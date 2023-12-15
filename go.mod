@@ -3,14 +3,24 @@ module github.com/maxthom/mir
 go 1.21.5
 
 require (
-	google.golang.org/grpc v1.60.0
-	google.golang.org/protobuf v1.31.0
+	github.com/knadh/koanf/providers/file v0.1.0
+	github.com/knadh/koanf/v2 v2.0.1
+)
+
+require github.com/knadh/koanf/providers/env v0.1.0 // indirect
+
+require (
+	github.com/fsnotify/fsnotify v1.7.0 // indirect
+	github.com/knadh/koanf/maps v0.1.1 // indirect
+	github.com/knadh/koanf/parsers/json v0.1.0
+	github.com/knadh/koanf/parsers/yaml v0.1.0
+	github.com/mitchellh/copystructure v1.2.0 // indirect
+	github.com/mitchellh/mapstructure v1.5.0 // indirect
+	github.com/mitchellh/reflectwalk v1.0.2 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 require (
-	github.com/golang/protobuf v1.5.3 // indirect
-	golang.org/x/net v0.19.0 // indirect
+	github.com/go-chi/chi/v5 v5.0.10
 	golang.org/x/sys v0.15.0 // indirect
-	golang.org/x/text v0.14.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20231212172506-995d672761c0 // indirect
 )
