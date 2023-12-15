@@ -1,0 +1,14 @@
+syntax = "proto3";
+option go_package = "github.com/maxthom/mir/gen";
+
+package todo;
+
+service TodoService {
+    rpc CreateTodo (Todo) returns (Todo) {}
+}
+
+message Todo {
+    string id = 1;
+    string title = 2;
+    string description = 3;
+}
