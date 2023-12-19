@@ -7,7 +7,12 @@ require (
 	github.com/knadh/koanf/v2 v2.0.1
 )
 
-require github.com/knadh/koanf/providers/env v0.1.0 // indirect
+require (
+	github.com/knadh/koanf/providers/env v0.1.0 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/rs/zerolog v1.31.0 // indirect
+)
 
 require (
 	github.com/fsnotify/fsnotify v1.7.0 // indirect

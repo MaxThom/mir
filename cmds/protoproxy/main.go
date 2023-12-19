@@ -8,6 +8,8 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/maxthom/mir/libs/api/health"
 	"github.com/maxthom/mir/libs/config"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 const AppName = "protoproxy"
@@ -36,6 +38,12 @@ func main() {
 	// Use the configuration.
 	fmt.Printf("config: %v\n", appConfig.All())
 	fmt.Printf("cfg: %v\n", cfg)
+
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+
+	log.Debug().Msg("This message appears only when log level set to Debug")
+	log.Info().Msg("This message appears when log level set to Debug or Info")
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
