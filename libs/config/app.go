@@ -86,6 +86,10 @@ type configFile struct {
 	format configFormat
 }
 
+func Empty() *appConfigSetup {
+	return &appConfigSetup{}
+}
+
 // The order of configuration loading is:
 //   - flags
 //   - env vars
@@ -142,8 +146,7 @@ func (s *appConfigSetup) LoadAndUnmarshal(out any) error {
 	if err := s.Load(); err != nil {
 		return err
 	}
-	s.Unmarshal(out)
-	return nil
+	return s.Unmarshal(out)
 }
 
 func (s *appConfigSetup) Get(path string) any {
@@ -154,16 +157,17 @@ func (s *appConfigSetup) All() map[string]any {
 	return s.k.All()
 }
 
-func (s *appConfigSetup) Unmarshal(out any) {
-	if out == nil {
-		return
-	}
-	s.k.Unmarshal("", out)
+func (s *appConfigSetup) Set(key string, val any) error {
+	return s.k.Set(key, val)
+}
+
+func (s *appConfigSetup) Unmarshal(out any) error {
+	return s.k.Unmarshal("", out)
 }
 
 func WithFilePath(path string, cff configFormat, devOnly bool) func(*appConfigSetup) {
 	return func(cfg *appConfigSetup) {
-		if devOnly && isNotPidZero {
+		if devOnly && isNotPidZero || !devOnly {
 			cfg.configFiles = append(cfg.configFiles, configFile{
 				path:   path,
 				format: cff,
@@ -174,7 +178,7 @@ func WithFilePath(path string, cff configFormat, devOnly bool) func(*appConfigSe
 
 func WithEtcFilePath(fileName string, cff configFormat, devOnly bool) func(*appConfigSetup) {
 	return func(cfg *appConfigSetup) {
-		if devOnly && isNotPidZero {
+		if devOnly && isNotPidZero || !devOnly {
 			path := filepath.Join("/etc", cfg.appName, fileName)
 			cfg.configFiles = append(cfg.configFiles, configFile{
 				path:   path,
@@ -186,7 +190,7 @@ func WithEtcFilePath(fileName string, cff configFormat, devOnly bool) func(*appC
 
 func WithXdgConfigHomeFilePath(fileName string, cff configFormat, devOnly bool) func(*appConfigSetup) {
 	return func(cfg *appConfigSetup) {
-		if devOnly && isNotPidZero {
+		if devOnly && isNotPidZero || !devOnly {
 			path := filepath.Join(xdgConfigHome, cfg.appName, fileName)
 			cfg.configFiles = append(cfg.configFiles, configFile{
 				path:   path,
