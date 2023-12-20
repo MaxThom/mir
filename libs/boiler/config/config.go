@@ -74,7 +74,7 @@ const (
 	Json configFormat = "json"
 )
 
-type appConfigSetup struct {
+type MirConfig struct {
 	configFiles []configFile
 	envVars     bool
 	appName     string
@@ -86,16 +86,16 @@ type configFile struct {
 	format configFormat
 }
 
-func Empty() *appConfigSetup {
-	return &appConfigSetup{}
+func Empty() *MirConfig {
+	return &MirConfig{}
 }
 
 // The order of configuration loading is:
 //   - flags
 //   - env vars
 //   - config files
-func New(appName string, options ...func(*appConfigSetup)) *appConfigSetup {
-	cfg := &appConfigSetup{
+func New(appName string, options ...func(*MirConfig)) *MirConfig {
+	cfg := &MirConfig{
 		appName: appName,
 		k:       koanf.New("."),
 	}
@@ -103,10 +103,12 @@ func New(appName string, options ...func(*appConfigSetup)) *appConfigSetup {
 		o(cfg)
 	}
 
+	// Could combine new and load in one function, new becomes private and load call new with the param
+	// Load could be static and return MirConfig. And have a LoadAndUnmarshal1
 	return cfg
 }
 
-func (s *appConfigSetup) Load() error {
+func (s *MirConfig) Load() error {
 	// Load
 	var errs error
 	for _, f := range s.configFiles {
@@ -142,31 +144,31 @@ func (s *appConfigSetup) Load() error {
 	return nil
 }
 
-func (s *appConfigSetup) LoadAndUnmarshal(out any) error {
+func (s *MirConfig) LoadAndUnmarshal(out any) error {
 	if err := s.Load(); err != nil {
 		return err
 	}
 	return s.Unmarshal(out)
 }
 
-func (s *appConfigSetup) Get(path string) any {
+func (s *MirConfig) Get(path string) any {
 	return s.k.Get(path)
 }
 
-func (s *appConfigSetup) All() map[string]any {
+func (s *MirConfig) All() map[string]any {
 	return s.k.All()
 }
 
-func (s *appConfigSetup) Set(key string, val any) error {
+func (s *MirConfig) Set(key string, val any) error {
 	return s.k.Set(key, val)
 }
 
-func (s *appConfigSetup) Unmarshal(out any) error {
+func (s *MirConfig) Unmarshal(out any) error {
 	return s.k.Unmarshal("", out)
 }
 
-func WithFilePath(path string, cff configFormat, devOnly bool) func(*appConfigSetup) {
-	return func(cfg *appConfigSetup) {
+func WithFilePath(path string, cff configFormat, devOnly bool) func(*MirConfig) {
+	return func(cfg *MirConfig) {
 		if devOnly && isNotPidZero || !devOnly {
 			cfg.configFiles = append(cfg.configFiles, configFile{
 				path:   path,
@@ -176,8 +178,19 @@ func WithFilePath(path string, cff configFormat, devOnly bool) func(*appConfigSe
 	}
 }
 
-func WithEtcFilePath(fileName string, cff configFormat, devOnly bool) func(*appConfigSetup) {
-	return func(cfg *appConfigSetup) {
+func WithFlagRegisterFilePath(flag string, path string, cff configFormat, devOnly bool) func(*MirConfig) {
+	return func(cfg *MirConfig) {
+		if devOnly && isNotPidZero || !devOnly {
+			cfg.configFiles = append(cfg.configFiles, configFile{
+				path:   path,
+				format: cff,
+			})
+		}
+	}
+}
+
+func WithEtcFilePath(fileName string, cff configFormat, devOnly bool) func(*MirConfig) {
+	return func(cfg *MirConfig) {
 		if devOnly && isNotPidZero || !devOnly {
 			path := filepath.Join("/etc", cfg.appName, fileName)
 			cfg.configFiles = append(cfg.configFiles, configFile{
@@ -188,8 +201,8 @@ func WithEtcFilePath(fileName string, cff configFormat, devOnly bool) func(*appC
 	}
 }
 
-func WithXdgConfigHomeFilePath(fileName string, cff configFormat, devOnly bool) func(*appConfigSetup) {
-	return func(cfg *appConfigSetup) {
+func WithXdgConfigHomeFilePath(fileName string, cff configFormat, devOnly bool) func(*MirConfig) {
+	return func(cfg *MirConfig) {
 		if devOnly && isNotPidZero || !devOnly {
 			path := filepath.Join(xdgConfigHome, cfg.appName, fileName)
 			cfg.configFiles = append(cfg.configFiles, configFile{
@@ -200,8 +213,8 @@ func WithXdgConfigHomeFilePath(fileName string, cff configFormat, devOnly bool) 
 	}
 }
 
-func WithEnvVars() func(*appConfigSetup) {
-	return func(cfg *appConfigSetup) {
+func WithEnvVars() func(*MirConfig) {
+	return func(cfg *MirConfig) {
 		cfg.envVars = true
 	}
 }

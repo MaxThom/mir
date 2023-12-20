@@ -5,15 +5,14 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/maxthom/mir/libs/api/health"
-	"github.com/maxthom/mir/libs/config"
+	"github.com/maxthom/mir/libs/boiler/cli"
+	"github.com/maxthom/mir/libs/boiler/config"
 	"github.com/rs/zerolog"
 	logger "github.com/rs/zerolog/log"
-	"gopkg.in/yaml.v3"
 )
 
 const AppName = "protoproxy"
@@ -21,9 +20,11 @@ const AppName = "protoproxy"
 var (
 	flagDebug    bool
 	flagFilePath string
+	flagLogLevel string
+	flagManual   bool
 
 	cfg = ProtoProxyConfig{
-		DebugLogging: false,
+		LogLevel: "info",
 		HttpServer: HttpServer{
 			Port: 3000,
 		},
@@ -34,8 +35,8 @@ var (
 
 type (
 	ProtoProxyConfig struct {
-		DebugLogging bool
-		HttpServer   HttpServer
+		LogLevel   string
+		HttpServer HttpServer
 	}
 
 	HttpServer struct {
@@ -44,49 +45,62 @@ type (
 )
 
 func init() {
-	// Cli
-	flag.Usage = func() {
-		fmt.Fprintf(flag.CommandLine.Output(), "Usage of %s:\n", AppName)
-		fmt.Fprintf(flag.CommandLine.Output(), "  Listen to NatsIO and process protobuf telemetry\n")
-		fmt.Fprintf(flag.CommandLine.Output(), "Args:\n")
-		flag.PrintDefaults()
-		fmt.Fprintf(flag.CommandLine.Output(), "Configuration automatically loaded from:\n")
-		fmt.Fprintf(flag.CommandLine.Output(), "  -/etc/%s/config.yaml\n", AppName)
-		fmt.Fprintf(flag.CommandLine.Output(), "  -$HOME/.config/%s/config.yaml, if process not zero\n", AppName)
-		fmt.Fprintf(flag.CommandLine.Output(), "Example default config.yaml:\n")
-		yamlData, _ := yaml.Marshal(cfg)
-		fmt.Fprintf(flag.CommandLine.Output(), strings.ReplaceAll("  "+string(yamlData), "\n", "\n  "))
-	}
-
-	flag.BoolVar(&flagDebug, "debug", false, "sets log level to debug")
-	flag.StringVar(&flagFilePath, "config", "", "pass an extra config file path")
+	mirCli := cli.New(AppName,
+		cli.WithDescription("Listen to NatsIO, deserialize protofbuf and push to puthost"),
+		cli.WithConfigFilePath(&flagFilePath),
+		cli.WithLogLevel(&flagLogLevel),
+		cli.WithLogDebug(&flagDebug),
+		cli.WithManual(&flagManual,
+			"Listen to queues from NatsIO and receive protobuf encoding to deserialize at runtime\n"+
+				"using an uploaded protobuf definition.The decoded data is pushed to the puthost protocol.",
+			&cfg, true, ""),
+	)
 	flag.Parse()
+	if flagManual {
+		fmt.Println(mirCli.Manual)
+		os.Exit(0)
+	}
 
 	// Config
-	if flagFilePath != "" {
-		appConfig = config.New(AppName,
-			config.WithEtcFilePath("config.yaml", config.Yaml, false),
-			config.WithXdgConfigHomeFilePath("config.yaml", config.Yaml, true),
-			config.WithFilePath(flagFilePath, config.Yaml, false),
-			config.WithEnvVars(),
-		)
-	} else {
-		appConfig = config.New(AppName,
-			config.WithEtcFilePath("config.yaml", config.Yaml, false),
-			config.WithXdgConfigHomeFilePath("config.yaml", config.Yaml, true),
-			config.WithEnvVars(),
-		)
+	opts := []func(*config.MirConfig){
+		config.WithEtcFilePath("config.yaml", config.Yaml, false),
+		config.WithXdgConfigHomeFilePath("config.yaml", config.Yaml, true),
+		config.WithEnvVars(),
 	}
+	if flagFilePath != "" {
+		opts = append(opts, config.WithFilePath(flagFilePath, config.Yaml, false))
+
+	}
+	appConfig = config.New(AppName, opts...)
 	err := appConfig.LoadAndUnmarshal(&cfg)
 
 	// Logger
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-	zerolog.SetGlobalLevel(zerolog.InfoLevel)
-	if flagDebug || cfg.DebugLogging {
-		appConfig.Set("debugLogging", true)
-		cfg.DebugLogging = true
-		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	if flagLogLevel != "" {
+		cfg.LogLevel = flagLogLevel
 	}
+	if flagDebug {
+		cfg.LogLevel = "debug"
+	}
+	switch cfg.LogLevel {
+	case "trace":
+		zerolog.SetGlobalLevel(zerolog.TraceLevel)
+	case "debug":
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	case "info":
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	case "warn":
+		zerolog.SetGlobalLevel(zerolog.WarnLevel)
+	case "error":
+		zerolog.SetGlobalLevel(zerolog.ErrorLevel)
+	case "fatal":
+		zerolog.SetGlobalLevel(zerolog.FatalLevel)
+	default:
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+		cfg.LogLevel = "info"
+
+	}
+	appConfig.Set("logLevel", cfg.LogLevel)
 
 	if err != nil {
 		log.Err(err).Msg("")
