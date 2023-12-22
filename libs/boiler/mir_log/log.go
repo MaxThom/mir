@@ -1,0 +1,58 @@
+package mir_log
+
+import (
+	"github.com/rs/zerolog"
+)
+
+type LogLevel = string
+
+var (
+	LogLevelTrace   LogLevel = "trace"
+	LogLevelDebug   LogLevel = "debug"
+	LogLevelInfo    LogLevel = "info"
+	LogLevelWarning LogLevel = "warn"
+	LogLevelError   LogLevel = "error"
+	LogLevelFatal   LogLevel = "fatal"
+)
+
+type mirLog struct {
+	timeFormat string
+	logLevel   string
+}
+
+var log *mirLog
+
+func Setup(options ...func(*mirLog)) {
+	log = &mirLog{}
+	for _, o := range options {
+		o(log)
+	}
+}
+
+func WithTimeFormatUnix() func(*mirLog) {
+	return func(log *mirLog) {
+		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	}
+}
+
+func WithLogLevel(logLevel LogLevel) func(*mirLog) {
+	return func(log *mirLog) {
+		log.logLevel = logLevel
+		switch logLevel {
+		case "trace":
+			zerolog.SetGlobalLevel(zerolog.TraceLevel)
+		case "debug":
+			zerolog.SetGlobalLevel(zerolog.DebugLevel)
+		case "info":
+			zerolog.SetGlobalLevel(zerolog.InfoLevel)
+		case "warn":
+			zerolog.SetGlobalLevel(zerolog.WarnLevel)
+		case "error":
+			zerolog.SetGlobalLevel(zerolog.ErrorLevel)
+		case "fatal":
+			zerolog.SetGlobalLevel(zerolog.FatalLevel)
+		default:
+			zerolog.SetGlobalLevel(zerolog.InfoLevel)
+		}
+	}
+}

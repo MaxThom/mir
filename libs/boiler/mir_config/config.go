@@ -38,7 +38,7 @@
 // }
 //
 
-package config
+package mir_config
 
 import (
 	"errors"
@@ -108,9 +108,8 @@ func New(appName string, options ...func(*MirConfig)) *MirConfig {
 	return cfg
 }
 
-func (s *MirConfig) Load() error {
+func (s *MirConfig) Load() (errs error, warns error) {
 	// Load
-	var errs error
 	for _, f := range s.configFiles {
 		var parser koanf.Parser
 
@@ -123,32 +122,37 @@ func (s *MirConfig) Load() error {
 			fmt.Printf("invalid config format '%s' for file %s.\n[Json|Yaml]\n", f.format, f.path)
 		}
 		if err := s.k.Load(file.Provider(f.path), parser); err != nil {
-			errs = errors.Join(errs, err)
+			if strings.Contains(err.Error(), "no such file or directory") {
+				warns = errors.Join(warns, err)
+			} else {
+				errs = errors.Join(errs, err)
+			}
 		}
 	}
 
-	if errs != nil {
-		return errs
-	}
+	//if errs != nil {
+	//	return errs
+	//}
 
 	// Each env var:
 	// - __ for nesting.
 	// - _ for multiple words where the first letter after it becomes capitalize
+	var err error
 	if s.envVars {
 		envPrefix := strings.ToUpper(s.appName) + "__"
-		s.k.Load(env.Provider(envPrefix, ".", func(s string) string {
+		err = s.k.Load(env.Provider(envPrefix, ".", func(s string) string {
 			return envVarsToYamlNomenclature(s, envPrefix)
 		}), nil)
 	}
 
-	return nil
+	return errors.Join(errs, err), warns
 }
 
-func (s *MirConfig) LoadAndUnmarshal(out any) error {
-	if err := s.Load(); err != nil {
-		return err
+func (s *MirConfig) LoadAndUnmarshal(out any) (errs error, warns error) {
+	if errs, warns = s.Load(); errs != nil {
+		return errs, warns
 	}
-	return s.Unmarshal(out)
+	return s.Unmarshal(out), warns
 }
 
 func (s *MirConfig) Get(path string) any {

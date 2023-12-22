@@ -3,7 +3,7 @@
 // TODO:
 // [ ]: global config
 // [ ]: no object?
-// [ ]: Add MirCli.parse which also print the manual
+// [ ]: Add Mircli.parse which also print the manual
 //
 // Snippets:
 //cli.New(AppName,
@@ -18,7 +18,7 @@
 // )
 // flag.Parse()
 // if flagManual {
-// 	fmt.Println(mirCli.Manual)
+// 	fmt.Println(mircli.Manual)
 // 	os.Exit(0)
 // }
 
@@ -34,11 +34,12 @@
 // }
 //
 
-package cli
+package mir_cli
 
 import (
 	"flag"
 	"fmt"
+	"os"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -58,7 +59,7 @@ const (
 func init() {
 }
 
-type MirCli struct {
+type mirCli struct {
 	appName    string
 	desc       string
 	Manual     string
@@ -68,8 +69,11 @@ type MirCli struct {
 	defaultCfg any
 }
 
-func New(appName string, options ...func(*MirCli)) *MirCli {
-	cli := &MirCli{
+var cli *mirCli
+var flagManualOut bool
+
+func Setup(appName string, options ...func(*mirCli)) {
+	cli = &mirCli{
 		appName: appName,
 	}
 	for _, o := range options {
@@ -91,7 +95,7 @@ func New(appName string, options ...func(*MirCli)) *MirCli {
 				"  - _ represent two words where the second one first letter is capitalized\n"+
 				"  e.g. %s__LOG__DEBUG_LOGGING == log.debugLogging in yaml", strings.ToUpper(cli.appName))
 	}
-	cli.Manual += cli.extra
+	cli.Manual += "\n" + cli.extra
 
 	flag.Usage = func() {
 		fmt.Fprintf(flag.CommandLine.Output(), "Usage of %s:\n", cli.appName)
@@ -101,39 +105,42 @@ func New(appName string, options ...func(*MirCli)) *MirCli {
 		fmt.Fprintf(flag.CommandLine.Output(), "Args:\n")
 		flag.PrintDefaults()
 	}
-
-	return cli
 }
 
-func (m *MirCli) Load() error {
+func Parse() error {
 	// Load
-
+	flag.Parse()
+	if flagManualOut {
+		fmt.Println(cli.Manual)
+		os.Exit(0)
+	}
 	return nil
 }
 
-func WithDescription(desc string) func(*MirCli) {
-	return func(cli *MirCli) {
+func WithDescription(desc string) func(*mirCli) {
+	return func(cli *mirCli) {
 		cli.desc = desc
 	}
 }
-func WithManual(out *bool, desc string, defaultConfig any, envVars bool, extra string) func(*MirCli) {
-	return func(cli *MirCli) {
+
+func WithManual(desc string, defaultConfig any, envVars bool, extra string) func(*mirCli) {
+	return func(cli *mirCli) {
 		cli.longDesc = desc
 		cli.defaultCfg = defaultConfig
 		cli.envVars = envVars
 		cli.extra = extra
-		flag.BoolVar(out, "manual", false, "diplay usage manual")
+		flag.BoolVar(&flagManualOut, "manual", false, "diplay usage manual")
 	}
 }
 
-func WithConfigFilePath(out *string) func(*MirCli) {
-	return func(cli *MirCli) {
+func WithConfigFilePath(out *string) func(*mirCli) {
+	return func(cli *mirCli) {
 		flag.StringVar(out, "config", "", "extra configuration filepath")
 	}
 }
 
-func WithLogLevel(out *LogLevel) func(*MirCli) {
-	return func(cli *MirCli) {
+func WithLogLevel(out *LogLevel) func(*mirCli) {
+	return func(cli *mirCli) {
 		flag.StringVar(out, "loglevel", LogLevelInfo, fmt.Sprintf("[%s|%s|%s|%s|%s|%s]",
 			LogLevelTrace,
 			LogLevelDebug,
@@ -145,8 +152,8 @@ func WithLogLevel(out *LogLevel) func(*MirCli) {
 	}
 }
 
-func WithLogDebug(out *bool) func(*MirCli) {
-	return func(cli *MirCli) {
+func WithLogDebug(out *bool) func(*mirCli) {
+	return func(cli *mirCli) {
 		flag.BoolVar(out, "debug", false, "set log level to debug")
 	}
 }
