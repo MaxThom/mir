@@ -117,6 +117,10 @@ func Parse() error {
 	return nil
 }
 
+func Args() []string {
+	return flag.Args()
+}
+
 func WithDescription(desc string) func(*mirCli) {
 	return func(cli *mirCli) {
 		cli.desc = desc
@@ -136,6 +140,12 @@ func WithManual(desc string, defaultConfig any, envVars bool, extra string) func
 func WithConfigFilePath(out *string) func(*mirCli) {
 	return func(cli *mirCli) {
 		flag.StringVar(out, "config", "", "extra configuration filepath")
+	}
+}
+
+func WithOsFlag(fn func()) func(*mirCli) {
+	return func(cli *mirCli) {
+		fn()
 	}
 }
 

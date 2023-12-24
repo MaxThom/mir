@@ -1,9 +1,12 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
+	"syscall"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -11,15 +14,17 @@ import (
 	"github.com/maxthom/mir/libs/boiler/mir_cli"
 	"github.com/maxthom/mir/libs/boiler/mir_config"
 	"github.com/maxthom/mir/libs/boiler/mir_log"
+	"github.com/maxthom/mir/libs/boiler/mir_signals"
 	logger "github.com/rs/zerolog/log"
 )
 
 const AppName = "protoproxy"
 
 var (
-	flagDebug    bool
-	flagFilePath string
-	flagLogLevel string
+	flagDebug       bool
+	flagFilePath    string
+	flagLogLevel    string
+	flagSchemaPaths []string
 
 	cfg = ProtoProxymir_config{
 		LogLevel: "info",
@@ -42,10 +47,10 @@ type (
 	}
 )
 
-// TODO os signals catch
-// TODO logger builder
-// TODO make appmir_configSetup public and tweak loading
 func main() {
+	mir_signals.Notify(syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT)
+
+	// Setup
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -54,8 +59,28 @@ func main() {
 
 	health.RegisterRoutes(r)
 	health.SetReady()
+
+	// Launch server
+	server := &http.Server{
+		Addr:    fmt.Sprintf(":%d", cfg.HttpServer.Port),
+		Handler: r,
+	}
+	go func() {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Err(err).Msg("")
+		}
+	}()
+
+	// Handle shutdown
 	log.Info().Msg(fmt.Sprintf("%s initialized", AppName))
-	http.ListenAndServe(fmt.Sprintf(":%d", cfg.HttpServer.Port), r)
+	mir_signals.WaitForOsSignals(func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		if err := server.Shutdown(ctx); err != nil {
+			log.Fatal().Err(err).Msg("failed to gracefully shutdown server")
+		}
+	})
 }
 
 func init() {
@@ -69,6 +94,8 @@ func init() {
 			"Listen to queues from NatsIO and receive protobuf encoding to deserialize at runtime\n"+
 				"using an uploaded protobuf definition.The decoded data is pushed to the puthost protocol.",
 			&cfg, true, ""),
+		mir_cli.WithOsFlag(func() {
+		}),
 	)
 	mir_cli.Parse()
 
