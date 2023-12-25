@@ -1,0 +1,10 @@
+version: v1
+plugins:
+  - plugin: go
+    out: api/v1alpha/protoproxy/gen
+    opt: 
+      - paths=source_relative
+  - plugin: connect-go
+    out: api/v1alpha/protoproxy/gen
+    opt: 
+      - paths=source_relative

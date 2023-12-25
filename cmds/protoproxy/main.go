@@ -1,114 +1,136 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"net/http"
 	"os"
+	"syscall"
+	"time"
 
-	"github.com/maxthom/mir/cmds/protoproxy/gen"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/reflect/protodesc"
-	"google.golang.org/protobuf/reflect/protoreflect"
-	"google.golang.org/protobuf/reflect/protoregistry"
-	"google.golang.org/protobuf/types/descriptorpb"
-	"google.golang.org/protobuf/types/dynamicpb"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/maxthom/mir/libs/api/health"
+	"github.com/maxthom/mir/libs/boiler/mir_cli"
+	"github.com/maxthom/mir/libs/boiler/mir_config"
+	"github.com/maxthom/mir/libs/boiler/mir_log"
+	"github.com/maxthom/mir/libs/boiler/mir_signals"
+	logger "github.com/rs/zerolog/log"
+)
+
+const AppName = "protoproxy"
+
+var (
+	flagDebug       bool
+	flagFilePath    string
+	flagLogLevel    string
+	flagSchemaPaths []string
+
+	cfg = ProtoProxymir_config{
+		LogLevel: "info",
+		HttpServer: HttpServer{
+			Port: 3000,
+		},
+	}
+	appConfig = mir_config.Empty()
+	log       = logger.With().Str("component", AppName).Logger()
+)
+
+type (
+	ProtoProxymir_config struct {
+		LogLevel   string
+		HttpServer HttpServer
+	}
+
+	HttpServer struct {
+		Port int
+	}
 )
 
 func main() {
-	todo := &gen.Todo{
-		Id:          "1",
-		Title:       "hello",
-		Description: "world !",
-	}
-	out, _ := proto.Marshal(todo)
-	fmt.Println(out)
+	mir_signals.Notify(syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT)
 
-	todoIn := &gen.Todo{}
-	proto.Unmarshal(out, todoIn)
-	fmt.Println(todoIn)
-
-	reflectOnExistingType(todoIn)
-	s := todoIn.ProtoReflect()
-
-	// ProtoRegistry = play with a set of protofiles
-	// ProtoReflect = dynamically manipulate messages
-	// Descriptor = description of the schema. used to build the callbacks
-	// snet use the grpc routing to know which object to deserialize
-	// tui will have to use maybe a header in the msg containing the fullname of the type
-	readDyn(out, s.Descriptor())
-
-	fmt.Println("---")
-	protoRegistry := &protoregistry.Files{}
-	pf, err := readProtoFromDisk("/home/hexory/code/go/mir/cmds/protoproxy/gen/bin/todo.bproto")
-	if err != nil {
-		fmt.Println(err)
-	}
-	err = registerProto(pf, protoRegistry)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	protoRegistry.RangeFiles(func(fd protoreflect.FileDescriptor) bool {
-		fmt.Println(fd)
-		fmt.Println(fd.FullName())
-		fmt.Println(fd.Name())
-		fmt.Printf("fd.Messages(): %v\n", fd.Messages().Get(0).FullName())
-		return true
+	// Setup
+	r := chi.NewRouter()
+	r.Use(middleware.Logger)
+	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(fmt.Sprintf("%v", health.IsReady())))
 	})
 
-	desc, err := protoRegistry.FindDescriptorByName("todo.Todo")
-	fmt.Println(desc)
-	fmt.Println(err)
-	readDyn(out, desc.(protoreflect.MessageDescriptor))
-}
+	health.RegisterRoutes(r)
+	health.SetReady()
 
-func readDyn(in []byte, desc protoreflect.MessageDescriptor) {
-	m := dynamicpb.NewMessage(desc)
-
-	if err := proto.Unmarshal(in, m); err != nil {
-		//		return nil, err
+	// Launch server
+	server := &http.Server{
+		Addr:    fmt.Sprintf(":%d", cfg.HttpServer.Port),
+		Handler: r,
 	}
+	go func() {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Err(err).Msg("")
+		}
+	}()
 
-	fmt.Println(m.Descriptor().FullName())
-	m.Range(func(fd protoreflect.FieldDescriptor, v protoreflect.Value) bool {
-		fmt.Printf("  %s: %s\n", fd.Name(), v)
-		return true
+	// Handle shutdown
+	log.Info().Msg(fmt.Sprintf("%s initialized", AppName))
+	mir_signals.WaitForOsSignals(func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		if err := server.Shutdown(ctx); err != nil {
+			log.Fatal().Err(err).Msg("failed to gracefully shutdown server")
+		}
 	})
 }
 
-func reflectOnExistingType(msg proto.Message) {
-	m := msg.ProtoReflect()
-	//fds := m.Descriptor().Fields()
-	fmt.Println("----- newReflect:")
-	fmt.Println(m.Descriptor())
-	// for k := 0; k < fds.Len(); k++ {
-	// 	fd := fds.Get(k)
-	// 	fmt.Println(fd)
-	// }
-}
+func init() {
+	// Cli
+	mir_cli.Setup(AppName,
+		mir_cli.WithDescription("Listen to NatsIO, deserialize protofbuf and push to puthost"),
+		mir_cli.WithConfigFilePath(&flagFilePath),
+		mir_cli.WithLogLevel(&flagLogLevel),
+		mir_cli.WithLogDebug(&flagDebug),
+		mir_cli.WithManual(
+			"Listen to queues from NatsIO and receive protobuf encoding to deserialize at runtime\n"+
+				"using an uploaded protobuf definition.The decoded data is pushed to the puthost protocol.",
+			&cfg, true, ""),
+		mir_cli.WithOsFlag(func() {
+		}),
+	)
+	mir_cli.Parse()
 
-func registerProto(p *descriptorpb.FileDescriptorProto, r *protoregistry.Files) error {
-	// Initialize the File descriptor object
-	fd, err := protodesc.NewFile(p, r)
+	// Config
+	opts := []func(*mir_config.MirConfig){
+		mir_config.WithEtcFilePath("config.yaml", mir_config.Yaml, false),
+		mir_config.WithXdgConfigHomeFilePath("config.yaml", mir_config.Yaml, true),
+		mir_config.WithEnvVars(),
+	}
+	if flagFilePath != "" {
+		opts = append(opts, mir_config.WithFilePath(flagFilePath, mir_config.Yaml, false))
+
+	}
+	appConfig = mir_config.New(AppName, opts...)
+	err, warns := appConfig.LoadAndUnmarshal(&cfg)
+
+	// Logger
+	if flagLogLevel != "" {
+		cfg.LogLevel = flagLogLevel
+	}
+	if flagDebug {
+		cfg.LogLevel = "debug"
+	}
+	appConfig.Set("logLevel", cfg.LogLevel)
+	mir_log.Setup(mir_log.WithLogLevel(cfg.LogLevel), mir_log.WithTimeFormatUnix())
+
+	// Finish
 	if err != nil {
-		return err
+		log.Err(err).Msg("")
+		os.Exit(1)
+	}
+	if warns != nil {
+		log.Warn().Msg(warns.Error())
 	}
 
-	return r.RegisterFile(fd)
-}
-
-func readProtoFromDisk(path string) (*descriptorpb.FileDescriptorProto, error) {
-	// Now load that temporary file as a file descriptor set protobuf
-	protoFile, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-
-	pbSet := new(descriptorpb.FileDescriptorSet)
-	if err := proto.Unmarshal(protoFile, pbSet); err != nil {
-		return nil, err
-	}
-
-	// We know protoc was invoked with a single .proto file
-	return pbSet.GetFile()[0], nil
-
+	log.Info().Msg(fmt.Sprintf("%s initializing...", AppName))
+	log.Info().Str("mir_config", fmt.Sprintf("%v", appConfig.All())).Msg("mir_config loaded")
 }
