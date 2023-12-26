@@ -2,8 +2,6 @@ package health
 
 import (
 	"net/http"
-
-	"github.com/go-chi/chi/v5"
 )
 
 var (
@@ -22,7 +20,7 @@ func SetUneady() {
 	isReady = false
 }
 
-func RegisterRoutes(r *chi.Mux) {
+func RegisterRoutes(r *http.ServeMux) {
 	r.HandleFunc("/ready", func(w http.ResponseWriter, r *http.Request) {
 		if IsReady() {
 			w.WriteHeader(http.StatusOK)

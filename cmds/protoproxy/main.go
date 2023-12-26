@@ -8,14 +8,17 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+	"connectrpc.com/connect"
+	"github.com/maxthom/mir/api/gen/proto/v1alpha/protoproxy"
+	"github.com/maxthom/mir/api/gen/proto/v1alpha/protoproxy/protoproxyconnect"
 	"github.com/maxthom/mir/libs/api/health"
 	"github.com/maxthom/mir/libs/boiler/mir_cli"
 	"github.com/maxthom/mir/libs/boiler/mir_config"
 	"github.com/maxthom/mir/libs/boiler/mir_log"
 	"github.com/maxthom/mir/libs/boiler/mir_signals"
 	logger "github.com/rs/zerolog/log"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 )
 
 const AppName = "protoproxy"
@@ -26,7 +29,7 @@ var (
 	flagLogLevel    string
 	flagSchemaPaths []string
 
-	cfg = ProtoProxymir_config{
+	cfg = ProtoProxyConfig{
 		LogLevel: "info",
 		HttpServer: HttpServer{
 			Port: 3000,
@@ -37,7 +40,7 @@ var (
 )
 
 type (
-	ProtoProxymir_config struct {
+	ProtoProxyConfig struct {
 		LogLevel   string
 		HttpServer HttpServer
 	}
@@ -45,26 +48,46 @@ type (
 	HttpServer struct {
 		Port int
 	}
+
+	ProtoProxyServer struct{}
 )
+
+func (p *ProtoProxyServer) UploadSchema(ctx context.Context,
+	req *connect.Request[protoproxy.UploadSchemaRequest],
+) (*connect.Response[protoproxy.UploadSchemaResponse], error) {
+	log.Info().Msg("upload schema!")
+	log.Info().Msg(fmt.Sprintf("Request headers: %s", req.Header()))
+	res := connect.NewResponse(&protoproxy.UploadSchemaResponse{
+		Msg: "schema uploaded!",
+	})
+	res.Header().Set("Content-Type", "application/json")
+	return res, nil
+}
 
 func main() {
 	mir_signals.Notify(syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT)
 
-	// Setup
-	r := chi.NewRouter()
-	r.Use(middleware.Logger)
-	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(fmt.Sprintf("%v", health.IsReady())))
-	})
+	mux := http.NewServeMux()
 
-	health.RegisterRoutes(r)
+	// Services
+	// Connect
+	api := http.NewServeMux()
+	pp := &ProtoProxyServer{}
+	api.Handle(protoproxyconnect.NewProtoProxyServiceHandler(pp))
+	mux.Handle("/api/", http.StripPrefix("/api", api))
+
+	// Health
+	health.RegisterRoutes(mux)
 	health.SetReady()
+
+	// TODO Prometheus
 
 	// Launch server
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.HttpServer.Port),
-		Handler: r,
+		Handler: h2c.NewHandler(mux, &http2.Server{}),
 	}
+
 	go func() {
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Err(err).Msg("")

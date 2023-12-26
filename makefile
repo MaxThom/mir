@@ -1,3 +1,7 @@
+
+api:
+	buf generate --config api/buf.gen.yaml
+
 rabbit:
 	docker stop rabbitmq || true
 	sleep 1
