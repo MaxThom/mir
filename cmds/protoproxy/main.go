@@ -12,16 +12,19 @@ import (
 	"github.com/maxthom/mir/api/gen/proto/v1alpha/protoproxy"
 	"github.com/maxthom/mir/api/gen/proto/v1alpha/protoproxy/protoproxyconnect"
 	"github.com/maxthom/mir/libs/api/health"
+	"github.com/maxthom/mir/libs/api/metrics"
 	"github.com/maxthom/mir/libs/boiler/mir_cli"
 	"github.com/maxthom/mir/libs/boiler/mir_config"
 	"github.com/maxthom/mir/libs/boiler/mir_log"
 	"github.com/maxthom/mir/libs/boiler/mir_signals"
+	"github.com/prometheus/client_golang/prometheus"
 	logger "github.com/rs/zerolog/log"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 )
 
 const AppName = "protoproxy"
+const Version = "0.0.1"
 
 var (
 	flagDebug       bool
@@ -35,8 +38,9 @@ var (
 			Port: 3000,
 		},
 	}
-	appConfig = mir_config.Empty()
-	log       = logger.With().Str("component", AppName).Logger()
+	appConfig                             = mir_config.Empty()
+	log                                   = logger.With().Str("component", AppName).Logger()
+	uploadSchemaMetric prometheus.Counter = nil
 )
 
 type (
@@ -55,6 +59,7 @@ type (
 func (p *ProtoProxyServer) UploadSchema(ctx context.Context,
 	req *connect.Request[protoproxy.UploadSchemaRequest],
 ) (*connect.Response[protoproxy.UploadSchemaResponse], error) {
+	uploadSchemaMetric.Inc()
 	log.Info().Msg("upload schema!")
 	log.Info().Msg(fmt.Sprintf("Request headers: %s", req.Header()))
 	res := connect.NewResponse(&protoproxy.UploadSchemaResponse{
@@ -76,11 +81,16 @@ func main() {
 	api.Handle(protoproxyconnect.NewProtoProxyServiceHandler(pp))
 	mux.Handle("/api/", http.StripPrefix("/api", api))
 
-	// Health
+	// Metrics & Health
+	metrics.RegisterMirMetrics(AppName, Version, map[string]string{"ca": "dev"}, fmt.Sprintf("%v", appConfig.All()))
+	uploadSchemaMetric = metrics.NewCounter(prometheus.CounterOpts{
+		Name: "upload_schema_counter",
+		Help: "Upload schema",
+	})
+	metrics.Register(uploadSchemaMetric)
+	metrics.RegisterRoutes(mux)
 	health.RegisterRoutes(mux)
 	health.SetReady()
-
-	// TODO Prometheus
 
 	// Launch server
 	server := &http.Server{
