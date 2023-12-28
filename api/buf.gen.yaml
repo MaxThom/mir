@@ -10,5 +10,6 @@ plugins:
       - paths=source_relative
   - plugin: connect-go
     out: gen
-    opt: 
+    opt:   
       - paths=source_relative
+# TODO how to generate binary next to proto

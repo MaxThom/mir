@@ -55,6 +55,10 @@ func RegisterMirMetrics(appName string, appVersion string, pinnedTags map[string
 	prometheus.DefaultRegisterer = registry
 }
 
+func Registry() *prometheus.Registry {
+	return registry
+}
+
 // NewCounter creates a new Prometheus Counter metric with the given options.
 func NewCounter(opts prometheus.CounterOpts) prometheus.Counter {
 	if opts.Namespace == "" {
