@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package v1alpha.protoproxy;
+
+option go_package = "gen/";
+
+message UploadRequest { }
+
+message UploadResponse {
+    string msg = 1;
+}
+
+message DownloadRequest { }
+
+message DownloadhResponse {
+    string msg = 1;
+}
+
+message ListRequest { }
+
+message ListResponse {
+    string msg = 1;
+}
+
+
+service ProtoStoreService {
+// Upload a  to the store with attached metadata
+rpc Upload(UploadRequest) returns (UploadResponse) {}
+
+// Download the a  using the name or uuid
+rpc Download(DownloadRequest) returns (DownloadResponse) {}
+
+// List all  present in the store
+rpc List(ListRequest) returns (ListResponse) {}
+}
