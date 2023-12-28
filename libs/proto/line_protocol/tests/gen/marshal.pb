@@ -1,7 +1,6 @@
 
-s
-
-todo.protostore"N
+|
+tests/marshal.protostore"N
 Todo
 id (	Rid
 title (	Rtitle 
