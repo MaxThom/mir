@@ -120,5 +120,4 @@ func readProtoFromDisk(path string) (*descriptorpb.FileDescriptorProto, error) {
 
 	// We know protoc was invoked with a single .proto file
 	return pbSet.GetFile()[0], nil
-
 }
