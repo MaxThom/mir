@@ -15,6 +15,7 @@ import (
 	"github.com/maxthom/mir/libs/boiler/mir_config"
 	"github.com/maxthom/mir/libs/boiler/mir_log"
 	"github.com/maxthom/mir/libs/boiler/mir_signals"
+	proto_store "github.com/maxthom/mir/libs/proto/store"
 	"github.com/maxthom/mir/services/protoproxy"
 	logger "github.com/rs/zerolog/log"
 	"golang.org/x/net/http2"
@@ -51,6 +52,10 @@ type (
 	}
 )
 
+// TODO
+//   - Library to translate proto to influx
+//   - The api could have an endpoint to send telemetry as json
+//   - The api could have an endpoint to send telemetry as grpc with a dynamic grpc server
 func main() {
 	mir_signals.Notify(syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT)
 	mux := http.NewServeMux()
@@ -63,6 +68,19 @@ func main() {
 	api.Handle(protoproxyconnect.NewProtoProxyServiceHandler(pp))
 
 	// ProtoStore
+	// Args are all proto binary to load as path
+	for _, p := range mir_cli.Args() {
+		err := proto_store.GlobalRegistry.LoadProtoBinaryFileFromDisk(proto_store.Meta{
+			Name: "todo",
+			Desc: "a description",
+			Tags: map[string]string{"ca": "dev"},
+		}, p)
+		if err != nil {
+			logger.Err(err).Msg("")
+		}
+	}
+	// TODO protostore service take a registry in the constructor
+	//      in the future, this could be an interface to many store type
 
 	// Metrics & Health
 	metrics.RegisterRoutes(mux)

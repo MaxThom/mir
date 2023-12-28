@@ -37,6 +37,7 @@ require (
 
 require (
 	github.com/go-chi/chi/v5 v5.0.10
+	github.com/google/uuid v1.5.0
 	github.com/prometheus/client_golang v1.18.0
 	golang.org/x/sys v0.15.0 // indirect
 )
