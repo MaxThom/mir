@@ -1,10 +1,14 @@
 version: v1
+managed:
+  enabled: true
+  go_package_prefix:
+    default: github.com/maxthom/mir/api/gen
 plugins:
   - plugin: go
-    out: api/v1alpha/protoproxy/gen
+    out: gen
     opt: 
       - paths=source_relative
   - plugin: connect-go
-    out: api/v1alpha/protoproxy/gen
+    out: gen
     opt: 
       - paths=source_relative
