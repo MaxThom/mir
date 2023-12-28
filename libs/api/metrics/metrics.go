@@ -63,7 +63,7 @@ func NewCounter(opts prometheus.CounterOpts) prometheus.Counter {
 	if opts.Subsystem == "" {
 		opts.Subsystem = subsystem
 	}
-	opts.ConstLabels = setMirPinnedTags(opts.ConstLabels)
+	opts.ConstLabels = setPinnedTags(opts.ConstLabels)
 
 	return prometheus.NewCounter(opts)
 }
@@ -76,7 +76,7 @@ func NewGauge(opts prometheus.GaugeOpts) prometheus.Gauge {
 	if opts.Subsystem == "" {
 		opts.Subsystem = subsystem
 	}
-	opts.ConstLabels = setMirPinnedTags(opts.ConstLabels)
+	opts.ConstLabels = setPinnedTags(opts.ConstLabels)
 
 	return prometheus.NewGauge(opts)
 }
@@ -89,7 +89,7 @@ func NewHistogram(opts prometheus.HistogramOpts) prometheus.Histogram {
 	if opts.Subsystem == "" {
 		opts.Subsystem = subsystem
 	}
-	opts.ConstLabels = setMirPinnedTags(opts.ConstLabels)
+	opts.ConstLabels = setPinnedTags(opts.ConstLabels)
 
 	return prometheus.NewHistogram(opts)
 }
@@ -102,7 +102,7 @@ func NewSummary(opts prometheus.SummaryOpts) prometheus.Summary {
 	if opts.Subsystem == "" {
 		opts.Subsystem = subsystem
 	}
-	opts.ConstLabels = setMirPinnedTags(opts.ConstLabels)
+	opts.ConstLabels = setPinnedTags(opts.ConstLabels)
 
 	return prometheus.NewSummary(opts)
 }
@@ -117,7 +117,7 @@ func RegisterRoutes(r *http.ServeMux) {
 }
 
 // setMirNomenclature sets the Mir-specific nomenclature for the given Prometheus options.
-func setMirPinnedTags(tags prometheus.Labels) prometheus.Labels {
+func setPinnedTags(tags prometheus.Labels) prometheus.Labels {
 	if tags == nil {
 		tags = prometheus.Labels{}
 	}
