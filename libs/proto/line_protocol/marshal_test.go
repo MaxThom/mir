@@ -57,7 +57,7 @@ func TestReadDyn(t *testing.T) {
 	fmt.Println(out)
 
 	// Act
-	fn := Marshal(desc.(protoreflect.MessageDescriptor))
+	fn := Marshal(map[string]string{"pin": "yup", "aa": "bb"}, desc.(protoreflect.MessageDescriptor))
 	lp, err := fn(out, map[string]string{"ca": "dev", "cb": "dev2"})
 	if err != nil {
 		assert.NilError(t, err)

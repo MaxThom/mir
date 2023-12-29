@@ -2,6 +2,7 @@ package proto_lineprotocol
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -27,7 +28,7 @@ import (
 // MessageDescriptor represent the proto descripor
 // We create a proto.Message from it and the add the data to it from the in byte using the unmarshall
 // Now with both data and descriptor, we can walk the fields
-func Marshal(desc protoreflect.MessageDescriptor) func([]byte, map[string]string) (string, error) {
+func Marshal(pinnedTags map[string]string, desc protoreflect.MessageDescriptor) func([]byte, map[string]string) (string, error) {
 
 	// Order the fields by the number
 	// Have a special field name that is server for the timestamp
@@ -36,6 +37,17 @@ func Marshal(desc protoreflect.MessageDescriptor) func([]byte, map[string]string
 
 	var lp strings.Builder
 	lp.WriteString(string(desc.FullName()))
+
+	// Pinned tags
+	// Good practices to sort them else its done by the db
+	pinnedTagKeys := make([]string, 0, len(pinnedTags))
+	for k := range pinnedTags {
+		pinnedTagKeys = append(pinnedTagKeys, k)
+	}
+	sort.Strings(pinnedTagKeys)
+	for _, k := range pinnedTagKeys {
+		lp.WriteString(fmt.Sprintf(",%s=%s", k, pinnedTags[k]))
+	}
 
 	// TODO make sure the order is correct, might not be possible to determine before hand
 	orderedFieldDesc := make([]protoreflect.FieldDescriptor, desc.Fields().Len())
@@ -62,16 +74,7 @@ func Marshal(desc protoreflect.MessageDescriptor) func([]byte, map[string]string
 	m := dynamicpb.NewMessage(desc)
 	return func(in []byte, tags map[string]string) (string, error) {
 		// Tags
-		// TODO tags could be move outside the function if we know the tag in advance
-		//      or maybe system tags and user tags
 		// TODO assume tags are sorted, should be done at the source
-		//tagKeys := make([]string, 0, len(tags))
-		//for k := range tags {
-		//	tagKeys = append(tagKeys, k)
-		//}
-		//sort.Strings(tagKeys)
-
-		// Tags
 		for k, v := range tags {
 			lp.WriteString(fmt.Sprintf(",%s=%s", k, v))
 		}
