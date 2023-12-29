@@ -8,8 +8,6 @@ import (
 	"syscall"
 	"time"
 
-	"connectrpc.com/connect"
-	"github.com/maxthom/mir/api/gen/proto/v1alpha/protoproxy"
 	"github.com/maxthom/mir/api/gen/proto/v1alpha/protoproxy/protoproxyconnect"
 	"github.com/maxthom/mir/libs/api/health"
 	"github.com/maxthom/mir/libs/api/metrics"
@@ -17,7 +15,8 @@ import (
 	"github.com/maxthom/mir/libs/boiler/mir_config"
 	"github.com/maxthom/mir/libs/boiler/mir_log"
 	"github.com/maxthom/mir/libs/boiler/mir_signals"
-	"github.com/prometheus/client_golang/prometheus"
+	proto_store "github.com/maxthom/mir/libs/proto/store"
+	"github.com/maxthom/mir/services/protoproxy"
 	logger "github.com/rs/zerolog/log"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -38,9 +37,8 @@ var (
 			Port: 3000,
 		},
 	}
-	appConfig                             = mir_config.Empty()
-	log                                   = logger.With().Str("component", AppName).Logger()
-	uploadSchemaMetric prometheus.Counter = nil
+	appConfig = mir_config.Empty()
+	log       = logger.With().Str("component", AppName).Logger()
 )
 
 type (
@@ -52,47 +50,45 @@ type (
 	HttpServer struct {
 		Port int
 	}
-
-	ProtoProxyServer struct{}
 )
 
-func (p *ProtoProxyServer) UploadSchema(ctx context.Context,
-	req *connect.Request[protoproxy.UploadSchemaRequest],
-) (*connect.Response[protoproxy.UploadSchemaResponse], error) {
-	uploadSchemaMetric.Inc()
-	log.Info().Msg("upload schema!")
-	log.Info().Msg(fmt.Sprintf("Request headers: %s", req.Header()))
-	res := connect.NewResponse(&protoproxy.UploadSchemaResponse{
-		Msg: "schema uploaded!",
-	})
-	res.Header().Set("Content-Type", "application/json")
-	return res, nil
-}
-
+// TODO
+//   - Library to translate proto to influx
+//   - The api could have an endpoint to send telemetry as json
+//   - The api could have an endpoint to send telemetry as grpc with a dynamic grpc server
 func main() {
 	mir_signals.Notify(syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT)
-
 	mux := http.NewServeMux()
+	api := http.NewServeMux()
 
 	// Services
-	// Connect
-	api := http.NewServeMux()
-	pp := &ProtoProxyServer{}
+	// ProtoProxy
+	pp := &protoproxy.ProtoProxyServer{}
+	protoproxy.RegisterMetrics(metrics.Registry())
 	api.Handle(protoproxyconnect.NewProtoProxyServiceHandler(pp))
-	mux.Handle("/api/", http.StripPrefix("/api", api))
+
+	// ProtoStore
+	// Args are all proto binary to load as path
+	for _, p := range mir_cli.Args() {
+		err := proto_store.GlobalRegistry.LoadProtoBinaryFileFromDisk(proto_store.Meta{
+			Name: "todo",
+			Desc: "a description",
+			Tags: map[string]string{"ca": "dev"},
+		}, p)
+		if err != nil {
+			logger.Err(err).Msg("")
+		}
+	}
+	// TODO protostore service take a registry in the constructor
+	//      in the future, this could be an interface to many store type
 
 	// Metrics & Health
-	metrics.RegisterMirMetrics(AppName, Version, map[string]string{"ca": "dev"}, fmt.Sprintf("%v", appConfig.All()))
-	uploadSchemaMetric = metrics.NewCounter(prometheus.CounterOpts{
-		Name: "upload_schema_counter",
-		Help: "Upload schema",
-	})
-	metrics.Register(uploadSchemaMetric)
 	metrics.RegisterRoutes(mux)
 	health.RegisterRoutes(mux)
 	health.SetReady()
 
 	// Launch server
+	mux.Handle("/api/", http.StripPrefix("/api", api))
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.HttpServer.Port),
 		Handler: h2c.NewHandler(mux, &http2.Server{}),
@@ -154,6 +150,9 @@ func init() {
 	}
 	appConfig.Set("logLevel", cfg.LogLevel)
 	mir_log.Setup(mir_log.WithLogLevel(cfg.LogLevel), mir_log.WithTimeFormatUnix())
+
+	// Metrics
+	metrics.RegisterMirMetrics(AppName, Version, map[string]string{"ca": "dev"}, fmt.Sprintf("%v", appConfig.All()))
 
 	// Finish
 	if err != nil {

@@ -69,6 +69,18 @@ Mir IoT Hub, act as your command center:
 
 # Roadmap
 
+- [ ] Mir Boilerplate
+  - [x] project layout
+  - [x] config management
+  - [x] basic cli
+  - [x] log setup
+  - [x] os signal handled
+  - [x] prometheus metrics
+  - [x] api structure defined
+  - [x] health endpoints
+  - [ ] api unit tests
+- [ ] MirCli
+  - [ ] one cli to rule them all
 - [ ] Server side sdk to interact with the hub
   - [ ] api that receive the bytes and must be deserialize using protoc code gen
   - [ ] offers utils such as api routes, disk or cli ways to upload a bpb
@@ -76,8 +88,12 @@ Mir IoT Hub, act as your command center:
   - [ ] rust-sdk
   - [ ] python-sdk
 - [ ] ProtoProxy, the templated data engine
-  - [ ] proto to grafana dashboard
-  - [ ] store to timeseries db
+  - [ ] proto schema to grafana dashboard
+  - [ ] proto data to timeseries db
+- [ ] ProtoStore, to store proto schema
+  - [ ] can run standalone
+  - [ ] can run embeded
+  - [ ] protoproxy can have an internal and external store
 - [ ] TwinHub, the configuration module
 - [ ] Client side sdk to interact with Mir
   - [ ] go-sdk
