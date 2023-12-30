@@ -16,6 +16,7 @@ type WriteValueToLpFn = func(value protoreflect.Value) string
 
 const (
 	fieldArrayTpl string = "%s_%d=%s"
+	nestingChar   string = "."
 )
 
 // Syntax
@@ -46,7 +47,6 @@ func GenerateMarshalFn(pinnedTags map[string]string, desc protoreflect.MessageDe
 	// Order the fields by the number
 	// Have a special field name that is server for the timestamp
 	// If not present, add current time
-	// See if we have a virtual timestamp field that is always the time.now
 
 	var lp strings.Builder
 	lp.WriteString(string(desc.FullName()))
@@ -62,7 +62,7 @@ func GenerateMarshalFn(pinnedTags map[string]string, desc protoreflect.MessageDe
 		lp.WriteString(fmt.Sprintf(",%s=%s", k, pinnedTags[k]))
 	}
 
-	orderedFieldDesc, fieldFns := formatProtoMessageToLineProtocol(desc)
+	orderedFieldDesc, fieldFns := formatProtoMessageToLineProtocol("", desc)
 
 	m := dynamicpb.NewMessage(desc)
 	mr := m.ProtoReflect()
@@ -73,12 +73,13 @@ func GenerateMarshalFn(pinnedTags map[string]string, desc protoreflect.MessageDe
 			lp.WriteString(fmt.Sprintf(",%s=%s", k, v))
 		}
 
-		// Fields
+		// Put the data in the proto message
 		if err := proto.Unmarshal(in, m); err != nil {
 			return "", err
 		}
 		lp.WriteByte(' ')
 		for i, fn := range fieldFns {
+			// I wonder if I should pass the string builder around for performance
 			lp.WriteString(fn(mr.Get(orderedFieldDesc[i])) + ",")
 		}
 		lpStr := strings.TrimSuffix(lp.String(), ",")
@@ -95,7 +96,7 @@ func Marhsal(in []byte, tags map[string]string, fn ProtoBytesToLineFn) (string, 
 	return fn(in, tags)
 }
 
-func formatProtoMessageToLineProtocol(desc protoreflect.MessageDescriptor) ([]protoreflect.FieldDescriptor, []WriteValueToLpFn) {
+func formatProtoMessageToLineProtocol(prefix string, desc protoreflect.MessageDescriptor) ([]protoreflect.FieldDescriptor, []WriteValueToLpFn) {
 	// TODO make sure the order is correct, might not be possible to determine before hand
 	// TODO better sort with Number
 	orderedFieldDesc := make([]protoreflect.FieldDescriptor, desc.Fields().Len())
@@ -108,40 +109,37 @@ func formatProtoMessageToLineProtocol(desc protoreflect.MessageDescriptor) ([]pr
 	fieldFns := make([]WriteValueToLpFn, len(orderedFieldDesc))
 	for i := 0; i < len(orderedFieldDesc); i++ {
 		fd := orderedFieldDesc[i]
-		fmt.Println(fd)
 
 		// Apply the right generation function for the field
 		// according to its type
 		switch fd.Cardinality() {
 		case protoreflect.Required:
 		case protoreflect.Optional:
-			//if mr.Has(orderedFieldDesc[i]) { TODO check with optionnal keyword
 			// Primitive types and nested messages
-			//fieldLp += string(fd.Name()) + "=" + formatProtoFieldToLineProtocol(fd)
-			//fieldFns[i] = func(value protoreflect.Value) string {
-			//	return fmt.Sprintf(fieldLp, value.Interface())
-			//}
+			// Proto3 removed required
+			// TODO
+			// - if optional add the check in the func (if mr.Has(orderedFieldDesc[i]) { ... })
+			// - bytes array
+			// - map
 
+			var lp strings.Builder
 			switch fd.Kind() {
 			case protoreflect.MessageKind:
-				// TODO call this same method recursively
-				// Incertainties
-				// - nested name, maybe need to pass prefix
-				// - how do we most in the nested message with the value
-				//   currently trying with passing back field descriptor
-
-			//case protoreflect.BytesKind:
-			//TODO array of byte, could be store as string base64
-			//case protoreflect.GroupKind:
-			//Look like a deprecated feature
+				fds, fns := formatProtoMessageToLineProtocol(prefix+fd.TextName()+nestingChar, fd.Message())
+				fieldFns[i] = func(value protoreflect.Value) string {
+					// The value is a proto.Message thus we move in it
+					mr := value.Message()
+					for i, fn := range fns {
+						lp.WriteString(fn(mr.Get(fds[i])) + ",")
+					}
+					return strings.TrimSuffix(lp.String(), ",")
+				}
+			case protoreflect.GroupKind:
+				panic("GroupKind is a depraecated feature")
 			default:
-				fieldFns[i] = formatProtoPrimitiveToLineProtocol(fd)
+				fieldFns[i] = formatProtoPrimitiveToLineProtocol(prefix, fd)
 			}
 
-			//fieldFns[i] = formatProtoFieldToLineProtocol(fd)
-
-			// Proto3 removed required
-			// TODO if optional add the check in the func
 		case protoreflect.Repeated:
 			// Complex objects such as list and map
 			if fd.IsList() {
@@ -164,24 +162,8 @@ func formatProtoMessageToLineProtocol(desc protoreflect.MessageDescriptor) ([]pr
 	return orderedFieldDesc, fieldFns
 }
 
-func formatProtoFieldToLineProtocol(fd protoreflect.FieldDescriptor) WriteValueToLpFn {
-	switch fd.Kind() {
-	case protoreflect.MessageKind:
-
-		return nil
-	//case protoreflect.BytesKind:
-	//TODO array of byte, could be store as string base64
-	//case protoreflect.GroupKind:
-	//Look like a deprecated feature
-	default:
-		return formatProtoPrimitiveToLineProtocol(fd)
-	}
-}
-
-func formatProtoPrimitiveToLineProtocol(fd protoreflect.FieldDescriptor) WriteValueToLpFn {
-	// TODO probably gonna have to pass the parent name around
-	fieldLp := string(fd.FullName()) + "="
-	fieldLp = strings.SplitN(fieldLp, ".", 3)[2]
+func formatProtoPrimitiveToLineProtocol(prefix string, fd protoreflect.FieldDescriptor) WriteValueToLpFn {
+	fieldLp := prefix + fd.TextName() + "="
 
 	switch fd.Kind() {
 	case protoreflect.BoolKind:
@@ -202,6 +184,8 @@ func formatProtoPrimitiveToLineProtocol(fd protoreflect.FieldDescriptor) WriteVa
 		fieldLp += "%f"
 	case protoreflect.EnumKind:
 		fieldLp += "%du"
+	//case protoreflect.BytesKind:
+	//TODO array of byte, could be store as string base64
 	default:
 		fieldLp += "%q"
 	}

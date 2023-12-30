@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/maxthom/mir/api/gen/clients/store"
+	"github.com/maxthom/mir/libs/proto/line_protocol/tests/gen"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -16,36 +16,36 @@ import (
 func main() {
 
 	fmt.Println("--- marshal in, marshal out")
-	todo := &store.Todo{
-		Id:          "1",
-		Title:       "hello",
-		Description: "world !",
-	}
-	out, _ := proto.Marshal(todo)
-	fmt.Println(out)
+	//todo := &store.Todo{
+	//		Id:          "1",
+	//		Title:       "hello",
+	//		Description: "world !",
+	//}
+	//out, _ := proto.Marshal(todo)
+	//fmt.Println(out)
 
-	todoIn := &store.Todo{}
-	proto.Unmarshal(out, todoIn)
-	fmt.Println(todoIn)
-	fmt.Println("---")
+	//todoIn := &store.Todo{}
+	//proto.Unmarshal(out, todoIn)
+	//fmt.Println(todoIn)
+	//fmt.Println("---")
 
-	fmt.Println("--- reflect on type")
-	reflectOnExistingType(todoIn)
-	fmt.Println("---")
+	//fmt.Println("--- reflect on type")
+	//reflectOnExistingType(todoIn)
+	//fmt.Println("---")
 
 	// ProtoRegistry = play with a set of protofiles
 	// ProtoReflect = dynamically manipulate messages
 	// Descriptor = description of the schema. used to build the callbacks
 	// snet use the grpc routing to know which object to deserialize
 	// tui will have to use maybe a header in the msg containing the fullname of the type
-	fmt.Println("--- Read value dynamicly")
-	s := todoIn.ProtoReflect()
-	readDyn(out, s.Descriptor())
-	fmt.Println("---")
+	//fmt.Println("--- Read value dynamicly")
+	//s := todoIn.ProtoReflect()
+	//readDyn(out, s.Descriptor())
+	//fmt.Println("---")
 
 	fmt.Println("--- Read proto from disk")
 	protoRegistry := &protoregistry.Files{}
-	pf, err := readProtoFromDisk("/home/hexory/code/go/mir/api/clients/store/todo.bproto")
+	pf, err := readProtoFromDisk("/home/hexory/code/go/mir/libs/proto/line_protocol/tests/gen/marshal.pb")
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -54,21 +54,51 @@ func main() {
 		fmt.Println(err)
 	}
 
-	protoRegistry.RangeFiles(func(fd protoreflect.FileDescriptor) bool {
-		fmt.Println(fd)
-		fmt.Println("Fullname: " + fd.FullName())
-		fmt.Println("Name: " + fd.Name())
-		fmt.Printf("fd.Messages(): %v\n", fd.Messages().Get(0).FullName())
-		return true
-	})
-	fmt.Println("---")
+	//protoRegistry.RangeFiles(func(fd protoreflect.FileDescriptor) bool {
+	//	fmt.Println(fd)
+	//	fmt.Println("Fullname: " + fd.FullName())
+	//	fmt.Println("Name: " + fd.Name())
+	//	fmt.Printf("fd.Messages(): %v\n", fd.Messages().Get(0).FullName())
+	//	return true
+	//})
+	//fmt.Println("---")
 
 	fmt.Println("--- Description of message")
-	desc, err := protoRegistry.FindDescriptorByName("store.Todo")
+	desc, err := protoRegistry.FindDescriptorByName("marshal.OneLevelNesting")
 	fmt.Println(desc)
 	fmt.Println(err)
-	readDyn(out, desc.(protoreflect.MessageDescriptor))
+	//readDyn(out, desc.(protoreflect.MessageDescriptor))
 	fmt.Println("---")
+
+	todo := &gen.OneLevelNesting{
+		A: &gen.SmallSetPrimitives{
+			A: 23.2,
+			B: 123,
+			C: 23,
+			D: "312",
+		},
+	}
+	out, _ := proto.Marshal(todo)
+
+	mDesc := desc.(protoreflect.MessageDescriptor)
+	m := dynamicpb.NewMessage(mDesc)
+	if err := proto.Unmarshal(out, m); err != nil {
+		//		return nil, err
+	}
+	nestedFd := m.Descriptor().Fields().Get(0)
+
+	mr := m.ProtoReflect()
+	nestedValue := mr.Get(nestedFd)
+	fmt.Println(nestedValue)
+	if nestedFd.Kind() == protoreflect.MessageKind {
+		nestedMsg := nestedValue.Message()
+		nestedDesc := nestedMsg.Descriptor().Fields().Get(0)
+		fmt.Println(nestedMsg)
+		fmt.Println(nestedMsg.Get(nestedDesc))
+		fd := mDesc.Fields().ByName("a").Message().Fields().ByName("b")
+		fmt.Println(nestedMsg.Get(fd))
+	}
+
 }
 
 func readDyn(in []byte, desc protoreflect.MessageDescriptor) {

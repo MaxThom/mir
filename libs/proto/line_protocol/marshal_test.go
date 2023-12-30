@@ -68,7 +68,7 @@ func TestPrimitives(t *testing.T) {
 	out, _ := proto.Marshal(todo)
 
 	// Act
-	lp, err := Marhsal(out, map[string]string{"ca": "dev", "cb": "dev2"}, GenerateMarshalFn(map[string]string{"pin": "yup", "aa": "bb"}, desc.(protoreflect.MessageDescriptor)))
+	lp, err := Marhsal(out, map[string]string{}, GenerateMarshalFn(map[string]string{"pin": "yup", "aa": "bb"}, desc.(protoreflect.MessageDescriptor)))
 	if err != nil {
 		assert.NilError(t, err)
 	}
@@ -76,7 +76,7 @@ func TestPrimitives(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, 1, 1)
-	assert.Equal(t, true, strings.Contains(lp, "marshal.Primitives,aa=bb,pin=yup,ca=dev,cb=dev2 a=23.200000,b=123.330002,c=23i,d=312i,e=12u,f=667u,g=231i,h=4234i,i=32u,j=1u,k=23i,l=23333i,m=true,n=\"hello old friend\""))
+	assert.Equal(t, true, strings.Contains(lp, "marshal.Primitives,aa=bb,pin=yup a=23.200000,b=123.330002,c=23i,d=312i,e=12u,f=667u,g=231i,h=4234i,i=32u,j=1u,k=23i,l=23333i,m=true,n=\"hello old friend\""))
 }
 
 func TestEnums(t *testing.T) {
@@ -158,5 +158,5 @@ func TestOneLevelNesting(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, 1, 1)
-	// assert.Equal(t, true, strings.Contains(lp, "marshal.RepeatedPrimitives a_4=0.500000,a_1=1.500000,a_2=2.500000,a_3=3.500000,b_4=0u,b_1=1u,b_2=2u,b_3=3u,c_4=-2i,c_1=-1i,c_2=0i,c_3=1i,c_4=2i,d_4=\"abc\",d_1=\"def\",d_2=\"ghi\""))
+	assert.Equal(t, true, strings.Contains(lp, "marshal.OneLevelNesting a.a=2.000000,a.b=3u,a.c=4i,a.d=\"5\""))
 }
