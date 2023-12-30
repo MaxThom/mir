@@ -1,11 +1,52 @@
 syntax = "proto3";
-package store;
+package marshal;
 
 option go_package = "gen/";
 
-message Todo { 
- string id = 1;
- string title = 2;
- string description = 3;
+enum EnumABC {
+    A = 0;
+    B = 1;
+    C = 2;
+  }
+
+message Primitives { 
+ double a = 1;
+ float b = 2;
+ int32 c = 3;
+ int64 d = 4;
+ uint32 e = 5;
+ uint64 f = 6;
+ sint32 g = 7;
+ sint64 h = 8;
+ fixed32 i = 9;
+ fixed64 j = 10;
+ sfixed32 k = 11;
+ sfixed64 l = 12;
+ bool m = 13;
+ string n = 14;
+ //bytes o = 15;
 }
 
+message EnumsSimple {
+  EnumABC a = 1;
+  EnumABC b = 2;
+  EnumABC c = 3;
+}
+
+message RepeatedPrimitives {
+    repeated double a = 1;
+    repeated uint32 b = 2;
+    repeated int32 c = 3;
+    repeated string d = 4;
+}
+
+message SmallSetPrimitives {
+    double a = 1;
+    uint32 b = 2;
+    int32 c = 3;
+    string d = 4;
+}
+
+message OneLevelNesting {
+  SmallSetPrimitives a = 1;
+}
