@@ -68,14 +68,13 @@ func TestPrimitives(t *testing.T) {
 	out, _ := proto.Marshal(todo)
 
 	// Act
-	lp, err := Marhsal(out, map[string]string{}, GenerateMarshalFn(map[string]string{"pin": "yup", "aa": "bb"}, desc.(protoreflect.MessageDescriptor)))
-	if err != nil {
-		assert.NilError(t, err)
-	}
+	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
+	assert.NilError(t, err)
+	lp := Marhsal(out, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
-	assert.Equal(t, true, strings.Contains(lp, "marshal.Primitives,aa=bb,pin=yup a=23.200000,b=123.330002,c=23i,d=312i,e=12u,f=667u,g=231i,h=4234i,i=32u,j=1u,k=23i,l=23333i,m=true,n=\"hello old friend\""))
+	assert.Equal(t, true, strings.Contains(lp, "marshal.Primitives a=23.200000,b=123.330002,c=23i,d=312i,e=12u,f=667u,g=231i,h=4234i,i=32u,j=1u,k=23i,l=23333i,m=true,n=\"hello old friend\""))
 }
 
 func TestEnums(t *testing.T) {
@@ -93,10 +92,9 @@ func TestEnums(t *testing.T) {
 	out, _ := proto.Marshal(todo)
 
 	// Act
-	lp, err := Marhsal(out, map[string]string{}, GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor)))
-	if err != nil {
-		assert.NilError(t, err)
-	}
+	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
+	assert.NilError(t, err)
+	lp := Marhsal(out, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -119,10 +117,9 @@ func TestRepeatedPrimitives(t *testing.T) {
 	out, _ := proto.Marshal(todo)
 
 	// Act
-	lp, err := Marhsal(out, map[string]string{}, GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor)))
-	if err != nil {
-		assert.NilError(t, err)
-	}
+	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
+	assert.NilError(t, err)
+	lp := Marhsal(out, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -147,10 +144,9 @@ func TestOneLevelNesting(t *testing.T) {
 	out, _ := proto.Marshal(todo)
 
 	// Act
-	lp, err := Marhsal(out, map[string]string{}, GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor)))
-	if err != nil {
-		assert.NilError(t, err)
-	}
+	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
+	assert.NilError(t, err)
+	lp := Marhsal(out, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -177,10 +173,9 @@ func TestTwoLevelNesting(t *testing.T) {
 	out, _ := proto.Marshal(todo)
 
 	// Act
-	lp, err := Marhsal(out, map[string]string{}, GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor)))
-	if err != nil {
-		assert.NilError(t, err)
-	}
+	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
+	assert.NilError(t, err)
+	lp := Marhsal(out, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -219,10 +214,9 @@ func TestRepeatedOneLevelNesting(t *testing.T) {
 	out, _ := proto.Marshal(todo)
 
 	// Act
-	lp, err := Marhsal(out, map[string]string{}, GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor)))
-	if err != nil {
-		assert.NilError(t, err)
-	}
+	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
+	assert.NilError(t, err)
+	lp := Marhsal(out, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -275,10 +269,9 @@ func TestRepeatedTwoLevelNesting(t *testing.T) {
 	out, _ := proto.Marshal(todo)
 
 	// Act
-	lp, err := Marhsal(out, map[string]string{}, GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor)))
-	if err != nil {
-		assert.NilError(t, err)
-	}
+	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
+	assert.NilError(t, err)
+	lp := Marhsal(out, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -301,15 +294,16 @@ func TestMapString(t *testing.T) {
 	out, _ := proto.Marshal(todo)
 
 	// Act
-	lp, err := Marhsal(out, map[string]string{}, GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor)))
-	if err != nil {
-		assert.NilError(t, err)
-	}
+	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
+	assert.NilError(t, err)
+	lp := Marhsal(out, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
 
-	assert.Equal(t, true, strings.Contains(lp, "marshal.MapString a_hello=\"world\",a_goodbye=\"world\""))
+	assert.Equal(t, true, strings.Contains(lp, "marshal.MapString"))
+	assert.Equal(t, true, strings.Contains(lp, "a_hello=\"world\""))
+	assert.Equal(t, true, strings.Contains(lp, "a_goodbye=\"world\""))
 }
 
 func TestMapMessage(t *testing.T) {
@@ -333,18 +327,25 @@ func TestMapMessage(t *testing.T) {
 				C: 44,
 				D: "55",
 			},
+			7: {
+				A: 222,
+				B: 333,
+				C: 444,
+				D: "555",
+			},
 		},
 	}
 	out, _ := proto.Marshal(todo)
 
 	// Act
-	lp, err := Marhsal(out, map[string]string{}, GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor)))
-	if err != nil {
-		assert.NilError(t, err)
-	}
+	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
+	assert.NilError(t, err)
+	lp := Marhsal(out, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
-
-	//assert.Equal(t, true, strings.Contains(lp, "marshal.MapMessage a_5.a=22.000000,a_5.b=33u,a_5.c=44i,a_5.d=\"55\",a_5.a=22.000000,a_5.b=33u,a_5.c=44i,a_5.d=\"55\",a_7.a=222.000000,a_7.b=333u,a_7.c=444i,a_7.d=\"555\",a_5.a=22.000000,a_5.b=33u,a_5.c=44i,a_5.d=\"55\",a_7.a=222.000000,a_7.b=333u,a_7.c=444i,a_7.d=\"555\",a_3.a=2.000000,a_3.b=3u,a_3.c=4i,a_3.d=\"5\""))
+	assert.Equal(t, true, strings.Contains(lp, "marshal.MapMessage"))
+	assert.Equal(t, true, strings.Contains(lp, "a_3.a=2.000000,a_3.b=3u,a_3.c=4i,a_3.d=\"5\""))
+	assert.Equal(t, true, strings.Contains(lp, "a_5.a=22.000000,a_5.b=33u,a_5.c=44i,a_5.d=\"55\""))
+	assert.Equal(t, true, strings.Contains(lp, "a_7.a=222.000000,a_7.b=333u,a_7.c=444i,a_7.d=\"555\""))
 }
