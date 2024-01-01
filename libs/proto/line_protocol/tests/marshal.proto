@@ -50,3 +50,15 @@ message SmallSetPrimitives {
 message OneLevelNesting {
   SmallSetPrimitives a = 1;
 }
+
+message RepeatedOneLevelNesting {
+  repeated SmallSetPrimitives a = 1;
+}
+
+message TwoLevelNesting {
+  OneLevelNesting a = 1;
+}
+
+message RepeatedTwoLevelNesting {
+  repeated RepeatedOneLevelNesting a = 1;
+}

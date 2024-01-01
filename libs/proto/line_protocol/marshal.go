@@ -12,11 +12,13 @@ import (
 )
 
 type ProtoBytesToLineFn = func(in []byte, tags map[string]string) (string, error)
-type WriteValueToLpFn = func(value protoreflect.Value) string
+type WriteValueToLpFn = func(value protoreflect.Value, args []any) string
+type WriteArrayValueToLpFn = func(value protoreflect.Value, args []any) string
 
 const (
-	fieldArrayTpl string = "%s_%d=%s"
-	nestingChar   string = "."
+	fieldArrayTpl  string = "%s_%d=%s"
+	nestedChar     string = "."
+	arrayIndexChar string = "_"
 )
 
 // Syntax
@@ -80,12 +82,11 @@ func GenerateMarshalFn(pinnedTags map[string]string, desc protoreflect.MessageDe
 		lp.WriteByte(' ')
 		for i, fn := range fieldFns {
 			// I wonder if I should pass the string builder around for performance
-			lp.WriteString(fn(mr.Get(orderedFieldDesc[i])) + ",")
+			lp.WriteString(fn(mr.Get(orderedFieldDesc[i]), []any{}) + ",")
 		}
 		lpStr := strings.TrimSuffix(lp.String(), ",")
 
 		// Timestamp
-		//lp.WriteString(fmt.Sprint(" ", time.Now().UTC().UnixNano()))
 		lpStr += fmt.Sprint(" ", time.Now().UTC().UnixNano())
 
 		return lpStr, nil
@@ -109,6 +110,7 @@ func formatProtoMessageToLineProtocol(prefix string, desc protoreflect.MessageDe
 	fieldFns := make([]WriteValueToLpFn, len(orderedFieldDesc))
 	for i := 0; i < len(orderedFieldDesc); i++ {
 		fd := orderedFieldDesc[i]
+		var lp strings.Builder
 
 		// Apply the right generation function for the field
 		// according to its type
@@ -120,22 +122,22 @@ func formatProtoMessageToLineProtocol(prefix string, desc protoreflect.MessageDe
 			// TODO
 			// - if optional add the check in the func (if mr.Has(orderedFieldDesc[i]) { ... })
 			// - bytes array
+			// - list enums
 			// - map
 
-			var lp strings.Builder
 			switch fd.Kind() {
 			case protoreflect.MessageKind:
-				fds, fns := formatProtoMessageToLineProtocol(prefix+fd.TextName()+nestingChar, fd.Message())
-				fieldFns[i] = func(value protoreflect.Value) string {
+				fds, fns := formatProtoMessageToLineProtocol(prefix+fd.TextName()+nestedChar, fd.Message())
+				fieldFns[i] = func(value protoreflect.Value, args []any) string {
 					// The value is a proto.Message thus we move in it
 					mr := value.Message()
 					for i, fn := range fns {
-						lp.WriteString(fn(mr.Get(fds[i])) + ",")
+						lp.WriteString(fn(mr.Get(fds[i]), args) + ",")
 					}
 					return strings.TrimSuffix(lp.String(), ",")
 				}
 			case protoreflect.GroupKind:
-				panic("GroupKind is a depraecated feature")
+				panic("GroupKind is a deprecated feature")
 			default:
 				fieldFns[i] = formatProtoPrimitiveToLineProtocol(prefix, fd)
 			}
@@ -143,20 +145,35 @@ func formatProtoMessageToLineProtocol(prefix string, desc protoreflect.MessageDe
 		case protoreflect.Repeated:
 			// Complex objects such as list and map
 			if fd.IsList() {
-				fieldTpl := string(fd.Name()) + "_%d=" + formatProtoPrimitiveToSymbol(fd.Kind())
-				fieldFns[i] = func(value protoreflect.Value) string {
-					fieldStr := ""
-					l := value.List()
-					fieldStr += fmt.Sprintf(fieldTpl, i, l.Get(0).Interface())
-					for i := 1; i < l.Len(); i++ {
-						fieldStr += fmt.Sprintf(","+fieldTpl, i, l.Get(i).Interface())
+				switch fd.Kind() {
+				case protoreflect.MessageKind:
+					fds, fns := formatProtoMessageToLineProtocol(prefix+fd.TextName()+arrayIndexChar+"%d"+nestedChar, fd.Message())
+					fieldFns[i] = func(value protoreflect.Value, args []any) string {
+						// The value is a proto.List thus we move in it
+						l := value.List()
+						for i := 0; i < l.Len(); i++ {
+							for j, fn := range fns {
+								lp.WriteString(fn(l.Get(i).Message().Get(fds[j]), append(args, i)) + ",")
+							}
+						}
+						return strings.TrimSuffix(lp.String(), ",")
 					}
-					return fieldStr
+				case protoreflect.GroupKind:
+					panic("GroupKind is a deprecated feature")
+				default:
+					fn := formatProtoListToLineProtocol(prefix, fd)
+					fieldFns[i] = func(value protoreflect.Value, args []any) string {
+						l := value.List()
+						for i := 0; i < l.Len(); i++ {
+							lp.WriteString(fn(l.Get(i), append(args, i)) + ",")
+						}
+						return strings.TrimSuffix(lp.String(), ",")
+					}
 				}
-				//} else if fd.IsMap() {
-				// TODO after nesting https://protobuf.dev/programming-guides/encoding/#maps
-				//}
-			}
+
+			} //} else if fd.IsMap() {
+			// TODO after nesting https://protobuf.dev/programming-guides/encoding/#maps
+			//}
 		}
 	}
 	return orderedFieldDesc, fieldFns
@@ -164,34 +181,19 @@ func formatProtoMessageToLineProtocol(prefix string, desc protoreflect.MessageDe
 
 func formatProtoPrimitiveToLineProtocol(prefix string, fd protoreflect.FieldDescriptor) WriteValueToLpFn {
 	fieldLp := prefix + fd.TextName() + "="
+	fieldLp += formatProtoPrimitiveToSymbol(fd.Kind())
 
-	switch fd.Kind() {
-	case protoreflect.BoolKind:
-		fieldLp += "%t"
-	case protoreflect.StringKind:
-		fieldLp += "%q"
-	case protoreflect.Int32Kind, protoreflect.Sint32Kind, protoreflect.Sfixed32Kind:
-		fieldLp += "%di"
-	case protoreflect.Int64Kind, protoreflect.Sint64Kind, protoreflect.Sfixed64Kind:
-		fieldLp += "%di"
-	case protoreflect.Uint32Kind, protoreflect.Fixed32Kind:
-		fieldLp += "%du"
-	case protoreflect.Uint64Kind, protoreflect.Fixed64Kind:
-		fieldLp += "%du"
-	case protoreflect.FloatKind:
-		fieldLp += "%f"
-	case protoreflect.DoubleKind:
-		fieldLp += "%f"
-	case protoreflect.EnumKind:
-		fieldLp += "%du"
-	//case protoreflect.BytesKind:
-	//TODO array of byte, could be store as string base64
-	default:
-		fieldLp += "%q"
+	return func(value protoreflect.Value, args []any) string {
+		return fmt.Sprintf(fieldLp, append(args, value.Interface())...)
 	}
+}
 
-	return func(value protoreflect.Value) string {
-		return fmt.Sprintf(fieldLp, value.Interface())
+func formatProtoListToLineProtocol(prefix string, fd protoreflect.FieldDescriptor) WriteArrayValueToLpFn {
+	fieldLp := prefix + fd.TextName() + arrayIndexChar + "%d" + "="
+	fieldLp += formatProtoPrimitiveToSymbol(fd.Kind())
+
+	return func(value protoreflect.Value, args []any) string {
+		return fmt.Sprintf(fieldLp, append(args, value.Interface())...)
 	}
 }
 
@@ -215,6 +217,8 @@ func formatProtoPrimitiveToSymbol(k protoreflect.Kind) string {
 		return "%f"
 	case protoreflect.EnumKind:
 		return "%du"
+	//case protoreflect.BytesKind:
+	//TODO array of byte, could be store as string base64
 	default:
 		return "%q"
 	}
