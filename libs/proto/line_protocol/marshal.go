@@ -40,10 +40,18 @@ const (
 // Now with both data and descriptor, we can walk the fields
 //
 // TODO
-// - enum kind
-// - group kind
-// - repeated, cardinality is repeated and IsList is true
-// - nested message
+// - [x] enum kind
+// - [x] primitives fields
+// - [ ] return error and error join
+// - [x] repeated, cardinality is repeated and IsList is true
+// - [x] nested message
+// - [x] repeated message
+// - [ ] map field
+// - [ ] optional field
+// - [ ] google timeseries field type
+// - [ ] enum list
+// - [ ] one of field
+// - [ ] enum options
 func GenerateMarshalFn(pinnedTags map[string]string, desc protoreflect.MessageDescriptor) ProtoBytesToLineFn {
 
 	// Order the fields by the number
@@ -109,79 +117,101 @@ func formatProtoMessageToLineProtocol(prefix string, desc protoreflect.MessageDe
 	// Create a set of function that will be called for each field
 	fieldFns := make([]WriteValueToLpFn, len(orderedFieldDesc))
 	for i := 0; i < len(orderedFieldDesc); i++ {
-		fd := orderedFieldDesc[i]
-		var lp strings.Builder
+		fieldFns[i] = formatProtoFieldToLineProtocol(prefix, orderedFieldDesc[i])
+	}
+	return orderedFieldDesc, fieldFns
+}
 
-		// Apply the right generation function for the field
-		// according to its type
-		switch fd.Cardinality() {
-		case protoreflect.Required:
-		case protoreflect.Optional:
-			// Primitive types and nested messages
-			// Proto3 removed required
-			// TODO
-			// - if optional add the check in the func (if mr.Has(orderedFieldDesc[i]) { ... })
-			// - bytes array
-			// - list enums
-			// - map
+func formatProtoFieldToLineProtocol(prefix string, fd protoreflect.FieldDescriptor) WriteValueToLpFn {
+	// Edge case with map, this allows to remove the 'value' field name
+	fieldName := fd.TextName()
+	if fd.Parent().(protoreflect.MessageDescriptor).IsMapEntry() {
+		fieldName = ""
+	}
 
+	// Apply the right generation function for the field
+	// according to its type
+	switch fd.Cardinality() {
+	case protoreflect.Required:
+	case protoreflect.Optional:
+		// Primitive types and nested messages
+		// Proto3 removed required
+		// TODO
+		// - if optional add the check in the func (if mr.Has(orderedFieldDesc[i]) { ... })
+
+		switch fd.Kind() {
+		case protoreflect.MessageKind:
+			fds, fns := formatProtoMessageToLineProtocol(prefix+fieldName+nestedChar, fd.Message())
+
+			return func(value protoreflect.Value, args []any) string {
+				var lp strings.Builder
+				// The value is a proto.Message thus we move in it
+				mr := value.Message()
+				for i, fn := range fns {
+					lp.WriteString(fn(mr.Get(fds[i]), args) + ",")
+				}
+				return strings.TrimSuffix(lp.String(), ",")
+			}
+		case protoreflect.GroupKind:
+			panic("GroupKind is a deprecated feature")
+		default:
+			return formatProtoPrimitiveToLineProtocol(prefix+fieldName, fd)
+		}
+
+	case protoreflect.Repeated:
+		// Complex objects such as list and map
+		if fd.IsList() {
 			switch fd.Kind() {
 			case protoreflect.MessageKind:
-				fds, fns := formatProtoMessageToLineProtocol(prefix+fd.TextName()+nestedChar, fd.Message())
-				fieldFns[i] = func(value protoreflect.Value, args []any) string {
-					// The value is a proto.Message thus we move in it
-					mr := value.Message()
-					for i, fn := range fns {
-						lp.WriteString(fn(mr.Get(fds[i]), args) + ",")
+				fds, fns := formatProtoMessageToLineProtocol(prefix+fieldName+arrayIndexChar+"%d"+nestedChar, fd.Message())
+				return func(value protoreflect.Value, args []any) string {
+					var lp strings.Builder
+					// The value is a proto.List thus we move in it
+					l := value.List()
+					for i := 0; i < l.Len(); i++ {
+						for j, fn := range fns {
+							lp.WriteString(fn(l.Get(i).Message().Get(fds[j]), append(args, i)) + ",")
+						}
 					}
 					return strings.TrimSuffix(lp.String(), ",")
 				}
 			case protoreflect.GroupKind:
 				panic("GroupKind is a deprecated feature")
 			default:
-				fieldFns[i] = formatProtoPrimitiveToLineProtocol(prefix, fd)
-			}
-
-		case protoreflect.Repeated:
-			// Complex objects such as list and map
-			if fd.IsList() {
-				switch fd.Kind() {
-				case protoreflect.MessageKind:
-					fds, fns := formatProtoMessageToLineProtocol(prefix+fd.TextName()+arrayIndexChar+"%d"+nestedChar, fd.Message())
-					fieldFns[i] = func(value protoreflect.Value, args []any) string {
-						// The value is a proto.List thus we move in it
-						l := value.List()
-						for i := 0; i < l.Len(); i++ {
-							for j, fn := range fns {
-								lp.WriteString(fn(l.Get(i).Message().Get(fds[j]), append(args, i)) + ",")
-							}
-						}
-						return strings.TrimSuffix(lp.String(), ",")
+				fn := formatProtoListToLineProtocol(prefix, fd)
+				return func(value protoreflect.Value, args []any) string {
+					var lp strings.Builder
+					l := value.List()
+					for i := 0; i < l.Len(); i++ {
+						lp.WriteString(fn(l.Get(i), append(args, i)) + ",")
 					}
-				case protoreflect.GroupKind:
-					panic("GroupKind is a deprecated feature")
-				default:
-					fn := formatProtoListToLineProtocol(prefix, fd)
-					fieldFns[i] = func(value protoreflect.Value, args []any) string {
-						l := value.List()
-						for i := 0; i < l.Len(); i++ {
-							lp.WriteString(fn(l.Get(i), append(args, i)) + ",")
-						}
-						return strings.TrimSuffix(lp.String(), ",")
-					}
+					return strings.TrimSuffix(lp.String(), ",")
 				}
-
-			} //} else if fd.IsMap() {
-			// TODO after nesting https://protobuf.dev/programming-guides/encoding/#maps
-			//}
+			}
+		} else if fd.IsMap() {
+			// Key can only be primitives except floating point and bytes
+			keyPlaceholder := "%d"
+			if fd.MapKey().Kind() == protoreflect.StringKind {
+				keyPlaceholder = "%s"
+			}
+			fn := formatProtoFieldToLineProtocol(prefix+fieldName+arrayIndexChar+keyPlaceholder, fd.MapValue())
+			return func(value protoreflect.Value, args []any) string {
+				// The value is a proto.List thus we move in it
+				var lp strings.Builder
+				value.Map().Range(func(key protoreflect.MapKey, value protoreflect.Value) bool {
+					lp.WriteString(fn(value, append(args, key.Interface())) + ",")
+					return true
+				})
+				return strings.TrimSuffix(lp.String(), ",")
+			}
 		}
 	}
-	return orderedFieldDesc, fieldFns
+	// TODO return error
+	return nil
 }
 
 func formatProtoPrimitiveToLineProtocol(prefix string, fd protoreflect.FieldDescriptor) WriteValueToLpFn {
-	fieldLp := prefix + fd.TextName() + "="
-	fieldLp += formatProtoPrimitiveToSymbol(fd.Kind())
+	fieldLp := prefix + "=" + formatProtoPrimitiveToSymbol(fd.Kind())
 
 	return func(value protoreflect.Value, args []any) string {
 		return fmt.Sprintf(fieldLp, append(args, value.Interface())...)

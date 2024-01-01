@@ -282,5 +282,69 @@ func TestRepeatedTwoLevelNesting(t *testing.T) {
 	fmt.Println(lp)
 
 	// Assert
-	assert.Equal(t, true, strings.Contains(lp, "marshal.RepeatedTwoLevelNesting a_0.a_0.a=2.000000,a_0.a_0.b=3u,a_0.a_0.c=4i,a_0.a_0.d=\"5\",a_0.a_1.a=22.000000,a_0.a_1.b=33u,a_0.a_1.c=44i,a_0.a_1.d=\"55\",a_0.a_0.a=2.000000,a_0.a_0.b=3u,a_0.a_0.c=4i,a_0.a_0.d=\"5\",a_0.a_1.a=22.000000,a_0.a_1.b=33u,a_0.a_1.c=44i,a_0.a_1.d=\"55\",a_1.a_0.a=222.000000,a_1.a_0.b=333u,a_1.a_0.c=444i,a_1.a_0.d=\"555\",a_1.a_1.a=2222.000000,a_1.a_1.b=3333u,a_1.a_1.c=4444i,a_1.a_1.d=\"5555\""))
+	assert.Equal(t, true, strings.Contains(lp, "marshal.RepeatedTwoLevelNesting a_0.a_0.a=2.000000,a_0.a_0.b=3u,a_0.a_0.c=4i,a_0.a_0.d=\"5\",a_0.a_1.a=22.000000,a_0.a_1.b=33u,a_0.a_1.c=44i,a_0.a_1.d=\"55\",a_1.a_0.a=222.000000,a_1.a_0.b=333u,a_1.a_0.c=444i,a_1.a_0.d=\"555\",a_1.a_1.a=2222.000000,a_1.a_1.b=3333u,a_1.a_1.c=4444i,a_1.a_1.d=\"5555\""))
+}
+
+func TestMapString(t *testing.T) {
+	// Arrange
+	desc, err := protoRegistry.FindDescriptorByName("marshal.MapString")
+	if err != nil {
+		assert.NilError(t, err)
+	}
+
+	todo := &gen.MapString{
+		A: map[string]string{
+			"hello":   "world",
+			"goodbye": "world",
+		},
+	}
+	out, _ := proto.Marshal(todo)
+
+	// Act
+	lp, err := Marhsal(out, map[string]string{}, GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor)))
+	if err != nil {
+		assert.NilError(t, err)
+	}
+	fmt.Println(lp)
+
+	// Assert
+
+	assert.Equal(t, true, strings.Contains(lp, "marshal.MapString a_hello=\"world\",a_goodbye=\"world\""))
+}
+
+func TestMapMessage(t *testing.T) {
+	// Arrange
+	desc, err := protoRegistry.FindDescriptorByName("marshal.MapMessage")
+	if err != nil {
+		assert.NilError(t, err)
+	}
+
+	todo := &gen.MapMessage{
+		A: map[int32]*gen.SmallSetPrimitives{
+			3: {
+				A: 2,
+				B: 3,
+				C: 4,
+				D: "5",
+			},
+			5: {
+				A: 22,
+				B: 33,
+				C: 44,
+				D: "55",
+			},
+		},
+	}
+	out, _ := proto.Marshal(todo)
+
+	// Act
+	lp, err := Marhsal(out, map[string]string{}, GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor)))
+	if err != nil {
+		assert.NilError(t, err)
+	}
+	fmt.Println(lp)
+
+	// Assert
+
+	//assert.Equal(t, true, strings.Contains(lp, "marshal.MapMessage a_5.a=22.000000,a_5.b=33u,a_5.c=44i,a_5.d=\"55\",a_5.a=22.000000,a_5.b=33u,a_5.c=44i,a_5.d=\"55\",a_7.a=222.000000,a_7.b=333u,a_7.c=444i,a_7.d=\"555\",a_5.a=22.000000,a_5.b=33u,a_5.c=44i,a_5.d=\"55\",a_7.a=222.000000,a_7.b=333u,a_7.c=444i,a_7.d=\"555\",a_3.a=2.000000,a_3.b=3u,a_3.c=4i,a_3.d=\"5\""))
 }

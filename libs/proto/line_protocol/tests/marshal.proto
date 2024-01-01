@@ -7,7 +7,7 @@ enum EnumABC {
     A = 0;
     B = 1;
     C = 2;
-  }
+}
 
 message Primitives { 
  double a = 1;
@@ -61,4 +61,12 @@ message TwoLevelNesting {
 
 message RepeatedTwoLevelNesting {
   repeated RepeatedOneLevelNesting a = 1;
+}
+
+message MapString {
+  map<string, string> a = 1;
+}
+
+message MapMessage {
+  map<int32, SmallSetPrimitives> a = 1;
 }
