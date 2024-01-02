@@ -33,6 +33,12 @@ message EnumsSimple {
   EnumABC c = 3;
 }
 
+message OptionalEnumsSimple {
+  optional EnumABC a = 1;
+  optional EnumABC b = 2;
+  optional EnumABC c = 3;
+}
+
 message RepeatedPrimitives {
     repeated double a = 1;
     repeated uint32 b = 2;
@@ -59,6 +65,10 @@ message TwoLevelNesting {
   OneLevelNesting a = 1;
 }
 
+message OptionalTwoLevelNesting {
+  optional OptionalOneLevelNesting a = 1;
+}
+
 message RepeatedTwoLevelNesting {
   repeated RepeatedOneLevelNesting a = 1;
 }
@@ -69,4 +79,35 @@ message MapString {
 
 message MapMessage {
   map<int32, SmallSetPrimitives> a = 1;
+}
+
+message OptionalSmallSetPrimitives {
+  optional double a = 1;
+  optional uint32 b = 2;
+  optional int32 c = 3;
+  optional string d = 4;
+}
+
+message OptionalOneLevelNesting {
+  optional OptionalSmallSetPrimitives a = 1;
+}
+
+message OptionalEnum {
+  OptionalEnumsSimple a = 1;
+}
+
+message OptionalNestedEnum {
+  optional OptionalEnumsSimple a = 1;
+}
+
+message RepeatedEnum {
+  repeated EnumsSimple a = 1;
+}
+
+message RepeatedOptionalEnum {
+  repeated OptionalEnumsSimple a = 1;
+}
+
+message RepeatedOptionalSmallSetPrimitive {
+  repeated OptionalSmallSetPrimitives a = 1;
 }

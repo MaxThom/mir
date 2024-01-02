@@ -182,6 +182,81 @@ func TestTwoLevelNesting(t *testing.T) {
 	assert.Equal(t, true, strings.Contains(lp, "marshal.TwoLevelNesting a.a.a=2.000000,a.a.b=3u,a.a.c=4i,a.a.d=\"5\""))
 }
 
+func TestOptionalTwoLevelNesting(t *testing.T) {
+	// Arrange
+	desc, err := protoRegistry.FindDescriptorByName("marshal.OptionalTwoLevelNesting")
+	if err != nil {
+		assert.NilError(t, err)
+	}
+
+	todo := &gen.OptionalTwoLevelNesting{
+		A: &gen.OptionalOneLevelNesting{
+			A: &gen.OptionalSmallSetPrimitives{
+				A: nil,
+				B: ptr[uint32](4),
+				C: ptr[int32](4),
+				D: nil,
+			},
+		},
+	}
+	out, _ := proto.Marshal(todo)
+
+	// Act
+	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
+	assert.NilError(t, err)
+	lp := Marhsal(out, map[string]string{}, fn)
+	fmt.Println(lp)
+
+	// Assert
+	assert.Equal(t, true, strings.Contains(lp, "marshal.OptionalTwoLevelNesting a.a.b=4u,a.a.c=4i"))
+}
+
+func TestOptionalTwoLevelNestingNil(t *testing.T) {
+	// Arrange
+	desc, err := protoRegistry.FindDescriptorByName("marshal.OptionalTwoLevelNesting")
+	if err != nil {
+		assert.NilError(t, err)
+	}
+
+	todo := &gen.OptionalTwoLevelNesting{
+		A: &gen.OptionalOneLevelNesting{
+			A: nil,
+		},
+	}
+	out, _ := proto.Marshal(todo)
+
+	// Act
+	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
+	assert.NilError(t, err)
+	lp := Marhsal(out, map[string]string{}, fn)
+	fmt.Println(lp)
+
+	// Assert
+	assert.Equal(t, true, strings.Contains(lp, "marshal.OptionalTwoLevelNesting "))
+}
+
+func TestOptionalTwoLevelNestingNilNil(t *testing.T) {
+	// Arrange
+	desc, err := protoRegistry.FindDescriptorByName("marshal.OptionalTwoLevelNesting")
+	if err != nil {
+		assert.NilError(t, err)
+	}
+
+	todo := &gen.OptionalTwoLevelNesting{
+		A: nil,
+	}
+	out, _ := proto.Marshal(todo)
+
+	// Act
+	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
+	assert.NilError(t, err)
+	lp := Marhsal(out, map[string]string{}, fn)
+	fmt.Println(lp)
+
+	// Assert
+	assert.Equal(t, true, strings.Contains(lp, "marshal.OptionalTwoLevelNesting "))
+}
+
 func TestRepeatedOneLevelNesting(t *testing.T) {
 	// Arrange
 	desc, err := protoRegistry.FindDescriptorByName("marshal.RepeatedOneLevelNesting")
@@ -348,4 +423,284 @@ func TestMapMessage(t *testing.T) {
 	assert.Equal(t, true, strings.Contains(lp, "a_3.a=2.000000,a_3.b=3u,a_3.c=4i,a_3.d=\"5\""))
 	assert.Equal(t, true, strings.Contains(lp, "a_5.a=22.000000,a_5.b=33u,a_5.c=44i,a_5.d=\"55\""))
 	assert.Equal(t, true, strings.Contains(lp, "a_7.a=222.000000,a_7.b=333u,a_7.c=444i,a_7.d=\"555\""))
+}
+
+func TestOptionalSmallSetPrimitives(t *testing.T) {
+	// Arrange
+	desc, err := protoRegistry.FindDescriptorByName("marshal.OptionalSmallSetPrimitives")
+	if err != nil {
+		assert.NilError(t, err)
+	}
+
+	todo := &gen.OptionalSmallSetPrimitives{
+		A: nil,
+		B: ptr[uint32](3),
+		C: nil,
+		D: ptr("5"),
+	}
+	out, _ := proto.Marshal(todo)
+
+	// Act
+	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
+	assert.NilError(t, err)
+	lp := Marhsal(out, map[string]string{}, fn)
+	fmt.Println(lp)
+
+	// Assert
+	assert.Equal(t, true, strings.Contains(lp, "marshal.OptionalSmallSetPrimitives b=3u,d=\"5\""))
+}
+
+func TestOptionalOneLevelNesting(t *testing.T) {
+	// Arrange
+	desc, err := protoRegistry.FindDescriptorByName("marshal.OptionalOneLevelNesting")
+	if err != nil {
+		assert.NilError(t, err)
+	}
+
+	todo := &gen.OptionalOneLevelNesting{
+		A: &gen.OptionalSmallSetPrimitives{
+			A: nil,
+			B: ptr[uint32](3),
+			C: ptr[int32](4),
+			D: ptr("5"),
+		},
+	}
+	out, _ := proto.Marshal(todo)
+
+	// Act
+	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
+	assert.NilError(t, err)
+	lp := Marhsal(out, map[string]string{}, fn)
+	fmt.Println(lp)
+
+	// Assert
+	assert.Equal(t, true, strings.Contains(lp, "marshal.OptionalOneLevelNesting a.b=3u,a.c=4i,a.d=\"5\""))
+}
+
+func TestOptionalOneLevelNestingNil(t *testing.T) {
+	// Arrange
+	desc, err := protoRegistry.FindDescriptorByName("marshal.OptionalOneLevelNesting")
+	if err != nil {
+		assert.NilError(t, err)
+	}
+
+	todo := &gen.OptionalOneLevelNesting{
+		A: nil,
+	}
+	out, _ := proto.Marshal(todo)
+
+	// Act
+	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
+	assert.NilError(t, err)
+	lp := Marhsal(out, map[string]string{}, fn)
+	fmt.Println(lp)
+
+	// Assert
+	assert.Equal(t, true, strings.Contains(lp, "marshal.OptionalOneLevelNesting"))
+}
+
+func TestOptionalEnumNil(t *testing.T) {
+	// Arrange
+	desc, err := protoRegistry.FindDescriptorByName("marshal.OptionalEnum")
+	if err != nil {
+		assert.NilError(t, err)
+	}
+
+	todo := &gen.OptionalEnum{
+		A: nil,
+	}
+	out, _ := proto.Marshal(todo)
+
+	// Act
+	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
+	assert.NilError(t, err)
+	lp := Marhsal(out, map[string]string{}, fn)
+	fmt.Println(lp)
+
+	// Assert
+	assert.Equal(t, true, strings.Contains(lp, "marshal.OptionalEnum"))
+}
+
+func TestOptionalEnum(t *testing.T) {
+	// Arrange
+	desc, err := protoRegistry.FindDescriptorByName("marshal.OptionalEnum")
+	if err != nil {
+		assert.NilError(t, err)
+	}
+
+	todo := &gen.OptionalEnum{
+		A: &gen.OptionalEnumsSimple{
+			A: nil,
+			B: ptr(gen.EnumABC_B),
+			C: nil,
+		},
+	}
+	out, _ := proto.Marshal(todo)
+
+	// Act
+	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
+	assert.NilError(t, err)
+	lp := Marhsal(out, map[string]string{}, fn)
+	fmt.Println(lp)
+
+	// Assert
+	assert.Equal(t, true, strings.Contains(lp, "marshal.OptionalEnum a.b=1u"))
+}
+
+func TestOptionalNestedEnum(t *testing.T) {
+	// Arrange
+	desc, err := protoRegistry.FindDescriptorByName("marshal.OptionalNestedEnum")
+	if err != nil {
+		assert.NilError(t, err)
+	}
+
+	todo := &gen.OptionalNestedEnum{
+		A: &gen.OptionalEnumsSimple{
+			A: nil,
+			B: ptr(gen.EnumABC_B),
+			C: nil,
+		},
+	}
+	out, _ := proto.Marshal(todo)
+
+	// Act
+	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
+	assert.NilError(t, err)
+	lp := Marhsal(out, map[string]string{}, fn)
+	fmt.Println(lp)
+
+	// Assert
+	assert.Equal(t, true, strings.Contains(lp, "marshal.OptionalNestedEnum a.b=1u"))
+}
+
+func TestOptionalNestedEnumNil(t *testing.T) {
+	// Arrange
+	desc, err := protoRegistry.FindDescriptorByName("marshal.OptionalNestedEnum")
+	if err != nil {
+		assert.NilError(t, err)
+	}
+
+	todo := &gen.OptionalNestedEnum{
+		A: nil,
+	}
+	out, _ := proto.Marshal(todo)
+
+	// Act
+	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
+	assert.NilError(t, err)
+	lp := Marhsal(out, map[string]string{}, fn)
+	fmt.Println(lp)
+
+	// Assert
+	assert.Equal(t, true, strings.Contains(lp, "marshal.OptionalNestedEnum"))
+}
+
+func TestRepeatedEnum(t *testing.T) {
+	// Arrange
+	desc, err := protoRegistry.FindDescriptorByName("marshal.RepeatedEnum")
+	if err != nil {
+		assert.NilError(t, err)
+	}
+
+	todo := &gen.RepeatedEnum{
+		A: []*gen.EnumsSimple{
+			{},
+			{
+				A: gen.EnumABC_A,
+				B: gen.EnumABC_B,
+				C: gen.EnumABC_C,
+			},
+			{
+				A: gen.EnumABC_A,
+				B: gen.EnumABC_B,
+				C: gen.EnumABC_C,
+			},
+		},
+	}
+	out, _ := proto.Marshal(todo)
+
+	// Act
+	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
+	assert.NilError(t, err)
+	lp := Marhsal(out, map[string]string{}, fn)
+	fmt.Println(lp)
+
+	// Assert
+	assert.Equal(t, true, strings.Contains(lp, "marshal.RepeatedEnum a_0.a=0u,a_0.b=0u,a_0.c=0u,a_1.a=0u,a_1.b=1u,a_1.c=2u,a_2.a=0u,a_2.b=1u,a_2.c=2u"))
+}
+
+func TestRepeatedOptionalEnum(t *testing.T) {
+	// Arrange
+	desc, err := protoRegistry.FindDescriptorByName("marshal.RepeatedOptionalEnum")
+	if err != nil {
+		assert.NilError(t, err)
+	}
+
+	todo := &gen.RepeatedOptionalEnum{
+		A: []*gen.OptionalEnumsSimple{
+			{
+				C: nil,
+			},
+			{
+				A: ptr(gen.EnumABC_A),
+				B: nil,
+				C: ptr(gen.EnumABC_C),
+			},
+			{
+				A: ptr(gen.EnumABC_A),
+				B: nil,
+				C: nil,
+			},
+		},
+	}
+	out, _ := proto.Marshal(todo)
+
+	// Act
+	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
+	assert.NilError(t, err)
+	lp := Marhsal(out, map[string]string{}, fn)
+	fmt.Println(lp)
+
+	// Assert
+	assert.Equal(t, true, strings.Contains(lp, "marshal.RepeatedOptionalEnum a_1.a=0u,a_1.c=2u,a_2.a=0u"))
+}
+
+func TestRepeatedOptionalSmallSetPrimitives(t *testing.T) {
+	// Arrange
+	desc, err := protoRegistry.FindDescriptorByName("marshal.RepeatedOptionalSmallSetPrimitive")
+	if err != nil {
+		assert.NilError(t, err)
+	}
+
+	todo := &gen.RepeatedOptionalSmallSetPrimitive{
+		A: []*gen.OptionalSmallSetPrimitives{
+			{
+				A: nil,
+				B: nil,
+				C: nil,
+				D: nil,
+			},
+			{
+				A: ptr(23.43),
+				B: nil,
+				C: ptr[int32](32),
+				D: nil,
+			},
+			nil,
+		},
+	}
+	out, _ := proto.Marshal(todo)
+
+	// Act
+	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
+	assert.NilError(t, err)
+	lp := Marhsal(out, map[string]string{}, fn)
+	fmt.Println(lp)
+
+	// Assert
+	assert.Equal(t, true, strings.Contains(lp, "marshal.RepeatedOptionalSmallSetPrimitive a_1.a=23.430000,a_1.c=32i"))
+}
+
+func ptr[T any](t T) *T {
+	return &t
 }

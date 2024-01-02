@@ -13,7 +13,7 @@ import (
 )
 
 type ProtoBytesToLpFn = func(in []byte, tags map[string]string) string
-type WriteValueToLpFn = func(value protoreflect.Value, args []any) string
+type WriteValueToLpFn = func(value protoreflect.Value, mr protoreflect.Message, args []any) string
 type WriteArrayValueToLpFn = func(value protoreflect.Value, args []any) string
 
 const (
@@ -35,7 +35,7 @@ const (
 // tags could be used for device id, schema id, etc
 // tags could be passed in function or special field in schema
 
-// Marhsal from proto encoding to influx line protocol
+// Marshal from proto encoding to influx line protocol
 // MessageDescriptor represent the proto descripor
 // We create a proto.Message from it and the add the data to it from the in byte using the unmarshall
 // Now with both data and descriptor, we can walk the fields
@@ -48,10 +48,10 @@ const (
 // - [x] nested message
 // - [x] repeated message
 // - [x] map field
-// - [ ] optional field
+// - [x] optional field
 // - [ ] google timeseries field type
-// - [ ] enum list
-// - [ ] more unit test
+// - [x] enum list
+// - [x] more unit test
 // - [ ] one of field
 // - [ ] enum options
 func GenerateMarshalFn(pinnedTags map[string]string, desc protoreflect.MessageDescriptor) (ProtoBytesToLpFn, error) {
@@ -75,9 +75,9 @@ func GenerateMarshalFn(pinnedTags map[string]string, desc protoreflect.MessageDe
 	}
 
 	orderedFieldDesc, fieldFns, err := formatProtoMessageToLineProtocol("", desc)
-
 	m := dynamicpb.NewMessage(desc)
 	mr := m.ProtoReflect()
+
 	return func(in []byte, tags map[string]string) string {
 		// Tags
 		// TODO assume tags are sorted, should be done at the source
@@ -92,7 +92,7 @@ func GenerateMarshalFn(pinnedTags map[string]string, desc protoreflect.MessageDe
 		lp.WriteByte(' ')
 		for i, fn := range fieldFns {
 			// I wonder if I should pass the string builder around for performance
-			lp.WriteString(fn(mr.Get(orderedFieldDesc[i]), []any{}) + ",")
+			lp.WriteString(fn(mr.Get(orderedFieldDesc[i]), mr, []any{}))
 		}
 		lpStr := strings.TrimSuffix(lp.String(), ",")
 
@@ -141,22 +141,21 @@ func formatProtoFieldToLineProtocol(prefix string, fd protoreflect.FieldDescript
 	case protoreflect.Required:
 	case protoreflect.Optional:
 		// Primitive types and nested messages
-		// Proto3 removed required
-		// TODO
-		// - if optional add the check in the func (if mr.Has(orderedFieldDesc[i]) { ... })
-
 		switch fd.Kind() {
 		case protoreflect.MessageKind:
 			fds, fns, err := formatProtoMessageToLineProtocol(prefix+fieldName+nestedChar, fd.Message())
 			errs = errors.Join(errs, err)
-			return func(value protoreflect.Value, args []any) string {
+
+			return func(value protoreflect.Value, mr protoreflect.Message, args []any) string {
 				var lp strings.Builder
 				// The value is a proto.Message thus we move in it
-				mr := value.Message()
+				mrNested := value.Message()
+				// TODO does this need a hasPresence check and inner has
+				// using this mr for has and fd.HasPresence outside
 				for i, fn := range fns {
-					lp.WriteString(fn(mr.Get(fds[i]), args) + ",")
+					lp.WriteString(fn(mrNested.Get(fds[i]), mrNested, args))
 				}
-				return strings.TrimSuffix(lp.String(), ",")
+				return lp.String()
 			}, errs
 		case protoreflect.GroupKind:
 			return nil, fmt.Errorf("GroupKind for %q is a deprecated feature", fd.FullName())
@@ -167,34 +166,38 @@ func formatProtoFieldToLineProtocol(prefix string, fd protoreflect.FieldDescript
 	case protoreflect.Repeated:
 		// Complex objects such as list and map
 		if fd.IsList() {
+			fmt.Println(fd)
 			switch fd.Kind() {
 			case protoreflect.MessageKind:
 				fds, fns, err := formatProtoMessageToLineProtocol(prefix+fieldName+arrayIndexChar+"%d"+nestedChar, fd.Message())
 				errs = errors.Join(errs, err)
-				return func(value protoreflect.Value, args []any) string {
+				return func(value protoreflect.Value, mr protoreflect.Message, args []any) string {
 					var lp strings.Builder
 					// The value is a proto.List thus we move in it
 					l := value.List()
 					for i := 0; i < l.Len(); i++ {
+						mrNested := l.Get(i).Message()
 						for j, fn := range fns {
-							lp.WriteString(fn(l.Get(i).Message().Get(fds[j]), append(args, i)) + ",")
+							lp.WriteString(fn(mrNested.Get(fds[j]), mrNested, append(args, i)))
 						}
 					}
-					return strings.TrimSuffix(lp.String(), ",")
+					return lp.String()
 				}, errs
 			case protoreflect.GroupKind:
 				return nil, fmt.Errorf("GroupKind for %q is a deprecated feature", fd.FullName())
 			default:
 				fn, err := formatProtoListToLineProtocol(prefix, fd)
 				errs = errors.Join(errs, err)
-				return func(value protoreflect.Value, args []any) string {
+
+				return func(value protoreflect.Value, mr protoreflect.Message, args []any) string {
 					var lp strings.Builder
 					l := value.List()
 					for i := 0; i < l.Len(); i++ {
-						lp.WriteString(fn(l.Get(i), append(args, i)) + ",")
+						lp.WriteString(fn(l.Get(i), append(args, i)))
 					}
-					return strings.TrimSuffix(lp.String(), ",")
+					return lp.String()
 				}, errs
+
 			}
 		} else if fd.IsMap() {
 			// Key can only be primitives except floating point and bytes
@@ -204,14 +207,14 @@ func formatProtoFieldToLineProtocol(prefix string, fd protoreflect.FieldDescript
 			}
 			fn, err := formatProtoFieldToLineProtocol(prefix+fieldName+arrayIndexChar+keyPlaceholder, fd.MapValue())
 			errs = errors.Join(errs, err)
-			return func(value protoreflect.Value, args []any) string {
+			return func(value protoreflect.Value, mr protoreflect.Message, args []any) string {
 				// The value is a proto.List thus we move in it
 				var lp strings.Builder
 				value.Map().Range(func(key protoreflect.MapKey, value protoreflect.Value) bool {
-					lp.WriteString(fn(value, append(args, key.Interface())) + ",")
+					lp.WriteString(fn(value, mr, append(args, key.Interface())))
 					return true
 				})
-				return strings.TrimSuffix(lp.String(), ",")
+				return lp.String()
 			}, errs
 		}
 	}
@@ -224,8 +227,17 @@ func formatProtoPrimitiveToLineProtocol(prefix string, fd protoreflect.FieldDesc
 	valueLp, err := formatProtoPrimitiveToSymbol(fd)
 	fieldLp += valueLp
 
-	return func(value protoreflect.Value, args []any) string {
-		return fmt.Sprintf(fieldLp, append(args, value.Interface())...)
+	if fd.HasPresence() {
+		return func(value protoreflect.Value, mr protoreflect.Message, args []any) string {
+			if mr.Has(fd) {
+				return fmt.Sprintf(fieldLp, append(args, value.Interface())...) + ","
+			}
+			return ""
+		}, err
+	}
+
+	return func(value protoreflect.Value, mr protoreflect.Message, args []any) string {
+		return fmt.Sprintf(fieldLp, append(args, value.Interface())...) + ","
 	}, err
 }
 
@@ -235,7 +247,7 @@ func formatProtoListToLineProtocol(prefix string, fd protoreflect.FieldDescripto
 	fieldLp += valueLp
 
 	return func(value protoreflect.Value, args []any) string {
-		return fmt.Sprintf(fieldLp, append(args, value.Interface())...)
+		return fmt.Sprintf(fieldLp, append(args, value.Interface())...) + ","
 	}, err
 }
 
