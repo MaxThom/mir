@@ -51,7 +51,8 @@ const (
 // - [x] optional field
 // - [ ] google timeseries field type
 // - [x] enum list
-// - [x] more unit test
+// - [ ] fix number array mistmatch
+// - [ ] more unit test
 // - [ ] one of field
 // - [ ] enum options
 func GenerateMarshalFn(pinnedTags map[string]string, desc protoreflect.MessageDescriptor) (ProtoBytesToLpFn, error) {
@@ -112,6 +113,14 @@ func formatProtoMessageToLineProtocol(prefix string, desc protoreflect.MessageDe
 	var err error
 	// TODO make sure the order is correct, might not be possible to determine before hand
 	// TODO better sort with Number
+	// reproducable with a struct similar to this
+	// need to match the number and array index using module fields().Len() pershaps ?
+	// message RepeatedThreeLevelNestingAndSomeChads {
+	// 	repeated OneLevelNesting a = 1;
+	// 	int32 b = 3;
+	// 	string c = 5;
+	// 	double d = 7;
+	//}
 	orderedFieldDesc := make([]protoreflect.FieldDescriptor, desc.Fields().Len())
 	for i := 0; i < desc.Fields().Len(); i++ {
 		fd := desc.Fields().Get(i)

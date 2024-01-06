@@ -1,6 +1,12 @@
 syntax = "proto3";
 package marshal;
 
+// Lot of unit test here to test the core of the proto to influx line protocol
+// Trying to name the messages with some consistency to have a reusable components
+// 
+// 
+//
+
 option go_package = "gen/";
 
 enum EnumABC {
@@ -59,6 +65,44 @@ message OneLevelNesting {
 
 message RepeatedOneLevelNesting {
   repeated SmallSetPrimitives a = 1;
+}
+
+message ThreeLevelNestingAndSomeChads {
+  OneLevelNesting a = 1;
+  int32 b = 2;
+  string c = 3;
+  double d = 4;
+}
+
+message RepeatedThreeLevelNestingAndSomeChads {
+  repeated OneLevelNesting a = 1;
+  int32 b = 2;
+  string c = 3;
+  double d = 4;
+}
+
+message MultipleThreeLevelNestingAndSomeChads {
+  OneLevelNesting a = 1;
+  TwoLevelNesting b = 2;
+  int32 c = 3;
+  string d = 4;
+  double e = 5;
+}
+
+message MultipleRepeatedThreeLevelNestingAndSomeChads {
+  repeated OneLevelNesting a = 1;
+  repeated TwoLevelNesting b = 2;
+  int32 c = 3;
+  string d = 4;
+  double e = 5;
+}
+
+message OptionalMultipleRepeatedThreeLevelNestingAndSomeChads {
+  optional OneLevelNesting a = 1;
+  repeated TwoLevelNesting b = 2;
+  int32 c = 3;
+  string d = 4;
+  optional double e = 5;
 }
 
 message TwoLevelNesting {

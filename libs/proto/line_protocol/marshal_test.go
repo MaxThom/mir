@@ -701,6 +701,83 @@ func TestRepeatedOptionalSmallSetPrimitives(t *testing.T) {
 	assert.Equal(t, true, strings.Contains(lp, "marshal.RepeatedOptionalSmallSetPrimitive a_1.a=23.430000,a_1.c=32i"))
 }
 
+func TestThreeLevelNestingAndSomeChads(t *testing.T) {
+	// Arrange
+	desc, err := protoRegistry.FindDescriptorByName("marshal.ThreeLevelNestingAndSomeChads")
+	if err != nil {
+		assert.NilError(t, err)
+	}
+
+	todo := &gen.ThreeLevelNestingAndSomeChads{
+		A: &gen.OneLevelNesting{
+			A: &gen.SmallSetPrimitives{
+				A: 1,
+				B: 2,
+				C: 3,
+				D: "d",
+			},
+		},
+		B: 2,
+		C: "abc",
+		D: 43.2,
+	}
+
+	out, _ := proto.Marshal(todo)
+
+	// Act
+	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
+	assert.NilError(t, err)
+	lp := Marhsal(out, map[string]string{}, fn)
+	fmt.Println(lp)
+
+	// Assert
+	assert.Equal(t, true, strings.Contains(lp, "marshal.ThreeLevelNestingAndSomeChads a.a.a=1.000000,a.a.b=2u,a.a.c=3i,a.a.d=\"d\",b=2i,c=\"abc\",d=43.200000"))
+
+}
+
+func TestRepeatedThreeLevelNestingAndSomeChads(t *testing.T) {
+	// Arrange
+	desc, err := protoRegistry.FindDescriptorByName("marshal.RepeatedThreeLevelNestingAndSomeChads")
+	if err != nil {
+		assert.NilError(t, err)
+	}
+
+	todo := &gen.RepeatedThreeLevelNestingAndSomeChads{
+		A: []*gen.OneLevelNesting{
+			{
+				A: &gen.SmallSetPrimitives{
+					A: 1,
+					B: 2,
+					C: 3,
+					D: "d",
+				},
+			},
+			{
+				A: &gen.SmallSetPrimitives{
+					A: 1,
+					B: 2,
+					C: 3,
+					D: "d",
+				},
+			},
+		},
+		B: 2,
+		C: "abc",
+		D: 43.2,
+	}
+
+	out, _ := proto.Marshal(todo)
+
+	// Act
+	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
+	assert.NilError(t, err)
+	lp := Marhsal(out, map[string]string{}, fn)
+	fmt.Println(lp)
+
+	// Assert
+	assert.Equal(t, true, strings.Contains(lp, "marshal.RepeatedThreeLevelNestingAndSomeChads a_0.a.a=1.000000,a_0.a.b=2u,a_0.a.c=3i,a_0.a.d=\"d\",a_1.a.a=1.000000,a_1.a.b=2u,a_1.a.c=3i,a_1.a.d=\"d\",b=2i,c=\"abc\",d=43.200000"))
+}
+
 func ptr[T any](t T) *T {
 	return &t
 }
