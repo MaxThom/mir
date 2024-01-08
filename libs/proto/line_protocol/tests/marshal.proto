@@ -1,13 +1,12 @@
-syntax = "proto3";
-package marshal;
-
 // Lot of unit test here to test the core of the proto to influx line protocol
 // Trying to name the messages with some consistency to have a reusable components
-// 
-// 
-//
 
+
+syntax = "proto3";
+package marshal;
 option go_package = "gen/";
+
+import "google/protobuf/timestamp.proto";
 
 enum EnumABC {
     A = 0;
@@ -154,4 +153,8 @@ message RepeatedOptionalEnum {
 
 message RepeatedOptionalSmallSetPrimitive {
   repeated OptionalSmallSetPrimitives a = 1;
+}
+
+message ImportMessage {
+  google.protobuf.Timestamp a = 1;
 }

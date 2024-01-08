@@ -3,43 +3,87 @@ package proto_lineprotocol
 // TODO could used virtual FS from embed to load all proto file in directory
 
 import (
+	"bytes"
 	_ "embed"
 	"fmt"
 	"os"
 	"strings"
 	"testing"
 
+	protoparser "github.com/bufbuild/protocompile/parser"
+	"github.com/bufbuild/protocompile/reporter"
 	"github.com/maxthom/mir/libs/proto/line_protocol/tests/gen"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
-	"google.golang.org/protobuf/types/descriptorpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"gotest.tools/assert"
 )
 
 // Generate the marshal.pb file and codegen for unit testing
 //go:generate protoc --go_out=tests/ --descriptor_set_out=./tests/gen/marshal.pb ./tests/marshal.proto
+//go:generate protoc --go_out=tests/ --descriptor_set_out=./tests/google.golang.org/protobuf/types/known/timestamppb/timestamp.pb ./tests/timestamp.proto
 
-//go:embed tests/gen/marshal.pb
-var marshalProtoFile []byte
-var protoRegistry = &protoregistry.Files{}
+var (
+	//go:embed tests/marshal.proto
+	marshalProtoFile []byte
+	//go:embed tests/gen/marshal.pb
+	marshalProtoFileOld []byte
+	//go:embed tests/timestamp.proto
+	timestampProtoFile []byte
+	//go:embed tests/google.golang.org/protobuf/types/known/timestamppb/timestamp.pb
+	timestampProtoFileOld []byte
+	protoRegistry         = &protoregistry.Files{}
+)
+
+type protoFile struct {
+	name    string
+	content []byte
+}
 
 func init() {
-	pbSet := new(descriptorpb.FileDescriptorSet)
-	if err := proto.Unmarshal(marshalProtoFile, pbSet); err != nil {
+	if err := loadProtoFileToRegistry(protoRegistry,
+		protoFile{
+			name:    "google/protobuf/timestamp.proto",
+			content: timestampProtoFile,
+		},
+		protoFile{
+			name:    "marshal.proto",
+			content: marshalProtoFile,
+		}); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+}
 
-	// TODO do this better if multiple proto file
-	fd, err := protodesc.NewFile(pbSet.GetFile()[0], protoRegistry)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+// TODO
+//
+//	manage to succed using binary proto
+//
+// see https://github.com/bufbuild/protocompile/issues/101
+func loadProtoFileToRegistry(pr *protoregistry.Files, protoFiles ...protoFile) error {
+	for _, p := range protoFiles {
+		reader := bytes.NewReader(p.content)
+		handler := reporter.NewHandler(nil)
+
+		node, err := protoparser.Parse(p.name, reader, handler)
+		if err != nil {
+			return fmt.Errorf("parse proto: %w", err)
+		}
+		res, err := protoparser.ResultFromAST(node, true /* validate */, handler)
+		if err != nil {
+			return fmt.Errorf("convert from AST: %w", err)
+		}
+		fd, err := protodesc.NewFile(res.FileDescriptorProto(), pr)
+		if err != nil {
+			return fmt.Errorf("convert to FileDescriptor: %w", err)
+		}
+		if err := pr.RegisterFile(fd); err != nil {
+			return fmt.Errorf("register file: %w", err)
+		}
 	}
-
-	protoRegistry.RegisterFile(fd)
+	return nil
 }
 
 func TestPrimitives(t *testing.T) {
@@ -776,6 +820,32 @@ func TestRepeatedThreeLevelNestingAndSomeChads(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, true, strings.Contains(lp, "marshal.RepeatedThreeLevelNestingAndSomeChads a_0.a.a=1.000000,a_0.a.b=2u,a_0.a.c=3i,a_0.a.d=\"d\",a_1.a.a=1.000000,a_1.a.b=2u,a_1.a.c=3i,a_1.a.d=\"d\",b=2i,c=\"abc\",d=43.200000"))
+}
+
+func TestImportMessage(t *testing.T) {
+	// Arrange
+	desc, err := protoRegistry.FindDescriptorByName("marshal.ImportMessage")
+	if err != nil {
+		assert.NilError(t, err)
+	}
+
+	todo := &gen.ImportMessage{
+		A: &timestamppb.Timestamp{
+			Seconds: 123,
+			Nanos:   256,
+		},
+	}
+
+	out, _ := proto.Marshal(todo)
+
+	// Act
+	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
+	assert.NilError(t, err)
+	lp := Marhsal(out, map[string]string{}, fn)
+	fmt.Println(lp)
+
+	// Assert
+	assert.Equal(t, true, strings.Contains(lp, "marshal.ImportMessage a.seconds=123i,a.nanos=256i"))
 }
 
 func ptr[T any](t T) *T {

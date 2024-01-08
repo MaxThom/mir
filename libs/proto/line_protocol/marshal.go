@@ -143,6 +143,7 @@ func formatProtoFieldToLineProtocol(prefix string, fd protoreflect.FieldDescript
 	if fd.Parent().(protoreflect.MessageDescriptor).IsMapEntry() {
 		fieldName = ""
 	}
+	fmt.Println(fd)
 
 	// Apply the right generation function for the field
 	// according to its type
