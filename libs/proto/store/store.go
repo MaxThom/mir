@@ -64,11 +64,17 @@ func (r *Registry) RegisterFileProto(meta Meta, p *descriptorpb.FileDescriptorPr
 }
 
 func (r *Registry) LoadProtoBinaryFileFromDisk(meta Meta, path string) error {
-	fd, err := readProtoFromDisk(path)
+	fds, err := readProtoFromDisk(path)
 	if err != nil {
 		return err
 	}
-	return r.RegisterFileProto(meta, fd)
+
+	for _, f := range fds {
+		if err := r.RegisterFileProto(meta, f); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (r *Registry) RangeFiles(fn func(fd protoreflect.FileDescriptor) bool) {
@@ -125,7 +131,7 @@ func (r *Registry) FindMetaByUuid(uuid uuid.UUID) (Meta, bool) {
 	return Meta{}, false
 }
 
-func readProtoFromDisk(path string) (*descriptorpb.FileDescriptorProto, error) {
+func readProtoFromDisk(path string) ([]*descriptorpb.FileDescriptorProto, error) {
 	// Now load that temporary file as a file descriptor
 	protoFile, err := os.ReadFile(path)
 	if err != nil {
@@ -138,5 +144,5 @@ func readProtoFromDisk(path string) (*descriptorpb.FileDescriptorProto, error) {
 	}
 
 	// We know protoc was invoked with a single .proto file
-	return pbSet.GetFile()[0], nil
+	return pbSet.GetFile(), nil
 }

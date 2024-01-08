@@ -15,15 +15,18 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"gotest.tools/assert"
 )
 
 // Generate the marshal.pb file and codegen for unit testing
-//go:generate protoc --go_out=tests/ --descriptor_set_out=./tests/gen/marshal.pb ./tests/marshal.proto
+//go:generate protoc --go_out=tests/ --descriptor_set_out=./tests/gen/marshal.pb --include_imports ./tests/marshal.proto
 
-//go:embed tests/gen/marshal.pb
-var marshalProtoFile []byte
-var protoRegistry = &protoregistry.Files{}
+var (
+	//go:embed tests/gen/marshal.pb
+	marshalProtoFile []byte
+	protoRegistry    = &protoregistry.Files{}
+)
 
 func init() {
 	pbSet := new(descriptorpb.FileDescriptorSet)
@@ -32,15 +35,14 @@ func init() {
 		os.Exit(1)
 	}
 
-	fmt.Println(pbSet.GetFile()[0].GetName())
-	// TODO do this better if multiple proto file
-	fd, err := protodesc.NewFile(pbSet.GetFile()[0], protoRegistry)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+	for _, f := range pbSet.GetFile() {
+		fd, err := protodesc.NewFile(f, protoRegistry)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		protoRegistry.RegisterFile(fd)
 	}
-
-	protoRegistry.RegisterFile(fd)
 }
 
 func TestPrimitives(t *testing.T) {
@@ -1047,6 +1049,32 @@ func TestOptionalMultipleRepeatedThreeLevelNestingAndSomeChadsEmpty(t *testing.T
 
 	// Assert
 	assert.Equal(t, true, strings.Contains(lp, "marshal.OptionalMultipleRepeatedThreeLevelNestingAndSomeChads c=3i,d=\"43.2\""))
+}
+
+func TestImportMessage(t *testing.T) {
+	// Arrange
+	desc, err := protoRegistry.FindDescriptorByName("marshal.ImportMessage")
+	if err != nil {
+		assert.NilError(t, err)
+	}
+	todo := &gen.ImportMessage{
+		A: &timestamppb.Timestamp{
+			Seconds: 123,
+			Nanos:   256,
+		},
+	}
+
+	out, _ := proto.Marshal(todo)
+
+	// Act
+	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
+	assert.NilError(t, err)
+	lp := Marhsal(out, map[string]string{}, fn)
+	fmt.Println(lp)
+
+	// Assert
+	assert.Equal(t, true, strings.Contains(lp, "marshal.ImportMessage a.seconds=123i,a.nanos=256i"))
+
 }
 
 func ptr[T any](t T) *T {

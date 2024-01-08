@@ -48,16 +48,7 @@ const (
 // - [x] repeated message
 // - [x] map field
 // - [x] optional field
-// - [ ] common types (https://protobuf.dev/reference/protobuf/google.protobuf/)
-//   - [ ] its more about testing the imports https://github.com/protocolbuffers/protobuf/blob/main/src/google/protobuf/timestamp.proto
-//     import "google/protobuf/timestamp.proto";
-//     message MyMessage {
-//     google.protobuf.Timestamp my_field = 1;
-//     }
-//   - [ ] timestamp
-//   - [ ] duration
-//   - [ ] empty
-//
+// - [x] imports
 // - [x] enum list
 // - [ ] fix number array mistmatch
 // - [x] more unit test
@@ -151,6 +142,7 @@ func formatProtoFieldToLineProtocol(prefix string, fd protoreflect.FieldDescript
 	if fd.Parent().(protoreflect.MessageDescriptor).IsMapEntry() {
 		fieldName = ""
 	}
+	fmt.Println(fd)
 
 	// Apply the right generation function for the field
 	// according to its type
