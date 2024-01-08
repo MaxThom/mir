@@ -20,7 +20,7 @@ import (
 )
 
 // Generate the marshal.pb file and codegen for unit testing
-//go:generate protoc --go_out=tests/ --descriptor_set_out=./tests/gen/marshal.pb --include_imports ./tests/marshal.proto
+//go:generate protoc --go_dataIn=tests/ --descriptor_set_dataIn=./tests/gen/marshal.pb --include_imports ./tests/marshal.proto
 
 var (
 	//go:embed tests/gen/marshal.pb
@@ -52,7 +52,7 @@ func TestPrimitives(t *testing.T) {
 		assert.NilError(t, err)
 	}
 
-	todo := &gen.Primitives{
+	testCase := &gen.Primitives{
 		A: 23.2,
 		B: 123.33,
 		C: 23,
@@ -68,12 +68,12 @@ func TestPrimitives(t *testing.T) {
 		M: true,
 		N: "hello old friend",
 	}
-	out, _ := proto.Marshal(todo)
+	dataIn, _ := proto.Marshal(testCase)
 
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(out, map[string]string{}, fn)
+	lp := Marhsal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -87,17 +87,17 @@ func TestEnums(t *testing.T) {
 		assert.NilError(t, err)
 	}
 
-	todo := &gen.EnumsSimple{
+	testCase := &gen.EnumsSimple{
 		A: gen.EnumABC_A,
 		B: gen.EnumABC_B,
 		C: gen.EnumABC_C,
 	}
-	out, _ := proto.Marshal(todo)
+	dataIn, _ := proto.Marshal(testCase)
 
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(out, map[string]string{}, fn)
+	lp := Marhsal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -111,18 +111,18 @@ func TestRepeatedPrimitives(t *testing.T) {
 		assert.NilError(t, err)
 	}
 
-	todo := &gen.RepeatedPrimitives{
+	testCase := &gen.RepeatedPrimitives{
 		A: []float64{0.5, 1.5, 2.5, 3.5},
 		B: []uint32{0, 1, 2, 3},
 		C: []int32{-2, -1, 0, 1, 2},
 		D: []string{"abc", "def", "ghi"},
 	}
-	out, _ := proto.Marshal(todo)
+	dataIn, _ := proto.Marshal(testCase)
 
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(out, map[string]string{}, fn)
+	lp := Marhsal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -136,7 +136,7 @@ func TestOneLevelNesting(t *testing.T) {
 		assert.NilError(t, err)
 	}
 
-	todo := &gen.OneLevelNesting{
+	testCase := &gen.OneLevelNesting{
 		A: &gen.SmallSetPrimitives{
 			A: 2,
 			B: 3,
@@ -144,12 +144,12 @@ func TestOneLevelNesting(t *testing.T) {
 			D: "5",
 		},
 	}
-	out, _ := proto.Marshal(todo)
+	dataIn, _ := proto.Marshal(testCase)
 
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(out, map[string]string{}, fn)
+	lp := Marhsal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -163,7 +163,7 @@ func TestTwoLevelNesting(t *testing.T) {
 		assert.NilError(t, err)
 	}
 
-	todo := &gen.TwoLevelNesting{
+	testCase := &gen.TwoLevelNesting{
 		A: &gen.OneLevelNesting{
 			A: &gen.SmallSetPrimitives{
 				A: 2,
@@ -173,12 +173,12 @@ func TestTwoLevelNesting(t *testing.T) {
 			},
 		},
 	}
-	out, _ := proto.Marshal(todo)
+	dataIn, _ := proto.Marshal(testCase)
 
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(out, map[string]string{}, fn)
+	lp := Marhsal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -192,7 +192,7 @@ func TestOptionalTwoLevelNesting(t *testing.T) {
 		assert.NilError(t, err)
 	}
 
-	todo := &gen.OptionalTwoLevelNesting{
+	testCase := &gen.OptionalTwoLevelNesting{
 		A: &gen.OptionalOneLevelNesting{
 			A: &gen.OptionalSmallSetPrimitives{
 				A: nil,
@@ -202,12 +202,12 @@ func TestOptionalTwoLevelNesting(t *testing.T) {
 			},
 		},
 	}
-	out, _ := proto.Marshal(todo)
+	dataIn, _ := proto.Marshal(testCase)
 
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(out, map[string]string{}, fn)
+	lp := Marhsal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -221,17 +221,17 @@ func TestOptionalTwoLevelNestingNil(t *testing.T) {
 		assert.NilError(t, err)
 	}
 
-	todo := &gen.OptionalTwoLevelNesting{
+	testCase := &gen.OptionalTwoLevelNesting{
 		A: &gen.OptionalOneLevelNesting{
 			A: nil,
 		},
 	}
-	out, _ := proto.Marshal(todo)
+	dataIn, _ := proto.Marshal(testCase)
 
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(out, map[string]string{}, fn)
+	lp := Marhsal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -245,15 +245,15 @@ func TestOptionalTwoLevelNestingNilNil(t *testing.T) {
 		assert.NilError(t, err)
 	}
 
-	todo := &gen.OptionalTwoLevelNesting{
+	testCase := &gen.OptionalTwoLevelNesting{
 		A: nil,
 	}
-	out, _ := proto.Marshal(todo)
+	dataIn, _ := proto.Marshal(testCase)
 
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(out, map[string]string{}, fn)
+	lp := Marhsal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -267,7 +267,7 @@ func TestRepeatedOneLevelNesting(t *testing.T) {
 		assert.NilError(t, err)
 	}
 
-	todo := &gen.RepeatedOneLevelNesting{
+	testCase := &gen.RepeatedOneLevelNesting{
 		A: []*gen.SmallSetPrimitives{
 			{
 				A: 2,
@@ -289,12 +289,12 @@ func TestRepeatedOneLevelNesting(t *testing.T) {
 			},
 		},
 	}
-	out, _ := proto.Marshal(todo)
+	dataIn, _ := proto.Marshal(testCase)
 
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(out, map[string]string{}, fn)
+	lp := Marhsal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -308,7 +308,7 @@ func TestRepeatedTwoLevelNesting(t *testing.T) {
 		assert.NilError(t, err)
 	}
 
-	todo := &gen.RepeatedTwoLevelNesting{
+	testCase := &gen.RepeatedTwoLevelNesting{
 		A: []*gen.RepeatedOneLevelNesting{
 			{
 				A: []*gen.SmallSetPrimitives{
@@ -344,12 +344,12 @@ func TestRepeatedTwoLevelNesting(t *testing.T) {
 			},
 		},
 	}
-	out, _ := proto.Marshal(todo)
+	dataIn, _ := proto.Marshal(testCase)
 
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(out, map[string]string{}, fn)
+	lp := Marhsal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -363,18 +363,18 @@ func TestMapString(t *testing.T) {
 		assert.NilError(t, err)
 	}
 
-	todo := &gen.MapString{
+	testCase := &gen.MapString{
 		A: map[string]string{
 			"hello":   "world",
 			"goodbye": "world",
 		},
 	}
-	out, _ := proto.Marshal(todo)
+	dataIn, _ := proto.Marshal(testCase)
 
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(out, map[string]string{}, fn)
+	lp := Marhsal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -391,7 +391,7 @@ func TestMapMessage(t *testing.T) {
 		assert.NilError(t, err)
 	}
 
-	todo := &gen.MapMessage{
+	testCase := &gen.MapMessage{
 		A: map[int32]*gen.SmallSetPrimitives{
 			3: {
 				A: 2,
@@ -413,12 +413,12 @@ func TestMapMessage(t *testing.T) {
 			},
 		},
 	}
-	out, _ := proto.Marshal(todo)
+	dataIn, _ := proto.Marshal(testCase)
 
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(out, map[string]string{}, fn)
+	lp := Marhsal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -435,18 +435,18 @@ func TestOptionalSmallSetPrimitives(t *testing.T) {
 		assert.NilError(t, err)
 	}
 
-	todo := &gen.OptionalSmallSetPrimitives{
+	testCase := &gen.OptionalSmallSetPrimitives{
 		A: nil,
 		B: ptr[uint32](3),
 		C: nil,
 		D: ptr("5"),
 	}
-	out, _ := proto.Marshal(todo)
+	dataIn, _ := proto.Marshal(testCase)
 
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(out, map[string]string{}, fn)
+	lp := Marhsal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -460,7 +460,7 @@ func TestOptionalOneLevelNesting(t *testing.T) {
 		assert.NilError(t, err)
 	}
 
-	todo := &gen.OptionalOneLevelNesting{
+	testCase := &gen.OptionalOneLevelNesting{
 		A: &gen.OptionalSmallSetPrimitives{
 			A: nil,
 			B: ptr[uint32](3),
@@ -468,12 +468,12 @@ func TestOptionalOneLevelNesting(t *testing.T) {
 			D: ptr("5"),
 		},
 	}
-	out, _ := proto.Marshal(todo)
+	dataIn, _ := proto.Marshal(testCase)
 
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(out, map[string]string{}, fn)
+	lp := Marhsal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -487,15 +487,15 @@ func TestOptionalOneLevelNestingNil(t *testing.T) {
 		assert.NilError(t, err)
 	}
 
-	todo := &gen.OptionalOneLevelNesting{
+	testCase := &gen.OptionalOneLevelNesting{
 		A: nil,
 	}
-	out, _ := proto.Marshal(todo)
+	dataIn, _ := proto.Marshal(testCase)
 
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(out, map[string]string{}, fn)
+	lp := Marhsal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -509,15 +509,15 @@ func TestOptionalEnumNil(t *testing.T) {
 		assert.NilError(t, err)
 	}
 
-	todo := &gen.OptionalEnum{
+	testCase := &gen.OptionalEnum{
 		A: nil,
 	}
-	out, _ := proto.Marshal(todo)
+	dataIn, _ := proto.Marshal(testCase)
 
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(out, map[string]string{}, fn)
+	lp := Marhsal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -531,19 +531,19 @@ func TestOptionalEnum(t *testing.T) {
 		assert.NilError(t, err)
 	}
 
-	todo := &gen.OptionalEnum{
+	testCase := &gen.OptionalEnum{
 		A: &gen.OptionalEnumsSimple{
 			A: nil,
 			B: ptr(gen.EnumABC_B),
 			C: nil,
 		},
 	}
-	out, _ := proto.Marshal(todo)
+	dataIn, _ := proto.Marshal(testCase)
 
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(out, map[string]string{}, fn)
+	lp := Marhsal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -557,19 +557,19 @@ func TestOptionalNestedEnum(t *testing.T) {
 		assert.NilError(t, err)
 	}
 
-	todo := &gen.OptionalNestedEnum{
+	testCase := &gen.OptionalNestedEnum{
 		A: &gen.OptionalEnumsSimple{
 			A: nil,
 			B: ptr(gen.EnumABC_B),
 			C: nil,
 		},
 	}
-	out, _ := proto.Marshal(todo)
+	dataIn, _ := proto.Marshal(testCase)
 
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(out, map[string]string{}, fn)
+	lp := Marhsal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -583,15 +583,15 @@ func TestOptionalNestedEnumNil(t *testing.T) {
 		assert.NilError(t, err)
 	}
 
-	todo := &gen.OptionalNestedEnum{
+	testCase := &gen.OptionalNestedEnum{
 		A: nil,
 	}
-	out, _ := proto.Marshal(todo)
+	dataIn, _ := proto.Marshal(testCase)
 
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(out, map[string]string{}, fn)
+	lp := Marhsal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -605,7 +605,7 @@ func TestRepeatedEnum(t *testing.T) {
 		assert.NilError(t, err)
 	}
 
-	todo := &gen.RepeatedEnum{
+	testCase := &gen.RepeatedEnum{
 		A: []*gen.EnumsSimple{
 			{},
 			{
@@ -620,12 +620,12 @@ func TestRepeatedEnum(t *testing.T) {
 			},
 		},
 	}
-	out, _ := proto.Marshal(todo)
+	dataIn, _ := proto.Marshal(testCase)
 
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(out, map[string]string{}, fn)
+	lp := Marhsal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -639,7 +639,7 @@ func TestRepeatedOptionalEnum(t *testing.T) {
 		assert.NilError(t, err)
 	}
 
-	todo := &gen.RepeatedOptionalEnum{
+	testCase := &gen.RepeatedOptionalEnum{
 		A: []*gen.OptionalEnumsSimple{
 			{
 				C: nil,
@@ -656,12 +656,12 @@ func TestRepeatedOptionalEnum(t *testing.T) {
 			},
 		},
 	}
-	out, _ := proto.Marshal(todo)
+	dataIn, _ := proto.Marshal(testCase)
 
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(out, map[string]string{}, fn)
+	lp := Marhsal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -675,7 +675,7 @@ func TestRepeatedOptionalSmallSetPrimitives(t *testing.T) {
 		assert.NilError(t, err)
 	}
 
-	todo := &gen.RepeatedOptionalSmallSetPrimitive{
+	testCase := &gen.RepeatedOptionalSmallSetPrimitive{
 		A: []*gen.OptionalSmallSetPrimitives{
 			{
 				A: nil,
@@ -692,12 +692,12 @@ func TestRepeatedOptionalSmallSetPrimitives(t *testing.T) {
 			nil,
 		},
 	}
-	out, _ := proto.Marshal(todo)
+	dataIn, _ := proto.Marshal(testCase)
 
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(out, map[string]string{}, fn)
+	lp := Marhsal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -711,7 +711,7 @@ func TestThreeLevelNestingAndSomeChads(t *testing.T) {
 		assert.NilError(t, err)
 	}
 
-	todo := &gen.ThreeLevelNestingAndSomeChads{
+	testCase := &gen.ThreeLevelNestingAndSomeChads{
 		A: &gen.OneLevelNesting{
 			A: &gen.SmallSetPrimitives{
 				A: 1,
@@ -725,12 +725,12 @@ func TestThreeLevelNestingAndSomeChads(t *testing.T) {
 		D: 43.2,
 	}
 
-	out, _ := proto.Marshal(todo)
+	dataIn, _ := proto.Marshal(testCase)
 
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(out, map[string]string{}, fn)
+	lp := Marhsal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -745,7 +745,7 @@ func TestRepeatedThreeLevelNestingAndSomeChads(t *testing.T) {
 		assert.NilError(t, err)
 	}
 
-	todo := &gen.RepeatedThreeLevelNestingAndSomeChads{
+	testCase := &gen.RepeatedThreeLevelNestingAndSomeChads{
 		A: []*gen.OneLevelNesting{
 			{
 				A: &gen.SmallSetPrimitives{
@@ -769,12 +769,12 @@ func TestRepeatedThreeLevelNestingAndSomeChads(t *testing.T) {
 		D: 43.2,
 	}
 
-	out, _ := proto.Marshal(todo)
+	dataIn, _ := proto.Marshal(testCase)
 
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(out, map[string]string{}, fn)
+	lp := Marhsal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -788,7 +788,7 @@ func TestMultipleThreeLevelNestingAndSomeChads(t *testing.T) {
 		assert.NilError(t, err)
 	}
 
-	todo := &gen.MultipleThreeLevelNestingAndSomeChads{
+	testCase := &gen.MultipleThreeLevelNestingAndSomeChads{
 		A: &gen.OneLevelNesting{
 			A: &gen.SmallSetPrimitives{
 				A: 1,
@@ -812,12 +812,12 @@ func TestMultipleThreeLevelNestingAndSomeChads(t *testing.T) {
 		E: 23.2,
 	}
 
-	out, _ := proto.Marshal(todo)
+	dataIn, _ := proto.Marshal(testCase)
 
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(out, map[string]string{}, fn)
+	lp := Marhsal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -831,7 +831,7 @@ func TestMultipleRepeatedThreeLevelNestingAndSomeChads(t *testing.T) {
 		assert.NilError(t, err)
 	}
 
-	todo := &gen.MultipleRepeatedThreeLevelNestingAndSomeChads{
+	testCase := &gen.MultipleRepeatedThreeLevelNestingAndSomeChads{
 		A: []*gen.OneLevelNesting{
 			{
 				A: &gen.SmallSetPrimitives{
@@ -887,12 +887,12 @@ func TestMultipleRepeatedThreeLevelNestingAndSomeChads(t *testing.T) {
 		E: 23.2,
 	}
 
-	out, _ := proto.Marshal(todo)
+	dataIn, _ := proto.Marshal(testCase)
 
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(out, map[string]string{}, fn)
+	lp := Marhsal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -906,7 +906,7 @@ func TestMultipleRepeatedThreeLevelNestingAndSomeChadsEmpty(t *testing.T) {
 		assert.NilError(t, err)
 	}
 
-	todo := &gen.MultipleRepeatedThreeLevelNestingAndSomeChads{
+	testCase := &gen.MultipleRepeatedThreeLevelNestingAndSomeChads{
 		A: []*gen.OneLevelNesting{},
 		B: []*gen.TwoLevelNesting{
 			{
@@ -945,12 +945,12 @@ func TestMultipleRepeatedThreeLevelNestingAndSomeChadsEmpty(t *testing.T) {
 		E: 23.2,
 	}
 
-	out, _ := proto.Marshal(todo)
+	dataIn, _ := proto.Marshal(testCase)
 
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(out, map[string]string{}, fn)
+	lp := Marhsal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -964,7 +964,7 @@ func TestOptionalMultipleRepeatedThreeLevelNestingAndSomeChads(t *testing.T) {
 		assert.NilError(t, err)
 	}
 
-	todo := &gen.OptionalMultipleRepeatedThreeLevelNestingAndSomeChads{
+	testCase := &gen.OptionalMultipleRepeatedThreeLevelNestingAndSomeChads{
 		A: &gen.OptionalOneLevelNesting{
 			A: &gen.OptionalSmallSetPrimitives{
 				A: nil,
@@ -1010,12 +1010,12 @@ func TestOptionalMultipleRepeatedThreeLevelNestingAndSomeChads(t *testing.T) {
 		E: ptr[float64](23.2),
 	}
 
-	out, _ := proto.Marshal(todo)
+	dataIn, _ := proto.Marshal(testCase)
 
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(out, map[string]string{}, fn)
+	lp := Marhsal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -1029,7 +1029,7 @@ func TestOptionalMultipleRepeatedThreeLevelNestingAndSomeChadsEmpty(t *testing.T
 		assert.NilError(t, err)
 	}
 
-	todo := &gen.OptionalMultipleRepeatedThreeLevelNestingAndSomeChads{
+	testCase := &gen.OptionalMultipleRepeatedThreeLevelNestingAndSomeChads{
 		A: &gen.OptionalOneLevelNesting{
 			A: nil,
 		},
@@ -1039,12 +1039,12 @@ func TestOptionalMultipleRepeatedThreeLevelNestingAndSomeChadsEmpty(t *testing.T
 		E: nil,
 	}
 
-	out, _ := proto.Marshal(todo)
+	dataIn, _ := proto.Marshal(testCase)
 
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(out, map[string]string{}, fn)
+	lp := Marhsal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -1057,24 +1057,77 @@ func TestImportMessage(t *testing.T) {
 	if err != nil {
 		assert.NilError(t, err)
 	}
-	todo := &gen.ImportMessage{
+	testCase := &gen.ImportMessage{
 		A: &timestamppb.Timestamp{
 			Seconds: 123,
 			Nanos:   256,
 		},
 	}
 
-	out, _ := proto.Marshal(todo)
+	dataIn, _ := proto.Marshal(testCase)
 
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(out, map[string]string{}, fn)
+	lp := Marhsal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
 	assert.Equal(t, true, strings.Contains(lp, "marshal.ImportMessage a.seconds=123i,a.nanos=256i"))
 
+}
+
+func TestMixIndexSmallSetPrimitives(t *testing.T) {
+	// Arrange
+	desc, err := protoRegistry.FindDescriptorByName("marshal.MixIndexSmallSetPrimitives")
+	if err != nil {
+		assert.NilError(t, err)
+	}
+	testCase := &gen.MixIndexSmallSetPrimitives{
+		A: 1,
+		B: 2,
+		C: 3,
+		D: "d",
+	}
+
+	dataIn, _ := proto.Marshal(testCase)
+
+	// Act
+	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
+	assert.NilError(t, err)
+	lp := Marhsal(dataIn, map[string]string{}, fn)
+	fmt.Println(lp)
+
+	// Assert
+	assert.Equal(t, true, strings.Contains(lp, "marshal.MixIndexSmallSetPrimitives a=1.000000,b=2u,c=3i,d=\"d\""))
+}
+
+func TestMixIndexOneLevelNesting(t *testing.T) {
+	// Arrange
+	desc, err := protoRegistry.FindDescriptorByName("marshal.MixIndexOneLevelNesting")
+	if err != nil {
+		assert.NilError(t, err)
+	}
+	testCase := &gen.MixIndexOneLevelNesting{
+		A: &gen.MixIndexSmallSetPrimitives{
+			A: 1,
+			B: 2,
+			C: 3,
+			D: "d",
+		},
+		B: 2,
+	}
+
+	dataIn, _ := proto.Marshal(testCase)
+
+	// Act
+	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
+	assert.NilError(t, err)
+	lp := Marhsal(dataIn, map[string]string{}, fn)
+	fmt.Println(lp)
+
+	// Assert
+	assert.Equal(t, true, strings.Contains(lp, "marshal.MixIndexOneLevelNesting a.a=1.000000,a.b=2u,a.c=3i,a.d=\"d\",b=2u,c=0i,d=\"\""))
 }
 
 func ptr[T any](t T) *T {

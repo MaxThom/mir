@@ -50,15 +50,11 @@ const (
 // - [x] optional field
 // - [x] imports
 // - [x] enum list
-// - [ ] fix number array mistmatch
+// - [x] fix number array mistmatch
 // - [x] more unit test
 // - [ ] one of field
 // - [ ] enum options
 func GenerateMarshalFn(pinnedTags map[string]string, desc protoreflect.MessageDescriptor) (ProtoBytesToLpFn, error) {
-
-	// Order the fields by the number
-	// Have a special field name that is server for the timestamp
-	// If not present, add current time
 
 	var lp strings.Builder
 	lp.WriteString(string(desc.FullName()))
@@ -110,20 +106,11 @@ func Marhsal(in []byte, tags map[string]string, fn ProtoBytesToLpFn) string {
 func formatProtoMessageToLineProtocol(prefix string, desc protoreflect.MessageDescriptor) ([]protoreflect.FieldDescriptor, []WriteValueToLpFn, error) {
 	var errs error
 	var err error
-	// TODO make sure the order is correct, might not be possible to determine before hand
-	// TODO better sort with Number
-	// reproducable with a struct similar to this
-	// need to match the number and array index using module fields().Len() pershaps ?
-	// message RepeatedThreeLevelNestingAndSomeChads {
-	// 	repeated OneLevelNesting a = 1;
-	// 	int32 b = 3;
-	// 	string c = 5;
-	// 	double d = 7;
-	//}
+
 	orderedFieldDesc := make([]protoreflect.FieldDescriptor, desc.Fields().Len())
 	for i := 0; i < desc.Fields().Len(); i++ {
 		fd := desc.Fields().Get(i)
-		orderedFieldDesc[fd.Number()-1] = fd
+		orderedFieldDesc[i] = fd
 	}
 
 	// Create a set of function that will be called for each field
@@ -142,7 +129,6 @@ func formatProtoFieldToLineProtocol(prefix string, fd protoreflect.FieldDescript
 	if fd.Parent().(protoreflect.MessageDescriptor).IsMapEntry() {
 		fieldName = ""
 	}
-	fmt.Println(fd)
 
 	// Apply the right generation function for the field
 	// according to its type

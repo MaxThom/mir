@@ -66,8 +66,23 @@ message SmallSetPrimitives {
   string d = 4;
 }
 
+message MixIndexSmallSetPrimitives {
+  double a = 3;
+  uint32 b = 14;
+  int32 c = 7;
+  string d = 11;
+}
+
+
 message OneLevelNesting {
   SmallSetPrimitives a = 1;
+}
+
+message MixIndexOneLevelNesting {
+  MixIndexSmallSetPrimitives a = 34;
+  uint32 b = 4;
+  int32 c = 12403;
+  string d = 4542;
 }
 
 message RepeatedOneLevelNesting {

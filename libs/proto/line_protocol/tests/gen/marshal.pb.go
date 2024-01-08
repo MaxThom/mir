@@ -500,6 +500,77 @@ func (x *SmallSetPrimitives) GetD() string {
 	return ""
 }
 
+type MixIndexSmallSetPrimitives struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	A float64 `protobuf:"fixed64,3,opt,name=a,proto3" json:"a,omitempty"`
+	B uint32  `protobuf:"varint,14,opt,name=b,proto3" json:"b,omitempty"`
+	C int32   `protobuf:"varint,7,opt,name=c,proto3" json:"c,omitempty"`
+	D string  `protobuf:"bytes,11,opt,name=d,proto3" json:"d,omitempty"`
+}
+
+func (x *MixIndexSmallSetPrimitives) Reset() {
+	*x = MixIndexSmallSetPrimitives{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_tests_marshal_proto_msgTypes[5]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *MixIndexSmallSetPrimitives) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MixIndexSmallSetPrimitives) ProtoMessage() {}
+
+func (x *MixIndexSmallSetPrimitives) ProtoReflect() protoreflect.Message {
+	mi := &file_tests_marshal_proto_msgTypes[5]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MixIndexSmallSetPrimitives.ProtoReflect.Descriptor instead.
+func (*MixIndexSmallSetPrimitives) Descriptor() ([]byte, []int) {
+	return file_tests_marshal_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *MixIndexSmallSetPrimitives) GetA() float64 {
+	if x != nil {
+		return x.A
+	}
+	return 0
+}
+
+func (x *MixIndexSmallSetPrimitives) GetB() uint32 {
+	if x != nil {
+		return x.B
+	}
+	return 0
+}
+
+func (x *MixIndexSmallSetPrimitives) GetC() int32 {
+	if x != nil {
+		return x.C
+	}
+	return 0
+}
+
+func (x *MixIndexSmallSetPrimitives) GetD() string {
+	if x != nil {
+		return x.D
+	}
+	return ""
+}
+
 type OneLevelNesting struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -511,7 +582,7 @@ type OneLevelNesting struct {
 func (x *OneLevelNesting) Reset() {
 	*x = OneLevelNesting{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_tests_marshal_proto_msgTypes[5]
+		mi := &file_tests_marshal_proto_msgTypes[6]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -524,7 +595,7 @@ func (x *OneLevelNesting) String() string {
 func (*OneLevelNesting) ProtoMessage() {}
 
 func (x *OneLevelNesting) ProtoReflect() protoreflect.Message {
-	mi := &file_tests_marshal_proto_msgTypes[5]
+	mi := &file_tests_marshal_proto_msgTypes[6]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -537,7 +608,7 @@ func (x *OneLevelNesting) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OneLevelNesting.ProtoReflect.Descriptor instead.
 func (*OneLevelNesting) Descriptor() ([]byte, []int) {
-	return file_tests_marshal_proto_rawDescGZIP(), []int{5}
+	return file_tests_marshal_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *OneLevelNesting) GetA() *SmallSetPrimitives {
@@ -545,6 +616,77 @@ func (x *OneLevelNesting) GetA() *SmallSetPrimitives {
 		return x.A
 	}
 	return nil
+}
+
+type MixIndexOneLevelNesting struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	A *MixIndexSmallSetPrimitives `protobuf:"bytes,34,opt,name=a,proto3" json:"a,omitempty"`
+	B uint32                      `protobuf:"varint,4,opt,name=b,proto3" json:"b,omitempty"`
+	C int32                       `protobuf:"varint,12403,opt,name=c,proto3" json:"c,omitempty"`
+	D string                      `protobuf:"bytes,4542,opt,name=d,proto3" json:"d,omitempty"`
+}
+
+func (x *MixIndexOneLevelNesting) Reset() {
+	*x = MixIndexOneLevelNesting{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_tests_marshal_proto_msgTypes[7]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *MixIndexOneLevelNesting) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MixIndexOneLevelNesting) ProtoMessage() {}
+
+func (x *MixIndexOneLevelNesting) ProtoReflect() protoreflect.Message {
+	mi := &file_tests_marshal_proto_msgTypes[7]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MixIndexOneLevelNesting.ProtoReflect.Descriptor instead.
+func (*MixIndexOneLevelNesting) Descriptor() ([]byte, []int) {
+	return file_tests_marshal_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *MixIndexOneLevelNesting) GetA() *MixIndexSmallSetPrimitives {
+	if x != nil {
+		return x.A
+	}
+	return nil
+}
+
+func (x *MixIndexOneLevelNesting) GetB() uint32 {
+	if x != nil {
+		return x.B
+	}
+	return 0
+}
+
+func (x *MixIndexOneLevelNesting) GetC() int32 {
+	if x != nil {
+		return x.C
+	}
+	return 0
+}
+
+func (x *MixIndexOneLevelNesting) GetD() string {
+	if x != nil {
+		return x.D
+	}
+	return ""
 }
 
 type RepeatedOneLevelNesting struct {
@@ -558,7 +700,7 @@ type RepeatedOneLevelNesting struct {
 func (x *RepeatedOneLevelNesting) Reset() {
 	*x = RepeatedOneLevelNesting{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_tests_marshal_proto_msgTypes[6]
+		mi := &file_tests_marshal_proto_msgTypes[8]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -571,7 +713,7 @@ func (x *RepeatedOneLevelNesting) String() string {
 func (*RepeatedOneLevelNesting) ProtoMessage() {}
 
 func (x *RepeatedOneLevelNesting) ProtoReflect() protoreflect.Message {
-	mi := &file_tests_marshal_proto_msgTypes[6]
+	mi := &file_tests_marshal_proto_msgTypes[8]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -584,7 +726,7 @@ func (x *RepeatedOneLevelNesting) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RepeatedOneLevelNesting.ProtoReflect.Descriptor instead.
 func (*RepeatedOneLevelNesting) Descriptor() ([]byte, []int) {
-	return file_tests_marshal_proto_rawDescGZIP(), []int{6}
+	return file_tests_marshal_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *RepeatedOneLevelNesting) GetA() []*SmallSetPrimitives {
@@ -608,7 +750,7 @@ type ThreeLevelNestingAndSomeChads struct {
 func (x *ThreeLevelNestingAndSomeChads) Reset() {
 	*x = ThreeLevelNestingAndSomeChads{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_tests_marshal_proto_msgTypes[7]
+		mi := &file_tests_marshal_proto_msgTypes[9]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -621,7 +763,7 @@ func (x *ThreeLevelNestingAndSomeChads) String() string {
 func (*ThreeLevelNestingAndSomeChads) ProtoMessage() {}
 
 func (x *ThreeLevelNestingAndSomeChads) ProtoReflect() protoreflect.Message {
-	mi := &file_tests_marshal_proto_msgTypes[7]
+	mi := &file_tests_marshal_proto_msgTypes[9]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -634,7 +776,7 @@ func (x *ThreeLevelNestingAndSomeChads) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ThreeLevelNestingAndSomeChads.ProtoReflect.Descriptor instead.
 func (*ThreeLevelNestingAndSomeChads) Descriptor() ([]byte, []int) {
-	return file_tests_marshal_proto_rawDescGZIP(), []int{7}
+	return file_tests_marshal_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *ThreeLevelNestingAndSomeChads) GetA() *OneLevelNesting {
@@ -679,7 +821,7 @@ type RepeatedThreeLevelNestingAndSomeChads struct {
 func (x *RepeatedThreeLevelNestingAndSomeChads) Reset() {
 	*x = RepeatedThreeLevelNestingAndSomeChads{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_tests_marshal_proto_msgTypes[8]
+		mi := &file_tests_marshal_proto_msgTypes[10]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -692,7 +834,7 @@ func (x *RepeatedThreeLevelNestingAndSomeChads) String() string {
 func (*RepeatedThreeLevelNestingAndSomeChads) ProtoMessage() {}
 
 func (x *RepeatedThreeLevelNestingAndSomeChads) ProtoReflect() protoreflect.Message {
-	mi := &file_tests_marshal_proto_msgTypes[8]
+	mi := &file_tests_marshal_proto_msgTypes[10]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -705,7 +847,7 @@ func (x *RepeatedThreeLevelNestingAndSomeChads) ProtoReflect() protoreflect.Mess
 
 // Deprecated: Use RepeatedThreeLevelNestingAndSomeChads.ProtoReflect.Descriptor instead.
 func (*RepeatedThreeLevelNestingAndSomeChads) Descriptor() ([]byte, []int) {
-	return file_tests_marshal_proto_rawDescGZIP(), []int{8}
+	return file_tests_marshal_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *RepeatedThreeLevelNestingAndSomeChads) GetA() []*OneLevelNesting {
@@ -751,7 +893,7 @@ type MultipleThreeLevelNestingAndSomeChads struct {
 func (x *MultipleThreeLevelNestingAndSomeChads) Reset() {
 	*x = MultipleThreeLevelNestingAndSomeChads{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_tests_marshal_proto_msgTypes[9]
+		mi := &file_tests_marshal_proto_msgTypes[11]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -764,7 +906,7 @@ func (x *MultipleThreeLevelNestingAndSomeChads) String() string {
 func (*MultipleThreeLevelNestingAndSomeChads) ProtoMessage() {}
 
 func (x *MultipleThreeLevelNestingAndSomeChads) ProtoReflect() protoreflect.Message {
-	mi := &file_tests_marshal_proto_msgTypes[9]
+	mi := &file_tests_marshal_proto_msgTypes[11]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -777,7 +919,7 @@ func (x *MultipleThreeLevelNestingAndSomeChads) ProtoReflect() protoreflect.Mess
 
 // Deprecated: Use MultipleThreeLevelNestingAndSomeChads.ProtoReflect.Descriptor instead.
 func (*MultipleThreeLevelNestingAndSomeChads) Descriptor() ([]byte, []int) {
-	return file_tests_marshal_proto_rawDescGZIP(), []int{9}
+	return file_tests_marshal_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *MultipleThreeLevelNestingAndSomeChads) GetA() *OneLevelNesting {
@@ -830,7 +972,7 @@ type MultipleRepeatedThreeLevelNestingAndSomeChads struct {
 func (x *MultipleRepeatedThreeLevelNestingAndSomeChads) Reset() {
 	*x = MultipleRepeatedThreeLevelNestingAndSomeChads{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_tests_marshal_proto_msgTypes[10]
+		mi := &file_tests_marshal_proto_msgTypes[12]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -843,7 +985,7 @@ func (x *MultipleRepeatedThreeLevelNestingAndSomeChads) String() string {
 func (*MultipleRepeatedThreeLevelNestingAndSomeChads) ProtoMessage() {}
 
 func (x *MultipleRepeatedThreeLevelNestingAndSomeChads) ProtoReflect() protoreflect.Message {
-	mi := &file_tests_marshal_proto_msgTypes[10]
+	mi := &file_tests_marshal_proto_msgTypes[12]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -856,7 +998,7 @@ func (x *MultipleRepeatedThreeLevelNestingAndSomeChads) ProtoReflect() protorefl
 
 // Deprecated: Use MultipleRepeatedThreeLevelNestingAndSomeChads.ProtoReflect.Descriptor instead.
 func (*MultipleRepeatedThreeLevelNestingAndSomeChads) Descriptor() ([]byte, []int) {
-	return file_tests_marshal_proto_rawDescGZIP(), []int{10}
+	return file_tests_marshal_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *MultipleRepeatedThreeLevelNestingAndSomeChads) GetA() []*OneLevelNesting {
@@ -909,7 +1051,7 @@ type OptionalMultipleRepeatedThreeLevelNestingAndSomeChads struct {
 func (x *OptionalMultipleRepeatedThreeLevelNestingAndSomeChads) Reset() {
 	*x = OptionalMultipleRepeatedThreeLevelNestingAndSomeChads{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_tests_marshal_proto_msgTypes[11]
+		mi := &file_tests_marshal_proto_msgTypes[13]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -922,7 +1064,7 @@ func (x *OptionalMultipleRepeatedThreeLevelNestingAndSomeChads) String() string 
 func (*OptionalMultipleRepeatedThreeLevelNestingAndSomeChads) ProtoMessage() {}
 
 func (x *OptionalMultipleRepeatedThreeLevelNestingAndSomeChads) ProtoReflect() protoreflect.Message {
-	mi := &file_tests_marshal_proto_msgTypes[11]
+	mi := &file_tests_marshal_proto_msgTypes[13]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -935,7 +1077,7 @@ func (x *OptionalMultipleRepeatedThreeLevelNestingAndSomeChads) ProtoReflect() p
 
 // Deprecated: Use OptionalMultipleRepeatedThreeLevelNestingAndSomeChads.ProtoReflect.Descriptor instead.
 func (*OptionalMultipleRepeatedThreeLevelNestingAndSomeChads) Descriptor() ([]byte, []int) {
-	return file_tests_marshal_proto_rawDescGZIP(), []int{11}
+	return file_tests_marshal_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *OptionalMultipleRepeatedThreeLevelNestingAndSomeChads) GetA() *OptionalOneLevelNesting {
@@ -984,7 +1126,7 @@ type TwoLevelNesting struct {
 func (x *TwoLevelNesting) Reset() {
 	*x = TwoLevelNesting{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_tests_marshal_proto_msgTypes[12]
+		mi := &file_tests_marshal_proto_msgTypes[14]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -997,7 +1139,7 @@ func (x *TwoLevelNesting) String() string {
 func (*TwoLevelNesting) ProtoMessage() {}
 
 func (x *TwoLevelNesting) ProtoReflect() protoreflect.Message {
-	mi := &file_tests_marshal_proto_msgTypes[12]
+	mi := &file_tests_marshal_proto_msgTypes[14]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1010,7 +1152,7 @@ func (x *TwoLevelNesting) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TwoLevelNesting.ProtoReflect.Descriptor instead.
 func (*TwoLevelNesting) Descriptor() ([]byte, []int) {
-	return file_tests_marshal_proto_rawDescGZIP(), []int{12}
+	return file_tests_marshal_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *TwoLevelNesting) GetA() *OneLevelNesting {
@@ -1031,7 +1173,7 @@ type OptionalTwoLevelNesting struct {
 func (x *OptionalTwoLevelNesting) Reset() {
 	*x = OptionalTwoLevelNesting{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_tests_marshal_proto_msgTypes[13]
+		mi := &file_tests_marshal_proto_msgTypes[15]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1044,7 +1186,7 @@ func (x *OptionalTwoLevelNesting) String() string {
 func (*OptionalTwoLevelNesting) ProtoMessage() {}
 
 func (x *OptionalTwoLevelNesting) ProtoReflect() protoreflect.Message {
-	mi := &file_tests_marshal_proto_msgTypes[13]
+	mi := &file_tests_marshal_proto_msgTypes[15]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1057,7 +1199,7 @@ func (x *OptionalTwoLevelNesting) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OptionalTwoLevelNesting.ProtoReflect.Descriptor instead.
 func (*OptionalTwoLevelNesting) Descriptor() ([]byte, []int) {
-	return file_tests_marshal_proto_rawDescGZIP(), []int{13}
+	return file_tests_marshal_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *OptionalTwoLevelNesting) GetA() *OptionalOneLevelNesting {
@@ -1078,7 +1220,7 @@ type RepeatedTwoLevelNesting struct {
 func (x *RepeatedTwoLevelNesting) Reset() {
 	*x = RepeatedTwoLevelNesting{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_tests_marshal_proto_msgTypes[14]
+		mi := &file_tests_marshal_proto_msgTypes[16]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1091,7 +1233,7 @@ func (x *RepeatedTwoLevelNesting) String() string {
 func (*RepeatedTwoLevelNesting) ProtoMessage() {}
 
 func (x *RepeatedTwoLevelNesting) ProtoReflect() protoreflect.Message {
-	mi := &file_tests_marshal_proto_msgTypes[14]
+	mi := &file_tests_marshal_proto_msgTypes[16]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1104,7 +1246,7 @@ func (x *RepeatedTwoLevelNesting) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RepeatedTwoLevelNesting.ProtoReflect.Descriptor instead.
 func (*RepeatedTwoLevelNesting) Descriptor() ([]byte, []int) {
-	return file_tests_marshal_proto_rawDescGZIP(), []int{14}
+	return file_tests_marshal_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *RepeatedTwoLevelNesting) GetA() []*RepeatedOneLevelNesting {
@@ -1125,7 +1267,7 @@ type MapString struct {
 func (x *MapString) Reset() {
 	*x = MapString{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_tests_marshal_proto_msgTypes[15]
+		mi := &file_tests_marshal_proto_msgTypes[17]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1138,7 +1280,7 @@ func (x *MapString) String() string {
 func (*MapString) ProtoMessage() {}
 
 func (x *MapString) ProtoReflect() protoreflect.Message {
-	mi := &file_tests_marshal_proto_msgTypes[15]
+	mi := &file_tests_marshal_proto_msgTypes[17]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1151,7 +1293,7 @@ func (x *MapString) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MapString.ProtoReflect.Descriptor instead.
 func (*MapString) Descriptor() ([]byte, []int) {
-	return file_tests_marshal_proto_rawDescGZIP(), []int{15}
+	return file_tests_marshal_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *MapString) GetA() map[string]string {
@@ -1172,7 +1314,7 @@ type MapMessage struct {
 func (x *MapMessage) Reset() {
 	*x = MapMessage{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_tests_marshal_proto_msgTypes[16]
+		mi := &file_tests_marshal_proto_msgTypes[18]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1185,7 +1327,7 @@ func (x *MapMessage) String() string {
 func (*MapMessage) ProtoMessage() {}
 
 func (x *MapMessage) ProtoReflect() protoreflect.Message {
-	mi := &file_tests_marshal_proto_msgTypes[16]
+	mi := &file_tests_marshal_proto_msgTypes[18]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1198,7 +1340,7 @@ func (x *MapMessage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MapMessage.ProtoReflect.Descriptor instead.
 func (*MapMessage) Descriptor() ([]byte, []int) {
-	return file_tests_marshal_proto_rawDescGZIP(), []int{16}
+	return file_tests_marshal_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *MapMessage) GetA() map[int32]*SmallSetPrimitives {
@@ -1222,7 +1364,7 @@ type OptionalSmallSetPrimitives struct {
 func (x *OptionalSmallSetPrimitives) Reset() {
 	*x = OptionalSmallSetPrimitives{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_tests_marshal_proto_msgTypes[17]
+		mi := &file_tests_marshal_proto_msgTypes[19]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1235,7 +1377,7 @@ func (x *OptionalSmallSetPrimitives) String() string {
 func (*OptionalSmallSetPrimitives) ProtoMessage() {}
 
 func (x *OptionalSmallSetPrimitives) ProtoReflect() protoreflect.Message {
-	mi := &file_tests_marshal_proto_msgTypes[17]
+	mi := &file_tests_marshal_proto_msgTypes[19]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1248,7 +1390,7 @@ func (x *OptionalSmallSetPrimitives) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OptionalSmallSetPrimitives.ProtoReflect.Descriptor instead.
 func (*OptionalSmallSetPrimitives) Descriptor() ([]byte, []int) {
-	return file_tests_marshal_proto_rawDescGZIP(), []int{17}
+	return file_tests_marshal_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *OptionalSmallSetPrimitives) GetA() float64 {
@@ -1290,7 +1432,7 @@ type OptionalOneLevelNesting struct {
 func (x *OptionalOneLevelNesting) Reset() {
 	*x = OptionalOneLevelNesting{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_tests_marshal_proto_msgTypes[18]
+		mi := &file_tests_marshal_proto_msgTypes[20]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1303,7 +1445,7 @@ func (x *OptionalOneLevelNesting) String() string {
 func (*OptionalOneLevelNesting) ProtoMessage() {}
 
 func (x *OptionalOneLevelNesting) ProtoReflect() protoreflect.Message {
-	mi := &file_tests_marshal_proto_msgTypes[18]
+	mi := &file_tests_marshal_proto_msgTypes[20]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1316,7 +1458,7 @@ func (x *OptionalOneLevelNesting) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OptionalOneLevelNesting.ProtoReflect.Descriptor instead.
 func (*OptionalOneLevelNesting) Descriptor() ([]byte, []int) {
-	return file_tests_marshal_proto_rawDescGZIP(), []int{18}
+	return file_tests_marshal_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *OptionalOneLevelNesting) GetA() *OptionalSmallSetPrimitives {
@@ -1337,7 +1479,7 @@ type OptionalEnum struct {
 func (x *OptionalEnum) Reset() {
 	*x = OptionalEnum{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_tests_marshal_proto_msgTypes[19]
+		mi := &file_tests_marshal_proto_msgTypes[21]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1350,7 +1492,7 @@ func (x *OptionalEnum) String() string {
 func (*OptionalEnum) ProtoMessage() {}
 
 func (x *OptionalEnum) ProtoReflect() protoreflect.Message {
-	mi := &file_tests_marshal_proto_msgTypes[19]
+	mi := &file_tests_marshal_proto_msgTypes[21]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1363,7 +1505,7 @@ func (x *OptionalEnum) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OptionalEnum.ProtoReflect.Descriptor instead.
 func (*OptionalEnum) Descriptor() ([]byte, []int) {
-	return file_tests_marshal_proto_rawDescGZIP(), []int{19}
+	return file_tests_marshal_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *OptionalEnum) GetA() *OptionalEnumsSimple {
@@ -1384,7 +1526,7 @@ type OptionalNestedEnum struct {
 func (x *OptionalNestedEnum) Reset() {
 	*x = OptionalNestedEnum{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_tests_marshal_proto_msgTypes[20]
+		mi := &file_tests_marshal_proto_msgTypes[22]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1397,7 +1539,7 @@ func (x *OptionalNestedEnum) String() string {
 func (*OptionalNestedEnum) ProtoMessage() {}
 
 func (x *OptionalNestedEnum) ProtoReflect() protoreflect.Message {
-	mi := &file_tests_marshal_proto_msgTypes[20]
+	mi := &file_tests_marshal_proto_msgTypes[22]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1410,7 +1552,7 @@ func (x *OptionalNestedEnum) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OptionalNestedEnum.ProtoReflect.Descriptor instead.
 func (*OptionalNestedEnum) Descriptor() ([]byte, []int) {
-	return file_tests_marshal_proto_rawDescGZIP(), []int{20}
+	return file_tests_marshal_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *OptionalNestedEnum) GetA() *OptionalEnumsSimple {
@@ -1431,7 +1573,7 @@ type RepeatedEnum struct {
 func (x *RepeatedEnum) Reset() {
 	*x = RepeatedEnum{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_tests_marshal_proto_msgTypes[21]
+		mi := &file_tests_marshal_proto_msgTypes[23]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1444,7 +1586,7 @@ func (x *RepeatedEnum) String() string {
 func (*RepeatedEnum) ProtoMessage() {}
 
 func (x *RepeatedEnum) ProtoReflect() protoreflect.Message {
-	mi := &file_tests_marshal_proto_msgTypes[21]
+	mi := &file_tests_marshal_proto_msgTypes[23]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1457,7 +1599,7 @@ func (x *RepeatedEnum) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RepeatedEnum.ProtoReflect.Descriptor instead.
 func (*RepeatedEnum) Descriptor() ([]byte, []int) {
-	return file_tests_marshal_proto_rawDescGZIP(), []int{21}
+	return file_tests_marshal_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *RepeatedEnum) GetA() []*EnumsSimple {
@@ -1478,7 +1620,7 @@ type RepeatedOptionalEnum struct {
 func (x *RepeatedOptionalEnum) Reset() {
 	*x = RepeatedOptionalEnum{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_tests_marshal_proto_msgTypes[22]
+		mi := &file_tests_marshal_proto_msgTypes[24]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1491,7 +1633,7 @@ func (x *RepeatedOptionalEnum) String() string {
 func (*RepeatedOptionalEnum) ProtoMessage() {}
 
 func (x *RepeatedOptionalEnum) ProtoReflect() protoreflect.Message {
-	mi := &file_tests_marshal_proto_msgTypes[22]
+	mi := &file_tests_marshal_proto_msgTypes[24]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1504,7 +1646,7 @@ func (x *RepeatedOptionalEnum) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RepeatedOptionalEnum.ProtoReflect.Descriptor instead.
 func (*RepeatedOptionalEnum) Descriptor() ([]byte, []int) {
-	return file_tests_marshal_proto_rawDescGZIP(), []int{22}
+	return file_tests_marshal_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *RepeatedOptionalEnum) GetA() []*OptionalEnumsSimple {
@@ -1525,7 +1667,7 @@ type RepeatedOptionalSmallSetPrimitive struct {
 func (x *RepeatedOptionalSmallSetPrimitive) Reset() {
 	*x = RepeatedOptionalSmallSetPrimitive{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_tests_marshal_proto_msgTypes[23]
+		mi := &file_tests_marshal_proto_msgTypes[25]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1538,7 +1680,7 @@ func (x *RepeatedOptionalSmallSetPrimitive) String() string {
 func (*RepeatedOptionalSmallSetPrimitive) ProtoMessage() {}
 
 func (x *RepeatedOptionalSmallSetPrimitive) ProtoReflect() protoreflect.Message {
-	mi := &file_tests_marshal_proto_msgTypes[23]
+	mi := &file_tests_marshal_proto_msgTypes[25]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1551,7 +1693,7 @@ func (x *RepeatedOptionalSmallSetPrimitive) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use RepeatedOptionalSmallSetPrimitive.ProtoReflect.Descriptor instead.
 func (*RepeatedOptionalSmallSetPrimitive) Descriptor() ([]byte, []int) {
-	return file_tests_marshal_proto_rawDescGZIP(), []int{23}
+	return file_tests_marshal_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *RepeatedOptionalSmallSetPrimitive) GetA() []*OptionalSmallSetPrimitives {
@@ -1572,7 +1714,7 @@ type ImportMessage struct {
 func (x *ImportMessage) Reset() {
 	*x = ImportMessage{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_tests_marshal_proto_msgTypes[24]
+		mi := &file_tests_marshal_proto_msgTypes[26]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1585,7 +1727,7 @@ func (x *ImportMessage) String() string {
 func (*ImportMessage) ProtoMessage() {}
 
 func (x *ImportMessage) ProtoReflect() protoreflect.Message {
-	mi := &file_tests_marshal_proto_msgTypes[24]
+	mi := &file_tests_marshal_proto_msgTypes[26]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1598,7 +1740,7 @@ func (x *ImportMessage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ImportMessage.ProtoReflect.Descriptor instead.
 func (*ImportMessage) Descriptor() ([]byte, []int) {
-	return file_tests_marshal_proto_rawDescGZIP(), []int{24}
+	return file_tests_marshal_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *ImportMessage) GetA() *timestamppb.Timestamp {
@@ -1654,11 +1796,24 @@ var file_tests_marshal_proto_rawDesc = []byte{
 	0x0a, 0x01, 0x61, 0x18, 0x01, 0x20, 0x01, 0x28, 0x01, 0x52, 0x01, 0x61, 0x12, 0x0c, 0x0a, 0x01,
 	0x62, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x01, 0x62, 0x12, 0x0c, 0x0a, 0x01, 0x63, 0x18,
 	0x03, 0x20, 0x01, 0x28, 0x05, 0x52, 0x01, 0x63, 0x12, 0x0c, 0x0a, 0x01, 0x64, 0x18, 0x04, 0x20,
-	0x01, 0x28, 0x09, 0x52, 0x01, 0x64, 0x22, 0x3c, 0x0a, 0x0f, 0x4f, 0x6e, 0x65, 0x4c, 0x65, 0x76,
-	0x65, 0x6c, 0x4e, 0x65, 0x73, 0x74, 0x69, 0x6e, 0x67, 0x12, 0x29, 0x0a, 0x01, 0x61, 0x18, 0x01,
-	0x20, 0x01, 0x28, 0x0b, 0x32, 0x1b, 0x2e, 0x6d, 0x61, 0x72, 0x73, 0x68, 0x61, 0x6c, 0x2e, 0x53,
-	0x6d, 0x61, 0x6c, 0x6c, 0x53, 0x65, 0x74, 0x50, 0x72, 0x69, 0x6d, 0x69, 0x74, 0x69, 0x76, 0x65,
-	0x73, 0x52, 0x01, 0x61, 0x22, 0x44, 0x0a, 0x17, 0x52, 0x65, 0x70, 0x65, 0x61, 0x74, 0x65, 0x64,
+	0x01, 0x28, 0x09, 0x52, 0x01, 0x64, 0x22, 0x54, 0x0a, 0x1a, 0x4d, 0x69, 0x78, 0x49, 0x6e, 0x64,
+	0x65, 0x78, 0x53, 0x6d, 0x61, 0x6c, 0x6c, 0x53, 0x65, 0x74, 0x50, 0x72, 0x69, 0x6d, 0x69, 0x74,
+	0x69, 0x76, 0x65, 0x73, 0x12, 0x0c, 0x0a, 0x01, 0x61, 0x18, 0x03, 0x20, 0x01, 0x28, 0x01, 0x52,
+	0x01, 0x61, 0x12, 0x0c, 0x0a, 0x01, 0x62, 0x18, 0x0e, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x01, 0x62,
+	0x12, 0x0c, 0x0a, 0x01, 0x63, 0x18, 0x07, 0x20, 0x01, 0x28, 0x05, 0x52, 0x01, 0x63, 0x12, 0x0c,
+	0x0a, 0x01, 0x64, 0x18, 0x0b, 0x20, 0x01, 0x28, 0x09, 0x52, 0x01, 0x64, 0x22, 0x3c, 0x0a, 0x0f,
+	0x4f, 0x6e, 0x65, 0x4c, 0x65, 0x76, 0x65, 0x6c, 0x4e, 0x65, 0x73, 0x74, 0x69, 0x6e, 0x67, 0x12,
+	0x29, 0x0a, 0x01, 0x61, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1b, 0x2e, 0x6d, 0x61, 0x72,
+	0x73, 0x68, 0x61, 0x6c, 0x2e, 0x53, 0x6d, 0x61, 0x6c, 0x6c, 0x53, 0x65, 0x74, 0x50, 0x72, 0x69,
+	0x6d, 0x69, 0x74, 0x69, 0x76, 0x65, 0x73, 0x52, 0x01, 0x61, 0x22, 0x78, 0x0a, 0x17, 0x4d, 0x69,
+	0x78, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x4f, 0x6e, 0x65, 0x4c, 0x65, 0x76, 0x65, 0x6c, 0x4e, 0x65,
+	0x73, 0x74, 0x69, 0x6e, 0x67, 0x12, 0x31, 0x0a, 0x01, 0x61, 0x18, 0x22, 0x20, 0x01, 0x28, 0x0b,
+	0x32, 0x23, 0x2e, 0x6d, 0x61, 0x72, 0x73, 0x68, 0x61, 0x6c, 0x2e, 0x4d, 0x69, 0x78, 0x49, 0x6e,
+	0x64, 0x65, 0x78, 0x53, 0x6d, 0x61, 0x6c, 0x6c, 0x53, 0x65, 0x74, 0x50, 0x72, 0x69, 0x6d, 0x69,
+	0x74, 0x69, 0x76, 0x65, 0x73, 0x52, 0x01, 0x61, 0x12, 0x0c, 0x0a, 0x01, 0x62, 0x18, 0x04, 0x20,
+	0x01, 0x28, 0x0d, 0x52, 0x01, 0x62, 0x12, 0x0d, 0x0a, 0x01, 0x63, 0x18, 0xf3, 0x60, 0x20, 0x01,
+	0x28, 0x05, 0x52, 0x01, 0x63, 0x12, 0x0d, 0x0a, 0x01, 0x64, 0x18, 0xbe, 0x23, 0x20, 0x01, 0x28,
+	0x09, 0x52, 0x01, 0x64, 0x22, 0x44, 0x0a, 0x17, 0x52, 0x65, 0x70, 0x65, 0x61, 0x74, 0x65, 0x64,
 	0x4f, 0x6e, 0x65, 0x4c, 0x65, 0x76, 0x65, 0x6c, 0x4e, 0x65, 0x73, 0x74, 0x69, 0x6e, 0x67, 0x12,
 	0x29, 0x0a, 0x01, 0x61, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1b, 0x2e, 0x6d, 0x61, 0x72,
 	0x73, 0x68, 0x61, 0x6c, 0x2e, 0x53, 0x6d, 0x61, 0x6c, 0x6c, 0x53, 0x65, 0x74, 0x50, 0x72, 0x69,
@@ -1798,7 +1953,7 @@ func file_tests_marshal_proto_rawDescGZIP() []byte {
 }
 
 var file_tests_marshal_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_tests_marshal_proto_msgTypes = make([]protoimpl.MessageInfo, 27)
+var file_tests_marshal_proto_msgTypes = make([]protoimpl.MessageInfo, 29)
 var file_tests_marshal_proto_goTypes = []interface{}{
 	(EnumABC)(0),                                                  // 0: marshal.EnumABC
 	(*Primitives)(nil),                                            // 1: marshal.Primitives
@@ -1806,29 +1961,31 @@ var file_tests_marshal_proto_goTypes = []interface{}{
 	(*OptionalEnumsSimple)(nil),                                   // 3: marshal.OptionalEnumsSimple
 	(*RepeatedPrimitives)(nil),                                    // 4: marshal.RepeatedPrimitives
 	(*SmallSetPrimitives)(nil),                                    // 5: marshal.SmallSetPrimitives
-	(*OneLevelNesting)(nil),                                       // 6: marshal.OneLevelNesting
-	(*RepeatedOneLevelNesting)(nil),                               // 7: marshal.RepeatedOneLevelNesting
-	(*ThreeLevelNestingAndSomeChads)(nil),                         // 8: marshal.ThreeLevelNestingAndSomeChads
-	(*RepeatedThreeLevelNestingAndSomeChads)(nil),                 // 9: marshal.RepeatedThreeLevelNestingAndSomeChads
-	(*MultipleThreeLevelNestingAndSomeChads)(nil),                 // 10: marshal.MultipleThreeLevelNestingAndSomeChads
-	(*MultipleRepeatedThreeLevelNestingAndSomeChads)(nil),         // 11: marshal.MultipleRepeatedThreeLevelNestingAndSomeChads
-	(*OptionalMultipleRepeatedThreeLevelNestingAndSomeChads)(nil), // 12: marshal.OptionalMultipleRepeatedThreeLevelNestingAndSomeChads
-	(*TwoLevelNesting)(nil),                                       // 13: marshal.TwoLevelNesting
-	(*OptionalTwoLevelNesting)(nil),                               // 14: marshal.OptionalTwoLevelNesting
-	(*RepeatedTwoLevelNesting)(nil),                               // 15: marshal.RepeatedTwoLevelNesting
-	(*MapString)(nil),                                             // 16: marshal.MapString
-	(*MapMessage)(nil),                                            // 17: marshal.MapMessage
-	(*OptionalSmallSetPrimitives)(nil),                            // 18: marshal.OptionalSmallSetPrimitives
-	(*OptionalOneLevelNesting)(nil),                               // 19: marshal.OptionalOneLevelNesting
-	(*OptionalEnum)(nil),                                          // 20: marshal.OptionalEnum
-	(*OptionalNestedEnum)(nil),                                    // 21: marshal.OptionalNestedEnum
-	(*RepeatedEnum)(nil),                                          // 22: marshal.RepeatedEnum
-	(*RepeatedOptionalEnum)(nil),                                  // 23: marshal.RepeatedOptionalEnum
-	(*RepeatedOptionalSmallSetPrimitive)(nil),                     // 24: marshal.RepeatedOptionalSmallSetPrimitive
-	(*ImportMessage)(nil),                                         // 25: marshal.ImportMessage
-	nil,                                                           // 26: marshal.MapString.AEntry
-	nil,                                                           // 27: marshal.MapMessage.AEntry
-	(*timestamppb.Timestamp)(nil),                                 // 28: google.protobuf.Timestamp
+	(*MixIndexSmallSetPrimitives)(nil),                            // 6: marshal.MixIndexSmallSetPrimitives
+	(*OneLevelNesting)(nil),                                       // 7: marshal.OneLevelNesting
+	(*MixIndexOneLevelNesting)(nil),                               // 8: marshal.MixIndexOneLevelNesting
+	(*RepeatedOneLevelNesting)(nil),                               // 9: marshal.RepeatedOneLevelNesting
+	(*ThreeLevelNestingAndSomeChads)(nil),                         // 10: marshal.ThreeLevelNestingAndSomeChads
+	(*RepeatedThreeLevelNestingAndSomeChads)(nil),                 // 11: marshal.RepeatedThreeLevelNestingAndSomeChads
+	(*MultipleThreeLevelNestingAndSomeChads)(nil),                 // 12: marshal.MultipleThreeLevelNestingAndSomeChads
+	(*MultipleRepeatedThreeLevelNestingAndSomeChads)(nil),         // 13: marshal.MultipleRepeatedThreeLevelNestingAndSomeChads
+	(*OptionalMultipleRepeatedThreeLevelNestingAndSomeChads)(nil), // 14: marshal.OptionalMultipleRepeatedThreeLevelNestingAndSomeChads
+	(*TwoLevelNesting)(nil),                                       // 15: marshal.TwoLevelNesting
+	(*OptionalTwoLevelNesting)(nil),                               // 16: marshal.OptionalTwoLevelNesting
+	(*RepeatedTwoLevelNesting)(nil),                               // 17: marshal.RepeatedTwoLevelNesting
+	(*MapString)(nil),                                             // 18: marshal.MapString
+	(*MapMessage)(nil),                                            // 19: marshal.MapMessage
+	(*OptionalSmallSetPrimitives)(nil),                            // 20: marshal.OptionalSmallSetPrimitives
+	(*OptionalOneLevelNesting)(nil),                               // 21: marshal.OptionalOneLevelNesting
+	(*OptionalEnum)(nil),                                          // 22: marshal.OptionalEnum
+	(*OptionalNestedEnum)(nil),                                    // 23: marshal.OptionalNestedEnum
+	(*RepeatedEnum)(nil),                                          // 24: marshal.RepeatedEnum
+	(*RepeatedOptionalEnum)(nil),                                  // 25: marshal.RepeatedOptionalEnum
+	(*RepeatedOptionalSmallSetPrimitive)(nil),                     // 26: marshal.RepeatedOptionalSmallSetPrimitive
+	(*ImportMessage)(nil),                                         // 27: marshal.ImportMessage
+	nil,                                                           // 28: marshal.MapString.AEntry
+	nil,                                                           // 29: marshal.MapMessage.AEntry
+	(*timestamppb.Timestamp)(nil),                                 // 30: google.protobuf.Timestamp
 }
 var file_tests_marshal_proto_depIdxs = []int32{
 	0,  // 0: marshal.EnumsSimple.a:type_name -> marshal.EnumABC
@@ -1838,33 +1995,34 @@ var file_tests_marshal_proto_depIdxs = []int32{
 	0,  // 4: marshal.OptionalEnumsSimple.b:type_name -> marshal.EnumABC
 	0,  // 5: marshal.OptionalEnumsSimple.c:type_name -> marshal.EnumABC
 	5,  // 6: marshal.OneLevelNesting.a:type_name -> marshal.SmallSetPrimitives
-	5,  // 7: marshal.RepeatedOneLevelNesting.a:type_name -> marshal.SmallSetPrimitives
-	6,  // 8: marshal.ThreeLevelNestingAndSomeChads.a:type_name -> marshal.OneLevelNesting
-	6,  // 9: marshal.RepeatedThreeLevelNestingAndSomeChads.a:type_name -> marshal.OneLevelNesting
-	6,  // 10: marshal.MultipleThreeLevelNestingAndSomeChads.a:type_name -> marshal.OneLevelNesting
-	13, // 11: marshal.MultipleThreeLevelNestingAndSomeChads.b:type_name -> marshal.TwoLevelNesting
-	6,  // 12: marshal.MultipleRepeatedThreeLevelNestingAndSomeChads.a:type_name -> marshal.OneLevelNesting
-	13, // 13: marshal.MultipleRepeatedThreeLevelNestingAndSomeChads.b:type_name -> marshal.TwoLevelNesting
-	19, // 14: marshal.OptionalMultipleRepeatedThreeLevelNestingAndSomeChads.a:type_name -> marshal.OptionalOneLevelNesting
-	13, // 15: marshal.OptionalMultipleRepeatedThreeLevelNestingAndSomeChads.b:type_name -> marshal.TwoLevelNesting
-	6,  // 16: marshal.TwoLevelNesting.a:type_name -> marshal.OneLevelNesting
-	19, // 17: marshal.OptionalTwoLevelNesting.a:type_name -> marshal.OptionalOneLevelNesting
-	7,  // 18: marshal.RepeatedTwoLevelNesting.a:type_name -> marshal.RepeatedOneLevelNesting
-	26, // 19: marshal.MapString.a:type_name -> marshal.MapString.AEntry
-	27, // 20: marshal.MapMessage.a:type_name -> marshal.MapMessage.AEntry
-	18, // 21: marshal.OptionalOneLevelNesting.a:type_name -> marshal.OptionalSmallSetPrimitives
-	3,  // 22: marshal.OptionalEnum.a:type_name -> marshal.OptionalEnumsSimple
-	3,  // 23: marshal.OptionalNestedEnum.a:type_name -> marshal.OptionalEnumsSimple
-	2,  // 24: marshal.RepeatedEnum.a:type_name -> marshal.EnumsSimple
-	3,  // 25: marshal.RepeatedOptionalEnum.a:type_name -> marshal.OptionalEnumsSimple
-	18, // 26: marshal.RepeatedOptionalSmallSetPrimitive.a:type_name -> marshal.OptionalSmallSetPrimitives
-	28, // 27: marshal.ImportMessage.a:type_name -> google.protobuf.Timestamp
-	5,  // 28: marshal.MapMessage.AEntry.value:type_name -> marshal.SmallSetPrimitives
-	29, // [29:29] is the sub-list for method output_type
-	29, // [29:29] is the sub-list for method input_type
-	29, // [29:29] is the sub-list for extension type_name
-	29, // [29:29] is the sub-list for extension extendee
-	0,  // [0:29] is the sub-list for field type_name
+	6,  // 7: marshal.MixIndexOneLevelNesting.a:type_name -> marshal.MixIndexSmallSetPrimitives
+	5,  // 8: marshal.RepeatedOneLevelNesting.a:type_name -> marshal.SmallSetPrimitives
+	7,  // 9: marshal.ThreeLevelNestingAndSomeChads.a:type_name -> marshal.OneLevelNesting
+	7,  // 10: marshal.RepeatedThreeLevelNestingAndSomeChads.a:type_name -> marshal.OneLevelNesting
+	7,  // 11: marshal.MultipleThreeLevelNestingAndSomeChads.a:type_name -> marshal.OneLevelNesting
+	15, // 12: marshal.MultipleThreeLevelNestingAndSomeChads.b:type_name -> marshal.TwoLevelNesting
+	7,  // 13: marshal.MultipleRepeatedThreeLevelNestingAndSomeChads.a:type_name -> marshal.OneLevelNesting
+	15, // 14: marshal.MultipleRepeatedThreeLevelNestingAndSomeChads.b:type_name -> marshal.TwoLevelNesting
+	21, // 15: marshal.OptionalMultipleRepeatedThreeLevelNestingAndSomeChads.a:type_name -> marshal.OptionalOneLevelNesting
+	15, // 16: marshal.OptionalMultipleRepeatedThreeLevelNestingAndSomeChads.b:type_name -> marshal.TwoLevelNesting
+	7,  // 17: marshal.TwoLevelNesting.a:type_name -> marshal.OneLevelNesting
+	21, // 18: marshal.OptionalTwoLevelNesting.a:type_name -> marshal.OptionalOneLevelNesting
+	9,  // 19: marshal.RepeatedTwoLevelNesting.a:type_name -> marshal.RepeatedOneLevelNesting
+	28, // 20: marshal.MapString.a:type_name -> marshal.MapString.AEntry
+	29, // 21: marshal.MapMessage.a:type_name -> marshal.MapMessage.AEntry
+	20, // 22: marshal.OptionalOneLevelNesting.a:type_name -> marshal.OptionalSmallSetPrimitives
+	3,  // 23: marshal.OptionalEnum.a:type_name -> marshal.OptionalEnumsSimple
+	3,  // 24: marshal.OptionalNestedEnum.a:type_name -> marshal.OptionalEnumsSimple
+	2,  // 25: marshal.RepeatedEnum.a:type_name -> marshal.EnumsSimple
+	3,  // 26: marshal.RepeatedOptionalEnum.a:type_name -> marshal.OptionalEnumsSimple
+	20, // 27: marshal.RepeatedOptionalSmallSetPrimitive.a:type_name -> marshal.OptionalSmallSetPrimitives
+	30, // 28: marshal.ImportMessage.a:type_name -> google.protobuf.Timestamp
+	5,  // 29: marshal.MapMessage.AEntry.value:type_name -> marshal.SmallSetPrimitives
+	30, // [30:30] is the sub-list for method output_type
+	30, // [30:30] is the sub-list for method input_type
+	30, // [30:30] is the sub-list for extension type_name
+	30, // [30:30] is the sub-list for extension extendee
+	0,  // [0:30] is the sub-list for field type_name
 }
 
 func init() { file_tests_marshal_proto_init() }
@@ -1934,7 +2092,7 @@ func file_tests_marshal_proto_init() {
 			}
 		}
 		file_tests_marshal_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*OneLevelNesting); i {
+			switch v := v.(*MixIndexSmallSetPrimitives); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1946,7 +2104,7 @@ func file_tests_marshal_proto_init() {
 			}
 		}
 		file_tests_marshal_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RepeatedOneLevelNesting); i {
+			switch v := v.(*OneLevelNesting); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1958,7 +2116,7 @@ func file_tests_marshal_proto_init() {
 			}
 		}
 		file_tests_marshal_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ThreeLevelNestingAndSomeChads); i {
+			switch v := v.(*MixIndexOneLevelNesting); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1970,7 +2128,7 @@ func file_tests_marshal_proto_init() {
 			}
 		}
 		file_tests_marshal_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RepeatedThreeLevelNestingAndSomeChads); i {
+			switch v := v.(*RepeatedOneLevelNesting); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1982,7 +2140,7 @@ func file_tests_marshal_proto_init() {
 			}
 		}
 		file_tests_marshal_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*MultipleThreeLevelNestingAndSomeChads); i {
+			switch v := v.(*ThreeLevelNestingAndSomeChads); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1994,7 +2152,7 @@ func file_tests_marshal_proto_init() {
 			}
 		}
 		file_tests_marshal_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*MultipleRepeatedThreeLevelNestingAndSomeChads); i {
+			switch v := v.(*RepeatedThreeLevelNestingAndSomeChads); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2006,7 +2164,7 @@ func file_tests_marshal_proto_init() {
 			}
 		}
 		file_tests_marshal_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*OptionalMultipleRepeatedThreeLevelNestingAndSomeChads); i {
+			switch v := v.(*MultipleThreeLevelNestingAndSomeChads); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2018,7 +2176,7 @@ func file_tests_marshal_proto_init() {
 			}
 		}
 		file_tests_marshal_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*TwoLevelNesting); i {
+			switch v := v.(*MultipleRepeatedThreeLevelNestingAndSomeChads); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2030,7 +2188,7 @@ func file_tests_marshal_proto_init() {
 			}
 		}
 		file_tests_marshal_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*OptionalTwoLevelNesting); i {
+			switch v := v.(*OptionalMultipleRepeatedThreeLevelNestingAndSomeChads); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2042,7 +2200,7 @@ func file_tests_marshal_proto_init() {
 			}
 		}
 		file_tests_marshal_proto_msgTypes[14].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RepeatedTwoLevelNesting); i {
+			switch v := v.(*TwoLevelNesting); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2054,7 +2212,7 @@ func file_tests_marshal_proto_init() {
 			}
 		}
 		file_tests_marshal_proto_msgTypes[15].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*MapString); i {
+			switch v := v.(*OptionalTwoLevelNesting); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2066,7 +2224,7 @@ func file_tests_marshal_proto_init() {
 			}
 		}
 		file_tests_marshal_proto_msgTypes[16].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*MapMessage); i {
+			switch v := v.(*RepeatedTwoLevelNesting); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2078,7 +2236,7 @@ func file_tests_marshal_proto_init() {
 			}
 		}
 		file_tests_marshal_proto_msgTypes[17].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*OptionalSmallSetPrimitives); i {
+			switch v := v.(*MapString); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2090,7 +2248,7 @@ func file_tests_marshal_proto_init() {
 			}
 		}
 		file_tests_marshal_proto_msgTypes[18].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*OptionalOneLevelNesting); i {
+			switch v := v.(*MapMessage); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2102,7 +2260,7 @@ func file_tests_marshal_proto_init() {
 			}
 		}
 		file_tests_marshal_proto_msgTypes[19].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*OptionalEnum); i {
+			switch v := v.(*OptionalSmallSetPrimitives); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2114,7 +2272,7 @@ func file_tests_marshal_proto_init() {
 			}
 		}
 		file_tests_marshal_proto_msgTypes[20].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*OptionalNestedEnum); i {
+			switch v := v.(*OptionalOneLevelNesting); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2126,7 +2284,7 @@ func file_tests_marshal_proto_init() {
 			}
 		}
 		file_tests_marshal_proto_msgTypes[21].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RepeatedEnum); i {
+			switch v := v.(*OptionalEnum); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2138,7 +2296,7 @@ func file_tests_marshal_proto_init() {
 			}
 		}
 		file_tests_marshal_proto_msgTypes[22].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RepeatedOptionalEnum); i {
+			switch v := v.(*OptionalNestedEnum); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2150,7 +2308,7 @@ func file_tests_marshal_proto_init() {
 			}
 		}
 		file_tests_marshal_proto_msgTypes[23].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RepeatedOptionalSmallSetPrimitive); i {
+			switch v := v.(*RepeatedEnum); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2162,6 +2320,30 @@ func file_tests_marshal_proto_init() {
 			}
 		}
 		file_tests_marshal_proto_msgTypes[24].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*RepeatedOptionalEnum); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_tests_marshal_proto_msgTypes[25].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*RepeatedOptionalSmallSetPrimitive); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_tests_marshal_proto_msgTypes[26].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ImportMessage); i {
 			case 0:
 				return &v.state
@@ -2175,18 +2357,18 @@ func file_tests_marshal_proto_init() {
 		}
 	}
 	file_tests_marshal_proto_msgTypes[2].OneofWrappers = []interface{}{}
-	file_tests_marshal_proto_msgTypes[11].OneofWrappers = []interface{}{}
 	file_tests_marshal_proto_msgTypes[13].OneofWrappers = []interface{}{}
-	file_tests_marshal_proto_msgTypes[17].OneofWrappers = []interface{}{}
-	file_tests_marshal_proto_msgTypes[18].OneofWrappers = []interface{}{}
+	file_tests_marshal_proto_msgTypes[15].OneofWrappers = []interface{}{}
+	file_tests_marshal_proto_msgTypes[19].OneofWrappers = []interface{}{}
 	file_tests_marshal_proto_msgTypes[20].OneofWrappers = []interface{}{}
+	file_tests_marshal_proto_msgTypes[22].OneofWrappers = []interface{}{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_tests_marshal_proto_rawDesc,
 			NumEnums:      1,
-			NumMessages:   27,
+			NumMessages:   29,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
