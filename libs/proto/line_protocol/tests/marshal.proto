@@ -3,9 +3,14 @@ package marshal;
 
 // Lot of unit test here to test the core of the proto to influx line protocol
 // Trying to name the messages with some consistency to have a reusable components
-// 
-// 
-//
+// examples:
+// - Nesting: OneLevelNesting, TwoLevelNesting, ThreeLevelNesting, etc
+// - Repeated: RepeatedOneLevelNesting, RepeatedTwoLevelNesting, RepeatedThreeLevelNesting, etc
+// - Optional: OptionalOneLevelNesting, OptionalTwoLevelNesting, OptionalThreeLevelNesting, etc
+// - Multiple: MultipleOneLevelNesting, MultipleTwoLevelNesting, MultipleThreeLevelNesting, etc
+// you can mix and match the nesting, repeated and optional to create more complex messages
+// - OptionalMultipleRepeatedTwoLevelNestingAndSomeChads
+// - SomeChads is a set of primitive types
 
 option go_package = "gen/";
 
@@ -46,17 +51,17 @@ message OptionalEnumsSimple {
 }
 
 message RepeatedPrimitives {
-    repeated double a = 1;
-    repeated uint32 b = 2;
-    repeated int32 c = 3;
-    repeated string d = 4;
+  repeated double a = 1;
+  repeated uint32 b = 2;
+  repeated int32 c = 3;
+  repeated string d = 4;
 }
 
 message SmallSetPrimitives {
-    double a = 1;
-    uint32 b = 2;
-    int32 c = 3;
-    string d = 4;
+  double a = 1;
+  uint32 b = 2;
+  int32 c = 3;
+  string d = 4;
 }
 
 message OneLevelNesting {
@@ -98,7 +103,7 @@ message MultipleRepeatedThreeLevelNestingAndSomeChads {
 }
 
 message OptionalMultipleRepeatedThreeLevelNestingAndSomeChads {
-  optional OneLevelNesting a = 1;
+  optional OptionalOneLevelNesting a = 1;
   repeated TwoLevelNesting b = 2;
   int32 c = 3;
   string d = 4;

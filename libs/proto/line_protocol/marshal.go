@@ -17,7 +17,6 @@ type WriteValueToLpFn = func(value protoreflect.Value, mr protoreflect.Message, 
 type WriteArrayValueToLpFn = func(value protoreflect.Value, args []any) string
 
 const (
-	fieldArrayTpl  string = "%s_%d=%s"
 	nestedChar     string = "."
 	arrayIndexChar string = "_"
 )
@@ -49,10 +48,19 @@ const (
 // - [x] repeated message
 // - [x] map field
 // - [x] optional field
-// - [ ] google timeseries field type
+// - [ ] common types (https://protobuf.dev/reference/protobuf/google.protobuf/)
+//   - [ ] its more about testing the imports https://github.com/protocolbuffers/protobuf/blob/main/src/google/protobuf/timestamp.proto
+//     import "google/protobuf/timestamp.proto";
+//     message MyMessage {
+//     google.protobuf.Timestamp my_field = 1;
+//     }
+//   - [ ] timestamp
+//   - [ ] duration
+//   - [ ] empty
+//
 // - [x] enum list
 // - [ ] fix number array mistmatch
-// - [ ] more unit test
+// - [x] more unit test
 // - [ ] one of field
 // - [ ] enum options
 func GenerateMarshalFn(pinnedTags map[string]string, desc protoreflect.MessageDescriptor) (ProtoBytesToLpFn, error) {
@@ -175,7 +183,6 @@ func formatProtoFieldToLineProtocol(prefix string, fd protoreflect.FieldDescript
 	case protoreflect.Repeated:
 		// Complex objects such as list and map
 		if fd.IsList() {
-			fmt.Println(fd)
 			switch fd.Kind() {
 			case protoreflect.MessageKind:
 				fds, fns, err := formatProtoMessageToLineProtocol(prefix+fieldName+arrayIndexChar+"%d"+nestedChar, fd.Message())

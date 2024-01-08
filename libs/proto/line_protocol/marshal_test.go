@@ -32,6 +32,7 @@ func init() {
 		os.Exit(1)
 	}
 
+	fmt.Println(pbSet.GetFile()[0].GetName())
 	// TODO do this better if multiple proto file
 	fd, err := protodesc.NewFile(pbSet.GetFile()[0], protoRegistry)
 	if err != nil {
@@ -776,6 +777,276 @@ func TestRepeatedThreeLevelNestingAndSomeChads(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, true, strings.Contains(lp, "marshal.RepeatedThreeLevelNestingAndSomeChads a_0.a.a=1.000000,a_0.a.b=2u,a_0.a.c=3i,a_0.a.d=\"d\",a_1.a.a=1.000000,a_1.a.b=2u,a_1.a.c=3i,a_1.a.d=\"d\",b=2i,c=\"abc\",d=43.200000"))
+}
+
+func TestMultipleThreeLevelNestingAndSomeChads(t *testing.T) {
+	// Arrange
+	desc, err := protoRegistry.FindDescriptorByName("marshal.MultipleThreeLevelNestingAndSomeChads")
+	if err != nil {
+		assert.NilError(t, err)
+	}
+
+	todo := &gen.MultipleThreeLevelNestingAndSomeChads{
+		A: &gen.OneLevelNesting{
+			A: &gen.SmallSetPrimitives{
+				A: 1,
+				B: 2,
+				C: 3,
+				D: "d",
+			},
+		},
+		B: &gen.TwoLevelNesting{
+			A: &gen.OneLevelNesting{
+				A: &gen.SmallSetPrimitives{
+					A: 1,
+					B: 2,
+					C: 3,
+					D: "d",
+				},
+			},
+		},
+		C: 3,
+		D: "43.2",
+		E: 23.2,
+	}
+
+	out, _ := proto.Marshal(todo)
+
+	// Act
+	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
+	assert.NilError(t, err)
+	lp := Marhsal(out, map[string]string{}, fn)
+	fmt.Println(lp)
+
+	// Assert
+	assert.Equal(t, true, strings.Contains(lp, "marshal.MultipleThreeLevelNestingAndSomeChads a.a.a=1.000000,a.a.b=2u,a.a.c=3i,a.a.d=\"d\",b.a.a.a=1.000000,b.a.a.b=2u,b.a.a.c=3i,b.a.a.d=\"d\",c=3i,d=\"43.2\",e=23.200000"))
+}
+
+func TestMultipleRepeatedThreeLevelNestingAndSomeChads(t *testing.T) {
+	// Arrange
+	desc, err := protoRegistry.FindDescriptorByName("marshal.MultipleRepeatedThreeLevelNestingAndSomeChads")
+	if err != nil {
+		assert.NilError(t, err)
+	}
+
+	todo := &gen.MultipleRepeatedThreeLevelNestingAndSomeChads{
+		A: []*gen.OneLevelNesting{
+			{
+				A: &gen.SmallSetPrimitives{
+					A: 1,
+					B: 2,
+					C: 3,
+					D: "d",
+				},
+			},
+			{
+				A: &gen.SmallSetPrimitives{
+					A: 1,
+					B: 2,
+					C: 3,
+					D: "d",
+				},
+			},
+		},
+		B: []*gen.TwoLevelNesting{
+			{
+				A: &gen.OneLevelNesting{
+					A: &gen.SmallSetPrimitives{
+						A: 1,
+						B: 2,
+						C: 3,
+						D: "d",
+					},
+				},
+			},
+			{
+				A: &gen.OneLevelNesting{
+					A: &gen.SmallSetPrimitives{
+						A: 1,
+						B: 2,
+						C: 3,
+						D: "d",
+					},
+				},
+			},
+			{
+				A: &gen.OneLevelNesting{
+					A: &gen.SmallSetPrimitives{
+						A: 1,
+						B: 2,
+						C: 3,
+						D: "d",
+					},
+				},
+			},
+		},
+		C: 3,
+		D: "43.2",
+		E: 23.2,
+	}
+
+	out, _ := proto.Marshal(todo)
+
+	// Act
+	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
+	assert.NilError(t, err)
+	lp := Marhsal(out, map[string]string{}, fn)
+	fmt.Println(lp)
+
+	// Assert
+	assert.Equal(t, true, strings.Contains(lp, "marshal.MultipleRepeatedThreeLevelNestingAndSomeChads a_0.a.a=1.000000,a_0.a.b=2u,a_0.a.c=3i,a_0.a.d=\"d\",a_1.a.a=1.000000,a_1.a.b=2u,a_1.a.c=3i,a_1.a.d=\"d\",b_0.a.a.a=1.000000,b_0.a.a.b=2u,b_0.a.a.c=3i,b_0.a.a.d=\"d\",b_1.a.a.a=1.000000,b_1.a.a.b=2u,b_1.a.a.c=3i,b_1.a.a.d=\"d\",b_2.a.a.a=1.000000,b_2.a.a.b=2u,b_2.a.a.c=3i,b_2.a.a.d=\"d\",c=3i,d=\"43.2\",e=23.200000"))
+}
+
+func TestMultipleRepeatedThreeLevelNestingAndSomeChadsEmpty(t *testing.T) {
+	// Arrange
+	desc, err := protoRegistry.FindDescriptorByName("marshal.MultipleRepeatedThreeLevelNestingAndSomeChads")
+	if err != nil {
+		assert.NilError(t, err)
+	}
+
+	todo := &gen.MultipleRepeatedThreeLevelNestingAndSomeChads{
+		A: []*gen.OneLevelNesting{},
+		B: []*gen.TwoLevelNesting{
+			{
+				A: &gen.OneLevelNesting{
+					A: &gen.SmallSetPrimitives{
+						A: 1,
+						B: 2,
+						C: 3,
+						D: "d",
+					},
+				},
+			},
+			{
+				A: &gen.OneLevelNesting{
+					A: &gen.SmallSetPrimitives{
+						A: 1,
+						B: 2,
+						C: 3,
+						D: "d",
+					},
+				},
+			},
+			{
+				A: &gen.OneLevelNesting{
+					A: &gen.SmallSetPrimitives{
+						A: 1,
+						B: 2,
+						C: 3,
+						D: "d",
+					},
+				},
+			},
+		},
+		C: 3,
+		D: "43.2",
+		E: 23.2,
+	}
+
+	out, _ := proto.Marshal(todo)
+
+	// Act
+	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
+	assert.NilError(t, err)
+	lp := Marhsal(out, map[string]string{}, fn)
+	fmt.Println(lp)
+
+	// Assert
+	assert.Equal(t, true, strings.Contains(lp, "marshal.MultipleRepeatedThreeLevelNestingAndSomeChads b_0.a.a.a=1.000000,b_0.a.a.b=2u,b_0.a.a.c=3i,b_0.a.a.d=\"d\",b_1.a.a.a=1.000000,b_1.a.a.b=2u,b_1.a.a.c=3i,b_1.a.a.d=\"d\",b_2.a.a.a=1.000000,b_2.a.a.b=2u,b_2.a.a.c=3i,b_2.a.a.d=\"d\",c=3i,d=\"43.2\",e=23.200000"))
+}
+
+func TestOptionalMultipleRepeatedThreeLevelNestingAndSomeChads(t *testing.T) {
+	// Arrange
+	desc, err := protoRegistry.FindDescriptorByName("marshal.OptionalMultipleRepeatedThreeLevelNestingAndSomeChads")
+	if err != nil {
+		assert.NilError(t, err)
+	}
+
+	todo := &gen.OptionalMultipleRepeatedThreeLevelNestingAndSomeChads{
+		A: &gen.OptionalOneLevelNesting{
+			A: &gen.OptionalSmallSetPrimitives{
+				A: nil,
+				B: ptr[uint32](3),
+				C: nil,
+				D: nil,
+			},
+		},
+		B: []*gen.TwoLevelNesting{
+			{
+				A: &gen.OneLevelNesting{
+					A: &gen.SmallSetPrimitives{
+						A: 1,
+						B: 2,
+						C: 3,
+						D: "d",
+					},
+				},
+			},
+			{
+				A: &gen.OneLevelNesting{
+					A: &gen.SmallSetPrimitives{
+						A: 1,
+						B: 2,
+						C: 3,
+						D: "d",
+					},
+				},
+			},
+			{
+				A: &gen.OneLevelNesting{
+					A: &gen.SmallSetPrimitives{
+						A: 1,
+						B: 2,
+						C: 3,
+						D: "d",
+					},
+				},
+			},
+		},
+		C: 3,
+		D: "43.2",
+		E: ptr[float64](23.2),
+	}
+
+	out, _ := proto.Marshal(todo)
+
+	// Act
+	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
+	assert.NilError(t, err)
+	lp := Marhsal(out, map[string]string{}, fn)
+	fmt.Println(lp)
+
+	// Assert
+	assert.Equal(t, true, strings.Contains(lp, "marshal.OptionalMultipleRepeatedThreeLevelNestingAndSomeChads a.a.b=3u,b_0.a.a.a=1.000000,b_0.a.a.b=2u,b_0.a.a.c=3i,b_0.a.a.d=\"d\",b_1.a.a.a=1.000000,b_1.a.a.b=2u,b_1.a.a.c=3i,b_1.a.a.d=\"d\",b_2.a.a.a=1.000000,b_2.a.a.b=2u,b_2.a.a.c=3i,b_2.a.a.d=\"d\",c=3i,d=\"43.2\",e=23.200000"))
+}
+
+func TestOptionalMultipleRepeatedThreeLevelNestingAndSomeChadsEmpty(t *testing.T) {
+	// Arrange
+	desc, err := protoRegistry.FindDescriptorByName("marshal.OptionalMultipleRepeatedThreeLevelNestingAndSomeChads")
+	if err != nil {
+		assert.NilError(t, err)
+	}
+
+	todo := &gen.OptionalMultipleRepeatedThreeLevelNestingAndSomeChads{
+		A: &gen.OptionalOneLevelNesting{
+			A: nil,
+		},
+		B: []*gen.TwoLevelNesting{},
+		C: 3,
+		D: "43.2",
+		E: nil,
+	}
+
+	out, _ := proto.Marshal(todo)
+
+	// Act
+	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
+	assert.NilError(t, err)
+	lp := Marhsal(out, map[string]string{}, fn)
+	fmt.Println(lp)
+
+	// Assert
+	assert.Equal(t, true, strings.Contains(lp, "marshal.OptionalMultipleRepeatedThreeLevelNestingAndSomeChads c=3i,d=\"43.2\""))
 }
 
 func ptr[T any](t T) *T {
