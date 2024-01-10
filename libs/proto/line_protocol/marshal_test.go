@@ -20,7 +20,7 @@ import (
 )
 
 // Generate the marshal.pb file and codegen for unit testing
-//go:generate protoc --go_dataIn=tests/ --descriptor_set_dataIn=./tests/gen/marshal.pb --include_imports ./tests/marshal.proto
+//go:generate protoc --go_out=tests/ --descriptor_set_out=./tests/gen/marshal.pb --include_imports ./tests/marshal.proto
 
 var (
 	//go:embed tests/gen/marshal.pb
