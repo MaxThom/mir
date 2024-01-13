@@ -22,8 +22,10 @@ import (
 	"golang.org/x/net/http2/h2c"
 )
 
-const AppName = "protoproxy"
-const Version = "0.0.1"
+const (
+	AppName = "protoproxy"
+	Version = "0.0.1"
+)
 
 var (
 	flagDebug       bool
@@ -43,12 +45,17 @@ var (
 
 type (
 	ProtoProxyConfig struct {
-		LogLevel   string
-		HttpServer HttpServer
+		LogLevel      string
+		HttpServer    HttpServer
+		DataBusServer DataBusServer
 	}
 
 	HttpServer struct {
 		Port int
+	}
+
+	DataBusServer struct {
+		Url string
 	}
 )
 
@@ -136,7 +143,6 @@ func init() {
 	}
 	if flagFilePath != "" {
 		opts = append(opts, mir_config.WithFilePath(flagFilePath, mir_config.Yaml, false))
-
 	}
 	appConfig = mir_config.New(AppName, opts...)
 	err, warns := appConfig.LoadAndUnmarshal(&cfg)
