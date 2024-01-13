@@ -30,9 +30,19 @@
                 "source": false
               }
             }
+          },
+          {
+            "id": "53f8fd6869e48ed2",
+            "type": "leaf",
+            "state": {
+              "type": "release-notes",
+              "state": {
+                "currentVersion": "1.5.3"
+              }
+            }
           }
         ],
-        "currentTab": 1
+        "currentTab": 2
       }
     ],
     "direction": "vertical"
@@ -159,7 +169,7 @@
       "command-palette:Open command palette": false
     }
   },
-  "active": "05c3a6c72b4ebc3d",
+  "active": "53f8fd6869e48ed2",
   "lastOpenFiles": [
     "ADR-15_protostore.md",
     "Roadmap.md",
