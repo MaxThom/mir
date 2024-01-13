@@ -15,12 +15,8 @@ require (
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
-<<<<<<< HEAD
-	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/klauspost/compress v1.17.0 // indirect
-=======
 	github.com/google/go-cmp v0.6.0 // indirect
->>>>>>> main
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/matttproud/golang_protobuf_extensions/v2 v2.0.0 // indirect

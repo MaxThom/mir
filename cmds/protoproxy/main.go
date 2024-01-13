@@ -17,6 +17,7 @@ import (
 	"github.com/maxthom/mir/libs/boiler/mir_signals"
 	proto_store "github.com/maxthom/mir/libs/proto/store"
 	"github.com/maxthom/mir/services/protoproxy"
+	"github.com/nats-io/nats.go"
 	logger "github.com/rs/zerolog/log"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -37,6 +38,9 @@ var (
 		LogLevel: "info",
 		HttpServer: HttpServer{
 			Port: 3000,
+		},
+		DataBusServer: DataBusServer{
+			Url: "nats://127.0.0.1:4222",
 		},
 	}
 	appConfig = mir_config.Empty()
@@ -89,10 +93,20 @@ func main() {
 	// TODO protostore service take a registry in the constructor
 	//      in the future, this could be an interface to many store type
 
+	// Connect to a server
+	nc, err := nats.Connect(cfg.DataBusServer.Url)
+	if err != nil {
+		logger.Err(err).Msg("")
+	}
+	// Simple Async Suubscriber
+	nc.Subscribe("foo", func(m *nats.Msg) {
+		fmt.Printf("Received a message: %s\n", string(m.Data))
+		nc.Publish(m.Reply, []byte("I can help!"))
+	})
+
 	// Metrics & Health
 	metrics.RegisterRoutes(mux)
 	health.RegisterRoutes(mux)
-	health.SetReady()
 
 	// Launch server
 	mux.Handle("/api/", http.StripPrefix("/api", api))
@@ -104,14 +118,21 @@ func main() {
 	go func() {
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Err(err).Msg("")
+			health.SetUneady()
 		}
 	}()
 
 	// Handle shutdown
 	log.Info().Msg(fmt.Sprintf("%s initialized", AppName))
+	health.SetReady()
 	mir_signals.WaitForOsSignals(func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
+
+		go func() {
+			nc.Drain()
+			nc.Close()
+		}()
 
 		if err := server.Shutdown(ctx); err != nil {
 			log.Fatal().Err(err).Msg("failed to gracefully shutdown server")
