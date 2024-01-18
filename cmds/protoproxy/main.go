@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"time"
 
+	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/maxthom/mir/api/gen/proto/v1alpha/protoproxy/protoproxyconnect"
 	"github.com/maxthom/mir/libs/api/health"
 	"github.com/maxthom/mir/libs/api/metrics"
@@ -44,6 +45,9 @@ var (
 		DataBusServer: DataBusServer{
 			Url: "nats://127.0.0.1:4222",
 		},
+		PutHostServer: PutHostSever{
+			Url: "http://localhost:9000",
+		},
 	}
 	appConfig = mir_config.Empty()
 	log       = logger.With().Str("component", AppName).Logger()
@@ -54,6 +58,7 @@ type (
 		LogLevel      string
 		HttpServer    HttpServer
 		DataBusServer DataBusServer
+		PutHostServer PutHostSever
 	}
 
 	HttpServer struct {
@@ -61,6 +66,10 @@ type (
 	}
 
 	DataBusServer struct {
+		Url string
+	}
+
+	PutHostSever struct {
 		Url string
 	}
 )
@@ -71,7 +80,7 @@ type (
 //   - [x] The api could have an endpoint to send telemetry as grpc with a dynamic grpc server
 //   - [x] Define route mechanism
 //   - [x] Setup Nats
-//   - [ ] Setup QuestDB
+//   - [x] Setup QuestDB
 //   - [ ] Pipe telemetry from Nats to QuestDB using protobuf to line protocol
 //   - [ ] Create server side Library
 //   - [ ] Create client side Library
@@ -101,6 +110,19 @@ func main() {
 	}
 	// TODO protostore service take a registry in the constructor
 	//      in the future, this could be an interface to many store type
+
+	// Database
+	// Connected to Questdb using influx client, use restapi
+	// move to questdb client when added line feature
+	lpClient := influxdb2.NewClient(cfg.PutHostServer.Url, "")
+	fmt.Println("Connected to influxdb")
+	lpWriter := lpClient.WriteAPI("", "test")
+	p := influxdb2.NewPointWithMeasurement("your_measurement").
+		AddTag("tag_name", "tag_value").
+		AddField("field_name", 1).
+		SetTime(time.Now())
+	lpWriter.WritePoint(p)
+	lpWriter.Flush()
 
 	// Connect to a server
 	b, err := bus.New(cfg.DataBusServer.Url,
@@ -157,19 +179,6 @@ func main() {
 
 	defer cc.Stop()
 
-	// Simple Async Subscriber
-	// b.Subscribe(">", func(m *nats.Msg) {
-	// 	fmt.Printf("Received a message: %s\n", string(m.Data))
-	// 	b.Publish(m.Reply, []byte("I can help!"))
-	// 	// Header
-	// 	// __msg: <proto_message> to id the message
-	// 	// __id: <device_id> to id the device
-	// 	// the topic will be <device_id>.<type>.<version>
-	// 	// eg. ff123b9.tlm.v1alpha
-	// 	// crazy idea, the proto_message could be the key.
-	// 	// m.Header.Get(key string)
-	// })
-	//
 	// Metrics & Health
 	metrics.RegisterRoutes(mux)
 	health.RegisterRoutes(mux)
