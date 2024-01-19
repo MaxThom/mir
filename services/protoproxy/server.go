@@ -13,9 +13,7 @@ import (
 
 type ProtoProxyServer struct{}
 
-var (
-	uploadMetric prometheus.Counter
-)
+var uploadMetric prometheus.Counter
 
 func RegisterMetrics(reg prometheus.Registerer) {
 	uploadMetric := metrics.NewCounter(prometheus.CounterOpts{
