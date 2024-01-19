@@ -1,0 +1,10 @@
+version: "3.8"
+services:
+  questdb:
+    image: questdb/questdb
+    container_name: questdb
+    ports:
+      - 9000:9000
+      - 9009:9009
+      - 8812:8812
+      - 9003:9003

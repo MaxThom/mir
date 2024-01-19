@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"time"
 
+	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/maxthom/mir/api/gen/proto/v1alpha/protoproxy/protoproxyconnect"
 	"github.com/maxthom/mir/libs/api/health"
 	"github.com/maxthom/mir/libs/api/metrics"
@@ -44,6 +45,9 @@ var (
 		DataBusServer: DataBusServer{
 			Url: "nats://127.0.0.1:4222",
 		},
+		PutHostServer: PutHostSever{
+			Url: "http://localhost:9000",
+		},
 	}
 	appConfig = mir_config.Empty()
 	log       = logger.With().Str("component", AppName).Logger()
@@ -54,6 +58,7 @@ type (
 		LogLevel      string
 		HttpServer    HttpServer
 		DataBusServer DataBusServer
+		PutHostServer PutHostSever
 	}
 
 	HttpServer struct {
@@ -61,6 +66,10 @@ type (
 	}
 
 	DataBusServer struct {
+		Url string
+	}
+
+	PutHostSever struct {
 		Url string
 	}
 )
@@ -71,7 +80,7 @@ type (
 //   - [x] The api could have an endpoint to send telemetry as grpc with a dynamic grpc server
 //   - [x] Define route mechanism
 //   - [x] Setup Nats
-//   - [ ] Setup QuestDB
+//   - [x] Setup QuestDB
 //   - [ ] Pipe telemetry from Nats to QuestDB using protobuf to line protocol
 //   - [ ] Create server side Library
 //   - [ ] Create client side Library
@@ -83,9 +92,7 @@ func main() {
 
 	// Services
 	// ProtoProxy
-	pp := &protoproxy.ProtoProxyServer{}
 	protoproxy.RegisterMetrics(metrics.Registry())
-	api.Handle(protoproxyconnect.NewProtoProxyServiceHandler(pp))
 
 	// ProtoStore
 	// Args are all proto binary to load as path
@@ -102,17 +109,31 @@ func main() {
 	// TODO protostore service take a registry in the constructor
 	//      in the future, this could be an interface to many store type
 
+	// Database
+	// Connected to Questdb using influx client, use restapi
+	// move to questdb client when added line feature
+	lpClient := influxdb2.NewClient(cfg.PutHostServer.Url, "")
+	// fmt.Println("Connected to influxdb")
+	lpWriter := lpClient.WriteAPI("", "")
+	// p := influxdb2.NewPointWithMeasurement("your_measurement").
+	// 	AddTag("tag_name", "tag_value").
+	// 	AddField("field_name", 1).
+	// 	SetTime(time.Now())
+	// lpWriter.WritePoint(p)
+	// lpWriter.Flush()
+
 	// Connect to a server
-	b, err := bus.New(cfg.DataBusServer.Url,
-		bus.WithReconnHandler(func(nc *nats.Conn) {
-			logger.Warn().Msg("reconnected to " + nc.ConnectedUrl())
-		}),
-		bus.WithDisconnHandler(func(nc *nats.Conn, err error) {
-			logger.Warn().Msg(fmt.Sprintf("disconnected due to %v, will attempt to reconnect ", err))
-		}),
-		bus.WithClosedHandler(func(nc *nats.Conn) {
-			logger.Warn().Msg("connection to %v closed " + nc.ConnectedUrl())
-		}))
+	b, err := bus.New(cfg.DataBusServer.Url)
+	// ,
+	// bus.WithReconnHandler(func(nc *nats.Conn) {
+	// 	logger.Warn().Msg("reconnected to " + nc.ConnectedUrl())
+	// }),
+	// bus.WithDisconnHandler(func(nc *nats.Conn, err error) {
+	// 	logger.Warn().Msg(fmt.Sprintf("disconnected due to %v, will attempt to reconnect ", err))
+	// }),
+	// bus.WithClosedHandler(func(nc *nats.Conn) {
+	// 	logger.Warn().Msg("connection to %v closed " + nc.ConnectedUrl())
+	// }))
 	if err != nil {
 		logger.Err(err).Msg("")
 	}
@@ -143,38 +164,14 @@ func main() {
 		fmt.Println(err)
 	}
 
-	cc, err := cons.Consume(func(msg jetstream.Msg) {
-		// TODO
-		// deserialize from protobuf to line protocol
-		// send to database
-		fmt.Println("Received jetstream message: ", string(msg.Data()))
-		b.Publish(msg.Reply(), []byte("im back!"))
-		msg.Ack()
-	})
-	if err != nil {
-		fmt.Println(err)
-	}
+	pp := protoproxy.NewProtoProxyServer(cons, lpWriter)
 
-	defer cc.Stop()
-
-	// Simple Async Subscriber
-	// b.Subscribe(">", func(m *nats.Msg) {
-	// 	fmt.Printf("Received a message: %s\n", string(m.Data))
-	// 	b.Publish(m.Reply, []byte("I can help!"))
-	// 	// Header
-	// 	// __msg: <proto_message> to id the message
-	// 	// __id: <device_id> to id the device
-	// 	// the topic will be <device_id>.<type>.<version>
-	// 	// eg. ff123b9.tlm.v1alpha
-	// 	// crazy idea, the proto_message could be the key.
-	// 	// m.Header.Get(key string)
-	// })
-	//
 	// Metrics & Health
 	metrics.RegisterRoutes(mux)
 	health.RegisterRoutes(mux)
 
 	// Launch server
+	api.Handle(protoproxyconnect.NewProtoProxyServiceHandler(pp))
 	mux.Handle("/api/", http.StripPrefix("/api", api))
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.HttpServer.Port),
@@ -187,6 +184,8 @@ func main() {
 			health.SetUneady()
 		}
 	}()
+
+	go pp.ListenAndPushTelemetry(ctx)
 
 	// Handle shutdown
 	log.Info().Msg(fmt.Sprintf("%s initialized", AppName))
