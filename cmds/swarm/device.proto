@@ -1,0 +1,15 @@
+
+syntax = "proto3";
+package swarm;
+option go_package = "gen/";
+
+import "google/protobuf/timestamp.proto";
+
+message Telemetry {
+  google.protobuf.Timestamp time = 1;
+  map<string, double> sensors =2;
+}
+
+message Sensor {
+  double data =1;
+}
