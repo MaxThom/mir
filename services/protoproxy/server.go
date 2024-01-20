@@ -3,23 +3,28 @@ package protoproxy
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"connectrpc.com/connect"
 	"github.com/influxdata/influxdb-client-go/v2/api"
 	"github.com/maxthom/mir/api/gen/proto/v1alpha/protoproxy"
 	"github.com/maxthom/mir/libs/api/metrics"
+	protostore "github.com/maxthom/mir/libs/proto/store"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/rs/zerolog/log"
+	"github.com/rs/zerolog"
 )
 
 type ProtoProxyServer struct {
-	cons   jetstream.Consumer
-	writer api.WriteAPI
+	cons     jetstream.Consumer
+	writer   api.WriteAPI
+	registry *protostore.Registry
 }
 
 var uploadMetric prometheus.Counter
+
+var l zerolog.Logger
 
 func RegisterMetrics(reg prometheus.Registerer) {
 	uploadMetric := metrics.NewCounter(prometheus.CounterOpts{
@@ -29,10 +34,13 @@ func RegisterMetrics(reg prometheus.Registerer) {
 	reg.Register(uploadMetric)
 }
 
-func NewProtoProxyServer(cons jetstream.Consumer, writer api.WriteAPI) *ProtoProxyServer {
+// TODO offer both NewServer which accepting external dependencies as var and NewServerWithConnections
+func NewProtoProxyServer(logger zerolog.Logger, registry *protostore.Registry, cons jetstream.Consumer, writer api.WriteAPI) *ProtoProxyServer {
+	l = logger.With().Str("srv", "protoproxy_server").Logger()
 	return &ProtoProxyServer{
-		cons:   cons,
-		writer: writer,
+		cons:     cons,
+		writer:   writer,
+		registry: registry,
 	}
 }
 
@@ -42,44 +50,44 @@ func (p *ProtoProxyServer) ListenAndPushTelemetry(ctx context.Context) {
 	// Use iterator pattern instead of Consume
 	// Look for flush
 
-	for {
-		msgs, err := p.cons.Fetch(100, jetstream.FetchMaxWait(1*time.Second))
-		if err != nil {
-			fmt.Println(err)
-		}
-		for msg := range msgs.Messages() {
-			fmt.Println(string(msg.Data()))
+	dataCh := make(chan string)
+	go func(stream <-chan string) {
+		for lp := range stream {
+			fmt.Fprintf(os.Stdout, "Processing value: %s\n", lp)
 			p.writer.WriteRecord("")
-			msg.Ack()
+			// Add processing logic here
 		}
-		if msgs.Error() != nil {
-			fmt.Println("Error fetching messages: ", err)
+	}(dataCh)
+
+	l.Info().Msg("listening to telemetry")
+	select {
+	case <-ctx.Done():
+		l.Info().Msg("shuting down")
+		return
+	default:
+		for {
+			msgs, err := p.cons.Fetch(100, jetstream.FetchMaxWait(1*time.Second))
+			if err != nil {
+				l.Error().Err(err).Msg("")
+			}
+			for msg := range msgs.Messages() {
+				fmt.Println(string(msg.Data()))
+				dataCh <- string(msg.Data())
+				msg.Ack()
+			}
+			if msgs.Error() != nil {
+				l.Error().Err(err).Msg("error while fetching from bus")
+			}
 		}
 	}
-
-	cc, err := p.cons.Consume(func(msg jetstream.Msg) {
-		// TODO
-		// deserialize from protobuf to line protocol
-		// send to databases
-		fmt.Println("Received jetstream message: ", string(msg.Data()))
-
-		p.writer.WriteRecord("")
-
-		msg.Ack()
-	})
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	defer cc.Stop()
 }
 
 func (p *ProtoProxyServer) UploadSchema(ctx context.Context,
 	req *connect.Request[protoproxy.UploadSchemaRequest],
 ) (*connect.Response[protoproxy.UploadSchemaResponse], error) {
 	uploadMetric.Inc()
-	log.Info().Msg("upload schema!")
-	log.Info().Msg(fmt.Sprintf("Request headers: %s", req.Header()))
+	l.Info().Msg("upload schema!")
+	l.Info().Msg(fmt.Sprintf("Request headers: %s", req.Header()))
 	res := connect.NewResponse(&protoproxy.UploadSchemaResponse{
 		Msg: "schema uploaded!",
 	})
