@@ -3,17 +3,18 @@ package protoproxy
 import (
 	"context"
 	"fmt"
-	"os"
 	"time"
 
 	"connectrpc.com/connect"
 	"github.com/influxdata/influxdb-client-go/v2/api"
 	"github.com/maxthom/mir/api/gen/proto/v1alpha/protoproxy"
 	"github.com/maxthom/mir/libs/api/metrics"
+	proto_lineprotocol "github.com/maxthom/mir/libs/proto/line_protocol"
 	protostore "github.com/maxthom/mir/libs/proto/store"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 type ProtoProxyServer struct {
@@ -50,11 +51,21 @@ func (p *ProtoProxyServer) ListenAndPushTelemetry(ctx context.Context) {
 	// Use iterator pattern instead of Consume
 	// Look for flush
 
+	p.registry.RangeFiles(func(fd protoreflect.FileDescriptor) bool {
+		fmt.Println("Messages in the .proto file:")
+
+		for i := 0; i < fd.Messages().Len(); i++ {
+			fmt.Println("-", fd.Messages().Get(i).FullName())
+		}
+
+		return true
+	})
+
 	dataCh := make(chan string)
 	go func(stream <-chan string) {
 		for lp := range stream {
-			fmt.Fprintf(os.Stdout, "Processing value: %s\n", lp)
-			p.writer.WriteRecord("")
+			fmt.Println(lp)
+			p.writer.WriteRecord(lp)
 			// Add processing logic here
 		}
 	}(dataCh)
@@ -72,7 +83,23 @@ func (p *ProtoProxyServer) ListenAndPushTelemetry(ctx context.Context) {
 			}
 			for msg := range msgs.Messages() {
 				fmt.Println(string(msg.Data()))
-				dataCh <- string(msg.Data())
+
+				fmt.Println(msg.Headers()["__pb"])
+				// TODO third channel for processing and ack
+				// could be a protoproxy library
+				// lazy loading with a hashmap on the descriptors
+				protoMsg := msg.Headers()["__pb"][0]
+				desc, err := p.registry.FindDescriptorByName(protoreflect.FullName(protoMsg))
+				if err != nil {
+					l.Error().Err(err).Msg("error while loading descriptor")
+				}
+				fn, err := proto_lineprotocol.GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
+				if err != nil {
+					l.Error().Err(err).Msg("error while loading descriptor")
+				}
+
+				lp := fn(msg.Data(), map[string]string{})
+				dataCh <- string(lp)
 				msg.Ack()
 			}
 			if msgs.Error() != nil {

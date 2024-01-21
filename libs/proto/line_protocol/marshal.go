@@ -12,12 +12,14 @@ import (
 	"google.golang.org/protobuf/types/dynamicpb"
 )
 
-type ProtoBytesToLpFn = func(in []byte, tags map[string]string) string
-type WriteValueToLpFn = func(value protoreflect.Value, mr protoreflect.Message, args []any) string
-type WriteArrayValueToLpFn = func(value protoreflect.Value, args []any) string
+type (
+	ProtoBytesToLpFn      = func(in []byte, tags map[string]string) string
+	WriteValueToLpFn      = func(value protoreflect.Value, mr protoreflect.Message, args []any) string
+	WriteArrayValueToLpFn = func(value protoreflect.Value, args []any) string
+)
 
 const (
-	nestedChar     string = "."
+	nestedChar     string = "__"
 	arrayIndexChar string = "_"
 )
 
@@ -55,7 +57,6 @@ const (
 // - [ ] one of field
 // - [ ] enum options
 func GenerateMarshalFn(pinnedTags map[string]string, desc protoreflect.MessageDescriptor) (ProtoBytesToLpFn, error) {
-
 	var lp strings.Builder
 	lp.WriteString(string(desc.FullName()))
 
@@ -265,8 +266,8 @@ func formatProtoPrimitiveToSymbol(fd protoreflect.FieldDescriptor) (string, erro
 		return "%f", nil
 	case protoreflect.EnumKind:
 		return "%du", nil
-	//case protoreflect.BytesKind:
-	//TODO array of byte, could be store as string base64
+	// case protoreflect.BytesKind:
+	// TODO array of byte, could be store as string base64
 	default:
 		return "%q", fmt.Errorf("unknown field kind %q for %q", fd.Kind(), fd.FullName())
 	}

@@ -23,7 +23,7 @@ type SinWave struct {
 
 func main() {
 	// Some flags
-	seconds := flag.Int("sec", 10, "number of seconds")
+	seconds := flag.Int("sec", -1, "number of seconds")
 	flag.Parse()
 
 	// Nats
@@ -77,14 +77,14 @@ func main() {
 			Subject: subject,
 			Data:    serializedData,
 			Header: nats.Header(map[string][]string{
-				"proto": {"telemetry"},
+				"__pb": {"swarm.Telemetry"},
 			}),
 		}); err != nil {
 			log.Fatal("Failed to publish data:", err)
 		}
 
 		// Stop after 10 seconds
-		if elapsed >= float64(*seconds) {
+		if *seconds != -1 && elapsed >= float64(*seconds) {
 			break
 		}
 	}
