@@ -73,7 +73,13 @@ func main() {
 			log.Fatal("Failed to serialize data:", err)
 		}
 
-		if err := nc.Publish(subject, serializedData); err != nil {
+		if err := nc.PublishMsg(&nats.Msg{
+			Subject: subject,
+			Data:    serializedData,
+			Header: nats.Header(map[string][]string{
+				"proto": {"telemetry"},
+			}),
+		}); err != nil {
 			log.Fatal("Failed to publish data:", err)
 		}
 
