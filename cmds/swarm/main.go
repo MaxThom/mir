@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"math"
 	"time"
@@ -24,6 +23,7 @@ type SinWave struct {
 func main() {
 	// Some flags
 	seconds := flag.Int("sec", -1, "number of seconds")
+	rate := flag.Int("rate", 1, "how many telemetry per second")
 	flag.Parse()
 
 	// Nats
@@ -35,7 +35,6 @@ func main() {
 	subject := "v1alpha.XFEA12.FactoA.tlm.proto"
 
 	// Define some random sensors with sin waves
-	sampleRate := 1 // How many samples per second
 	waves := map[string]SinWave{
 		"temperature": {
 			Amplitude: 1.0,
@@ -55,7 +54,7 @@ func main() {
 	}
 
 	// Create a ticker on sameple rate
-	ticker := time.NewTicker(time.Second / time.Duration(sampleRate))
+	ticker := time.NewTicker(time.Second / time.Duration(*rate))
 	defer ticker.Stop()
 	startTime := time.Now()
 
@@ -66,7 +65,7 @@ func main() {
 
 		// Generate sine value
 		tlm := generateSinWavesPayload(elapsed, waves)
-		fmt.Println(tlm)
+		// fmt.Println(tlm)
 
 		serializedData, err := proto.Marshal(&tlm)
 		if err != nil {
@@ -77,7 +76,8 @@ func main() {
 			Subject: subject,
 			Data:    serializedData,
 			Header: nats.Header(map[string][]string{
-				"__pb": {"swarm.Telemetry"},
+				"__pb":     {"swarm.Telemetry"},
+				"deviceId": {"XFEA12"},
 			}),
 		}); err != nil {
 			log.Fatal("Failed to publish data:", err)

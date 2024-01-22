@@ -57,8 +57,8 @@ const (
 // - [ ] one of field
 // - [ ] enum options
 func GenerateMarshalFn(pinnedTags map[string]string, desc protoreflect.MessageDescriptor) (ProtoBytesToLpFn, error) {
-	var lp strings.Builder
-	lp.WriteString(string(desc.FullName()))
+	var lpHead strings.Builder
+	lpHead.WriteString(string(desc.FullName()))
 
 	// Pinned tags
 	// Good practices to sort them else its done by the db
@@ -68,7 +68,7 @@ func GenerateMarshalFn(pinnedTags map[string]string, desc protoreflect.MessageDe
 	}
 	sort.Strings(pinnedTagKeys)
 	for _, k := range pinnedTagKeys {
-		lp.WriteString(fmt.Sprintf(",%s=%s", k, pinnedTags[k]))
+		lpHead.WriteString(fmt.Sprintf(",%s=%s", k, pinnedTags[k]))
 	}
 
 	orderedFieldDesc, fieldFns, err := formatProtoMessageToLineProtocol("", desc)
@@ -76,6 +76,8 @@ func GenerateMarshalFn(pinnedTags map[string]string, desc protoreflect.MessageDe
 	mr := m.ProtoReflect()
 
 	return func(in []byte, tags map[string]string) string {
+		var lp strings.Builder
+		lp.WriteString(lpHead.String())
 		// Tags
 		// TODO assume tags are sorted, should be done at the source
 		for k, v := range tags {

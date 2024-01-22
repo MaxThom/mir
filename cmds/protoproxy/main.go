@@ -125,7 +125,7 @@ func main() {
 	}
 	log.Info().Str("url", cfg.DataBusServer.Url).Str("stream", cons.CachedInfo().Stream).Str("consumer", cons.CachedInfo().Name).Strs("subjects", cons.CachedInfo().Config.FilterSubjects).Msg("connected to msg bus")
 
-	// Protoproxy
+	// Protoproxy with store, db and bus
 	pp := protoproxy.NewProtoProxyServer(log, protostore.GlobalRegistry, cons, lpWriter)
 	protoproxy.RegisterMetrics(metrics.Registry())
 

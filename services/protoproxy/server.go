@@ -9,18 +9,21 @@ import (
 	"github.com/influxdata/influxdb-client-go/v2/api"
 	"github.com/maxthom/mir/api/gen/proto/v1alpha/protoproxy"
 	"github.com/maxthom/mir/libs/api/metrics"
-	proto_lineprotocol "github.com/maxthom/mir/libs/proto/line_protocol"
 	protostore "github.com/maxthom/mir/libs/proto/store"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
-	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 type ProtoProxyServer struct {
-	cons     jetstream.Consumer
-	writer   api.WriteAPI
-	registry *protostore.Registry
+	cons        jetstream.Consumer
+	writer      api.WriteAPI
+	marshallers *Marhshallers
+}
+
+type ProtoPayload struct {
+	key  MarshallerKey
+	data []byte
 }
 
 var uploadMetric prometheus.Counter
@@ -39,41 +42,45 @@ func RegisterMetrics(reg prometheus.Registerer) {
 func NewProtoProxyServer(logger zerolog.Logger, registry *protostore.Registry, cons jetstream.Consumer, writer api.WriteAPI) *ProtoProxyServer {
 	l = logger.With().Str("srv", "protoproxy_server").Logger()
 	return &ProtoProxyServer{
-		cons:     cons,
-		writer:   writer,
-		registry: registry,
+		cons:        cons,
+		writer:      writer,
+		marshallers: NewMarshallers(registry),
 	}
 }
 
+// Using the db and bus, listen for telemetry, deserialize using proto and push to line protocol db
 func (p *ProtoProxyServer) ListenAndPushTelemetry(ctx context.Context) {
 	// Optimize with prefetch and batches
 	// Optimize with better ack patterns
 	// Use iterator pattern instead of Consume
 	// Look for flush
 
-	p.registry.RangeFiles(func(fd protoreflect.FileDescriptor) bool {
-		fmt.Println("Messages in the .proto file:")
+	// p.marshallers.Registry.RangeFiles(func(fd protoreflect.FileDescriptor) bool {
+	// 	fmt.Println("Messages in the .proto file:")
+	// 	for i := 0; i < fd.Messages().Len(); i++ {
+	// 		fmt.Println("-", fd.Messages().Get(i).FullName())
+	// 	}
+	// 	return true
+	// })
 
-		for i := 0; i < fd.Messages().Len(); i++ {
-			fmt.Println("-", fd.Messages().Get(i).FullName())
-		}
-
-		return true
-	})
-
-	dataCh := make(chan string)
-	go func(stream <-chan string) {
-		for lp := range stream {
-			fmt.Println(lp)
+	// Create routine for deserializing and writing to db
+	dataCh := make(chan ProtoPayload)
+	go func(stream <-chan ProtoPayload) {
+		for pr := range stream {
+			lp, err := p.marshallers.Deserialize(pr.data, pr.key)
+			if err != nil {
+				l.Error().Err(err).Msg("error while marshalling")
+			}
+			// fmt.Println(lp)
+			// This is also another channel and routine to write to db
 			p.writer.WriteRecord(lp)
-			// Add processing logic here
 		}
 	}(dataCh)
 
 	l.Info().Msg("listening to telemetry")
 	select {
 	case <-ctx.Done():
-		l.Info().Msg("shuting down")
+		l.Info().Msg("shutting down")
 		return
 	default:
 		for {
@@ -81,25 +88,27 @@ func (p *ProtoProxyServer) ListenAndPushTelemetry(ctx context.Context) {
 			if err != nil {
 				l.Error().Err(err).Msg("")
 			}
+			// Extract proto message name and device id to deserialize
 			for msg := range msgs.Messages() {
-				fmt.Println(string(msg.Data()))
-
-				fmt.Println(msg.Headers()["__pb"])
-				// TODO third channel for processing and ack
-				// could be a protoproxy library
-				// lazy loading with a hashmap on the descriptors
-				protoMsg := msg.Headers()["__pb"][0]
-				desc, err := p.registry.FindDescriptorByName(protoreflect.FullName(protoMsg))
-				if err != nil {
-					l.Error().Err(err).Msg("error while loading descriptor")
+				msgName, ok := msg.Headers()["__pb"]
+				if !ok {
+					l.Warn().Err(err).Msg("missing proto header")
+					continue
 				}
-				fn, err := proto_lineprotocol.GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
-				if err != nil {
-					l.Error().Err(err).Msg("error while loading descriptor")
+				deviceId := ""
+				deviceIdAr, ok := msg.Headers()["deviceId"]
+				if ok {
+					deviceId = deviceIdAr[0]
 				}
 
-				lp := fn(msg.Data(), map[string]string{})
-				dataCh <- string(lp)
+				dataCh <- ProtoPayload{
+					data: msg.Data(),
+					key: MarshallerKey{
+						messageName: msgName[0],
+						deviceId:    deviceId,
+					},
+				}
+
 				msg.Ack()
 			}
 			if msgs.Error() != nil {
