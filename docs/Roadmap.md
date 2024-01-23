@@ -10,3 +10,11 @@
   6. [x] Need to deploy NatsIO [docker compose]
   7. [x] Need to create a NatsIO library
   8. [x] Need to create to pipe the natsio telemetry to the db through protoproxy
+  9. [x] Deploy Questdb and connect
+  10. [ ] Add metrics to protoproxy
+  11. [ ] Add dashboard for protoproxy
+  12. [ ] Add dashboard for natsio
+  13. [ ] Add dashboard for Questdb
+  14. [ ] Add timeseries field to proto libraryd
+  15. [x] Add metrics endpoint for prometheus, nodeexporter, natsio, questdb
+  16. [x] Configure a grafana with questdb and prometheus data source

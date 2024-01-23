@@ -1,8 +1,10 @@
 version: "3.8"
 services:
   questdb:
-    image: questdb/questdb
+    image: questdb/questdb:latest
     container_name: questdb
+    environment:
+      - QDB_METRICS_ENABLED=TRUE
     ports:
       - 9000:9000
       - 9009:9009

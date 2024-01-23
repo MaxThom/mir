@@ -40,7 +40,7 @@ var (
 	cfg = ProtoProxyConfig{
 		LogLevel: "info",
 		HttpServer: HttpServer{
-			Port: 3000,
+			Port: 3017,
 		},
 		DataBusServer: DataBusServer{
 			Url: "nats://127.0.0.1:4222",
