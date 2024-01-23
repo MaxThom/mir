@@ -3,7 +3,7 @@ datasources:
   - name: Prometheus
     type: prometheus
     access: proxy
-    url: http://prometheus:9090
+    url: http://localhost:9090
     isDefault: true
   - name: QuestDB
     typeName: PostgreSQL
@@ -12,7 +12,7 @@ datasources:
     access: proxy
     url: localhost:8812
     user: admin
-    database: ''
+    database: ""
     secureJsonData:
       password: "quest"
     jsonData:
@@ -23,4 +23,3 @@ datasources:
       maxOpenConns: 100
       postgresVersion: 1230
       sslmode: disable
-
