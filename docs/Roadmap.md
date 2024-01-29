@@ -11,8 +11,8 @@
   7. [x] Need to create a NatsIO library
   8. [x] Need to create to pipe the natsio telemetry to the db through protoproxy
   9. [x] Deploy Questdb and connect
-  10. [ ] Add metrics to protoproxy
-  11. [ ] Add dashboard for protoproxy
+  10. [x] Add metrics to protoproxy
+  11. [x] Add dashboard for protoproxy
   12. [ ] Add dashboard for natsio
   13. [ ] Add dashboard for Questdb
   14. [ ] Add timeseries field to proto library

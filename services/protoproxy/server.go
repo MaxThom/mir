@@ -92,7 +92,7 @@ func (p *ProtoProxyServer) ListenAndPushTelemetry(ctx context.Context) {
 	default:
 		for {
 			// startTime := time.Now()
-			msgs, err := p.cons.Fetch(100, jetstream.FetchMaxWait(1*time.Second))
+			msgs, err := p.cons.Fetch(10000, jetstream.FetchMaxWait(1*time.Second))
 			if err != nil {
 				l.Error().Err(err).Msg("")
 			}
