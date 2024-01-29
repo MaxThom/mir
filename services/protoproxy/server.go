@@ -26,16 +26,22 @@ type ProtoPayload struct {
 	data []byte
 }
 
-var uploadMetric prometheus.Counter
+var (
+	uploadMetric = metrics.NewCounter(prometheus.CounterOpts{
+		Name: "upload_schema_counter",
+		Help: "Upload schema",
+	})
+	datapointCount = metrics.NewCounter(prometheus.CounterOpts{
+		Name: "datapoint_count",
+		Help: "Number of datapoint fed into protoproxy from nats",
+	})
+)
 
 var l zerolog.Logger
 
 func RegisterMetrics(reg prometheus.Registerer) {
-	uploadMetric := metrics.NewCounter(prometheus.CounterOpts{
-		Name: "upload_schema_counter",
-		Help: "Upload schema",
-	})
 	reg.Register(uploadMetric)
+	reg.Register(datapointCount)
 }
 
 // TODO offer both NewServer which accepting external dependencies as var and NewServerWithConnections
@@ -70,6 +76,7 @@ func (p *ProtoProxyServer) ListenAndPushTelemetry(ctx context.Context) {
 			lp, err := p.marshallers.Deserialize(pr.data, pr.key)
 			if err != nil {
 				l.Error().Err(err).Msg("error while marshalling")
+				continue
 			}
 			// fmt.Println(lp)
 			// This is also another channel and routine to write to db
@@ -84,10 +91,15 @@ func (p *ProtoProxyServer) ListenAndPushTelemetry(ctx context.Context) {
 		return
 	default:
 		for {
+			// startTime := time.Now()
 			msgs, err := p.cons.Fetch(100, jetstream.FetchMaxWait(1*time.Second))
 			if err != nil {
 				l.Error().Err(err).Msg("")
 			}
+
+			// duration := time.Since(startTime)
+			// fmt.Println("duration: ", duration)
+
 			// Extract proto message name and device id to deserialize
 			for msg := range msgs.Messages() {
 				msgName, ok := msg.Headers()["__pb"]
@@ -110,6 +122,8 @@ func (p *ProtoProxyServer) ListenAndPushTelemetry(ctx context.Context) {
 				}
 
 				msg.Ack()
+				// TODO Adjust to reduce observability cost
+				datapointCount.Inc()
 			}
 			if msgs.Error() != nil {
 				l.Error().Err(err).Msg("error while fetching from bus")

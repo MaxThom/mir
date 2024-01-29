@@ -1206,7 +1206,7 @@
   },
   "timezone": "browser",
   "title": "NATS JetStream",
-  "uid": "yQUo5l17k",
+  "uid": "mir-nats-jetstream",
   "version": 1,
   "weekStart": ""
 }

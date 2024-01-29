@@ -15,6 +15,7 @@
   11. [ ] Add dashboard for protoproxy
   12. [ ] Add dashboard for natsio
   13. [ ] Add dashboard for Questdb
-  14. [ ] Add timeseries field to proto libraryd
+  14. [ ] Add timeseries field to proto library
   15. [x] Add metrics endpoint for prometheus, nodeexporter, natsio, questdb
   16. [x] Configure a grafana with questdb and prometheus data source
+  17. [x] Add dashboard to see telemetry

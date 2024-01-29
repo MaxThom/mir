@@ -3,8 +3,10 @@ package protoproxy
 import (
 	"fmt"
 
+	"github.com/maxthom/mir/libs/api/metrics"
 	proto_lineprotocol "github.com/maxthom/mir/libs/proto/line_protocol"
 	protostore "github.com/maxthom/mir/libs/proto/store"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
@@ -19,7 +21,17 @@ type MarshallerKey struct {
 	deviceId    string
 }
 
-var lr zerolog.Logger
+var (
+	lr                 zerolog.Logger
+	marshallersInCache = metrics.NewGauge(prometheus.GaugeOpts{
+		Name: "marshallers_in_cache",
+		Help: "Number of marshallers in cache for deserializng proto",
+	})
+)
+
+func init() {
+	metrics.Register(marshallersInCache)
+}
 
 func NewMarshallers(registry *protostore.Registry) *Marhshallers {
 	return &Marhshallers{
@@ -52,6 +64,7 @@ func (m *Marhshallers) Deserialize(proto []byte, key MarshallerKey) (string, err
 		l.Error().Err(err).Msg("error while loading descriptor")
 	}
 	m.marshallers[key] = fn
+	marshallersInCache.Inc()
 
 	return fn(proto, map[string]string{}), nil
 }

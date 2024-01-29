@@ -81,7 +81,7 @@ type (
 //   - [x] Define route mechanism
 //   - [x] Setup Nats
 //   - [x] Setup QuestDB
-//   - [ ] Pipe telemetry from Nats to QuestDB using protobuf to line protocol
+//   - [x] Pipe telemetry from Nats to QuestDB using protobuf to line protocol
 //   - [ ] Create server side Library
 //   - [ ] Create client side Library
 //   - [ ] Create the swarm

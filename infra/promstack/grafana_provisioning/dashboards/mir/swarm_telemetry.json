@@ -210,7 +210,7 @@
   "timepicker": {},
   "timezone": "",
   "title": "Sensors Telemetry",
-  "uid": "efcd9449-8b3e-46e9-b0eb-d1b9f97b0999",
+  "uid": "mir_swarm_sensors_telemetry",
   "version": 1,
   "weekStart": ""
 }

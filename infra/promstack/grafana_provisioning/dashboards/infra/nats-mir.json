@@ -116,6 +116,6 @@
   "timepicker": {},
   "timezone": "",
   "title": "NATS.io Dashboard",
-  "uid": null,
+  "uid": "mir-nats",
   "version": 1
 }
