@@ -1,4 +1,4 @@
-package proto_store
+package protostore
 
 //
 // TODO
@@ -20,9 +20,7 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
-var (
-	GlobalRegistry *Registry = NewRegistry()
-)
+var GlobalRegistry *Registry = NewRegistry()
 
 type (
 	Registry struct {
@@ -48,7 +46,6 @@ func NewRegistry() *Registry {
 func (r *Registry) RegisterFile(meta Meta, fd protoreflect.FileDescriptor) error {
 	if meta.Uuid.String() == "" {
 		meta.Uuid = uuid.New()
-
 	}
 	r.meta[meta.Uuid] = meta
 	return r.registry.RegisterFile(fd)
@@ -126,7 +123,6 @@ func (r *Registry) FindMetaByName(name string) (Meta, bool) {
 func (r *Registry) FindMetaByUuid(uuid uuid.UUID) (Meta, bool) {
 	if meta, ok := r.meta[uuid]; ok {
 		return meta, true
-
 	}
 	return Meta{}, false
 }

@@ -17,7 +17,7 @@ import (
 	"github.com/maxthom/mir/libs/boiler/mir_log"
 	"github.com/maxthom/mir/libs/boiler/mir_signals"
 	bus "github.com/maxthom/mir/libs/external/natsio"
-	proto_store "github.com/maxthom/mir/libs/proto/store"
+	protostore "github.com/maxthom/mir/libs/proto/store"
 	"github.com/maxthom/mir/services/protoproxy"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
@@ -40,7 +40,7 @@ var (
 	cfg = ProtoProxyConfig{
 		LogLevel: "info",
 		HttpServer: HttpServer{
-			Port: 3000,
+			Port: 3017,
 		},
 		DataBusServer: DataBusServer{
 			Url: "nats://127.0.0.1:4222",
@@ -50,7 +50,7 @@ var (
 		},
 	}
 	appConfig = mir_config.Empty()
-	log       = logger.With().Str("component", AppName).Logger()
+	log       = logger.With().Str("cmd", AppName).Logger()
 )
 
 type (
@@ -81,109 +81,60 @@ type (
 //   - [x] Define route mechanism
 //   - [x] Setup Nats
 //   - [x] Setup QuestDB
-//   - [ ] Pipe telemetry from Nats to QuestDB using protobuf to line protocol
+//   - [x] Pipe telemetry from Nats to QuestDB using protobuf to line protocol
 //   - [ ] Create server side Library
 //   - [ ] Create client side Library
 //   - [ ] Create the swarm
+//   - [ ] Check worker group
+//   - [ ] Do PR for questdb raw line
+//   - [ ] Better influx integration
 func main() {
+	ctx, cancel := context.WithCancel(context.Background())
 	mir_signals.Notify(syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT)
 	mux := http.NewServeMux()
 	api := http.NewServeMux()
 
 	// Services
-	// ProtoProxy
-	pp := &protoproxy.ProtoProxyServer{}
-	protoproxy.RegisterMetrics(metrics.Registry())
-	api.Handle(protoproxyconnect.NewProtoProxyServiceHandler(pp))
+	// Should we initialize them in the service?
 
 	// ProtoStore
 	// Args are all proto binary to load as path
 	for _, p := range mir_cli.Args() {
-		err := proto_store.GlobalRegistry.LoadProtoBinaryFileFromDisk(proto_store.Meta{
+		err := protostore.GlobalRegistry.LoadProtoBinaryFileFromDisk(protostore.Meta{
 			Name: "todo",
 			Desc: "a description",
 			Tags: map[string]string{"ca": "dev"},
 		}, p)
 		if err != nil {
-			logger.Err(err).Msg("")
+			log.Err(err).Msg("")
 		}
 	}
 	// TODO protostore service take a registry in the constructor
 	//      in the future, this could be an interface to many store type
 
+	// Setup
 	// Database
-	// Connected to Questdb using influx client, use restapi
-	// move to questdb client when added line feature
 	lpClient := influxdb2.NewClient(cfg.PutHostServer.Url, "")
-	fmt.Println("Connected to influxdb")
-	lpWriter := lpClient.WriteAPI("", "test")
-	p := influxdb2.NewPointWithMeasurement("your_measurement").
-		AddTag("tag_name", "tag_value").
-		AddField("field_name", 1).
-		SetTime(time.Now())
-	lpWriter.WritePoint(p)
-	lpWriter.Flush()
+	lpWriter := lpClient.WriteAPI("", "")
+	log.Info().Str("url", cfg.PutHostServer.Url).Msg("connected to puthost")
 
-	// Connect to a server
-	b, err := bus.New(cfg.DataBusServer.Url,
-		bus.WithReconnHandler(func(nc *nats.Conn) {
-			logger.Warn().Msg("reconnected to " + nc.ConnectedUrl())
-		}),
-		bus.WithDisconnHandler(func(nc *nats.Conn, err error) {
-			logger.Warn().Msg(fmt.Sprintf("disconnected due to %v, will attempt to reconnect ", err))
-		}),
-		bus.WithClosedHandler(func(nc *nats.Conn) {
-			logger.Warn().Msg("connection to %v closed " + nc.ConnectedUrl())
-		}))
+	// Bus
+	b, _, cons, err := createConsumerForTelemetry(ctx)
 	if err != nil {
-		logger.Err(err).Msg("")
+		log.Err(err).Msg("")
 	}
-	logger.Info().Msg("connected to msg bus on " + cfg.DataBusServer.Url)
+	log.Info().Str("url", cfg.DataBusServer.Url).Str("stream", cons.CachedInfo().Stream).Str("consumer", cons.CachedInfo().Name).Strs("subjects", cons.CachedInfo().Config.FilterSubjects).Msg("connected to msg bus")
 
-	// TODO
-	// - [ ] worker group on the queue
-	js, _ := jetstream.New(b.Conn)
-	ctxNats, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	stream, err := js.CreateOrUpdateStream(ctxNats, jetstream.StreamConfig{
-		Name:     bus.TelemetryStreamName,
-		Subjects: []string{bus.TelemetryStreamSubject},
-	})
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	// retrieve consumer handle from a stream
-	cons, err := stream.CreateOrUpdateConsumer(ctxNats, jetstream.ConsumerConfig{
-		Durable:        "protoproxy",                         // + hash of pod for scaling?
-		FilterSubjects: []string{bus.TelemetryConsumerProto}, // can filter on specific functions
-		// Implicit for telemerty, explicity for commands and telemetry
-		AckPolicy: jetstream.AckExplicitPolicy,
-	})
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	cc, err := cons.Consume(func(msg jetstream.Msg) {
-		// TODO
-		// deserialize from protobuf to line protocol
-		// send to database
-		fmt.Println("Received jetstream message: ", string(msg.Data()))
-		b.Publish(msg.Reply(), []byte("im back!"))
-		msg.Ack()
-	})
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	defer cc.Stop()
+	// Protoproxy with store, db and bus
+	pp := protoproxy.NewProtoProxyServer(log, protostore.GlobalRegistry, cons, lpWriter)
+	protoproxy.RegisterMetrics(metrics.Registry())
 
 	// Metrics & Health
 	metrics.RegisterRoutes(mux)
 	health.RegisterRoutes(mux)
 
-	// Launch server
+	// WebServer
+	api.Handle(protoproxyconnect.NewProtoProxyServiceHandler(pp))
 	mux.Handle("/api/", http.StripPrefix("/api", api))
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.HttpServer.Port),
@@ -194,25 +145,72 @@ func main() {
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Err(err).Msg("")
 			health.SetUneady()
+			mir_signals.Shutdown()
 		}
+	}()
+
+	go func() {
+		pp.ListenAndPushTelemetry(ctx)
 	}()
 
 	// Handle shutdown
 	log.Info().Msg(fmt.Sprintf("%s initialized", AppName))
 	health.SetReady()
 	mir_signals.WaitForOsSignals(func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-
+		cancel()
 		go func() {
 			b.Drain()
 			b.Close()
 		}()
 
+		// 10 secons to close server, gives sometime for bus and puthost
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
 		if err := server.Shutdown(ctx); err != nil {
 			log.Fatal().Err(err).Msg("failed to gracefully shutdown server")
 		}
 	})
+}
+
+// TODO
+// rework this function to a library or something
+func createConsumerForTelemetry(ctx context.Context) (*bus.BusConn, jetstream.Stream, jetstream.Consumer, error) {
+	b, err := bus.New(cfg.DataBusServer.Url,
+		bus.WithReconnHandler(func(nc *nats.Conn) {
+			logger.Warn().Msg("reconnected to " + nc.ConnectedUrl())
+		}),
+		bus.WithDisconnHandler(func(_ *nats.Conn, err error) {
+			logger.Warn().Msg(fmt.Sprintf("disconnected due to %v, will attempt to reconnect ", err))
+		}),
+		bus.WithClosedHandler(func(nc *nats.Conn) {
+			logger.Warn().Msg("connection to %v closed " + nc.ConnectedUrl())
+		}))
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	js, err := jetstream.New(b.Conn)
+	if err != nil {
+		return b, nil, nil, err
+	}
+
+	stream, err := js.CreateOrUpdateStream(ctx, jetstream.StreamConfig{
+		Name:     bus.TelemetryStreamName,
+		Subjects: []string{bus.TelemetryStreamSubject},
+	})
+	if err != nil {
+		return b, stream, nil, err
+	}
+
+	// retrieve consumer handle from a stream
+	cons, err := stream.CreateOrUpdateConsumer(ctx, jetstream.ConsumerConfig{
+		Durable:        "protoproxy",                         // + hash of pod for scaling?
+		FilterSubjects: []string{bus.TelemetryConsumerProto}, // can filter on specific functions
+		// Implicit for telemerty, explicity for commands and telemetry
+		AckPolicy: jetstream.AckExplicitPolicy,
+	})
+
+	return b, stream, cons, err
 }
 
 func init() {

@@ -4,6 +4,7 @@ go 1.21.5
 
 require (
 	connectrpc.com/connect v1.14.0
+	github.com/influxdata/influxdb-client-go/v2 v2.13.0
 	github.com/knadh/koanf/providers/env v0.1.0
 	github.com/knadh/koanf/providers/file v0.1.0
 	github.com/knadh/koanf/v2 v2.0.1
@@ -18,7 +19,6 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
-	github.com/influxdata/influxdb-client-go/v2 v2.13.0 // indirect
 	github.com/influxdata/line-protocol v0.0.0-20200327222509-2487e7298839 // indirect
 	github.com/klauspost/compress v1.17.0 // indirect
 	github.com/kr/text v0.2.0 // indirect
@@ -32,7 +32,6 @@ require (
 	github.com/prometheus/client_model v0.5.0 // indirect
 	github.com/prometheus/common v0.45.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
-	github.com/stretchr/testify v1.8.4 // indirect
 	golang.org/x/crypto v0.16.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 )

@@ -1,4 +1,4 @@
-package proto_store
+package protostore
 
 //type protoFile struct {
 //	name    string

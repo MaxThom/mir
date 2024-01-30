@@ -735,7 +735,6 @@ func TestThreeLevelNestingAndSomeChads(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, true, strings.Contains(lp, "marshal.ThreeLevelNestingAndSomeChads a.a.a=1.000000,a.a.b=2u,a.a.c=3i,a.a.d=\"d\",b=2i,c=\"abc\",d=43.200000"))
-
 }
 
 func TestRepeatedThreeLevelNestingAndSomeChads(t *testing.T) {
@@ -1074,7 +1073,6 @@ func TestImportMessage(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, true, strings.Contains(lp, "marshal.ImportMessage a.seconds=123i,a.nanos=256i"))
-
 }
 
 func TestMixIndexSmallSetPrimitives(t *testing.T) {
