@@ -23,3 +23,10 @@ datasources:
       maxOpenConns: 100
       postgresVersion: 1230
       sslmode: disable
+  - name: VictoriaMetrics
+    type: prometheus
+    access: proxy
+    url: http://localhost:8428
+    isDefault: false
+    jsonData:
+      prometheusType: Prometheus

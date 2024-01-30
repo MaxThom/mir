@@ -1,0 +1,24 @@
+version: '3.8'
+services:
+  victoriametrics:
+    image: victoriametrics/victoria-metrics
+    ports:
+      - 8428:8428 # http
+      - 8089:8089 # influx tcp
+      - 8089:8089/udp # influx udp
+      - 2003:2003 # graphite tcp
+      - 2003:2003/udp # graphite udp
+      #- 4242:4242 # open tsdb
+    volumes:
+      - victoriametrics_data:/storage
+    command:
+      - "--storageDataPath=/storage"
+      - "--graphiteListenAddr=:2003"
+      #- "--opentsdbListenAddr=:4242"
+      - "--httpListenAddr=:8428"
+      - "--influxListenAddr=:8089"
+        #- "--vmalert.proxyURL=http://vmalert:8880"
+
+volumes:
+  victoriametrics_data:
+

@@ -1,6 +1,6 @@
 # Roadmap
 
-- Create an ProtoProxy which can listen Nats and push to db
+- Create ProtoProxy which can listen Nats and push to db
   1. [x] Need to create store library
      - [x] Create store server
   2. [x] need to select db [questdb]
@@ -13,9 +13,17 @@
   9. [x] Deploy Questdb and connect
   10. [x] Add metrics to protoproxy
   11. [x] Add dashboard for protoproxy
-  12. [ ] Add dashboard for natsio
+  12. [x] Add dashboard for natsio
   13. [ ] Add dashboard for Questdb
   14. [ ] Add timeseries field to proto library
   15. [x] Add metrics endpoint for prometheus, nodeexporter, natsio, questdb
   16. [x] Configure a grafana with questdb and prometheus data source
   17. [x] Add dashboard to see telemetry
+
+- Create ProtoDash which can generate a dashboard from a proto file
+  1. [ ] Generate dashboard for questdb
+
+- Create TwinManager to manager configuration
+
+- Create MirUI using htmx and tailwind
+
