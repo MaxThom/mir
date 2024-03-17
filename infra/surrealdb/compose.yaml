@@ -1,0 +1,22 @@
+version: "3.8"
+services:
+  surrealdb:
+    image: surrealdb/surrealdb:latest
+    ports:
+      - "8000:8000"
+    volumes:
+      - surrealdb-data:/var/lib/surrealdb
+    user: root
+    command:
+      - start
+      - file:/var/lib/surrealdb/mydatabase.db
+      - --user
+      - root
+      - --pass
+      - root
+      - -A
+      #- --log
+      #- trace
+
+volumes:
+  surrealdb-data:
