@@ -43,7 +43,7 @@ var (
 			Url: "nats://127.0.0.1:4222",
 		},
 		DatabaseServer: DatabaseSever{
-			Url: "http://127.0.0.1:8000",
+			Url: "ws://127.0.0.1:8000/rpc",
 		},
 	}
 	appConfig = mir_config.Empty()

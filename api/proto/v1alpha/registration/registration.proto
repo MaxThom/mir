@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package v1alpha.registration;
+
+option go_package = "gen/";
+
+message CreateDeviceRequest {
+  string device_id = 1;
+  string description = 2;
+  map<string, string> labels = 3;
+  map<string, string> annotations = 4;
+}
+
+message CreateDeviceResponse {
+  string device_id = 1;
+  string msg = 2;
+}
