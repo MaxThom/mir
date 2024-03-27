@@ -1,7 +1,10 @@
 package mir_log
 
 import (
+	"io"
+
 	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 type LogLevel = string
@@ -54,5 +57,11 @@ func WithLogLevel(logLevel LogLevel) func(*mirLog) {
 		default:
 			zerolog.SetGlobalLevel(zerolog.InfoLevel)
 		}
+	}
+}
+
+func WithCustomWriter(w io.Writer) func(*mirLog) {
+	return func(l *mirLog) {
+		log.Logger = log.Output(w)
 	}
 }

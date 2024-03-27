@@ -1,39 +1,38 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
-	bus "github.com/maxthom/mir/libs/external/natsio"
+	"github.com/maxthom/mir/services/cli/root"
 	"github.com/rs/zerolog"
 )
 
 var l zerolog.Logger
 
-type Config struct {
-}
+type Config struct{}
 
 type TUI struct {
-	b *bus.BusConn
+	mirUrl string
 }
 
-func NewServer(log zerolog.Logger, b *bus.BusConn) *TUI {
+func NewServer(log zerolog.Logger, mirUrl string) *TUI {
 	l = log.With().Str("srv", "cli").Logger()
-	return &TUI{b: b}
+	return &TUI{mirUrl: mirUrl}
 }
 
-func (s *TUI) Launch() error {
-	//p := tea.NewProgram(initialModel())
-	p := tea.NewProgram(initialModelCmd())
+func (s *TUI) Launch(ctx context.Context) error {
+	p := tea.NewProgram(root.NewModel(ctx, l, s.mirUrl))
 	if _, err := p.Run(); err != nil {
 		return err
 	}
 	return nil
 }
 
-// / Command Tutorial
+// Command Tutorial
 const url = "https://charm.sh/"
 
 type modelCmd struct {
@@ -46,11 +45,9 @@ func initialModelCmd() modelCmd {
 }
 
 func checkServer() tea.Msg {
-
 	// Create an HTTP client and make a GET request.
 	c := &http.Client{Timeout: 10 * time.Second}
 	res, err := c.Get(url)
-
 	if err != nil {
 		// There was an error making our request. Wrap the error we received
 		// in a message and return it.
@@ -142,7 +139,6 @@ func (m model) Init() tea.Cmd {
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-
 	// Is it a key press?
 	case tea.KeyMsg:
 

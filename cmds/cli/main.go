@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"syscall"
 
 	"github.com/maxthom/mir/libs/api/metrics"
@@ -11,9 +12,7 @@ import (
 	"github.com/maxthom/mir/libs/boiler/mir_config"
 	"github.com/maxthom/mir/libs/boiler/mir_log"
 	"github.com/maxthom/mir/libs/boiler/mir_signals"
-	bus "github.com/maxthom/mir/libs/external/natsio"
 	"github.com/maxthom/mir/services/cli"
-	"github.com/nats-io/nats.go"
 	logger "github.com/rs/zerolog/log"
 )
 
@@ -46,19 +45,29 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	mir_signals.Notify(syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT)
 
-	// Setup
-	// Bus
-	b, err := createMirConnection(ctx)
-	if err != nil {
-		log.Err(err).Msg("")
-	}
-	log.Info().Str("url", cfg.MirServer).Msg("connected to Mir 🛰️")
-
 	// Services
-	cliSrv := cli.NewServer(log, b)
+	userHomeDir, err := os.UserHomeDir()
+	if err != nil {
+		log.Error().Msg("$HOME is not defined")
+	}
+	dirPath := filepath.Join(userHomeDir, ".config", "mir")
+	logPath := filepath.Join(dirPath, "cli.log")
+	err = os.MkdirAll(dirPath, 0755)
+	if err != nil {
+		log.Error().Msg("Error creating directories")
+	}
+
+	logFile, err := os.OpenFile(logPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
+	if err != nil {
+		panic(err) // Handle the error according to your needs
+	}
+	defer logFile.Close()
+	log = log.Output(logFile)
+
+	cliSrv := cli.NewServer(log, cfg.MirServer)
 
 	go func() {
-		cliSrv.Launch()
+		cliSrv.Launch(ctx)
 	}()
 
 	// Handle shutdown
@@ -66,30 +75,8 @@ func main() {
 	mir_signals.WaitForOsSignals(func() {
 		cancel()
 		go func() {
-			b.Drain()
-			b.Close()
 		}()
 	})
-}
-
-// TODO
-// rework this function to a library or something
-func createMirConnection(ctx context.Context) (*bus.BusConn, error) {
-	b, err := bus.New(cfg.MirServer,
-		bus.WithReconnHandler(func(nc *nats.Conn) {
-			logger.Warn().Msg("reconnected to " + nc.ConnectedUrl())
-		}),
-		bus.WithDisconnHandler(func(_ *nats.Conn, err error) {
-			logger.Warn().Msg(fmt.Sprintf("disconnected due to %v, will attempt to reconnect ", err))
-		}),
-		bus.WithClosedHandler(func(nc *nats.Conn) {
-			logger.Warn().Msg("connection to %v closed " + nc.ConnectedUrl())
-		}))
-	if err != nil {
-		return nil, err
-	}
-
-	return b, nil
 }
 
 func init() {
