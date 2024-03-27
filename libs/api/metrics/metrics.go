@@ -72,6 +72,19 @@ func NewCounter(opts prometheus.CounterOpts) prometheus.Counter {
 	return prometheus.NewCounter(opts)
 }
 
+// NewCounter creates a new Prometheus Counter metric with the given options.
+func NewCounterVec(opts prometheus.CounterOpts, labels []string) *prometheus.CounterVec {
+	if opts.Namespace == "" {
+		opts.Namespace = namespace
+	}
+	if opts.Subsystem == "" {
+		opts.Subsystem = subsystem
+	}
+	opts.ConstLabels = setPinnedTags(opts.ConstLabels)
+
+	return prometheus.NewCounterVec(opts, labels)
+}
+
 // NewGauge creates a new Prometheus Gauge metric with the given options.
 func NewGauge(opts prometheus.GaugeOpts) prometheus.Gauge {
 	if opts.Namespace == "" {

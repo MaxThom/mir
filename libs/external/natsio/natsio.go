@@ -34,6 +34,14 @@ var (
 	// ProtoMessage in header
 	CommandStreamName     MirBus = "v1alpha_cmd"
 	CommandsStreamSubject MirBus = "v1alpha.*.*.cmd.>"
+
+	// Device
+	DeviceStreamName         MirBus = "device"
+	DeviceStreamSubject      MirBus = "*.v1alpha.device.*"
+	DeviceConsumerCreate     MirBus = "*.v1alpha.device.create"
+	DeviceConsumerUpdate     MirBus = "*.v1alpha.device.update"
+	DeviceConsunerDelete     MirBus = "*.v1alpha.device.delete"
+	DeviceConsumerHearthbeat MirBus = "*.v1alpha.device.hearthbeat"
 )
 
 func New(url string, options ...func(*BusConn)) (*BusConn, error) {
