@@ -20,12 +20,12 @@ type mirLog struct {
 	logLevel   string
 }
 
-var log *mirLog
+var GlobalLogger *mirLog
 
 func Setup(options ...func(*mirLog)) {
-	log = &mirLog{}
+	GlobalLogger = &mirLog{}
 	for _, o := range options {
-		o(log)
+		o(GlobalLogger)
 	}
 }
 

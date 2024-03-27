@@ -12,7 +12,7 @@ import (
 	"github.com/maxthom/mir/libs/boiler/mir_log"
 	"github.com/maxthom/mir/libs/boiler/mir_signals"
 	bus "github.com/maxthom/mir/libs/external/natsio"
-	"github.com/maxthom/mir/services/registration"
+	"github.com/maxthom/mir/services/cli"
 	"github.com/nats-io/nats.go"
 	logger "github.com/rs/zerolog/log"
 )
@@ -55,10 +55,10 @@ func main() {
 	log.Info().Str("url", cfg.MirServer).Msg("connected to Mir 🛰️")
 
 	// Services
-	regSrv := registration.NewRegistrationServer(log, cons, db)
-	registration.RegisterMetrics(metrics.Registry())
+	cliSrv := cli.NewServer(log, b)
 
 	go func() {
+		cliSrv.Launch()
 	}()
 
 	// Handle shutdown
