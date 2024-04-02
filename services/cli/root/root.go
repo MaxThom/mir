@@ -41,7 +41,7 @@ func (m *Model) Init() tea.Cmd {
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case connMirCmdMsg:
-		m.lblSpinner.UpdateLabel("connection to Mir ...standby")
+		m.lblSpinner.UpdateLabel("connecting to Mir ...standby")
 		return m, tea.Batch(m.lblSpinner.Start(), m.connectToMir(m.mirUrl))
 	case resMsg:
 		m.lblSpinner.UpdateLabel(msg)
@@ -63,7 +63,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *Model) View() string {
 	// "🛰️⣿"
-	msg := "\n 🛰️ "
+	msg := " 🛰️ "
 	if m.lblSpinner.IsSpinning {
 		msg += m.lblSpinner.View()
 	} else {

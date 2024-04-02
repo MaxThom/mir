@@ -13,7 +13,7 @@ import (
 	"github.com/maxthom/mir/libs/boiler/mir_log"
 	"github.com/maxthom/mir/libs/boiler/mir_signals"
 	"github.com/maxthom/mir/services/cli"
-	logger "github.com/rs/zerolog/log"
+	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -31,7 +31,7 @@ var (
 		MirServer: "nats://127.0.0.1:4222",
 	}
 	appConfig = mir_config.Empty()
-	log       = logger.With().Str("cmd", AppName).Logger()
+	logFile   *os.File
 )
 
 type (
@@ -46,25 +46,7 @@ func main() {
 	mir_signals.Notify(syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT)
 
 	// Services
-	userHomeDir, err := os.UserHomeDir()
-	if err != nil {
-		log.Error().Msg("$HOME is not defined")
-	}
-	dirPath := filepath.Join(userHomeDir, ".config", "mir")
-	logPath := filepath.Join(dirPath, "cli.log")
-	err = os.MkdirAll(dirPath, 0755)
-	if err != nil {
-		log.Error().Msg("Error creating directories")
-	}
-
-	logFile, err := os.OpenFile(logPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
-	if err != nil {
-		panic(err) // Handle the error according to your needs
-	}
-	defer logFile.Close()
-	log = log.Output(logFile)
-
-	cliSrv := cli.NewServer(log, cfg.MirServer)
+	cliSrv := cli.NewServer(log.Logger, cfg.MirServer)
 
 	go func() {
 		cliSrv.Launch(ctx)
@@ -75,6 +57,7 @@ func main() {
 	mir_signals.WaitForOsSignals(func() {
 		cancel()
 		go func() {
+			logFile.Close()
 		}()
 	})
 }
@@ -104,9 +87,28 @@ func init() {
 		opts = append(opts, mir_config.WithFilePath(flagFilePath, mir_config.Yaml, false))
 	}
 	appConfig = mir_config.New(AppName, opts...)
-	err, warns := appConfig.LoadAndUnmarshal(&cfg)
+	errCfg, warn := appConfig.LoadAndUnmarshal(&cfg)
 
 	// Logger
+	userHomeDir, err := os.UserHomeDir()
+	if err != nil {
+		log.Err(err).Msg("$HOME is not defined")
+		userHomeDir = "./"
+	}
+	dirPath := filepath.Join(userHomeDir, ".config", "mir")
+	logPath := filepath.Join(dirPath, "cli.log")
+	err = os.MkdirAll(dirPath, 0755)
+	if err != nil {
+		log.Err(err).Msg("error creating directories")
+		os.Exit(1)
+	}
+
+	logFile, err = os.OpenFile(logPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
+	if err != nil {
+		log.Err(err).Msg("can't create file for storing logs")
+		os.Exit(1)
+	}
+
 	if flagLogLevel != "" {
 		cfg.LogLevel = flagLogLevel
 	}
@@ -114,18 +116,23 @@ func init() {
 		cfg.LogLevel = "debug"
 	}
 	appConfig.Set("logLevel", cfg.LogLevel)
-	mir_log.Setup(mir_log.WithLogLevel(cfg.LogLevel), mir_log.WithTimeFormatUnix())
+	mir_log.Setup(
+		mir_log.WithLogLevel(cfg.LogLevel),
+		mir_log.WithTimeFormatUnix(),
+		mir_log.WithCustomWriter(logFile),
+		mir_log.WithAppName(AppName),
+	)
 
 	// Metrics
 	metrics.RegisterMirMetrics(AppName, Version, map[string]string{"ca": "dev"}, fmt.Sprintf("%v", appConfig.All()))
 
 	// Finish
-	if err != nil {
-		log.Err(err).Msg("")
+	if errCfg != nil {
+		log.Err(errCfg).Msg("error loading config")
 		os.Exit(1)
 	}
-	if warns != nil {
-		log.Warn().Msg(warns.Error())
+	if warn != nil {
+		log.Warn().Msg(warn.Error())
 	}
 
 	log.Info().Msg(fmt.Sprintf("%s initializing...", AppName))

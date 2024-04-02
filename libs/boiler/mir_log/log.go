@@ -65,3 +65,15 @@ func WithCustomWriter(w io.Writer) func(*mirLog) {
 		log.Logger = log.Output(w)
 	}
 }
+
+func WithAppName(name string) func(*mirLog) {
+	return func(l *mirLog) {
+		log.Logger = log.With().Str("cmd", name).Logger()
+	}
+}
+
+func WithKeyValue(key, value string) func(*mirLog) {
+	return func(l *mirLog) {
+		log.Logger = log.With().Str(key, value).Logger()
+	}
+}
