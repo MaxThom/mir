@@ -7,11 +7,16 @@ import (
 )
 
 type globalKeyMap struct {
-	Help key.Binding
-	Quit key.Binding
+	Previous key.Binding
+	Help     key.Binding
+	Quit     key.Binding
 }
 
 var keys = globalKeyMap{
+	Previous: key.NewBinding(
+		key.WithKeys("esc"),
+		key.WithHelp("esc", "previous"),
+	),
 	Help: key.NewBinding(
 		key.WithKeys("?"),
 		key.WithHelp("?", "toggle help"),
@@ -59,9 +64,9 @@ func (m Model) View() string {
 }
 
 func (m Model) ShortHelp() []key.Binding {
-	return append(m.keyMap.ShortHelp(), m.globalKeys.Help, m.globalKeys.Quit)
+	return append(m.keyMap.ShortHelp(), m.globalKeys.Help, m.globalKeys.Previous, m.globalKeys.Quit)
 }
 
 func (m Model) FullHelp() [][]key.Binding {
-	return append(m.keyMap.FullHelp(), []key.Binding{m.globalKeys.Help, m.globalKeys.Quit})
+	return append(m.keyMap.FullHelp(), []key.Binding{m.globalKeys.Previous, m.globalKeys.Help, m.globalKeys.Quit})
 }

@@ -12,7 +12,7 @@ import (
 	"github.com/maxthom/mir/libs/boiler/mir_config"
 	"github.com/maxthom/mir/libs/boiler/mir_log"
 	"github.com/maxthom/mir/libs/boiler/mir_signals"
-	"github.com/maxthom/mir/services/cli"
+	"github.com/maxthom/mir/services/tui"
 	"github.com/rs/zerolog/log"
 )
 
@@ -46,10 +46,10 @@ func main() {
 	mir_signals.Notify(syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT)
 
 	// Services
-	cliSrv := cli.NewServer(log.Logger, cfg.MirServer)
+	tuiSrv := tui.NewServer(log.Logger, cfg.MirServer)
 
 	go func() {
-		cliSrv.Launch(ctx)
+		tuiSrv.Launch(ctx)
 	}()
 
 	// Handle shutdown

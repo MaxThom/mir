@@ -91,7 +91,7 @@ func (o Option) String(isSelected bool) string {
 	}
 	s.WriteString("\n    ")
 	s.WriteString(styles["description"].Render(o.Description))
-	s.WriteString("\n\n")
+	s.WriteString("\n")
 	return s.String()
 }
 
