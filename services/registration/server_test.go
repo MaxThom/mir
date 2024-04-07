@@ -79,6 +79,60 @@ func TestPublishDeviceCreateSuccess(t *testing.T) {
 	assert.Equal(t, devReq.Description, devRes[0].Description)
 }
 
+func TestPublishDeviceCreateClientSuccess(t *testing.T) {
+	// Arrange
+	ctx, cancel := context.WithCancel(context.Background())
+	db, bus, cons, err := setupConns(ctx, jetstream.StreamConfig{
+		Name:     bus.DeviceStreamName,
+		Subjects: []string{bus.DeviceStreamSubject},
+	}, jetstream.ConsumerConfig{
+		Durable:        "registration_test",
+		FilterSubjects: []string{},
+		AckPolicy:      jetstream.AckExplicitPolicy,
+	})
+	t.Cleanup(func() {
+		db.Close()
+		cancel()
+	})
+	if err != nil {
+		t.Error(err)
+	}
+
+	devReq := &registration.CreateDeviceRequest{
+		DeviceId:    "0x994b",
+		Description: "hello world of devices !",
+		Labels: map[string]string{
+			"factory": "A",
+			"model":   "xx021",
+		},
+		Annotations: map[string]string{
+			"utility": "air_quality",
+		},
+	}
+
+	// Act
+	regSrv := NewRegistrationServer(log, cons, db)
+	go func() {
+		regSrv.Listen(ctx)
+	}()
+
+	_, err = publishDeviceCreateRequest(ctx, bus, devReq)
+
+	// Wait for written to db
+	time.Sleep(1 * time.Second)
+
+	devRes := executeQueryForType[[]registration.CreateDeviceRequest](t, db,
+		"SELECT * FROM type::table($tb);",
+		map[string]string{
+			"tb": "devices",
+		})
+	deleteTableOrRecord(t, db, "devices")
+
+	// Assert
+	assert.Equal(t, devReq.DeviceId, devRes[0].DeviceId)
+	assert.Equal(t, devReq.Description, devRes[0].Description)
+}
+
 func executeQueryForType[T any](t *testing.T, db *surrealdb.DB, query string, vars map[string]string) T {
 	result, err := db.Query(query, vars)
 	if err != nil {
