@@ -1,7 +1,10 @@
 package mir_log
 
 import (
+	"io"
+
 	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 type LogLevel = string
@@ -20,12 +23,12 @@ type mirLog struct {
 	logLevel   string
 }
 
-var log *mirLog
+var GlobalLogger *mirLog
 
 func Setup(options ...func(*mirLog)) {
-	log = &mirLog{}
+	GlobalLogger = &mirLog{}
 	for _, o := range options {
-		o(log)
+		o(GlobalLogger)
 	}
 }
 
@@ -54,5 +57,23 @@ func WithLogLevel(logLevel LogLevel) func(*mirLog) {
 		default:
 			zerolog.SetGlobalLevel(zerolog.InfoLevel)
 		}
+	}
+}
+
+func WithCustomWriter(w io.Writer) func(*mirLog) {
+	return func(l *mirLog) {
+		log.Logger = log.Output(w)
+	}
+}
+
+func WithAppName(name string) func(*mirLog) {
+	return func(l *mirLog) {
+		log.Logger = log.With().Str("cmd", name).Logger()
+	}
+}
+
+func WithKeyValue(key, value string) func(*mirLog) {
+	return func(l *mirLog) {
+		log.Logger = log.With().Str(key, value).Logger()
 	}
 }
