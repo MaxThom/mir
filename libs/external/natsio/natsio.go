@@ -90,3 +90,9 @@ func WithClosedHandler(fn nats.ConnHandler) func(*BusConn) {
 		}...)
 	}
 }
+
+func WithCustom(options ...nats.Option) func(*BusConn) {
+	return func(bus *BusConn) {
+		bus.opts = append(bus.opts, options...)
+	}
+}

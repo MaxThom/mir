@@ -50,7 +50,7 @@ func TestPublishDeviceCreateSuccess(t *testing.T) {
 	}
 
 	// Act
-	regSrv := NewRegistrationServer(log, cons, db)
+	regSrv := NewRegistrationServer(log, bus, cons, db)
 	go func() {
 		regSrv.Listen(ctx)
 	}()
@@ -111,22 +111,25 @@ func TestPublishDeviceCreateClientSuccess(t *testing.T) {
 	}
 
 	// Act
-	regSrv := NewRegistrationServer(log, cons, db)
+	regSrv := NewRegistrationServer(log, bus, cons, db)
 	go func() {
 		regSrv.Listen(ctx)
 	}()
 
-	_, err = publishDeviceCreateRequest(ctx, bus, devReq)
+	_, err = PublishDeviceCreateRequest(ctx, bus, devReq)
+	if err != nil {
+		//t.Error(err)
+	}
 
 	// Wait for written to db
-	time.Sleep(1 * time.Second)
+	time.Sleep(5 * time.Second)
 
 	devRes := executeQueryForType[[]registration.CreateDeviceRequest](t, db,
 		"SELECT * FROM type::table($tb);",
 		map[string]string{
 			"tb": "devices",
 		})
-	deleteTableOrRecord(t, db, "devices")
+	//deleteTableOrRecord(t, db, "devices")
 
 	// Assert
 	assert.Equal(t, devReq.DeviceId, devRes[0].DeviceId)

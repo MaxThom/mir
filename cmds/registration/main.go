@@ -102,7 +102,7 @@ func main() {
 	log.Info().Str("url", cfg.DataBusServer.Url).Str("stream", cons.CachedInfo().Stream).Str("consumer", cons.CachedInfo().Name).Strs("subjects", cons.CachedInfo().Config.FilterSubjects).Msg("connected to msg bus")
 
 	// Services
-	regSrv := registration.NewRegistrationServer(log, cons, db)
+	regSrv := registration.NewRegistrationServer(log, b, cons, db)
 	registration.RegisterMetrics(metrics.Registry())
 
 	// Metrics & Health

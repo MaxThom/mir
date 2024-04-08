@@ -8,6 +8,7 @@ import (
 
 	"github.com/maxthom/mir/api/gen/proto/v1alpha/registration"
 	"github.com/maxthom/mir/libs/api/metrics"
+	bus "github.com/maxthom/mir/libs/external/natsio"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
@@ -17,6 +18,7 @@ import (
 
 type RegistrationServer struct {
 	cons jetstream.Consumer
+	bus  *bus.BusConn
 	db   *surrealdb.DB
 }
 type Device struct {
@@ -35,10 +37,11 @@ func RegisterMetrics(reg prometheus.Registerer) {
 	reg.Register(requestCount)
 }
 
-func NewRegistrationServer(logger zerolog.Logger, cons jetstream.Consumer, db *surrealdb.DB) *RegistrationServer {
+func NewRegistrationServer(logger zerolog.Logger, bus *bus.BusConn, cons jetstream.Consumer, db *surrealdb.DB) *RegistrationServer {
 	l = logger.With().Str("srv", "registration_server").Logger()
 	return &RegistrationServer{
 		cons: cons,
+		bus:  bus,
 		db:   db,
 	}
 }
@@ -79,17 +82,45 @@ func (s *RegistrationServer) createDeviceRequestHandler(ch chan jetstream.Msg) {
 	for {
 		msg := <-ch
 		req := &registration.CreateDeviceRequest{}
-		proto.Unmarshal(msg.Data(), req)
+		err := proto.Unmarshal(msg.Data(), req)
+		if err != nil {
+			l.Error().Err(err).Msg("error occure while using db")
+			continue
+		}
 		l.Info().Str("route", "create").Str("payload", fmt.Sprintf("%v", req)).Msg("new device request")
 
-		var err error
 		if _, err = s.db.Use("global", "mir"); err != nil {
 			l.Error().Err(err).Msg("error occure while using db")
 			continue
 		}
 
 		// TODO return msg with reply with device id
-		_, err = s.db.Create("devices", req)
+		respDb, err := s.db.Create("devices", req)
+		if err != nil {
+			l.Error().Err(err).Msg("error occure while using db")
+			continue
+		}
+		newDev := make([]registration.CreateDeviceRequest, 1)
+		err = surrealdb.Unmarshal(respDb, &newDev)
+		if err != nil {
+			l.Error().Err(err).Msg("error occure while using db")
+			continue
+		}
+
+		resp := &registration.CreateDeviceResponse{
+			DeviceId: newDev[0].DeviceId,
+			Msg:      "Device created",
+		}
+		fmt.Println(resp)
+		fmt.Println("CACA")
+		fmt.Println(respDb)
+		bResp, err := proto.Marshal(resp)
+		if err != nil {
+			l.Error().Err(err).Msg("error occure while using db")
+			continue
+		}
+
+		err = s.bus.Publish(msg.Reply(), bResp)
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while using db")
 			continue
