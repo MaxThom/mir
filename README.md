@@ -128,3 +128,8 @@ Mir IoT Hub, act as your command center:
 # License
 
 Source code for MirHub is licensed under a MIT license
+
+# References
+
+- [table](https://github.com/chronosphereio/calyptia-go-bubble-table/tree/main)
+- [lipgloss](https://github.com/charmbracelet/lipgloss)

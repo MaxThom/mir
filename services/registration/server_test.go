@@ -7,6 +7,7 @@ import (
 
 	"github.com/maxthom/mir/api/gen/proto/v1alpha/registration"
 	bus "github.com/maxthom/mir/libs/external/natsio"
+	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	logger "github.com/rs/zerolog/log"
 	"github.com/surrealdb/surrealdb.go"
@@ -20,14 +21,7 @@ var log = logger.With().Str("test", "registration").Logger()
 func TestPublishDeviceCreateSuccess(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
-	db, bus, cons, err := setupConns(ctx, jetstream.StreamConfig{
-		Name:     bus.DeviceStreamName,
-		Subjects: []string{bus.DeviceStreamSubject},
-	}, jetstream.ConsumerConfig{
-		Durable:        "registration_test",
-		FilterSubjects: []string{},
-		AckPolicy:      jetstream.AckExplicitPolicy,
-	})
+	db, bus, sub, err := setupConns(bus.DeviceStreamSubject)
 	t.Cleanup(func() {
 		db.Close()
 		cancel()
@@ -50,7 +44,7 @@ func TestPublishDeviceCreateSuccess(t *testing.T) {
 	}
 
 	// Act
-	regSrv := NewRegistrationServer(log, bus, cons, db)
+	regSrv := NewRegistrationServer(log, bus, sub, db)
 	go func() {
 		regSrv.Listen(ctx)
 	}()
@@ -82,14 +76,7 @@ func TestPublishDeviceCreateSuccess(t *testing.T) {
 func TestPublishDeviceCreateClientSuccess(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
-	db, bus, cons, err := setupConns(ctx, jetstream.StreamConfig{
-		Name:     bus.DeviceStreamName,
-		Subjects: []string{bus.DeviceStreamSubject},
-	}, jetstream.ConsumerConfig{
-		Durable:        "registration_test",
-		FilterSubjects: []string{},
-		AckPolicy:      jetstream.AckExplicitPolicy,
-	})
+	db, bus, sub, err := setupConns(bus.DeviceStreamSubject)
 	t.Cleanup(func() {
 		db.Close()
 		cancel()
@@ -111,29 +98,31 @@ func TestPublishDeviceCreateClientSuccess(t *testing.T) {
 	}
 
 	// Act
-	regSrv := NewRegistrationServer(log, bus, cons, db)
+	regSrv := NewRegistrationServer(log, bus, sub, db)
 	go func() {
 		regSrv.Listen(ctx)
 	}()
 
-	_, err = PublishDeviceCreateRequest(ctx, bus, devReq)
+	resp, err := PublishDeviceCreateRequest(ctx, bus, devReq)
 	if err != nil {
-		//t.Error(err)
+		t.Error(err)
 	}
 
 	// Wait for written to db
-	time.Sleep(5 * time.Second)
+	time.Sleep(1 * time.Second)
 
 	devRes := executeQueryForType[[]registration.CreateDeviceRequest](t, db,
 		"SELECT * FROM type::table($tb);",
 		map[string]string{
 			"tb": "devices",
 		})
-	//deleteTableOrRecord(t, db, "devices")
+	deleteTableOrRecord(t, db, "devices")
 
 	// Assert
 	assert.Equal(t, devReq.DeviceId, devRes[0].DeviceId)
 	assert.Equal(t, devReq.Description, devRes[0].Description)
+	assert.Equal(t, resp.DeviceId, devRes[0].DeviceId)
+	assert.Equal(t, resp.Msg, "Device created")
 }
 
 func executeQueryForType[T any](t *testing.T, db *surrealdb.DB, query string, vars map[string]string) T {
@@ -156,7 +145,7 @@ func deleteTableOrRecord(t *testing.T, db *surrealdb.DB, thing string) {
 	}
 }
 
-func setupConns(ctx context.Context, jsCfg jetstream.StreamConfig, consCfg jetstream.ConsumerConfig) (*surrealdb.DB, *bus.BusConn, jetstream.Consumer, error) {
+func setupJetStreamConns(ctx context.Context, jsCfg jetstream.StreamConfig, consCfg jetstream.ConsumerConfig) (*surrealdb.DB, *bus.BusConn, jetstream.Consumer, error) {
 	// Database
 	db, err := surrealdb.New("ws://127.0.0.1:8000/rpc")
 	if err != nil {
@@ -190,21 +179,41 @@ func createPublisherForStream(ctx context.Context, busUrl string, jsCfg jetstrea
 		return b, nil, nil, err
 	}
 
-	stream, err := js.CreateOrUpdateStream(ctx, jetstream.StreamConfig{
-		Name:     bus.DeviceStreamName,
-		Subjects: []string{bus.DeviceStreamSubject},
-	})
+	stream, err := js.CreateOrUpdateStream(ctx, jsCfg)
 	if err != nil {
 		return b, stream, nil, err
 	}
 
 	// retrieve consumer handle from a stream
-	cons, err := stream.CreateOrUpdateConsumer(ctx, jetstream.ConsumerConfig{
-		Durable:        "registration", // + hash of pod for scaling?
-		FilterSubjects: []string{},     // can filter on specific functions
-		// Implicit for telemerty, explicity for commands and telemetry
-		AckPolicy: jetstream.AckExplicitPolicy,
-	})
+	cons, err := stream.CreateOrUpdateConsumer(ctx, consCfg)
 
 	return b, stream, cons, err
+}
+
+func setupConns(subject string) (*surrealdb.DB, *bus.BusConn, *nats.Subscription, error) {
+	// Database
+	db, err := surrealdb.New("ws://127.0.0.1:8000/rpc")
+	if err != nil {
+		return db, nil, nil, err
+	}
+
+	if _, err = db.Signin(map[string]any{
+		"user": "root",
+		"pass": "root",
+	}); err != nil {
+		return db, nil, nil, err
+	}
+
+	// Bus
+	b, err := bus.New("nats://127.0.0.1:4222")
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	sub, err := b.SubscribeSync(subject)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to subscribe to subject")
+	}
+
+	return db, b, sub, nil
 }

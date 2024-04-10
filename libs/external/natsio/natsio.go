@@ -51,7 +51,7 @@ func New(url string, options ...func(*BusConn)) (*BusConn, error) {
 		o(bus)
 	}
 
-	// Add retry connection here as well
+	// TODO Add retry connection here as well
 	bus.Conn, err = nats.Connect(url, bus.opts...)
 
 	return bus, err

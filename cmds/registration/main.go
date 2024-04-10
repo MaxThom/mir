@@ -17,7 +17,6 @@ import (
 	bus "github.com/maxthom/mir/libs/external/natsio"
 	"github.com/maxthom/mir/services/registration"
 	"github.com/nats-io/nats.go"
-	"github.com/nats-io/nats.go/jetstream"
 	logger "github.com/rs/zerolog/log"
 	"github.com/surrealdb/surrealdb.go"
 	"golang.org/x/net/http2"
@@ -95,14 +94,14 @@ func main() {
 	}
 
 	// Bus
-	b, _, cons, err := createConsumerForTelemetry(ctx)
+	b, sub, err := subscribeToCoreStream(ctx)
 	if err != nil {
 		log.Err(err).Msg("")
 	}
-	log.Info().Str("url", cfg.DataBusServer.Url).Str("stream", cons.CachedInfo().Stream).Str("consumer", cons.CachedInfo().Name).Strs("subjects", cons.CachedInfo().Config.FilterSubjects).Msg("connected to msg bus")
+	log.Info().Str("url", cfg.DataBusServer.Url).Str("subject", sub.Subject).Str("queue", sub.Queue).Msg("connected to msg bus")
 
 	// Services
-	regSrv := registration.NewRegistrationServer(log, b, cons, db)
+	regSrv := registration.NewRegistrationServer(log, b, db)
 	registration.RegisterMetrics(metrics.Registry())
 
 	// Metrics & Health
@@ -150,7 +149,7 @@ func main() {
 
 // TODO
 // rework this function to a library or something
-func createConsumerForTelemetry(ctx context.Context) (*bus.BusConn, jetstream.Stream, jetstream.Consumer, error) {
+func subscribeToCoreStream(ctx context.Context) (*bus.BusConn, *nats.Subscription, error) {
 	b, err := bus.New(cfg.DataBusServer.Url,
 		bus.WithReconnHandler(func(nc *nats.Conn) {
 			logger.Warn().Msg("reconnected to " + nc.ConnectedUrl())
@@ -162,31 +161,15 @@ func createConsumerForTelemetry(ctx context.Context) (*bus.BusConn, jetstream.St
 			logger.Warn().Msg("connection to %v closed " + nc.ConnectedUrl())
 		}))
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 
-	js, err := jetstream.New(b.Conn)
+	sub, err := b.SubscribeSync(bus.DeviceStreamSubject)
 	if err != nil {
-		return b, nil, nil, err
+		log.Error().Err(err).Msg("failed to subscribe to subject")
 	}
 
-	stream, err := js.CreateOrUpdateStream(ctx, jetstream.StreamConfig{
-		Name:     bus.DeviceStreamName,
-		Subjects: []string{bus.DeviceStreamSubject},
-	})
-	if err != nil {
-		return b, stream, nil, err
-	}
-
-	// retrieve consumer handle from a stream
-	cons, err := stream.CreateOrUpdateConsumer(ctx, jetstream.ConsumerConfig{
-		Durable:        "registration", // + hash of pod for scaling?
-		FilterSubjects: []string{},     // can filter on specific functions
-		// Implicit for telemerty, explicity for commands and telemetry
-		AckPolicy: jetstream.AckExplicitPolicy,
-	})
-
-	return b, stream, cons, err
+	return b, sub, err
 }
 
 func init() {

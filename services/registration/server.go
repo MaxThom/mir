@@ -4,12 +4,11 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/maxthom/mir/api/gen/proto/v1alpha/registration"
 	"github.com/maxthom/mir/libs/api/metrics"
 	bus "github.com/maxthom/mir/libs/external/natsio"
-	"github.com/nats-io/nats.go/jetstream"
+	"github.com/nats-io/nats.go"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
 	"github.com/surrealdb/surrealdb.go"
@@ -17,9 +16,9 @@ import (
 )
 
 type RegistrationServer struct {
-	cons jetstream.Consumer
-	bus  *bus.BusConn
-	db   *surrealdb.DB
+	sub *nats.Subscription
+	bus *bus.BusConn
+	db  *surrealdb.DB
 }
 type Device struct {
 	ID   string `json:"id,omitempty"`
@@ -37,21 +36,21 @@ func RegisterMetrics(reg prometheus.Registerer) {
 	reg.Register(requestCount)
 }
 
-func NewRegistrationServer(logger zerolog.Logger, bus *bus.BusConn, cons jetstream.Consumer, db *surrealdb.DB) *RegistrationServer {
+func NewRegistrationServer(logger zerolog.Logger, bus *bus.BusConn, sub *nats.Subscription, db *surrealdb.DB) *RegistrationServer {
 	l = logger.With().Str("srv", "registration_server").Logger()
 	return &RegistrationServer{
-		cons: cons,
-		bus:  bus,
-		db:   db,
+		sub: sub,
+		bus: bus,
+		db:  db,
 	}
 }
 
 // Using the db and bus, listen for telemetry, deserialize using proto and push to line protocol db
 func (s *RegistrationServer) Listen(ctx context.Context) {
-	channelFns := map[string]chan jetstream.Msg{
-		"create": make(chan jetstream.Msg, 10),
-		"delete": make(chan jetstream.Msg, 10),
-		"update": make(chan jetstream.Msg, 10),
+	channelFns := map[string]chan nats.Msg{
+		"create": make(chan nats.Msg, 10),
+		"delete": make(chan nats.Msg, 10),
+		"update": make(chan nats.Msg, 10),
 	}
 	go s.createDeviceRequestHandler(channelFns["create"])
 
@@ -61,28 +60,22 @@ func (s *RegistrationServer) Listen(ctx context.Context) {
 		return
 	default:
 		for {
-			msgs, err := s.cons.Fetch(10, jetstream.FetchMaxWait(1*time.Second))
+			msg, err := s.sub.NextMsgWithContext(ctx)
 			if err != nil {
 				l.Error().Err(err).Msg("")
 			}
-
-			for msg := range msgs.Messages() {
-				route := getRoutingFunc(msg.Subject())
-				channelFns[route] <- msg
-				requestCount.WithLabelValues(route).Inc()
-			}
-			if msgs.Error() != nil {
-				l.Error().Err(err).Msg("error while fetching from bus")
-			}
+			route := getRoutingFunc(msg.Subject)
+			channelFns[route] <- *msg
+			requestCount.WithLabelValues(route).Inc()
 		}
 	}
 }
 
-func (s *RegistrationServer) createDeviceRequestHandler(ch chan jetstream.Msg) {
+func (s *RegistrationServer) createDeviceRequestHandler(ch chan nats.Msg) {
 	for {
 		msg := <-ch
 		req := &registration.CreateDeviceRequest{}
-		err := proto.Unmarshal(msg.Data(), req)
+		err := proto.Unmarshal(msg.Data, req)
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while using db")
 			continue
@@ -111,19 +104,18 @@ func (s *RegistrationServer) createDeviceRequestHandler(ch chan jetstream.Msg) {
 			DeviceId: newDev[0].DeviceId,
 			Msg:      "Device created",
 		}
-		fmt.Println(resp)
-		fmt.Println("CACA")
-		fmt.Println(respDb)
 		bResp, err := proto.Marshal(resp)
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while using db")
 			continue
 		}
 
-		err = s.bus.Publish(msg.Reply(), bResp)
-		if err != nil {
-			l.Error().Err(err).Msg("error occure while using db")
-			continue
+		if msg.Reply != "" {
+			err = s.bus.Publish(msg.Reply, bResp)
+			if err != nil {
+				l.Error().Err(err).Msg("error occure while sending reply")
+				continue
+			}
 		}
 
 		msg.Ack()
