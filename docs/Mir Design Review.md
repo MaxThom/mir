@@ -189,6 +189,24 @@ A JSON alternative could be the timestamp field embeded next to the fields direc
 }
 ```
 
+#### 4.1.1.4 Open API Validation
+
+It could be possible to generate open api validation on the different json templates. That schema would help present options or validations for any clients such as Web or TUI. 
+
+The developer could generate a schema from structs or made manually. You upload it to mir. It is like uploading a CRD. When you create a a new twin template, you can attach a schema to it. Like a CR link to a CRD.
+In the json of the properties, a new field with the linked schema could be added to point to the schema.
+
+```json
+{
+	"properties": {
+		"openapischema": "<name>",
+	    "desired": {},
+	    "reported": {}
+	}
+}
+```
+
+This could be on the json template or on the device twin as well in a more fix manner. A bit more thinking to be done here.
 ### 4.2 Detailed Design
 
 Dive into the detailed design of each module, including class diagrams, data flow diagrams, and other relevant details.
