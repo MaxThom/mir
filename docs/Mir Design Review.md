@@ -227,6 +227,39 @@ Describe the deployment process, including deployment environments, continuous i
 
 Outline the overall testing strategy, including types of testing (unit, integration, system, acceptance) and testing tools.
 
+#### 7.1.1.1 Integration Testing
+
+A few approaches to integration testing:
+
+1. **In unit test**
+
+- have files called integration test that will test the integration of the module with the database, the message bus, etc.
+- everything is there, but it needs the infra to be on
+- bash script that just turn the infra on and off before running the tests
+- it could be env vars that get skip if missing, set env vars in pipeline
+- could be one IntegrationTest=local, which mean all default vars
+
+```go
+func TestIntegration(t *testing.T) {
+	fooAddr := os.Getenv("FOO_ADDR")
+	if fooAddr == "" {
+		t.Skip("set FOO_ADDR to run this test")
+	}
+
+	f, err := foo.Connect(fooAddr)
+	// ...
+}
+```
+
+2. **In a bash script**
+
+- have a bash script that will start the infra, run the test, and stop the infra
+- gnu parallel could be used to run multiple tests at the same time
+- easy to do in pipeline
+- could be really good to do with a dedicated cli
+- closer to production
+- could try to build an integration test framework
+
 ### 7.2 Test Cases
 
 Provide examples of test cases for critical functionalities.
