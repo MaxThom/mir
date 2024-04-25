@@ -66,10 +66,20 @@ Describe the non-functional requirements such as performance, security, and usab
 
 Provide a high-level design overview, including major system modules and their responsibilities.
 
-#### 4.1.1 Twin Module
+#### 4.1.1 Core
 
-The Twin module is res#one json with same representation, but with timestamp instead of valu
-ponsible for managing the device twin, which is a digital representation of a physical device. It stores device metadata, configuration, and state information, allowing the system to manage and monitor devices remotely.
+The core is responsible of the management of devices lifetime. It is also the API interface for interacting with surrealdb.
+
+TODO one app in front of the db or many app access
+	- one app which interface the db
+	- each app interact with the db managing their own stuff
+		- see own its done for surreal same document
+TODO think on how to restrict the api in terms of what to update.
+- one endpoint for each type of modification and control?
+- just update endpoint with a token or header indicating rights or source
+#### 4.1.2 Twin Module
+
+The Twin module gives life to devices with digital twin. It is a digital representation of a physical or virtual device. It stores device metadata, configuration, and state information, allowing the system to manage and monitor devices remotely.
 
 Twin is the reconciliation logic between desired properties and reported properties.
 

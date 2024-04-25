@@ -13,5 +13,53 @@ message CreateDeviceRequest {
 
 message CreateDeviceResponse {
   string device_id = 1;
-  string msg = 2;
+  repeated string msg = 2;
+}
+
+/// Optional field, means can be nil
+/// when nil, mean we do not need to set them
+/// when nil, for a map value, it means mark for deletion
+message UpdateDeviceRequest {
+  repeated string target_ids = 1;
+  map<string, string> target_labels = 2;
+  optional string description = 3;
+  map<string, OptString> labels = 4;
+  map<string, OptString> annotations = 5;
+
+  message OptString {
+    optional string value = 1;
+  }
+}
+
+message UpdateDeviceResponse {
+  repeated string affected_devices = 1;
+  repeated string msg = 2;
+}
+
+message DeleteDeviceRequest {
+  repeated string target_ids = 1;
+  map<string, string> target_labels = 2;
+}
+
+message DeleteDeviceResponse {
+  repeated string affected_devices = 1;
+  repeated string msg = 2;
+}
+
+message ListDeviceRequest {
+  repeated string target_ids = 1;
+  map<string, string> target_labels = 2;
+}
+
+message ListDeviceResponse {
+  repeated Device devices = 1;
+  repeated string msg = 2;
+}
+
+message Device {
+  string id = 1;
+  string device_id = 2;
+  string description = 3;
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
 }
