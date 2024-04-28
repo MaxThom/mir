@@ -1,11 +1,11 @@
-package registration
+package core
 
 import (
 	"context"
 	"fmt"
 	"strings"
 
-	"github.com/maxthom/mir/api/gen/proto/v1alpha/registration"
+	"github.com/maxthom/mir/api/gen/proto/v1alpha/core"
 	"github.com/maxthom/mir/libs/api/metrics"
 	bus "github.com/maxthom/mir/libs/external/natsio"
 	"github.com/nats-io/nats.go"
@@ -16,7 +16,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-type RegistrationServer struct {
+type CoreServer struct {
 	sub *nats.Subscription
 	bus *bus.BusConn
 	db  *surrealdb.DB
@@ -28,7 +28,7 @@ type Device struct {
 
 var requestCount = metrics.NewCounterVec(prometheus.CounterOpts{
 	Name: "request_count",
-	Help: "Number of request for registration",
+	Help: "Number of request for core",
 }, []string{"route"})
 
 var l zerolog.Logger
@@ -37,9 +37,9 @@ func RegisterMetrics(reg prometheus.Registerer) {
 	reg.Register(requestCount)
 }
 
-func NewRegistrationServer(logger zerolog.Logger, bus *bus.BusConn, sub *nats.Subscription, db *surrealdb.DB) *RegistrationServer {
+func NewCore(logger zerolog.Logger, bus *bus.BusConn, sub *nats.Subscription, db *surrealdb.DB) *CoreServer {
 	l = logger.With().Str("srv", "registration_server").Logger()
-	return &RegistrationServer{
+	return &CoreServer{
 		sub: sub,
 		bus: bus,
 		db:  db,
@@ -47,7 +47,7 @@ func NewRegistrationServer(logger zerolog.Logger, bus *bus.BusConn, sub *nats.Su
 }
 
 // Using the db and bus, listen for telemetry, deserialize using proto and push to line protocol db
-func (s *RegistrationServer) Listen(ctx context.Context) {
+func (s *CoreServer) Listen(ctx context.Context) {
 	channelFns := map[string]chan nats.Msg{
 		"create": make(chan nats.Msg, 10),
 		"delete": make(chan nats.Msg, 10),
@@ -79,10 +79,10 @@ func (s *RegistrationServer) Listen(ctx context.Context) {
 }
 
 // TODO check if unique on device_id
-func (s *RegistrationServer) createDeviceRequestHandler(ch chan nats.Msg) {
+func (s *CoreServer) createDeviceRequestHandler(ch chan nats.Msg) {
 	for {
 		msg := <-ch
-		req := &registration.CreateDeviceRequest{}
+		req := &core.CreateDeviceRequest{}
 		err := proto.Unmarshal(msg.Data, req)
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while unmarhsalling payload")
@@ -100,14 +100,14 @@ func (s *RegistrationServer) createDeviceRequestHandler(ch chan nats.Msg) {
 			l.Error().Err(err).Msg("error occure while using db")
 			continue
 		}
-		newDev := make([]registration.CreateDeviceRequest, 1)
+		newDev := make([]core.CreateDeviceRequest, 1)
 		err = surrealdb.Unmarshal(respDb, &newDev)
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while using db")
 			continue
 		}
 
-		resp := &registration.CreateDeviceResponse{
+		resp := &core.CreateDeviceResponse{
 			DeviceId: newDev[0].DeviceId,
 			Msg:      []string{"Device created"},
 		}
@@ -129,12 +129,12 @@ func (s *RegistrationServer) createDeviceRequestHandler(ch chan nats.Msg) {
 	}
 }
 
-func (s *RegistrationServer) updateDeviceRequestHandler(ch chan nats.Msg) {
+func (s *CoreServer) updateDeviceRequestHandler(ch chan nats.Msg) {
 	for {
 		msg := <-ch
-		resp := &registration.UpdateDeviceResponse{}
+		resp := &core.UpdateDeviceResponse{}
 
-		req := &registration.UpdateDeviceRequest{}
+		req := &core.UpdateDeviceRequest{}
 		err := proto.Unmarshal(msg.Data, req)
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while unmarshalling request")
@@ -155,7 +155,7 @@ func (s *RegistrationServer) updateDeviceRequestHandler(ch chan nats.Msg) {
 		// Change is a merge
 		// Modify is a patch
 		q, v := createUpdateQueryForDevice(req)
-		respDb, err := executeQueryForType[[]registration.Device](s.db, q, v)
+		respDb, err := executeQueryForType[[]core.Device](s.db, q, v)
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while updating records")
 			resp.Msg = append(resp.Msg, "error occure while updating records")
@@ -172,11 +172,11 @@ func (s *RegistrationServer) updateDeviceRequestHandler(ch chan nats.Msg) {
 	}
 }
 
-func (s *RegistrationServer) deleteDeviceRequestHandler(ch chan nats.Msg) {
+func (s *CoreServer) deleteDeviceRequestHandler(ch chan nats.Msg) {
 	for {
 		msg := <-ch
-		req := &registration.DeleteDeviceRequest{}
-		resp := &registration.DeleteDeviceResponse{}
+		req := &core.DeleteDeviceRequest{}
+		resp := &core.DeleteDeviceResponse{}
 		err := proto.Unmarshal(msg.Data, req)
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while unmarshalling delete request")
@@ -192,7 +192,7 @@ func (s *RegistrationServer) deleteDeviceRequestHandler(ch chan nats.Msg) {
 		}
 
 		q, v := createDeleteQueryForDevice(req)
-		respDb, err := executeQueryForType[[]registration.Device](s.db, q, v)
+		respDb, err := executeQueryForType[[]core.Device](s.db, q, v)
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while using db")
 			resp.Msg = append(resp.Msg, "error occure while using db")
@@ -209,11 +209,11 @@ func (s *RegistrationServer) deleteDeviceRequestHandler(ch chan nats.Msg) {
 	}
 }
 
-func (s *RegistrationServer) listDeviceRequestHandler(ch chan nats.Msg) {
+func (s *CoreServer) listDeviceRequestHandler(ch chan nats.Msg) {
 	for {
 		msg := <-ch
-		req := &registration.ListDeviceRequest{}
-		resp := &registration.ListDeviceResponse{}
+		req := &core.ListDeviceRequest{}
+		resp := &core.ListDeviceResponse{}
 		err := proto.Unmarshal(msg.Data, req)
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while unmarshalling delete request")
@@ -229,7 +229,7 @@ func (s *RegistrationServer) listDeviceRequestHandler(ch chan nats.Msg) {
 		}
 
 		q, v := createListQueryForDevice(req)
-		respDb, err := executeQueryForType[[]*registration.Device](s.db, q, v)
+		respDb, err := executeQueryForType[[]*core.Device](s.db, q, v)
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while using db")
 			resp.Msg = append(resp.Msg, "error occure while using db")
@@ -264,7 +264,7 @@ func getRoutingFunc(s string) string {
 	return s[index+1:]
 }
 
-func createUpdateQueryForDevice(req *registration.UpdateDeviceRequest) (sql string, vars map[string]any) {
+func createUpdateQueryForDevice(req *core.UpdateDeviceRequest) (sql string, vars map[string]any) {
 	var q strings.Builder
 	vars = map[string]any{}
 	q.WriteString("UPDATE devices MERGE {")
@@ -325,7 +325,7 @@ func createUpdateQueryForDevice(req *registration.UpdateDeviceRequest) (sql stri
 	return
 }
 
-func createDeleteQueryForDevice(req *registration.DeleteDeviceRequest) (sql string, vars map[string]any) {
+func createDeleteQueryForDevice(req *core.DeleteDeviceRequest) (sql string, vars map[string]any) {
 	var q strings.Builder
 	vars = map[string]any{}
 
@@ -336,7 +336,7 @@ func createDeleteQueryForDevice(req *registration.DeleteDeviceRequest) (sql stri
 	return
 }
 
-func createListQueryForDevice(req *registration.ListDeviceRequest) (sql string, vars map[string]any) {
+func createListQueryForDevice(req *core.ListDeviceRequest) (sql string, vars map[string]any) {
 	var q strings.Builder
 	vars = map[string]any{}
 

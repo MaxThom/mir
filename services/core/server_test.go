@@ -1,4 +1,4 @@
-package registration
+package core
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/maxthom/mir/api/gen/proto/v1alpha/registration"
+	"github.com/maxthom/mir/api/gen/proto/v1alpha/core"
 	bus "github.com/maxthom/mir/libs/external/natsio"
 	"github.com/nats-io/nats.go"
 	logger "github.com/rs/zerolog/log"
@@ -16,7 +16,11 @@ import (
 	"gotest.tools/assert"
 )
 
-var log = logger.With().Str("test", "registration").Logger()
+// TODO make use of the t.SubTest thingy to better handle cleaning such as
+// db connection closing
+// perhaps also create a large set of data that can be manipulated throughtout
+// all the test and deleted at the end
+var log = logger.With().Str("test", "core").Logger()
 var db *surrealdb.DB
 var b *bus.BusConn
 var sub *nats.Subscription
@@ -29,14 +33,14 @@ func init() {
 	}
 }
 
-// go test -v -timeout 30s -run ^TestPublishDeviceCreateSuccess\$ github.com/maxthom/mir/services/registration
+// go test -v -timeout 30s -run ^TestPublishDeviceCreateSuccess\$ github.com/maxthom/mir/services/core
 func TestPublishDeviceCreateSuccess(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 
 	id := "0x994b"
 	publishStream := "test.v1alpha.device.create"
-	devReq := &registration.CreateDeviceRequest{
+	devReq := &core.CreateDeviceRequest{
 		DeviceId:    id,
 		Description: "hello world of devices !",
 		Labels: map[string]string{
@@ -49,7 +53,7 @@ func TestPublishDeviceCreateSuccess(t *testing.T) {
 	}
 
 	// Act
-	regSrv := NewRegistrationServer(log, b, sub, db)
+	regSrv := NewCore(log, b, sub, db)
 	go func() {
 		regSrv.Listen(ctx)
 	}()
@@ -64,7 +68,7 @@ func TestPublishDeviceCreateSuccess(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	dbResp := executeTestQueryForType[[]registration.CreateDeviceRequest](t, db,
+	dbResp := executeTestQueryForType[[]core.CreateDeviceRequest](t, db,
 		"SELECT * FROM type::table($tb) WHERE device_id = $id;",
 		map[string]string{
 			"tb": "devices",
@@ -84,7 +88,7 @@ func TestPublishDeviceCreateClientSuccess(t *testing.T) {
 	ctx := context.Background()
 
 	id := "0x992a"
-	devReq := &registration.CreateDeviceRequest{
+	devReq := &core.CreateDeviceRequest{
 		DeviceId:    id,
 		Description: "hello world of devices !",
 		Labels: map[string]string{
@@ -97,7 +101,7 @@ func TestPublishDeviceCreateClientSuccess(t *testing.T) {
 	}
 
 	// Act
-	regSrv := NewRegistrationServer(log, b, sub, db)
+	regSrv := NewCore(log, b, sub, db)
 	go func() {
 		regSrv.Listen(ctx)
 	}()
@@ -108,7 +112,7 @@ func TestPublishDeviceCreateClientSuccess(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	devRes := executeTestQueryForType[[]registration.CreateDeviceRequest](t, db,
+	devRes := executeTestQueryForType[[]core.CreateDeviceRequest](t, db,
 		"SELECT * FROM type::table($tb) WHERE device_id = $id;",
 		map[string]string{
 			"tb": "devices",
@@ -130,7 +134,7 @@ func TestPublishDeviceUpdateTargetIdsSuccess(t *testing.T) {
 	ctx := context.Background()
 
 	id := "0x777b"
-	device := &registration.CreateDeviceRequest{
+	device := &core.CreateDeviceRequest{
 		DeviceId:    id,
 		Description: "hello world of devices !",
 		Labels: map[string]string{
@@ -144,11 +148,11 @@ func TestPublishDeviceUpdateTargetIdsSuccess(t *testing.T) {
 		},
 	}
 
-	testQuery := &registration.UpdateDeviceRequest{
+	testQuery := &core.UpdateDeviceRequest{
 		TargetIds:    []string{id},
 		TargetLabels: map[string]string{},
 		Description:  strRef("yiihayy"),
-		Labels: map[string]*registration.UpdateDeviceRequest_OptString{
+		Labels: map[string]*core.UpdateDeviceRequest_OptString{
 			"factory": {
 				Value: strRef("site_b"),
 			},
@@ -160,7 +164,7 @@ func TestPublishDeviceUpdateTargetIdsSuccess(t *testing.T) {
 				Value: strRef("mazda3sport"),
 			},
 		},
-		Annotations: map[string]*registration.UpdateDeviceRequest_OptString{
+		Annotations: map[string]*core.UpdateDeviceRequest_OptString{
 			"utility": {
 				Value: strRef("major"),
 			},
@@ -172,7 +176,7 @@ func TestPublishDeviceUpdateTargetIdsSuccess(t *testing.T) {
 	}
 
 	// Act
-	regSrv := NewRegistrationServer(log, b, sub, db)
+	regSrv := NewCore(log, b, sub, db)
 	go func() {
 		regSrv.Listen(ctx)
 	}()
@@ -188,7 +192,7 @@ func TestPublishDeviceUpdateTargetIdsSuccess(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	dbResp := executeTestQueryForType[[]registration.CreateDeviceRequest](t, db,
+	dbResp := executeTestQueryForType[[]core.CreateDeviceRequest](t, db,
 		"SELECT * FROM type::table($tb) WHERE device_id = $id;",
 		map[string]string{
 			"tb": "devices",
@@ -209,14 +213,14 @@ func TestPublishDeviceUpdateTargetLabelsSuccess(t *testing.T) {
 	ctx := context.Background()
 
 	deviceIds := []string{"0x998c", "0x999d", "0x122f"}
-	testQuery := &registration.UpdateDeviceRequest{
+	testQuery := &core.UpdateDeviceRequest{
 		TargetIds: []string{},
 		TargetLabels: map[string]string{
 			"factory": "D",
 			"land":    "sheep",
 		},
 		Description: strRef("yiihayy"),
-		Labels: map[string]*registration.UpdateDeviceRequest_OptString{
+		Labels: map[string]*core.UpdateDeviceRequest_OptString{
 			"owner": {
 				Value: nil,
 			},
@@ -224,7 +228,7 @@ func TestPublishDeviceUpdateTargetLabelsSuccess(t *testing.T) {
 				Value: strRef("mazda3sport"),
 			},
 		},
-		Annotations: map[string]*registration.UpdateDeviceRequest_OptString{
+		Annotations: map[string]*core.UpdateDeviceRequest_OptString{
 			"utility": {
 				Value: nil,
 			},
@@ -234,7 +238,7 @@ func TestPublishDeviceUpdateTargetLabelsSuccess(t *testing.T) {
 			},
 		},
 	}
-	devices := []*registration.CreateDeviceRequest{
+	devices := []*core.CreateDeviceRequest{
 		{
 			DeviceId:    deviceIds[0],
 			Description: "hello world of devices !",
@@ -277,7 +281,7 @@ func TestPublishDeviceUpdateTargetLabelsSuccess(t *testing.T) {
 	}
 
 	// Act
-	regSrv := NewRegistrationServer(log, b, sub, db)
+	regSrv := NewCore(log, b, sub, db)
 	go func() {
 		regSrv.Listen(ctx)
 	}()
@@ -292,7 +296,7 @@ func TestPublishDeviceUpdateTargetLabelsSuccess(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	devRes := executeTestQueryForType[[]registration.Device](t, db,
+	devRes := executeTestQueryForType[[]core.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE device_id = $id1 OR device_id = $id2 OR device_id = $id3;",
 		map[string]string{
 			"tb":  "devices",
@@ -328,14 +332,14 @@ func TestPublishDeviceUpdateTargetMixsSuccess(t *testing.T) {
 	ctx := context.Background()
 
 	deviceIds := []string{"0x998c", "0x999d", "0x122f"}
-	testQuery := &registration.UpdateDeviceRequest{
+	testQuery := &core.UpdateDeviceRequest{
 		TargetIds: []string{deviceIds[2], deviceIds[0]},
 		TargetLabels: map[string]string{
 			"factory": "D",
 			"land":    "sheep",
 		},
 		Description: strRef("yiihayy"),
-		Labels: map[string]*registration.UpdateDeviceRequest_OptString{
+		Labels: map[string]*core.UpdateDeviceRequest_OptString{
 			"owner": {
 				Value: nil,
 			},
@@ -343,7 +347,7 @@ func TestPublishDeviceUpdateTargetMixsSuccess(t *testing.T) {
 				Value: strRef("mazda3sport"),
 			},
 		},
-		Annotations: map[string]*registration.UpdateDeviceRequest_OptString{
+		Annotations: map[string]*core.UpdateDeviceRequest_OptString{
 			"utility": {
 				Value: nil,
 			},
@@ -353,7 +357,7 @@ func TestPublishDeviceUpdateTargetMixsSuccess(t *testing.T) {
 			},
 		},
 	}
-	devices := []*registration.CreateDeviceRequest{
+	devices := []*core.CreateDeviceRequest{
 		{
 			DeviceId:    deviceIds[0],
 			Description: "hello world of devices !",
@@ -396,7 +400,7 @@ func TestPublishDeviceUpdateTargetMixsSuccess(t *testing.T) {
 	}
 
 	// Act
-	regSrv := NewRegistrationServer(log, b, sub, db)
+	regSrv := NewCore(log, b, sub, db)
 	go func() {
 		regSrv.Listen(ctx)
 	}()
@@ -413,7 +417,7 @@ func TestPublishDeviceUpdateTargetMixsSuccess(t *testing.T) {
 	// Wait for written to db
 	time.Sleep(1 * time.Second)
 
-	dbResp := executeTestQueryForType[[]registration.Device](t, db,
+	dbResp := executeTestQueryForType[[]core.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE device_id = $id1 OR device_id = $id2 OR device_id = $id3;",
 		map[string]string{
 			"tb":  "devices",
@@ -449,10 +453,10 @@ func TestPublishDeviceDeleteTargetIdsSuccess(t *testing.T) {
 	ctx := context.Background()
 
 	deviceIds := []string{"0x998c", "0x999d", "0x122f"}
-	testQuery := &registration.DeleteDeviceRequest{
+	testQuery := &core.DeleteDeviceRequest{
 		TargetIds: []string{deviceIds[0], deviceIds[1]},
 	}
-	devices := []*registration.CreateDeviceRequest{
+	devices := []*core.CreateDeviceRequest{
 		{
 			DeviceId:    deviceIds[0],
 			Description: "hello world of devices !",
@@ -495,7 +499,7 @@ func TestPublishDeviceDeleteTargetIdsSuccess(t *testing.T) {
 	}
 
 	// Act
-	regSrv := NewRegistrationServer(log, b, sub, db)
+	regSrv := NewCore(log, b, sub, db)
 	go func() {
 		regSrv.Listen(ctx)
 	}()
@@ -513,7 +517,7 @@ func TestPublishDeviceDeleteTargetIdsSuccess(t *testing.T) {
 	// Wait for written to db
 	time.Sleep(1 * time.Second)
 
-	dbResp := executeTestQueryForType[[]registration.Device](t, db,
+	dbResp := executeTestQueryForType[[]core.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE device_id = $id1 OR device_id = $id2 OR device_id = $id3;",
 		map[string]string{
 			"tb":  "devices",
@@ -535,7 +539,7 @@ func TestPublishDeviceDeleteTargetLabelsSuccess(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 
-	testQuery := &registration.DeleteDeviceRequest{
+	testQuery := &core.DeleteDeviceRequest{
 		TargetLabels: map[string]string{
 			"factory": "D",
 			"land":    "sheep",
@@ -543,7 +547,7 @@ func TestPublishDeviceDeleteTargetLabelsSuccess(t *testing.T) {
 	}
 
 	deviceIds := []string{"0x998c", "0x999d", "0x122f"}
-	devices := []*registration.CreateDeviceRequest{
+	devices := []*core.CreateDeviceRequest{
 		{
 			DeviceId:    deviceIds[0],
 			Description: "hello world of devices !",
@@ -586,7 +590,7 @@ func TestPublishDeviceDeleteTargetLabelsSuccess(t *testing.T) {
 	}
 
 	// Act
-	regSrv := NewRegistrationServer(log, b, sub, db)
+	regSrv := NewCore(log, b, sub, db)
 	go func() {
 		regSrv.Listen(ctx)
 	}()
@@ -602,7 +606,7 @@ func TestPublishDeviceDeleteTargetLabelsSuccess(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	dbResp := executeTestQueryForType[[]registration.Device](t, db,
+	dbResp := executeTestQueryForType[[]core.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE device_id = $id1 OR device_id = $id2 OR device_id = $id3;",
 		map[string]string{
 			"tb":  "devices",
@@ -625,17 +629,17 @@ func TestPublishDeviceListTargetIdsSuccess(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 
-	regSrv := NewRegistrationServer(log, b, sub, db)
+	regSrv := NewCore(log, b, sub, db)
 	go func() {
 		regSrv.Listen(ctx)
 	}()
 
 	deviceIds := []string{"0x998c", "0x999d", "0x122f"}
-	testQuery := &registration.ListDeviceRequest{
+	testQuery := &core.ListDeviceRequest{
 		TargetIds: []string{deviceIds[0], deviceIds[1]},
 	}
 
-	devices := []*registration.CreateDeviceRequest{
+	devices := []*core.CreateDeviceRequest{
 		{
 			DeviceId:    deviceIds[0],
 			Description: "hello world of devices !",
@@ -689,7 +693,7 @@ func TestPublishDeviceListTargetIdsSuccess(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	dbResp := executeTestQueryForType[[]registration.Device](t, db,
+	dbResp := executeTestQueryForType[[]core.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE device_id = $id1 OR device_id = $id2 OR device_id = $id3;",
 		map[string]string{
 			"tb":  "devices",
@@ -712,12 +716,12 @@ func TestPublishDeviceListTargetLabelsSuccess(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 
-	regSrv := NewRegistrationServer(log, b, sub, db)
+	regSrv := NewCore(log, b, sub, db)
 	go func() {
 		regSrv.Listen(ctx)
 	}()
 
-	testQuery := &registration.ListDeviceRequest{
+	testQuery := &core.ListDeviceRequest{
 		TargetLabels: map[string]string{
 			"factory": "D",
 			"land":    "sheep",
@@ -725,7 +729,7 @@ func TestPublishDeviceListTargetLabelsSuccess(t *testing.T) {
 	}
 
 	deviceIds := []string{"0x998c", "0x999d", "0x122f"}
-	devices := []*registration.CreateDeviceRequest{
+	devices := []*core.CreateDeviceRequest{
 		{
 			DeviceId:    deviceIds[0],
 			Description: "hello world of devices !",
@@ -779,7 +783,7 @@ func TestPublishDeviceListTargetLabelsSuccess(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	dbResult := executeTestQueryForType[[]registration.Device](t, db,
+	dbResult := executeTestQueryForType[[]core.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE device_id = $id1 OR device_id = $id2 OR device_id = $id3;",
 		map[string]string{
 			"tb":  "devices",
@@ -817,14 +821,14 @@ func deleteDevices(t *testing.T, db *surrealdb.DB, ids []string) error {
 	q := "DELETE FROM type::table($tb) WHERE device_id = \""
 	q += strings.Join(ids, "\" OR device_id = \"")
 	q += "\";"
-	executeTestQueryForType[[]registration.Device](t, db,
+	executeTestQueryForType[[]core.Device](t, db,
 		q, map[string]string{
 			"tb": "devices",
 		})
 	return nil
 }
 
-func createDevices(ctx context.Context, bus *bus.BusConn, devices []*registration.CreateDeviceRequest) error {
+func createDevices(ctx context.Context, bus *bus.BusConn, devices []*core.CreateDeviceRequest) error {
 	for _, dev := range devices {
 		_, err := PublishDeviceCreateRequest(ctx, b, dev)
 		if err != nil {

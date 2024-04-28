@@ -23,17 +23,21 @@
 - Create ProtoDash which can generate a dashboard from a proto file
   1. [ ] Generate dashboard for questdb
 
-- Registrater, register new device and basic management. The Core.
+- Core, register new device and basic management. The Core.
 
   - [x] Create a new device
-  - [ ] Update a device
-  - [ ] Delete a device
-  - [ ] List all devices with labels filter
-  - [ ] Get a device or a list of device with list of ids
+  - [x] Update a device
+  - [x] Delete a device
+  - [x] List all devices with labels filter
+  - [x] Get a device or a list of device with list of ids
   - [x] Setup unit test boilerplate
-  - [ ] Setup unit test for each functions
+  - [x] Setup unit test for each functions
   - [x] Setup SurrealDB
   - [x] Setup NatsIO and request reply paradigm
+  - [ ] Set config in a mir folder instead of per apps
+  - [ ] Add unit test with sub test and better handle db close
+  - [ ] Add search by annotations
+  - [ ] Add search by any json fields
 
 - TwinManager, the digital twin manager
 

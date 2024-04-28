@@ -15,7 +15,7 @@ import (
 	"github.com/maxthom/mir/libs/boiler/mir_log"
 	"github.com/maxthom/mir/libs/boiler/mir_signals"
 	bus "github.com/maxthom/mir/libs/external/natsio"
-	"github.com/maxthom/mir/services/registration"
+	"github.com/maxthom/mir/services/core"
 	"github.com/nats-io/nats.go"
 	logger "github.com/rs/zerolog/log"
 	"github.com/surrealdb/surrealdb.go"
@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	AppName = "registration"
+	AppName = "core"
 	Version = "0.0.1"
 )
 
@@ -101,8 +101,8 @@ func main() {
 	log.Info().Str("url", cfg.DataBusServer.Url).Str("subject", sub.Subject).Str("queue", sub.Queue).Msg("connected to msg bus")
 
 	// Services
-	regSrv := registration.NewRegistrationServer(log, b, db)
-	registration.RegisterMetrics(metrics.Registry())
+	regSrv := core.NewCore(log, b, sub, db)
+	core.RegisterMetrics(metrics.Registry())
 
 	// Metrics & Health
 	metrics.RegisterRoutes(mux)
