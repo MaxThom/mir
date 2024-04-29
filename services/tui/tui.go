@@ -93,8 +93,8 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmd := m.lblSpinner.UpdateLabelWithTimeout(styles["success"].Render(msg), 2*time.Second)
 		return m, tea.Batch(m.lblSpinner.Stop(), cmd)
 	case msgs.ErrMsg:
-		cmd := m.lblSpinner.UpdateLabelWithTimeout(msg.Error(), 2*time.Second)
-		return m, tea.Batch(m.lblSpinner.Stop(), cmd)
+		m.lblSpinner.UpdateLabel(styles["error"].Render(msg.Error()))
+		return m, tea.Batch(m.lblSpinner.Stop())
 	case msgs.RouteChangeMsg:
 		m.currentRoute = msg.Route
 		if m.routes[m.currentRoute] == nil {

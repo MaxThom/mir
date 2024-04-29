@@ -11,7 +11,7 @@
 
 <br/>
 <p align="center">
-  <a href="https://github.com/maxthom/mir/blob/master/LICENSE">
+  <a href="https://github.com/maxthom/mir/blob/main/LICENSE">
     <img src="https://img.shields.io/github/license/maxthom/mir">
   </a>
   <img src="https://img.shields.io/github/repo-size/maxthom/mir">
@@ -24,7 +24,7 @@ Enable highly secure and reliable communication between your Internet of Things 
 Mir IoT Hub, act as your command center:
 
 - processes telemetry and commands with two ways communication
-- automatically generate dashboards to observe data
+- automatically generate dashboards to monitor data
 - uses device twin for configuration management
 - over the air update
 - lightweight and infinitely scalable
@@ -38,10 +38,11 @@ Mir IoT Hub, act as your command center:
   - [Device side apps](#device-side-apps)
   - [Server side apps](#server-side-apps)
 - [Modules](#modules)
-  - [User defined module](#user-defined-module)
-  - [Configuration module](#configuration-module)
+  - [Device Twin module](#device-twin-module)
+  - [Telemetry module](#telemetry-module)
+  - [Command module](#command-module)
   - [Observability module](#observability-module)
-  - [User templated-data module](#user-templated-data-module)
+  - [User defined module](#user-defined-module)
 - [Road map](#roadmap)
 - [License](#license)
 
@@ -59,17 +60,19 @@ Mir IoT Hub, act as your command center:
 
 # Modules
 
-## User defined module
+## Device Twin module
 
-## Configuration module
+## Telemetry module
+
+## Command Module
 
 ## Observability module
 
-## User templated-data module
+## User defined module
 
 # Roadmap
 
-- [ ] Mir Boilerplate
+- [x] Mir Boilerplate
   - [x] project layout
   - [x] config management
   - [x] basic cli
@@ -78,23 +81,37 @@ Mir IoT Hub, act as your command center:
   - [x] prometheus metrics
   - [x] api structure defined
   - [x] health endpoints
-  - [ ] api unit tests
+  - [x] api unit tests
 - [ ] MirCli
   - [ ] one cli to rule them all
+- [ ] MirTui, the terminal ui
+  - [x] main layout
+  - [ ] device create window
+  - [ ] device list and edit window
+  - [ ] telemetry windows
+  - [ ] command windows
+  - [ ] manifest windows
 - [ ] Server side sdk to interact with the hub
   - [ ] api that receive the bytes and must be deserialize using protoc code gen
   - [ ] offers utils such as api routes, disk or cli ways to upload a bpb
   - [ ] go-sdk
   - [ ] rust-sdk
   - [ ] python-sdk
+- [ ] Core
+  - [x] create new devices
+  - [ ] list, edit and delete devices
+  - [ ] hearthbeat for devices
 - [ ] ProtoProxy, the templated data engine
+  - [ ] proto library from protobuff to influx line protocol at runtime
   - [ ] proto schema to grafana dashboard
   - [ ] proto data to timeseries db
 - [ ] ProtoStore, to store proto schema
   - [ ] can run standalone
   - [ ] can run embeded
   - [ ] protoproxy can have an internal and external store
-- [ ] TwinHub, the configuration module
+- [ ] Twin, the Digital Twin module
+  - [ ] desired properties
+  - [ ] reported properties
 - [ ] Client side sdk to interact with Mir
   - [ ] go-sdk
   - [ ] rust-sdk
@@ -111,3 +128,8 @@ Mir IoT Hub, act as your command center:
 # License
 
 Source code for MirHub is licensed under a MIT license
+
+# References
+
+- [table](https://github.com/chronosphereio/calyptia-go-bubble-table/tree/main)
+- [lipgloss](https://github.com/charmbracelet/lipgloss)

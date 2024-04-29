@@ -1,0 +1,126 @@
+syntax = "proto3";
+
+package v1alpha.core;
+
+option go_package = "gen/";
+
+/*
+  Send a request to create a new device in the system
+*/
+message CreateDeviceRequest {
+  string device_id = 1; // the device_id must be unique
+  string description = 2;  // description of the device
+  map<string, string> labels = 3; // labels are used to uniquely identify the device
+  map<string, string> annotations = 4; // annotations are used to add additional information
+}
+
+/*
+  Response to the create device request
+  Only the error or the response data will be set
+*/
+message CreateDeviceResponse {
+  oneof response {
+    DeviceIdList ok = 1; // list of device ids that were created
+    Error error = 2;  // HTTP like error if something went wrong
+  }
+}
+
+/*
+  Send a request to update a device in the system
+  - Optional field, means can be nil
+  - when nil, mean we do not need to set them
+  - when nil, for a map value, it means mark for deletion
+*/
+message UpdateDeviceRequest {
+  Targets targets = 1; // To target a set of devices, search using ids, labels and annotations 
+  optional string description = 3; // description of the device
+  map<string, OptString> labels = 4; // set key to nil to remove it
+  map<string, OptString> annotations = 5; // set key to nil to remove it
+
+  message OptString {
+    optional string value = 1;
+  }
+}
+
+/*
+  Response to the create device request
+  Only the error or the response data will be set
+*/
+message UpdateDeviceResponse {
+  oneof response {
+    DeviceIdList ok = 1; //  List of device ids that were updated
+    Error error = 2; // HTTP like error if something went wrong
+  }
+}
+
+/* 
+  Send a request to delete a device in the system
+*/
+message DeleteDeviceRequest {
+  Targets targets = 1; // To target a set of devices, search using ids, labels and annotations
+}
+
+/*
+  Response to the create device request
+  Only the error or the response data will be set
+*/
+message DeleteDeviceResponse {
+  oneof response {
+    DeviceIdList ok = 1; // List of device ids that were deleted
+    Error error = 2; // HTTP like error if something went wrong
+  }
+}
+
+/*
+  Send a request to list devices in the system
+*/
+message ListDeviceRequest {
+  Targets targets = 1; // To target a set of devices, search using ids, labels and annotations
+}
+
+/*
+  Response to the create device request
+  Only the error or the response data will be set
+*/
+message ListDeviceResponse {
+  oneof response {
+    DeviceList ok = 1; // Devices that were found from the search
+    Error error = 2;  // HTTP like error if something went wrong
+  }  
+}
+
+/*
+  Targets is used to target a set of devices using
+  a combination of ids, labels and annotations
+*/
+message Targets {
+  repeated string ids = 1; // ids of the devices
+  map<string, string> labels = 2; // Labels are used to uniquely identify the device
+  map<string, string> annotations = 3; // Annotations are used to add additional information
+}
+
+message DeviceList {
+  repeated Device devices = 1;
+}
+
+message DeviceIdList {
+  repeated string device_ids = 1;
+}
+
+/*
+  Represent a device in the system
+*/
+message Device {
+  string id = 1; // Represent the database id of the device
+  string device_id = 2; // Represent the Mir id of the device 
+  string description = 3; // Description of the devices
+  map<string, string> labels = 4; // Labels are used to uniquely identify the device
+  map<string, string> annotations = 5; // Annotations are used to add additional information
+}
+
+// Generic error message
+message Error {
+    uint32 code = 1;     // HTTP like status code
+    string message = 2;  // Human-readable error message.
+    repeated string details = 3; // Optional details.
+}

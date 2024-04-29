@@ -23,7 +23,42 @@
 - Create ProtoDash which can generate a dashboard from a proto file
   1. [ ] Generate dashboard for questdb
 
-- Create TwinManager to manager configuration
+- Core, register new device and basic management. The Core.
 
-- Create MirUI using htmx and tailwind
+  - [x] Create a new device
+  - [x] Update a device
+  - [x] Delete a device
+  - [x] List all devices with labels filter
+  - [x] Get a device or a list of device with list of ids
+  - [x] Setup unit test boilerplate
+  - [x] Setup unit test for each functions
+  - [x] Setup SurrealDB
+  - [x] Setup NatsIO and request reply paradigm
+  - [ ] Set config in a mir folder instead of per apps
+  - [x] Add unit test with sub test and better handle db close
+  - [x] Add search by annotations
+  - [ ] Add search by any json fields
+  - [x] Add custom set of Mir errors for nice and consistent error handling
+  - [x] Comment the protofile
+  - [ ] Added hearthbeat functionality
+  - [ ] Add env var for integration test if run
+
+- TwinManager, the digital twin manager
+
+- MirCLI, the Command Line Interface to easy interact with the system and with scripts
+  
+  - [ ] Create a database seeding script for populating the db
+
+- MirTUI, the Terminal User Interface with bubble tea
+
+  - [x] Learn BubbleTea
+  - [x] Create the general parent layout
+  - [ ] Create basic components like tooltip and toast
+  - [ ] Create main page layout
+  - [ ] Create the list device layouts
+  - [ ] Create the next device page layout
+  - [ ] Create the edit device page layout
+  - [ ] Delete a device function
+
+- MirWebUI, the Web User Interface with htmx and templ
 

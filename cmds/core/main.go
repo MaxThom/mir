@@ -15,9 +15,8 @@ import (
 	"github.com/maxthom/mir/libs/boiler/mir_log"
 	"github.com/maxthom/mir/libs/boiler/mir_signals"
 	bus "github.com/maxthom/mir/libs/external/natsio"
-	"github.com/maxthom/mir/services/registration"
+	"github.com/maxthom/mir/services/core"
 	"github.com/nats-io/nats.go"
-	"github.com/nats-io/nats.go/jetstream"
 	logger "github.com/rs/zerolog/log"
 	"github.com/surrealdb/surrealdb.go"
 	"golang.org/x/net/http2"
@@ -25,7 +24,7 @@ import (
 )
 
 const (
-	AppName = "registration"
+	AppName = "core"
 	Version = "0.0.1"
 )
 
@@ -94,16 +93,21 @@ func main() {
 		panic(err)
 	}
 
+	if _, err = db.Use("global", "mir"); err != nil {
+		panic(err)
+	}
+	log.Info().Str("url", cfg.DatabaseServer.Url).Str("namespace", "global").Str("database", "mir").Msg("connected to database")
+
 	// Bus
-	b, _, cons, err := createConsumerForTelemetry(ctx)
+	b, sub, err := subscribeToCoreStream()
 	if err != nil {
 		log.Err(err).Msg("")
 	}
-	log.Info().Str("url", cfg.DataBusServer.Url).Str("stream", cons.CachedInfo().Stream).Str("consumer", cons.CachedInfo().Name).Strs("subjects", cons.CachedInfo().Config.FilterSubjects).Msg("connected to msg bus")
+	log.Info().Str("url", cfg.DataBusServer.Url).Str("subject", sub.Subject).Str("queue", sub.Queue).Msg("connected to msg bus")
 
 	// Services
-	regSrv := registration.NewRegistrationServer(log, cons, db)
-	registration.RegisterMetrics(metrics.Registry())
+	regSrv := core.NewCore(log, b, sub, db)
+	core.RegisterMetrics(metrics.Registry())
 
 	// Metrics & Health
 	metrics.RegisterRoutes(mux)
@@ -137,6 +141,7 @@ func main() {
 		go func() {
 			b.Drain()
 			b.Close()
+			db.Close()
 		}()
 
 		// 10 secons to close server, gives sometime for bus and puthost
@@ -150,7 +155,7 @@ func main() {
 
 // TODO
 // rework this function to a library or something
-func createConsumerForTelemetry(ctx context.Context) (*bus.BusConn, jetstream.Stream, jetstream.Consumer, error) {
+func subscribeToCoreStream() (*bus.BusConn, *nats.Subscription, error) {
 	b, err := bus.New(cfg.DataBusServer.Url,
 		bus.WithReconnHandler(func(nc *nats.Conn) {
 			logger.Warn().Msg("reconnected to " + nc.ConnectedUrl())
@@ -162,31 +167,15 @@ func createConsumerForTelemetry(ctx context.Context) (*bus.BusConn, jetstream.St
 			logger.Warn().Msg("connection to %v closed " + nc.ConnectedUrl())
 		}))
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 
-	js, err := jetstream.New(b.Conn)
+	sub, err := b.SubscribeSync(bus.DeviceStreamSubject)
 	if err != nil {
-		return b, nil, nil, err
+		log.Error().Err(err).Msg("failed to subscribe to subject")
 	}
 
-	stream, err := js.CreateOrUpdateStream(ctx, jetstream.StreamConfig{
-		Name:     bus.DeviceStreamName,
-		Subjects: []string{bus.DeviceStreamSubject},
-	})
-	if err != nil {
-		return b, stream, nil, err
-	}
-
-	// retrieve consumer handle from a stream
-	cons, err := stream.CreateOrUpdateConsumer(ctx, jetstream.ConsumerConfig{
-		Durable:        "registration", // + hash of pod for scaling?
-		FilterSubjects: []string{},     // can filter on specific functions
-		// Implicit for telemerty, explicity for commands and telemetry
-		AckPolicy: jetstream.AckExplicitPolicy,
-	})
-
-	return b, stream, cons, err
+	return b, sub, err
 }
 
 func init() {
