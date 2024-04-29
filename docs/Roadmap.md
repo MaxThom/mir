@@ -35,7 +35,7 @@
   - [x] Setup SurrealDB
   - [x] Setup NatsIO and request reply paradigm
   - [ ] Set config in a mir folder instead of per apps
-  - [ ] Add unit test with sub test and better handle db close
+  - [x] Add unit test with sub test and better handle db close
   - [x] Add search by annotations
   - [ ] Add search by any json fields
   - [x] Add custom set of Mir errors for nice and consistent error handling
@@ -44,6 +44,10 @@
   - [ ] Add env var for integration test if run
 
 - TwinManager, the digital twin manager
+
+- MirCLI, the Command Line Interface to easy interact with the system and with scripts
+  
+  - [ ] Create a database seeding script for populating the db
 
 - MirTUI, the Terminal User Interface with bubble tea
 

@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -16,25 +17,41 @@ import (
 	"gotest.tools/assert"
 )
 
-// TODO
-//   - [ ] make use of the t.SubTest thingy to better handle cleaning such as
-//     db connection closing
-//   - [ ] perhaps also create a large set of data that can be manipulated throughtout
-//     all the tests and deleted at the end
-//   - [ ] read on how to nicely return error from proto
-//   - [ ] create custom set of errors that returns from Mir
 var log = logger.With().Str("test", "core").Logger()
 var db *surrealdb.DB
 var b *bus.BusConn
 var sub *nats.Subscription
 
-func init() {
+func TestMain(m *testing.M) {
+	// Setup
+	fmt.Println("Test Setup")
 	var err error
 	db, b, sub, err = setupConns(bus.DeviceStreamSubject)
 	if err != nil {
 		panic(err)
 	}
-	deleteTableOrRecord(db, "devices")
+	fmt.Println(" -> connected to bus and db")
+	if err := deleteTableOrRecord(db, "devices"); err != nil {
+		panic(err)
+	}
+	fmt.Println(" -> cleaned up db before testing")
+
+	// Tests
+	exitVal := m.Run()
+
+	// Teardown
+	fmt.Println("Test Teardown")
+	if err := deleteTableOrRecord(db, "devices"); err != nil {
+		panic(err)
+	}
+	fmt.Println(" -> cleaned up db after testing")
+	time.Sleep(1 * time.Second)
+	b.Drain()
+	b.Close()
+	db.Close()
+	fmt.Println(" -> closed bus and db connection")
+
+	os.Exit(exitVal)
 }
 
 // go test -v -timeout 30s -run ^TestPublishDeviceCreate\$ github.com/maxthom/mir/services/core
@@ -1064,6 +1081,10 @@ func setupConns(subject string) (*surrealdb.DB, *bus.BusConn, *nats.Subscription
 		"user": "root",
 		"pass": "root",
 	}); err != nil {
+		return db, nil, nil, err
+	}
+
+	if _, err = db.Use("global", "mir"); err != nil {
 		return db, nil, nil, err
 	}
 

@@ -38,7 +38,7 @@ func RegisterMetrics(reg prometheus.Registerer) {
 }
 
 func NewCore(logger zerolog.Logger, bus *bus.BusConn, sub *nats.Subscription, db *surrealdb.DB) *CoreServer {
-	l = logger.With().Str("srv", "registration_server").Logger()
+	l = logger.With().Str("srv", "core_server").Logger()
 	return &CoreServer{
 		sub: sub,
 		bus: bus,
@@ -99,20 +99,6 @@ func (s *CoreServer) createDeviceRequestHandler(ch chan nats.Msg) {
 			continue
 		}
 		l.Debug().Str("route", "create").Str("payload", fmt.Sprintf("%v", req)).Msg("new device request")
-
-		if _, err = s.db.Use("global", "mir"); err != nil {
-			l.Error().Err(err).Msg("error occure while setting db context")
-			sendReplyOrAck(s.bus, msg, &core.CreateDeviceResponse{
-				Response: &core.CreateDeviceResponse_Error{
-					Error: &core.Error{
-						Code:    502,
-						Message: "error occure while setting db context",
-						Details: []string{"502 Bad Gateway", err.Error()},
-					},
-				},
-			})
-			continue
-		}
 
 		q, v := createListQueryForDevice(&core.ListDeviceRequest{
 			Targets: &core.Targets{
@@ -206,20 +192,6 @@ func (s *CoreServer) updateDeviceRequestHandler(ch chan nats.Msg) {
 		}
 		l.Debug().Str("route", "update").Str("payload", fmt.Sprintf("%v", req)).Msg("update device request")
 
-		if _, err = s.db.Use("global", "mir"); err != nil {
-			l.Error().Err(err).Msg("error occure while setting db context")
-			sendReplyOrAck(s.bus, msg, &core.UpdateDeviceResponse{
-				Response: &core.UpdateDeviceResponse_Error{
-					Error: &core.Error{
-						Code:    502,
-						Message: "error occure while setting db context",
-						Details: []string{"502 Bad Gateway", err.Error()},
-					},
-				},
-			})
-			continue
-		}
-
 		if req.Targets == nil ||
 			len(req.Targets.Ids) == 0 &&
 				len(req.Targets.Labels) == 0 &&
@@ -289,20 +261,6 @@ func (s *CoreServer) deleteDeviceRequestHandler(ch chan nats.Msg) {
 		}
 		l.Debug().Str("route", "delete").Str("payload", fmt.Sprintf("%v", req)).Msg("delete device request")
 
-		if _, err = s.db.Use("global", "mir"); err != nil {
-			l.Error().Err(err).Msg("error occure while setting db context")
-			sendReplyOrAck(s.bus, msg, &core.DeleteDeviceResponse{
-				Response: &core.DeleteDeviceResponse_Error{
-					Error: &core.Error{
-						Code:    502,
-						Message: "error occure while setting db context",
-						Details: []string{"502 Bad Gateway", err.Error()},
-					},
-				},
-			})
-			continue
-		}
-
 		if req.Targets == nil ||
 			len(req.Targets.Ids) == 0 &&
 				len(req.Targets.Labels) == 0 &&
@@ -367,21 +325,7 @@ func (s *CoreServer) listDeviceRequestHandler(ch chan nats.Msg) {
 			})
 			continue
 		}
-		l.Info().Str("route", "list").Str("payload", fmt.Sprintf("%v", req)).Msg("delete device request")
-
-		if _, err = s.db.Use("global", "mir"); err != nil {
-			l.Error().Err(err).Msg("error occure while setting db context")
-			sendReplyOrAck(s.bus, msg, &core.ListDeviceResponse{
-				Response: &core.ListDeviceResponse_Error{
-					Error: &core.Error{
-						Code:    502,
-						Message: "error occure while setting db context",
-						Details: []string{"502 Bad Gateway", err.Error()},
-					},
-				},
-			})
-			continue
-		}
+		l.Debug().Str("route", "list").Str("payload", fmt.Sprintf("%v", req)).Msg("delete device request")
 
 		q, v := createListQueryForDevice(req)
 		respDb, err := executeQueryForType[[]*core.Device](s.db, q, v)

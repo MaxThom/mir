@@ -93,8 +93,13 @@ func main() {
 		panic(err)
 	}
 
+	if _, err = db.Use("global", "mir"); err != nil {
+		panic(err)
+	}
+	log.Info().Str("url", cfg.DatabaseServer.Url).Str("namespace", "global").Str("database", "mir").Msg("connected to database")
+
 	// Bus
-	b, sub, err := subscribeToCoreStream(ctx)
+	b, sub, err := subscribeToCoreStream()
 	if err != nil {
 		log.Err(err).Msg("")
 	}
@@ -136,6 +141,7 @@ func main() {
 		go func() {
 			b.Drain()
 			b.Close()
+			db.Close()
 		}()
 
 		// 10 secons to close server, gives sometime for bus and puthost
@@ -149,7 +155,7 @@ func main() {
 
 // TODO
 // rework this function to a library or something
-func subscribeToCoreStream(ctx context.Context) (*bus.BusConn, *nats.Subscription, error) {
+func subscribeToCoreStream() (*bus.BusConn, *nats.Subscription, error) {
 	b, err := bus.New(cfg.DataBusServer.Url,
 		bus.WithReconnHandler(func(nc *nats.Conn) {
 			logger.Warn().Msg("reconnected to " + nc.ConnectedUrl())
