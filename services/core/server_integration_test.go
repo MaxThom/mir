@@ -16,10 +16,13 @@ import (
 	"gotest.tools/assert"
 )
 
-// TODO make use of the t.SubTest thingy to better handle cleaning such as
-// db connection closing
-// perhaps also create a large set of data that can be manipulated throughtout
-// all the test and deleted at the end
+// TODO
+//   - [ ] make use of the t.SubTest thingy to better handle cleaning such as
+//     db connection closing
+//   - [ ] perhaps also create a large set of data that can be manipulated throughtout
+//     all the tests and deleted at the end
+//   - [ ] read on how to nicely return error from proto
+//   - [ ] create custom set of errors that returns from Mir
 var log = logger.With().Str("test", "core").Logger()
 var db *surrealdb.DB
 var b *bus.BusConn
@@ -31,10 +34,11 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
+	deleteTableOrRecord(db, "devices")
 }
 
-// go test -v -timeout 30s -run ^TestPublishDeviceCreateSuccess\$ github.com/maxthom/mir/services/core
-func TestPublishDeviceCreateSuccess(t *testing.T) {
+// go test -v -timeout 30s -run ^TestPublishDeviceCreate\$ github.com/maxthom/mir/services/core
+func TestPublishDeviceCreate(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 
@@ -83,7 +87,7 @@ func TestPublishDeviceCreateSuccess(t *testing.T) {
 	assert.Equal(t, devReq.Description, dbResp[0].Description)
 }
 
-func TestPublishDeviceCreateClientSuccess(t *testing.T) {
+func TestPublishDeviceCreateClient(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 
@@ -112,7 +116,7 @@ func TestPublishDeviceCreateClientSuccess(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	devRes := executeTestQueryForType[[]core.CreateDeviceRequest](t, db,
+	devRes := executeTestQueryForType[[]core.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE device_id = $id;",
 		map[string]string{
 			"tb": "devices",
@@ -126,10 +130,10 @@ func TestPublishDeviceCreateClientSuccess(t *testing.T) {
 	assert.Equal(t, devReq.DeviceId, devRes[0].DeviceId)
 	assert.Equal(t, devReq.Description, devRes[0].Description)
 	assert.Equal(t, resp.DeviceId, devRes[0].DeviceId)
-	assert.Equal(t, resp.Msg[0], "Device created")
+	assert.Equal(t, resp.Msg[0], "device created successfully")
 }
 
-func TestPublishDeviceUpdateTargetIdsSuccess(t *testing.T) {
+func TestPublishDeviceUpdateTargetIds(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 
@@ -149,9 +153,10 @@ func TestPublishDeviceUpdateTargetIdsSuccess(t *testing.T) {
 	}
 
 	testQuery := &core.UpdateDeviceRequest{
-		TargetIds:    []string{id},
-		TargetLabels: map[string]string{},
-		Description:  strRef("yiihayy"),
+		Targets: &core.Targets{
+			Ids: []string{id},
+		},
+		Description: strRef("yiihayy"),
 		Labels: map[string]*core.UpdateDeviceRequest_OptString{
 			"factory": {
 				Value: strRef("site_b"),
@@ -203,21 +208,22 @@ func TestPublishDeviceUpdateTargetIdsSuccess(t *testing.T) {
 	}
 
 	// Assert
-	assert.Equal(t, testQuery.TargetIds[0], dbResp[0].DeviceId)
+	assert.Equal(t, testQuery.Targets.Ids[0], dbResp[0].DeviceId)
 	assert.Equal(t, *testQuery.Description, dbResp[0].Description)
 	assert.Equal(t, resp.AffectedDevices[0], id)
 }
 
-func TestPublishDeviceUpdateTargetLabelsSuccess(t *testing.T) {
+func TestPublishDeviceUpdateTargetLabels(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 
 	deviceIds := []string{"0x998c", "0x999d", "0x122f"}
 	testQuery := &core.UpdateDeviceRequest{
-		TargetIds: []string{},
-		TargetLabels: map[string]string{
-			"factory": "D",
-			"land":    "sheep",
+		Targets: &core.Targets{
+			Labels: map[string]string{
+				"factory": "D",
+				"land":    "sheep",
+			},
 		},
 		Description: strRef("yiihayy"),
 		Labels: map[string]*core.UpdateDeviceRequest_OptString{
@@ -286,7 +292,7 @@ func TestPublishDeviceUpdateTargetLabelsSuccess(t *testing.T) {
 		regSrv.Listen(ctx)
 	}()
 
-	if err := createDevices(ctx, b, devices); err != nil {
+	if _, err := createDevices(ctx, b, devices); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
@@ -327,16 +333,18 @@ func TestPublishDeviceUpdateTargetLabelsSuccess(t *testing.T) {
 	}
 }
 
-func TestPublishDeviceUpdateTargetMixsSuccess(t *testing.T) {
+func TestPublishDeviceUpdateTargetMixs(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 
 	deviceIds := []string{"0x998c", "0x999d", "0x122f"}
 	testQuery := &core.UpdateDeviceRequest{
-		TargetIds: []string{deviceIds[2], deviceIds[0]},
-		TargetLabels: map[string]string{
-			"factory": "D",
-			"land":    "sheep",
+		Targets: &core.Targets{
+			Ids: []string{deviceIds[2], deviceIds[0]},
+			Labels: map[string]string{
+				"factory": "D",
+				"land":    "sheep",
+			},
 		},
 		Description: strRef("yiihayy"),
 		Labels: map[string]*core.UpdateDeviceRequest_OptString{
@@ -405,7 +413,7 @@ func TestPublishDeviceUpdateTargetMixsSuccess(t *testing.T) {
 		regSrv.Listen(ctx)
 	}()
 
-	if err := createDevices(ctx, b, devices); err != nil {
+	if _, err := createDevices(ctx, b, devices); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
@@ -448,13 +456,15 @@ func TestPublishDeviceUpdateTargetMixsSuccess(t *testing.T) {
 	}
 }
 
-func TestPublishDeviceDeleteTargetIdsSuccess(t *testing.T) {
+func TestPublishDeviceDeleteTargetIds(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 
 	deviceIds := []string{"0x998c", "0x999d", "0x122f"}
 	testQuery := &core.DeleteDeviceRequest{
-		TargetIds: []string{deviceIds[0], deviceIds[1]},
+		Targets: &core.Targets{
+			Ids: []string{deviceIds[0], deviceIds[1]},
+		},
 	}
 	devices := []*core.CreateDeviceRequest{
 		{
@@ -504,7 +514,7 @@ func TestPublishDeviceDeleteTargetIdsSuccess(t *testing.T) {
 		regSrv.Listen(ctx)
 	}()
 
-	if err := createDevices(ctx, b, devices); err != nil {
+	if _, err := createDevices(ctx, b, devices); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
@@ -535,14 +545,16 @@ func TestPublishDeviceDeleteTargetIdsSuccess(t *testing.T) {
 	assert.Equal(t, dbResp[0].DeviceId, deviceIds[2])
 }
 
-func TestPublishDeviceDeleteTargetLabelsSuccess(t *testing.T) {
+func TestPublishDeviceDeleteTargetLabels(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 
 	testQuery := &core.DeleteDeviceRequest{
-		TargetLabels: map[string]string{
-			"factory": "D",
-			"land":    "sheep",
+		Targets: &core.Targets{
+			Labels: map[string]string{
+				"factory": "D",
+				"land":    "plane",
+			},
 		},
 	}
 
@@ -553,7 +565,7 @@ func TestPublishDeviceDeleteTargetLabelsSuccess(t *testing.T) {
 			Description: "hello world of devices !",
 			Labels: map[string]string{
 				"factory": "D",
-				"land":    "sheep",
+				"land":    "plane",
 				"owner":   "bob_morrisson",
 				"fix":     "cant_be_touch",
 			},
@@ -566,7 +578,7 @@ func TestPublishDeviceDeleteTargetLabelsSuccess(t *testing.T) {
 			Description: "hello world of devices !",
 			Labels: map[string]string{
 				"factory": "D",
-				"land":    "sheep",
+				"land":    "plane",
 				"owner":   "bob_morrisson",
 				"fix":     "cant_be_touch",
 			},
@@ -595,7 +607,7 @@ func TestPublishDeviceDeleteTargetLabelsSuccess(t *testing.T) {
 		regSrv.Listen(ctx)
 	}()
 
-	if err := createDevices(ctx, b, devices); err != nil {
+	if _, err := createDevices(ctx, b, devices); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
@@ -614,7 +626,6 @@ func TestPublishDeviceDeleteTargetLabelsSuccess(t *testing.T) {
 			"id2": deviceIds[1],
 			"id3": deviceIds[2],
 		})
-
 	if err = deleteDevices(t, db, deviceIds); err != nil {
 		t.Error(err)
 	}
@@ -625,7 +636,7 @@ func TestPublishDeviceDeleteTargetLabelsSuccess(t *testing.T) {
 	assert.Equal(t, dbResp[0].DeviceId, deviceIds[2])
 }
 
-func TestPublishDeviceListTargetIdsSuccess(t *testing.T) {
+func TestPublishDeviceListTargetIds(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 
@@ -636,7 +647,9 @@ func TestPublishDeviceListTargetIdsSuccess(t *testing.T) {
 
 	deviceIds := []string{"0x998c", "0x999d", "0x122f"}
 	testQuery := &core.ListDeviceRequest{
-		TargetIds: []string{deviceIds[0], deviceIds[1]},
+		Targets: &core.Targets{
+			Ids: []string{deviceIds[0], deviceIds[1]},
+		},
 	}
 
 	devices := []*core.CreateDeviceRequest{
@@ -682,7 +695,7 @@ func TestPublishDeviceListTargetIdsSuccess(t *testing.T) {
 	}
 
 	// Act
-	if err := createDevices(ctx, b, devices); err != nil {
+	if _, err := createDevices(ctx, b, devices); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
@@ -712,7 +725,7 @@ func TestPublishDeviceListTargetIdsSuccess(t *testing.T) {
 	assert.Check(t, resp.Devices[1].DeviceId == deviceIds[0] || resp.Devices[1].DeviceId == deviceIds[1])
 }
 
-func TestPublishDeviceListTargetLabelsSuccess(t *testing.T) {
+func TestPublishDeviceListTargetLabels(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 
@@ -722,9 +735,11 @@ func TestPublishDeviceListTargetLabelsSuccess(t *testing.T) {
 	}()
 
 	testQuery := &core.ListDeviceRequest{
-		TargetLabels: map[string]string{
-			"factory": "D",
-			"land":    "sheep",
+		Targets: &core.Targets{
+			Labels: map[string]string{
+				"factory": "D",
+				"land":    "sheep",
+			},
 		},
 	}
 
@@ -772,7 +787,7 @@ func TestPublishDeviceListTargetLabelsSuccess(t *testing.T) {
 	}
 
 	// Act
-	if err := createDevices(ctx, b, devices); err != nil {
+	if _, err := createDevices(ctx, b, devices); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
@@ -787,16 +802,211 @@ func TestPublishDeviceListTargetLabelsSuccess(t *testing.T) {
 		"SELECT * FROM type::table($tb) WHERE device_id = $id1 OR device_id = $id2 OR device_id = $id3;",
 		map[string]string{
 			"tb":  "devices",
-			"id1": "0x998c",
-			"id2": "0x999d",
-			"id3": "0x122f",
+			"id1": deviceIds[0],
+			"id2": deviceIds[1],
+			"id3": deviceIds[2],
 		})
+	if err := deleteDevices(t, db, deviceIds); err != nil {
+		t.Error(err)
+	}
 
 	// Assert
 	assert.Equal(t, len(dbResult), 3)
 	assert.Equal(t, len(resp.Devices), 2)
 	assert.Check(t, resp.Devices[0].DeviceId == "0x998c" || resp.Devices[0].DeviceId == "0x999d")
 	assert.Check(t, resp.Devices[1].DeviceId == "0x998c" || resp.Devices[1].DeviceId == "0x999d")
+}
+
+func TestPublishDeviceListTargetAnnotations(t *testing.T) {
+	// Arrange
+	ctx := context.Background()
+
+	regSrv := NewCore(log, b, sub, db)
+	go func() {
+		regSrv.Listen(ctx)
+	}()
+
+	testQuery := &core.ListDeviceRequest{
+		Targets: &core.Targets{
+			Annotations: map[string]string{
+				"utility": "air_quality",
+			},
+		},
+	}
+
+	deviceIds := []string{"0x123x", "0x93ef", "0x378a"}
+	devices := []*core.CreateDeviceRequest{
+		{
+			DeviceId:    deviceIds[0],
+			Description: "hello world of devices !",
+			Labels: map[string]string{
+				"factory": "D",
+				"land":    "sheep",
+				"owner":   "bob_morrisson",
+				"fix":     "cant_be_touch",
+			},
+			Annotations: map[string]string{
+				"utility": "air_quality",
+			},
+		},
+		{
+			DeviceId:    deviceIds[1],
+			Description: "hello world of devices !",
+			Labels: map[string]string{
+				"factory": "D",
+				"land":    "sheep",
+				"owner":   "bob_morrisson",
+				"fix":     "cant_be_touch",
+			},
+			Annotations: map[string]string{
+				"utility": "humidity",
+			},
+		},
+		{
+			DeviceId:    deviceIds[2],
+			Description: "hello world of devices !",
+			Labels: map[string]string{
+				"factory": "D",
+				"land":    "cow",
+				"owner":   "bob_morrisson",
+				"fix":     "cant_be_touch",
+			},
+			Annotations: map[string]string{
+				"utility": "humidity",
+			},
+		},
+	}
+
+	// Act
+	if _, err := createDevices(ctx, b, devices); err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	resp, err := PublishDeviceListRequest(ctx, b, testQuery)
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	dbResult := executeTestQueryForType[[]core.Device](t, db,
+		"SELECT * FROM type::table($tb) WHERE device_id = $id1 OR device_id = $id2 OR device_id = $id3;",
+		map[string]string{
+			"tb":  "devices",
+			"id1": deviceIds[0],
+			"id2": deviceIds[1],
+			"id3": deviceIds[2],
+		})
+	if err := deleteDevices(t, db, deviceIds); err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, len(dbResult), 3)
+	assert.Equal(t, len(resp.Devices), 1)
+	assert.Check(t, resp.Devices[0].DeviceId == deviceIds[0])
+}
+
+func TestCreatedDeviceAlreadyExist(t *testing.T) {
+	// Arrange
+	ctx := context.Background()
+
+	regSrv := NewCore(log, b, sub, db)
+	go func() {
+		regSrv.Listen(ctx)
+	}()
+
+	deviceIds := []string{"0x666x", "0x666x"}
+	devices := []*core.CreateDeviceRequest{
+		{
+			DeviceId:    deviceIds[0],
+			Description: "hello world of devices !",
+			Labels: map[string]string{
+				"factory": "D",
+				"land":    "sheep",
+				"owner":   "bob_morrisson",
+				"fix":     "cant_be_touch",
+			},
+			Annotations: map[string]string{
+				"utility": "air_quality",
+			},
+		},
+		{
+			DeviceId:    deviceIds[1],
+			Description: "hello world of devices !",
+			Labels: map[string]string{
+				"factory": "D",
+				"land":    "sheep",
+				"owner":   "bob_morrisson",
+				"fix":     "cant_be_touch",
+			},
+			Annotations: map[string]string{
+				"utility": "humidity",
+			},
+		},
+	}
+
+	// Act
+	resp, err := createDevices(ctx, b, devices)
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	// Assert
+	assert.Equal(t, len(resp), 2)
+	assert.Equal(t, resp[0].Msg[0], "device created successfully")
+	assert.Equal(t, resp[1].Msg[0], "device already exist")
+}
+
+func TestUpdateNoTargetSpecified(t *testing.T) {
+	// Arrange
+	ctx := context.Background()
+
+	regSrv := NewCore(log, b, sub, db)
+	go func() {
+		regSrv.Listen(ctx)
+	}()
+
+	testQuery := &core.UpdateDeviceRequest{}
+
+	// Act
+	resp, err := PublishDeviceUpdateRequest(ctx, b, testQuery)
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	// Act
+
+	// Assert
+	assert.Equal(t, len(resp.Msg), 1)
+	assert.Equal(t, resp.Msg[0], "no targets provided")
+}
+
+func TestDeleteNoTargetSpecified(t *testing.T) {
+	// Arrange
+	ctx := context.Background()
+
+	regSrv := NewCore(log, b, sub, db)
+	go func() {
+		regSrv.Listen(ctx)
+	}()
+
+	testQuery := &core.DeleteDeviceRequest{}
+
+	// Act
+	resp, err := PublishDeviceDeleteRequest(ctx, b, testQuery)
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	// Act
+
+	// Assert
+	assert.Equal(t, len(resp.Msg), 1)
+	assert.Equal(t, resp.Msg[0], "no targets provided")
 }
 
 func executeTestQueryForType[T any](t *testing.T, db *surrealdb.DB, query string, vars map[string]string) T {
@@ -828,20 +1038,23 @@ func deleteDevices(t *testing.T, db *surrealdb.DB, ids []string) error {
 	return nil
 }
 
-func createDevices(ctx context.Context, bus *bus.BusConn, devices []*core.CreateDeviceRequest) error {
+func createDevices(ctx context.Context, bus *bus.BusConn, devices []*core.CreateDeviceRequest) ([]*core.CreateDeviceResponse, error) {
+	responses := []*core.CreateDeviceResponse{}
 	for _, dev := range devices {
-		_, err := PublishDeviceCreateRequest(ctx, b, dev)
+		resp, err := PublishDeviceCreateRequest(ctx, bus, dev)
+		responses = append(responses, resp)
 		if err != nil {
-			return err
+			return responses, err
 		}
 	}
-	return nil
+	return responses, nil
 }
 
-func deleteTableOrRecord(t *testing.T, db *surrealdb.DB, thing string) {
+func deleteTableOrRecord(db *surrealdb.DB, thing string) error {
 	if _, err := db.Delete(thing); err != nil {
-		t.Error(err)
+		return err
 	}
+	return nil
 }
 
 func setupConns(subject string) (*surrealdb.DB, *bus.BusConn, *nats.Subscription, error) {

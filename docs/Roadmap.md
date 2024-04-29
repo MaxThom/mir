@@ -36,8 +36,12 @@
   - [x] Setup NatsIO and request reply paradigm
   - [ ] Set config in a mir folder instead of per apps
   - [ ] Add unit test with sub test and better handle db close
-  - [ ] Add search by annotations
+  - [x] Add search by annotations
   - [ ] Add search by any json fields
+  - [ ] Add custom set of Mir errors for nice and consistent error handling
+  - [ ] Comment the protofile
+  - [ ] Added hearthbeat functionality
+  - [ ] Add env var for integration test if run
 
 - TwinManager, the digital twin manager
 

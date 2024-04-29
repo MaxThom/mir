@@ -20,8 +20,7 @@ message CreateDeviceResponse {
 /// when nil, mean we do not need to set them
 /// when nil, for a map value, it means mark for deletion
 message UpdateDeviceRequest {
-  repeated string target_ids = 1;
-  map<string, string> target_labels = 2;
+  Targets targets = 1;
   optional string description = 3;
   map<string, OptString> labels = 4;
   map<string, OptString> annotations = 5;
@@ -37,8 +36,7 @@ message UpdateDeviceResponse {
 }
 
 message DeleteDeviceRequest {
-  repeated string target_ids = 1;
-  map<string, string> target_labels = 2;
+  Targets targets = 1;
 }
 
 message DeleteDeviceResponse {
@@ -47,13 +45,18 @@ message DeleteDeviceResponse {
 }
 
 message ListDeviceRequest {
-  repeated string target_ids = 1;
-  map<string, string> target_labels = 2;
+  Targets targets = 1;
 }
 
 message ListDeviceResponse {
   repeated Device devices = 1;
   repeated string msg = 2;
+}
+
+message Targets {
+  repeated string ids = 1;
+  map<string, string> labels = 2;
+  map<string, string> annotations = 3;
 }
 
 message Device {
@@ -62,4 +65,11 @@ message Device {
   string description = 3;
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
+}
+
+// Generic error message used across your services.
+message Error {
+    string code = 1;     // Machine-readable error code.
+    string message = 2;  // Human-readable error message.
+    repeated string details = 3; // Optional details.
 }

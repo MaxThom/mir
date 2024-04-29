@@ -82,50 +82,62 @@ func (s *CoreServer) Listen(ctx context.Context) {
 func (s *CoreServer) createDeviceRequestHandler(ch chan nats.Msg) {
 	for {
 		msg := <-ch
+		resp := &core.CreateDeviceResponse{}
 		req := &core.CreateDeviceRequest{}
 		err := proto.Unmarshal(msg.Data, req)
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while unmarhsalling payload")
+			resp.Msg = append(resp.Msg, "error occure while unmarhsalling payload")
+			sendReplyOrAck(s.bus, msg, resp)
 			continue
 		}
 		l.Debug().Str("route", "create").Str("payload", fmt.Sprintf("%v", req)).Msg("new device request")
 
 		if _, err = s.db.Use("global", "mir"); err != nil {
 			l.Error().Err(err).Msg("error occure while using db")
+			resp.Msg = append(resp.Msg, "error occure while using db")
+			sendReplyOrAck(s.bus, msg, resp)
+			continue
+		}
+
+		q, v := createListQueryForDevice(&core.ListDeviceRequest{
+			Targets: &core.Targets{
+				Ids: []string{req.DeviceId},
+			},
+		})
+		respCheck, err := executeQueryForType[[]*core.Device](s.db, q, v)
+		if err != nil {
+			l.Error().Err(err).Msg("error occure while using db")
+			resp.Msg = append(resp.Msg, "error occure while using db")
+			sendReplyOrAck(s.bus, msg, resp)
+			continue
+		}
+
+		if len(respCheck) > 0 {
+			resp.Msg = append(resp.Msg, "device already exist")
+			sendReplyOrAck(s.bus, msg, resp)
 			continue
 		}
 
 		respDb, err := s.db.Create("devices", req)
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while using db")
+			resp.Msg = append(resp.Msg, "error occure while using db")
+			sendReplyOrAck(s.bus, msg, resp)
 			continue
 		}
 		newDev := make([]core.CreateDeviceRequest, 1)
 		err = surrealdb.Unmarshal(respDb, &newDev)
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while using db")
+			resp.Msg = append(resp.Msg, "error occure while using db")
+			sendReplyOrAck(s.bus, msg, resp)
 			continue
 		}
 
-		resp := &core.CreateDeviceResponse{
-			DeviceId: newDev[0].DeviceId,
-			Msg:      []string{"Device created"},
-		}
-		bResp, err := proto.Marshal(resp)
-		if err != nil {
-			l.Error().Err(err).Msg("error occure while creating response")
-			continue
-		}
-
-		if msg.Reply != "" {
-			err = s.bus.Publish(msg.Reply, bResp)
-			if err != nil {
-				l.Error().Err(err).Msg("error occure while sending reply")
-				continue
-			}
-		}
-
-		msg.Ack()
+		resp.DeviceId = newDev[0].DeviceId
+		resp.Msg = append(resp.Msg, "device created successfully")
+		sendReplyOrAck(s.bus, msg, resp)
 	}
 }
 
@@ -139,7 +151,7 @@ func (s *CoreServer) updateDeviceRequestHandler(ch chan nats.Msg) {
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while unmarshalling request")
 			resp.Msg = append(resp.Msg, "error occure while unmarshalling request")
-			sendReplyIfRequest(s.bus, msg.Reply, resp)
+			sendReplyOrAck(s.bus, msg, resp)
 			continue
 		}
 		l.Debug().Str("route", "update").Str("payload", fmt.Sprintf("%v", req)).Msg("update device request")
@@ -147,7 +159,16 @@ func (s *CoreServer) updateDeviceRequestHandler(ch chan nats.Msg) {
 		if _, err = s.db.Use("global", "mir"); err != nil {
 			l.Error().Err(err).Msg("error occure while using db")
 			resp.Msg = append(resp.Msg, "error occure while unmarshalling request")
-			sendReplyIfRequest(s.bus, msg.Reply, resp)
+			sendReplyOrAck(s.bus, msg, resp)
+			continue
+		}
+
+		if req.Targets == nil ||
+			len(req.Targets.Ids) == 0 &&
+				len(req.Targets.Labels) == 0 &&
+				len(req.Targets.Annotations) == 0 {
+			resp.Msg = append(resp.Msg, "no targets provided")
+			sendReplyOrAck(s.bus, msg, resp)
 			continue
 		}
 
@@ -159,6 +180,7 @@ func (s *CoreServer) updateDeviceRequestHandler(ch chan nats.Msg) {
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while updating records")
 			resp.Msg = append(resp.Msg, "error occure while updating records")
+			sendReplyOrAck(s.bus, msg, resp)
 			continue
 		}
 
@@ -166,9 +188,7 @@ func (s *CoreServer) updateDeviceRequestHandler(ch chan nats.Msg) {
 			resp.AffectedDevices = append(resp.AffectedDevices, v.DeviceId)
 		}
 
-		sendReplyIfRequest(s.bus, msg.Reply, resp)
-
-		msg.Ack()
+		sendReplyOrAck(s.bus, msg, resp)
 	}
 }
 
@@ -181,6 +201,7 @@ func (s *CoreServer) deleteDeviceRequestHandler(ch chan nats.Msg) {
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while unmarshalling delete request")
 			resp.Msg = append(resp.Msg, "error occure while unmarshalling delete request")
+			sendReplyOrAck(s.bus, msg, resp)
 			continue
 		}
 		l.Debug().Str("route", "delete").Str("payload", fmt.Sprintf("%v", req)).Msg("delete device request")
@@ -188,6 +209,16 @@ func (s *CoreServer) deleteDeviceRequestHandler(ch chan nats.Msg) {
 		if _, err = s.db.Use("global", "mir"); err != nil {
 			l.Error().Err(err).Msg("error occure while using db")
 			resp.Msg = append(resp.Msg, "error occure while using db")
+			sendReplyOrAck(s.bus, msg, resp)
+			continue
+		}
+
+		if req.Targets == nil ||
+			len(req.Targets.Ids) == 0 &&
+				len(req.Targets.Labels) == 0 &&
+				len(req.Targets.Annotations) == 0 {
+			resp.Msg = append(resp.Msg, "no targets provided")
+			sendReplyOrAck(s.bus, msg, resp)
 			continue
 		}
 
@@ -196,6 +227,7 @@ func (s *CoreServer) deleteDeviceRequestHandler(ch chan nats.Msg) {
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while using db")
 			resp.Msg = append(resp.Msg, "error occure while using db")
+			sendReplyOrAck(s.bus, msg, resp)
 			continue
 		}
 
@@ -203,9 +235,7 @@ func (s *CoreServer) deleteDeviceRequestHandler(ch chan nats.Msg) {
 			resp.AffectedDevices = append(resp.AffectedDevices, v.DeviceId)
 		}
 
-		sendReplyIfRequest(s.bus, msg.Reply, resp)
-
-		msg.Ack()
+		sendReplyOrAck(s.bus, msg, resp)
 	}
 }
 
@@ -218,6 +248,7 @@ func (s *CoreServer) listDeviceRequestHandler(ch chan nats.Msg) {
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while unmarshalling delete request")
 			resp.Msg = append(resp.Msg, "error occure while unmarshalling delete request")
+			sendReplyOrAck(s.bus, msg, resp)
 			continue
 		}
 		l.Info().Str("route", "list").Str("payload", fmt.Sprintf("%v", req)).Msg("delete device request")
@@ -225,6 +256,7 @@ func (s *CoreServer) listDeviceRequestHandler(ch chan nats.Msg) {
 		if _, err = s.db.Use("global", "mir"); err != nil {
 			l.Error().Err(err).Msg("error occure while using db")
 			resp.Msg = append(resp.Msg, "error occure while using db")
+			sendReplyOrAck(s.bus, msg, resp)
 			continue
 		}
 
@@ -233,26 +265,27 @@ func (s *CoreServer) listDeviceRequestHandler(ch chan nats.Msg) {
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while using db")
 			resp.Msg = append(resp.Msg, "error occure while using db")
+			sendReplyOrAck(s.bus, msg, resp)
 			continue
 		}
 		resp.Devices = respDb
 
-		sendReplyIfRequest(s.bus, msg.Reply, resp)
-
-		msg.Ack()
+		sendReplyOrAck(s.bus, msg, resp)
 	}
 }
 
-func sendReplyIfRequest(bus *bus.BusConn, replyId string, m protoreflect.ProtoMessage) {
-	if replyId != "" {
+func sendReplyOrAck(bus *bus.BusConn, msg nats.Msg, m protoreflect.ProtoMessage) {
+	if msg.Reply != "" {
 		bResp, err := proto.Marshal(m)
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while creating response")
 		}
-		err = bus.Publish(replyId, bResp)
+		err = bus.Publish(msg.Reply, bResp)
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while sending reply")
 		}
+	} else {
+		msg.Ack()
 	}
 }
 
@@ -304,16 +337,16 @@ func createUpdateQueryForDevice(req *core.UpdateDeviceRequest) (sql string, vars
 	q.WriteString("} WHERE ")
 
 	cond := []string{}
-	if len(req.TargetIds) > 0 {
+	if len(req.Targets.Ids) > 0 {
 		var t []string
-		for _, id := range req.TargetIds {
+		for _, id := range req.Targets.Ids {
 			t = append(t, fmt.Sprintf("device_id = \"%s\"", id))
 		}
 		cond = append(cond, strings.Join(t, " OR "))
 	}
-	if len(req.TargetLabels) > 0 {
+	if len(req.Targets.Labels) > 0 {
 		var t []string
-		for k, v := range req.TargetLabels {
+		for k, v := range req.Targets.Labels {
 			t = append(t, fmt.Sprintf("labels.%s = \"%s\"", k, v))
 		}
 		cond = append(cond, "("+strings.Join(t, " AND ")+")")
@@ -330,7 +363,7 @@ func createDeleteQueryForDevice(req *core.DeleteDeviceRequest) (sql string, vars
 	vars = map[string]any{}
 
 	q.WriteString("DELETE FROM devices WHERE ")
-	q.WriteString(createWhereStatementWithTargets(req.TargetIds, req.TargetLabels))
+	q.WriteString(createWhereStatementWithTargets(req.Targets.Ids, req.Targets.Labels, req.Targets.Annotations))
 
 	sql = q.String()
 	return
@@ -340,14 +373,19 @@ func createListQueryForDevice(req *core.ListDeviceRequest) (sql string, vars map
 	var q strings.Builder
 	vars = map[string]any{}
 
-	q.WriteString("SELECT * FROM devices WHERE ")
-	q.WriteString(createWhereStatementWithTargets(req.TargetIds, req.TargetLabels))
+	q.WriteString("SELECT * FROM devices")
+	where := createWhereStatementWithTargets(req.Targets.Ids, req.Targets.Labels, req.Targets.Annotations)
+	if len(where) > 0 {
+		q.WriteString(" WHERE ")
+		q.WriteString(where)
+	}
 
+	q.WriteString(";")
 	sql = q.String()
 	return
 }
 
-func createWhereStatementWithTargets(targetIds []string, targetLabels map[string]string) string {
+func createWhereStatementWithTargets(targetIds []string, targetLabels map[string]string, targetAnno map[string]string) string {
 	var q strings.Builder
 
 	cond := []string{}
@@ -362,6 +400,13 @@ func createWhereStatementWithTargets(targetIds []string, targetLabels map[string
 		var t []string
 		for k, v := range targetLabels {
 			t = append(t, fmt.Sprintf("labels.%s = \"%s\"", k, v))
+		}
+		cond = append(cond, "("+strings.Join(t, " AND ")+")")
+	}
+	if len(targetAnno) > 0 {
+		var t []string
+		for k, v := range targetAnno {
+			t = append(t, fmt.Sprintf("annotations.%s = \"%s\"", k, v))
 		}
 		cond = append(cond, "("+strings.Join(t, " AND ")+")")
 	}
