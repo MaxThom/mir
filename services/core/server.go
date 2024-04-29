@@ -68,6 +68,7 @@ func (s *CoreServer) Listen(ctx context.Context) {
 			msg, err := s.sub.NextMsgWithContext(ctx)
 			if err != nil {
 				l.Error().Err(err).Msg("")
+				continue
 			}
 			route := getRoutingFunc(msg.Subject)
 			l.Info().Str("route", route).Msg("device request")
@@ -82,21 +83,34 @@ func (s *CoreServer) Listen(ctx context.Context) {
 func (s *CoreServer) createDeviceRequestHandler(ch chan nats.Msg) {
 	for {
 		msg := <-ch
-		resp := &core.CreateDeviceResponse{}
 		req := &core.CreateDeviceRequest{}
 		err := proto.Unmarshal(msg.Data, req)
 		if err != nil {
-			l.Error().Err(err).Msg("error occure while unmarhsalling payload")
-			resp.Msg = append(resp.Msg, "error occure while unmarhsalling payload")
-			sendReplyOrAck(s.bus, msg, resp)
+			l.Error().Err(err).Msg("error occure while unmarhsalling request payload")
+			sendReplyOrAck(s.bus, msg, &core.CreateDeviceResponse{
+				Response: &core.CreateDeviceResponse_Error{
+					Error: &core.Error{
+						Code:    400,
+						Message: "error occure while unmarhsalling request payload",
+						Details: []string{"400 Bad Request", err.Error()},
+					},
+				},
+			})
 			continue
 		}
 		l.Debug().Str("route", "create").Str("payload", fmt.Sprintf("%v", req)).Msg("new device request")
 
 		if _, err = s.db.Use("global", "mir"); err != nil {
-			l.Error().Err(err).Msg("error occure while using db")
-			resp.Msg = append(resp.Msg, "error occure while using db")
-			sendReplyOrAck(s.bus, msg, resp)
+			l.Error().Err(err).Msg("error occure while setting db context")
+			sendReplyOrAck(s.bus, msg, &core.CreateDeviceResponse{
+				Response: &core.CreateDeviceResponse_Error{
+					Error: &core.Error{
+						Code:    502,
+						Message: "error occure while setting db context",
+						Details: []string{"502 Bad Gateway", err.Error()},
+					},
+				},
+			})
 			continue
 		}
 
@@ -107,59 +121,102 @@ func (s *CoreServer) createDeviceRequestHandler(ch chan nats.Msg) {
 		})
 		respCheck, err := executeQueryForType[[]*core.Device](s.db, q, v)
 		if err != nil {
-			l.Error().Err(err).Msg("error occure while using db")
-			resp.Msg = append(resp.Msg, "error occure while using db")
-			sendReplyOrAck(s.bus, msg, resp)
+			l.Error().Err(err).Msg("error occure while executing a db query")
+			sendReplyOrAck(s.bus, msg, &core.CreateDeviceResponse{
+				Response: &core.CreateDeviceResponse_Error{
+					Error: &core.Error{
+						Code:    500,
+						Message: "error occure while executing a db query",
+						Details: []string{"500 Internal Server Error", err.Error()},
+					},
+				},
+			})
 			continue
 		}
 
 		if len(respCheck) > 0 {
-			resp.Msg = append(resp.Msg, "device already exist")
-			sendReplyOrAck(s.bus, msg, resp)
+			sendReplyOrAck(s.bus, msg, &core.CreateDeviceResponse{
+				Response: &core.CreateDeviceResponse_Error{
+					Error: &core.Error{
+						Code:    409,
+						Message: "a device with the same id already exists",
+						Details: []string{"409 Conflict"},
+					},
+				},
+			})
 			continue
 		}
 
 		respDb, err := s.db.Create("devices", req)
 		if err != nil {
-			l.Error().Err(err).Msg("error occure while using db")
-			resp.Msg = append(resp.Msg, "error occure while using db")
-			sendReplyOrAck(s.bus, msg, resp)
+			l.Error().Err(err).Msg("error occure while executing a db query")
+			sendReplyOrAck(s.bus, msg, &core.CreateDeviceResponse{
+				Response: &core.CreateDeviceResponse_Error{
+					Error: &core.Error{
+						Code:    500,
+						Message: "error occure while executing a db query",
+						Details: []string{"500 Internal Server Error", err.Error()},
+					},
+				},
+			})
 			continue
 		}
 		newDev := make([]core.CreateDeviceRequest, 1)
 		err = surrealdb.Unmarshal(respDb, &newDev)
 		if err != nil {
-			l.Error().Err(err).Msg("error occure while using db")
-			resp.Msg = append(resp.Msg, "error occure while using db")
-			sendReplyOrAck(s.bus, msg, resp)
+			l.Error().Err(err).Msg("error occure while deserializing a db response")
+			sendReplyOrAck(s.bus, msg, &core.CreateDeviceResponse{
+				Response: &core.CreateDeviceResponse_Error{
+					Error: &core.Error{
+						Code:    500,
+						Message: "error occure while deserializing a db response",
+						Details: []string{"500 Internal Server Error", err.Error()},
+					},
+				},
+			})
 			continue
 		}
 
-		resp.DeviceId = newDev[0].DeviceId
-		resp.Msg = append(resp.Msg, "device created successfully")
-		sendReplyOrAck(s.bus, msg, resp)
+		sendReplyOrAck(s.bus, msg, &core.CreateDeviceResponse{
+			Response: &core.CreateDeviceResponse_Ok{
+				Ok: &core.DeviceIdList{
+					DeviceIds: []string{newDev[0].DeviceId},
+				},
+			}})
 	}
 }
 
 func (s *CoreServer) updateDeviceRequestHandler(ch chan nats.Msg) {
 	for {
 		msg := <-ch
-		resp := &core.UpdateDeviceResponse{}
-
 		req := &core.UpdateDeviceRequest{}
 		err := proto.Unmarshal(msg.Data, req)
 		if err != nil {
-			l.Error().Err(err).Msg("error occure while unmarshalling request")
-			resp.Msg = append(resp.Msg, "error occure while unmarshalling request")
-			sendReplyOrAck(s.bus, msg, resp)
+			l.Error().Err(err).Msg("error occure while unmarhsalling request payload")
+			sendReplyOrAck(s.bus, msg, &core.UpdateDeviceResponse{
+				Response: &core.UpdateDeviceResponse_Error{
+					Error: &core.Error{
+						Code:    400,
+						Message: "error occure while unmarhsalling request payload",
+						Details: []string{"400 Bad Request", err.Error()},
+					},
+				},
+			})
 			continue
 		}
 		l.Debug().Str("route", "update").Str("payload", fmt.Sprintf("%v", req)).Msg("update device request")
 
 		if _, err = s.db.Use("global", "mir"); err != nil {
-			l.Error().Err(err).Msg("error occure while using db")
-			resp.Msg = append(resp.Msg, "error occure while unmarshalling request")
-			sendReplyOrAck(s.bus, msg, resp)
+			l.Error().Err(err).Msg("error occure while setting db context")
+			sendReplyOrAck(s.bus, msg, &core.UpdateDeviceResponse{
+				Response: &core.UpdateDeviceResponse_Error{
+					Error: &core.Error{
+						Code:    502,
+						Message: "error occure while setting db context",
+						Details: []string{"502 Bad Gateway", err.Error()},
+					},
+				},
+			})
 			continue
 		}
 
@@ -167,8 +224,15 @@ func (s *CoreServer) updateDeviceRequestHandler(ch chan nats.Msg) {
 			len(req.Targets.Ids) == 0 &&
 				len(req.Targets.Labels) == 0 &&
 				len(req.Targets.Annotations) == 0 {
-			resp.Msg = append(resp.Msg, "no targets provided")
-			sendReplyOrAck(s.bus, msg, resp)
+			sendReplyOrAck(s.bus, msg, &core.UpdateDeviceResponse{
+				Response: &core.UpdateDeviceResponse_Error{
+					Error: &core.Error{
+						Code:    400,
+						Message: "no target provided for update",
+						Details: []string{"400 Bad Request"},
+					},
+				},
+			})
 			continue
 		}
 
@@ -178,17 +242,30 @@ func (s *CoreServer) updateDeviceRequestHandler(ch chan nats.Msg) {
 		q, v := createUpdateQueryForDevice(req)
 		respDb, err := executeQueryForType[[]core.Device](s.db, q, v)
 		if err != nil {
-			l.Error().Err(err).Msg("error occure while updating records")
-			resp.Msg = append(resp.Msg, "error occure while updating records")
-			sendReplyOrAck(s.bus, msg, resp)
+			l.Error().Err(err).Msg("error occure while executing a db query")
+			sendReplyOrAck(s.bus, msg, &core.UpdateDeviceResponse{
+				Response: &core.UpdateDeviceResponse_Error{
+					Error: &core.Error{
+						Code:    500,
+						Message: "error occure while executing a db query",
+						Details: []string{"500 Internal Server Error", err.Error()},
+					},
+				},
+			})
 			continue
 		}
 
+		ids := []string{}
 		for _, v := range respDb {
-			resp.AffectedDevices = append(resp.AffectedDevices, v.DeviceId)
+			ids = append(ids, v.DeviceId)
 		}
 
-		sendReplyOrAck(s.bus, msg, resp)
+		sendReplyOrAck(s.bus, msg, &core.UpdateDeviceResponse{
+			Response: &core.UpdateDeviceResponse_Ok{
+				Ok: &core.DeviceIdList{
+					DeviceIds: ids,
+				},
+			}})
 	}
 }
 
@@ -196,20 +273,33 @@ func (s *CoreServer) deleteDeviceRequestHandler(ch chan nats.Msg) {
 	for {
 		msg := <-ch
 		req := &core.DeleteDeviceRequest{}
-		resp := &core.DeleteDeviceResponse{}
 		err := proto.Unmarshal(msg.Data, req)
 		if err != nil {
-			l.Error().Err(err).Msg("error occure while unmarshalling delete request")
-			resp.Msg = append(resp.Msg, "error occure while unmarshalling delete request")
-			sendReplyOrAck(s.bus, msg, resp)
+			l.Error().Err(err).Msg("error occure while unmarhsalling request payload")
+			sendReplyOrAck(s.bus, msg, &core.DeleteDeviceResponse{
+				Response: &core.DeleteDeviceResponse_Error{
+					Error: &core.Error{
+						Code:    400,
+						Message: "error occure while unmarhsalling request payload",
+						Details: []string{"400 Bad Request", err.Error()},
+					},
+				},
+			})
 			continue
 		}
 		l.Debug().Str("route", "delete").Str("payload", fmt.Sprintf("%v", req)).Msg("delete device request")
 
 		if _, err = s.db.Use("global", "mir"); err != nil {
-			l.Error().Err(err).Msg("error occure while using db")
-			resp.Msg = append(resp.Msg, "error occure while using db")
-			sendReplyOrAck(s.bus, msg, resp)
+			l.Error().Err(err).Msg("error occure while setting db context")
+			sendReplyOrAck(s.bus, msg, &core.DeleteDeviceResponse{
+				Response: &core.DeleteDeviceResponse_Error{
+					Error: &core.Error{
+						Code:    502,
+						Message: "error occure while setting db context",
+						Details: []string{"502 Bad Gateway", err.Error()},
+					},
+				},
+			})
 			continue
 		}
 
@@ -217,25 +307,45 @@ func (s *CoreServer) deleteDeviceRequestHandler(ch chan nats.Msg) {
 			len(req.Targets.Ids) == 0 &&
 				len(req.Targets.Labels) == 0 &&
 				len(req.Targets.Annotations) == 0 {
-			resp.Msg = append(resp.Msg, "no targets provided")
-			sendReplyOrAck(s.bus, msg, resp)
+			sendReplyOrAck(s.bus, msg, &core.DeleteDeviceResponse{
+				Response: &core.DeleteDeviceResponse_Error{
+					Error: &core.Error{
+						Code:    400,
+						Message: "no target provided for delete",
+						Details: []string{"400 Bad Request"},
+					},
+				},
+			})
 			continue
 		}
 
 		q, v := createDeleteQueryForDevice(req)
 		respDb, err := executeQueryForType[[]core.Device](s.db, q, v)
 		if err != nil {
-			l.Error().Err(err).Msg("error occure while using db")
-			resp.Msg = append(resp.Msg, "error occure while using db")
-			sendReplyOrAck(s.bus, msg, resp)
+			l.Error().Err(err).Msg("error occure while executing a db query")
+			sendReplyOrAck(s.bus, msg, &core.DeleteDeviceResponse{
+				Response: &core.DeleteDeviceResponse_Error{
+					Error: &core.Error{
+						Code:    500,
+						Message: "error occure while executing a db query",
+						Details: []string{"500 Internal Server Error", err.Error()},
+					},
+				},
+			})
 			continue
 		}
 
+		ids := []string{}
 		for _, v := range respDb {
-			resp.AffectedDevices = append(resp.AffectedDevices, v.DeviceId)
+			ids = append(ids, v.DeviceId)
 		}
 
-		sendReplyOrAck(s.bus, msg, resp)
+		sendReplyOrAck(s.bus, msg, &core.DeleteDeviceResponse{
+			Response: &core.DeleteDeviceResponse_Ok{
+				Ok: &core.DeviceIdList{
+					DeviceIds: ids,
+				},
+			}})
 	}
 }
 
@@ -243,34 +353,58 @@ func (s *CoreServer) listDeviceRequestHandler(ch chan nats.Msg) {
 	for {
 		msg := <-ch
 		req := &core.ListDeviceRequest{}
-		resp := &core.ListDeviceResponse{}
 		err := proto.Unmarshal(msg.Data, req)
 		if err != nil {
-			l.Error().Err(err).Msg("error occure while unmarshalling delete request")
-			resp.Msg = append(resp.Msg, "error occure while unmarshalling delete request")
-			sendReplyOrAck(s.bus, msg, resp)
+			l.Error().Err(err).Msg("error occure while unmarhsalling request payload")
+			sendReplyOrAck(s.bus, msg, &core.ListDeviceResponse{
+				Response: &core.ListDeviceResponse_Error{
+					Error: &core.Error{
+						Code:    400,
+						Message: "error occure while unmarhsalling request payload",
+						Details: []string{"400 Bad Request", err.Error()},
+					},
+				},
+			})
 			continue
 		}
 		l.Info().Str("route", "list").Str("payload", fmt.Sprintf("%v", req)).Msg("delete device request")
 
 		if _, err = s.db.Use("global", "mir"); err != nil {
-			l.Error().Err(err).Msg("error occure while using db")
-			resp.Msg = append(resp.Msg, "error occure while using db")
-			sendReplyOrAck(s.bus, msg, resp)
+			l.Error().Err(err).Msg("error occure while setting db context")
+			sendReplyOrAck(s.bus, msg, &core.ListDeviceResponse{
+				Response: &core.ListDeviceResponse_Error{
+					Error: &core.Error{
+						Code:    502,
+						Message: "error occure while setting db context",
+						Details: []string{"502 Bad Gateway", err.Error()},
+					},
+				},
+			})
 			continue
 		}
 
 		q, v := createListQueryForDevice(req)
 		respDb, err := executeQueryForType[[]*core.Device](s.db, q, v)
 		if err != nil {
-			l.Error().Err(err).Msg("error occure while using db")
-			resp.Msg = append(resp.Msg, "error occure while using db")
-			sendReplyOrAck(s.bus, msg, resp)
+			l.Error().Err(err).Msg("error occure while executing a db query")
+			sendReplyOrAck(s.bus, msg, &core.ListDeviceResponse{
+				Response: &core.ListDeviceResponse_Error{
+					Error: &core.Error{
+						Code:    500,
+						Message: "error occure while executing a db query",
+						Details: []string{"500 Internal Server Error", err.Error()},
+					},
+				},
+			})
 			continue
 		}
-		resp.Devices = respDb
 
-		sendReplyOrAck(s.bus, msg, resp)
+		sendReplyOrAck(s.bus, msg, &core.ListDeviceResponse{
+			Response: &core.ListDeviceResponse_Ok{
+				Ok: &core.DeviceList{
+					Devices: respDb,
+				},
+			}})
 	}
 }
 

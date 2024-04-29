@@ -129,8 +129,7 @@ func TestPublishDeviceCreateClient(t *testing.T) {
 	// Assert
 	assert.Equal(t, devReq.DeviceId, devRes[0].DeviceId)
 	assert.Equal(t, devReq.Description, devRes[0].Description)
-	assert.Equal(t, resp.DeviceId, devRes[0].DeviceId)
-	assert.Equal(t, resp.Msg[0], "device created successfully")
+	assert.Equal(t, resp.GetOk().DeviceIds[0], devRes[0].DeviceId)
 }
 
 func TestPublishDeviceUpdateTargetIds(t *testing.T) {
@@ -210,7 +209,7 @@ func TestPublishDeviceUpdateTargetIds(t *testing.T) {
 	// Assert
 	assert.Equal(t, testQuery.Targets.Ids[0], dbResp[0].DeviceId)
 	assert.Equal(t, *testQuery.Description, dbResp[0].Description)
-	assert.Equal(t, resp.AffectedDevices[0], id)
+	assert.Equal(t, resp.GetOk().DeviceIds[0], id)
 }
 
 func TestPublishDeviceUpdateTargetLabels(t *testing.T) {
@@ -541,7 +540,7 @@ func TestPublishDeviceDeleteTargetIds(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, len(dbResp), 1)
-	assert.Equal(t, len(resp.AffectedDevices), 2)
+	assert.Equal(t, len(resp.GetOk().DeviceIds), 2)
 	assert.Equal(t, dbResp[0].DeviceId, deviceIds[2])
 }
 
@@ -632,7 +631,7 @@ func TestPublishDeviceDeleteTargetLabels(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, len(dbResp), 1)
-	assert.Equal(t, len(resp.AffectedDevices), 2)
+	assert.Equal(t, len(resp.GetOk().DeviceIds), 2)
 	assert.Equal(t, dbResp[0].DeviceId, deviceIds[2])
 }
 
@@ -720,9 +719,9 @@ func TestPublishDeviceListTargetIds(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, len(dbResp), 3)
-	assert.Equal(t, len(resp.Devices), 2)
-	assert.Check(t, resp.Devices[0].DeviceId == deviceIds[0] || resp.Devices[0].DeviceId == deviceIds[1])
-	assert.Check(t, resp.Devices[1].DeviceId == deviceIds[0] || resp.Devices[1].DeviceId == deviceIds[1])
+	assert.Equal(t, len(resp.GetOk().Devices), 2)
+	assert.Check(t, resp.GetOk().Devices[0].DeviceId == deviceIds[0] || resp.GetOk().Devices[0].DeviceId == deviceIds[1])
+	assert.Check(t, resp.GetOk().Devices[1].DeviceId == deviceIds[0] || resp.GetOk().Devices[1].DeviceId == deviceIds[1])
 }
 
 func TestPublishDeviceListTargetLabels(t *testing.T) {
@@ -738,19 +737,19 @@ func TestPublishDeviceListTargetLabels(t *testing.T) {
 		Targets: &core.Targets{
 			Labels: map[string]string{
 				"factory": "D",
-				"land":    "sheep",
+				"land":    "lamb",
 			},
 		},
 	}
 
-	deviceIds := []string{"0x998c", "0x999d", "0x122f"}
+	deviceIds := []string{"0x12238c", "0x3429d", "0x12cd2f"}
 	devices := []*core.CreateDeviceRequest{
 		{
 			DeviceId:    deviceIds[0],
 			Description: "hello world of devices !",
 			Labels: map[string]string{
 				"factory": "D",
-				"land":    "sheep",
+				"land":    "lamb",
 				"owner":   "bob_morrisson",
 				"fix":     "cant_be_touch",
 			},
@@ -763,7 +762,7 @@ func TestPublishDeviceListTargetLabels(t *testing.T) {
 			Description: "hello world of devices !",
 			Labels: map[string]string{
 				"factory": "D",
-				"land":    "sheep",
+				"land":    "lamb",
 				"owner":   "bob_morrisson",
 				"fix":     "cant_be_touch",
 			},
@@ -812,9 +811,9 @@ func TestPublishDeviceListTargetLabels(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, len(dbResult), 3)
-	assert.Equal(t, len(resp.Devices), 2)
-	assert.Check(t, resp.Devices[0].DeviceId == "0x998c" || resp.Devices[0].DeviceId == "0x999d")
-	assert.Check(t, resp.Devices[1].DeviceId == "0x998c" || resp.Devices[1].DeviceId == "0x999d")
+	assert.Equal(t, len(resp.GetOk().Devices), 2)
+	assert.Check(t, resp.GetOk().Devices[0].DeviceId == deviceIds[0] || resp.GetOk().Devices[0].DeviceId == deviceIds[1])
+	assert.Check(t, resp.GetOk().Devices[1].DeviceId == deviceIds[0] || resp.GetOk().Devices[1].DeviceId == deviceIds[1])
 }
 
 func TestPublishDeviceListTargetAnnotations(t *testing.T) {
@@ -903,8 +902,8 @@ func TestPublishDeviceListTargetAnnotations(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, len(dbResult), 3)
-	assert.Equal(t, len(resp.Devices), 1)
-	assert.Check(t, resp.Devices[0].DeviceId == deviceIds[0])
+	assert.Equal(t, len(resp.GetOk().Devices), 1)
+	assert.Check(t, resp.GetOk().Devices[0].DeviceId == deviceIds[0])
 }
 
 func TestCreatedDeviceAlreadyExist(t *testing.T) {
@@ -955,8 +954,7 @@ func TestCreatedDeviceAlreadyExist(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, len(resp), 2)
-	assert.Equal(t, resp[0].Msg[0], "device created successfully")
-	assert.Equal(t, resp[1].Msg[0], "device already exist")
+	assert.Equal(t, resp[1].GetError().Message, "a device with the same id already exists")
 }
 
 func TestUpdateNoTargetSpecified(t *testing.T) {
@@ -980,8 +978,7 @@ func TestUpdateNoTargetSpecified(t *testing.T) {
 	// Act
 
 	// Assert
-	assert.Equal(t, len(resp.Msg), 1)
-	assert.Equal(t, resp.Msg[0], "no targets provided")
+	assert.Equal(t, resp.GetError().Message, "no target provided for update")
 }
 
 func TestDeleteNoTargetSpecified(t *testing.T) {
@@ -1005,8 +1002,7 @@ func TestDeleteNoTargetSpecified(t *testing.T) {
 	// Act
 
 	// Assert
-	assert.Equal(t, len(resp.Msg), 1)
-	assert.Equal(t, resp.Msg[0], "no targets provided")
+	assert.Equal(t, resp.GetError().Message, "no target provided for update")
 }
 
 func executeTestQueryForType[T any](t *testing.T, db *surrealdb.DB, query string, vars map[string]string) T {

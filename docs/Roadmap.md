@@ -38,8 +38,8 @@
   - [ ] Add unit test with sub test and better handle db close
   - [x] Add search by annotations
   - [ ] Add search by any json fields
-  - [ ] Add custom set of Mir errors for nice and consistent error handling
-  - [ ] Comment the protofile
+  - [x] Add custom set of Mir errors for nice and consistent error handling
+  - [x] Comment the protofile
   - [ ] Added hearthbeat functionality
   - [ ] Add env var for integration test if run
 
