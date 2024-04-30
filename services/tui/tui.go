@@ -30,7 +30,7 @@ type TUI struct {
 }
 
 func NewServer(log zerolog.Logger, mirUrl string) *TUI {
-	l = log.With().Str("srv", "cli").Logger()
+	l = log.With().Str("srv", "tui").Logger()
 	return &TUI{mirUrl: mirUrl}
 }
 

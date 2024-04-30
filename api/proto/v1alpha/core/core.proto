@@ -20,7 +20,7 @@ message CreateDeviceRequest {
 */
 message CreateDeviceResponse {
   oneof response {
-    DeviceIdList ok = 1; // list of device ids that were created
+    DeviceList ok = 1; // list of device that were created
     Error error = 2;  // HTTP like error if something went wrong
   }
 }
@@ -48,7 +48,7 @@ message UpdateDeviceRequest {
 */
 message UpdateDeviceResponse {
   oneof response {
-    DeviceIdList ok = 1; //  List of device ids that were updated
+    DeviceList ok = 1; //  List of device that were updated
     Error error = 2; // HTTP like error if something went wrong
   }
 }
@@ -66,7 +66,7 @@ message DeleteDeviceRequest {
 */
 message DeleteDeviceResponse {
   oneof response {
-    DeviceIdList ok = 1; // List of device ids that were deleted
+    DeviceList ok = 1; // List of device that were deleted
     Error error = 2; // HTTP like error if something went wrong
   }
 }

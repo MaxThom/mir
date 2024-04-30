@@ -146,7 +146,40 @@ func TestPublishDeviceCreateClient(t *testing.T) {
 	// Assert
 	assert.Equal(t, devReq.DeviceId, devRes[0].DeviceId)
 	assert.Equal(t, devReq.Description, devRes[0].Description)
-	assert.Equal(t, resp.GetOk().DeviceIds[0], devRes[0].DeviceId)
+	assert.Equal(t, resp.GetOk().Devices[0].DeviceId, devRes[0].DeviceId)
+}
+
+func TestPublishDeviceCreateClientNoID(t *testing.T) {
+	// Arrange
+	ctx := context.Background()
+
+	id := ""
+	devReq := &core.CreateDeviceRequest{
+		DeviceId:    id,
+		Description: "hello world of devices !",
+		Labels: map[string]string{
+			"factory": "A",
+			"model":   "xx021",
+		},
+		Annotations: map[string]string{
+			"utility": "air_quality",
+		},
+	}
+
+	// Act
+	regSrv := NewCore(log, b, sub, db)
+	go func() {
+		regSrv.Listen(ctx)
+	}()
+
+	resp, err := PublishDeviceCreateRequest(ctx, b, devReq)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, resp.GetError() != nil, true)
+	assert.Equal(t, resp.GetError().Message, "Invalid device ID")
 }
 
 func TestPublishDeviceUpdateTargetIds(t *testing.T) {
@@ -226,7 +259,7 @@ func TestPublishDeviceUpdateTargetIds(t *testing.T) {
 	// Assert
 	assert.Equal(t, testQuery.Targets.Ids[0], dbResp[0].DeviceId)
 	assert.Equal(t, *testQuery.Description, dbResp[0].Description)
-	assert.Equal(t, resp.GetOk().DeviceIds[0], id)
+	assert.Equal(t, resp.GetOk().Devices[0].DeviceId, id)
 }
 
 func TestPublishDeviceUpdateTargetLabels(t *testing.T) {
@@ -322,9 +355,128 @@ func TestPublishDeviceUpdateTargetLabels(t *testing.T) {
 		"SELECT * FROM type::table($tb) WHERE device_id = $id1 OR device_id = $id2 OR device_id = $id3;",
 		map[string]string{
 			"tb":  "devices",
-			"id1": "0x998c",
-			"id2": "0x999d",
-			"id3": "0x122f",
+			"id1": deviceIds[0],
+			"id2": deviceIds[1],
+			"id3": deviceIds[2],
+		})
+	if err := deleteDevices(t, db, deviceIds); err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	for _, dev := range devRes {
+		switch dev.DeviceId {
+		case deviceIds[0]:
+			assert.Equal(t, dev.Labels["factory"], "D")
+			assert.Equal(t, dev.Labels["land"], "sheep")
+			assert.Equal(t, dev.Labels["fix"], "mazda3sport")
+		case deviceIds[1]:
+			assert.Equal(t, dev.Labels["factory"], "D")
+			assert.Equal(t, dev.Labels["land"], "sheep")
+			assert.Equal(t, dev.Labels["fix"], "mazda3sport")
+		case deviceIds[2]:
+			assert.Equal(t, dev.Labels["factory"], "D")
+			assert.Equal(t, dev.Labels["land"], "cow")
+			assert.Equal(t, dev.Labels["fix"], "cant_be_touch")
+		}
+	}
+}
+
+func TestPublishDeviceUpdateTargetAnno(t *testing.T) {
+	// Arrange
+	ctx := context.Background()
+
+	deviceIds := []string{"0x14s8c", "0x3499d", "0x16822f"}
+	testQuery := &core.UpdateDeviceRequest{
+		Targets: &core.Targets{
+			Annotations: map[string]string{
+				"utility": "hvac",
+			},
+		},
+		Description: strRef("yiihayy"),
+		Labels: map[string]*core.UpdateDeviceRequest_OptString{
+			"owner": {
+				Value: nil,
+			},
+			"fix": {
+				Value: strRef("mazda3sport"),
+			},
+		},
+		Annotations: map[string]*core.UpdateDeviceRequest_OptString{
+			"utility": {
+				Value: nil,
+			},
+			"instance": nil,
+			"deploy": {
+				Value: strRef("in_hell"),
+			},
+		},
+	}
+	devices := []*core.CreateDeviceRequest{
+		{
+			DeviceId:    deviceIds[0],
+			Description: "hello world of devices !",
+			Labels: map[string]string{
+				"factory": "D",
+				"land":    "sheep",
+				"owner":   "bob_morrisson",
+				"fix":     "cant_be_touch",
+			},
+			Annotations: map[string]string{
+				"utility": "hvac",
+			},
+		},
+		{
+			DeviceId:    deviceIds[1],
+			Description: "hello world of devices !",
+			Labels: map[string]string{
+				"factory": "D",
+				"land":    "sheep",
+				"owner":   "bob_morrisson",
+				"fix":     "cant_be_touch",
+			},
+			Annotations: map[string]string{
+				"utility": "hvac",
+			},
+		},
+		{
+			DeviceId:    deviceIds[2],
+			Description: "hello world of devices !",
+			Labels: map[string]string{
+				"factory": "D",
+				"land":    "cow",
+				"owner":   "bob_morrisson",
+				"fix":     "cant_be_touch",
+			},
+			Annotations: map[string]string{
+				"utility": "humidity",
+			},
+		},
+	}
+
+	// Act
+	regSrv := NewCore(log, b, sub, db)
+	go func() {
+		regSrv.Listen(ctx)
+	}()
+
+	if _, err := createDevices(ctx, b, devices); err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	if _, err := PublishDeviceUpdateRequest(ctx, b, testQuery); err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	devRes := executeTestQueryForType[[]core.Device](t, db,
+		"SELECT * FROM type::table($tb) WHERE device_id = $id1 OR device_id = $id2 OR device_id = $id3;",
+		map[string]string{
+			"tb":  "devices",
+			"id1": deviceIds[0],
+			"id2": deviceIds[1],
+			"id3": deviceIds[2],
 		})
 	if err := deleteDevices(t, db, deviceIds); err != nil {
 		t.Error(err)
@@ -557,7 +709,7 @@ func TestPublishDeviceDeleteTargetIds(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, len(dbResp), 1)
-	assert.Equal(t, len(resp.GetOk().DeviceIds), 2)
+	assert.Equal(t, len(resp.GetOk().Devices), 2)
 	assert.Equal(t, dbResp[0].DeviceId, deviceIds[2])
 }
 
@@ -648,7 +800,7 @@ func TestPublishDeviceDeleteTargetLabels(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, len(dbResp), 1)
-	assert.Equal(t, len(resp.GetOk().DeviceIds), 2)
+	assert.Equal(t, len(resp.GetOk().Devices), 2)
 	assert.Equal(t, dbResp[0].DeviceId, deviceIds[2])
 }
 
@@ -921,6 +1073,78 @@ func TestPublishDeviceListTargetAnnotations(t *testing.T) {
 	assert.Equal(t, len(dbResult), 3)
 	assert.Equal(t, len(resp.GetOk().Devices), 1)
 	assert.Check(t, resp.GetOk().Devices[0].DeviceId == deviceIds[0])
+}
+
+func TestPublishDeviceListNoTarget(t *testing.T) {
+	// Arrange
+	ctx := context.Background()
+
+	regSrv := NewCore(log, b, sub, db)
+	go func() {
+		regSrv.Listen(ctx)
+	}()
+
+	testQuery := &core.ListDeviceRequest{
+		Targets: &core.Targets{},
+	}
+
+	deviceIds := []string{"0x123x", "0x93ef", "0x378a"}
+	devices := []*core.CreateDeviceRequest{
+		{
+			DeviceId:    deviceIds[0],
+			Description: "hello world of devices !",
+			Labels: map[string]string{
+				"factory": "D",
+				"land":    "sheep",
+				"owner":   "bob_morrisson",
+				"fix":     "cant_be_touch",
+			},
+			Annotations: map[string]string{
+				"utility": "air_quality",
+			},
+		},
+		{
+			DeviceId:    deviceIds[1],
+			Description: "hello world of devices !",
+			Labels: map[string]string{
+				"factory": "D",
+				"land":    "sheep",
+				"owner":   "bob_morrisson",
+				"fix":     "cant_be_touch",
+			},
+			Annotations: map[string]string{
+				"utility": "humidity",
+			},
+		},
+		{
+			DeviceId:    deviceIds[2],
+			Description: "hello world of devices !",
+			Labels: map[string]string{
+				"factory": "D",
+				"land":    "cow",
+				"owner":   "bob_morrisson",
+				"fix":     "cant_be_touch",
+			},
+			Annotations: map[string]string{
+				"utility": "humidity",
+			},
+		},
+	}
+
+	// Act
+	if _, err := createDevices(ctx, b, devices); err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	resp, err := PublishDeviceListRequest(ctx, b, testQuery)
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	// Assert
+	assert.Equal(t, len(resp.GetOk().Devices) >= 3, true)
 }
 
 func TestCreatedDeviceAlreadyExist(t *testing.T) {

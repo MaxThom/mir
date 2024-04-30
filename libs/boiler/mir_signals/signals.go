@@ -20,7 +20,7 @@ func Notify(sig ...os.Signal) {
 }
 
 func Shutdown() {
-	signalChan <- CodeSignal(1)
+	signalChan <- CodeSignal(0x20)
 }
 
 func WaitForOsSignals(shutdownFn func()) {
