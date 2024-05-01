@@ -47,13 +47,16 @@
 
 - MirCLI, the Command Line Interface to easy interact with the system and with scripts
   
-  - [ ] Create a database seeding script for populating the db
+  - [x] Basic functionallity to manage devices
+  - [x] Create a database seeding script for populating the db
+  - [ ] Add name field to device
+  - [ ] Merge the TUI and CLI app into one called mir
 
 - MirTUI, the Terminal User Interface with bubble tea
 
   - [x] Learn BubbleTea
   - [x] Create the general parent layout
-  - [ ] Create basic components like tooltip and toast
+  - [x] Create basic components like tooltip and toast
   - [ ] Create main page layout
   - [ ] Create the list device layouts
   - [ ] Create the next device page layout
@@ -62,3 +65,22 @@
 
 - MirWebUI, the Web User Interface with htmx and templ
 
+## Improvements
+  
+  - merge tui and cli into one binary
+  - rework how boiler template of app is made for services
+    - same tool for cli could be used for bootstrap of service
+    - change how init is used to become more main and have a run method
+  - configuration folder change, need to be all in a mir folder
+    - where is the line between using code and a spec? maybe enforcing a spec is sufficient instead of creating a maze of code abstraction for it
+
+### Dev setup Improvements
+
+- fix my neovim
+- single docker compose with all dependencies running
+- tmux script file in repo
+- think of nice setup for vscode setup or other ide.
+- as the number of services becomes more complete, they will need to run same as dependency software
+  - need to think about how to do it
+  - tmux window with a go run main.go ?
+  - container strategy for docker

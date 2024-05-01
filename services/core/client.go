@@ -22,7 +22,7 @@ func PublishDeviceCreateRequest(ctx context.Context, bus *bus.BusConn, req *core
 		return &core.CreateDeviceResponse{}, err
 	}
 
-	resMsg, err := bus.Request(createDeviceStream, bReq, 10*time.Second)
+	resMsg, err := bus.Request(createDeviceStream, bReq, 3*time.Second)
 	if err != nil {
 		return &core.CreateDeviceResponse{}, err
 	}
@@ -42,7 +42,7 @@ func PublishDeviceUpdateRequest(ctx context.Context, bus *bus.BusConn, req *core
 		return &core.UpdateDeviceResponse{}, err
 	}
 
-	resMsg, err := bus.Request(updateDeviceStream, bReq, 10*time.Second)
+	resMsg, err := bus.Request(updateDeviceStream, bReq, 3*time.Second)
 	if err != nil {
 		return &core.UpdateDeviceResponse{}, err
 	}
@@ -62,7 +62,7 @@ func PublishDeviceDeleteRequest(ctx context.Context, bus *bus.BusConn, req *core
 		return &core.DeleteDeviceResponse{}, err
 	}
 
-	resMsg, err := bus.Request(updateDeviceStream, bReq, 10*time.Second)
+	resMsg, err := bus.Request(updateDeviceStream, bReq, 3*time.Second)
 	if err != nil {
 		return &core.DeleteDeviceResponse{}, err
 	}
@@ -82,7 +82,7 @@ func PublishDeviceListRequest(ctx context.Context, bus *bus.BusConn, req *core.L
 		return &core.ListDeviceResponse{}, err
 	}
 
-	resMsg, err := bus.Request(listDeviceStream, bReq, 10*time.Second)
+	resMsg, err := bus.Request(listDeviceStream, bReq, 3*time.Second)
 	if err != nil {
 		return &core.ListDeviceResponse{}, err
 	}

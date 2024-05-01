@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/maxthom/mir/api/gen/proto/v1alpha/core"
 	bus "github.com/maxthom/mir/libs/external/natsio"
 	client_core "github.com/maxthom/mir/services/core"
@@ -13,7 +14,6 @@ import (
 
 // TODO find how to move output here instead of per command
 // TODO set yaml indent to two spaces
-// TODO add random guid id for device create
 // TODO check if json to remove key value pair should be NONE or NULL. check json doc
 type DeviceCmd struct {
 	List   DeviceListCmd   `cmd:"" help:"List devices"`
@@ -30,10 +30,11 @@ type DeviceListCmd struct {
 type DeviceCreateCmd struct {
 	Output string `short:"o" help:"output format for response [json|yaml]" default:"json"`
 
-	Id     string            `help:"Set device id"`
-	Desc   string            `help:"Set device description"`
-	Labels map[string]string `help:"Set labels to uniquely tag the device"`
-	Anno   map[string]string `help:"Set annotations to add extra information to the device"`
+	RandomId bool              `short:"r" help:"Set a random device id"`
+	Id       string            `help:"Set device id"`
+	Desc     string            `help:"Set device description"`
+	Labels   map[string]string `help:"Set labels to uniquely tag the device"`
+	Anno     map[string]string `help:"Set annotations to add extra information to the device"`
 }
 
 type DeviceUpdateCmd struct {
@@ -77,7 +78,9 @@ func (d *DeviceListCmd) Run(globals *Globals) error {
 	var err error
 	msgBus, err = bus.New(globals.Target)
 	if err != nil {
-		return MirConnectionError{Target: globals.Target, e: err}
+		e := MirConnectionError{Target: globals.Target, e: err}
+		fmt.Println(e)
+		return e
 	}
 	defer msgBus.Close()
 
@@ -88,9 +91,10 @@ func (d *DeviceListCmd) Run(globals *Globals) error {
 			Annotations: d.Anno,
 		},
 	})
-
 	if err != nil {
-		return MirRequestError{Route: "device.list", e: err}
+		e := MirRequestError{Route: "device.list", e: err}
+		fmt.Println(e)
+		return e
 	}
 
 	if resp.GetError() != nil {
@@ -118,7 +122,7 @@ func (d *DeviceCreateCmd) Validate() error {
 	err := MirInvalidInputError{
 		Details: []string{},
 	}
-	if d.Id == "" {
+	if d.Id == "" && !d.RandomId {
 		err.Details = append(err.Details, "The device ID is mandatory")
 	}
 	if strings.ToLower(d.Output) != "yaml" && strings.ToLower(d.Output) != "json" {
@@ -134,9 +138,21 @@ func (d *DeviceCreateCmd) Run(globals *Globals) error {
 	var err error
 	msgBus, err = bus.New(globals.Target)
 	if err != nil {
-		return MirConnectionError{Target: globals.Target, e: err}
+		e := MirConnectionError{Target: globals.Target, e: err}
+		fmt.Println(e)
+		return e
 	}
 	defer msgBus.Close()
+
+	if d.RandomId {
+		t, err := uuid.NewRandom()
+		if err != nil {
+			e := MirProcessError{Msg: "error generating random device id}", e: err}
+			fmt.Println(e)
+			return e
+		}
+		d.Id = t.String()
+	}
 
 	resp, err := client_core.PublishDeviceCreateRequest(ctx, msgBus, &core.CreateDeviceRequest{
 		DeviceId:    d.Id,
@@ -144,9 +160,10 @@ func (d *DeviceCreateCmd) Run(globals *Globals) error {
 		Labels:      d.Labels,
 		Annotations: d.Anno,
 	})
-
 	if err != nil {
-		return MirRequestError{Route: "device.create", e: err}
+		e := MirRequestError{Route: "device.create", e: err}
+		fmt.Println(e)
+		return e
 	}
 
 	if resp.GetError() != nil {
@@ -195,7 +212,9 @@ func (d *DeviceUpdateCmd) Run(globals *Globals) error {
 	var err error
 	msgBus, err = bus.New(globals.Target)
 	if err != nil {
-		return MirConnectionError{Target: globals.Target, e: err}
+		e := MirConnectionError{Target: globals.Target, e: err}
+		fmt.Println(e)
+		return e
 	}
 	defer msgBus.Close()
 
@@ -233,9 +252,10 @@ func (d *DeviceUpdateCmd) Run(globals *Globals) error {
 		Labels:      labels,
 		Annotations: anno,
 	})
-
 	if err != nil {
-		return MirRequestError{Route: "device.update", e: err}
+		e := MirRequestError{Route: "device.update", e: err}
+		fmt.Println(e)
+		return e
 	}
 
 	if resp.GetError() != nil {
@@ -284,7 +304,9 @@ func (d *DeviceDeleteCmd) Run(globals *Globals) error {
 	var err error
 	msgBus, err = bus.New(globals.Target)
 	if err != nil {
-		return MirConnectionError{Target: globals.Target, e: err}
+		e := MirConnectionError{Target: globals.Target, e: err}
+		fmt.Println(e)
+		return e
 	}
 	defer msgBus.Close()
 
@@ -295,9 +317,10 @@ func (d *DeviceDeleteCmd) Run(globals *Globals) error {
 			Annotations: d.Anno,
 		},
 	})
-
 	if err != nil {
-		return MirRequestError{Route: "device.delete", e: err}
+		e := MirRequestError{Route: "device.delete", e: err}
+		fmt.Println(e)
+		return e
 	}
 
 	if resp.GetError() != nil {

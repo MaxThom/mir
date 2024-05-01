@@ -60,3 +60,12 @@ type MirSerializationError struct {
 func (e MirSerializationError) Error() string {
 	return fmt.Sprintf("error serializing data to %s\n%s", e.Format, e.e)
 }
+
+type MirProcessError struct {
+	Msg string
+	e   error
+}
+
+func (e MirProcessError) Error() string {
+	return fmt.Sprintf("error processing request. %s\n%s", e.Msg, e.e)
+}
