@@ -18,6 +18,7 @@ import (
 	"github.com/maxthom/mir/services/tui/msgs"
 	"github.com/maxthom/mir/services/tui/pages/devices"
 	"github.com/maxthom/mir/services/tui/pages/mainmenu"
+	"github.com/maxthom/mir/services/tui/store"
 	"github.com/nats-io/nats.go"
 )
 
@@ -65,7 +66,7 @@ func NewModel(ctx context.Context, log zerolog.Logger, mirUrl string) *Model {
 	s := labelspinner.New(" 🛰️ ", styles["info"].Render("Mir"), spinner.Dot)
 	routes := map[string]tea.Model{
 		"/":          mainmenu.NewModel(),
-		"/devices":   devices.NewModel(ctx, nil),
+		"/devices":   devices.NewModel(ctx),
 		"/twins":     nil,
 		"/telemetry": nil,
 	}
@@ -79,33 +80,37 @@ func NewModel(ctx context.Context, log zerolog.Logger, mirUrl string) *Model {
 }
 
 func (m *Model) Init() tea.Cmd {
-	return func() tea.Msg {
-		return connMirCmdMsg{}
-	}
+	return tea.Batch(msgs.ReqMsgCmd("connecting to Mir ...standby"), m.connectToMir(m.mirUrl))
 }
 
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case connMirCmdMsg:
-		m.lblSpinner.UpdateLabel("connecting to Mir ...standby")
-		return m, tea.Batch(m.lblSpinner.Start(), m.connectToMir(m.mirUrl))
+	case msgs.ReqMsg:
+		m.lblSpinner.UpdateLabel(styles["info"].Render(string(msg)))
+		return m, m.lblSpinner.Start()
 	case msgs.ResMsg:
 		cmd := m.lblSpinner.UpdateLabelWithTimeout(styles["success"].Render(msg), 2*time.Second)
 		return m, tea.Batch(m.lblSpinner.Stop(), cmd)
 	case msgs.ErrMsg:
-		m.lblSpinner.UpdateLabel(styles["error"].Render(msg.Error()))
+		if msg.Timeout != 0 {
+			m.lblSpinner.UpdateLabelWithTimeout(styles["error"].Render(msg.Error()), msg.Timeout)
+		} else {
+			m.lblSpinner.UpdateLabel(styles["error"].Render(msg.Error()))
+		}
 		return m, tea.Batch(m.lblSpinner.Stop())
 	case msgs.RouteChangeMsg:
 		m.currentRoute = msg.Route
 		if m.routes[m.currentRoute] == nil {
 			m.currentRoute = "/"
 			return m, m.lblSpinner.UpdateLabelWithTimeout(styles["error"].Render("not implemented yet"), 2*time.Second)
+		} else {
+			return m, m.routes[m.currentRoute].Init()
 		}
 		return m, nil
 	case tea.KeyMsg:
 		var cmd tea.Cmd
 		switch {
-		case msg.Type == tea.KeyCtrlC || msg.String() == "q":
+		case msg.Type == tea.KeyCtrlC:
 			return m, tea.Quit
 		case msg.Type == tea.KeyEscape:
 			return m, msgs.RouteChangeCmd(removeLastSegment(m.currentRoute))
@@ -162,6 +167,7 @@ func (m *Model) connectToMir(url string) tea.Cmd {
 			return msgs.ErrMsg{Err: err}
 		}
 		m.bus = b
+		store.Bus = b
 
 		return msgs.ResMsg("connected to Mir")
 	}

@@ -49,7 +49,10 @@ func main() {
 	tuiSrv := tui.NewServer(log.Logger, cfg.MirServer)
 
 	go func() {
-		tuiSrv.Launch(ctx)
+		if err := tuiSrv.Launch(ctx); err != nil {
+			log.Err(err).Msg("")
+		}
+		mir_signals.Shutdown()
 	}()
 
 	// Handle shutdown

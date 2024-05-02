@@ -84,7 +84,7 @@ func (d *DeviceListCmd) Run(globals *Globals) error {
 	}
 	defer msgBus.Close()
 
-	resp, err := client_core.PublishDeviceListRequest(ctx, msgBus, &core.ListDeviceRequest{
+	resp, err := client_core.PublishDeviceListRequest(msgBus, &core.ListDeviceRequest{
 		Targets: &core.Targets{
 			Ids:         d.Ids,
 			Labels:      d.Labels,
@@ -154,7 +154,7 @@ func (d *DeviceCreateCmd) Run(globals *Globals) error {
 		d.Id = t.String()
 	}
 
-	resp, err := client_core.PublishDeviceCreateRequest(ctx, msgBus, &core.CreateDeviceRequest{
+	resp, err := client_core.PublishDeviceCreateRequest(msgBus, &core.CreateDeviceRequest{
 		DeviceId:    d.Id,
 		Description: d.Desc,
 		Labels:      d.Labels,
@@ -242,7 +242,7 @@ func (d *DeviceUpdateCmd) Run(globals *Globals) error {
 			}
 		}
 	}
-	resp, err := client_core.PublishDeviceUpdateRequest(ctx, msgBus, &core.UpdateDeviceRequest{
+	resp, err := client_core.PublishDeviceUpdateRequest(msgBus, &core.UpdateDeviceRequest{
 		Targets: &core.Targets{
 			Ids:         d.Target.Ids,
 			Labels:      d.Target.Labels,
@@ -310,7 +310,7 @@ func (d *DeviceDeleteCmd) Run(globals *Globals) error {
 	}
 	defer msgBus.Close()
 
-	resp, err := client_core.PublishDeviceDeleteRequest(ctx, msgBus, &core.DeleteDeviceRequest{
+	resp, err := client_core.PublishDeviceDeleteRequest(msgBus, &core.DeleteDeviceRequest{
 		Targets: &core.Targets{
 			Ids:         d.Ids,
 			Labels:      d.Labels,

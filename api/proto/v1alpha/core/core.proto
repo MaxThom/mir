@@ -113,9 +113,12 @@ message DeviceIdList {
 message Device {
   string id = 1; // Represent the database id of the device
   string device_id = 2; // Represent the Mir id of the device 
-  string description = 3; // Description of the devices
-  map<string, string> labels = 4; // Labels are used to uniquely identify the device
-  map<string, string> annotations = 5; // Annotations are used to add additional information
+  string name = 3; // Name of the device
+  string description = 4; // Description of the devices
+  Timestamp last_hearthbeat = 5; // Represent the time when the last hearthbeat was received
+  bool enabled = 6; // Is the device enabled ? if not, it will cut communication
+  map<string, string> labels = 7; // Labels are used to uniquely identify the device
+  map<string, string> annotations = 8; // Annotations are used to add additional information
 }
 
 // Generic error message
@@ -123,4 +126,17 @@ message Error {
     uint32 code = 1;     // HTTP like status code
     string message = 2;  // Human-readable error message.
     repeated string details = 3; // Optional details.
+}
+
+message Timestamp {
+  // Represents seconds of UTC time since Unix epoch
+  // 1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to
+  // 9999-12-31T23:59:59Z inclusive.
+  int64 seconds = 1;
+
+  // Non-negative fractions of a second at nanosecond resolution. Negative
+  // second values with fractions must still have non-negative nanos values
+  // that count forward in time. Must be from 0 to 999,999,999
+  // inclusive.
+  int32 nanos = 2;
 }

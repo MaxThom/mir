@@ -1,10 +1,18 @@
 package msgs
 
-import tea "github.com/charmbracelet/bubbletea"
+import (
+	"time"
+
+	tea "github.com/charmbracelet/bubbletea"
+)
 
 type (
-	ResMsg         = string
-	ErrMsg         struct{ Err error }
+	ReqMsg string
+	ResMsg = string
+	ErrMsg struct {
+		Err     error
+		Timeout time.Duration
+	}
 	RouteChangeMsg struct {
 		Route string
 	}
@@ -20,5 +28,17 @@ func (e ErrMsg) Error() string {
 func RouteChangeCmd(route string) tea.Cmd {
 	return func() tea.Msg {
 		return RouteChangeMsg{route}
+	}
+}
+
+func ReqMsgCmd(msg string) tea.Cmd {
+	return func() tea.Msg {
+		return ReqMsg(msg)
+	}
+}
+
+func ResMsgCmd(msg string) tea.Cmd {
+	return func() tea.Msg {
+		return ResMsg(msg)
 	}
 }

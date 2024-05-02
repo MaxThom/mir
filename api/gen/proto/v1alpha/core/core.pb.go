@@ -760,11 +760,14 @@ type Device struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Id          string            `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`                                                                                                           // Represent the database id of the device
-	DeviceId    string            `protobuf:"bytes,2,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`                                                                               // Represent the Mir id of the device
-	Description string            `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`                                                                                         // Description of the devices
-	Labels      map[string]string `protobuf:"bytes,4,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`           // Labels are used to uniquely identify the device
-	Annotations map[string]string `protobuf:"bytes,5,rep,name=annotations,proto3" json:"annotations,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"` // Annotations are used to add additional information
+	Id             string            `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`                                                                                                           // Represent the database id of the device
+	DeviceId       string            `protobuf:"bytes,2,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`                                                                               // Represent the Mir id of the device
+	Name           string            `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`                                                                                                       // Name of the device
+	Description    string            `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`                                                                                         // Description of the devices
+	LastHearthbeat *Timestamp        `protobuf:"bytes,5,opt,name=last_hearthbeat,json=lastHearthbeat,proto3" json:"last_hearthbeat,omitempty"`                                                             // Represent the time when the last hearthbeat was received
+	Enabled        bool              `protobuf:"varint,6,opt,name=enabled,proto3" json:"enabled,omitempty"`                                                                                                // Is the device enabled ? if not, it will cut communication
+	Labels         map[string]string `protobuf:"bytes,7,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`           // Labels are used to uniquely identify the device
+	Annotations    map[string]string `protobuf:"bytes,8,rep,name=annotations,proto3" json:"annotations,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"` // Annotations are used to add additional information
 }
 
 func (x *Device) Reset() {
@@ -813,11 +816,32 @@ func (x *Device) GetDeviceId() string {
 	return ""
 }
 
+func (x *Device) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
 func (x *Device) GetDescription() string {
 	if x != nil {
 		return x.Description
 	}
 	return ""
+}
+
+func (x *Device) GetLastHearthbeat() *Timestamp {
+	if x != nil {
+		return x.LastHearthbeat
+	}
+	return nil
+}
+
+func (x *Device) GetEnabled() bool {
+	if x != nil {
+		return x.Enabled
+	}
+	return false
 }
 
 func (x *Device) GetLabels() map[string]string {
@@ -898,6 +922,68 @@ func (x *Error) GetDetails() []string {
 	return nil
 }
 
+type Timestamp struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// Represents seconds of UTC time since Unix epoch
+	// 1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to
+	// 9999-12-31T23:59:59Z inclusive.
+	Seconds int64 `protobuf:"varint,1,opt,name=seconds,proto3" json:"seconds,omitempty"`
+	// Non-negative fractions of a second at nanosecond resolution. Negative
+	// second values with fractions must still have non-negative nanos values
+	// that count forward in time. Must be from 0 to 999,999,999
+	// inclusive.
+	Nanos int32 `protobuf:"varint,2,opt,name=nanos,proto3" json:"nanos,omitempty"`
+}
+
+func (x *Timestamp) Reset() {
+	*x = Timestamp{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_proto_v1alpha_core_core_proto_msgTypes[13]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Timestamp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Timestamp) ProtoMessage() {}
+
+func (x *Timestamp) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_v1alpha_core_core_proto_msgTypes[13]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Timestamp.ProtoReflect.Descriptor instead.
+func (*Timestamp) Descriptor() ([]byte, []int) {
+	return file_proto_v1alpha_core_core_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *Timestamp) GetSeconds() int64 {
+	if x != nil {
+		return x.Seconds
+	}
+	return 0
+}
+
+func (x *Timestamp) GetNanos() int32 {
+	if x != nil {
+		return x.Nanos
+	}
+	return 0
+}
+
 type UpdateDeviceRequest_OptString struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -909,7 +995,7 @@ type UpdateDeviceRequest_OptString struct {
 func (x *UpdateDeviceRequest_OptString) Reset() {
 	*x = UpdateDeviceRequest_OptString{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_proto_v1alpha_core_core_proto_msgTypes[17]
+		mi := &file_proto_v1alpha_core_core_proto_msgTypes[18]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -922,7 +1008,7 @@ func (x *UpdateDeviceRequest_OptString) String() string {
 func (*UpdateDeviceRequest_OptString) ProtoMessage() {}
 
 func (x *UpdateDeviceRequest_OptString) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_v1alpha_core_core_proto_msgTypes[17]
+	mi := &file_proto_v1alpha_core_core_proto_msgTypes[18]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1072,17 +1158,24 @@ var file_proto_v1alpha_core_core_proto_rawDesc = []byte{
 	0x69, 0x63, 0x65, 0x52, 0x07, 0x64, 0x65, 0x76, 0x69, 0x63, 0x65, 0x73, 0x22, 0x2d, 0x0a, 0x0c,
 	0x44, 0x65, 0x76, 0x69, 0x63, 0x65, 0x49, 0x64, 0x4c, 0x69, 0x73, 0x74, 0x12, 0x1d, 0x0a, 0x0a,
 	0x64, 0x65, 0x76, 0x69, 0x63, 0x65, 0x5f, 0x69, 0x64, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x09,
-	0x52, 0x09, 0x64, 0x65, 0x76, 0x69, 0x63, 0x65, 0x49, 0x64, 0x73, 0x22, 0xd5, 0x02, 0x0a, 0x06,
+	0x52, 0x09, 0x64, 0x65, 0x76, 0x69, 0x63, 0x65, 0x49, 0x64, 0x73, 0x22, 0xc5, 0x03, 0x0a, 0x06,
 	0x44, 0x65, 0x76, 0x69, 0x63, 0x65, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01,
 	0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x12, 0x1b, 0x0a, 0x09, 0x64, 0x65, 0x76, 0x69, 0x63, 0x65,
 	0x5f, 0x69, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x64, 0x65, 0x76, 0x69, 0x63,
-	0x65, 0x49, 0x64, 0x12, 0x20, 0x0a, 0x0b, 0x64, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x69,
-	0x6f, 0x6e, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0b, 0x64, 0x65, 0x73, 0x63, 0x72, 0x69,
-	0x70, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x38, 0x0a, 0x06, 0x6c, 0x61, 0x62, 0x65, 0x6c, 0x73, 0x18,
-	0x04, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x20, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x2e,
+	0x65, 0x49, 0x64, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28,
+	0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x20, 0x0a, 0x0b, 0x64, 0x65, 0x73, 0x63, 0x72,
+	0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0b, 0x64, 0x65,
+	0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x40, 0x0a, 0x0f, 0x6c, 0x61, 0x73,
+	0x74, 0x5f, 0x68, 0x65, 0x61, 0x72, 0x74, 0x68, 0x62, 0x65, 0x61, 0x74, 0x18, 0x05, 0x20, 0x01,
+	0x28, 0x0b, 0x32, 0x17, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x2e, 0x63, 0x6f, 0x72,
+	0x65, 0x2e, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x52, 0x0e, 0x6c, 0x61, 0x73,
+	0x74, 0x48, 0x65, 0x61, 0x72, 0x74, 0x68, 0x62, 0x65, 0x61, 0x74, 0x12, 0x18, 0x0a, 0x07, 0x65,
+	0x6e, 0x61, 0x62, 0x6c, 0x65, 0x64, 0x18, 0x06, 0x20, 0x01, 0x28, 0x08, 0x52, 0x07, 0x65, 0x6e,
+	0x61, 0x62, 0x6c, 0x65, 0x64, 0x12, 0x38, 0x0a, 0x06, 0x6c, 0x61, 0x62, 0x65, 0x6c, 0x73, 0x18,
+	0x07, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x20, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x2e,
 	0x63, 0x6f, 0x72, 0x65, 0x2e, 0x44, 0x65, 0x76, 0x69, 0x63, 0x65, 0x2e, 0x4c, 0x61, 0x62, 0x65,
 	0x6c, 0x73, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x52, 0x06, 0x6c, 0x61, 0x62, 0x65, 0x6c, 0x73, 0x12,
-	0x47, 0x0a, 0x0b, 0x61, 0x6e, 0x6e, 0x6f, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x18, 0x05,
+	0x47, 0x0a, 0x0b, 0x61, 0x6e, 0x6e, 0x6f, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x18, 0x08,
 	0x20, 0x03, 0x28, 0x0b, 0x32, 0x25, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x2e, 0x63,
 	0x6f, 0x72, 0x65, 0x2e, 0x44, 0x65, 0x76, 0x69, 0x63, 0x65, 0x2e, 0x41, 0x6e, 0x6e, 0x6f, 0x74,
 	0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x52, 0x0b, 0x61, 0x6e, 0x6e,
@@ -1099,17 +1192,21 @@ var file_proto_v1alpha_core_core_proto_rawDesc = []byte{
 	0x12, 0x18, 0x0a, 0x07, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28,
 	0x09, 0x52, 0x07, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x12, 0x18, 0x0a, 0x07, 0x64, 0x65,
 	0x74, 0x61, 0x69, 0x6c, 0x73, 0x18, 0x03, 0x20, 0x03, 0x28, 0x09, 0x52, 0x07, 0x64, 0x65, 0x74,
-	0x61, 0x69, 0x6c, 0x73, 0x42, 0xa1, 0x01, 0x0a, 0x10, 0x63, 0x6f, 0x6d, 0x2e, 0x76, 0x31, 0x61,
-	0x6c, 0x70, 0x68, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x42, 0x09, 0x43, 0x6f, 0x72, 0x65, 0x50,
-	0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x31, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63,
-	0x6f, 0x6d, 0x2f, 0x6d, 0x61, 0x78, 0x74, 0x68, 0x6f, 0x6d, 0x2f, 0x6d, 0x69, 0x72, 0x2f, 0x61,
-	0x70, 0x69, 0x2f, 0x67, 0x65, 0x6e, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x76, 0x31, 0x61,
-	0x6c, 0x70, 0x68, 0x61, 0x2f, 0x63, 0x6f, 0x72, 0x65, 0xa2, 0x02, 0x03, 0x56, 0x43, 0x58, 0xaa,
-	0x02, 0x0c, 0x56, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x2e, 0x43, 0x6f, 0x72, 0x65, 0xca, 0x02,
-	0x0c, 0x56, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x5c, 0x43, 0x6f, 0x72, 0x65, 0xe2, 0x02, 0x18,
-	0x56, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x5c, 0x43, 0x6f, 0x72, 0x65, 0x5c, 0x47, 0x50, 0x42,
-	0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x0d, 0x56, 0x31, 0x61, 0x6c, 0x70,
-	0x68, 0x61, 0x3a, 0x3a, 0x43, 0x6f, 0x72, 0x65, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x61, 0x69, 0x6c, 0x73, 0x22, 0x3b, 0x0a, 0x09, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d,
+	0x70, 0x12, 0x18, 0x0a, 0x07, 0x73, 0x65, 0x63, 0x6f, 0x6e, 0x64, 0x73, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x03, 0x52, 0x07, 0x73, 0x65, 0x63, 0x6f, 0x6e, 0x64, 0x73, 0x12, 0x14, 0x0a, 0x05, 0x6e,
+	0x61, 0x6e, 0x6f, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x05, 0x52, 0x05, 0x6e, 0x61, 0x6e, 0x6f,
+	0x73, 0x42, 0xa1, 0x01, 0x0a, 0x10, 0x63, 0x6f, 0x6d, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68,
+	0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x42, 0x09, 0x43, 0x6f, 0x72, 0x65, 0x50, 0x72, 0x6f, 0x74,
+	0x6f, 0x50, 0x01, 0x5a, 0x31, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f,
+	0x6d, 0x61, 0x78, 0x74, 0x68, 0x6f, 0x6d, 0x2f, 0x6d, 0x69, 0x72, 0x2f, 0x61, 0x70, 0x69, 0x2f,
+	0x67, 0x65, 0x6e, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68,
+	0x61, 0x2f, 0x63, 0x6f, 0x72, 0x65, 0xa2, 0x02, 0x03, 0x56, 0x43, 0x58, 0xaa, 0x02, 0x0c, 0x56,
+	0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x2e, 0x43, 0x6f, 0x72, 0x65, 0xca, 0x02, 0x0c, 0x56, 0x31,
+	0x61, 0x6c, 0x70, 0x68, 0x61, 0x5c, 0x43, 0x6f, 0x72, 0x65, 0xe2, 0x02, 0x18, 0x56, 0x31, 0x61,
+	0x6c, 0x70, 0x68, 0x61, 0x5c, 0x43, 0x6f, 0x72, 0x65, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74,
+	0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x0d, 0x56, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x3a,
+	0x3a, 0x43, 0x6f, 0x72, 0x65, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -1124,7 +1221,7 @@ func file_proto_v1alpha_core_core_proto_rawDescGZIP() []byte {
 	return file_proto_v1alpha_core_core_proto_rawDescData
 }
 
-var file_proto_v1alpha_core_core_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
+var file_proto_v1alpha_core_core_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
 var file_proto_v1alpha_core_core_proto_goTypes = []interface{}{
 	(*CreateDeviceRequest)(nil),           // 0: v1alpha.core.CreateDeviceRequest
 	(*CreateDeviceResponse)(nil),          // 1: v1alpha.core.CreateDeviceResponse
@@ -1139,24 +1236,25 @@ var file_proto_v1alpha_core_core_proto_goTypes = []interface{}{
 	(*DeviceIdList)(nil),                  // 10: v1alpha.core.DeviceIdList
 	(*Device)(nil),                        // 11: v1alpha.core.Device
 	(*Error)(nil),                         // 12: v1alpha.core.Error
-	nil,                                   // 13: v1alpha.core.CreateDeviceRequest.LabelsEntry
-	nil,                                   // 14: v1alpha.core.CreateDeviceRequest.AnnotationsEntry
-	nil,                                   // 15: v1alpha.core.UpdateDeviceRequest.LabelsEntry
-	nil,                                   // 16: v1alpha.core.UpdateDeviceRequest.AnnotationsEntry
-	(*UpdateDeviceRequest_OptString)(nil), // 17: v1alpha.core.UpdateDeviceRequest.OptString
-	nil,                                   // 18: v1alpha.core.Targets.LabelsEntry
-	nil,                                   // 19: v1alpha.core.Targets.AnnotationsEntry
-	nil,                                   // 20: v1alpha.core.Device.LabelsEntry
-	nil,                                   // 21: v1alpha.core.Device.AnnotationsEntry
+	(*Timestamp)(nil),                     // 13: v1alpha.core.Timestamp
+	nil,                                   // 14: v1alpha.core.CreateDeviceRequest.LabelsEntry
+	nil,                                   // 15: v1alpha.core.CreateDeviceRequest.AnnotationsEntry
+	nil,                                   // 16: v1alpha.core.UpdateDeviceRequest.LabelsEntry
+	nil,                                   // 17: v1alpha.core.UpdateDeviceRequest.AnnotationsEntry
+	(*UpdateDeviceRequest_OptString)(nil), // 18: v1alpha.core.UpdateDeviceRequest.OptString
+	nil,                                   // 19: v1alpha.core.Targets.LabelsEntry
+	nil,                                   // 20: v1alpha.core.Targets.AnnotationsEntry
+	nil,                                   // 21: v1alpha.core.Device.LabelsEntry
+	nil,                                   // 22: v1alpha.core.Device.AnnotationsEntry
 }
 var file_proto_v1alpha_core_core_proto_depIdxs = []int32{
-	13, // 0: v1alpha.core.CreateDeviceRequest.labels:type_name -> v1alpha.core.CreateDeviceRequest.LabelsEntry
-	14, // 1: v1alpha.core.CreateDeviceRequest.annotations:type_name -> v1alpha.core.CreateDeviceRequest.AnnotationsEntry
+	14, // 0: v1alpha.core.CreateDeviceRequest.labels:type_name -> v1alpha.core.CreateDeviceRequest.LabelsEntry
+	15, // 1: v1alpha.core.CreateDeviceRequest.annotations:type_name -> v1alpha.core.CreateDeviceRequest.AnnotationsEntry
 	9,  // 2: v1alpha.core.CreateDeviceResponse.ok:type_name -> v1alpha.core.DeviceList
 	12, // 3: v1alpha.core.CreateDeviceResponse.error:type_name -> v1alpha.core.Error
 	8,  // 4: v1alpha.core.UpdateDeviceRequest.targets:type_name -> v1alpha.core.Targets
-	15, // 5: v1alpha.core.UpdateDeviceRequest.labels:type_name -> v1alpha.core.UpdateDeviceRequest.LabelsEntry
-	16, // 6: v1alpha.core.UpdateDeviceRequest.annotations:type_name -> v1alpha.core.UpdateDeviceRequest.AnnotationsEntry
+	16, // 5: v1alpha.core.UpdateDeviceRequest.labels:type_name -> v1alpha.core.UpdateDeviceRequest.LabelsEntry
+	17, // 6: v1alpha.core.UpdateDeviceRequest.annotations:type_name -> v1alpha.core.UpdateDeviceRequest.AnnotationsEntry
 	9,  // 7: v1alpha.core.UpdateDeviceResponse.ok:type_name -> v1alpha.core.DeviceList
 	12, // 8: v1alpha.core.UpdateDeviceResponse.error:type_name -> v1alpha.core.Error
 	8,  // 9: v1alpha.core.DeleteDeviceRequest.targets:type_name -> v1alpha.core.Targets
@@ -1165,18 +1263,19 @@ var file_proto_v1alpha_core_core_proto_depIdxs = []int32{
 	8,  // 12: v1alpha.core.ListDeviceRequest.targets:type_name -> v1alpha.core.Targets
 	9,  // 13: v1alpha.core.ListDeviceResponse.ok:type_name -> v1alpha.core.DeviceList
 	12, // 14: v1alpha.core.ListDeviceResponse.error:type_name -> v1alpha.core.Error
-	18, // 15: v1alpha.core.Targets.labels:type_name -> v1alpha.core.Targets.LabelsEntry
-	19, // 16: v1alpha.core.Targets.annotations:type_name -> v1alpha.core.Targets.AnnotationsEntry
+	19, // 15: v1alpha.core.Targets.labels:type_name -> v1alpha.core.Targets.LabelsEntry
+	20, // 16: v1alpha.core.Targets.annotations:type_name -> v1alpha.core.Targets.AnnotationsEntry
 	11, // 17: v1alpha.core.DeviceList.devices:type_name -> v1alpha.core.Device
-	20, // 18: v1alpha.core.Device.labels:type_name -> v1alpha.core.Device.LabelsEntry
-	21, // 19: v1alpha.core.Device.annotations:type_name -> v1alpha.core.Device.AnnotationsEntry
-	17, // 20: v1alpha.core.UpdateDeviceRequest.LabelsEntry.value:type_name -> v1alpha.core.UpdateDeviceRequest.OptString
-	17, // 21: v1alpha.core.UpdateDeviceRequest.AnnotationsEntry.value:type_name -> v1alpha.core.UpdateDeviceRequest.OptString
-	22, // [22:22] is the sub-list for method output_type
-	22, // [22:22] is the sub-list for method input_type
-	22, // [22:22] is the sub-list for extension type_name
-	22, // [22:22] is the sub-list for extension extendee
-	0,  // [0:22] is the sub-list for field type_name
+	13, // 18: v1alpha.core.Device.last_hearthbeat:type_name -> v1alpha.core.Timestamp
+	21, // 19: v1alpha.core.Device.labels:type_name -> v1alpha.core.Device.LabelsEntry
+	22, // 20: v1alpha.core.Device.annotations:type_name -> v1alpha.core.Device.AnnotationsEntry
+	18, // 21: v1alpha.core.UpdateDeviceRequest.LabelsEntry.value:type_name -> v1alpha.core.UpdateDeviceRequest.OptString
+	18, // 22: v1alpha.core.UpdateDeviceRequest.AnnotationsEntry.value:type_name -> v1alpha.core.UpdateDeviceRequest.OptString
+	23, // [23:23] is the sub-list for method output_type
+	23, // [23:23] is the sub-list for method input_type
+	23, // [23:23] is the sub-list for extension type_name
+	23, // [23:23] is the sub-list for extension extendee
+	0,  // [0:23] is the sub-list for field type_name
 }
 
 func init() { file_proto_v1alpha_core_core_proto_init() }
@@ -1341,7 +1440,19 @@ func file_proto_v1alpha_core_core_proto_init() {
 				return nil
 			}
 		}
-		file_proto_v1alpha_core_core_proto_msgTypes[17].Exporter = func(v interface{}, i int) interface{} {
+		file_proto_v1alpha_core_core_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Timestamp); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_proto_v1alpha_core_core_proto_msgTypes[18].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*UpdateDeviceRequest_OptString); i {
 			case 0:
 				return &v.state
@@ -1371,14 +1482,14 @@ func file_proto_v1alpha_core_core_proto_init() {
 		(*ListDeviceResponse_Ok)(nil),
 		(*ListDeviceResponse_Error)(nil),
 	}
-	file_proto_v1alpha_core_core_proto_msgTypes[17].OneofWrappers = []interface{}{}
+	file_proto_v1alpha_core_core_proto_msgTypes[18].OneofWrappers = []interface{}{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_proto_v1alpha_core_core_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   22,
+			NumMessages:   23,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

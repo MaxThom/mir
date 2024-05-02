@@ -217,6 +217,7 @@ In the json of the properties, a new field with the linked schema could be added
 ```
 
 This could be on the json template or on the device twin as well in a more fix manner. A bit more thinking to be done here.
+
 ### 4.2 Detailed Design
 
 Dive into the detailed design of each module, including class diagrams, data flow diagrams, and other relevant details.
