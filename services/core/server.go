@@ -79,7 +79,7 @@ func (s *CoreServer) Listen(ctx context.Context) {
 	}
 }
 
-// TODO check if unique on device_id
+// TODO  add ability to create multiple devices by giving many ids
 func (s *CoreServer) createDeviceRequestHandler(ch chan nats.Msg) {
 	for {
 		msg := <-ch
@@ -99,6 +99,19 @@ func (s *CoreServer) createDeviceRequestHandler(ch chan nats.Msg) {
 			continue
 		}
 		l.Debug().Str("route", "create").Str("payload", fmt.Sprintf("%v", req)).Msg("new device request")
+
+		if req.DeviceId == "" {
+			sendReplyOrAck(s.bus, msg, &core.CreateDeviceResponse{
+				Response: &core.CreateDeviceResponse_Error{
+					Error: &core.Error{
+						Code:    400,
+						Message: "Invalid device ID",
+						Details: []string{"400 Bad Request"},
+					},
+				},
+			})
+			continue
+		}
 
 		q, v := createListQueryForDevice(&core.ListDeviceRequest{
 			Targets: &core.Targets{
@@ -147,7 +160,7 @@ func (s *CoreServer) createDeviceRequestHandler(ch chan nats.Msg) {
 			})
 			continue
 		}
-		newDev := make([]core.CreateDeviceRequest, 1)
+		newDev := []*core.Device{}
 		err = surrealdb.Unmarshal(respDb, &newDev)
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while deserializing a db response")
@@ -165,8 +178,8 @@ func (s *CoreServer) createDeviceRequestHandler(ch chan nats.Msg) {
 
 		sendReplyOrAck(s.bus, msg, &core.CreateDeviceResponse{
 			Response: &core.CreateDeviceResponse_Ok{
-				Ok: &core.DeviceIdList{
-					DeviceIds: []string{newDev[0].DeviceId},
+				Ok: &core.DeviceList{
+					Devices: newDev,
 				},
 			}})
 	}
@@ -212,7 +225,7 @@ func (s *CoreServer) updateDeviceRequestHandler(ch chan nats.Msg) {
 		// Change is a merge
 		// Modify is a patch
 		q, v := createUpdateQueryForDevice(req)
-		respDb, err := executeQueryForType[[]core.Device](s.db, q, v)
+		respDb, err := executeQueryForType[[]*core.Device](s.db, q, v)
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while executing a db query")
 			sendReplyOrAck(s.bus, msg, &core.UpdateDeviceResponse{
@@ -227,15 +240,10 @@ func (s *CoreServer) updateDeviceRequestHandler(ch chan nats.Msg) {
 			continue
 		}
 
-		ids := []string{}
-		for _, v := range respDb {
-			ids = append(ids, v.DeviceId)
-		}
-
 		sendReplyOrAck(s.bus, msg, &core.UpdateDeviceResponse{
 			Response: &core.UpdateDeviceResponse_Ok{
-				Ok: &core.DeviceIdList{
-					DeviceIds: ids,
+				Ok: &core.DeviceList{
+					Devices: respDb,
 				},
 			}})
 	}
@@ -278,7 +286,7 @@ func (s *CoreServer) deleteDeviceRequestHandler(ch chan nats.Msg) {
 		}
 
 		q, v := createDeleteQueryForDevice(req)
-		respDb, err := executeQueryForType[[]core.Device](s.db, q, v)
+		respDb, err := executeQueryForType[[]*core.Device](s.db, q, v)
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while executing a db query")
 			sendReplyOrAck(s.bus, msg, &core.DeleteDeviceResponse{
@@ -293,15 +301,10 @@ func (s *CoreServer) deleteDeviceRequestHandler(ch chan nats.Msg) {
 			continue
 		}
 
-		ids := []string{}
-		for _, v := range respDb {
-			ids = append(ids, v.DeviceId)
-		}
-
 		sendReplyOrAck(s.bus, msg, &core.DeleteDeviceResponse{
 			Response: &core.DeleteDeviceResponse_Ok{
-				Ok: &core.DeviceIdList{
-					DeviceIds: ids,
+				Ok: &core.DeviceList{
+					Devices: respDb,
 				},
 			}})
 	}
@@ -325,7 +328,7 @@ func (s *CoreServer) listDeviceRequestHandler(ch chan nats.Msg) {
 			})
 			continue
 		}
-		l.Debug().Str("route", "list").Str("payload", fmt.Sprintf("%v", req)).Msg("delete device request")
+		l.Debug().Str("route", "list").Str("payload", fmt.Sprintf("%v", req)).Msg("list device request")
 
 		q, v := createListQueryForDevice(req)
 		respDb, err := executeQueryForType[[]*core.Device](s.db, q, v)
@@ -413,23 +416,7 @@ func createUpdateQueryForDevice(req *core.UpdateDeviceRequest) (sql string, vars
 	}
 
 	q.WriteString("} WHERE ")
-
-	cond := []string{}
-	if len(req.Targets.Ids) > 0 {
-		var t []string
-		for _, id := range req.Targets.Ids {
-			t = append(t, fmt.Sprintf("device_id = \"%s\"", id))
-		}
-		cond = append(cond, strings.Join(t, " OR "))
-	}
-	if len(req.Targets.Labels) > 0 {
-		var t []string
-		for k, v := range req.Targets.Labels {
-			t = append(t, fmt.Sprintf("labels.%s = \"%s\"", k, v))
-		}
-		cond = append(cond, "("+strings.Join(t, " AND ")+")")
-	}
-	q.WriteString(strings.Join(cond, " OR "))
+	q.WriteString(createWhereStatementWithTargets(req.Targets.Ids, req.Targets.Labels, req.Targets.Annotations))
 	q.WriteString(";")
 	sql = q.String()
 
@@ -442,7 +429,7 @@ func createDeleteQueryForDevice(req *core.DeleteDeviceRequest) (sql string, vars
 
 	q.WriteString("DELETE FROM devices WHERE ")
 	q.WriteString(createWhereStatementWithTargets(req.Targets.Ids, req.Targets.Labels, req.Targets.Annotations))
-
+	q.WriteString(";")
 	sql = q.String()
 	return
 }
@@ -489,7 +476,6 @@ func createWhereStatementWithTargets(targetIds []string, targetLabels map[string
 		cond = append(cond, "("+strings.Join(t, " AND ")+")")
 	}
 	q.WriteString(strings.Join(cond, " OR "))
-	q.WriteString(";")
 	return q.String()
 }
 

@@ -45,7 +45,6 @@ func (m *Model) UpdateLabel(label string) {
 func (m *Model) UpdateLabelWithTimeout(label string, timeout time.Duration) tea.Cmd {
 	m.lbl = label
 	m.timer = timer.New(timeout)
-	//m.timer.Init()
 	return m.timer.Init()
 }
 
@@ -75,9 +74,9 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 
 func (m Model) View() string {
 	if m.IsSpinning {
-		return m.prefix + m.spinner.View() + m.lbl
+		return m.prefix + " " + m.spinner.View() + m.lbl
 	} else {
-		return m.prefix + m.lbl
+		return m.prefix + " " + m.lbl
 	}
 }
 
