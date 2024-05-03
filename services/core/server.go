@@ -382,9 +382,17 @@ func createUpdateQueryForDevice(req *core.UpdateDeviceRequest) (sql string, vars
 	var q strings.Builder
 	vars = map[string]any{}
 	q.WriteString("UPDATE devices MERGE {")
+	if req.Name != nil {
+		q.WriteString("name: $NAME,")
+		vars["NAME"] = *req.Name
+	}
 	if req.Description != nil {
 		q.WriteString("description: $DESC,")
 		vars["DESC"] = *req.Description
+	}
+	if req.Disabled != nil {
+		q.WriteString("disabled: $DISA,")
+		vars["DISA"] = *req.Disabled
 	}
 	if req.Labels != nil && len(req.Labels) > 0 {
 		q.WriteString("labels: {")

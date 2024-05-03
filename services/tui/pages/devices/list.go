@@ -182,10 +182,15 @@ func getRows(devices []*core.Device) []table.Row {
 		for k, v := range d.Labels {
 			lbls = append(lbls, k+"="+v)
 		}
+		status := "🟢"
+		if d.Disabled {
+			status = "⭕"
+		} else if !d.Online {
+			status = "🔴"
+		}
 		rows = append(rows, table.Row{
-			"🟢", d.DeviceId, d.Name, strings.Join(lbls, ","),
+			status, d.DeviceId, d.Name, strings.Join(lbls, ","),
 		})
-		// ⭕🔴🟢: desabled, offline, online
 	}
 	return rows
 }

@@ -9,9 +9,11 @@ option go_package = "gen/";
 */
 message CreateDeviceRequest {
   string device_id = 1; // the device_id must be unique
-  string description = 2;  // description of the device
-  map<string, string> labels = 3; // labels are used to uniquely identify the device
-  map<string, string> annotations = 4; // annotations are used to add additional information
+  string name = 2; // Name of the device
+  string description = 3;  // description of the device
+  bool disabled = 4; // If disabled, device will be cut off from communication
+  map<string, string> labels = 5; // labels are used to uniquely identify the device
+  map<string, string> annotations = 6; // annotations are used to add additional information
 }
 
 /*
@@ -33,9 +35,11 @@ message CreateDeviceResponse {
 */
 message UpdateDeviceRequest {
   Targets targets = 1; // To target a set of devices, search using ids, labels and annotations 
+  optional string name = 2; // Name of the device
   optional string description = 3; // description of the device
-  map<string, OptString> labels = 4; // set key to nil to remove it
-  map<string, OptString> annotations = 5; // set key to nil to remove it
+  optional bool disabled = 4; // If disabled, device will be cut off from communication
+  map<string, OptString> labels = 5; // set key to nil to remove it
+  map<string, OptString> annotations = 6; // set key to nil to remove it
 
   message OptString {
     optional string value = 1;
@@ -115,10 +119,11 @@ message Device {
   string device_id = 2; // Represent the Mir id of the device 
   string name = 3; // Name of the device
   string description = 4; // Description of the devices
-  Timestamp last_hearthbeat = 5; // Represent the time when the last hearthbeat was received
-  bool enabled = 6; // Is the device enabled ? if not, it will cut communication
-  map<string, string> labels = 7; // Labels are used to uniquely identify the device
-  map<string, string> annotations = 8; // Annotations are used to add additional information
+  bool disabled = 5; // If disabled, device will be cut off from communication
+  map<string, string> labels = 6; // Labels are used to uniquely identify the device
+  map<string, string> annotations = 7; // Annotations are used to add additional information
+  Timestamp last_hearthbeat = 8; // Represent the time when the last hearthbeat was received
+  bool online = 9; // The device is online and sending heathbeath signal
 }
 
 // Generic error message

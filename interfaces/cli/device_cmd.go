@@ -32,7 +32,9 @@ type DeviceCreateCmd struct {
 
 	RandomId bool              `short:"r" help:"Set a random device id"`
 	Id       string            `help:"Set device id"`
+	Name     string            `help:"Set device name"`
 	Desc     string            `help:"Set device description"`
+	Disabled bool              `help:"if disabled, communication is cut"`
 	Labels   map[string]string `help:"Set labels to uniquely tag the device"`
 	Anno     map[string]string `help:"Set annotations to add extra information to the device"`
 }
@@ -41,9 +43,11 @@ type DeviceUpdateCmd struct {
 	Output string `short:"o" help:"output format for response" default:"json"`
 	Target `embed:"" prefix:"target."`
 
-	Desc   *string           `help:"Set device description"`
-	Labels map[string]string `help:"Set labels to uniquely tag the device"`
-	Anno   map[string]string `help:"Set annotations to add extra information to the device"`
+	Name     *string           `help:"Set device name"`
+	Desc     *string           `help:"Set device description"`
+	Disabled *bool             `help:"if not enabled, communication is cut"`
+	Labels   map[string]string `help:"Set labels to uniquely tag the device"`
+	Anno     map[string]string `help:"Set annotations to add extra information to the device"`
 }
 
 type DeviceDeleteCmd struct {
@@ -156,7 +160,9 @@ func (d *DeviceCreateCmd) Run(globals *Globals) error {
 
 	resp, err := client_core.PublishDeviceCreateRequest(msgBus, &core.CreateDeviceRequest{
 		DeviceId:    d.Id,
+		Name:        d.Name,
 		Description: d.Desc,
+		Disabled:    d.Disabled,
 		Labels:      d.Labels,
 		Annotations: d.Anno,
 	})
@@ -248,7 +254,9 @@ func (d *DeviceUpdateCmd) Run(globals *Globals) error {
 			Labels:      d.Target.Labels,
 			Annotations: d.Target.Anno,
 		},
+		Name:        d.Name,
 		Description: d.Desc,
+		Disabled:    d.Disabled,
 		Labels:      labels,
 		Annotations: anno,
 	})
