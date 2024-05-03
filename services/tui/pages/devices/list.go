@@ -3,6 +3,7 @@ package devices
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/key"
@@ -20,16 +21,12 @@ import (
 )
 
 // IDEA wide option that show more fields
-// TODO search field with / to focus and enter to focus table
 
 var (
 	l = log.With().Str("cmp", "root").Logger()
 )
 
 type (
-	SearchFilterMsg struct {
-		filter string
-	}
 	DeviceFetchedMsg struct {
 		devices []*core.Device
 	}
@@ -37,10 +34,10 @@ type (
 
 type Model struct {
 	ctx         context.Context
-	bus         *bus.BusConn
 	help        mir_help.Model
 	table       table.Model
 	searchInput textinput.Model
+	tableRowAll []table.Row
 }
 
 var styles = map[string]lipgloss.Style{
@@ -57,7 +54,6 @@ func NewModel(ctx context.Context) *Model {
 	ti.CharLimit = 256
 	ti.Width = 50
 	ti.ShowSuggestions = true
-	ti.SetSuggestions([]string{"search"})
 
 	columns := []table.Column{
 		{Title: "", Width: 2}, // Icon with status. online/offline/desabled
@@ -100,7 +96,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case DeviceFetchedMsg:
-		m.table.SetRows(getRows(msg.devices))
+		var suggestions []string
+		m.tableRowAll, suggestions = devicesToRows(msg.devices)
+		m.searchInput.SetSuggestions(suggestions)
+		m.table.SetRows(m.tableRowAll)
 		return m, msgs.ResMsgCmd(fmt.Sprintf("%d devices fetched", len(msg.devices)))
 	case tea.KeyMsg:
 		if m.searchInput.Focused() {
@@ -109,6 +108,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.searchInput.Blur()
 			} else {
 				m.searchInput, cmd = m.searchInput.Update(msg)
+				m.table.SetRows(filterTableRows(m.tableRowAll, m.searchInput.Value()))
 			}
 		} else if m.table.Focused() {
 			m.help, cmd = m.help.Update(msg)
@@ -175,13 +175,20 @@ var keys = keyMap{
 	),
 }
 
-func getRows(devices []*core.Device) []table.Row {
+func devicesToRows(devices []*core.Device) ([]table.Row, []string) {
 	rows := []table.Row{}
+	suggestions := []string{}
 	for _, d := range devices {
 		lbls := []string{}
-		for k, v := range d.Labels {
-			lbls = append(lbls, k+"="+v)
+		lblKeys := []string{}
+		for k := range d.Labels {
+			lblKeys = append(lblKeys, k)
 		}
+		sort.Strings(lblKeys)
+		for _, k := range lblKeys {
+			lbls = append(lbls, k+"="+d.Labels[k])
+		}
+
 		status := "🟢"
 		if d.Disabled {
 			status = "⭕"
@@ -191,8 +198,38 @@ func getRows(devices []*core.Device) []table.Row {
 		rows = append(rows, table.Row{
 			status, d.DeviceId, d.Name, strings.Join(lbls, ","),
 		})
+		suggestions = append(suggestions, d.Name, d.DeviceId)
+		suggestions = append(suggestions, lbls...)
 	}
-	return rows
+	// Sort the rows by labels then name if equal
+	sort.SliceStable(rows, func(i, j int) bool {
+		if rows[i][3] > rows[j][3] {
+			return false
+		} else if rows[i][3] < rows[j][3] {
+			return true
+		} else {
+			if rows[i][2] > rows[j][2] {
+				return false
+			} else if rows[i][2] < rows[j][2] {
+				return true
+			}
+		}
+		return false
+	})
+	return rows, suggestions
+}
+
+func filterTableRows(rows []table.Row, filter string) []table.Row {
+	filteredRows := []table.Row{}
+	for _, r := range rows {
+		for _, c := range r {
+			if strings.Contains(c, filter) {
+				filteredRows = append(filteredRows, r)
+				break
+			}
+		}
+	}
+	return filteredRows
 }
 
 func fetchMirDevices(bus *bus.BusConn) tea.Cmd {
