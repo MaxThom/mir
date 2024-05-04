@@ -1,4 +1,4 @@
-package devices
+package device_list
 
 import (
 	"context"
@@ -23,7 +23,9 @@ import (
 // IDEA wide option that show more fields
 
 var (
-	l = log.With().Str("cmp", "root").Logger()
+	l                               = log.With().Str("page", "device_list").Logger()
+	menuOption_device_create string = "/devices/create"
+	menuOption_device_edit   string = "/devices/edit"
 )
 
 type (
@@ -38,13 +40,6 @@ type Model struct {
 	table       table.Model
 	searchInput textinput.Model
 	tableRowAll []table.Row
-}
-
-var styles = map[string]lipgloss.Style{
-	"mir":   lipgloss.NewStyle().Foreground(lipgloss.Color("#04B575")),
-	"table": lipgloss.NewStyle(),
-	//BorderStyle(lipgloss.NormalBorder()).
-	//BorderForeground(lipgloss.Color("240")),
 }
 
 func NewModel(ctx context.Context) *Model {
@@ -117,6 +112,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else if msg.String() == "/" {
 				m.table.Blur()
 				m.searchInput.Focus()
+			} else if msg.String() == "c" {
+				return m, msgs.RouteChangeCmd(menuOption_device_create)
+			} else if msg.String() == "e" {
+				return m, msgs.RouteChangeCmd(menuOption_device_edit)
 			} else {
 				m.table, cmd = m.table.Update(msg)
 			}
@@ -134,7 +133,7 @@ func (m *Model) View() string {
 		v.WriteString("" + m.searchInput.View())
 		v.WriteString("\n")
 	}
-	v.WriteString(styles["table"].Render(m.table.View() + "\n"))
+	v.WriteString(m.table.View() + "\n")
 	v.WriteString("\n\n" + m.help.View())
 	return v.String()
 }
@@ -142,7 +141,7 @@ func (m *Model) View() string {
 type keyMap map[string]key.Binding
 
 func (k keyMap) ShortHelp() []key.Binding {
-	return []key.Binding{}
+	return []key.Binding{k["search"], k["create"], k["edit"]}
 }
 
 func (k keyMap) FullHelp() [][]key.Binding {
@@ -239,6 +238,7 @@ func fetchMirDevices(bus *bus.BusConn) tea.Cmd {
 		})
 		if err != nil {
 			// TODO move error from cli to next to core client and use it here as well
+			l.Error().Err(err).Msg("")
 			return msgs.ErrMsg{Err: err}
 		}
 		if resp.GetError() != nil {

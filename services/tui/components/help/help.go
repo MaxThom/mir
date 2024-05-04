@@ -64,7 +64,7 @@ func (m Model) View() string {
 }
 
 func (m Model) ShortHelp() []key.Binding {
-	return append(m.keyMap.ShortHelp(), m.globalKeys.Help, m.globalKeys.Previous, m.globalKeys.Quit)
+	return append(m.keyMap.ShortHelp(), m.globalKeys.Help)
 }
 
 func (m Model) FullHelp() [][]key.Binding {
