@@ -49,6 +49,7 @@ func NewModel(ctx context.Context) *Model {
 	tiId.Width = 60
 	tiId.ShowSuggestions = true
 	tiId.Validate = deviceIdValidator
+	tiId.Focus()
 	inputs[deviceId] = &tiId
 
 	tiNm := label_textbox.New(store.Styles["primary"].Render("Name"), "")

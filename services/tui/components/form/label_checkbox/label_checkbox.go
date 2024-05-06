@@ -20,7 +20,12 @@ type ()
 func New(label string, tooltip string) Model {
 	i := textinput.New()
 	i.CharLimit = 1
+	i.Width = 1
 	i.Prompt = ""
+	i.Cursor.Style = store.Styles["cursor_underline"]
+	// TODO find way too blink, top set cursor under the o and remove cursor style
+	// IDEA cursor to no style and o got the underline
+	i.SetCursor(0)
 	i.SetValue("○")
 
 	return Model{
