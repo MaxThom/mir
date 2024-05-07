@@ -1,8 +1,11 @@
 package label_checkbox
 
 import (
+	"strings"
+
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/maxthom/mir/services/tui/components/form"
 	"github.com/maxthom/mir/services/tui/store"
 )
@@ -17,6 +20,8 @@ type Model struct {
 
 type ()
 
+// IDEA design alternative similar to the textInputs example
+// > <label as placeholder> ?
 func New(label string, tooltip string) Model {
 	i := textinput.New()
 	i.CharLimit = 1
@@ -24,7 +29,7 @@ func New(label string, tooltip string) Model {
 	i.Prompt = ""
 	i.Cursor.Style = store.Styles["cursor_underline"]
 	// TODO find way too blink, top set cursor under the o and remove cursor style
-	// IDEA cursor to no style and o got the underline
+	// IDEA cursor to no style and last letter got the underline
 	i.SetCursor(0)
 	i.SetValue("○")
 
@@ -42,22 +47,27 @@ func (m Model) Init() tea.Cmd {
 
 func (m Model) Update(msg tea.Msg) (form.Control, tea.Cmd) {
 	cmds := []tea.Cmd{}
+
+	fn := func() {
+		if m.Focused() {
+			m.isChecked = !m.isChecked
+			if m.isChecked {
+				m.SetValue("◉")
+			} else {
+				m.SetValue("○")
+			}
+		}
+	}
+
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-
 		switch {
 		case msg.String() == "?":
 			m.isTooltipHidden = !m.isTooltipHidden
 		case msg.Type == tea.KeyEnter:
+			fn()
 		case msg.Type == tea.KeySpace:
-			if m.Focused() {
-				m.isChecked = !m.isChecked
-				if m.isChecked {
-					m.SetValue("◉")
-				} else {
-					m.SetValue("○")
-				}
-			}
+			fn()
 		}
 	}
 	var cmd tea.Cmd
@@ -67,16 +77,31 @@ func (m Model) Update(msg tea.Msg) (form.Control, tea.Cmd) {
 }
 
 func (m Model) View() string {
-	v := m.label
-	t := ""
+	// IDEA create a reusable string buffer in the package which is already
+	// allocated. This way we can avoid the allocation of the strings.Builder.
+	var sb strings.Builder
+
+	if m.Focused() {
+		sb.WriteString(store.Styles["primary"].Render("> "))
+		//		m.Model.TextStyle = store.Styles["primary"]
+
+	} else {
+		sb.WriteString(lipgloss.NewStyle().Render("> "))
+		//		m.Model.TextStyle = lipgloss.NewStyle()
+	}
+
+	sb.WriteString(store.Styles["help"].Render(m.label))
+	sb.WriteString(" ")
+	sb.WriteString(m.Model.View())
+	sb.WriteString(" ")
+
 	if m.tooltip != "" {
-		if m.isTooltipHidden {
-			t += store.Styles["help"].Render("?")
-		} else {
-			t += "" + store.Styles["help"].Render(m.tooltip)
+		sb.WriteString(store.Styles["help"].Render("? "))
+		if !m.isTooltipHidden {
+			sb.WriteString(store.Styles["help"].Render(m.tooltip))
 		}
 	}
-	return v + " " + m.Model.View() + " " + t
+	return sb.String()
 }
 
 func (m Model) Blink() tea.Msg {

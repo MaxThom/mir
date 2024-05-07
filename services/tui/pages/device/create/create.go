@@ -7,11 +7,13 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/maxthom/mir/services/tui/components/form"
+	"github.com/maxthom/mir/services/tui/components/form/button"
 	"github.com/maxthom/mir/services/tui/components/form/label_checkbox"
 	"github.com/maxthom/mir/services/tui/components/form/label_textbox"
 	mir_help "github.com/maxthom/mir/services/tui/components/help"
-	"github.com/maxthom/mir/services/tui/store"
+	"github.com/maxthom/mir/services/tui/msgs"
 	"github.com/rs/zerolog/log"
 )
 
@@ -29,6 +31,8 @@ const (
 	disabled
 	labels
 	annotations
+	cancel
+	submit
 )
 
 type ()
@@ -41,44 +45,46 @@ type Model struct {
 }
 
 func NewModel(ctx context.Context) *Model {
-	inputs := make([]form.Control, 4)
-	tiId := label_textbox.New(store.Styles["primary"].Render("Unique ID"), "Suggestions are existing IDs")
-	tiId.Prompt = store.Styles["primary"].Render("> ")
-	tiId.Placeholder = ""
+	inputs := make([]form.Control, 8)
+	tiId := label_textbox.New("Unique ID", "Suggestions are existing IDs")
+
 	tiId.CharLimit = 50
 	tiId.Width = 60
-	tiId.ShowSuggestions = true
 	tiId.Validate = deviceIdValidator
 	tiId.Focus()
 	inputs[deviceId] = &tiId
 
-	tiNm := label_textbox.New(store.Styles["primary"].Render("Name"), "")
-	tiNm.Prompt = store.Styles["primary"].Render("> ")
-	tiNm.Placeholder = ""
+	tiNm := label_textbox.New("Name", "")
 	tiNm.CharLimit = 50
 	tiNm.Width = 60
-	tiNm.ShowSuggestions = true
 	tiNm.Validate = deviceIdValidator
 	inputs[name] = &tiNm
 
-	tiDesc := label_textbox.New(store.Styles["primary"].Render("Description"), "")
-	tiDesc.Prompt = store.Styles["primary"].Render("> ")
-	tiDesc.Placeholder = ""
+	tiDesc := label_textbox.New("Description", "")
 	tiDesc.CharLimit = 50
 	tiDesc.Width = 60
-	tiDesc.ShowSuggestions = true
 	tiDesc.Validate = deviceIdValidator
 	inputs[description] = &tiDesc
 
-	//checkInputs := make([]label_checkbox.Model, 1)
-	chkiDisabled := label_checkbox.New(store.Styles["primary"].Render("Enabled >"), "Prevent communication with the device")
-	//textInputs[deviceId].Prompt = store.Styles["primary"].Render("> ")
-	//textInputs[deviceId].Placeholder = ""
-	//textInputs[deviceId].CharLimit = 50
-	//textInputs[deviceId].Width = 60
-	//textInputs[deviceId].ShowSuggestions = true
-	//textInputs[deviceId].Validate = deviceIdValidator
+	tiLbls := label_textbox.New("Labels", "Set of indexed key value pairs to identify the device <k1=v1;k2=v2>")
+	tiDesc.CharLimit = 50
+	tiDesc.Width = 60
+	tiDesc.Validate = deviceIdValidator
+	inputs[labels] = &tiLbls
+
+	tiAnno := label_textbox.New("Annotations", "Set of key value pairs to add information on the device <k1=v1;k2=v2>")
+	tiDesc.CharLimit = 50
+	tiDesc.Width = 60
+	tiDesc.Validate = deviceIdValidator
+	inputs[annotations] = &tiAnno
+
+	chkiDisabled := label_checkbox.New("Enabled", "Prevent communication with the device")
 	inputs[disabled] = &chkiDisabled
+
+	btnCancel := button.New("Cancel")
+	inputs[cancel] = &btnCancel
+	btnSubmit := button.New("Create")
+	inputs[submit] = &btnSubmit
 
 	return &Model{
 		ctx:    ctx,
@@ -100,6 +106,12 @@ func (m *Model) Init() tea.Cmd {
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd = make([]tea.Cmd, len(m.inputs))
 	switch msg := msg.(type) {
+	case button.ButtonPressedMsg:
+		if msg.Label == "Cancel" {
+			return m, msgs.RouteChangeCmd("/devices")
+		} else if msg.Label == "Create" {
+
+		}
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyEnter:
@@ -134,7 +146,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *Model) View() string {
 	var v strings.Builder
 	v.WriteString("\n")
-	v.WriteString(store.Styles["info"].Bold(true).Render("Create a new Device"))
+	v.WriteString(lipgloss.NewStyle().Bold(true).Render("Create a new Device"))
 	v.WriteString("\n")
 	v.WriteString(m.inputs[deviceId].View())
 	v.WriteString("\n")
@@ -143,24 +155,20 @@ func (m *Model) View() string {
 	v.WriteString(m.inputs[description].View())
 	v.WriteString("\n\n")
 	v.WriteString(m.inputs[disabled].View())
-	// v.WriteString(store.Styles["primary"].Width(100).Render("Enabled"))
-	// v.WriteString("\n")
-	// v.WriteString(m.inputs[disabled].View())
-	// v.WriteString("\n\n")
-	// v.WriteString(store.Styles["primary"].Width(100).Render("Labels"))
-	// v.WriteString("\n")
-	// v.WriteString(m.inputs[labels].View())
-	// v.WriteString("\n")
-	// v.WriteString(store.Styles["primary"].Width(100).Render("Annotations"))
-	// v.WriteString("\n")
-	// v.WriteString(m.inputs[annotations].View())
-	// v.WriteString("\n\n")
+	v.WriteString("\n\n")
+	v.WriteString(m.inputs[labels].View())
+	v.WriteString("\n")
+	v.WriteString(m.inputs[annotations].View())
+	v.WriteString("\n\n")
+	v.WriteString(m.inputs[cancel].View())
+	v.WriteString("  ")
+	v.WriteString(m.inputs[submit].View())
 
 	// v.WriteString("\n" + m.deviceIdInput.View() + "\n")
 	// if m.deviceIdInput.Err != nil {
 	// 	v.WriteString(store.Styles["error"].Render(m.deviceIdInput.Err.Error()))
 	// }
-	v.WriteString("\n\n" + m.help.View())
+	v.WriteString("\n\n\n" + m.help.View())
 
 	return v.String()
 }
