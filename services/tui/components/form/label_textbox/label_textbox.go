@@ -5,7 +5,6 @@ import (
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/maxthom/mir/services/tui/components/form"
 	"github.com/maxthom/mir/services/tui/store"
 )
@@ -15,11 +14,13 @@ type Model struct {
 	tooltip         string
 	isTooltipHidden bool
 	textinput.Model
+	err       error
+	validator form.ValidateFn
 }
 
 type ()
 
-func New(label string, tooltip string) Model {
+func New(label string, tooltip string, fn form.ValidateFn) Model {
 	i := textinput.New()
 	i.Prompt = store.Styles["primary"].Render("> ")
 
@@ -28,6 +29,8 @@ func New(label string, tooltip string) Model {
 		tooltip:         tooltip,
 		isTooltipHidden: true,
 		Model:           i,
+		err:             nil,
+		validator:       fn,
 	}
 }
 
@@ -47,6 +50,10 @@ func (m Model) Update(msg tea.Msg) (form.Control, tea.Cmd) {
 			var cmd tea.Cmd
 			m.Model, cmd = m.Model.Update(msg)
 			cmds = append(cmds, cmd)
+
+			if m.validator != nil {
+				m.err = m.validator(m.Value())
+			}
 		}
 	}
 	return &m, tea.Batch(cmds...)
@@ -58,12 +65,12 @@ func (m Model) View() string {
 	sb.WriteString(" ")
 	if m.tooltip != "" {
 		sb.WriteString(store.Styles["help"].Render("? "))
-		if !m.isTooltipHidden {
-			sb.WriteString(store.Styles["help"].Render(m.tooltip))
-			sb.WriteString(lipgloss.NewStyle().Render(" "))
-		}
+		// if !m.isTooltipHidden {
+		// 	sb.WriteString(store.Styles["help"].Render(m.tooltip))
+		// 	sb.WriteString(lipgloss.NewStyle().Render(" "))
+		// }
 	}
-	sb.WriteString("\n")
+	//sb.WriteString("\n")
 	if m.Focused() {
 		m.Model.Prompt = store.Styles["primary"].Render("> ")
 		//m.Model.TextStyle = store.Styles["primary"]
@@ -73,6 +80,7 @@ func (m Model) View() string {
 		//m.Model.TextStyle = lipgloss.NewStyle()
 	}
 	sb.WriteString(m.Model.View())
+	sb.WriteString(" ")
 
 	return sb.String()
 }
@@ -87,4 +95,20 @@ func (m *Model) Blur() {
 
 func (m *Model) Focus() tea.Cmd {
 	return m.Model.Focus()
+}
+
+func (m Model) Focused() bool {
+	return m.Model.Focused()
+}
+
+func (m Model) GetLabel() string {
+	return m.label
+}
+
+func (m Model) GetErr() error {
+	return m.err
+}
+
+func (m Model) GetTooltip() string {
+	return m.tooltip
 }

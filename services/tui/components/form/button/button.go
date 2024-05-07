@@ -16,6 +16,9 @@ type Model struct {
 	suffix     string
 	focusStyle lipgloss.Style
 	style      lipgloss.Style
+	tooltip    string
+	err        error
+	validator  form.ValidateFn
 }
 
 type (
@@ -24,7 +27,7 @@ type (
 	}
 )
 
-func New(label string) Model {
+func New(label string, tooltip string, fn form.ValidateFn) Model {
 	return Model{
 		label:      label,
 		isFocused:  false,
@@ -32,6 +35,9 @@ func New(label string) Model {
 		suffix:     " ]",
 		focusStyle: store.Styles["primary"],
 		style:      lipgloss.NewStyle(),
+		tooltip:    tooltip,
+		err:        nil,
+		validator:  fn,
 	}
 }
 
@@ -86,6 +92,18 @@ func (m *Model) Focus() tea.Cmd {
 
 func (m Model) Focused() bool {
 	return m.isFocused
+}
+
+func (m Model) GetLabel() string {
+	return m.label
+}
+
+func (m Model) GetTooltip() string {
+	return m.tooltip
+}
+
+func (m Model) GetErr() error {
+	return m.err
 }
 
 func (m Model) ButtonPressedCmd() tea.Cmd {

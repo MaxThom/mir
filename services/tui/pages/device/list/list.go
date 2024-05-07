@@ -77,7 +77,7 @@ func NewModel(ctx context.Context) *Model {
 
 	return &Model{
 		ctx:         ctx,
-		help:        mir_help.New(keys),
+		help:        mir_help.New(keys, []string{}),
 		table:       t,
 		searchInput: ti,
 	}

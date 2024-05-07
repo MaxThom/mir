@@ -49,7 +49,7 @@ func NewModel() Model {
 	})
 	return Model{
 		menu: mm,
-		help: mir_help.New(keys),
+		help: mir_help.New(keys, []string{}),
 	}
 }
 

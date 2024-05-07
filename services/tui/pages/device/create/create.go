@@ -14,6 +14,7 @@ import (
 	"github.com/maxthom/mir/services/tui/components/form/label_textbox"
 	mir_help "github.com/maxthom/mir/services/tui/components/help"
 	"github.com/maxthom/mir/services/tui/msgs"
+	"github.com/maxthom/mir/services/tui/store"
 	"github.com/rs/zerolog/log"
 )
 
@@ -46,7 +47,7 @@ type Model struct {
 
 func NewModel(ctx context.Context) *Model {
 	inputs := make([]form.Control, 8)
-	tiId := label_textbox.New("Unique ID", "Suggestions are existing IDs")
+	tiId := label_textbox.New("Unique ID", "Suggestions are existing IDs", nil)
 
 	tiId.CharLimit = 50
 	tiId.Width = 60
@@ -54,41 +55,47 @@ func NewModel(ctx context.Context) *Model {
 	tiId.Focus()
 	inputs[deviceId] = &tiId
 
-	tiNm := label_textbox.New("Name", "")
+	tiNm := label_textbox.New("Name       ", "", nil)
 	tiNm.CharLimit = 50
 	tiNm.Width = 60
 	tiNm.Validate = deviceIdValidator
 	inputs[name] = &tiNm
 
-	tiDesc := label_textbox.New("Description", "")
+	tiDesc := label_textbox.New("Description", "", nil)
 	tiDesc.CharLimit = 50
 	tiDesc.Width = 60
 	tiDesc.Validate = deviceIdValidator
 	inputs[description] = &tiDesc
 
-	tiLbls := label_textbox.New("Labels", "Set of indexed key value pairs to identify the device <k1=v1;k2=v2>")
-	tiDesc.CharLimit = 50
-	tiDesc.Width = 60
-	tiDesc.Validate = deviceIdValidator
+	tiLbls := label_textbox.New("Labels     ", "Set of indexed key value pairs to identify the device <k1=v1;k2=v2>", form.KeyValueMapValidator)
+	tiLbls.CharLimit = 50
+	tiLbls.Width = 60
 	inputs[labels] = &tiLbls
 
-	tiAnno := label_textbox.New("Annotations", "Set of key value pairs to add information on the device <k1=v1;k2=v2>")
-	tiDesc.CharLimit = 50
-	tiDesc.Width = 60
-	tiDesc.Validate = deviceIdValidator
+	tiAnno := label_textbox.New("Annotations", "Set of key value pairs to add information on the device <k1=v1;k2=v2>", form.KeyValueMapValidator)
+	tiAnno.CharLimit = 50
+	tiAnno.Width = 60
 	inputs[annotations] = &tiAnno
 
-	chkiDisabled := label_checkbox.New("Enabled", "Prevent communication with the device")
+	chkiDisabled := label_checkbox.New("Enabled  ", "Prevent communication with the device", true, nil)
 	inputs[disabled] = &chkiDisabled
 
-	btnCancel := button.New("Cancel")
+	btnCancel := button.New("Cancel", "", nil)
 	inputs[cancel] = &btnCancel
-	btnSubmit := button.New("Create")
+	btnSubmit := button.New("Create", "", nil)
 	inputs[submit] = &btnSubmit
+
+	tooltips := []string{}
+	for _, v := range inputs {
+		t := v.GetTooltip()
+		if t != "" {
+			tooltips = append(tooltips, v.GetLabel()+" > "+t)
+		}
+	}
 
 	return &Model{
 		ctx:    ctx,
-		help:   mir_help.New(keys),
+		help:   mir_help.New(keys, tooltips),
 		inputs: inputs,
 	}
 }
@@ -153,7 +160,7 @@ func (m *Model) View() string {
 	v.WriteString(m.inputs[name].View())
 	v.WriteString("\n")
 	v.WriteString(m.inputs[description].View())
-	v.WriteString("\n\n")
+	v.WriteString("\n")
 	v.WriteString(m.inputs[disabled].View())
 	v.WriteString("\n\n")
 	v.WriteString(m.inputs[labels].View())
@@ -163,12 +170,24 @@ func (m *Model) View() string {
 	v.WriteString(m.inputs[cancel].View())
 	v.WriteString("  ")
 	v.WriteString(m.inputs[submit].View())
+	v.WriteString("\n\n")
 
 	// v.WriteString("\n" + m.deviceIdInput.View() + "\n")
-	// if m.deviceIdInput.Err != nil {
-	// 	v.WriteString(store.Styles["error"].Render(m.deviceIdInput.Err.Error()))
-	// }
-	v.WriteString("\n\n\n" + m.help.View())
+	addLines := false
+	for _, i := range m.inputs {
+		if i.GetErr() != nil && !i.Focused() {
+			addLines = true
+			v.WriteString(store.Styles["error"].Render(i.GetLabel()))
+			v.WriteString(store.Styles["error"].Render(" > "))
+			v.WriteString(store.Styles["error"].Render(i.GetErr().Error()))
+			v.WriteString("\n")
+		}
+	}
+	if addLines {
+		v.WriteString("\n")
+	}
+
+	v.WriteString(m.help.View())
 
 	return v.String()
 }

@@ -16,13 +16,15 @@ type Model struct {
 	isTooltipHidden bool
 	isChecked       bool
 	textinput.Model
+	err       error
+	validator form.ValidateFn
 }
 
 type ()
 
 // IDEA design alternative similar to the textInputs example
 // > <label as placeholder> ?
-func New(label string, tooltip string) Model {
+func New(label string, tooltip string, value bool, fn form.ValidateFn) Model {
 	i := textinput.New()
 	i.CharLimit = 1
 	i.Width = 1
@@ -31,13 +33,20 @@ func New(label string, tooltip string) Model {
 	// TODO find way too blink, top set cursor under the o and remove cursor style
 	// IDEA cursor to no style and last letter got the underline
 	i.SetCursor(0)
-	i.SetValue("○")
+	if value {
+		i.SetValue("◉")
+	} else {
+		i.SetValue("○")
+	}
 
 	return Model{
 		label:           label,
 		tooltip:         tooltip,
 		isTooltipHidden: true,
 		Model:           i,
+		isChecked:       value,
+		err:             nil,
+		validator:       fn,
 	}
 }
 
@@ -80,7 +89,11 @@ func (m Model) View() string {
 	// IDEA create a reusable string buffer in the package which is already
 	// allocated. This way we can avoid the allocation of the strings.Builder.
 	var sb strings.Builder
-
+	sb.WriteString(store.Styles["help"].Render(m.label))
+	sb.WriteString(" ")
+	if m.tooltip != "" {
+		sb.WriteString(store.Styles["help"].Render("? "))
+	}
 	if m.Focused() {
 		sb.WriteString(store.Styles["primary"].Render("> "))
 		//		m.Model.TextStyle = store.Styles["primary"]
@@ -90,17 +103,9 @@ func (m Model) View() string {
 		//		m.Model.TextStyle = lipgloss.NewStyle()
 	}
 
-	sb.WriteString(store.Styles["help"].Render(m.label))
-	sb.WriteString(" ")
 	sb.WriteString(m.Model.View())
 	sb.WriteString(" ")
 
-	if m.tooltip != "" {
-		sb.WriteString(store.Styles["help"].Render("? "))
-		if !m.isTooltipHidden {
-			sb.WriteString(store.Styles["help"].Render(m.tooltip))
-		}
-	}
 	return sb.String()
 }
 
@@ -114,4 +119,20 @@ func (m *Model) Blur() {
 
 func (m *Model) Focus() tea.Cmd {
 	return m.Model.Focus()
+}
+
+func (m Model) Focused() bool {
+	return m.Model.Focused()
+}
+
+func (m Model) GetLabel() string {
+	return m.label
+}
+
+func (m Model) GetErr() error {
+	return m.err
+}
+
+func (m Model) GetTooltip() string {
+	return m.tooltip
 }
