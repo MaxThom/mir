@@ -127,7 +127,7 @@ func TestPublishDeviceCreateClient(t *testing.T) {
 		regSrv.Listen(ctx)
 	}()
 
-	resp, err := PublishDeviceCreateRequest(ctx, b, devReq)
+	resp, err := PublishDeviceCreateRequest(b, devReq)
 	if err != nil {
 		t.Error(err)
 	}
@@ -172,7 +172,7 @@ func TestPublishDeviceCreateClientNoID(t *testing.T) {
 		regSrv.Listen(ctx)
 	}()
 
-	resp, err := PublishDeviceCreateRequest(ctx, b, devReq)
+	resp, err := PublishDeviceCreateRequest(b, devReq)
 	if err != nil {
 		t.Error(err)
 	}
@@ -235,12 +235,12 @@ func TestPublishDeviceUpdateTargetIds(t *testing.T) {
 		regSrv.Listen(ctx)
 	}()
 
-	if _, err := PublishDeviceCreateRequest(ctx, b, device); err != nil {
+	if _, err := PublishDeviceCreateRequest(b, device); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
 
-	resp, err := PublishDeviceUpdateRequest(ctx, b, testQuery)
+	resp, err := PublishDeviceUpdateRequest(b, testQuery)
 	if err != nil {
 		t.Error(err)
 	}
@@ -346,7 +346,7 @@ func TestPublishDeviceUpdateTargetLabels(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	if _, err := PublishDeviceUpdateRequest(ctx, b, testQuery); err != nil {
+	if _, err := PublishDeviceUpdateRequest(b, testQuery); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
@@ -465,7 +465,7 @@ func TestPublishDeviceUpdateTargetAnno(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	if _, err := PublishDeviceUpdateRequest(ctx, b, testQuery); err != nil {
+	if _, err := PublishDeviceUpdateRequest(b, testQuery); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
@@ -586,7 +586,7 @@ func TestPublishDeviceUpdateTargetMixs(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	if _, err := PublishDeviceUpdateRequest(ctx, b, testQuery); err != nil {
+	if _, err := PublishDeviceUpdateRequest(b, testQuery); err != nil {
 		t.Error(err)
 	}
 
@@ -687,7 +687,7 @@ func TestPublishDeviceDeleteTargetIds(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	resp, err := PublishDeviceDeleteRequest(ctx, b, testQuery)
+	resp, err := PublishDeviceDeleteRequest(b, testQuery)
 	if err != nil {
 		t.Error(err)
 	}
@@ -780,7 +780,7 @@ func TestPublishDeviceDeleteTargetLabels(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	resp, err := PublishDeviceDeleteRequest(ctx, b, testQuery)
+	resp, err := PublishDeviceDeleteRequest(b, testQuery)
 	if err != nil {
 		t.Error(err)
 	}
@@ -868,7 +868,7 @@ func TestPublishDeviceListTargetIds(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	resp, err := PublishDeviceListRequest(ctx, b, testQuery)
+	resp, err := PublishDeviceListRequest(b, testQuery)
 	if err != nil {
 		t.Error(err)
 	}
@@ -960,7 +960,7 @@ func TestPublishDeviceListTargetLabels(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	resp, err := PublishDeviceListRequest(ctx, b, testQuery)
+	resp, err := PublishDeviceListRequest(b, testQuery)
 	if err != nil {
 		t.Error(err)
 	}
@@ -1051,7 +1051,7 @@ func TestPublishDeviceListTargetAnnotations(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	resp, err := PublishDeviceListRequest(ctx, b, testQuery)
+	resp, err := PublishDeviceListRequest(b, testQuery)
 	if err != nil {
 		t.Error(err)
 	}
@@ -1137,7 +1137,7 @@ func TestPublishDeviceListNoTarget(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	resp, err := PublishDeviceListRequest(ctx, b, testQuery)
+	resp, err := PublishDeviceListRequest(b, testQuery)
 	if err != nil {
 		t.Error(err)
 	}
@@ -1210,7 +1210,7 @@ func TestUpdateNoTargetSpecified(t *testing.T) {
 	testQuery := &core.UpdateDeviceRequest{}
 
 	// Act
-	resp, err := PublishDeviceUpdateRequest(ctx, b, testQuery)
+	resp, err := PublishDeviceUpdateRequest(b, testQuery)
 	if err != nil {
 		t.Error(err)
 	}
@@ -1234,7 +1234,7 @@ func TestDeleteNoTargetSpecified(t *testing.T) {
 	testQuery := &core.DeleteDeviceRequest{}
 
 	// Act
-	resp, err := PublishDeviceDeleteRequest(ctx, b, testQuery)
+	resp, err := PublishDeviceDeleteRequest(b, testQuery)
 	if err != nil {
 		t.Error(err)
 	}
@@ -1278,7 +1278,7 @@ func deleteDevices(t *testing.T, db *surrealdb.DB, ids []string) error {
 func createDevices(ctx context.Context, bus *bus.BusConn, devices []*core.CreateDeviceRequest) ([]*core.CreateDeviceResponse, error) {
 	responses := []*core.CreateDeviceResponse{}
 	for _, dev := range devices {
-		resp, err := PublishDeviceCreateRequest(ctx, bus, dev)
+		resp, err := PublishDeviceCreateRequest(bus, dev)
 		responses = append(responses, resp)
 		if err != nil {
 			return responses, err

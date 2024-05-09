@@ -1,7 +1,6 @@
 package core
 
 import (
-	"context"
 	"time"
 
 	"github.com/maxthom/mir/api/gen/proto/v1alpha/core"
@@ -16,7 +15,7 @@ const (
 	listDeviceStream   = "client.v1alpha.device.list"
 )
 
-func PublishDeviceCreateRequest(ctx context.Context, bus *bus.BusConn, req *core.CreateDeviceRequest) (*core.CreateDeviceResponse, error) {
+func PublishDeviceCreateRequest(bus *bus.BusConn, req *core.CreateDeviceRequest) (*core.CreateDeviceResponse, error) {
 	bReq, err := proto.Marshal(req)
 	if err != nil {
 		return &core.CreateDeviceResponse{}, err
@@ -36,7 +35,7 @@ func PublishDeviceCreateRequest(ctx context.Context, bus *bus.BusConn, req *core
 	return resp, nil
 }
 
-func PublishDeviceUpdateRequest(ctx context.Context, bus *bus.BusConn, req *core.UpdateDeviceRequest) (*core.UpdateDeviceResponse, error) {
+func PublishDeviceUpdateRequest(bus *bus.BusConn, req *core.UpdateDeviceRequest) (*core.UpdateDeviceResponse, error) {
 	bReq, err := proto.Marshal(req)
 	if err != nil {
 		return &core.UpdateDeviceResponse{}, err
@@ -56,7 +55,7 @@ func PublishDeviceUpdateRequest(ctx context.Context, bus *bus.BusConn, req *core
 	return resp, nil
 }
 
-func PublishDeviceDeleteRequest(ctx context.Context, bus *bus.BusConn, req *core.DeleteDeviceRequest) (*core.DeleteDeviceResponse, error) {
+func PublishDeviceDeleteRequest(bus *bus.BusConn, req *core.DeleteDeviceRequest) (*core.DeleteDeviceResponse, error) {
 	bReq, err := proto.Marshal(req)
 	if err != nil {
 		return &core.DeleteDeviceResponse{}, err
@@ -76,7 +75,7 @@ func PublishDeviceDeleteRequest(ctx context.Context, bus *bus.BusConn, req *core
 	return resp, nil
 }
 
-func PublishDeviceListRequest(ctx context.Context, bus *bus.BusConn, req *core.ListDeviceRequest) (*core.ListDeviceResponse, error) {
+func PublishDeviceListRequest(bus *bus.BusConn, req *core.ListDeviceRequest) (*core.ListDeviceResponse, error) {
 	bReq, err := proto.Marshal(req)
 	if err != nil {
 		return &core.ListDeviceResponse{}, err

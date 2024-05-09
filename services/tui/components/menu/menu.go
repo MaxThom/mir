@@ -11,6 +11,7 @@ var styles = map[string]lipgloss.Style{
 	"selectedOption": lipgloss.NewStyle().Foreground(lipgloss.Color("#FF75B7")),
 	"description":    lipgloss.NewStyle().Foreground(lipgloss.Color("#605F63")),
 }
+var v strings.Builder
 
 type (
 	OptionSelectedMsg struct {
@@ -81,18 +82,18 @@ func (m Model) View() string {
 }
 
 func (o Option) String(isSelected bool) string {
-	s := strings.Builder{}
+	v.Reset()
 	if isSelected {
-		s.WriteString(styles["selectedOption"].Render("  > "))
-		s.WriteString(styles["selectedOption"].Render(o.Label))
+		v.WriteString(styles["selectedOption"].Render("  > "))
+		v.WriteString(styles["selectedOption"].Render(o.Label))
 	} else {
-		s.WriteString("    ")
-		s.WriteString(o.Label)
+		v.WriteString("    ")
+		v.WriteString(o.Label)
 	}
-	s.WriteString("\n    ")
-	s.WriteString(styles["description"].Render(o.Description))
-	s.WriteString("\n")
-	return s.String()
+	v.WriteString("\n    ")
+	v.WriteString(styles["description"].Render(o.Description))
+	v.WriteString("\n")
+	return v.String()
 }
 
 func (m Model) optionSelectedCmd(v OptionValue) tea.Cmd {

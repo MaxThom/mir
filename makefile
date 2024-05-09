@@ -1,7 +1,7 @@
 .PHONY: api seed build
 
 api:
-	buf generate --config api/buf.gen.yaml
+	buf generate --config ./api/buf.gen.yaml
 
 seed: build
 	./scripts/seed.sh

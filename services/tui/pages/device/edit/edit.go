@@ -1,61 +1,80 @@
-package devices
+package device_edit
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/key"
+	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	bus "github.com/maxthom/mir/libs/external/natsio"
+	"github.com/maxthom/mir/api/gen/proto/v1alpha/core"
 	mir_help "github.com/maxthom/mir/services/tui/components/help"
+	"github.com/maxthom/mir/services/tui/msgs"
 	"github.com/rs/zerolog/log"
 )
 
+// IDEA wide option that show more fields
+
 var (
-	l = log.With().Str("cmp", "root").Logger()
+	l = log.With().Str("page", "device_edit").Logger()
+	v strings.Builder
+)
+
+type (
+	DeviceFetchedMsg struct {
+		devices []*core.Device
+	}
 )
 
 type Model struct {
-	ctx  context.Context
-	bus  *bus.BusConn
-	help mir_help.Model
+	ctx           context.Context
+	help          mir_help.Model
+	deviceIdInput textinput.Model
 }
 
 var styles = map[string]lipgloss.Style{
 	"mir": lipgloss.NewStyle().Foreground(lipgloss.Color("#04B575")),
 }
 
-func NewModel(ctx context.Context, bus *bus.BusConn) *Model {
+func NewModel(ctx context.Context) *Model {
+	ti := textinput.New()
+	ti.Placeholder = ""
+	ti.Blur()
+	ti.CharLimit = 256
+	ti.Width = 50
+	ti.ShowSuggestions = true
+
 	return &Model{
-		ctx:  ctx,
-		bus:  bus,
-		help: mir_help.New(keys),
+		ctx:           ctx,
+		help:          mir_help.New(keys, []string{}),
+		deviceIdInput: ti,
 	}
 }
 
 func (m *Model) Init() tea.Cmd {
-	return func() tea.Msg {
-		return nil
-	}
+	return tea.Batch(msgs.ReqMsgCmd("fetching devices..."))
 }
 
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
 	switch msg := msg.(type) {
+	case DeviceFetchedMsg:
+		return m, msgs.ResMsgCmd(fmt.Sprintf("%d devices fetched", len(msg.devices)))
 	case tea.KeyMsg:
-		var cmd tea.Cmd
-		switch {
-		default:
-			m.help, cmd = m.help.Update(msg)
-		}
+
 		return m, cmd
 	}
+
 	return m, nil
 }
 
 func (m *Model) View() string {
-	var v strings.Builder
-	v.WriteString(m.help.View())
+	v.Reset()
+	v.WriteString("\n")
+	v.WriteString("" + m.deviceIdInput.View() + "\n")
+	v.WriteString("\n\n" + m.help.View())
 	return v.String()
 }
 
@@ -67,20 +86,12 @@ func (k keyMap) ShortHelp() []key.Binding {
 
 func (k keyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
-		{k["create"], k["edit"]},
+		{k["search"], k["create"], k["edit"]},
 		{k["up"], k["down"]},
 	}
 }
 
 var keys = keyMap{
-	"create": key.NewBinding(
-		key.WithKeys("c"),
-		key.WithHelp("c", "create"),
-	),
-	"edit": key.NewBinding(
-		key.WithKeys("e"),
-		key.WithHelp("e", "edit"),
-	),
 	"up": key.NewBinding(
 		key.WithKeys("up", "k"),
 		key.WithHelp("↑/k", "move up"),

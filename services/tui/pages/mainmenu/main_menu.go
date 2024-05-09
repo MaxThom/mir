@@ -13,10 +13,11 @@ import (
 )
 
 var (
-	l                                     = log.With().Str("cmp", "mainmenu").Logger()
+	l                                     = log.With().Str("page", "mainmenu").Logger()
 	menuOption_devices   menu.OptionValue = "/devices"
 	menuOption_twins     menu.OptionValue = "/twins"
 	menuOption_telemetry menu.OptionValue = "/telemetry"
+	v                    strings.Builder
 )
 
 type Model struct {
@@ -49,7 +50,7 @@ func NewModel() Model {
 	})
 	return Model{
 		menu: mm,
-		help: mir_help.New(keys),
+		help: mir_help.New(keys, []string{}),
 	}
 }
 
@@ -65,6 +66,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		var cmd tea.Cmd
 		switch {
+		case msg.String() == "q":
+			return m, tea.Quit
 		default:
 			m.menu, cmd = m.menu.Update(msg)
 			if cmd != nil {
@@ -78,7 +81,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) View() string {
-	var v strings.Builder
+	v.Reset()
 	v.WriteString(m.menu.View())
 	v.WriteString("\n\n" + m.help.View())
 	return v.String()
@@ -87,7 +90,7 @@ func (m Model) View() string {
 type keyMap map[string]key.Binding
 
 func (k keyMap) ShortHelp() []key.Binding {
-	return []key.Binding{}
+	return []key.Binding{k["previous"], k["quit"]}
 }
 
 func (k keyMap) FullHelp() [][]key.Binding {
@@ -108,5 +111,13 @@ var keys = keyMap{
 	"enter": key.NewBinding(
 		key.WithKeys("enter", " "),
 		key.WithHelp("enter/space", "select"),
+	),
+	"previous": key.NewBinding(
+		key.WithKeys("esc"),
+		key.WithHelp("esc", "previous"),
+	),
+	"quit": key.NewBinding(
+		key.WithKeys("q", "ctrl+c"),
+		key.WithHelp("q", "quit"),
 	),
 }

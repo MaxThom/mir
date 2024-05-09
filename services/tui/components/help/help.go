@@ -1,9 +1,12 @@
 package helpless
 
 import (
+	"strings"
+
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/maxthom/mir/services/tui/store"
 )
 
 type globalKeyMap struct {
@@ -26,15 +29,18 @@ var keys = globalKeyMap{
 		key.WithHelp("q", "quit"),
 	),
 }
+var v strings.Builder
 
 type Model struct {
+	tooltips   []string
 	keyMap     help.KeyMap
 	globalKeys globalKeyMap
 	help       help.Model
 }
 
-func New(km help.KeyMap) Model {
+func New(km help.KeyMap, tooltips []string) Model {
 	return Model{
+		tooltips:   tooltips,
 		keyMap:     km,
 		globalKeys: keys,
 		help:       help.New(),
@@ -60,11 +66,20 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 }
 
 func (m Model) View() string {
-	return m.help.View(m)
+	v.Reset()
+	if m.help.ShowAll {
+		for _, s := range m.tooltips {
+			v.WriteString(store.Styles["help"].Render(s))
+			v.WriteString("\n")
+		}
+	}
+	v.WriteString("\n")
+	v.WriteString(m.help.View(m))
+	return v.String()
 }
 
 func (m Model) ShortHelp() []key.Binding {
-	return append(m.keyMap.ShortHelp(), m.globalKeys.Help, m.globalKeys.Previous, m.globalKeys.Quit)
+	return append(m.keyMap.ShortHelp(), m.globalKeys.Help)
 }
 
 func (m Model) FullHelp() [][]key.Binding {
