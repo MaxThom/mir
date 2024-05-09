@@ -285,6 +285,7 @@ func (s *CoreServer) deleteDeviceRequestHandler(ch chan nats.Msg) {
 			continue
 		}
 
+		// TODO find a way for delete to return the device documents
 		q, v := createDeleteQueryForDevice(req)
 		respDb, err := executeQueryForType[[]*core.Device](s.db, q, v)
 		if err != nil {

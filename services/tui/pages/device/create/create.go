@@ -27,12 +27,6 @@ import (
 // BUG array out of bound on current suggestion
 // BUG set cursor on position 0 for checkbox
 
-// IDEA random uuid with a 'r' hotkey, could be a checkbox or a button
-
-// TODO color of help in dark terminal too dim
-// TODO msg on return screen
-// TODO create with random id button
-// TODO fix missing fields
 var (
 	l = log.With().Str("page", "device_create").Logger()
 )
@@ -165,7 +159,6 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, msgs.ErrCmd(err, 2*time.Second)
 			}
 			m.inputs[deviceId].(*label_textbox.Model).SetValue(t.String())
-			//m.inputs[deviceId], _ = m.inputs[deviceId].(*label_textbox.Model).Update(msg)
 
 			return m, m.inputs[submit].(*button.Model).ButtonPressCmd()
 		}

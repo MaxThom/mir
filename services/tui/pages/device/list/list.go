@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/table"
@@ -27,13 +28,19 @@ var (
 	v                        strings.Builder
 )
 
-type ()
+const (
+	tableColStatus   = 0
+	tableColDeviceID = 1
+	tableColName     = 2
+	tableColLabels   = 3
+)
 
 type Model struct {
 	ctx         context.Context
 	help        mir_help.Model
 	table       table.Model
 	searchInput textinput.Model
+	deleteInput textinput.Model
 	tableRowAll []table.Row
 }
 
@@ -45,6 +52,15 @@ func NewModel(ctx context.Context) *Model {
 	ti.Width = 50
 	ti.ShowSuggestions = true
 
+	delti := textinput.New()
+	delti.Placeholder = "yes|no"
+	delti.Blur()
+	delti.CharLimit = 50
+	delti.Width = 50
+	delti.ShowSuggestions = true
+	delti.SetSuggestions([]string{"yes", "no"})
+	delti.Prompt = "Confirm device deletion? > "
+
 	columns := []table.Column{
 		{Title: "", Width: 2}, // Icon with status. online/offline/desabled
 		{Title: "id", Width: 10},
@@ -54,13 +70,10 @@ func NewModel(ctx context.Context) *Model {
 
 	s := table.DefaultStyles()
 	s.Header = s.Header.
-		//BorderStyle(lipgloss.NormalBorder()).
-		//BorderForeground(lipgloss.Color("240")).
 		BorderBottom(true).
 		Bold(true)
 	s.Selected = s.Selected.
 		Foreground(lipgloss.Color("#FF75B7")).
-		//Background(lipgloss.Color("57")).
 		Bold(false).Italic(true)
 
 	t := table.New(
@@ -75,23 +88,32 @@ func NewModel(ctx context.Context) *Model {
 		help:        mir_help.New(keys, []string{}),
 		table:       t,
 		searchInput: ti,
+		deleteInput: delti,
 	}
 }
 
 func (m *Model) Init() tea.Cmd {
-	return tea.Batch(msgs.ReqMsgCmd("fetching devices..."), msgs.FetchMirDevices(store.Bus))
+	return tea.Batch(msgs.ReqMsgCmd("fetching devices..."), msgs.ListMirDevices(store.Bus))
 }
 
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
-	case msgs.DeviceFetchedMsg:
+	case msgs.DeviceListedMsg:
 		store.Devices = msg.Devices
 		var suggestions []string
 		m.tableRowAll, suggestions = devicesToRows(msg.Devices)
 		m.searchInput.SetSuggestions(suggestions)
 		m.table.SetRows(m.tableRowAll)
-		return m, msgs.ResMsgCmd(fmt.Sprintf("%d devices fetched", len(msg.Devices)))
+		if !msg.NoToast {
+			return m, msgs.ResMsgCmd(fmt.Sprintf("%d devices fetched", len(msg.Devices)))
+		}
+	case msgs.DeviceDeleteMsg:
+		rsp := "device deleted"
+		if len(msg.Devices) > 0 {
+			rsp = fmt.Sprintf("device '%s' deleted", msg.Devices[0].DeviceId)
+		}
+		return m, tea.Batch(msgs.ListMirDevicesSilently(store.Bus), msgs.ResMsgCmd(rsp))
 	case tea.KeyMsg:
 		if m.searchInput.Focused() {
 			if msg.Type == tea.KeyEnter {
@@ -100,6 +122,28 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 				m.searchInput, cmd = m.searchInput.Update(msg)
 				m.table.SetRows(filterTableRows(m.tableRowAll, m.searchInput.Value()))
+			}
+		} else if m.deleteInput.Focused() {
+			if msg.Type == tea.KeyEnter {
+				m.table.Focus()
+				m.deleteInput.Blur()
+				if m.deleteInput.Value() != "yes" && m.deleteInput.Value() != "y" {
+					return m, nil
+				}
+
+				device, ok := rowToDevice(m.table.SelectedRow())
+				if !ok {
+					return m, msgs.ErrCmd(fmt.Errorf("no device selected"), 2*time.Second)
+				}
+				return m, tea.Batch(
+					msgs.ReqMsgCmd("deleting device "+device.DeviceId+"..."),
+					msgs.DeleteMirDevice(store.Bus, &core.DeleteDeviceRequest{
+						Targets: &core.Targets{
+							Ids: []string{device.DeviceId},
+						},
+					}))
+			} else {
+				m.deleteInput, cmd = m.deleteInput.Update(msg)
 			}
 		} else if m.table.Focused() {
 			m.help, cmd = m.help.Update(msg)
@@ -112,6 +156,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, msgs.RouteChangeCmd(menuOption_device_create)
 			} else if msg.String() == "e" {
 				return m, msgs.RouteChangeCmd(menuOption_device_edit)
+			} else if msg.String() == "x" {
+				m.table.Blur()
+				m.deleteInput.SetValue("")
+				m.deleteInput.Focus()
 			} else {
 				m.table, cmd = m.table.Update(msg)
 			}
@@ -128,7 +176,11 @@ func (m *Model) View() string {
 	if m.searchInput.Focused() || m.searchInput.Value() != "" {
 		v.WriteString("" + m.searchInput.View())
 		v.WriteString("\n")
+	} else if m.deleteInput.Focused() {
+		v.WriteString("" + m.deleteInput.View())
+		v.WriteString("\n")
 	}
+
 	v.WriteString(m.table.View() + "\n")
 	v.WriteString("\n\n" + m.help.View())
 	return v.String()
@@ -137,12 +189,13 @@ func (m *Model) View() string {
 type keyMap map[string]key.Binding
 
 func (k keyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k["search"], k["create"], k["edit"]}
+	return []key.Binding{k["search"], k["create"], k["edit"], k["delete"]}
 }
 
 func (k keyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
-		{k["search"], k["create"], k["edit"]},
+		{k["search"], k["create"]},
+		{k["edit"], k["delete"]},
 		{k["up"], k["down"]},
 	}
 }
@@ -159,6 +212,10 @@ var keys = keyMap{
 	"edit": key.NewBinding(
 		key.WithKeys("e"),
 		key.WithHelp("e", "edit"),
+	),
+	"delete": key.NewBinding(
+		key.WithKeys("x"),
+		key.WithHelp("x", "delete"),
 	),
 	"up": key.NewBinding(
 		key.WithKeys("up", "k"),
@@ -225,4 +282,19 @@ func filterTableRows(rows []table.Row, filter string) []table.Row {
 		}
 	}
 	return filteredRows
+}
+
+func rowToDevice(r table.Row) (*core.Device, bool) {
+	if len(r) < 2 {
+		return nil, false
+	}
+	id := r[tableColDeviceID]
+	if store.Devices != nil {
+		for _, i := range store.Devices {
+			if id == i.DeviceId {
+				return i, true
+			}
+		}
+	}
+	return nil, false
 }
