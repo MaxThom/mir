@@ -9,6 +9,10 @@ import (
 	"github.com/maxthom/mir/services/tui/store"
 )
 
+var (
+	v strings.Builder
+)
+
 type Model struct {
 	label      string
 	isFocused  bool
@@ -53,11 +57,11 @@ func (m Model) Update(msg tea.Msg) (form.Control, tea.Cmd) {
 		switch {
 		case msg.Type == tea.KeyEnter:
 			if m.Focused() {
-				cmds = append(cmds, m.ButtonPressedCmd())
+				cmds = append(cmds, m.ButtonPressCmd())
 			}
 		case msg.Type == tea.KeySpace:
 			if m.Focused() {
-				cmds = append(cmds, m.ButtonPressedCmd())
+				cmds = append(cmds, m.ButtonPressCmd())
 			}
 		default:
 		}
@@ -66,19 +70,19 @@ func (m Model) Update(msg tea.Msg) (form.Control, tea.Cmd) {
 }
 
 func (m Model) View() string {
-	var sb strings.Builder
+	v.Reset()
 
 	if m.Focused() {
-		sb.WriteString(m.focusStyle.Render(m.prefix))
-		sb.WriteString(m.style.Render(m.label))
-		sb.WriteString(m.focusStyle.Render(m.suffix))
+		v.WriteString(m.focusStyle.Render(m.prefix))
+		v.WriteString(m.style.Render(m.label))
+		v.WriteString(m.focusStyle.Render(m.suffix))
 	} else {
-		sb.WriteString(m.style.Render(m.prefix))
-		sb.WriteString(m.style.Render(m.label))
-		sb.WriteString(m.style.Render(m.suffix))
+		v.WriteString(m.style.Render(m.prefix))
+		v.WriteString(m.style.Render(m.label))
+		v.WriteString(m.style.Render(m.suffix))
 	}
 
-	return sb.String()
+	return v.String()
 }
 
 func (m *Model) Blur() {
@@ -106,8 +110,18 @@ func (m Model) GetErr() error {
 	return m.err
 }
 
-func (m Model) ButtonPressedCmd() tea.Cmd {
+func (m Model) GetValue() string {
+	return m.label
+}
+
+func (m Model) ButtonPressCmd() tea.Cmd {
 	return func() tea.Msg {
 		return ButtonPressedMsg{m.label}
+	}
+}
+
+func ButtonPressCmd(s string) tea.Cmd {
+	return func() tea.Msg {
+		return ButtonPressedMsg{s}
 	}
 }

@@ -2,12 +2,17 @@ package device_create
 
 import (
 	"context"
+	"fmt"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/google/uuid"
+	"github.com/maxthom/mir/api/gen/proto/v1alpha/core"
 	"github.com/maxthom/mir/services/tui/components/form"
 	"github.com/maxthom/mir/services/tui/components/form/button"
 	"github.com/maxthom/mir/services/tui/components/form/label_checkbox"
@@ -18,9 +23,16 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// IDEA wide option that show more fields
-// Use an interface with blur and focus with each form type implement
-// Have an array of form types
+// BUG blink on text input
+// BUG array out of bound on current suggestion
+// BUG set cursor on position 0 for checkbox
+
+// IDEA random uuid with a 'r' hotkey, could be a checkbox or a button
+
+// TODO color of help in dark terminal too dim
+// TODO msg on return screen
+// TODO create with random id button
+// TODO fix missing fields
 var (
 	l = log.With().Str("page", "device_create").Logger()
 )
@@ -34,56 +46,61 @@ const (
 	annotations
 	cancel
 	submit
+	submitRandom
 )
 
-type ()
+var (
+	v strings.Builder
+)
 
 type Model struct {
-	ctx     context.Context
-	help    mir_help.Model
-	inputs  []form.Control
-	focused int
+	ctx          context.Context
+	help         mir_help.Model
+	inputs       []form.Control
+	focused      int
+	displayError bool
 }
 
 func NewModel(ctx context.Context) *Model {
-	inputs := make([]form.Control, 8)
-	tiId := label_textbox.New("Unique ID", "Suggestions are existing IDs", nil)
-
+	inputs := make([]form.Control, 9)
+	tiId := label_textbox.New("Unique ID  ", "Suggestions are existing IDs", form.MirValidators(form.WithMandatoryValidator()))
 	tiId.CharLimit = 50
 	tiId.Width = 60
-	tiId.Validate = deviceIdValidator
+	tiId.ShowSuggestions = true
 	tiId.Focus()
 	inputs[deviceId] = &tiId
 
 	tiNm := label_textbox.New("Name       ", "", nil)
 	tiNm.CharLimit = 50
 	tiNm.Width = 60
-	tiNm.Validate = deviceIdValidator
 	inputs[name] = &tiNm
 
 	tiDesc := label_textbox.New("Description", "", nil)
 	tiDesc.CharLimit = 50
 	tiDesc.Width = 60
-	tiDesc.Validate = deviceIdValidator
 	inputs[description] = &tiDesc
 
-	tiLbls := label_textbox.New("Labels     ", "Set of indexed key value pairs to identify the device <k1=v1;k2=v2>", form.KeyValueMapValidator)
+	tiLbls := label_textbox.New("Labels     ", "Set of indexed key value pairs to identify the device <k1=v1;k2=v2>", form.MirValidators(form.WithKeyValueMapValidator()))
 	tiLbls.CharLimit = 50
 	tiLbls.Width = 60
+	tiLbls.ShowSuggestions = true
 	inputs[labels] = &tiLbls
 
-	tiAnno := label_textbox.New("Annotations", "Set of key value pairs to add information on the device <k1=v1;k2=v2>", form.KeyValueMapValidator)
+	tiAnno := label_textbox.New("Annotations", "Set of key value pairs to add information on the device <k1=v1;k2=v2>", form.MirValidators(form.WithKeyValueMapValidator()))
 	tiAnno.CharLimit = 50
 	tiAnno.Width = 60
+	tiAnno.ShowSuggestions = true
 	inputs[annotations] = &tiAnno
 
-	chkiDisabled := label_checkbox.New("Enabled  ", "Prevent communication with the device", true, nil)
+	chkiDisabled := label_checkbox.New("Enabled    ", "Prevent communication with the device", true, nil)
 	inputs[disabled] = &chkiDisabled
 
-	btnCancel := button.New("Cancel", "", nil)
+	btnCancel := button.New("Previous", "", nil)
 	inputs[cancel] = &btnCancel
 	btnSubmit := button.New("Create", "", nil)
 	inputs[submit] = &btnSubmit
+	btnSubmitWithRandom := button.New("Create with random uuid", "", nil)
+	inputs[submitRandom] = &btnSubmitWithRandom
 
 	tooltips := []string{}
 	for _, v := range inputs {
@@ -101,6 +118,10 @@ func NewModel(ctx context.Context) *Model {
 }
 
 func (m *Model) Init() tea.Cmd {
+	m.inputs[deviceId].(*label_textbox.Model).SetSuggestions(store.GetDeviceIdSuggestions(store.Devices))
+	m.inputs[labels].(*label_textbox.Model).SetSuggestions(store.GetLabelsSuggestions(store.Devices))
+	m.inputs[annotations].(*label_textbox.Model).SetSuggestions(store.GetAnnotationsSuggestions(store.Devices))
+	m.displayError = false
 	var cmds []tea.Cmd = make([]tea.Cmd, len(m.inputs))
 	for i := range m.inputs {
 		cmds[i] = m.inputs[i].Init()
@@ -114,11 +135,49 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd = make([]tea.Cmd, len(m.inputs))
 	switch msg := msg.(type) {
 	case button.ButtonPressedMsg:
-		if msg.Label == "Cancel" {
+		if msg.Label == "Previous" {
 			return m, msgs.RouteChangeCmd("/devices")
 		} else if msg.Label == "Create" {
+			// We want the error to be displayed
+			// only after first attempt of Create
+			// else, they are annoying
+			m.displayError = true
+			formInError := false
+			for _, i := range m.inputs {
+				if i.GetErr() != nil {
+					formInError = true
+				}
+			}
+			if !formInError {
+				req := &core.CreateDeviceRequest{
+					DeviceId:    m.inputs[deviceId].GetValue(),
+					Name:        m.inputs[name].GetValue(),
+					Description: m.inputs[description].GetValue(),
+					Disabled:    !boolStringToBool(m.inputs[disabled].GetValue()),
+					Labels:      keyValueStringToMap(m.inputs[labels].GetValue()),
+					Annotations: keyValueStringToMap(m.inputs[annotations].GetValue()),
+				}
+				return m, tea.Batch(msgs.ReqMsgCmd("creating device..."), msgs.CreateMirDevice(store.Bus, req))
+			}
+		} else if msg.Label == "Create with random uuid" {
+			t, err := uuid.NewRandom()
+			if err != nil {
+				return m, msgs.ErrCmd(err, 2*time.Second)
+			}
+			m.inputs[deviceId].(*label_textbox.Model).SetValue(t.String())
+			//m.inputs[deviceId], _ = m.inputs[deviceId].(*label_textbox.Model).Update(msg)
 
+			return m, m.inputs[submit].(*button.Model).ButtonPressCmd()
 		}
+	case msgs.DeviceCreatedMsg:
+		s := ""
+		if len(msg.Devices) == 1 {
+			s = fmt.Sprintf("device '%s' created", msg.Devices[0].DeviceId)
+		} else {
+			s = fmt.Sprintf("%d devices created", len(msg.Devices))
+		}
+		return m, tea.Batch(msgs.ResMsgCmd(s))
+
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyEnter:
@@ -128,7 +187,16 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyShiftTab, tea.KeyCtrlP:
 			m.prevInput()
 		case tea.KeyTab, tea.KeyCtrlN:
+			// TODO BUG FIX in bubble repo, make a pr
+			// The method 'current suggestion' crashes if no suggestion
+			// in the meantime, we can complete suggestion.
+			//if l, ok := m.inputs[m.focused].(*label_textbox.Model); ok {
+			//	if l.CurrentSuggestion() == "" {
+			//		m.nextInput()
+			//	}
+			//} else {
 			m.nextInput()
+			//}
 		}
 
 		for i := range m.inputs {
@@ -151,7 +219,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 // Try with an interface on Focus, Blur and Render
 // Needs a component for button, map and checkbox
 func (m *Model) View() string {
-	var v strings.Builder
+	v.Reset()
 	v.WriteString("\n")
 	v.WriteString(lipgloss.NewStyle().Bold(true).Render("Create a new Device"))
 	v.WriteString("\n")
@@ -170,21 +238,24 @@ func (m *Model) View() string {
 	v.WriteString(m.inputs[cancel].View())
 	v.WriteString("  ")
 	v.WriteString(m.inputs[submit].View())
+	v.WriteString("  ")
+	v.WriteString(m.inputs[submitRandom].View())
 	v.WriteString("\n\n")
 
-	// v.WriteString("\n" + m.deviceIdInput.View() + "\n")
-	addLines := false
-	for _, i := range m.inputs {
-		if i.GetErr() != nil && !i.Focused() {
-			addLines = true
-			v.WriteString(store.Styles["error"].Render(i.GetLabel()))
-			v.WriteString(store.Styles["error"].Render(" > "))
-			v.WriteString(store.Styles["error"].Render(i.GetErr().Error()))
+	if m.displayError {
+		addLines := false
+		for _, i := range m.inputs {
+			if i.GetErr() != nil {
+				addLines = true
+				v.WriteString(store.Styles["error"].Render(i.GetLabel()))
+				v.WriteString(store.Styles["error"].Render(" > "))
+				v.WriteString(store.Styles["error"].Render(i.GetErr().Error()))
+				v.WriteString("\n")
+			}
+		}
+		if addLines {
 			v.WriteString("\n")
 		}
-	}
-	if addLines {
-		v.WriteString("\n")
 	}
 
 	v.WriteString(m.help.View())
@@ -230,6 +301,29 @@ var keys = keyMap{
 	),
 }
 
-func deviceIdValidator(s string) error {
-	return nil
+func boolStringToBool(s string) bool {
+	b, e := strconv.ParseBool(s)
+	if e != nil {
+		return false
+	}
+	return b
+}
+
+func keyValueStringToMap(s string) map[string]string {
+	m := map[string]string{}
+	if s == "" {
+		return m
+	}
+
+	pairs := strings.Split(s, ";")
+	for _, p := range pairs {
+		kv := strings.Split(p, "=")
+		if len(kv) >= 2 {
+			m[kv[0]] = kv[1]
+		} else if len(kv) == 1 {
+			m[kv[0]] = ""
+		}
+	}
+
+	return m
 }

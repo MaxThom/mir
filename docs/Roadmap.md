@@ -84,3 +84,4 @@
   - need to think about how to do it
   - tmux window with a go run main.go ?
   - container strategy for docker
+- air on each app that store so everything reloads

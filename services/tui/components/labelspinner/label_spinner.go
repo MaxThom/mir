@@ -1,12 +1,15 @@
 package labelspinner
 
 import (
+	"strings"
 	"time"
 
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/timer"
 	tea "github.com/charmbracelet/bubbletea"
 )
+
+var v strings.Builder
 
 type Model struct {
 	lbl         string
@@ -73,11 +76,13 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 }
 
 func (m Model) View() string {
+	v.Reset()
 	if m.IsSpinning {
-		return m.prefix + " " + m.spinner.View() + m.lbl
+		v.WriteString(m.prefix + " " + m.spinner.View() + m.lbl)
 	} else {
-		return m.prefix + " " + m.lbl
+		v.WriteString(m.prefix + " " + m.lbl)
 	}
+	return v.String()
 }
 
 func (m Model) Tick() tea.Msg {

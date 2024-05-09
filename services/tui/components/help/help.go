@@ -29,6 +29,7 @@ var keys = globalKeyMap{
 		key.WithHelp("q", "quit"),
 	),
 }
+var v strings.Builder
 
 type Model struct {
 	tooltips   []string
@@ -65,16 +66,16 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 }
 
 func (m Model) View() string {
-	var sb strings.Builder
+	v.Reset()
 	if m.help.ShowAll {
 		for _, s := range m.tooltips {
-			sb.WriteString(store.Styles["help"].Render(s))
-			sb.WriteString("\n")
+			v.WriteString(store.Styles["help"].Render(s))
+			v.WriteString("\n")
 		}
 	}
-	sb.WriteString("\n")
-	sb.WriteString(m.help.View(m))
-	return sb.String()
+	v.WriteString("\n")
+	v.WriteString(m.help.View(m))
+	return v.String()
 }
 
 func (m Model) ShortHelp() []key.Binding {

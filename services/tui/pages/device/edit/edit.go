@@ -19,6 +19,7 @@ import (
 
 var (
 	l = log.With().Str("page", "device_edit").Logger()
+	v strings.Builder
 )
 
 type (
@@ -70,7 +71,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *Model) View() string {
-	var v strings.Builder
+	v.Reset()
 	v.WriteString("\n")
 	v.WriteString("" + m.deviceIdInput.View() + "\n")
 	v.WriteString("\n\n" + m.help.View())

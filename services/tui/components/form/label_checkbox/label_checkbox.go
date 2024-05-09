@@ -1,6 +1,7 @@
 package label_checkbox
 
 import (
+	"strconv"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textinput"
@@ -8,6 +9,10 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/maxthom/mir/services/tui/components/form"
 	"github.com/maxthom/mir/services/tui/store"
+)
+
+var (
+	v strings.Builder
 )
 
 type Model struct {
@@ -19,8 +24,6 @@ type Model struct {
 	err       error
 	validator form.ValidateFn
 }
-
-type ()
 
 // IDEA design alternative similar to the textInputs example
 // > <label as placeholder> ?
@@ -88,25 +91,32 @@ func (m Model) Update(msg tea.Msg) (form.Control, tea.Cmd) {
 func (m Model) View() string {
 	// IDEA create a reusable string buffer in the package which is already
 	// allocated. This way we can avoid the allocation of the strings.Builder.
-	var sb strings.Builder
-	sb.WriteString(store.Styles["help"].Render(m.label))
-	sb.WriteString(" ")
+	v.Reset()
 	if m.tooltip != "" {
-		sb.WriteString(store.Styles["help"].Render("? "))
+		v.WriteString(store.Styles["help"].Render("? "))
+	} else {
+		v.WriteString("  ")
 	}
+
+	v.WriteString(store.Styles["help"].Render(m.label))
+	v.WriteString(" ")
 	if m.Focused() {
-		sb.WriteString(store.Styles["primary"].Render("> "))
+		v.WriteString(store.Styles["primary"].Render("> "))
 		//		m.Model.TextStyle = store.Styles["primary"]
 
 	} else {
-		sb.WriteString(lipgloss.NewStyle().Render("> "))
+		v.WriteString(lipgloss.NewStyle().Render("> "))
 		//		m.Model.TextStyle = lipgloss.NewStyle()
 	}
 
-	sb.WriteString(m.Model.View())
-	sb.WriteString(" ")
+	v.WriteString(m.Model.View())
+	v.WriteString(" ")
 
-	return sb.String()
+	return v.String()
+}
+
+func (m Model) GetValue() string {
+	return strconv.FormatBool(m.isChecked)
 }
 
 func (m Model) Blink() tea.Msg {

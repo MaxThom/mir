@@ -17,6 +17,7 @@ var (
 	menuOption_devices   menu.OptionValue = "/devices"
 	menuOption_twins     menu.OptionValue = "/twins"
 	menuOption_telemetry menu.OptionValue = "/telemetry"
+	v                    strings.Builder
 )
 
 type Model struct {
@@ -80,7 +81,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) View() string {
-	var v strings.Builder
+	v.Reset()
 	v.WriteString(m.menu.View())
 	v.WriteString("\n\n" + m.help.View())
 	return v.String()

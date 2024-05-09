@@ -24,6 +24,7 @@ import (
 )
 
 var l zerolog.Logger
+var v strings.Builder
 
 type Config struct{}
 
@@ -124,7 +125,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *Model) View() string {
-	var v strings.Builder
+	v.Reset()
 	v.WriteString(m.lblSpinner.View())
 	v.WriteString("\n")
 	v.WriteString(m.routes[m.currentRoute].View())

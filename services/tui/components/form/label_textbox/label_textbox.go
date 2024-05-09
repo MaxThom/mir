@@ -9,6 +9,10 @@ import (
 	"github.com/maxthom/mir/services/tui/store"
 )
 
+var (
+	v strings.Builder
+)
+
 type Model struct {
 	label           string
 	tooltip         string
@@ -17,8 +21,6 @@ type Model struct {
 	err       error
 	validator form.ValidateFn
 }
-
-type ()
 
 func New(label string, tooltip string, fn form.ValidateFn) Model {
 	i := textinput.New()
@@ -42,7 +44,6 @@ func (m Model) Update(msg tea.Msg) (form.Control, tea.Cmd) {
 	cmds := []tea.Cmd{}
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-
 		switch {
 		case msg.String() == "?":
 			m.isTooltipHidden = !m.isTooltipHidden
@@ -60,29 +61,34 @@ func (m Model) Update(msg tea.Msg) (form.Control, tea.Cmd) {
 }
 
 func (m Model) View() string {
-	var sb strings.Builder
-	sb.WriteString(store.Styles["help"].Bold(false).Render(m.label))
-	sb.WriteString(" ")
+	v.Reset()
 	if m.tooltip != "" {
-		sb.WriteString(store.Styles["help"].Render("? "))
-		// if !m.isTooltipHidden {
-		// 	sb.WriteString(store.Styles["help"].Render(m.tooltip))
-		// 	sb.WriteString(lipgloss.NewStyle().Render(" "))
-		// }
+		v.WriteString(store.Styles["help"].Render("? "))
+	} else {
+		v.WriteString("  ")
 	}
-	//sb.WriteString("\n")
+	v.WriteString(store.Styles["help"].Bold(false).Render(m.label))
+	v.WriteString(" ")
 	if m.Focused() {
 		m.Model.Prompt = store.Styles["primary"].Render("> ")
-		//m.Model.TextStyle = store.Styles["primary"]
-
 	} else {
 		m.Model.Prompt = "> "
-		//m.Model.TextStyle = lipgloss.NewStyle()
 	}
-	sb.WriteString(m.Model.View())
-	sb.WriteString(" ")
+	v.WriteString(m.Model.View())
+	v.WriteString(" ")
 
-	return sb.String()
+	return v.String()
+}
+
+func (m *Model) SetValue(s string) {
+	m.Model.SetValue(s)
+	if m.validator != nil {
+		m.err = m.validator(m.Value())
+	}
+}
+
+func (m Model) GetValue() string {
+	return m.Value()
 }
 
 func (m Model) Blink() tea.Msg {

@@ -12,8 +12,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/maxthom/mir/api/gen/proto/v1alpha/core"
-	bus "github.com/maxthom/mir/libs/external/natsio"
-	client_core "github.com/maxthom/mir/services/core"
 	mir_help "github.com/maxthom/mir/services/tui/components/help"
 	"github.com/maxthom/mir/services/tui/msgs"
 	"github.com/maxthom/mir/services/tui/store"
@@ -26,13 +24,10 @@ var (
 	l                               = log.With().Str("page", "device_list").Logger()
 	menuOption_device_create string = "/devices/create"
 	menuOption_device_edit   string = "/devices/edit"
+	v                        strings.Builder
 )
 
-type (
-	DeviceFetchedMsg struct {
-		devices []*core.Device
-	}
-)
+type ()
 
 type Model struct {
 	ctx         context.Context
@@ -44,7 +39,7 @@ type Model struct {
 
 func NewModel(ctx context.Context) *Model {
 	ti := textinput.New()
-	ti.Placeholder = ""
+	ti.Placeholder = "Search"
 	ti.Blur()
 	ti.CharLimit = 256
 	ti.Width = 50
@@ -84,18 +79,19 @@ func NewModel(ctx context.Context) *Model {
 }
 
 func (m *Model) Init() tea.Cmd {
-	return tea.Batch(msgs.ReqMsgCmd("fetching devices..."), fetchMirDevices(store.Bus))
+	return tea.Batch(msgs.ReqMsgCmd("fetching devices..."), msgs.FetchMirDevices(store.Bus))
 }
 
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
-	case DeviceFetchedMsg:
+	case msgs.DeviceFetchedMsg:
+		store.Devices = msg.Devices
 		var suggestions []string
-		m.tableRowAll, suggestions = devicesToRows(msg.devices)
+		m.tableRowAll, suggestions = devicesToRows(msg.Devices)
 		m.searchInput.SetSuggestions(suggestions)
 		m.table.SetRows(m.tableRowAll)
-		return m, msgs.ResMsgCmd(fmt.Sprintf("%d devices fetched", len(msg.devices)))
+		return m, msgs.ResMsgCmd(fmt.Sprintf("%d devices fetched", len(msg.Devices)))
 	case tea.KeyMsg:
 		if m.searchInput.Focused() {
 			if msg.Type == tea.KeyEnter {
@@ -127,7 +123,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *Model) View() string {
-	var v strings.Builder
+	v.Reset()
 	v.WriteString("\n")
 	if m.searchInput.Focused() || m.searchInput.Value() != "" {
 		v.WriteString("" + m.searchInput.View())
@@ -229,21 +225,4 @@ func filterTableRows(rows []table.Row, filter string) []table.Row {
 		}
 	}
 	return filteredRows
-}
-
-func fetchMirDevices(bus *bus.BusConn) tea.Cmd {
-	return func() tea.Msg {
-		resp, err := client_core.PublishDeviceListRequest(bus, &core.ListDeviceRequest{
-			Targets: &core.Targets{},
-		})
-		if err != nil {
-			// TODO move error from cli to next to core client and use it here as well
-			l.Error().Err(err).Msg("")
-			return msgs.ErrMsg{Err: err}
-		}
-		if resp.GetError() != nil {
-			return msgs.ErrMsg{Err: fmt.Errorf(resp.GetError().GetMessage())}
-		}
-		return DeviceFetchedMsg{devices: resp.GetOk().Devices}
-	}
 }

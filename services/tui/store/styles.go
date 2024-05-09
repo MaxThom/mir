@@ -10,7 +10,7 @@ var Styles = map[string]lipgloss.Style{
 	"primary": lipgloss.NewStyle().Foreground(lipgloss.Color("#FF75B7")),
 	"help": lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{
 		Light: "#B2B2B2",
-		Dark:  "#4A4A4A",
+		Dark:  "#B2B2B2",
 	}),
 	"cursor_underline": lipgloss.NewStyle().Underline(true),
 }
