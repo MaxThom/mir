@@ -2,6 +2,7 @@ package device_edit
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -13,13 +14,15 @@ import (
 	"github.com/maxthom/mir/api/gen/proto/v1alpha/core"
 	mir_help "github.com/maxthom/mir/services/tui/components/help"
 	"github.com/maxthom/mir/services/tui/msgs"
+	device_list "github.com/maxthom/mir/services/tui/pages/device/list"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
 // IDEA wide option that show more fields
 
 var (
-	l = log.With().Str("page", "device_edit").Logger()
+	l zerolog.Logger
 	v strings.Builder
 )
 
@@ -28,27 +31,38 @@ type (
 		devices []*core.Device
 	}
 	EditorFinishedMsg struct {
-		content []byte
+		content json.RawMessage
 		err     error
 	}
 )
 
 type Model struct {
-	ctx     context.Context
-	help    mir_help.Model
-	content string
+	ctx  context.Context
+	help mir_help.Model
 }
 
 func NewModel(ctx context.Context) *Model {
-
+	l = log.With().Str("page", "device_edit").Logger()
 	return &Model{
 		ctx:  ctx,
 		help: mir_help.New(keys, []string{}, ""),
 	}
 }
 
+func (m *Model) InitWithData(d any) tea.Cmd {
+	l.Debug().Msg(fmt.Sprintf("%v", d))
+	rj, e := json.MarshalIndent(d, "", "  ")
+	if e != nil {
+		l.Error().Err(e).Msg("")
+		return tea.Batch(msgs.ErrCmd(e, 2*time.Second), msgs.RouteChangeWithDataCmd("/devices", device_list.InputData{SilentFetch: true}))
+
+	}
+	return openEditor(rj)
+}
+
 func (m *Model) Init() tea.Cmd {
-	return openEditor() //tea.Batch(msgs.ReqMsgCmd("fetching devices..."))
+	var rj json.RawMessage
+	return openEditor(rj)
 }
 
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -59,14 +73,13 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case EditorFinishedMsg:
 		var res tea.Cmd
 		if msg.err != nil {
-			m.content = string(msg.content) + "\n" + msg.err.Error()
 			res = msgs.ErrCmd(msg.err, 2*time.Second)
 		} else {
-			m.content = string(msg.content)
+			// TODO update device
 			res = msgs.ResMsgCmd("device edited successfully")
 		}
 
-		return m, tea.Batch(res, msgs.RouteChangeCmd("/devices"))
+		return m, tea.Batch(res, msgs.RouteChangeWithDataCmd("/devices", device_list.InputData{SilentFetch: true}))
 	case tea.KeyMsg:
 
 		return m, cmd
@@ -77,13 +90,11 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *Model) View() string {
 	v.Reset()
-	v.WriteString(m.content)
-	v.WriteString("\n")
 	v.WriteString("\n\n" + m.help.View())
 	return v.String()
 }
 
-func openEditor() tea.Cmd {
+func openEditor(data json.RawMessage) tea.Cmd {
 	editor := os.Getenv("EDITOR")
 	if editor == "" {
 		editor = "vim"
@@ -97,7 +108,7 @@ func openEditor() tea.Cmd {
 	}
 
 	// Write initial device to the temp file
-	_, err = tmpfile.Write([]byte(`{"key": "value"}`))
+	_, err = tmpfile.Write(data)
 	if err != nil {
 		l.Error().Err(err).Msg("can't write to temporary file for editing twin")
 	}
@@ -110,17 +121,24 @@ func openEditor() tea.Cmd {
 	c.Stderr = os.Stderr
 
 	return tea.ExecProcess(c, func(err error) tea.Msg {
-
-		l.Error().Err(err).Msg("can't run editor command for editing twin")
-
+		if err != nil {
+			l.Error().Err(err).Msg("can't run editor command for editing twin")
+			return EditorFinishedMsg{content: []byte{}, err: err}
+		}
 		// Read the modified file
 		content, err := os.ReadFile(tmpfile.Name())
 		if err != nil {
 			l.Error().Err(err).Msg("can't write to temporary file for editing twin")
+			return EditorFinishedMsg{content: []byte{}, err: err}
 		}
 
-		os.Remove(tmpfile.Name())
-		return EditorFinishedMsg{content: content, err: err}
+		err = os.Remove(tmpfile.Name())
+		if err != nil {
+			l.Error().Err(err).Msg("can't delete temporary file for editing twin")
+			return EditorFinishedMsg{content: content, err: err}
+		}
+
+		return EditorFinishedMsg{content: content, err: nil}
 	})
 }
 

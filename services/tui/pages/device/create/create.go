@@ -20,6 +20,7 @@ import (
 	mir_help "github.com/maxthom/mir/services/tui/components/help"
 	"github.com/maxthom/mir/services/tui/msgs"
 	"github.com/maxthom/mir/services/tui/store"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
@@ -28,7 +29,7 @@ import (
 // BUG set cursor on position 0 for checkbox
 
 var (
-	l = log.With().Str("page", "device_create").Logger()
+	l zerolog.Logger
 )
 
 const (
@@ -56,6 +57,7 @@ type Model struct {
 }
 
 func NewModel(ctx context.Context) *Model {
+	l = log.With().Str("page", "device_create").Logger()
 	inputs := make([]form.Control, 9)
 	tiId := label_textbox.New("Unique ID  ", "Suggestions are existing IDs", form.MirValidators(form.WithMandatoryValidator()))
 	tiId.CharLimit = 50
@@ -109,6 +111,10 @@ func NewModel(ctx context.Context) *Model {
 		help:   mir_help.New(keys, tooltips, "mir device create"),
 		inputs: inputs,
 	}
+}
+
+func (m *Model) InitWithData(d any) tea.Cmd {
+	return m.Init()
 }
 
 func (m *Model) Init() tea.Cmd {

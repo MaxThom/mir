@@ -8,11 +8,6 @@ import (
 	"github.com/maxthom/mir/api/gen/proto/v1alpha/core"
 	bus "github.com/maxthom/mir/libs/external/natsio"
 	client_core "github.com/maxthom/mir/services/core"
-	"github.com/rs/zerolog/log"
-)
-
-var (
-	l = log.With().Str("store", "msgs").Logger()
 )
 
 type (
@@ -24,6 +19,7 @@ type (
 	}
 	RouteChangeMsg struct {
 		Route string
+		Data  any
 	}
 	DeviceListedMsg struct {
 		Devices []*core.Device
@@ -54,7 +50,13 @@ func ErrCmd(e error, t time.Duration) tea.Cmd {
 
 func RouteChangeCmd(route string) tea.Cmd {
 	return func() tea.Msg {
-		return RouteChangeMsg{route}
+		return RouteChangeMsg{Route: route, Data: nil}
+	}
+}
+
+func RouteChangeWithDataCmd(route string, data any) tea.Cmd {
+	return func() tea.Msg {
+		return RouteChangeMsg{Route: route, Data: data}
 	}
 }
 

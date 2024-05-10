@@ -16,13 +16,14 @@ import (
 	mir_help "github.com/maxthom/mir/services/tui/components/help"
 	"github.com/maxthom/mir/services/tui/msgs"
 	"github.com/maxthom/mir/services/tui/store"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
 // IDEA wide option that show more fields
 
 var (
-	l                               = log.With().Str("page", "device_list").Logger()
+	l                        zerolog.Logger
 	menuOption_device_create string = "/devices/create"
 	menuOption_device_edit   string = "/devices/edit"
 	v                        strings.Builder
@@ -44,7 +45,12 @@ type Model struct {
 	tableRowAll []table.Row
 }
 
+type InputData struct {
+	SilentFetch bool
+}
+
 func NewModel(ctx context.Context) *Model {
+	l = log.With().Str("page", "device_list").Logger()
 	ti := textinput.New()
 	ti.Placeholder = "Search"
 	ti.Blur()
@@ -90,6 +96,21 @@ func NewModel(ctx context.Context) *Model {
 		searchInput: ti,
 		deleteInput: delti,
 	}
+}
+
+func (m Model) InitWithData(d any) tea.Cmd {
+	if a, ok := d.(InputData); ok {
+		if a.SilentFetch {
+			return tea.Batch(msgs.ListMirDevicesSilently(store.Bus))
+		} else {
+			return m.Init()
+		}
+	} else if d != nil {
+		e := fmt.Errorf("can't assert data on route init")
+		l.Error().Err(e).Msg("")
+		return tea.Batch(msgs.ErrCmd(e, 2*time.Second))
+	}
+	return m.Init()
 }
 
 func (m *Model) Init() tea.Cmd {
@@ -155,7 +176,11 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else if msg.String() == "c" {
 				return m, msgs.RouteChangeCmd(menuOption_device_create)
 			} else if msg.String() == "e" {
-				return m, msgs.RouteChangeCmd(menuOption_device_edit)
+				device, ok := rowToDevice(m.table.SelectedRow())
+				if !ok {
+					return m, msgs.ErrCmd(fmt.Errorf("no device selected"), 2*time.Second)
+				}
+				return m, msgs.RouteChangeWithDataCmd(menuOption_device_edit, device)
 			} else if msg.String() == "x" {
 				m.table.Blur()
 				m.deleteInput.SetValue("")

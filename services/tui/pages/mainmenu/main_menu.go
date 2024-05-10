@@ -8,11 +8,12 @@ import (
 	mir_help "github.com/maxthom/mir/services/tui/components/help"
 	"github.com/maxthom/mir/services/tui/components/menu"
 	"github.com/maxthom/mir/services/tui/msgs"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
 var (
-	l                                     = log.With().Str("page", "mainmenu").Logger()
+	l                    zerolog.Logger
 	menuOption_devices   menu.OptionValue = "/devices"
 	menuOption_twins     menu.OptionValue = "/twins"
 	menuOption_telemetry menu.OptionValue = "/telemetry"
@@ -26,6 +27,7 @@ type Model struct {
 }
 
 func NewModel() Model {
+	l = log.With().Str("page", "mainmenu").Logger()
 	mm := menu.New([]menu.Option{
 		{
 			Value:       menuOption_devices,
@@ -47,6 +49,10 @@ func NewModel() Model {
 		menu: mm,
 		help: mir_help.New(keys, []string{}, ""),
 	}
+}
+
+func (m Model) InitWithData(d any) tea.Cmd {
+	return nil
 }
 
 func (m Model) Init() tea.Cmd {
