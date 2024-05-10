@@ -99,6 +99,9 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.currentRoute = "/"
 			return m, m.lblSpinner.UpdateLabelWithTimeout(store.Styles["error"].Render("not implemented yet"), 2*time.Second)
 		} else {
+			// TODO add route param to say if init or not
+			// Perhaps even some data to share state
+			// a generic perhaps
 			return m, m.routes[m.currentRoute].Init()
 		}
 		return m, nil
