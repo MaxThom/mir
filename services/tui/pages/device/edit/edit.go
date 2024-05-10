@@ -48,7 +48,7 @@ func NewModel(ctx context.Context) *Model {
 
 	return &Model{
 		ctx:           ctx,
-		help:          mir_help.New(keys, []string{}),
+		help:          mir_help.New(keys, []string{}, ""),
 		deviceIdInput: ti,
 	}
 }

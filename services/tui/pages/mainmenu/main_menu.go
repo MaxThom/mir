@@ -5,7 +5,6 @@ import (
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	mir_help "github.com/maxthom/mir/services/tui/components/help"
 	"github.com/maxthom/mir/services/tui/components/menu"
 	"github.com/maxthom/mir/services/tui/msgs"
@@ -24,10 +23,6 @@ type Model struct {
 	menu         menu.Model
 	currentRoute menu.OptionValue
 	help         mir_help.Model
-}
-
-var styles = map[string]lipgloss.Style{
-	"mir": lipgloss.NewStyle().Foreground(lipgloss.Color("#C26BFF")),
 }
 
 func NewModel() Model {
@@ -50,7 +45,7 @@ func NewModel() Model {
 	})
 	return Model{
 		menu: mm,
-		help: mir_help.New(keys, []string{}),
+		help: mir_help.New(keys, []string{}, ""),
 	}
 }
 

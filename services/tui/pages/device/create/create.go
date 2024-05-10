@@ -106,7 +106,7 @@ func NewModel(ctx context.Context) *Model {
 
 	return &Model{
 		ctx:    ctx,
-		help:   mir_help.New(keys, tooltips),
+		help:   mir_help.New(keys, tooltips, "mir device create"),
 		inputs: inputs,
 	}
 }
@@ -199,10 +199,12 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	}
 	m.help, _ = m.help.Update(msg)
+	m.updateCli()
 
 	for i := range m.inputs {
 		m.inputs[i], cmds[i] = m.inputs[i].Update(msg)
 	}
+
 	return m, tea.Batch(cmds...)
 }
 
@@ -268,6 +270,35 @@ func (m *Model) prevInput() {
 	if m.focused < 0 {
 		m.focused = len(m.inputs) - 1
 	}
+}
+
+func (m *Model) updateCli() {
+	cli := []string{"mir device create"}
+	if m.inputs[deviceId].GetValue() != "" {
+		cli = append(cli, "--id \""+m.inputs[deviceId].GetValue()+"\"")
+	}
+
+	if m.inputs[name].GetValue() != "" {
+		cli = append(cli, "--name \""+m.inputs[name].GetValue()+"\"")
+	}
+
+	if m.inputs[description].GetValue() != "" {
+		cli = append(cli, "--desc \""+m.inputs[description].GetValue()+"\"")
+	}
+
+	if m.inputs[labels].GetValue() != "" {
+		cli = append(cli, "--labels \""+m.inputs[labels].GetValue()+"\"")
+	}
+
+	if m.inputs[annotations].GetValue() != "" {
+		cli = append(cli, "--anno \""+m.inputs[annotations].GetValue()+"\"")
+	}
+
+	if m.inputs[disabled].GetValue() == "false" {
+		cli = append(cli, "--disabled")
+	}
+
+	m.help.UpdateCli(strings.Join(cli, " "))
 }
 
 type keyMap map[string]key.Binding

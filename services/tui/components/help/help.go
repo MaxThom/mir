@@ -36,14 +36,16 @@ type Model struct {
 	keyMap     help.KeyMap
 	globalKeys globalKeyMap
 	help       help.Model
+	cli        string
 }
 
-func New(km help.KeyMap, tooltips []string) Model {
+func New(km help.KeyMap, tooltips []string, cli string) Model {
 	return Model{
 		tooltips:   tooltips,
 		keyMap:     km,
 		globalKeys: keys,
 		help:       help.New(),
+		cli:        cli,
 	}
 }
 
@@ -75,7 +77,15 @@ func (m Model) View() string {
 	}
 	v.WriteString("\n")
 	v.WriteString(m.help.View(m))
+	if m.cli != "" && m.help.ShowAll {
+		v.WriteString(store.Styles["help"].Italic(true).Render("\n\n"))
+		v.WriteString(store.Styles["help"].Render(m.cli))
+	}
 	return v.String()
+}
+
+func (m *Model) UpdateCli(s string) {
+	m.cli = s
 }
 
 func (m Model) ShortHelp() []key.Binding {

@@ -67,7 +67,7 @@ func (m Model) View() string {
 	} else {
 		v.WriteString("  ")
 	}
-	v.WriteString(store.Styles["help"].Bold(false).Render(m.label))
+	v.WriteString(store.Styles["form_label"].Bold(false).Render(m.label))
 	v.WriteString(" ")
 	if m.Focused() {
 		m.Model.Prompt = store.Styles["primary"].Render("> ")
