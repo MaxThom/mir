@@ -7,8 +7,8 @@ import (
 )
 
 type Device struct {
-	Id          string             `json:"id"`
-	DeviceId    string             `json:"device_id"`
+	Id          string             `json:"__id"`
+	DeviceId    string             `json:"__device_id"`
 	System      system             `json:"__system"`
 	Name        string             `json:"name"`
 	Description string             `json:"description"`

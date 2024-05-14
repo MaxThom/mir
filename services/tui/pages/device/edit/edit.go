@@ -1,6 +1,7 @@
 package device_edit
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -124,6 +125,14 @@ func openEditor(data json.RawMessage) tea.Cmd {
 	}
 
 	// Write initial device to the temp file
+	var comments strings.Builder
+	comments.WriteString("// Edit the device below\n")
+	comments.WriteString("// Field with __ prefix can't be removed or updated\n")
+	comments.WriteString("// To remove a field, you must explicitly set it to null\n")
+	_, err = tmpfile.Write([]byte(comments.String()))
+	if err != nil {
+		l.Error().Err(err).Msg("can't write to temporary file for editing twin")
+	}
 	_, err = tmpfile.Write(data)
 	if err != nil {
 		l.Error().Err(err).Msg("can't write to temporary file for editing twin")
@@ -141,12 +150,22 @@ func openEditor(data json.RawMessage) tea.Cmd {
 			l.Error().Err(err).Msg("can't run editor command for editing twin")
 			return EditorFinishedMsg{content: []byte{}, err: err}
 		}
-		// Read the modified file
-		content, err := os.ReadFile(tmpfile.Name())
+
+		file, err := os.Open(tmpfile.Name())
 		if err != nil {
-			l.Error().Err(err).Msg("can't write to temporary file for editing twin")
+			l.Error().Err(err).Msg("can't open to temporary file for reading twin")
 			return EditorFinishedMsg{content: []byte{}, err: err}
 		}
+
+		var sb strings.Builder
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			line := scanner.Text()
+			if !strings.HasPrefix(strings.TrimSpace(line), "//") {
+				sb.WriteString(line)
+			}
+		}
+		content := []byte(sb.String())
 
 		err = os.Remove(tmpfile.Name())
 		if err != nil {
