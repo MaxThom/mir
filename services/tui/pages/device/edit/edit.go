@@ -12,9 +12,11 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/maxthom/mir/api/gen/proto/v1alpha/core"
+	core_srv "github.com/maxthom/mir/services/core"
 	mir_help "github.com/maxthom/mir/services/tui/components/help"
 	"github.com/maxthom/mir/services/tui/msgs"
 	device_list "github.com/maxthom/mir/services/tui/pages/device/list"
+	"github.com/maxthom/mir/services/tui/store"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -50,13 +52,13 @@ func NewModel(ctx context.Context) *Model {
 }
 
 func (m *Model) InitWithData(d any) tea.Cmd {
-	l.Debug().Msg(fmt.Sprintf("%v", d))
 	rj, e := json.MarshalIndent(d, "", "  ")
 	if e != nil {
 		l.Error().Err(e).Msg("")
 		return tea.Batch(msgs.ErrCmd(e, 2*time.Second), msgs.RouteChangeWithDataCmd("/devices", device_list.InputData{SilentFetch: true}))
 
 	}
+	l.Debug().Str("edit", "before").Msg(fmt.Sprintf("%v", string(rj)))
 	return openEditor(rj)
 }
 
@@ -68,20 +70,34 @@ func (m *Model) Init() tea.Cmd {
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
-	case DeviceFetchedMsg:
-		return m, msgs.ResMsgCmd(fmt.Sprintf("%d devices fetched", len(msg.devices)))
+	case msgs.DeviceUpdateMsg:
+		rsp := "device edited successfully"
+		if len(msg.Devices) > 0 {
+			rsp = fmt.Sprintf("device '%s' edited successfully", msg.Devices[0].DeviceId)
+		}
+		return m, tea.Batch(msgs.ResMsgCmd(rsp), msgs.RouteChangeWithDataCmd("/devices", device_list.InputData{SilentFetch: true}))
 	case EditorFinishedMsg:
-		var res tea.Cmd
+		var cmds []tea.Cmd
 		if msg.err != nil {
-			res = msgs.ErrCmd(msg.err, 2*time.Second)
+			cmds = append(cmds, msgs.ErrCmd(msg.err, 2*time.Second))
+			cmds = append(cmds, msgs.RouteChangeWithDataCmd("/devices", device_list.InputData{SilentFetch: true}))
 		} else {
-			// TODO update device
-			res = msgs.ResMsgCmd("device edited successfully")
+			l.Debug().Str("edit", "after").Msg(fmt.Sprintf("%v", string(msg.content)))
+
+			dev := core_srv.Device{}
+			if err := json.Unmarshal(msg.content, &dev); err != nil {
+				l.Error().Err(err).Msg("can't unmarshal edited device")
+				cmds = append(cmds, msgs.ErrCmd(err, 2*time.Second))
+				cmds = append(cmds, msgs.RouteChangeWithDataCmd("/devices", device_list.InputData{SilentFetch: true}))
+			} else {
+				l.Debug().Str("edit", "unmarshalled").Msg(fmt.Sprintf("%v", dev))
+				cmds = append(cmds, msgs.UpdateMirDevice(store.Bus, core_srv.NewUpdateDeviceReqFromDevice(dev)))
+			}
+
 		}
 
-		return m, tea.Batch(res, msgs.RouteChangeWithDataCmd("/devices", device_list.InputData{SilentFetch: true}))
+		return m, tea.Batch(cmds...)
 	case tea.KeyMsg:
-
 		return m, cmd
 	}
 

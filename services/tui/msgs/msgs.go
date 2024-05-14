@@ -33,6 +33,10 @@ type (
 		Devices []*core.Device
 		NoToast bool
 	}
+	DeviceUpdateMsg struct {
+		Devices []*core.Device
+		NoToast bool
+	}
 )
 
 func (e ErrMsg) Error() string {
@@ -140,5 +144,28 @@ func deleteMirDeviceCmd(bus *bus.BusConn, noToast bool, req *core.DeleteDeviceRe
 			return ErrMsg{Err: fmt.Errorf(resp.GetError().GetMessage())}
 		}
 		return DeviceDeleteMsg{Devices: resp.GetOk().Devices, NoToast: noToast}
+	}
+}
+
+func UpdateMirDeviceSilently(bus *bus.BusConn, req *core.UpdateDeviceRequest) tea.Cmd {
+	return updateMirDeviceCmd(bus, true, req)
+}
+
+func UpdateMirDevice(bus *bus.BusConn, req *core.UpdateDeviceRequest) tea.Cmd {
+	return updateMirDeviceCmd(bus, false, req)
+}
+
+func updateMirDeviceCmd(bus *bus.BusConn, noToast bool, req *core.UpdateDeviceRequest) tea.Cmd {
+	return func() tea.Msg {
+		resp, err := client_core.PublishDeviceUpdateRequest(bus, req)
+		if err != nil {
+			// TODO move error from cli to next to core client and use it here as well
+			//l.Error().Err(err).Msg("")
+			return ErrMsg{Err: err}
+		}
+		if resp.GetError() != nil {
+			return ErrMsg{Err: fmt.Errorf(resp.GetError().GetMessage())}
+		}
+		return DeviceUpdateMsg{Devices: resp.GetOk().Devices, NoToast: noToast}
 	}
 }

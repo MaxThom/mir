@@ -21,10 +21,6 @@ type CoreServer struct {
 	bus *bus.BusConn
 	db  *surrealdb.DB
 }
-type Device struct {
-	ID   string `json:"id,omitempty"`
-	Name string `json:"name"`
-}
 
 var requestCount = metrics.NewCounterVec(prometheus.CounterOpts{
 	Name: "request_count",

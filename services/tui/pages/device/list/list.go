@@ -13,6 +13,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/maxthom/mir/api/gen/proto/v1alpha/core"
+	core_srv "github.com/maxthom/mir/services/core"
 	mir_help "github.com/maxthom/mir/services/tui/components/help"
 	"github.com/maxthom/mir/services/tui/msgs"
 	"github.com/maxthom/mir/services/tui/store"
@@ -130,7 +131,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, msgs.ResMsgCmd(fmt.Sprintf("%d devices fetched", len(msg.Devices)))
 		}
 	case msgs.DeviceDeleteMsg:
-		rsp := "device deleted"
+		rsp := "device deleted successfully"
 		if len(msg.Devices) > 0 {
 			rsp = fmt.Sprintf("device '%s' deleted", msg.Devices[0].DeviceId)
 		}
@@ -180,7 +181,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if !ok {
 					return m, msgs.ErrCmd(fmt.Errorf("no device selected"), 2*time.Second)
 				}
-				return m, msgs.RouteChangeWithDataCmd(menuOption_device_edit, device)
+				return m, msgs.RouteChangeWithDataCmd(menuOption_device_edit, core_srv.NewDeviceFromProtoDevice(device))
 			} else if msg.String() == "x" {
 				m.table.Blur()
 				m.deleteInput.SetValue("")
