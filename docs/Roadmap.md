@@ -74,6 +74,10 @@ is much incertainties about the feasibility of that one
   - [ ] Create builder or Option patterns for sdk
   - [ ] Have Hearthbeat functionality implemented
   - [ ] How do we publish a library? Pkg folder instead of sdks?
+  - [ ] Design the event system
+    - [ ] How to publish new event
+    - [ ] How to catch those events
+    - [ ] ServerSide SDK
 
 ### Improvements/Tech dett
 
@@ -219,7 +223,7 @@ and conternarization
     - maybe github pages? would be nice to also have them locally
 - [ ] write the documentation
 - [ ] write set of examples
-r
+
 ### DevOps
 
 - [ ] make the doc publish using a pipeline
