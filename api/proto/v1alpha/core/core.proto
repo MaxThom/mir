@@ -34,13 +34,24 @@ message CreateDeviceResponse {
   - when nil, for a map value, it means mark for deletion
 */
 message UpdateDeviceRequest {
-  Targets targets = 1; // To target a set of devices, search using ids, labels and annotations 
-  optional string name = 2; // Name of the device
-  optional string description = 3; // description of the device
-  optional bool disabled = 4; // If disabled, device will be cut off from communication
-  map<string, OptString> labels = 5; // set key to nil to remove it
-  map<string, OptString> annotations = 6; // set key to nil to remove it
+  Targets targets = 1; // To target a set of devices, search using ids, labels and annotations
 
+  // You can only update the spec or status per request
+  oneof request {
+    Spec spec = 2;
+    Status status = 3;
+  }
+
+  message Spec {
+    optional string name = 2; // Name of the device
+    optional string description = 3; // description of the device
+    optional bool disabled = 4; // If disabled, device will be cut off from communication
+    map<string, OptString> labels = 5; // set key to nil to remove it
+    map<string, OptString> annotations = 6; // set key to nil to remove it
+  }
+  message Status {
+
+  }
   message OptString {
     optional string value = 1;
   }
@@ -57,7 +68,7 @@ message UpdateDeviceResponse {
   }
 }
 
-/* 
+/*
   Send a request to delete a device in the system
 */
 message DeleteDeviceRequest {
@@ -90,7 +101,7 @@ message ListDeviceResponse {
   oneof response {
     DeviceList ok = 1; // Devices that were found from the search
     Error error = 2;  // HTTP like error if something went wrong
-  }  
+  }
 }
 
 /*
@@ -116,12 +127,20 @@ message DeviceIdList {
 */
 message Device {
   string id = 1; // Represent the database id of the device
-  string device_id = 2; // Represent the Mir id of the device 
-  string name = 3; // Name of the device
-  string description = 4; // Description of the devices
-  bool disabled = 5; // If disabled, device will be cut off from communication
-  map<string, string> labels = 6; // Labels are used to uniquely identify the device
-  map<string, string> annotations = 7; // Annotations are used to add additional information
+  string device_id = 2; // Represent the Mir id of the device
+  Spec spec = 3; // Represent the specifications that can be updated
+  Status status = 4; // Represent the status reported by the Mir
+}
+
+message Spec {
+    string name = 3; // Name of the device
+    string description = 4; // Description of the devices
+    bool disabled = 5; // If disabled, device will be cut off from communication
+    map<string, string> labels = 6; // Labels are used to uniquely identify the device
+    map<string, string> annotations = 7; // Annotations are used to add additional information
+}
+
+message Status {
   Timestamp last_hearthbeat = 8; // Represent the time when the last hearthbeat was received
   bool online = 9; // The device is online and sending heathbeath signal
 }

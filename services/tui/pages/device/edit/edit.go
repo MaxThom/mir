@@ -92,7 +92,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmds = append(cmds, msgs.RouteChangeWithDataCmd("/devices", device_list.InputData{SilentFetch: true}))
 			} else {
 				l.Debug().Str("edit", "unmarshalled").Msg(fmt.Sprintf("%v", dev))
-				cmds = append(cmds, msgs.UpdateMirDevice(store.Bus, core_srv.NewUpdateDeviceReqFromDevice(dev)))
+				cmds = append(cmds, msgs.UpdateMirDevice(store.Bus, core_srv.NewUpdateDeviceSpecReqFromDevice(dev)))
 			}
 
 		}
@@ -127,7 +127,6 @@ func openEditor(data json.RawMessage) tea.Cmd {
 	// Write initial device to the temp file
 	var comments strings.Builder
 	comments.WriteString("// Edit the device below\n")
-	comments.WriteString("// Field with __ prefix can't be removed or updated\n")
 	comments.WriteString("// To remove a field, you must explicitly set it to null\n")
 	_, err = tmpfile.Write([]byte(comments.String()))
 	if err != nil {

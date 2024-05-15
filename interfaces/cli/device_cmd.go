@@ -254,11 +254,15 @@ func (d *DeviceUpdateCmd) Run(globals *Globals) error {
 			Labels:      d.Target.Labels,
 			Annotations: d.Target.Anno,
 		},
-		Name:        d.Name,
-		Description: d.Desc,
-		Disabled:    d.Disabled,
-		Labels:      labels,
-		Annotations: anno,
+		Request: &core.UpdateDeviceRequest_Spec_{
+			Spec: &core.UpdateDeviceRequest_Spec{
+				Name:        d.Name,
+				Description: d.Desc,
+				Disabled:    d.Disabled,
+				Labels:      labels,
+				Annotations: anno,
+			},
+		},
 	})
 	if err != nil {
 		e := MirRequestError{Route: "device.update", e: err}

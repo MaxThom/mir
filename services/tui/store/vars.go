@@ -22,12 +22,12 @@ func GetAnnotationsSuggestions(devices []*core.Device) []string {
 	for _, d := range devices {
 		lbls := []string{}
 		keys := []string{}
-		for k := range d.Annotations {
+		for k := range d.Spec.Annotations {
 			keys = append(keys, k)
 		}
 		sort.Strings(keys)
 		for _, k := range keys {
-			lbls = append(lbls, k+"="+d.Annotations[k])
+			lbls = append(lbls, k+"="+d.Spec.Annotations[k])
 		}
 		s = append(s, strings.Join(lbls, ";"))
 	}
@@ -45,12 +45,12 @@ func GetLabelsSuggestions(devices []*core.Device) []string {
 	for _, d := range devices {
 		lbls := []string{}
 		keys := []string{}
-		for k := range d.Labels {
+		for k := range d.Spec.Labels {
 			keys = append(keys, k)
 		}
 		sort.Strings(keys)
 		for _, k := range keys {
-			lbls = append(lbls, k+"="+d.Labels[k])
+			lbls = append(lbls, k+"="+d.Spec.Labels[k])
 		}
 		s = append(s, strings.Join(lbls, ";"))
 	}

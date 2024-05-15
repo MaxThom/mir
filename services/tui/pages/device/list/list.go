@@ -254,29 +254,31 @@ var keys = keyMap{
 }
 
 func devicesToRows(devices []*core.Device) ([]table.Row, []string) {
+	l.Debug().Msg(fmt.Sprintf("%v", devices))
 	rows := []table.Row{}
 	suggestions := []string{}
 	for _, d := range devices {
 		lbls := []string{}
 		lblKeys := []string{}
-		for k := range d.Labels {
+		for k := range d.Spec.Labels {
 			lblKeys = append(lblKeys, k)
 		}
 		sort.Strings(lblKeys)
 		for _, k := range lblKeys {
-			lbls = append(lbls, k+"="+d.Labels[k])
+			lbls = append(lbls, k+"="+d.Spec.Labels[k])
 		}
 
 		status := "🟢"
-		if d.Disabled {
+		if d.Spec.Disabled {
 			status = "⭕"
-		} else if !d.Online {
+		} else if !d.Status.Online {
 			status = "🔴"
 		}
+
 		rows = append(rows, table.Row{
-			status, d.DeviceId, d.Name, strings.Join(lbls, ","),
+			status, d.DeviceId, d.Spec.Name, strings.Join(lbls, ","),
 		})
-		suggestions = append(suggestions, d.Name, d.DeviceId)
+		suggestions = append(suggestions, d.Spec.Name, d.DeviceId)
 		suggestions = append(suggestions, lbls...)
 	}
 	// Sort the rows by labels then name if equal

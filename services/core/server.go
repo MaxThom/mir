@@ -116,12 +116,12 @@ func (s *CoreServer) createDeviceRequestHandler(ch chan nats.Msg) {
 		})
 		respCheck, err := executeQueryForType[[]*core.Device](s.db, q, v)
 		if err != nil {
-			l.Error().Err(err).Msg("error occure while executing a db query")
+			l.Error().Err(err).Msg("error occure while executing list db query")
 			sendReplyOrAck(s.bus, msg, &core.CreateDeviceResponse{
 				Response: &core.CreateDeviceResponse_Error{
 					Error: &core.Error{
 						Code:    500,
-						Message: "error occure while executing a db query",
+						Message: "error occure while executing list db query",
 						Details: []string{"500 Internal Server Error", err.Error()},
 					},
 				},
@@ -142,21 +142,21 @@ func (s *CoreServer) createDeviceRequestHandler(ch chan nats.Msg) {
 			continue
 		}
 
-		respDb, err := s.db.Create("devices", req)
+		respDb, err := s.db.Create("devices", NewDeviceFromCreateDeviceReq(req))
 		if err != nil {
-			l.Error().Err(err).Msg("error occure while executing a db query")
+			l.Error().Err(err).Msg("error occure while executing create db query")
 			sendReplyOrAck(s.bus, msg, &core.CreateDeviceResponse{
 				Response: &core.CreateDeviceResponse_Error{
 					Error: &core.Error{
 						Code:    500,
-						Message: "error occure while executing a db query",
+						Message: "error occure while executing create db query",
 						Details: []string{"500 Internal Server Error", err.Error()},
 					},
 				},
 			})
 			continue
 		}
-		newDev := []*core.Device{}
+		newDev := []*DeviceWithId{}
 		err = surrealdb.Unmarshal(respDb, &newDev)
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while deserializing a db response")
@@ -175,7 +175,7 @@ func (s *CoreServer) createDeviceRequestHandler(ch chan nats.Msg) {
 		sendReplyOrAck(s.bus, msg, &core.CreateDeviceResponse{
 			Response: &core.CreateDeviceResponse_Ok{
 				Ok: &core.DeviceList{
-					Devices: newDev,
+					Devices: NewProtoDeviceListFromDevicesWithId(newDev),
 				},
 			}})
 	}
@@ -220,8 +220,17 @@ func (s *CoreServer) updateDeviceRequestHandler(ch chan nats.Msg) {
 		// Update is full document
 		// Change is a merge
 		// Modify is a patch
-		q, v := createUpdateQueryForDevice(req)
-		respDb, err := executeQueryForType[[]*core.Device](s.db, q, v)
+
+		// TODO check how to do it on type
+		q := ""
+		v := map[string]any{}
+		if spec, ok := req.Request.(*core.UpdateDeviceRequest_Spec_); ok && spec != nil {
+			q, v = createUpdateQueryForDeviceSpec(req.Targets, spec.Spec)
+		} else if status, ok := req.Request.(*core.UpdateDeviceRequest_Status_); ok && status != nil {
+			// TODO status update
+		}
+
+		respDb, err := executeQueryForType[[]*DeviceWithId](s.db, q, v)
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while executing a db query")
 			sendReplyOrAck(s.bus, msg, &core.UpdateDeviceResponse{
@@ -239,7 +248,7 @@ func (s *CoreServer) updateDeviceRequestHandler(ch chan nats.Msg) {
 		sendReplyOrAck(s.bus, msg, &core.UpdateDeviceResponse{
 			Response: &core.UpdateDeviceResponse_Ok{
 				Ok: &core.DeviceList{
-					Devices: respDb,
+					Devices: NewProtoDeviceListFromDevicesWithId(respDb),
 				},
 			}})
 	}
@@ -283,7 +292,7 @@ func (s *CoreServer) deleteDeviceRequestHandler(ch chan nats.Msg) {
 
 		// TODO find a way for delete to return the device documents
 		q, v := createDeleteQueryForDevice(req)
-		respDb, err := executeQueryForType[[]*core.Device](s.db, q, v)
+		respDb, err := executeQueryForType[[]*DeviceWithId](s.db, q, v)
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while executing a db query")
 			sendReplyOrAck(s.bus, msg, &core.DeleteDeviceResponse{
@@ -301,7 +310,7 @@ func (s *CoreServer) deleteDeviceRequestHandler(ch chan nats.Msg) {
 		sendReplyOrAck(s.bus, msg, &core.DeleteDeviceResponse{
 			Response: &core.DeleteDeviceResponse_Ok{
 				Ok: &core.DeviceList{
-					Devices: respDb,
+					Devices: NewProtoDeviceListFromDevicesWithId(respDb),
 				},
 			}})
 	}
@@ -328,7 +337,7 @@ func (s *CoreServer) listDeviceRequestHandler(ch chan nats.Msg) {
 		l.Debug().Str("route", "list").Str("payload", fmt.Sprintf("%v", req)).Msg("list device request")
 
 		q, v := createListQueryForDevice(req)
-		respDb, err := executeQueryForType[[]*core.Device](s.db, q, v)
+		respDb, err := executeQueryForType[[]*DeviceWithId](s.db, q, v)
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while executing a db query")
 			sendReplyOrAck(s.bus, msg, &core.ListDeviceResponse{
@@ -346,7 +355,7 @@ func (s *CoreServer) listDeviceRequestHandler(ch chan nats.Msg) {
 		sendReplyOrAck(s.bus, msg, &core.ListDeviceResponse{
 			Response: &core.ListDeviceResponse_Ok{
 				Ok: &core.DeviceList{
-					Devices: respDb,
+					Devices: NewProtoDeviceListFromDevicesWithId(respDb),
 				},
 			}})
 	}
@@ -375,25 +384,26 @@ func getRoutingFunc(s string) string {
 	return s[index+1:]
 }
 
-func createUpdateQueryForDevice(req *core.UpdateDeviceRequest) (sql string, vars map[string]any) {
+func createUpdateQueryForDeviceSpec(t *core.Targets, spec *core.UpdateDeviceRequest_Spec) (sql string, vars map[string]any) {
 	var q strings.Builder
 	vars = map[string]any{}
 	q.WriteString("UPDATE devices MERGE {")
-	if req.Name != nil {
+	q.WriteString("spec: {")
+	if spec.Name != nil {
 		q.WriteString("name: $NAME,")
-		vars["NAME"] = *req.Name
+		vars["NAME"] = *spec.Name
 	}
-	if req.Description != nil {
+	if spec.Description != nil {
 		q.WriteString("description: $DESC,")
-		vars["DESC"] = *req.Description
+		vars["DESC"] = *spec.Description
 	}
-	if req.Disabled != nil {
+	if spec.Disabled != nil {
 		q.WriteString("disabled: $DISA,")
-		vars["DISA"] = *req.Disabled
+		vars["DISA"] = *spec.Disabled
 	}
-	if req.Labels != nil && len(req.Labels) > 0 {
+	if spec.Labels != nil && len(spec.Labels) > 0 {
 		q.WriteString("labels: {")
-		for key, val := range req.Labels {
+		for key, val := range spec.Labels {
 			q.WriteString(key)
 			q.WriteString(": ")
 			if val == nil || val.Value == nil {
@@ -405,9 +415,9 @@ func createUpdateQueryForDevice(req *core.UpdateDeviceRequest) (sql string, vars
 		}
 		q.WriteString("},")
 	}
-	if req.Annotations != nil && len(req.Annotations) > 0 {
+	if spec.Annotations != nil && len(spec.Annotations) > 0 {
 		q.WriteString("annotations: {")
-		for key, val := range req.Annotations {
+		for key, val := range spec.Annotations {
 			q.WriteString(key)
 			q.WriteString(": ")
 			if val == nil || val.Value == nil {
@@ -420,8 +430,8 @@ func createUpdateQueryForDevice(req *core.UpdateDeviceRequest) (sql string, vars
 		q.WriteString("},")
 	}
 
-	q.WriteString("} WHERE ")
-	q.WriteString(createWhereStatementWithTargets(req.Targets.Ids, req.Targets.Labels, req.Targets.Annotations))
+	q.WriteString("},} WHERE ")
+	q.WriteString(createWhereStatementWithTargets(t.Ids, t.Labels, t.Annotations))
 	q.WriteString(";")
 	sql = q.String()
 
@@ -469,14 +479,14 @@ func createWhereStatementWithTargets(targetIds []string, targetLabels map[string
 	if len(targetLabels) > 0 {
 		var t []string
 		for k, v := range targetLabels {
-			t = append(t, fmt.Sprintf("labels.%s = \"%s\"", k, v))
+			t = append(t, fmt.Sprintf("spec.labels.%s = \"%s\"", k, v))
 		}
 		cond = append(cond, "("+strings.Join(t, " AND ")+")")
 	}
 	if len(targetAnno) > 0 {
 		var t []string
 		for k, v := range targetAnno {
-			t = append(t, fmt.Sprintf("annotations.%s = \"%s\"", k, v))
+			t = append(t, fmt.Sprintf("spec.annotations.%s = \"%s\"", k, v))
 		}
 		cond = append(cond, "("+strings.Join(t, " AND ")+")")
 	}
