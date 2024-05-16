@@ -33,7 +33,7 @@ var (
 	flagFilePath string
 	flagLogLevel string
 
-	cfg = RegistrationConfig{
+	cfg = CoreConfig{
 		LogLevel: "info",
 		HttpServer: HttpServer{
 			Port: 3016,
@@ -50,7 +50,7 @@ var (
 )
 
 type (
-	RegistrationConfig struct {
+	CoreConfig struct {
 		LogLevel       string
 		HttpServer     HttpServer
 		DataBusServer  DataBusServer

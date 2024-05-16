@@ -10,6 +10,7 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/table"
 	"github.com/charmbracelet/bubbles/textinput"
+	"github.com/charmbracelet/bubbles/timer"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/maxthom/mir/api/gen/proto/v1alpha/core"
@@ -35,6 +36,8 @@ const (
 	tableColDeviceID = 1
 	tableColName     = 2
 	tableColLabels   = 3
+
+	refreshInterval = time.Second * 10
 )
 
 type Model struct {
@@ -44,6 +47,7 @@ type Model struct {
 	searchInput textinput.Model
 	deleteInput textinput.Model
 	tableRowAll []table.Row
+	timer       timer.Model
 }
 
 type InputData struct {
@@ -96,26 +100,27 @@ func NewModel(ctx context.Context) *Model {
 		table:       t,
 		searchInput: ti,
 		deleteInput: delti,
+		timer:       timer.New(refreshInterval),
 	}
 }
 
 func (m Model) InitWithData(d any) tea.Cmd {
 	if a, ok := d.(InputData); ok {
 		if a.SilentFetch {
-			return tea.Batch(msgs.ListMirDevicesSilently(store.Bus))
+			return tea.Batch(m.timer.Init(), msgs.ListMirDevicesSilently(store.Bus))
 		} else {
 			return m.Init()
 		}
 	} else if d != nil {
 		e := fmt.Errorf("can't assert data on route init")
 		l.Error().Err(e).Msg("")
-		return tea.Batch(msgs.ErrCmd(e, 2*time.Second))
+		return tea.Batch(m.timer.Init(), msgs.ErrCmd(e, 2*time.Second))
 	}
 	return m.Init()
 }
 
 func (m *Model) Init() tea.Cmd {
-	return tea.Batch(msgs.ReqMsgCmd("fetching devices..."), msgs.ListMirDevices(store.Bus))
+	return tea.Batch(m.timer.Init(), msgs.ReqMsgCmd("fetching devices..."), msgs.ListMirDevices(store.Bus))
 }
 
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -136,6 +141,13 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			rsp = fmt.Sprintf("device '%s' deleted", msg.Devices[0].DeviceId)
 		}
 		return m, tea.Batch(msgs.ListMirDevicesSilently(store.Bus), msgs.ResMsgCmd(rsp))
+	case timer.TickMsg:
+		var cmd tea.Cmd
+		m.timer, cmd = m.timer.Update(msg)
+		return m, cmd
+	case timer.TimeoutMsg:
+		m.timer = timer.New(refreshInterval)
+		return m, tea.Batch(m.timer.Init(), msgs.ListMirDevicesSilently(store.Bus))
 	case tea.KeyMsg:
 		if m.searchInput.Focused() {
 			if msg.Type == tea.KeyEnter {
@@ -207,8 +219,9 @@ func (m *Model) View() string {
 		v.WriteString("\n")
 	}
 
-	v.WriteString(m.table.View() + "\n")
-	v.WriteString("\n\n" + m.help.View())
+	v.WriteString(m.table.View())
+	v.WriteString("\n\n")
+	v.WriteString(m.help.View())
 	return v.String()
 }
 

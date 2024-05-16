@@ -30,11 +30,11 @@ func WaitForOsSignals(shutdownFn func()) {
 		case syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT:
 			log.Info().Msg("received " + s.String() + " signal, shutting down...")
 			shutdownFn()
-			os.Exit(0)
+			return
 		case PRGSHUTDOWN:
 			log.Info().Msg("received " + s.String() + " signal, shutting down...")
 			shutdownFn()
-			os.Exit(0)
+			return
 		default:
 			log.Info().Msg("received unknown signal " + s.String())
 		}

@@ -27,7 +27,7 @@ type Spec struct {
 
 type Status struct {
 	Online         bool      `json:"online"`
-	LastHearthbeat time.Time `json:"last_hearth_beath"`
+	LastHearthbeat time.Time `json:"last_hearthbeat"`
 }
 
 func NewUpdateDeviceSpecReqFromDevice(d Device) *core.UpdateDeviceRequest {

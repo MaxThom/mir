@@ -60,11 +60,6 @@ var isNotPidZero = os.Getpid() != 0
 var configName string
 
 func init() {
-	userHomeDir, err := os.UserHomeDir()
-	if err != nil {
-		fmt.Println("$HOME is not defined")
-	}
-	xdgConfigHome = filepath.Join(userHomeDir, ".config")
 }
 
 type configFormat string
@@ -208,6 +203,12 @@ func WithEtcFilePath(fileName string, cff configFormat, devOnly bool) func(*MirC
 func WithXdgConfigHomeFilePath(fileName string, cff configFormat, devOnly bool) func(*MirConfig) {
 	return func(cfg *MirConfig) {
 		if devOnly && isNotPidZero || !devOnly {
+			userHomeDir, err := os.UserHomeDir()
+			if err != nil {
+				fmt.Println("$HOME is not defined")
+			}
+			xdgConfigHome = filepath.Join(userHomeDir, ".config")
+
 			path := filepath.Join(xdgConfigHome, cfg.appName, fileName)
 			cfg.configFiles = append(cfg.configFiles, configFile{
 				path:   path,

@@ -71,8 +71,9 @@ is much incertainties about the feasibility of that one
 
 -  MirGoSdk, device sdk in Go
 
-  - [ ] Create builder or Option patterns for sdk
-  - [ ] Have Hearthbeat functionality implemented
+  - [x] Create builder or Option patterns for sdk
+  - [x] Have Hearthbeat functionality implemented
+  - [ ] Config and Logging setup
   - [ ] How do we publish a library? Pkg folder instead of sdks?
   - [ ] Design the event system
     - [ ] How to publish new event

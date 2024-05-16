@@ -56,11 +56,9 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	case StartMsg:
 		m.IsSpinning = true
 		return m, m.spinner.Tick
-
 	case StopMsg:
 		m.IsSpinning = false
 		return m, nil
-
 	case spinner.TickMsg:
 		var cmd tea.Cmd
 		m.spinner, cmd = m.spinner.Update(msg)

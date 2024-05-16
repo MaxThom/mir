@@ -31,5 +31,7 @@ $bin device create --random-id --name "l_tree"  --desc "Mushroom lamp three" --l
 $bin device create --random-id --name "l_four"  --desc "Mushroom lamp four"  --labels "source=seed;location=shipwreck;version=2"     --anno "color=purple;made_by=seb"  --disabled  >/dev/null
 $bin device create --random-id --name "l_five"  --desc "Mushroom lamp five"  --labels "source=seed;location=shipwreck;version=3"     --anno "color=cyan;made_by=liam"               >/dev/null
 
+$bin device create --id "0xf86ea" --name "dev1" --desc "Device hard one" --labels "source=seed;" --anno "" >/dev/null
+
 echo "CREATED"
 $bin device list --target.labels "source=seed" -o json

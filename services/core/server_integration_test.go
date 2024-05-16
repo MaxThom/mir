@@ -1264,6 +1264,143 @@ func TestDeleteNoTargetSpecified(t *testing.T) {
 	assert.Equal(t, resp.GetError().Message, "no target provided for delete")
 }
 
+func TestPublishHearthbeatRequest(t *testing.T) {
+	// Arrange
+	ctx := context.Background()
+
+	deviceIds := []string{"0x14ffea"}
+	testQuery := &core.ListDeviceRequest{
+		Targets: &core.Targets{
+			Ids: deviceIds,
+		},
+	}
+	devices := []*core.CreateDeviceRequest{
+		{
+			DeviceId:    deviceIds[0],
+			Description: "hello world of devices !",
+			Labels: map[string]string{
+				"factory": "D",
+				"land":    "sheep",
+				"owner":   "bob_morrisson",
+				"fix":     "cant_be_touch",
+			},
+			Annotations: map[string]string{
+				"utility": "hvac",
+			},
+		},
+	}
+
+	// Act
+	regSrv := NewCore(log, b, sub, db)
+	go func() {
+		regSrv.Listen(ctx)
+	}()
+
+	if _, err := createDevices(ctx, b, devices); err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	if err := PublishHearthbeatRequest(b, deviceIds[0]); err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	devRes, err := PublishDeviceListRequest(b, testQuery)
+	if err != nil {
+		t.Error(err)
+	}
+	if err := deleteDevices(t, db, deviceIds); err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	for _, dev := range devRes.GetOk().Devices {
+		switch dev.DeviceId {
+		case deviceIds[0]:
+			assert.Equal(t, dev.Status.Online, true)
+			devTs := AsGoTime(dev.Status.LastHearthbeat)
+			assert.Equal(t, time.Now().UTC().Sub(devTs).Abs().Seconds() < 10, true)
+		}
+	}
+}
+
+// go test -v -timeout 90s -run ^TestDeviceGoesOffline\$ github.com/maxthom/mir/services/core
+func TestDeviceGoesOffline(t *testing.T) {
+	// Arrange
+	ctx := context.Background()
+
+	deviceIds := []string{"0x14aaea"}
+	testQuery := &core.ListDeviceRequest{
+		Targets: &core.Targets{
+			Ids: deviceIds,
+		},
+	}
+	devices := []*core.CreateDeviceRequest{
+		{
+			DeviceId:    deviceIds[0],
+			Description: "hello world of devices !",
+			Labels: map[string]string{
+				"factory": "D",
+				"land":    "sheep",
+				"owner":   "bob_morrisson",
+				"fix":     "cant_be_touch",
+			},
+			Annotations: map[string]string{
+				"utility": "hvac",
+			},
+		},
+	}
+
+	// Act
+	regSrv := NewCore(log, b, sub, db)
+	go func() {
+		regSrv.Listen(ctx)
+	}()
+
+	if _, err := createDevices(ctx, b, devices); err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	hbTime := time.Now().UTC()
+	if err := PublishHearthbeatRequest(b, deviceIds[0]); err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	devResOn, err := PublishDeviceListRequest(b, testQuery)
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(60 * time.Second)
+
+	devResOff, err := PublishDeviceListRequest(b, testQuery)
+	if err != nil {
+		t.Error(err)
+	}
+	if err := deleteDevices(t, db, deviceIds); err != nil {
+		t.Error(err)
+	}
+	// Assert
+	for _, dev := range devResOn.GetOk().Devices {
+		switch dev.DeviceId {
+		case deviceIds[0]:
+			assert.Equal(t, dev.Status.Online, true)
+			devTs := AsGoTime(dev.Status.LastHearthbeat)
+			assert.Equal(t, hbTime.Sub(devTs).Abs().Seconds() < 10, true)
+		}
+	}
+	for _, dev := range devResOff.GetOk().Devices {
+		switch dev.DeviceId {
+		case deviceIds[0]:
+			assert.Equal(t, dev.Status.Online, false)
+			devTs := AsGoTime(dev.Status.LastHearthbeat)
+			assert.Equal(t, time.Now().UTC().Sub(devTs).Abs().Seconds() > 30, true)
+		}
+	}
+}
+
 func executeTestQueryForType[T any](t *testing.T, db *surrealdb.DB, query string, vars map[string]string) T {
 	result, err := db.Query(query, vars)
 	if err != nil {
