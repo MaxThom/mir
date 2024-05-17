@@ -98,7 +98,7 @@ func (m Model) View() string {
 		v.WriteString("  ")
 	}
 
-	v.WriteString(store.Styles["help"].Render(m.label))
+	v.WriteString(store.Styles["form_label"].Render(m.label))
 	v.WriteString(" ")
 	if m.Focused() {
 		v.WriteString(store.Styles["primary"].Render("> "))

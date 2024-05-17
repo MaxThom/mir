@@ -32,6 +32,11 @@ type TUI struct {
 	mirUrl string
 }
 
+type MirTeaModel interface {
+	InitWithData(d any) tea.Cmd
+	tea.Model
+}
+
 func NewServer(log zerolog.Logger, mirUrl string) *TUI {
 	l = log.With().Str("srv", "tui").Logger()
 	return &TUI{mirUrl: mirUrl}
@@ -51,13 +56,13 @@ type Model struct {
 	mirUrl       string
 	lblSpinner   labelspinner.Model
 	currentRoute menu.OptionValue
-	routes       map[string]tea.Model
+	routes       map[string]MirTeaModel
 }
 
 func NewModel(ctx context.Context, log zerolog.Logger, mirUrl string) *Model {
 	l = log.With().Str("page", "tui").Logger()
 	s := labelspinner.New(" 🛰️ ", store.Styles["mir"].Render("Mir"), spinner.Dot)
-	routes := map[string]tea.Model{
+	routes := map[string]MirTeaModel{
 		"/":               mainmenu.NewModel(),
 		"/devices":        device_list.NewModel(ctx),
 		"/devices/create": device_create.NewModel(ctx),
@@ -99,7 +104,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.currentRoute = "/"
 			return m, m.lblSpinner.UpdateLabelWithTimeout(store.Styles["error"].Render("not implemented yet"), 2*time.Second)
 		} else {
-			return m, m.routes[m.currentRoute].Init()
+			// TODO add route param to say if init or not
+			// Perhaps even some data to share state
+			// a generic perhaps
+			return m, m.routes[m.currentRoute].InitWithData(msg.Data)
 		}
 		return m, nil
 	case tea.KeyMsg:
@@ -110,7 +118,8 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case msg.Type == tea.KeyEscape:
 			return m, msgs.RouteChangeCmd(removeLastSegment(m.currentRoute))
 		default:
-			m.routes[m.currentRoute], cmd = m.routes[m.currentRoute].Update(msg)
+			rm, cmd := m.routes[m.currentRoute].Update(msg)
+			m.routes[m.currentRoute] = rm.(MirTeaModel)
 			if cmd != nil {
 				return m, cmd
 			}
@@ -118,8 +127,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 	default:
 		cmds := make([]tea.Cmd, 2)
+		var rm tea.Model
 		m.lblSpinner, cmds[0] = m.lblSpinner.Update(msg)
-		m.routes[m.currentRoute], cmds[1] = m.routes[m.currentRoute].Update(msg)
+		rm, cmds[1] = m.routes[m.currentRoute].Update(msg)
+		m.routes[m.currentRoute] = rm.(MirTeaModel)
 		return m, tea.Batch(cmds...)
 	}
 }

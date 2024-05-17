@@ -21,10 +21,6 @@ type CoreServer struct {
 	bus *bus.BusConn
 	db  *surrealdb.DB
 }
-type Device struct {
-	ID   string `json:"id,omitempty"`
-	Name string `json:"name"`
-}
 
 var requestCount = metrics.NewCounterVec(prometheus.CounterOpts{
 	Name: "request_count",
@@ -285,6 +281,7 @@ func (s *CoreServer) deleteDeviceRequestHandler(ch chan nats.Msg) {
 			continue
 		}
 
+		// TODO find a way for delete to return the device documents
 		q, v := createDeleteQueryForDevice(req)
 		respDb, err := executeQueryForType[[]*core.Device](s.db, q, v)
 		if err != nil {

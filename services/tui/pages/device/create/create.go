@@ -20,6 +20,7 @@ import (
 	mir_help "github.com/maxthom/mir/services/tui/components/help"
 	"github.com/maxthom/mir/services/tui/msgs"
 	"github.com/maxthom/mir/services/tui/store"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
@@ -27,14 +28,8 @@ import (
 // BUG array out of bound on current suggestion
 // BUG set cursor on position 0 for checkbox
 
-// IDEA random uuid with a 'r' hotkey, could be a checkbox or a button
-
-// TODO color of help in dark terminal too dim
-// TODO msg on return screen
-// TODO create with random id button
-// TODO fix missing fields
 var (
-	l = log.With().Str("page", "device_create").Logger()
+	l zerolog.Logger
 )
 
 const (
@@ -62,6 +57,7 @@ type Model struct {
 }
 
 func NewModel(ctx context.Context) *Model {
+	l = log.With().Str("page", "device_create").Logger()
 	inputs := make([]form.Control, 9)
 	tiId := label_textbox.New("Unique ID  ", "Suggestions are existing IDs", form.MirValidators(form.WithMandatoryValidator()))
 	tiId.CharLimit = 50
@@ -112,9 +108,13 @@ func NewModel(ctx context.Context) *Model {
 
 	return &Model{
 		ctx:    ctx,
-		help:   mir_help.New(keys, tooltips),
+		help:   mir_help.New(keys, tooltips, "mir device create"),
 		inputs: inputs,
 	}
+}
+
+func (m *Model) InitWithData(d any) tea.Cmd {
+	return m.Init()
 }
 
 func (m *Model) Init() tea.Cmd {
@@ -165,7 +165,6 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, msgs.ErrCmd(err, 2*time.Second)
 			}
 			m.inputs[deviceId].(*label_textbox.Model).SetValue(t.String())
-			//m.inputs[deviceId], _ = m.inputs[deviceId].(*label_textbox.Model).Update(msg)
 
 			return m, m.inputs[submit].(*button.Model).ButtonPressCmd()
 		}
@@ -206,10 +205,12 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	}
 	m.help, _ = m.help.Update(msg)
+	m.updateCli()
 
 	for i := range m.inputs {
 		m.inputs[i], cmds[i] = m.inputs[i].Update(msg)
 	}
+
 	return m, tea.Batch(cmds...)
 }
 
@@ -275,6 +276,35 @@ func (m *Model) prevInput() {
 	if m.focused < 0 {
 		m.focused = len(m.inputs) - 1
 	}
+}
+
+func (m *Model) updateCli() {
+	cli := []string{"mir device create"}
+	if m.inputs[deviceId].GetValue() != "" {
+		cli = append(cli, "--id \""+m.inputs[deviceId].GetValue()+"\"")
+	}
+
+	if m.inputs[name].GetValue() != "" {
+		cli = append(cli, "--name \""+m.inputs[name].GetValue()+"\"")
+	}
+
+	if m.inputs[description].GetValue() != "" {
+		cli = append(cli, "--desc \""+m.inputs[description].GetValue()+"\"")
+	}
+
+	if m.inputs[labels].GetValue() != "" {
+		cli = append(cli, "--labels \""+m.inputs[labels].GetValue()+"\"")
+	}
+
+	if m.inputs[annotations].GetValue() != "" {
+		cli = append(cli, "--anno \""+m.inputs[annotations].GetValue()+"\"")
+	}
+
+	if m.inputs[disabled].GetValue() == "false" {
+		cli = append(cli, "--disabled")
+	}
+
+	m.help.UpdateCli(strings.Join(cli, " "))
 }
 
 type keyMap map[string]key.Binding

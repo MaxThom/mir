@@ -5,15 +5,15 @@ import (
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	mir_help "github.com/maxthom/mir/services/tui/components/help"
 	"github.com/maxthom/mir/services/tui/components/menu"
 	"github.com/maxthom/mir/services/tui/msgs"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
 var (
-	l                                     = log.With().Str("page", "mainmenu").Logger()
+	l                    zerolog.Logger
 	menuOption_devices   menu.OptionValue = "/devices"
 	menuOption_twins     menu.OptionValue = "/twins"
 	menuOption_telemetry menu.OptionValue = "/telemetry"
@@ -26,11 +26,8 @@ type Model struct {
 	help         mir_help.Model
 }
 
-var styles = map[string]lipgloss.Style{
-	"mir": lipgloss.NewStyle().Foreground(lipgloss.Color("#C26BFF")),
-}
-
 func NewModel() Model {
+	l = log.With().Str("page", "mainmenu").Logger()
 	mm := menu.New([]menu.Option{
 		{
 			Value:       menuOption_devices,
@@ -50,8 +47,12 @@ func NewModel() Model {
 	})
 	return Model{
 		menu: mm,
-		help: mir_help.New(keys, []string{}),
+		help: mir_help.New(keys, []string{}, ""),
 	}
+}
+
+func (m Model) InitWithData(d any) tea.Cmd {
+	return nil
 }
 
 func (m Model) Init() tea.Cmd {

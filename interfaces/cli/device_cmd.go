@@ -46,8 +46,8 @@ type DeviceUpdateCmd struct {
 	Name     *string           `help:"Set device name"`
 	Desc     *string           `help:"Set device description"`
 	Disabled *bool             `help:"if not enabled, communication is cut"`
-	Labels   map[string]string `help:"Set labels to uniquely tag the device"`
-	Anno     map[string]string `help:"Set annotations to add extra information to the device"`
+	Labels   map[string]string `help:"Set labels to uniquely tag the device (set to null to remove)"`
+	Anno     map[string]string `help:"Set annotations to add extra information to the devie (set to null to remove)"`
 }
 
 type DeviceDeleteCmd struct {
@@ -226,7 +226,7 @@ func (d *DeviceUpdateCmd) Run(globals *Globals) error {
 
 	labels := map[string]*core.UpdateDeviceRequest_OptString{}
 	for k, v := range d.Labels {
-		if strings.ToLower(v) == "none" {
+		if strings.ToLower(v) == "null" {
 			labels[k] = &core.UpdateDeviceRequest_OptString{
 				Value: nil,
 			}
@@ -238,7 +238,7 @@ func (d *DeviceUpdateCmd) Run(globals *Globals) error {
 	}
 	anno := map[string]*core.UpdateDeviceRequest_OptString{}
 	for k, v := range d.Anno {
-		if strings.ToLower(v) == "none" {
+		if strings.ToLower(v) == "null" {
 			anno[k] = &core.UpdateDeviceRequest_OptString{
 				Value: nil,
 			}

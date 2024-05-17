@@ -8,11 +8,6 @@ import (
 	"github.com/maxthom/mir/api/gen/proto/v1alpha/core"
 	bus "github.com/maxthom/mir/libs/external/natsio"
 	client_core "github.com/maxthom/mir/services/core"
-	"github.com/rs/zerolog/log"
-)
-
-var (
-	l = log.With().Str("store", "msgs").Logger()
 )
 
 type (
@@ -24,12 +19,23 @@ type (
 	}
 	RouteChangeMsg struct {
 		Route string
+		Data  any
 	}
-	DeviceFetchedMsg struct {
+	DeviceListedMsg struct {
 		Devices []*core.Device
+		NoToast bool
 	}
 	DeviceCreatedMsg struct {
 		Devices []*core.Device
+		NoToast bool
+	}
+	DeviceDeleteMsg struct {
+		Devices []*core.Device
+		NoToast bool
+	}
+	DeviceUpdateMsg struct {
+		Devices []*core.Device
+		NoToast bool
 	}
 )
 
@@ -48,7 +54,13 @@ func ErrCmd(e error, t time.Duration) tea.Cmd {
 
 func RouteChangeCmd(route string) tea.Cmd {
 	return func() tea.Msg {
-		return RouteChangeMsg{route}
+		return RouteChangeMsg{Route: route, Data: nil}
+	}
+}
+
+func RouteChangeWithDataCmd(route string, data any) tea.Cmd {
+	return func() tea.Msg {
+		return RouteChangeMsg{Route: route, Data: data}
 	}
 }
 
@@ -64,7 +76,15 @@ func ResMsgCmd(msg string) tea.Cmd {
 	}
 }
 
-func FetchMirDevices(bus *bus.BusConn) tea.Cmd {
+func ListMirDevicesSilently(bus *bus.BusConn) tea.Cmd {
+	return listMirDevicesCmd(bus, true)
+}
+
+func ListMirDevices(bus *bus.BusConn) tea.Cmd {
+	return listMirDevicesCmd(bus, false)
+}
+
+func listMirDevicesCmd(bus *bus.BusConn, noToast bool) func() tea.Msg {
 	return func() tea.Msg {
 		resp, err := client_core.PublishDeviceListRequest(bus, &core.ListDeviceRequest{
 			Targets: &core.Targets{},
@@ -77,11 +97,19 @@ func FetchMirDevices(bus *bus.BusConn) tea.Cmd {
 		if resp.GetError() != nil {
 			return ErrMsg{Err: fmt.Errorf(resp.GetError().GetMessage())}
 		}
-		return DeviceFetchedMsg{Devices: resp.GetOk().Devices}
+		return DeviceListedMsg{Devices: resp.GetOk().Devices, NoToast: noToast}
 	}
 }
 
+func CreateMirDeviceSilently(bus *bus.BusConn, req *core.CreateDeviceRequest) tea.Cmd {
+	return createMirDeviceCmd(bus, true, req)
+}
+
 func CreateMirDevice(bus *bus.BusConn, req *core.CreateDeviceRequest) tea.Cmd {
+	return createMirDeviceCmd(bus, false, req)
+}
+
+func createMirDeviceCmd(bus *bus.BusConn, noToast bool, req *core.CreateDeviceRequest) tea.Cmd {
 	return func() tea.Msg {
 		resp, err := client_core.PublishDeviceCreateRequest(bus, req)
 		if err != nil {
@@ -92,6 +120,52 @@ func CreateMirDevice(bus *bus.BusConn, req *core.CreateDeviceRequest) tea.Cmd {
 		if resp.GetError() != nil {
 			return ErrMsg{Err: fmt.Errorf(resp.GetError().GetMessage())}
 		}
-		return DeviceCreatedMsg{Devices: resp.GetOk().Devices}
+		return DeviceCreatedMsg{Devices: resp.GetOk().Devices, NoToast: noToast}
+	}
+}
+
+func DeleteMirDeviceSilently(bus *bus.BusConn, req *core.DeleteDeviceRequest) tea.Cmd {
+	return deleteMirDeviceCmd(bus, true, req)
+}
+
+func DeleteMirDevice(bus *bus.BusConn, req *core.DeleteDeviceRequest) tea.Cmd {
+	return deleteMirDeviceCmd(bus, false, req)
+}
+
+func deleteMirDeviceCmd(bus *bus.BusConn, noToast bool, req *core.DeleteDeviceRequest) tea.Cmd {
+	return func() tea.Msg {
+		resp, err := client_core.PublishDeviceDeleteRequest(bus, req)
+		if err != nil {
+			// TODO move error from cli to next to core client and use it here as well
+			//l.Error().Err(err).Msg("")
+			return ErrMsg{Err: err}
+		}
+		if resp.GetError() != nil {
+			return ErrMsg{Err: fmt.Errorf(resp.GetError().GetMessage())}
+		}
+		return DeviceDeleteMsg{Devices: resp.GetOk().Devices, NoToast: noToast}
+	}
+}
+
+func UpdateMirDeviceSilently(bus *bus.BusConn, req *core.UpdateDeviceRequest) tea.Cmd {
+	return updateMirDeviceCmd(bus, true, req)
+}
+
+func UpdateMirDevice(bus *bus.BusConn, req *core.UpdateDeviceRequest) tea.Cmd {
+	return updateMirDeviceCmd(bus, false, req)
+}
+
+func updateMirDeviceCmd(bus *bus.BusConn, noToast bool, req *core.UpdateDeviceRequest) tea.Cmd {
+	return func() tea.Msg {
+		resp, err := client_core.PublishDeviceUpdateRequest(bus, req)
+		if err != nil {
+			// TODO move error from cli to next to core client and use it here as well
+			//l.Error().Err(err).Msg("")
+			return ErrMsg{Err: err}
+		}
+		if resp.GetError() != nil {
+			return ErrMsg{Err: fmt.Errorf(resp.GetError().GetMessage())}
+		}
+		return DeviceUpdateMsg{Devices: resp.GetOk().Devices, NoToast: noToast}
 	}
 }

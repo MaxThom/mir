@@ -48,14 +48,14 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 			m.choice = m.choices[m.cursor].Value
 			return m, m.optionSelectedCmd(m.choice)
 
-		case "down", "j":
+		case "down", "j", "tab":
 			m.cursor++
 			if m.cursor >= len(m.choices) {
 				m.cursor = 0
 			}
 			return m, nil
 
-		case "up", "k":
+		case "up", "k", "shift+tab":
 			m.cursor--
 			if m.cursor < 0 {
 				m.cursor = len(m.choices) - 1

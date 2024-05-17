@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	regiModel "github.com/maxthom/mir/api/gen/proto/v1alpha/registration"
+	"github.com/maxthom/mir/api/gen/proto/v1alpha/core"
 	bus "github.com/maxthom/mir/libs/external/natsio"
-	"github.com/maxthom/mir/services/registration"
+	core_client "github.com/maxthom/mir/services/core"
 	"github.com/nats-io/nats.go/jetstream"
 )
 
@@ -50,7 +50,7 @@ func main() {
 	}()
 
 	time.Sleep(2 * time.Second)
-	devReq := &regiModel.CreateDeviceRequest{
+	devReq := &core.CreateDeviceRequest{
 		DeviceId:    "0x994b",
 		Description: "hello world of devices !",
 		Labels: map[string]string{
@@ -61,7 +61,7 @@ func main() {
 			"utility": "air_quality",
 		},
 	}
-	_, err = registration.PublishDeviceCreateRequest(ctx, b, devReq)
+	_, err = core_client.PublishDeviceCreateRequest(b, devReq)
 	if err != nil {
 		fmt.Println(err)
 	}
