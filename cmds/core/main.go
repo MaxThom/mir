@@ -72,7 +72,6 @@ type (
 	}
 )
 
-// TODO
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	mir_signals.Notify(syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT)

@@ -83,7 +83,7 @@ The Twin module gives life to devices with digital twin. It is a digital represe
 
 Twin is the reconciliation logic between desired properties and reported properties.
 
-##### 4.1.1.1 Twin Templates
+##### 4.1.2.1 Twin Templates
 
 A Twin Template is a JSON patch that defines the desired state of a device twin. It specifies the desired properties and their values that the device should have. It will then use labels to target a specific set of devices or a list of device ids. These are manually or via script triggered.
 
@@ -102,7 +102,7 @@ A Twin Template is a JSON patch that defines the desired state of a device twin.
 }
 ```
 
-##### 4.1.1.2 Twin AutoTemplates
+##### 4.1.2.2 Twin AutoTemplates
 
 A Twin AutoTemplate is a template that is associated with a set of labels for targets or list of devices id and an event from the message bus such as:
 
@@ -201,7 +201,7 @@ A JSON alternative could be the timestamp field embeded next to the fields direc
 
 #### 4.1.1.4 Open API Validation
 
-It could be possible to generate open api validation on the different json templates. That schema would help present options or validations for any clients such as Web or TUI. 
+It could be possible to generate open api validation on the different json templates. That schema would help present options or validations for any clients such as Web or TUI.
 
 The developer could generate a schema from structs or made manually. You upload it to mir. It is like uploading a CRD. When you create a a new twin template, you can attach a schema to it. Like a CR link to a CRD.
 In the json of the properties, a new field with the linked schema could be added to point to the schema.
