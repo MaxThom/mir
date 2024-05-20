@@ -202,7 +202,7 @@ func init() {
 		opts = append(opts, mir_config.WithFilePath(flagFilePath, mir_config.Yaml, false))
 	}
 	appConfig = mir_config.New(AppName, opts...)
-	err, warns := appConfig.LoadAndUnmarshal(&cfg)
+	err, report := appConfig.LoadAndUnmarshal(&cfg)
 
 	// Logger
 	if flagLogLevel != "" {
@@ -222,8 +222,8 @@ func init() {
 		log.Err(err).Msg("")
 		os.Exit(1)
 	}
-	if warns != nil {
-		log.Warn().Msg(warns.Error())
+	if report != "" {
+		log.Info().Msg(report)
 	}
 
 	log.Info().Msg(fmt.Sprintf("%s initializing...", AppName))

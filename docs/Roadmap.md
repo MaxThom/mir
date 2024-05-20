@@ -48,7 +48,7 @@ is much incertainties about the feasibility of that one
   - [ ] Add search by any json fields
   - [x] Add custom set of Mir errors for nice and consistent error handling
   - [x] Comment the protofile
-  - [ ] Added hearthbeat functionality
+  - [x] Added hearthbeat functionality
 
 
 - MirCLI, the Command Line Interface to easy interact with the system and with scripts
@@ -73,7 +73,7 @@ is much incertainties about the feasibility of that one
 
   - [x] Create builder or Option patterns for sdk
   - [x] Have Hearthbeat functionality implemented
-  - [ ] Config and Logging setup
+  - [x] Config and Logging setup
   - [ ] How do we publish a library? Pkg folder instead of sdks?
   - [ ] Design the event system
     - [ ] How to publish new event

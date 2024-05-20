@@ -103,8 +103,9 @@ func New(appName string, options ...func(*MirConfig)) *MirConfig {
 	return cfg
 }
 
-func (s *MirConfig) Load() (errs error, warns error) {
+func (s *MirConfig) Load() (errs error, report string) {
 	// Load
+	foundCfg := []string{}
 	for _, f := range s.configFiles {
 		var parser koanf.Parser
 
@@ -117,13 +118,14 @@ func (s *MirConfig) Load() (errs error, warns error) {
 			fmt.Printf("invalid config format '%s' for file %s.\n[Json|Yaml]\n", f.format, f.path)
 		}
 		if err := s.k.Load(file.Provider(f.path), parser); err != nil {
-			if strings.Contains(err.Error(), "no such file or directory") {
-				warns = errors.Join(warns, err)
-			} else {
+			if !strings.Contains(err.Error(), "no such file or directory") {
 				errs = errors.Join(errs, err)
 			}
+		} else {
+			foundCfg = append(foundCfg, f.path)
 		}
 	}
+	report = fmt.Sprintf("loaded config files: %s", strings.Join(foundCfg, ", "))
 
 	//if errs != nil {
 	//	return errs
@@ -140,14 +142,14 @@ func (s *MirConfig) Load() (errs error, warns error) {
 		}), nil)
 	}
 
-	return errors.Join(errs, err), warns
+	return errors.Join(errs, err), report
 }
 
-func (s *MirConfig) LoadAndUnmarshal(out any) (errs error, warns error) {
-	if errs, warns = s.Load(); errs != nil {
-		return errs, warns
+func (s *MirConfig) LoadAndUnmarshal(out any) (errs error, report string) {
+	if errs, report = s.Load(); errs != nil {
+		return errs, report
 	}
-	return s.Unmarshal(out), warns
+	return s.Unmarshal(out), report
 }
 
 func (s *MirConfig) Get(path string) any {

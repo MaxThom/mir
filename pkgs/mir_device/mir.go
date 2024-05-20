@@ -9,6 +9,7 @@ import (
 	bus "github.com/maxthom/mir/libs/external/natsio"
 	"github.com/maxthom/mir/services/core"
 	"github.com/nats-io/nats.go"
+	"github.com/rs/zerolog"
 )
 
 // IDEA on go language
@@ -25,10 +26,11 @@ type Mir struct {
 	b        *bus.BusConn
 	ctx      context.Context
 	cancelFn context.CancelFunc
+	l        zerolog.Logger
 }
 
 type cfg struct {
-	DeviceId string `json:"deviceId" yaml:"deviceId"`
+	DeviceId string `json:"deviceId" yaml:"deviceId" cfg:""`
 	Target   string `json:"target" yaml:"target"`
 	LogLevel string `json:"logLevel" yaml:"logLevel"`
 }
@@ -52,13 +54,14 @@ func (m *Mir) Launch(ctx context.Context) (*sync.WaitGroup, error) {
 	var err error
 	m.b, err = bus.New(m.cfg.Target,
 		bus.WithReconnHandler(func(nc *nats.Conn) {
-			//logger.Warn().Msg("reconnected to " + nc.ConnectedUrl())
+			m.l.Warn().Msg("reconnected to Mir Server ")
 		}),
 		bus.WithDisconnHandler(func(_ *nats.Conn, err error) {
-			//logger.Warn().Msg(fmt.Sprintf("disconnected due to %v, will attempt to reconnect ", err))
+			if err != nil {
+				m.l.Error().Err(err).Msg(fmt.Sprintf("disconnected due to %v, will attempt to reconnect ", err))
+			}
 		}),
 		bus.WithClosedHandler(func(nc *nats.Conn) {
-			//logger.Warn().Msg("connection to %v closed " + nc.ConnectedUrl())
 		}))
 	if err != nil {
 		return &wg, err
@@ -76,10 +79,6 @@ func (m *Mir) Launch(ctx context.Context) (*sync.WaitGroup, error) {
 		wg.Done()
 	}()
 
-	fmt.Println(m.cfg.DeviceId)
-	fmt.Println(m.cfg.Target)
-	fmt.Println(m.b.ConnectedServerName())
-
 	return &wg, nil
 }
 
@@ -89,11 +88,11 @@ func (m *Mir) hearthbeat(ctx context.Context, interval time.Duration) {
 	for {
 		select {
 		case <-ctx.Done():
-			fmt.Println("HEARTHBEAT CLOSING")
+			m.l.Debug().Msg("shuting down hearthbeat")
 			return
 		case <-time.After(interval):
 			if err := core.PublishHearthbeatRequest(m.b, m.cfg.DeviceId); err != nil {
-				// log the error
+				m.l.Error().Err(err).Msg("error sending hearthbeat to Mir")
 			}
 		}
 	}
@@ -103,9 +102,21 @@ func (m *Mir) shutdown(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			fmt.Println("CLOSING")
+			m.l.Info().Msg("shutting down connection to Mir")
 			m.b.Conn.Close()
 			return
 		}
 	}
+}
+
+// Return a new context of the Mir SDK logger
+// The zerolog.logger can be extended and
+// used to log your app specific logs
+// You need to assigned it first
+// eg.
+// l := m.Logger()
+// l.Info().Msg("Mir is ready for launch")
+func (m Mir) Logger() zerolog.Logger {
+	l := m.l.With().Logger()
+	return l
 }
