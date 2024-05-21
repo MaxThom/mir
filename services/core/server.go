@@ -54,7 +54,7 @@ func NewCore(logger zerolog.Logger, bus *bus.BusConn, sub *nats.Subscription, db
 		// to the map.
 		// If a device becomes offline, it's removed from the map
 		if d != nil && d.Status.Online {
-			hearbeats[d.DeviceId] = d.Status.LastHearthbeat
+			hearbeats[d.Meta.DeviceId] = d.Status.LastHearthbeat
 		}
 	}
 
@@ -251,8 +251,8 @@ func (s *CoreServer) updateDeviceRequestHandler(ch chan nats.Msg) {
 		// TODO check how to do it on type
 		q := ""
 		v := map[string]any{}
-		if spec, ok := req.Request.(*core.UpdateDeviceRequest_Spec_); ok && spec != nil {
-			q, v = createUpdateQueryForDeviceSpec(req.Targets, spec.Spec)
+		if spec, ok := req.Request.(*core.UpdateDeviceRequest_Meta_); ok && spec != nil {
+			q, v = createUpdateQueryForDeviceMeta(req.Targets, spec.Meta)
 		} else if status, ok := req.Request.(*core.UpdateDeviceRequest_Status_); ok && status != nil {
 			// TODO status update
 		}
@@ -461,18 +461,14 @@ func getRoutingFunc(s string) string {
 	return s[index+1:]
 }
 
-func createUpdateQueryForDeviceSpec(t *core.Targets, spec *core.UpdateDeviceRequest_Spec) (sql string, vars map[string]any) {
+func createUpdateQueryForDeviceMeta(t *core.Targets, spec *core.UpdateDeviceRequest_Meta) (sql string, vars map[string]any) {
 	var q strings.Builder
 	vars = map[string]any{}
 	q.WriteString("UPDATE devices MERGE {")
-	q.WriteString("spec: {")
+	q.WriteString("meta: {")
 	if spec.Name != nil {
 		q.WriteString("name: $NAME,")
 		vars["NAME"] = *spec.Name
-	}
-	if spec.Description != nil {
-		q.WriteString("description: $DESC,")
-		vars["DESC"] = *spec.Description
 	}
 	if spec.Disabled != nil {
 		q.WriteString("disabled: $DISA,")
@@ -481,7 +477,9 @@ func createUpdateQueryForDeviceSpec(t *core.Targets, spec *core.UpdateDeviceRequ
 	if spec.Labels != nil && len(spec.Labels) > 0 {
 		q.WriteString("labels: {")
 		for key, val := range spec.Labels {
+			q.WriteString("\"")
 			q.WriteString(key)
+			q.WriteString("\"")
 			q.WriteString(": ")
 			if val == nil || val.Value == nil {
 				q.WriteString("NONE")
@@ -495,7 +493,9 @@ func createUpdateQueryForDeviceSpec(t *core.Targets, spec *core.UpdateDeviceRequ
 	if spec.Annotations != nil && len(spec.Annotations) > 0 {
 		q.WriteString("annotations: {")
 		for key, val := range spec.Annotations {
+			q.WriteString("\"")
 			q.WriteString(key)
+			q.WriteString("\"")
 			q.WriteString(": ")
 			if val == nil || val.Value == nil {
 				q.WriteString("NONE")
@@ -548,7 +548,7 @@ func createHeartbeatQuery(id string, t time.Time, online bool) (sql string, vars
 	q.WriteString("UPDATE devices MERGE {")
 	q.WriteString("status: {")
 	if !t.IsZero() {
-		q.WriteString("last_hearthbeat: $BEAT,")
+		q.WriteString("lastHearthbeat: $BEAT,")
 		vars["BEAT"] = t
 	}
 	q.WriteString("online: $ON,")
@@ -560,6 +560,7 @@ func createHeartbeatQuery(id string, t time.Time, online bool) (sql string, vars
 	return
 }
 
+// TODO find how we can query using / in name in WHERE clause
 func createWhereStatementWithTargets(targetIds []string, targetLabels map[string]string, targetAnno map[string]string) string {
 	var q strings.Builder
 
@@ -567,26 +568,27 @@ func createWhereStatementWithTargets(targetIds []string, targetLabels map[string
 	if len(targetIds) > 0 {
 		var t []string
 		for _, id := range targetIds {
-			t = append(t, fmt.Sprintf("device_id = \"%s\"", id))
+			t = append(t, fmt.Sprintf("meta.deviceId = \"%s\"", id))
 		}
 		cond = append(cond, strings.Join(t, " OR "))
 	}
 	if len(targetLabels) > 0 {
 		var t []string
 		for k, v := range targetLabels {
-			t = append(t, fmt.Sprintf("spec.labels.%s = \"%s\"", k, v))
+			t = append(t, fmt.Sprintf("meta.labels.%s = \"%s\"", k, v))
 		}
 		cond = append(cond, "("+strings.Join(t, " AND ")+")")
 	}
 	if len(targetAnno) > 0 {
 		var t []string
 		for k, v := range targetAnno {
-			t = append(t, fmt.Sprintf("spec.annotations.%s = \"%s\"", k, v))
+			t = append(t, fmt.Sprintf("meta.annotations.%s = \"%s\"", k, v))
 		}
 		cond = append(cond, "("+strings.Join(t, " AND ")+")")
 	}
 	q.WriteString(strings.Join(cond, " OR "))
-	return q.String()
+	ti := q.String()
+	return ti
 }
 
 func getDeviceIdFromSubject(s string) string {

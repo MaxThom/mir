@@ -22,14 +22,14 @@ import (
 // bus and db still exist here, but not err
 
 type Mir struct {
-	cfg      cfg
+	cfg      Cfg
 	b        *bus.BusConn
 	ctx      context.Context
 	cancelFn context.CancelFunc
 	l        zerolog.Logger
 }
 
-type cfg struct {
+type Cfg struct {
 	DeviceId string `json:"deviceId" yaml:"deviceId" cfg:""`
 	Target   string `json:"target" yaml:"target"`
 	LogLevel string `json:"logLevel" yaml:"logLevel"`
@@ -38,6 +38,10 @@ type cfg struct {
 const ()
 
 var ()
+
+func (m Mir) GetConfig() Cfg {
+	return m.cfg
+}
 
 // Establish connection to the Mir server
 // This will enable communication to and from the device

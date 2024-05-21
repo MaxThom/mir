@@ -153,11 +153,11 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				req := &core.CreateDeviceRequest{
 					DeviceId:    m.inputs[deviceId].GetValue(),
 					Name:        m.inputs[name].GetValue(),
-					Description: m.inputs[description].GetValue(),
 					Disabled:    !boolStringToBool(m.inputs[disabled].GetValue()),
 					Labels:      keyValueStringToMap(m.inputs[labels].GetValue()),
 					Annotations: keyValueStringToMap(m.inputs[annotations].GetValue()),
 				}
+				req.Annotations["mir/device/description"] = m.inputs[description].GetValue()
 				return m, tea.Batch(msgs.ReqMsgCmd("creating device..."), msgs.CreateMirDevice(store.Bus, req))
 			}
 		} else if msg.Label == "Create with random uuid" {
@@ -172,7 +172,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case msgs.DeviceCreatedMsg:
 		s := ""
 		if len(msg.Devices) == 1 {
-			s = fmt.Sprintf("device '%s' created", msg.Devices[0].DeviceId)
+			s = fmt.Sprintf("device '%s' created", msg.Devices[0].Meta.DeviceId)
 		} else {
 			s = fmt.Sprintf("%d devices created", len(msg.Devices))
 		}

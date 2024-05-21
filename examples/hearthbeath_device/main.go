@@ -10,19 +10,22 @@ import (
 	"github.com/maxthom/mir/pkgs/mir_device"
 )
 
-// TODO change twin
 // TODO Integration test
+// TODO rework core integration test
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	mir_signals.Notify(syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT)
 
-	mir := mir_device.Builder().
+	mir, err := mir_device.Builder().
 		DeviceId("0xf86ea").
 		Target("nats://127.0.0.1:4222").
 		LogLevel(mir_device.LogLevelInfo).
 		LogWriters([]io.Writer{os.Stdout}).
 		DefaultConfigFile(mir_device.Yaml).
 		Build()
+	if err != nil {
+		panic(err)
+	}
 	l := mir.Logger()
 
 	l.Info().Msg("Mir is ready for launch")

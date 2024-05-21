@@ -74,7 +74,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case msgs.DeviceUpdateMsg:
 		rsp := "device edited successfully"
 		if len(msg.Devices) > 0 {
-			rsp = fmt.Sprintf("device '%s' edited successfully", msg.Devices[0].DeviceId)
+			rsp = fmt.Sprintf("device '%s' edited successfully", msg.Devices[0].Meta.DeviceId)
 		}
 		return m, tea.Batch(msgs.ResMsgCmd(rsp), msgs.RouteChangeWithDataCmd("/devices", device_list.InputData{SilentFetch: true}))
 	case EditorFinishedMsg:
@@ -91,7 +91,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmds = append(cmds, msgs.RouteChangeWithDataCmd("/devices", device_list.InputData{SilentFetch: true}))
 			} else {
 				l.Debug().Str("edit", "unmarshalled").Msg(fmt.Sprintf("%v", dev))
-				cmds = append(cmds, msgs.UpdateMirDevice(store.Bus, core_srv.NewUpdateDeviceSpecReqFromDevice(dev)))
+				cmds = append(cmds, msgs.UpdateMirDevice(store.Bus, core_srv.NewUpdateDeviceMetaReqFromDevice(dev)))
 			}
 		}
 
@@ -126,7 +126,7 @@ func openEditor(data json.RawMessage) tea.Cmd {
 	var comments strings.Builder
 	comments.WriteString("// Edit the device below\n")
 	comments.WriteString("// To remove a field, you must explicitly set it to null\n")
-	comments.WriteString("// Only fields under spec are editable\n")
+	comments.WriteString("// Only fields under meta and properties.desired are editable\n")
 	_, err = tmpfile.Write([]byte(comments.String()))
 	if err != nil {
 		l.Error().Err(err).Msg("can't write to temporary file for editing twin")

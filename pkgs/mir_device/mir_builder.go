@@ -128,8 +128,8 @@ func (b builder) LogWriters(writers []io.Writer) builder {
 
 // Return the Mir device object to
 // be used to interact with the system
-func (b builder) Build() *Mir {
-	c := cfg{}
+func (b builder) Build() (*Mir, error) {
+	c := Cfg{}
 
 	var errs error
 	var report string
@@ -153,7 +153,7 @@ func (b builder) Build() *Mir {
 	}
 
 	l := mir_log.Setup(
-		mir_log.WithLogLevel(b.logLevel.String()),
+		mir_log.WithLogLevel(c.LogLevel),
 		mir_log.WithTimeFormatUnix(),
 		mir_log.WithAppName("mir"),
 		mir_log.WithCustomWriters(b.logWriters),
@@ -161,7 +161,7 @@ func (b builder) Build() *Mir {
 
 	if errs != nil {
 		l.Error().Err(errs).Msg("Error while loading configuration")
-		return nil
+		return nil, errs
 	}
 	if report != "" {
 		l.Info().Msg(report)
@@ -173,8 +173,20 @@ func (b builder) Build() *Mir {
 		l.Info().Str("config", string(prettyCfg)).Msg("")
 	}
 
+	fieldsErr := []string{}
+	if c.DeviceId == "" {
+		fieldsErr = append(fieldsErr, "DeviceId is required to identity the device")
+	}
+	if c.Target == "" {
+		fieldsErr = append(fieldsErr, "Target is required to connect to the server")
+	}
+	if len(fieldsErr) > 0 {
+		return nil, MirBuilderFieldsError{
+			Fields: fieldsErr,
+		}
+	}
 	return &Mir{
 		cfg: c,
 		l:   l,
-	}
+	}, nil
 }

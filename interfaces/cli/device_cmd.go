@@ -157,15 +157,15 @@ func (d *DeviceCreateCmd) Run(globals *Globals) error {
 		}
 		d.Id = t.String()
 	}
-
+	d.Anno["mir/device/description"] = d.Desc
 	resp, err := client_core.PublishDeviceCreateRequest(msgBus, &core.CreateDeviceRequest{
 		DeviceId:    d.Id,
 		Name:        d.Name,
-		Description: d.Desc,
 		Disabled:    d.Disabled,
 		Labels:      d.Labels,
 		Annotations: d.Anno,
 	})
+
 	if err != nil {
 		e := MirRequestError{Route: "device.create", e: err}
 		fmt.Println(e)
@@ -248,16 +248,18 @@ func (d *DeviceUpdateCmd) Run(globals *Globals) error {
 			}
 		}
 	}
+	anno["mir/device/description"] = &core.UpdateDeviceRequest_OptString{
+		Value: d.Desc,
+	}
 	resp, err := client_core.PublishDeviceUpdateRequest(msgBus, &core.UpdateDeviceRequest{
 		Targets: &core.Targets{
 			Ids:         d.Target.Ids,
 			Labels:      d.Target.Labels,
 			Annotations: d.Target.Anno,
 		},
-		Request: &core.UpdateDeviceRequest_Spec_{
-			Spec: &core.UpdateDeviceRequest_Spec{
+		Request: &core.UpdateDeviceRequest_Meta_{
+			Meta: &core.UpdateDeviceRequest_Meta{
 				Name:        d.Name,
-				Description: d.Desc,
 				Disabled:    d.Disabled,
 				Labels:      labels,
 				Annotations: anno,

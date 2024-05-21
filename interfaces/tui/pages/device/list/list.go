@@ -90,7 +90,8 @@ func NewModel(ctx context.Context) *Model {
 	t := table.New(
 		table.WithColumns(columns),
 		table.WithFocused(true),
-		table.WithHeight(20),
+		// TODO how to change height according to window height
+		table.WithHeight(10),
 		table.WithStyles(s),
 	)
 
@@ -138,7 +139,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case msgs.DeviceDeleteMsg:
 		rsp := "device deleted successfully"
 		if len(msg.Devices) > 0 {
-			rsp = fmt.Sprintf("device '%s' deleted", msg.Devices[0].DeviceId)
+			rsp = fmt.Sprintf("device '%s' deleted", msg.Devices[0].Meta.DeviceId)
 		}
 		return m, tea.Batch(msgs.ListMirDevicesSilently(store.Bus), msgs.ResMsgCmd(rsp))
 	case timer.TickMsg:
@@ -170,10 +171,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, msgs.ErrCmd(fmt.Errorf("no device selected"), 2*time.Second)
 				}
 				return m, tea.Batch(
-					msgs.ReqMsgCmd("deleting device "+device.DeviceId+"..."),
+					msgs.ReqMsgCmd("deleting device "+device.Meta.DeviceId+"..."),
 					msgs.DeleteMirDevice(store.Bus, &core.DeleteDeviceRequest{
 						Targets: &core.Targets{
-							Ids: []string{device.DeviceId},
+							Ids: []string{device.Meta.DeviceId},
 						},
 					}))
 			} else {
@@ -220,7 +221,7 @@ func (m *Model) View() string {
 	}
 
 	v.WriteString(m.table.View())
-	v.WriteString("\n\n")
+	v.WriteString("\n")
 	v.WriteString(m.help.View())
 	return v.String()
 }
@@ -273,25 +274,25 @@ func devicesToRows(devices []*core.Device) ([]table.Row, []string) {
 	for _, d := range devices {
 		lbls := []string{}
 		lblKeys := []string{}
-		for k := range d.Spec.Labels {
+		for k := range d.Meta.Labels {
 			lblKeys = append(lblKeys, k)
 		}
 		sort.Strings(lblKeys)
 		for _, k := range lblKeys {
-			lbls = append(lbls, k+"="+d.Spec.Labels[k])
+			lbls = append(lbls, k+"="+d.Meta.Labels[k])
 		}
 
 		status := "🟢"
-		if d.Spec.Disabled {
+		if d.Meta.Disabled {
 			status = "⭕"
 		} else if !d.Status.Online {
 			status = "🔴"
 		}
 
 		rows = append(rows, table.Row{
-			status, d.DeviceId, d.Spec.Name, strings.Join(lbls, ","),
+			status, d.Meta.DeviceId, d.Meta.Name, strings.Join(lbls, ","),
 		})
-		suggestions = append(suggestions, d.Spec.Name, d.DeviceId)
+		suggestions = append(suggestions, d.Meta.Name, d.Meta.DeviceId)
 		suggestions = append(suggestions, lbls...)
 	}
 	// Sort the rows by labels then name if equal
@@ -332,7 +333,7 @@ func rowToDevice(r table.Row) (*core.Device, bool) {
 	id := r[tableColDeviceID]
 	if store.Devices != nil {
 		for _, i := range store.Devices {
-			if id == i.DeviceId {
+			if id == i.Meta.DeviceId {
 				return i, true
 			}
 		}
