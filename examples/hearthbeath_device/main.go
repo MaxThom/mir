@@ -10,8 +10,11 @@ import (
 	"github.com/maxthom/mir/pkgs/mir_device"
 )
 
-// TODO Integration test
 // TODO rework core integration test
+// TODO create boiler integration test code
+// TODO main v2
+// TODO server sdk
+// TODO events
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	mir_signals.Notify(syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT)

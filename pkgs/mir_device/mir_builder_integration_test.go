@@ -5,29 +5,8 @@ import (
 	"os"
 	"testing"
 
-	bus "github.com/maxthom/mir/libs/external/natsio"
-	"github.com/nats-io/nats.go"
-	logger "github.com/rs/zerolog/log"
-	"github.com/surrealdb/surrealdb.go"
 	"gotest.tools/assert"
 )
-
-var log = logger.With().Str("test", "core").Logger()
-var db *surrealdb.DB
-var b *bus.BusConn
-var sub *nats.Subscription
-
-func TestMain(m *testing.M) {
-	// Setup
-	fmt.Println("Test Setup")
-
-	// Tests
-	exitVal := m.Run()
-
-	// Teardown
-	fmt.Println("Test Teardown")
-	os.Exit(exitVal)
-}
 
 func TestLoadCompileConfig(t *testing.T) {
 	mir, err := Builder().

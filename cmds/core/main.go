@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"net/http"
 	"os"
@@ -72,11 +73,18 @@ type (
 	}
 )
 
-func main() {
-	ctx, cancel := context.WithCancel(context.Background())
+func run(
+	ctx context.Context,
+	// args []string,
+	// getenv func(string) string,
+	// stdin io.Reader,
+	// stdout io.Writer,
+	// stderr io.Writer,
+) error {
+	ctx, cancel := context.WithCancel(ctx)
 	mir_signals.Notify(syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT)
+
 	mux := http.NewServeMux()
-	// api := http.NewServeMux()
 
 	// Setup
 	// Database
@@ -105,7 +113,7 @@ func main() {
 	log.Info().Str("url", cfg.DataBusServer.Url).Str("subject", sub.Subject).Str("queue", sub.Queue).Msg("connected to msg bus")
 
 	// Services
-	regSrv := core.NewCore(log, b, sub, db)
+	coreSrv := core.NewCore(log, b, sub, db)
 	core.RegisterMetrics(metrics.Registry())
 
 	// Metrics & Health
@@ -129,7 +137,7 @@ func main() {
 	}()
 
 	go func() {
-		regSrv.Listen(ctx)
+		coreSrv.Listen(ctx)
 	}()
 
 	// Handle shutdown
@@ -150,6 +158,24 @@ func main() {
 			log.Fatal().Err(err).Msg("failed to gracefully shutdown server")
 		}
 	})
+
+	return nil
+}
+
+// TODO dynamic cli flags based on cfg struct
+
+func main() {
+	ctx := context.Background()
+	// if err := run(ctx, os.Args, os.Getenv,
+	// 	os.Stdin, os.Stdout, os.Stderr); err != nil {
+	// 	fmt.Fprintf(os.Stderr, "%s\n", err)
+	// 	os.Exit(1)
+	// }
+
+	if err := run(ctx); err != nil {
+		fmt.Fprintf(os.Stderr, "%s\n", err)
+		os.Exit(1)
+	}
 }
 
 // TODO
@@ -179,6 +205,7 @@ func subscribeToCoreStream() (*bus.BusConn, *nats.Subscription, error) {
 
 func init() {
 	// Cli
+	mirTarget := ""
 	mir_cli.Setup(AppName,
 		mir_cli.WithDescription("Listen to NatsIO, manager devices in Mir"),
 		mir_cli.WithConfigFilePath(&flagFilePath),
@@ -188,6 +215,7 @@ func init() {
 			"Manager devices for different CRUD operations as well as managing the hearthbeat of devices.",
 			&cfg, true, ""),
 		mir_cli.WithOsFlag(func() {
+			flag.StringVar(&mirTarget, "target", "", "set Mir server url")
 		}),
 	)
 	mir_cli.Parse()

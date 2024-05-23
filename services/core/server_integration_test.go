@@ -347,7 +347,7 @@ func TestPublishDeviceUpdateTargetLabels(t *testing.T) {
 		regSrv.Listen(ctx)
 	}()
 
-	if _, err := createDevices(ctx, b, devices); err != nil {
+	if _, err := createDevices(b, devices); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
@@ -469,7 +469,7 @@ func TestPublishDeviceUpdateTargetAnno(t *testing.T) {
 		regSrv.Listen(ctx)
 	}()
 
-	if _, err := createDevices(ctx, b, devices); err != nil {
+	if _, err := createDevices(b, devices); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
@@ -590,7 +590,7 @@ func TestPublishDeviceUpdateTargetMixs(t *testing.T) {
 		regSrv.Listen(ctx)
 	}()
 
-	if _, err := createDevices(ctx, b, devices); err != nil {
+	if _, err := createDevices(b, devices); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
@@ -688,7 +688,7 @@ func TestPublishDeviceDeleteTargetIds(t *testing.T) {
 		regSrv.Listen(ctx)
 	}()
 
-	if _, err := createDevices(ctx, b, devices); err != nil {
+	if _, err := createDevices(b, devices); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
@@ -779,7 +779,7 @@ func TestPublishDeviceDeleteTargetLabels(t *testing.T) {
 		regSrv.Listen(ctx)
 	}()
 
-	if _, err := createDevices(ctx, b, devices); err != nil {
+	if _, err := createDevices(b, devices); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
@@ -865,7 +865,7 @@ func TestPublishDeviceListTargetIds(t *testing.T) {
 	}
 
 	// Act
-	if _, err := createDevices(ctx, b, devices); err != nil {
+	if _, err := createDevices(b, devices); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
@@ -954,7 +954,7 @@ func TestPublishDeviceListTargetLabels(t *testing.T) {
 	}
 
 	// Act
-	if _, err := createDevices(ctx, b, devices); err != nil {
+	if _, err := createDevices(b, devices); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
@@ -1042,7 +1042,7 @@ func TestPublishDeviceListTargetAnnotations(t *testing.T) {
 	}
 
 	// Act
-	if _, err := createDevices(ctx, b, devices); err != nil {
+	if _, err := createDevices(b, devices); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
@@ -1125,7 +1125,7 @@ func TestPublishDeviceListNoTarget(t *testing.T) {
 	}
 
 	// Act
-	if _, err := createDevices(ctx, b, devices); err != nil {
+	if _, err := createDevices(b, devices); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
@@ -1178,7 +1178,7 @@ func TestCreatedDeviceAlreadyExist(t *testing.T) {
 	}
 
 	// Act
-	resp, err := createDevices(ctx, b, devices)
+	resp, err := createDevices(b, devices)
 	if err != nil {
 		t.Error(err)
 	}
@@ -1268,7 +1268,7 @@ func TestPublishHearthbeatRequest(t *testing.T) {
 		regSrv.Listen(ctx)
 	}()
 
-	if _, err := createDevices(ctx, b, devices); err != nil {
+	if _, err := createDevices(b, devices); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
@@ -1329,7 +1329,7 @@ func TestDeviceGoesOffline(t *testing.T) {
 		regSrv.Listen(ctx)
 	}()
 
-	if _, err := createDevices(ctx, b, devices); err != nil {
+	if _, err := createDevices(b, devices); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
@@ -1401,7 +1401,7 @@ func deleteDevices(t *testing.T, db *surrealdb.DB, ids []string) error {
 	return nil
 }
 
-func createDevices(ctx context.Context, bus *bus.BusConn, devices []*core.CreateDeviceRequest) ([]*core.CreateDeviceResponse, error) {
+func createDevices(bus *bus.BusConn, devices []*core.CreateDeviceRequest) ([]*core.CreateDeviceResponse, error) {
 	responses := []*core.CreateDeviceResponse{}
 	for _, dev := range devices {
 		resp, err := PublishDeviceCreateRequest(bus, dev)
