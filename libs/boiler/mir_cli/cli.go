@@ -34,6 +34,12 @@
 // }
 //
 
+// TODO rework ideas
+// - switch to kong
+// - use a struct that the app can pass
+// - this structs becomes cli flags
+// - default struc
+
 package mir_cli
 
 import (

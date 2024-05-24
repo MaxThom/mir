@@ -103,9 +103,8 @@ func New(appName string, options ...func(*MirConfig)) *MirConfig {
 	return cfg
 }
 
-func (s *MirConfig) Load() (errs error, report string) {
+func (s *MirConfig) Load() (errs error, lookupFiles, foundFiles []string) {
 	// Load
-	foundCfg := []string{}
 	for _, f := range s.configFiles {
 		var parser koanf.Parser
 
@@ -122,10 +121,10 @@ func (s *MirConfig) Load() (errs error, report string) {
 				errs = errors.Join(errs, err)
 			}
 		} else {
-			foundCfg = append(foundCfg, f.path)
+			foundFiles = append(foundFiles, f.path)
 		}
+		lookupFiles = append(lookupFiles, f.path)
 	}
-	report = fmt.Sprintf("loaded config files: %s", strings.Join(foundCfg, ", "))
 
 	//if errs != nil {
 	//	return errs
@@ -142,14 +141,15 @@ func (s *MirConfig) Load() (errs error, report string) {
 		}), nil)
 	}
 
-	return errors.Join(errs, err), report
+	return errors.Join(errs, err), lookupFiles, foundFiles
 }
 
-func (s *MirConfig) LoadAndUnmarshal(out any) (errs error, report string) {
-	if errs, report = s.Load(); errs != nil {
-		return errs, report
+func (s *MirConfig) LoadAndUnmarshal(out any) (errs error, lookupFiles, foundFiles []string) {
+	errs, lookupFiles, foundFiles = s.Load()
+	if errs != nil {
+		return errs, lookupFiles, foundFiles
 	}
-	return s.Unmarshal(out), report
+	return s.Unmarshal(out), lookupFiles, foundFiles
 }
 
 func (s *MirConfig) Get(path string) any {
@@ -171,10 +171,12 @@ func (s *MirConfig) Unmarshal(out any) error {
 func WithFilePath(path string, cff configFormat, devOnly bool) func(*MirConfig) {
 	return func(cfg *MirConfig) {
 		if devOnly && isNotPidZero || !devOnly {
-			cfg.configFiles = append(cfg.configFiles, configFile{
-				path:   path,
-				format: cff,
-			})
+			if path != "" {
+				cfg.configFiles = append(cfg.configFiles, configFile{
+					path:   path,
+					format: cff,
+				})
+			}
 		}
 	}
 }
@@ -190,10 +192,10 @@ func WithFlagRegisterFilePath(flag string, path string, cff configFormat, devOnl
 	}
 }
 
-func WithEtcFilePath(fileName string, cff configFormat, devOnly bool) func(*MirConfig) {
+func WithEtcFilePath(filename string, cff configFormat, devOnly bool) func(*MirConfig) {
 	return func(cfg *MirConfig) {
 		if devOnly && isNotPidZero || !devOnly {
-			path := filepath.Join("/etc", cfg.appName, fileName)
+			path := filepath.Join("/etc/mir", filename)
 			cfg.configFiles = append(cfg.configFiles, configFile{
 				path:   path,
 				format: cff,
@@ -202,7 +204,7 @@ func WithEtcFilePath(fileName string, cff configFormat, devOnly bool) func(*MirC
 	}
 }
 
-func WithXdgConfigHomeFilePath(fileName string, cff configFormat, devOnly bool) func(*MirConfig) {
+func WithXdgConfigHomeFilePath(filename string, cff configFormat, devOnly bool) func(*MirConfig) {
 	return func(cfg *MirConfig) {
 		if devOnly && isNotPidZero || !devOnly {
 			userHomeDir, err := os.UserHomeDir()
@@ -211,7 +213,7 @@ func WithXdgConfigHomeFilePath(fileName string, cff configFormat, devOnly bool) 
 			}
 			xdgConfigHome = filepath.Join(userHomeDir, ".config")
 
-			path := filepath.Join(xdgConfigHome, cfg.appName, fileName)
+			path := filepath.Join(xdgConfigHome, "mir", filename)
 			cfg.configFiles = append(cfg.configFiles, configFile{
 				path:   path,
 				format: cff,

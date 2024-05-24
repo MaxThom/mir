@@ -132,9 +132,9 @@ func (b builder) Build() (*Mir, error) {
 	c := Cfg{}
 
 	var errs error
-	var report string
+	var lookupFiles, foundFiles []string
 	if len(b.fileOpts) > 0 {
-		errs, report = mir_config.New("mir", b.fileOpts...).LoadAndUnmarshal(&c)
+		errs, lookupFiles, foundFiles = mir_config.New("mir", b.fileOpts...).LoadAndUnmarshal(&c)
 	}
 	if b.deviceId != nil {
 		c.DeviceId = *b.deviceId
@@ -163,9 +163,7 @@ func (b builder) Build() (*Mir, error) {
 		l.Error().Err(errs).Msg("Error while loading configuration")
 		return nil, errs
 	}
-	if report != "" {
-		l.Info().Msg(report)
-	}
+	l.Info().Strs("lookup config", lookupFiles).Strs("found config", foundFiles).Msg("configuration loaded")
 
 	if prettyCfg, err := mir_config.JsonMarshalWithoutSecrets(c); err != nil {
 		l.Error().Err(err).Msg("Error marshalling config")

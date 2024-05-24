@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/maxthom/mir/api/gen/proto/v1alpha/core"
@@ -75,22 +76,54 @@ func (s *CoreServer) Listen(ctx context.Context) {
 		"list":       make(chan nats.Msg, 10),
 		"hearthbeat": make(chan nats.Msg, 10),
 	}
-	go s.createDeviceRequestHandler(channelFns["create"])
-	go s.updateDeviceRequestHandler(channelFns["update"])
-	go s.deleteDeviceRequestHandler(channelFns["delete"])
-	go s.listDeviceRequestHandler(channelFns["list"])
-	go s.hearthbeatRequestHandler(channelFns["hearthbeat"])
-	go s.hearthbeatPulsor(time.Second*10, time.Second*30)
+	wg := &sync.WaitGroup{}
 
-	select {
-	case <-ctx.Done():
-		l.Info().Msg("shutting down")
-		return
-	default:
-		for {
+	go func() {
+		wg.Add(1)
+		s.createDeviceRequestHandler(channelFns["create"])
+		wg.Done()
+	}()
+	go func() {
+		wg.Add(1)
+		go s.updateDeviceRequestHandler(channelFns["update"])
+		wg.Done()
+	}()
+	go func() {
+		wg.Add(1)
+		go s.deleteDeviceRequestHandler(channelFns["delete"])
+		wg.Done()
+	}()
+	go func() {
+		wg.Add(1)
+		go s.listDeviceRequestHandler(channelFns["list"])
+		wg.Done()
+	}()
+	go func() {
+		wg.Add(1)
+		go s.hearthbeatRequestHandler(channelFns["hearthbeat"])
+		wg.Done()
+	}()
+	go func() {
+		wg.Add(1)
+		go s.hearthbeatPulsor(ctx, time.Second*10, time.Second*30)
+		wg.Done()
+	}()
+
+	for {
+		select {
+		case <-ctx.Done():
+			for _, v := range channelFns {
+				close(v)
+			}
+			wg.Wait()
+			l.Debug().Msg("core server shutdown")
+			return
+		default:
 			msg, err := s.sub.NextMsgWithContext(ctx)
 			if err != nil {
-				l.Error().Err(err).Msg("")
+				if ctx.Err() != err {
+					l.Error().Err(err).Msg("")
+				}
 				continue
 			}
 			route := getRoutingFunc(msg.Subject)
@@ -105,7 +138,10 @@ func (s *CoreServer) Listen(ctx context.Context) {
 // TODO  add ability to create multiple devices by giving many ids
 func (s *CoreServer) createDeviceRequestHandler(ch chan nats.Msg) {
 	for {
-		msg := <-ch
+		msg, ok := <-ch
+		if !ok {
+			return
+		}
 		req := &core.CreateDeviceRequest{}
 		err := proto.Unmarshal(msg.Data, req)
 		if err != nil {
@@ -210,7 +246,10 @@ func (s *CoreServer) createDeviceRequestHandler(ch chan nats.Msg) {
 
 func (s *CoreServer) updateDeviceRequestHandler(ch chan nats.Msg) {
 	for {
-		msg := <-ch
+		msg, ok := <-ch
+		if !ok {
+			return
+		}
 		req := &core.UpdateDeviceRequest{}
 		err := proto.Unmarshal(msg.Data, req)
 		if err != nil {
@@ -283,7 +322,10 @@ func (s *CoreServer) updateDeviceRequestHandler(ch chan nats.Msg) {
 
 func (s *CoreServer) deleteDeviceRequestHandler(ch chan nats.Msg) {
 	for {
-		msg := <-ch
+		msg, ok := <-ch
+		if !ok {
+			return
+		}
 		req := &core.DeleteDeviceRequest{}
 		err := proto.Unmarshal(msg.Data, req)
 		if err != nil {
@@ -345,7 +387,10 @@ func (s *CoreServer) deleteDeviceRequestHandler(ch chan nats.Msg) {
 
 func (s *CoreServer) listDeviceRequestHandler(ch chan nats.Msg) {
 	for {
-		msg := <-ch
+		msg, ok := <-ch
+		if !ok {
+			return
+		}
 		req := &core.ListDeviceRequest{}
 		err := proto.Unmarshal(msg.Data, req)
 		if err != nil {
@@ -388,35 +433,42 @@ func (s *CoreServer) listDeviceRequestHandler(ch chan nats.Msg) {
 	}
 }
 
-func (s *CoreServer) hearthbeatPulsor(interval time.Duration, offlineAfter time.Duration) {
+func (s *CoreServer) hearthbeatPulsor(ctx context.Context, interval time.Duration, offlineAfter time.Duration) {
 	for {
-		newOffline := []string{}
-		now := time.Now().UTC()
-		for k, v := range s.hearthbeats {
-			if v.Add(offlineAfter).Before(now) {
-				newOffline = append(newOffline, k)
-				// TODO create offline event
-				q, v := createHeartbeatQuery(k, time.Time{}, false)
-				_, err := executeQueryForType[[]*DeviceWithId](s.db, q, v)
-				if err != nil {
-					l.Error().Err(err).Msg("error occure while executing hearthbeat db query")
-					continue
+		select {
+		case <-ctx.Done():
+			l.Debug().Msg("shutting down pulsor task")
+			return
+		case <-time.After(interval):
+			newOffline := []string{}
+			now := time.Now().UTC()
+			for k, v := range s.hearthbeats {
+				if v.Add(offlineAfter).Before(now) {
+					newOffline = append(newOffline, k)
+					// TODO create offline event
+					q, v := createHeartbeatQuery(k, time.Time{}, false)
+					_, err := executeQueryForType[[]*DeviceWithId](s.db, q, v)
+					if err != nil {
+						l.Error().Err(err).Msg("error occure while executing hearthbeat db query")
+						continue
+					}
 				}
 			}
+			// TODO some lock on that map
+			for _, key := range newOffline {
+				delete(s.hearthbeats, key)
+			}
+			l.Debug().Strs("new_offline_devices", newOffline).Msg("hearthbeats pulse")
 		}
-		// TODO some lock on that map
-		for _, key := range newOffline {
-			delete(s.hearthbeats, key)
-		}
-		l.Debug().Strs("new_offline_devices", newOffline).Msg("hearthbeats pulse")
-		// TODO with select
-		time.Sleep(interval)
 	}
 }
 
 func (s *CoreServer) hearthbeatRequestHandler(ch chan nats.Msg) {
 	for {
-		msg := <-ch
+		msg, ok := <-ch
+		if !ok {
+			return
+		}
 		l.Debug().Str("route", "hearthbeat").Msg("hearthbeat device request")
 		deviceId := getDeviceIdFromSubject(msg.Subject)
 		s.hearthbeats[deviceId] = time.Now().UTC()

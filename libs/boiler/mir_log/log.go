@@ -2,6 +2,7 @@ package mir_log
 
 import (
 	"io"
+	"os"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -22,6 +23,7 @@ type mirLog struct {
 	timeFormat string
 	logLevel   string
 	zerolog.Logger
+	hasWriter bool
 }
 
 func (l *mirLog) WithKeyValue(key, value string) func(*mirLog) {
@@ -39,6 +41,9 @@ func Setup(options ...func(*mirLog)) zerolog.Logger {
 	Logger = &mirLog{}
 	for _, o := range options {
 		o(Logger)
+	}
+	if !Logger.hasWriter {
+		Logger.Logger = Logger.Output(os.Stdout)
 	}
 	return Logger.With().Logger()
 }
@@ -79,10 +84,55 @@ func WithLogLevel(logLevel LogLevel) func(*mirLog) {
 	}
 }
 
+// FlagLogLevel take logs flag parameters and
+// log level from file. It will select based on priority
+// 1. debug flag
+// 2. loglevel flag
+// 3. file loglevel
+// It will set the fileLogLevel to the current to keep config right
+func WithFlagAndFileLogLevel(flagIsDebug bool, flagLogLevel LogLevel, fileLogLevel *LogLevel) func(*mirLog) {
+	var current LogLevel
+	if flagIsDebug {
+		current = LogLevelDebug
+	} else if flagLogLevel != "" {
+		current = flagLogLevel
+	} else if *fileLogLevel != "" {
+		current = *fileLogLevel
+	}
+	*fileLogLevel = current
+	return func(log *mirLog) {
+		log.logLevel = current
+		switch current {
+		case "trace":
+			log.Logger = log.Level(zerolog.TraceLevel)
+			zerolog.SetGlobalLevel(zerolog.TraceLevel)
+		case "debug":
+			log.Logger = log.Level(zerolog.DebugLevel)
+			zerolog.SetGlobalLevel(zerolog.DebugLevel)
+		case "info":
+			log.Logger = log.Level(zerolog.InfoLevel)
+			zerolog.SetGlobalLevel(zerolog.InfoLevel)
+		case "warn":
+			log.Logger = log.Level(zerolog.WarnLevel)
+			zerolog.SetGlobalLevel(zerolog.WarnLevel)
+		case "error":
+			log.Logger = log.Level(zerolog.ErrorLevel)
+			zerolog.SetGlobalLevel(zerolog.ErrorLevel)
+		case "fatal":
+			log.Logger = log.Level(zerolog.FatalLevel)
+			zerolog.SetGlobalLevel(zerolog.FatalLevel)
+		default:
+			log.Logger = log.Level(zerolog.InfoLevel)
+			zerolog.SetGlobalLevel(zerolog.InfoLevel)
+		}
+	}
+}
+
 func WithCustomWriter(w io.Writer) func(*mirLog) {
 	return func(l *mirLog) {
 		log.Logger = log.Output(w)
 		l.Logger = l.Output(w)
+		l.hasWriter = true
 	}
 }
 
@@ -91,6 +141,7 @@ func WithCustomWriters(writers []io.Writer) func(*mirLog) {
 		w := io.MultiWriter(writers...)
 		log.Logger = log.Output(w)
 		l.Logger = l.Output(w)
+		l.hasWriter = true
 	}
 }
 

@@ -63,7 +63,7 @@ func init() {
 		mir_config.WithEnvVars(),
 	}
 	appConfig = mir_config.New(AppName, opts...)
-	errCfg, report := appConfig.LoadAndUnmarshal(&cfg)
+	errCfg, lookupFiles, foundFiles := appConfig.LoadAndUnmarshal(&cfg)
 
 	// Logger
 	userHomeDir, err := os.UserHomeDir()
@@ -104,10 +104,8 @@ func init() {
 		log.Err(errCfg).Msg("error loading config")
 		os.Exit(1)
 	}
-	if report != "" {
-		log.Warn().Msg(report)
-	}
 
+	log.Info().Strs("lookup config", lookupFiles).Strs("found config", foundFiles).Msg("configuration loaded")
 	log.Info().Msg(fmt.Sprintf("%s initializing...", AppName))
 	log.Info().Str("mir_config", fmt.Sprintf("%v", appConfig.All())).Msg("mir_config loaded")
 }
