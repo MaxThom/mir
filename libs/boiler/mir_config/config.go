@@ -70,10 +70,10 @@ const (
 )
 
 type MirConfig struct {
-	configFiles []configFile
-	envVars     bool
-	appName     string
-	k           *koanf.Koanf
+	configFiles   []configFile
+	envVars       bool
+	envVarsPrefix string
+	k             *koanf.Koanf
 }
 
 type configFile struct {
@@ -91,8 +91,7 @@ func Empty() *MirConfig {
 //   - config files
 func New(appName string, options ...func(*MirConfig)) *MirConfig {
 	cfg := &MirConfig{
-		appName: appName,
-		k:       koanf.New("."),
+		k: koanf.New("."),
 	}
 	for _, o := range options {
 		o(cfg)
@@ -135,7 +134,7 @@ func (s *MirConfig) Load() (errs error, lookupFiles, foundFiles []string) {
 	// - _ for multiple words where the first letter after it becomes capitalize
 	var err error
 	if s.envVars {
-		envPrefix := strings.ToUpper(s.appName) + "__"
+		envPrefix := strings.ToUpper(s.envVarsPrefix) + "__"
 		err = s.k.Load(env.Provider(envPrefix, ".", func(s string) string {
 			return envVarsToYamlNomenclature(s, envPrefix)
 		}), nil)
@@ -195,7 +194,7 @@ func WithFlagRegisterFilePath(flag string, path string, cff configFormat, devOnl
 func WithEtcFilePath(filename string, cff configFormat, devOnly bool) func(*MirConfig) {
 	return func(cfg *MirConfig) {
 		if devOnly && isNotPidZero || !devOnly {
-			path := filepath.Join("/etc/mir", filename)
+			path := filepath.Join("/etc", filename)
 			cfg.configFiles = append(cfg.configFiles, configFile{
 				path:   path,
 				format: cff,
@@ -210,10 +209,11 @@ func WithXdgConfigHomeFilePath(filename string, cff configFormat, devOnly bool) 
 			userHomeDir, err := os.UserHomeDir()
 			if err != nil {
 				fmt.Println("$HOME is not defined")
+				userHomeDir = "./"
 			}
 			xdgConfigHome = filepath.Join(userHomeDir, ".config")
 
-			path := filepath.Join(xdgConfigHome, "mir", filename)
+			path := filepath.Join(xdgConfigHome, filename)
 			cfg.configFiles = append(cfg.configFiles, configFile{
 				path:   path,
 				format: cff,
@@ -222,9 +222,10 @@ func WithXdgConfigHomeFilePath(filename string, cff configFormat, devOnly bool) 
 	}
 }
 
-func WithEnvVars() func(*MirConfig) {
+func WithEnvVars(prefix string) func(*MirConfig) {
 	return func(cfg *MirConfig) {
 		cfg.envVars = true
+		cfg.envVarsPrefix = prefix
 	}
 }
 

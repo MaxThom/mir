@@ -12,7 +12,6 @@ import (
 
 // TODO rework core integration test
 // TODO create boiler integration test code
-// TODO mainv2 for cli and tui
 // TODO combine tui and cli
 // TODO server sdk
 // TODO events

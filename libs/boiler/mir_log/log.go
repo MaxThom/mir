@@ -1,8 +1,10 @@
 package mir_log
 
 import (
+	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -141,6 +143,29 @@ func WithCustomWriters(writers []io.Writer) func(*mirLog) {
 		w := io.MultiWriter(writers...)
 		log.Logger = log.Output(w)
 		l.Logger = l.Output(w)
+		l.hasWriter = true
+	}
+}
+
+func WithXdgConfigHomeLogFile(path string, file *os.File) func(*mirLog) {
+	userHomeDir, err := os.UserHomeDir()
+	if err != nil {
+		fmt.Println("$HOME is not defined")
+		userHomeDir = "./"
+	}
+	filePath := filepath.Join(userHomeDir, ".config", path)
+	if err := os.MkdirAll(filepath.Dir(filePath), os.ModePerm); err != nil {
+		fmt.Println("Failed to create directories:", err)
+		os.Exit(1)
+	}
+	file, err = os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		fmt.Println("Failed to open log file:", err)
+		os.Exit(1)
+	}
+	return func(l *mirLog) {
+		log.Logger = log.Output(file)
+		l.Logger = l.Output(file)
 		l.hasWriter = true
 	}
 }

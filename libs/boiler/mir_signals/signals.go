@@ -23,6 +23,7 @@ func Shutdown() {
 	signalChan <- CodeSignal(0x20)
 }
 
+// IDEA add context that can be cancelled ? or the cancel func
 func WaitForOsSignals(shutdownFn func()) {
 	for {
 		s := <-signalChan

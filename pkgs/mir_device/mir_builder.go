@@ -98,7 +98,7 @@ func (b builder) CustomConfigFile(fullPath string, f configFormat) builder {
 // - They follow the json or yaml configuration layout
 // These have priority over the config from files
 func (b builder) EnvVars() builder {
-	b.fileOpts = append(b.fileOpts, mir_config.WithEnvVars())
+	b.fileOpts = append(b.fileOpts, mir_config.WithEnvVars("MIR"))
 	return b
 }
 

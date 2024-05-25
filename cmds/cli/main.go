@@ -4,15 +4,14 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
+	"sync"
 	"syscall"
 
 	"github.com/maxthom/mir/interfaces/cli"
-	"github.com/maxthom/mir/libs/api/metrics"
 	"github.com/maxthom/mir/libs/boiler/mir_config"
 	"github.com/maxthom/mir/libs/boiler/mir_log"
 	"github.com/maxthom/mir/libs/boiler/mir_signals"
-	"github.com/rs/zerolog/log"
+	"github.com/rs/zerolog"
 )
 
 const (
@@ -25,79 +24,39 @@ var (
 		LogLevel: "info",
 		Target:   "nats://127.0.0.1:4222",
 	}
-	appConfig = mir_config.Empty()
-	logFile   *os.File
 )
 
-type ()
-
 func main() {
-	ctx, cancel := context.WithCancel(context.Background())
-	mir_signals.Notify(syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT)
-
-	// UI
-	ui := cli.NewUI(log.Logger, Version, cfg)
-
-	go func() {
-		if err := ui.Launch(ctx); err != nil {
-			log.Err(err).Msg("")
-		}
-		mir_signals.Shutdown()
-	}()
-
-	// Handle shutdown
-	log.Info().Msg(fmt.Sprintf("%s initialized", AppName))
-	mir_signals.WaitForOsSignals(func() {
-		cancel()
-		go func() {
-			logFile.Close()
-		}()
-	})
-}
-
-func init() {
+	ctx := context.Background()
 	// Config
-	opts := []func(*mir_config.MirConfig){
-		mir_config.WithEtcFilePath("config.yaml", mir_config.Yaml, false),
-		mir_config.WithXdgConfigHomeFilePath("config.yaml", mir_config.Yaml, true),
-		mir_config.WithEnvVars(),
-	}
-	appConfig = mir_config.New(AppName, opts...)
-	errCfg, lookupFiles, foundFiles := appConfig.LoadAndUnmarshal(&cfg)
+	errCfg, lookupFiles, foundFiles := mir_config.New(AppName,
+		mir_config.WithEtcFilePath("mir/cli.yaml", mir_config.Yaml, false),
+		mir_config.WithXdgConfigHomeFilePath("mir/cli.yaml", mir_config.Yaml, true),
+		mir_config.WithEnvVars("MIR"),
+	).LoadAndUnmarshal(&cfg)
 
 	// Logger
-	userHomeDir, err := os.UserHomeDir()
-	if err != nil {
-		log.Err(err).Msg("$HOME is not defined")
-		userHomeDir = "./"
-	}
-	dirPath := filepath.Join(userHomeDir, ".config", "mir")
-	logPath := filepath.Join(dirPath, "cli.log")
-	err = os.MkdirAll(dirPath, 0755)
-	if err != nil {
-		log.Err(err).Msg("error creating directories")
-		os.Exit(1)
-	}
-
-	logFile, err = os.OpenFile(logPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
-	if err != nil {
-		log.Err(err).Msg("can't create file for storing logs")
-		os.Exit(1)
+	// TODO rework this to put kong in the cmd package
+	flagDebug := false
+	flagLvl := mir_log.LogLevelInfo
+	for i, arg := range os.Args[1:] {
+		if arg == "--debug" {
+			flagDebug = true
+		} else if arg == "--log-level" || arg == "-l" {
+			if len(os.Args) > i+2 {
+				flagLvl = os.Args[i+2]
+			}
+		}
 	}
 
-	//if flagDebug {
-	//	cfg.LogLevel = "debug"
-	//}
-	appConfig.Set("logLevel", cfg.LogLevel)
-	mir_log.Setup(
-		mir_log.WithLogLevel(cfg.LogLevel),
+	var file *os.File
+	log := mir_log.Setup(
+		mir_log.WithFlagAndFileLogLevel(flagDebug, flagLvl, &cfg.LogLevel),
 		mir_log.WithTimeFormatUnix(),
-		mir_log.WithCustomWriter(logFile),
+		mir_log.WithXdgConfigHomeLogFile("mir/cli.log", file),
 		mir_log.WithAppName(AppName),
 	)
-
-	// Metrics
-	metrics.RegisterMirMetrics(AppName, Version, map[string]string{}, fmt.Sprintf("%v", appConfig.All()))
+	defer file.Close()
 
 	// Finish
 	if errCfg != nil {
@@ -106,6 +65,47 @@ func init() {
 	}
 
 	log.Info().Strs("lookup config", lookupFiles).Strs("found config", foundFiles).Msg("configuration loaded")
-	log.Info().Msg(fmt.Sprintf("%s initializing...", AppName))
-	log.Info().Str("mir_config", fmt.Sprintf("%v", appConfig.All())).Msg("mir_config loaded")
+	prettyCfg, err := mir_config.JsonMarshalWithoutSecrets(cfg)
+	if err != nil {
+		log.Error().Err(err).Msg("Error marshalling config")
+		os.Exit(1)
+	}
+	log.Info().Str("config", string(prettyCfg)).Msg("")
+
+	// Run!!!
+	if err := run(ctx, log, cfg); err != nil {
+		log.Error().Err(err).Msg("")
+		os.Exit(1)
+	}
+}
+
+func run(
+	ctx context.Context,
+	log zerolog.Logger,
+	cfg cli.CliConfig,
+) error {
+	ctx, cancel := context.WithCancel(context.Background())
+	mir_signals.Notify(syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT)
+
+	// UI
+	ui := cli.NewUI(log, Version, cfg)
+
+	var wg sync.WaitGroup
+	go func() {
+		wg.Add(1)
+		if err := ui.Launch(ctx); err != nil {
+			log.Err(err).Msg("")
+		}
+		mir_signals.Shutdown()
+		wg.Done()
+	}()
+
+	// Handle shutdown
+	log.Info().Msg(fmt.Sprintf("%s initialized", AppName))
+	mir_signals.WaitForOsSignals(func() {
+		cancel()
+		wg.Wait()
+		log.Info().Msg("shutdown")
+	})
+	return nil
 }

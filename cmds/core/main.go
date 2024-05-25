@@ -97,10 +97,10 @@ func main() {
 	cfg := defaultCfg
 	err, lookupFiles, foundFiles := mir_config.
 		New(AppName,
-			mir_config.WithEtcFilePath("core.yaml", mir_config.Yaml, false),
-			mir_config.WithXdgConfigHomeFilePath("core.yaml", mir_config.Yaml, true),
+			mir_config.WithEtcFilePath("mir/core.yaml", mir_config.Yaml, false),
+			mir_config.WithXdgConfigHomeFilePath("mir/core.yaml", mir_config.Yaml, true),
 			mir_config.WithFilePath(flagFilePath, mir_config.Yaml, false),
-			mir_config.WithEnvVars(),
+			mir_config.WithEnvVars("mir"),
 		).
 		LoadAndUnmarshal(&cfg)
 
