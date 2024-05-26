@@ -83,15 +83,94 @@ The Twin module gives life to devices with digital twin. It is a digital represe
 
 Twin is the reconciliation logic between desired properties and reported properties.
 
+```json
+{
+  "apiVersion": "v1alpha",
+  "meta": {
+    "deviceId": "0xf123"
+    "name": "tempsens_vent_alpha232"
+    "disabled": false,
+    "labels": {
+        "factory": "A"
+        "airVent": "alpha232"
+    },
+    "annotations": {
+      "mir/device/description": "Sensing environement data in vents",
+      "deviceType": "temperatureSensor"
+    }
+  },
+  "properties": {
+    "desired": {
+      "interval": "60s",
+      "heisteresist": 0.05 // TODO look for the spelling of that bloody word
+    },
+    "reported": {
+      "temperature": 24,
+      "humidity": 49
+    }
+  },
+  "status": {
+    "online": true,
+    "lastHearthbeat": "24-23-2024T16:34:32Z"
+  }
+}
+```
+
+Alternative with label and annotations at root
+
+```json
+{
+  "apiVersion": "v1alpha",
+  "meta": {
+    "deviceId": "0xf123"
+    "name": "tempsens_vent_alpha232"
+    "disabled": false,
+  ,
+  "labels": {
+    "factory": "A"
+    "airVent": "alpha232"
+  },
+  "annotations": {
+    "mir/device/description": "Sensing environement data in vents",
+    "deviceType": "temperatureSensor"
+  }
+  "properties": {
+    "desired": {
+      "interval": "60s",
+      "heisteresist": 0.05 // TODO look for the spelling of that bloody word
+    },
+    "reported": {
+      "temperature": 24,
+      "humidity": 49
+    }
+  },
+  "status": {
+    "online": true,
+    "lastHearthbeat": "24-23-2024T16:34:32Z"
+  }
+}
+```
+
+
 ##### 4.1.2.1 Twin Templates
 
 A Twin Template is a JSON patch that defines the desired state of a device twin. It specifies the desired properties and their values that the device should have. It will then use labels to target a specific set of devices or a list of device ids. These are manually or via script triggered.
 
 ```json
 {
-  "templateId": "template-1",
-  "labels": {
-    "deviceType": "temperatureSensor"
+  "apiVersion": "v1alpha",
+  "meta": {
+    "templateId": "airvents_temp_sensors",
+    "event": ".create" // Empty mean manually triggered
+  },
+  "targets": { // labels and annotations are ANDs for each of their key set. IDs are ORs. All together they are ORs.
+    "labels": {
+      "deviceType": "temperatureSensor"
+    },
+    "ids": ["asd2", "oxf213"],
+    "annotations": {
+      "complex": "A"
+    }
   },
   "properties": {
     "desired": {
@@ -117,9 +196,19 @@ Together, this gives the ability to automatically apply a template to a device w
 
 ```json
 {
-  "templateId": "template-1",
-  "labels": {
-    "deviceType": "temperatureSensor"
+  "apiVersion": "v1alpha",
+  "meta": {
+    "templateId": "airvents_temp_sensors",
+    "event": "device.create" // Empty mean manually triggered
+  },
+  "targets": { // labels and annotations are ANDs for each of their key set. IDs are ORs. All together they are ORs.
+    "labels": {
+      "deviceType": "temperatureSensor"
+    },
+    "ids": ["asd2", "oxf213"],
+    "annotations": {
+      "complex": "A"
+    }
   },
   "properties": {
     "desired": {

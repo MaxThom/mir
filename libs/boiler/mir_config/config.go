@@ -60,11 +60,6 @@ var isNotPidZero = os.Getpid() != 0
 var configName string
 
 func init() {
-	userHomeDir, err := os.UserHomeDir()
-	if err != nil {
-		fmt.Println("$HOME is not defined")
-	}
-	xdgConfigHome = filepath.Join(userHomeDir, ".config")
 }
 
 type configFormat string
@@ -75,10 +70,10 @@ const (
 )
 
 type MirConfig struct {
-	configFiles []configFile
-	envVars     bool
-	appName     string
-	k           *koanf.Koanf
+	configFiles   []configFile
+	envVars       bool
+	envVarsPrefix string
+	k             *koanf.Koanf
 }
 
 type configFile struct {
@@ -96,8 +91,7 @@ func Empty() *MirConfig {
 //   - config files
 func New(appName string, options ...func(*MirConfig)) *MirConfig {
 	cfg := &MirConfig{
-		appName: appName,
-		k:       koanf.New("."),
+		k: koanf.New("."),
 	}
 	for _, o := range options {
 		o(cfg)
@@ -108,7 +102,7 @@ func New(appName string, options ...func(*MirConfig)) *MirConfig {
 	return cfg
 }
 
-func (s *MirConfig) Load() (errs error, warns error) {
+func (s *MirConfig) Load() (errs error, lookupFiles, foundFiles []string) {
 	// Load
 	for _, f := range s.configFiles {
 		var parser koanf.Parser
@@ -122,12 +116,13 @@ func (s *MirConfig) Load() (errs error, warns error) {
 			fmt.Printf("invalid config format '%s' for file %s.\n[Json|Yaml]\n", f.format, f.path)
 		}
 		if err := s.k.Load(file.Provider(f.path), parser); err != nil {
-			if strings.Contains(err.Error(), "no such file or directory") {
-				warns = errors.Join(warns, err)
-			} else {
+			if !strings.Contains(err.Error(), "no such file or directory") {
 				errs = errors.Join(errs, err)
 			}
+		} else {
+			foundFiles = append(foundFiles, f.path)
 		}
+		lookupFiles = append(lookupFiles, f.path)
 	}
 
 	//if errs != nil {
@@ -139,20 +134,21 @@ func (s *MirConfig) Load() (errs error, warns error) {
 	// - _ for multiple words where the first letter after it becomes capitalize
 	var err error
 	if s.envVars {
-		envPrefix := strings.ToUpper(s.appName) + "__"
+		envPrefix := strings.ToUpper(s.envVarsPrefix) + "__"
 		err = s.k.Load(env.Provider(envPrefix, ".", func(s string) string {
 			return envVarsToYamlNomenclature(s, envPrefix)
 		}), nil)
 	}
 
-	return errors.Join(errs, err), warns
+	return errors.Join(errs, err), lookupFiles, foundFiles
 }
 
-func (s *MirConfig) LoadAndUnmarshal(out any) (errs error, warns error) {
-	if errs, warns = s.Load(); errs != nil {
-		return errs, warns
+func (s *MirConfig) LoadAndUnmarshal(out any) (errs error, lookupFiles, foundFiles []string) {
+	errs, lookupFiles, foundFiles = s.Load()
+	if errs != nil {
+		return errs, lookupFiles, foundFiles
 	}
-	return s.Unmarshal(out), warns
+	return s.Unmarshal(out), lookupFiles, foundFiles
 }
 
 func (s *MirConfig) Get(path string) any {
@@ -174,10 +170,12 @@ func (s *MirConfig) Unmarshal(out any) error {
 func WithFilePath(path string, cff configFormat, devOnly bool) func(*MirConfig) {
 	return func(cfg *MirConfig) {
 		if devOnly && isNotPidZero || !devOnly {
-			cfg.configFiles = append(cfg.configFiles, configFile{
-				path:   path,
-				format: cff,
-			})
+			if path != "" {
+				cfg.configFiles = append(cfg.configFiles, configFile{
+					path:   path,
+					format: cff,
+				})
+			}
 		}
 	}
 }
@@ -193,10 +191,10 @@ func WithFlagRegisterFilePath(flag string, path string, cff configFormat, devOnl
 	}
 }
 
-func WithEtcFilePath(fileName string, cff configFormat, devOnly bool) func(*MirConfig) {
+func WithEtcFilePath(filename string, cff configFormat, devOnly bool) func(*MirConfig) {
 	return func(cfg *MirConfig) {
 		if devOnly && isNotPidZero || !devOnly {
-			path := filepath.Join("/etc", cfg.appName, fileName)
+			path := filepath.Join("/etc", filename)
 			cfg.configFiles = append(cfg.configFiles, configFile{
 				path:   path,
 				format: cff,
@@ -205,10 +203,17 @@ func WithEtcFilePath(fileName string, cff configFormat, devOnly bool) func(*MirC
 	}
 }
 
-func WithXdgConfigHomeFilePath(fileName string, cff configFormat, devOnly bool) func(*MirConfig) {
+func WithXdgConfigHomeFilePath(filename string, cff configFormat, devOnly bool) func(*MirConfig) {
 	return func(cfg *MirConfig) {
 		if devOnly && isNotPidZero || !devOnly {
-			path := filepath.Join(xdgConfigHome, cfg.appName, fileName)
+			userHomeDir, err := os.UserHomeDir()
+			if err != nil {
+				fmt.Println("$HOME is not defined")
+				userHomeDir = "./"
+			}
+			xdgConfigHome = filepath.Join(userHomeDir, ".config")
+
+			path := filepath.Join(xdgConfigHome, filename)
 			cfg.configFiles = append(cfg.configFiles, configFile{
 				path:   path,
 				format: cff,
@@ -217,9 +222,10 @@ func WithXdgConfigHomeFilePath(fileName string, cff configFormat, devOnly bool) 
 	}
 }
 
-func WithEnvVars() func(*MirConfig) {
+func WithEnvVars(prefix string) func(*MirConfig) {
 	return func(cfg *MirConfig) {
 		cfg.envVars = true
+		cfg.envVarsPrefix = prefix
 	}
 }
 

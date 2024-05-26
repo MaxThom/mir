@@ -1,6 +1,7 @@
 package core
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/maxthom/mir/api/gen/proto/v1alpha/core"
@@ -9,10 +10,11 @@ import (
 )
 
 const (
-	createDeviceStream = "client.v1alpha.device.create"
-	updateDeviceStream = "client.v1alpha.device.update"
-	deleteDeviceStream = "client.v1alpha.device.delete"
-	listDeviceStream   = "client.v1alpha.device.list"
+	createDeviceStream     = "client.v1alpha.device.create"
+	updateDeviceStream     = "client.v1alpha.device.update"
+	deleteDeviceStream     = "client.v1alpha.device.delete"
+	listDeviceStream       = "client.v1alpha.device.list"
+	hearthbeatDeviceStream = "%s.v1alpha.device.hearthbeat"
 )
 
 func PublishDeviceCreateRequest(bus *bus.BusConn, req *core.CreateDeviceRequest) (*core.CreateDeviceResponse, error) {
@@ -93,4 +95,8 @@ func PublishDeviceListRequest(bus *bus.BusConn, req *core.ListDeviceRequest) (*c
 	}
 
 	return resp, nil
+}
+
+func PublishHearthbeatRequest(bus *bus.BusConn, deviceId string) error {
+	return bus.Publish(fmt.Sprintf(hearthbeatDeviceStream, deviceId), []byte{})
 }

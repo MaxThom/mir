@@ -10,10 +10,9 @@ option go_package = "gen/";
 message CreateDeviceRequest {
   string device_id = 1; // the device_id must be unique
   string name = 2; // Name of the device
-  string description = 3;  // description of the device
-  bool disabled = 4; // If disabled, device will be cut off from communication
-  map<string, string> labels = 5; // labels are used to uniquely identify the device
-  map<string, string> annotations = 6; // annotations are used to add additional information
+  bool disabled = 3; // If disabled, device will be cut off from communication
+  map<string, string> labels = 4; // labels are used to uniquely identify the device
+  map<string, string> annotations = 5; // annotations are used to add additional information
 }
 
 /*
@@ -38,19 +37,19 @@ message UpdateDeviceRequest {
 
   // You can only update the spec or status per request
   oneof request {
-    Spec spec = 2;
+    Meta meta = 2;
     Status status = 3;
   }
 
-  message Spec {
+  message Meta {
     optional string name = 2; // Name of the device
-    optional string description = 3; // description of the device
-    optional bool disabled = 4; // If disabled, device will be cut off from communication
-    map<string, OptString> labels = 5; // set key to nil to remove it
-    map<string, OptString> annotations = 6; // set key to nil to remove it
+    optional bool disabled = 3; // If disabled, device will be cut off from communication
+    map<string, OptString> labels = 4; // set key to nil to remove it
+    map<string, OptString> annotations = 5; // set key to nil to remove it
   }
   message Status {
-
+    optional bool online = 2; // Is device online ?
+    optional Timestamp last_hearthbeat = 3; // Last pulse received
   }
   message OptString {
     optional string value = 1;
@@ -114,10 +113,16 @@ message Targets {
   map<string, string> annotations = 3; // Annotations are used to add additional information
 }
 
+/*
+* A set of devices
+*/
 message DeviceList {
   repeated Device devices = 1;
 }
 
+/*
+* A set of devices with only their Id
+*/
 message DeviceIdList {
   repeated string device_ids = 1;
 }
@@ -127,19 +132,35 @@ message DeviceIdList {
 */
 message Device {
   string id = 1; // Represent the database id of the device
-  string device_id = 2; // Represent the Mir id of the device
-  Spec spec = 3; // Represent the specifications that can be updated
-  Status status = 4; // Represent the status reported by the Mir
+  string api_version = 2; // Current version of the spec
+  string api_name = 3; // Name of the spec
+  Meta meta = 4; // Represent the specifications that can be updated
+  Properties properties = 5; // Represent set of device defined properties
+  Status status = 6; // Represent the status reported by the Mir
 }
 
-message Spec {
-    string name = 3; // Name of the device
-    string description = 4; // Description of the devices
-    bool disabled = 5; // If disabled, device will be cut off from communication
-    map<string, string> labels = 6; // Labels are used to uniquely identify the device
-    map<string, string> annotations = 7; // Annotations are used to add additional information
+/*
+* Set of data from the Mir system to describe a device
+*/
+message Meta {
+    string device_id = 1; // Represent the Mir id of the device
+    string name = 2; // Name of the device
+    bool disabled = 3; // If disabled, device will be cut off from communication
+    map<string, string> labels = 4; // Labels are used to uniquely identify the device
+    map<string, string> annotations = 5; // Annotations are used to add additional information
 }
 
+/*
+* Devices desired properties from the users
+* and reported properties from the devices
+*/
+message Properties {
+
+}
+
+/*
+* Status fields describe the device conditions monitored by Mir
+*/
 message Status {
   Timestamp last_hearthbeat = 8; // Represent the time when the last hearthbeat was received
   bool online = 9; // The device is online and sending heathbeath signal

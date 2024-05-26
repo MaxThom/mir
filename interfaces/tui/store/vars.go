@@ -21,12 +21,12 @@ func GetAnnotationsSuggestions(devices []*core.Device) []string {
 	for _, d := range devices {
 		lbls := []string{}
 		keys := []string{}
-		for k := range d.Spec.Annotations {
+		for k := range d.Meta.Annotations {
 			keys = append(keys, k)
 		}
 		sort.Strings(keys)
 		for _, k := range keys {
-			lbls = append(lbls, k+"="+d.Spec.Annotations[k])
+			lbls = append(lbls, k+"="+d.Meta.Annotations[k])
 		}
 		s = append(s, strings.Join(lbls, ";"))
 	}
@@ -44,12 +44,12 @@ func GetLabelsSuggestions(devices []*core.Device) []string {
 	for _, d := range devices {
 		lbls := []string{}
 		keys := []string{}
-		for k := range d.Spec.Labels {
+		for k := range d.Meta.Labels {
 			keys = append(keys, k)
 		}
 		sort.Strings(keys)
 		for _, k := range keys {
-			lbls = append(lbls, k+"="+d.Spec.Labels[k])
+			lbls = append(lbls, k+"="+d.Meta.Labels[k])
 		}
 		s = append(s, strings.Join(lbls, ";"))
 	}
@@ -64,7 +64,7 @@ func GetDeviceIdSuggestions(devices []*core.Device) []string {
 	var s []string
 
 	for _, d := range devices {
-		s = append(s, d.DeviceId)
+		s = append(s, d.Meta.DeviceId)
 	}
 	return s
 }

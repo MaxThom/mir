@@ -12,25 +12,30 @@ type DeviceWithId struct {
 }
 
 type Device struct {
-	DeviceId string `json:"device_id"`
-	Spec     Spec   `json:"spec"`
-	Status   Status `json:"status"`
+	ApiVersion string     `json:"apiVersion"`
+	ApiName    string     `json:"apiName"`
+	Meta       Meta       `json:"meta"`
+	Properties Properties `json:"properties"`
+	Status     Status     `json:"status"`
 }
 
-type Spec struct {
+type Meta struct {
+	DeviceId    string             `json:"deviceId"`
 	Name        string             `json:"name"`
-	Description string             `json:"description"`
 	Disabled    bool               `json:"disabled"`
 	Labels      map[string]*string `json:"labels"`
 	Annotations map[string]*string `json:"annotations"`
 }
 
-type Status struct {
-	Online         bool      `json:"online"`
-	LastHearthbeat time.Time `json:"last_hearth_beath"`
+type Properties struct {
 }
 
-func NewUpdateDeviceSpecReqFromDevice(d Device) *core.UpdateDeviceRequest {
+type Status struct {
+	Online         bool      `json:"online"`
+	LastHearthbeat time.Time `json:"lastHearthbeat"`
+}
+
+func NewUpdateDeviceMetaReqFromDevice(d Device) *core.UpdateDeviceRequest {
 	toUpdateMap := func(m map[string]*string) map[string]*core.UpdateDeviceRequest_OptString {
 		opt := map[string]*core.UpdateDeviceRequest_OptString{}
 		for k, v := range m {
@@ -49,17 +54,16 @@ func NewUpdateDeviceSpecReqFromDevice(d Device) *core.UpdateDeviceRequest {
 
 	// IDEA maybe add the possibility to update device id
 	return &core.UpdateDeviceRequest{
-		Request: &core.UpdateDeviceRequest_Spec_{
-			Spec: &core.UpdateDeviceRequest_Spec{
-				Name:        &d.Spec.Name,
-				Description: &d.Spec.Description,
-				Disabled:    &d.Spec.Disabled,
-				Labels:      toUpdateMap(d.Spec.Labels),
-				Annotations: toUpdateMap(d.Spec.Annotations),
+		Request: &core.UpdateDeviceRequest_Meta_{
+			Meta: &core.UpdateDeviceRequest_Meta{
+				Name:        &d.Meta.Name,
+				Disabled:    &d.Meta.Disabled,
+				Labels:      toUpdateMap(d.Meta.Labels),
+				Annotations: toUpdateMap(d.Meta.Annotations),
 			},
 		},
 		Targets: &core.Targets{
-			Ids: []string{d.DeviceId},
+			Ids: []string{d.Meta.DeviceId},
 		},
 	}
 }
@@ -74,12 +78,11 @@ func NewCreateDeviceReqFromDevice(d Device) *core.CreateDeviceRequest {
 	}
 
 	return &core.CreateDeviceRequest{
-		DeviceId:    d.DeviceId,
-		Name:        d.Spec.Name,
-		Description: d.Spec.Description,
-		Disabled:    d.Spec.Disabled,
-		Labels:      toValueMap(d.Spec.Labels),
-		Annotations: toValueMap(d.Spec.Annotations),
+		DeviceId:    d.Meta.DeviceId,
+		Name:        d.Meta.Name,
+		Disabled:    d.Meta.Disabled,
+		Labels:      toValueMap(d.Meta.Labels),
+		Annotations: toValueMap(d.Meta.Annotations),
 	}
 }
 
@@ -101,15 +104,17 @@ func NewProtoDeviceFromDeviceWithId(d *DeviceWithId) *core.Device {
 	}
 
 	return &core.Device{
-		Id:       d.Id,
-		DeviceId: d.DeviceId,
-		Spec: &core.Spec{
-			Name:        d.Spec.Name,
-			Description: d.Spec.Description,
-			Disabled:    d.Spec.Disabled,
-			Labels:      toValueMap(d.Spec.Labels),
-			Annotations: toValueMap(d.Spec.Annotations),
+		Id:         d.Id,
+		ApiVersion: d.ApiVersion,
+		ApiName:    d.ApiName,
+		Meta: &core.Meta{
+			DeviceId:    d.Meta.DeviceId,
+			Name:        d.Meta.Name,
+			Disabled:    d.Meta.Disabled,
+			Labels:      toValueMap(d.Meta.Labels),
+			Annotations: toValueMap(d.Meta.Annotations),
 		},
+		Properties: &core.Properties{},
 		Status: &core.Status{
 			Online:         d.Status.Online,
 			LastHearthbeat: AsProtoTimestamp(d.Status.LastHearthbeat),
@@ -132,14 +137,16 @@ func NewDeviceFromProtoDevice(d *core.Device) *Device {
 	}
 
 	return &Device{
-		DeviceId: d.DeviceId,
-		Spec: Spec{
-			Name:        d.Spec.Name,
-			Description: d.Spec.Description,
-			Disabled:    d.Spec.Disabled,
-			Labels:      toPtrMap(d.Spec.Labels),
-			Annotations: toPtrMap(d.Spec.Annotations),
+		ApiVersion: d.ApiVersion,
+		ApiName:    d.ApiName,
+		Meta: Meta{
+			DeviceId:    d.Meta.DeviceId,
+			Name:        d.Meta.Name,
+			Disabled:    d.Meta.Disabled,
+			Labels:      toPtrMap(d.Meta.Labels),
+			Annotations: toPtrMap(d.Meta.Annotations),
 		},
+		Properties: Properties{},
 		Status: Status{
 			Online:         d.Status.Online,
 			LastHearthbeat: lastHeartbeatTime,
@@ -156,10 +163,11 @@ func NewDeviceFromCreateDeviceReq(c *core.CreateDeviceRequest) Device {
 		return mPtr
 	}
 	return Device{
-		DeviceId: c.DeviceId,
-		Spec: Spec{
+		ApiVersion: "v1alpha",
+		ApiName:    "twin",
+		Meta: Meta{
+			DeviceId:    c.DeviceId,
 			Name:        c.Name,
-			Description: c.Description,
 			Disabled:    c.Disabled,
 			Labels:      toPtrMap(c.Labels),
 			Annotations: toPtrMap(c.Annotations),

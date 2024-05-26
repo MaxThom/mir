@@ -23,6 +23,7 @@ func Shutdown() {
 	signalChan <- CodeSignal(0x20)
 }
 
+// IDEA add context that can be cancelled ? or the cancel func
 func WaitForOsSignals(shutdownFn func()) {
 	for {
 		s := <-signalChan
@@ -30,11 +31,11 @@ func WaitForOsSignals(shutdownFn func()) {
 		case syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT:
 			log.Info().Msg("received " + s.String() + " signal, shutting down...")
 			shutdownFn()
-			os.Exit(0)
+			return
 		case PRGSHUTDOWN:
 			log.Info().Msg("received " + s.String() + " signal, shutting down...")
 			shutdownFn()
-			os.Exit(0)
+			return
 		default:
 			log.Info().Msg("received unknown signal " + s.String())
 		}

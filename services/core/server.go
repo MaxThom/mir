@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/maxthom/mir/api/gen/proto/v1alpha/core"
 	"github.com/maxthom/mir/libs/api/metrics"
@@ -17,9 +19,10 @@ import (
 )
 
 type CoreServer struct {
-	sub *nats.Subscription
-	bus *bus.BusConn
-	db  *surrealdb.DB
+	sub         *nats.Subscription
+	bus         *bus.BusConn
+	db          *surrealdb.DB
+	hearthbeats map[string]time.Time
 }
 
 var requestCount = metrics.NewCounterVec(prometheus.CounterOpts{
@@ -35,35 +38,92 @@ func RegisterMetrics(reg prometheus.Registerer) {
 
 func NewCore(logger zerolog.Logger, bus *bus.BusConn, sub *nats.Subscription, db *surrealdb.DB) *CoreServer {
 	l = logger.With().Str("srv", "core_server").Logger()
+	hearbeats := map[string]time.Time{}
+
+	// Preload hearthbeat map. Required in case the
+	// app is down while a device is also, but report as online
+	// because it went offline when the app was down
+	q, v := createListQueryForDevice(&core.ListDeviceRequest{Targets: &core.Targets{}})
+	devices, err := executeQueryForType[[]*DeviceWithId](db, q, v)
+	if err != nil {
+		l.Error().Err(err).Msg("error occure while executing list query")
+	}
+	for _, d := range devices {
+		// We only add the online ones
+		// This way, the pulse doesnt do a check on offline device
+		// When an offline device sends a first pulse, it get added
+		// to the map.
+		// If a device becomes offline, it's removed from the map
+		if d != nil && d.Status.Online {
+			hearbeats[d.Meta.DeviceId] = d.Status.LastHearthbeat
+		}
+	}
+
 	return &CoreServer{
-		sub: sub,
-		bus: bus,
-		db:  db,
+		sub:         sub,
+		bus:         bus,
+		db:          db,
+		hearthbeats: hearbeats,
 	}
 }
 
 // Using the db and bus, listen for telemetry, deserialize using proto and push to line protocol db
 func (s *CoreServer) Listen(ctx context.Context) {
 	channelFns := map[string]chan nats.Msg{
-		"create": make(chan nats.Msg, 10),
-		"delete": make(chan nats.Msg, 10),
-		"update": make(chan nats.Msg, 10),
-		"list":   make(chan nats.Msg, 10),
+		"create":     make(chan nats.Msg, 10),
+		"delete":     make(chan nats.Msg, 10),
+		"update":     make(chan nats.Msg, 10),
+		"list":       make(chan nats.Msg, 10),
+		"hearthbeat": make(chan nats.Msg, 10),
 	}
-	go s.createDeviceRequestHandler(channelFns["create"])
-	go s.updateDeviceRequestHandler(channelFns["update"])
-	go s.deleteDeviceRequestHandler(channelFns["delete"])
-	go s.listDeviceRequestHandler(channelFns["list"])
+	wg := &sync.WaitGroup{}
 
-	select {
-	case <-ctx.Done():
-		l.Info().Msg("shutting down")
-		return
-	default:
-		for {
+	go func() {
+		wg.Add(1)
+		s.createDeviceRequestHandler(channelFns["create"])
+		wg.Done()
+	}()
+	go func() {
+		wg.Add(1)
+		go s.updateDeviceRequestHandler(channelFns["update"])
+		wg.Done()
+	}()
+	go func() {
+		wg.Add(1)
+		go s.deleteDeviceRequestHandler(channelFns["delete"])
+		wg.Done()
+	}()
+	go func() {
+		wg.Add(1)
+		go s.listDeviceRequestHandler(channelFns["list"])
+		wg.Done()
+	}()
+	go func() {
+		wg.Add(1)
+		go s.hearthbeatRequestHandler(channelFns["hearthbeat"])
+		wg.Done()
+	}()
+	go func() {
+		wg.Add(1)
+		go s.hearthbeatPulsor(ctx, time.Second*10, time.Second*30)
+		wg.Done()
+	}()
+
+	for {
+		select {
+		case <-ctx.Done():
+			for _, v := range channelFns {
+				close(v)
+			}
+			wg.Wait()
+			l.Debug().Msg("core server shutdown")
+			return
+		default:
 			msg, err := s.sub.NextMsgWithContext(ctx)
 			if err != nil {
-				l.Error().Err(err).Msg("")
+				if ctx.Err() != err {
+					l.Error().Err(err).Msg("")
+				}
 				continue
 			}
 			route := getRoutingFunc(msg.Subject)
@@ -78,7 +138,10 @@ func (s *CoreServer) Listen(ctx context.Context) {
 // TODO  add ability to create multiple devices by giving many ids
 func (s *CoreServer) createDeviceRequestHandler(ch chan nats.Msg) {
 	for {
-		msg := <-ch
+		msg, ok := <-ch
+		if !ok {
+			return
+		}
 		req := &core.CreateDeviceRequest{}
 		err := proto.Unmarshal(msg.Data, req)
 		if err != nil {
@@ -183,7 +246,10 @@ func (s *CoreServer) createDeviceRequestHandler(ch chan nats.Msg) {
 
 func (s *CoreServer) updateDeviceRequestHandler(ch chan nats.Msg) {
 	for {
-		msg := <-ch
+		msg, ok := <-ch
+		if !ok {
+			return
+		}
 		req := &core.UpdateDeviceRequest{}
 		err := proto.Unmarshal(msg.Data, req)
 		if err != nil {
@@ -224,8 +290,8 @@ func (s *CoreServer) updateDeviceRequestHandler(ch chan nats.Msg) {
 		// TODO check how to do it on type
 		q := ""
 		v := map[string]any{}
-		if spec, ok := req.Request.(*core.UpdateDeviceRequest_Spec_); ok && spec != nil {
-			q, v = createUpdateQueryForDeviceSpec(req.Targets, spec.Spec)
+		if spec, ok := req.Request.(*core.UpdateDeviceRequest_Meta_); ok && spec != nil {
+			q, v = createUpdateQueryForDeviceMeta(req.Targets, spec.Meta)
 		} else if status, ok := req.Request.(*core.UpdateDeviceRequest_Status_); ok && status != nil {
 			// TODO status update
 		}
@@ -256,7 +322,10 @@ func (s *CoreServer) updateDeviceRequestHandler(ch chan nats.Msg) {
 
 func (s *CoreServer) deleteDeviceRequestHandler(ch chan nats.Msg) {
 	for {
-		msg := <-ch
+		msg, ok := <-ch
+		if !ok {
+			return
+		}
 		req := &core.DeleteDeviceRequest{}
 		err := proto.Unmarshal(msg.Data, req)
 		if err != nil {
@@ -318,7 +387,10 @@ func (s *CoreServer) deleteDeviceRequestHandler(ch chan nats.Msg) {
 
 func (s *CoreServer) listDeviceRequestHandler(ch chan nats.Msg) {
 	for {
-		msg := <-ch
+		msg, ok := <-ch
+		if !ok {
+			return
+		}
 		req := &core.ListDeviceRequest{}
 		err := proto.Unmarshal(msg.Data, req)
 		if err != nil {
@@ -361,6 +433,63 @@ func (s *CoreServer) listDeviceRequestHandler(ch chan nats.Msg) {
 	}
 }
 
+func (s *CoreServer) hearthbeatPulsor(ctx context.Context, interval time.Duration, offlineAfter time.Duration) {
+	for {
+		select {
+		case <-ctx.Done():
+			l.Debug().Msg("shutting down pulsor task")
+			return
+		case <-time.After(interval):
+			newOffline := []string{}
+			now := time.Now().UTC()
+			for k, v := range s.hearthbeats {
+				if v.Add(offlineAfter).Before(now) {
+					newOffline = append(newOffline, k)
+					// TODO create offline event
+					q, v := createHeartbeatQuery(k, time.Time{}, false)
+					_, err := executeQueryForType[[]*DeviceWithId](s.db, q, v)
+					if err != nil {
+						l.Error().Err(err).Msg("error occure while executing hearthbeat db query")
+						continue
+					}
+				}
+			}
+			// TODO some lock on that map
+			for _, key := range newOffline {
+				delete(s.hearthbeats, key)
+			}
+			l.Debug().Strs("new_offline_devices", newOffline).Msg("hearthbeats pulse")
+		}
+	}
+}
+
+func (s *CoreServer) hearthbeatRequestHandler(ch chan nats.Msg) {
+	for {
+		msg, ok := <-ch
+		if !ok {
+			return
+		}
+		l.Debug().Str("route", "hearthbeat").Msg("hearthbeat device request")
+		deviceId := getDeviceIdFromSubject(msg.Subject)
+		s.hearthbeats[deviceId] = time.Now().UTC()
+		// TODO compute using a map
+		// map[deviceid]lasthearthbeat
+		// if last != now by >= 3 mins, the device offline
+		// every minute, a routine check the map to see if there is
+		// hearthbeat older then 3 mins, if so set device to offline
+		// TODO tui terminal, 10secs refresh list silently
+		// or maybe r hotkey?
+		q, v := createHeartbeatQuery(deviceId, s.hearthbeats[deviceId], true)
+		_, err := executeQueryForType[[]*DeviceWithId](s.db, q, v)
+		if err != nil {
+			l.Error().Err(err).Msg("error occure while executing hearthbeat db query")
+			msg.Ack()
+			continue
+		}
+		msg.Ack()
+	}
+}
+
 func sendReplyOrAck(bus *bus.BusConn, msg nats.Msg, m protoreflect.ProtoMessage) {
 	if msg.Reply != "" {
 		bResp, err := proto.Marshal(m)
@@ -384,18 +513,14 @@ func getRoutingFunc(s string) string {
 	return s[index+1:]
 }
 
-func createUpdateQueryForDeviceSpec(t *core.Targets, spec *core.UpdateDeviceRequest_Spec) (sql string, vars map[string]any) {
+func createUpdateQueryForDeviceMeta(t *core.Targets, spec *core.UpdateDeviceRequest_Meta) (sql string, vars map[string]any) {
 	var q strings.Builder
 	vars = map[string]any{}
 	q.WriteString("UPDATE devices MERGE {")
-	q.WriteString("spec: {")
+	q.WriteString("meta: {")
 	if spec.Name != nil {
 		q.WriteString("name: $NAME,")
 		vars["NAME"] = *spec.Name
-	}
-	if spec.Description != nil {
-		q.WriteString("description: $DESC,")
-		vars["DESC"] = *spec.Description
 	}
 	if spec.Disabled != nil {
 		q.WriteString("disabled: $DISA,")
@@ -404,7 +529,9 @@ func createUpdateQueryForDeviceSpec(t *core.Targets, spec *core.UpdateDeviceRequ
 	if spec.Labels != nil && len(spec.Labels) > 0 {
 		q.WriteString("labels: {")
 		for key, val := range spec.Labels {
+			q.WriteString("\"")
 			q.WriteString(key)
+			q.WriteString("\"")
 			q.WriteString(": ")
 			if val == nil || val.Value == nil {
 				q.WriteString("NONE")
@@ -418,7 +545,9 @@ func createUpdateQueryForDeviceSpec(t *core.Targets, spec *core.UpdateDeviceRequ
 	if spec.Annotations != nil && len(spec.Annotations) > 0 {
 		q.WriteString("annotations: {")
 		for key, val := range spec.Annotations {
+			q.WriteString("\"")
 			q.WriteString(key)
+			q.WriteString("\"")
 			q.WriteString(": ")
 			if val == nil || val.Value == nil {
 				q.WriteString("NONE")
@@ -465,6 +594,25 @@ func createListQueryForDevice(req *core.ListDeviceRequest) (sql string, vars map
 	return
 }
 
+func createHeartbeatQuery(id string, t time.Time, online bool) (sql string, vars map[string]any) {
+	var q strings.Builder
+	vars = map[string]any{}
+	q.WriteString("UPDATE devices MERGE {")
+	q.WriteString("status: {")
+	if !t.IsZero() {
+		q.WriteString("lastHearthbeat: $BEAT,")
+		vars["BEAT"] = t
+	}
+	q.WriteString("online: $ON,")
+	vars["ON"] = online
+	q.WriteString("},} WHERE ")
+	q.WriteString(createWhereStatementWithTargets([]string{id}, nil, nil))
+	q.WriteString(";")
+	sql = q.String()
+	return
+}
+
+// TODO find how we can query using / in name in WHERE clause
 func createWhereStatementWithTargets(targetIds []string, targetLabels map[string]string, targetAnno map[string]string) string {
 	var q strings.Builder
 
@@ -472,26 +620,35 @@ func createWhereStatementWithTargets(targetIds []string, targetLabels map[string
 	if len(targetIds) > 0 {
 		var t []string
 		for _, id := range targetIds {
-			t = append(t, fmt.Sprintf("device_id = \"%s\"", id))
+			t = append(t, fmt.Sprintf("meta.deviceId = \"%s\"", id))
 		}
 		cond = append(cond, strings.Join(t, " OR "))
 	}
 	if len(targetLabels) > 0 {
 		var t []string
 		for k, v := range targetLabels {
-			t = append(t, fmt.Sprintf("spec.labels.%s = \"%s\"", k, v))
+			t = append(t, fmt.Sprintf("meta.labels.%s = \"%s\"", k, v))
 		}
 		cond = append(cond, "("+strings.Join(t, " AND ")+")")
 	}
 	if len(targetAnno) > 0 {
 		var t []string
 		for k, v := range targetAnno {
-			t = append(t, fmt.Sprintf("spec.annotations.%s = \"%s\"", k, v))
+			t = append(t, fmt.Sprintf("meta.annotations.%s = \"%s\"", k, v))
 		}
 		cond = append(cond, "("+strings.Join(t, " AND ")+")")
 	}
 	q.WriteString(strings.Join(cond, " OR "))
-	return q.String()
+	ti := q.String()
+	return ti
+}
+
+func getDeviceIdFromSubject(s string) string {
+	pos := strings.Index(s, ".")
+	if pos == -1 {
+		return ""
+	}
+	return s[:pos]
 }
 
 func executeQueryForType[T any](db *surrealdb.DB, query string, vars map[string]any) (T, error) {
