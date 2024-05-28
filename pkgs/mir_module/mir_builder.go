@@ -1,4 +1,4 @@
-package mir_device
+package mir_module
 
 import (
 	"io"
@@ -8,12 +8,14 @@ import (
 	"github.com/maxthom/mir/libs/boiler/mir_log"
 )
 
+// TODO route could be in builder instead and it pass nats subscritions
+// and handlers to Mir
 type builder struct {
 	fileOpts   []func(*mir_config.MirConfig)
-	deviceId   *string
 	target     *string
 	logLevel   *logLevel
 	logWriters []io.Writer
+	streams    []stream
 }
 
 type configFormat string
@@ -35,19 +37,10 @@ const (
 )
 
 // Builder pattern to get your Mir
-// device built and launched !
+// module built and launched !
 // Configure logging, device authentication and config loading.
 func Builder() builder {
 	return builder{}
-}
-
-// Set unique ID of the device
-// Can be retrieved from creating a new device
-// or be used with an Autoprovisioner.
-// See b.DeviceProvisioner(p Provisioner)
-func (b builder) DeviceId(id string) builder {
-	b.deviceId = &id
-	return b
 }
 
 // Specify the url of the server instance
@@ -58,18 +51,18 @@ func (b builder) Target(t string) builder {
 }
 
 // Use a configuration file to load the
-// device_id and the target. Specifying those configs
+// the target and other config. Specifying those configs
 // in the builder pattern have greater priority
 // then loading from the config file.
-// The file is loaded in folder /etc/mir/device.[json|yaml]
+// The file is loaded in folder /etc/mir/module.[json|yaml]
 // If not running in a container, it will also load from path
-// $HOME/.config/mir/device.[json|yaml]
+// $HOME/.config/mir/module.[json|yaml]
 func (b builder) DefaultConfigFile(f configFormat) builder {
 	format := mir_config.Yaml
-	fileName := "mir/device.yaml"
+	fileName := "mir/module.yaml"
 	if f == Json {
 		format = mir_config.Json
-		fileName = "mir/device.json"
+		fileName = "mir/module.json"
 	}
 	b.fileOpts = append(b.fileOpts,
 		mir_config.WithEtcFilePath(fileName, format, false),
@@ -79,7 +72,7 @@ func (b builder) DefaultConfigFile(f configFormat) builder {
 }
 
 // Use a configuration file to load the
-// device_id and the target. Specifying those configs
+// target and other config. Specifying those configs
 // in the builder pattern have greater priority
 // then loading from the config file.
 func (b builder) CustomConfigFile(fullPath string, f configFormat) builder {
@@ -126,26 +119,36 @@ func (b builder) LogWriters(writers []io.Writer) builder {
 	return b
 }
 
-// Return the Mir device object to
+// Subscribe to a set of streams to receive data from the
+// system.
+func (b builder) Streams(s ...stream) builder {
+	b.streams = append(b.streams, s...)
+	return b
+}
+
+// Subscribe to receive events of Mir
+func (b builder) Events(s ...event) builder {
+	return b
+}
+
+// Return the Mir server object to
 // be used to interact with the system
 func (b builder) Build() (*Mir, error) {
-	c := Cfg{}
+	c := Cfg{
+		LogLevel: "info",
+		Target:   "nats://127.0.0.1:4222",
+	}
 
 	var errs error
 	var lookupFiles, foundFiles []string
 	if len(b.fileOpts) > 0 {
 		errs, lookupFiles, foundFiles = mir_config.New("mir", b.fileOpts...).LoadAndUnmarshal(&c)
 	}
-	if b.deviceId != nil {
-		c.DeviceId = *b.deviceId
-	}
 	if b.target != nil {
 		c.Target = *b.target
 	}
 	if b.logLevel != nil {
 		c.LogLevel = b.logLevel.String()
-	} else {
-		c.LogLevel = "info"
 	}
 
 	if len(b.logWriters) == 0 {
@@ -172,9 +175,7 @@ func (b builder) Build() (*Mir, error) {
 	}
 
 	fieldsErr := []string{}
-	if c.DeviceId == "" {
-		fieldsErr = append(fieldsErr, "DeviceId is required to identity the device")
-	}
+
 	if c.Target == "" {
 		fieldsErr = append(fieldsErr, "Target is required to connect to the server")
 	}
@@ -183,6 +184,13 @@ func (b builder) Build() (*Mir, error) {
 			Fields: fieldsErr,
 		}
 	}
+
+	var subs []string
+	for _, s := range b.streams {
+		subs = append(subs, s.Subject())
+	}
+	l.Debug().Strs("streams", subs).Msg("")
+
 	return &Mir{
 		cfg: c,
 		l:   l,
