@@ -233,13 +233,13 @@ func init() {
 	opts := []func(*mir_config.MirConfig){
 		mir_config.WithEtcFilePath("config.yaml", mir_config.Yaml, false),
 		mir_config.WithXdgConfigHomeFilePath("config.yaml", mir_config.Yaml, true),
-		mir_config.WithEnvVars(),
+		mir_config.WithEnvVars("MIR"),
 	}
 	if flagFilePath != "" {
 		opts = append(opts, mir_config.WithFilePath(flagFilePath, mir_config.Yaml, false))
 	}
 	appConfig = mir_config.New(AppName, opts...)
-	err, warns := appConfig.LoadAndUnmarshal(&cfg)
+	err, fileLookup, fileLoaded := appConfig.LoadAndUnmarshal(&cfg)
 
 	// Logger
 	if flagLogLevel != "" {
@@ -259,9 +259,7 @@ func init() {
 		log.Err(err).Msg("")
 		os.Exit(1)
 	}
-	if warns != nil {
-		log.Warn().Msg(warns.Error())
-	}
+	log.Info().Strs("config lookup", fileLookup).Strs("config found", fileLoaded).Msg("configuration loaded")
 
 	log.Info().Msg(fmt.Sprintf("%s initializing...", AppName))
 	log.Info().Str("mir_config", fmt.Sprintf("%v", appConfig.All())).Msg("mir_config loaded")

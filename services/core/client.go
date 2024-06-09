@@ -1,21 +1,15 @@
 package core
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/maxthom/mir/api/gen/proto/v1alpha/core"
+	"github.com/maxthom/mir/api/routes"
 	bus "github.com/maxthom/mir/libs/external/natsio"
 	"google.golang.org/protobuf/proto"
 )
 
-const (
-	createDeviceStream     = "client.v1alpha.device.create"
-	updateDeviceStream     = "client.v1alpha.device.update"
-	deleteDeviceStream     = "client.v1alpha.device.delete"
-	listDeviceStream       = "client.v1alpha.device.list"
-	hearthbeatDeviceStream = "%s.v1alpha.device.hearthbeat"
-)
+const ()
 
 func PublishDeviceCreateRequest(bus *bus.BusConn, req *core.CreateDeviceRequest) (*core.CreateDeviceResponse, error) {
 	bReq, err := proto.Marshal(req)
@@ -23,7 +17,7 @@ func PublishDeviceCreateRequest(bus *bus.BusConn, req *core.CreateDeviceRequest)
 		return &core.CreateDeviceResponse{}, err
 	}
 
-	resMsg, err := bus.Request(createDeviceStream, bReq, 7*time.Second)
+	resMsg, err := bus.Request(routes.CreateDeviceStream.WithId("todo"), bReq, 7*time.Second)
 	if err != nil {
 		return &core.CreateDeviceResponse{}, err
 	}
@@ -43,7 +37,7 @@ func PublishDeviceUpdateRequest(bus *bus.BusConn, req *core.UpdateDeviceRequest)
 		return &core.UpdateDeviceResponse{}, err
 	}
 
-	resMsg, err := bus.Request(updateDeviceStream, bReq, 7*time.Second)
+	resMsg, err := bus.Request(routes.UpdateDeviceStream.WithId("TODO"), bReq, 7*time.Second)
 	if err != nil {
 		return &core.UpdateDeviceResponse{}, err
 	}
@@ -63,7 +57,7 @@ func PublishDeviceDeleteRequest(bus *bus.BusConn, req *core.DeleteDeviceRequest)
 		return &core.DeleteDeviceResponse{}, err
 	}
 
-	resMsg, err := bus.Request(deleteDeviceStream, bReq, 7*time.Second)
+	resMsg, err := bus.Request(routes.DeleteDeviceStream.WithId("TODO"), bReq, 7*time.Second)
 	if err != nil {
 		return &core.DeleteDeviceResponse{}, err
 	}
@@ -83,7 +77,7 @@ func PublishDeviceListRequest(bus *bus.BusConn, req *core.ListDeviceRequest) (*c
 		return &core.ListDeviceResponse{}, err
 	}
 
-	resMsg, err := bus.Request(listDeviceStream, bReq, 7*time.Second)
+	resMsg, err := bus.Request(routes.ListDeviceStream.WithId("TODO"), bReq, 7*time.Second)
 	if err != nil {
 		return &core.ListDeviceResponse{}, err
 	}
@@ -98,5 +92,5 @@ func PublishDeviceListRequest(bus *bus.BusConn, req *core.ListDeviceRequest) (*c
 }
 
 func PublishHearthbeatRequest(bus *bus.BusConn, deviceId string) error {
-	return bus.Publish(fmt.Sprintf(hearthbeatDeviceStream, deviceId), []byte{})
+	return bus.Publish(routes.HearthbeatDeviceStream.WithId(deviceId), []byte{})
 }

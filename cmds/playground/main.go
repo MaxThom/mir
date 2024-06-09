@@ -51,8 +51,7 @@ func main() {
 
 	time.Sleep(2 * time.Second)
 	devReq := &core.CreateDeviceRequest{
-		DeviceId:    "0x994b",
-		Description: "hello world of devices !",
+		DeviceId: "0x994b",
 		Labels: map[string]string{
 			"factory": "A",
 			"model":   "xx021",

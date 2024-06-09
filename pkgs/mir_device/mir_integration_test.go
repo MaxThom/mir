@@ -11,7 +11,6 @@ import (
 	core_api "github.com/maxthom/mir/api/gen/proto/v1alpha/core"
 	bus "github.com/maxthom/mir/libs/external/natsio"
 	"github.com/maxthom/mir/services/core"
-	"github.com/nats-io/nats.go"
 	logger "github.com/rs/zerolog/log"
 	"github.com/surrealdb/surrealdb.go"
 	"gotest.tools/assert"
@@ -20,7 +19,6 @@ import (
 var log = logger.With().Str("test", "core").Logger()
 var db *surrealdb.DB
 var b *bus.BusConn
-var sub *nats.Subscription
 
 // IDEA methods that returns a set of subscriber to Nats using a map
 // where the key is the stream subject
@@ -33,7 +31,8 @@ func TestMain(m *testing.M) {
 	// Setup
 	fmt.Println("Test Setup")
 	var err error
-	db, b, sub, err = setupConns(bus.DeviceStreamSubject)
+	db, b, err = setupConns()
+
 	if err != nil {
 		panic(err)
 	}
@@ -44,7 +43,7 @@ func TestMain(m *testing.M) {
 	}
 	fmt.Println(" -> cleaning db")
 
-	coreSrv := core.NewCore(log, b, sub, db)
+	coreSrv := core.NewCore(log, b, db)
 	go func() {
 		coreSrv.Listen(ctx)
 	}()
@@ -185,36 +184,31 @@ func executeTestQueryForType[T any](t *testing.T, db *surrealdb.DB, query string
 	return res
 }
 
-func setupConns(subject string) (*surrealdb.DB, *bus.BusConn, *nats.Subscription, error) {
+func setupConns() (*surrealdb.DB, *bus.BusConn, error) {
 	// Database
 	db, err := surrealdb.New("ws://127.0.0.1:8000/rpc")
 	if err != nil {
-		return db, nil, nil, err
+		return db, nil, err
 	}
 
 	if _, err = db.Signin(map[string]any{
 		"user": "root",
 		"pass": "root",
 	}); err != nil {
-		return db, nil, nil, err
+		return db, nil, err
 	}
 
 	if _, err = db.Use("global", "mir"); err != nil {
-		return db, nil, nil, err
+		return db, nil, err
 	}
 
 	// Bus
 	b, err := bus.New("nats://127.0.0.1:4222")
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 
-	sub, err := b.SubscribeSync(subject)
-	if err != nil {
-		log.Error().Err(err).Msg("failed to subscribe to subject")
-	}
-
-	return db, b, sub, nil
+	return db, b, nil
 }
 
 func strRef(s string) *string {

@@ -18,10 +18,7 @@ import (
 	"github.com/maxthom/mir/libs/boiler/mir_signals"
 	bus "github.com/maxthom/mir/libs/external/natsio"
 	"github.com/maxthom/mir/services/core"
-	"github.com/nats-io/nats.go"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
-	logger "github.com/rs/zerolog/log"
 	"github.com/surrealdb/surrealdb.go"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -155,14 +152,15 @@ func run(
 	log.Info().Str("url", cfg.DatabaseServer.Url).Str("namespace", "global").Str("database", "mir").Msg("connected to database")
 
 	// Bus
-	b, sub, err := subscribeToCoreStream(cfg.DataBusServer.Url)
+	b, err := bus.New(cfg.DataBusServer.Url)
 	if err != nil {
 		return err
 	}
-	log.Info().Str("url", cfg.DataBusServer.Url).Str("subject", sub.Subject).Str("queue", sub.Queue).Msg("connected to msg bus")
+	log.Info().Str("url", cfg.DataBusServer.Url).Msg("connected to msg bus")
 
 	// Services
-	coreSrv := core.NewCore(log, b, sub, db)
+	// TODO switch to bus only and sub in core
+	coreSrv := core.NewCore(log, b, db)
 	core.RegisterMetrics(metrics.Registry())
 
 	// Metrics & Health
@@ -235,31 +233,4 @@ func connectToDb(url, namespace, database, user, password string) (*surrealdb.DB
 	}
 
 	return db, nil
-}
-
-// TODO
-// rework this function to a library or something
-func subscribeToCoreStream(url string) (*bus.BusConn, *nats.Subscription, error) {
-	b, err := bus.New(url,
-		bus.WithReconnHandler(func(nc *nats.Conn) {
-			logger.Warn().Msg("reconnected to " + nc.ConnectedUrl())
-		}),
-		bus.WithDisconnHandler(func(_ *nats.Conn, err error) {
-			if err != nil {
-				logger.Warn().Msg(fmt.Sprintf("disconnected due to %v, will attempt to reconnect ", err))
-			}
-		}),
-		bus.WithClosedHandler(func(nc *nats.Conn) {
-			logger.Debug().Msg("bus connection closed")
-		}))
-	if err != nil {
-		return nil, nil, err
-	}
-
-	sub, err := b.SubscribeSync(bus.DeviceStreamSubject)
-	if err != nil {
-		log.Error().Err(err).Msg("failed to subscribe to subject")
-	}
-
-	return b, sub, err
 }

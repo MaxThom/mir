@@ -66,10 +66,10 @@ func (b builder) Target(t string) builder {
 // $HOME/.config/mir/device.[json|yaml]
 func (b builder) DefaultConfigFile(f configFormat) builder {
 	format := mir_config.Yaml
-	fileName := "device.yaml"
+	fileName := "mir/device.yaml"
 	if f == Json {
 		format = mir_config.Json
-		fileName = "device.json"
+		fileName = "mir/device.json"
 	}
 	b.fileOpts = append(b.fileOpts,
 		mir_config.WithEtcFilePath(fileName, format, false),

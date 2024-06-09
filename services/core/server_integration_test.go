@@ -26,7 +26,7 @@ func TestMain(m *testing.M) {
 	// Setup
 	fmt.Println("Test Setup")
 	var err error
-	db, b, sub, err = setupConns(bus.DeviceStreamSubject)
+	db, b, err = setupConns()
 	if err != nil {
 		panic(err)
 	}
@@ -60,7 +60,7 @@ func TestPublishDeviceCreate(t *testing.T) {
 	ctx := context.Background()
 
 	id := "0x994b"
-	publishStream := "test.v1alpha.device.create"
+	publishStream := "device.0x944b.core.create.v1alpha"
 	devReq := &core.CreateDeviceRequest{
 		DeviceId: id,
 		Labels: map[string]string{
@@ -74,7 +74,7 @@ func TestPublishDeviceCreate(t *testing.T) {
 	}
 
 	// Act
-	regSrv := NewCore(log, b, sub, db)
+	regSrv := NewCore(log, b, db)
 	go func() {
 		regSrv.Listen(ctx)
 	}()
@@ -121,7 +121,7 @@ func TestPublishDeviceCreateClient(t *testing.T) {
 	}
 
 	// Act
-	regSrv := NewCore(log, b, sub, db)
+	regSrv := NewCore(log, b, db)
 	go func() {
 		regSrv.Listen(ctx)
 	}()
@@ -165,7 +165,7 @@ func TestPublishDeviceCreateClientNoID(t *testing.T) {
 	}
 
 	// Act
-	regSrv := NewCore(log, b, sub, db)
+	regSrv := NewCore(log, b, db)
 	go func() {
 		regSrv.Listen(ctx)
 	}()
@@ -231,7 +231,7 @@ func TestPublishDeviceUpdateTargetIds(t *testing.T) {
 	}
 
 	// Act
-	regSrv := NewCore(log, b, sub, db)
+	regSrv := NewCore(log, b, db)
 	go func() {
 		regSrv.Listen(ctx)
 	}()
@@ -342,7 +342,7 @@ func TestPublishDeviceUpdateTargetLabels(t *testing.T) {
 	}
 
 	// Act
-	regSrv := NewCore(log, b, sub, db)
+	regSrv := NewCore(log, b, db)
 	go func() {
 		regSrv.Listen(ctx)
 	}()
@@ -464,7 +464,7 @@ func TestPublishDeviceUpdateTargetAnno(t *testing.T) {
 	}
 
 	// Act
-	regSrv := NewCore(log, b, sub, db)
+	regSrv := NewCore(log, b, db)
 	go func() {
 		regSrv.Listen(ctx)
 	}()
@@ -585,7 +585,7 @@ func TestPublishDeviceUpdateTargetMixs(t *testing.T) {
 	}
 
 	// Act
-	regSrv := NewCore(log, b, sub, db)
+	regSrv := NewCore(log, b, db)
 	go func() {
 		regSrv.Listen(ctx)
 	}()
@@ -683,7 +683,7 @@ func TestPublishDeviceDeleteTargetIds(t *testing.T) {
 	}
 
 	// Act
-	regSrv := NewCore(log, b, sub, db)
+	regSrv := NewCore(log, b, db)
 	go func() {
 		regSrv.Listen(ctx)
 	}()
@@ -774,7 +774,7 @@ func TestPublishDeviceDeleteTargetLabels(t *testing.T) {
 	}
 
 	// Act
-	regSrv := NewCore(log, b, sub, db)
+	regSrv := NewCore(log, b, db)
 	go func() {
 		regSrv.Listen(ctx)
 	}()
@@ -813,7 +813,7 @@ func TestPublishDeviceListTargetIds(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 
-	regSrv := NewCore(log, b, sub, db)
+	regSrv := NewCore(log, b, db)
 	go func() {
 		regSrv.Listen(ctx)
 	}()
@@ -899,7 +899,7 @@ func TestPublishDeviceListTargetLabels(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 
-	regSrv := NewCore(log, b, sub, db)
+	regSrv := NewCore(log, b, db)
 	go func() {
 		regSrv.Listen(ctx)
 	}()
@@ -988,7 +988,7 @@ func TestPublishDeviceListTargetAnnotations(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 
-	regSrv := NewCore(log, b, sub, db)
+	regSrv := NewCore(log, b, db)
 	go func() {
 		regSrv.Listen(ctx)
 	}()
@@ -1075,7 +1075,7 @@ func TestPublishDeviceListNoTarget(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 
-	regSrv := NewCore(log, b, sub, db)
+	regSrv := NewCore(log, b, db)
 	go func() {
 		regSrv.Listen(ctx)
 	}()
@@ -1144,7 +1144,7 @@ func TestCreatedDeviceAlreadyExist(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 
-	regSrv := NewCore(log, b, sub, db)
+	regSrv := NewCore(log, b, db)
 	go func() {
 		regSrv.Listen(ctx)
 	}()
@@ -1193,7 +1193,7 @@ func TestUpdateNoTargetMetafield(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 
-	regSrv := NewCore(log, b, sub, db)
+	regSrv := NewCore(log, b, db)
 	go func() {
 		regSrv.Listen(ctx)
 	}()
@@ -1217,7 +1217,7 @@ func TestDeleteNoTargetMetafield(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 
-	regSrv := NewCore(log, b, sub, db)
+	regSrv := NewCore(log, b, db)
 	go func() {
 		regSrv.Listen(ctx)
 	}()
@@ -1263,7 +1263,7 @@ func TestPublishHearthbeatRequest(t *testing.T) {
 	}
 
 	// Act
-	regSrv := NewCore(log, b, sub, db)
+	regSrv := NewCore(log, b, db)
 	go func() {
 		regSrv.Listen(ctx)
 	}()
@@ -1324,7 +1324,7 @@ func TestDeviceGoesOffline(t *testing.T) {
 	}
 
 	// Act
-	regSrv := NewCore(log, b, sub, db)
+	regSrv := NewCore(log, b, db)
 	go func() {
 		regSrv.Listen(ctx)
 	}()
@@ -1420,36 +1420,31 @@ func deleteTableOrRecord(db *surrealdb.DB, thing string) error {
 	return nil
 }
 
-func setupConns(subject string) (*surrealdb.DB, *bus.BusConn, *nats.Subscription, error) {
+func setupConns() (*surrealdb.DB, *bus.BusConn, error) {
 	// Database
 	db, err := surrealdb.New("ws://127.0.0.1:8000/rpc")
 	if err != nil {
-		return db, nil, nil, err
+		return db, nil, err
 	}
 
 	if _, err = db.Signin(map[string]any{
 		"user": "root",
 		"pass": "root",
 	}); err != nil {
-		return db, nil, nil, err
+		return db, nil, err
 	}
 
 	if _, err = db.Use("global", "mir"); err != nil {
-		return db, nil, nil, err
+		return db, nil, err
 	}
 
 	// Bus
 	b, err := bus.New("nats://127.0.0.1:4222")
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 
-	sub, err := b.SubscribeSync(subject)
-	if err != nil {
-		log.Error().Err(err).Msg("failed to subscribe to subject")
-	}
-
-	return db, b, sub, nil
+	return db, b, nil
 }
 
 func strRef(s string) *string {
