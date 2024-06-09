@@ -1,4 +1,4 @@
-package mir_module
+package mir
 
 import (
 	"fmt"

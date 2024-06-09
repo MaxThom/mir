@@ -1,10 +1,8 @@
-package mir_module
+package routes
 
-import "strings"
-
-type stream interface {
-	Subject() string
-}
+import (
+	"strings"
+)
 
 // Builder
 type streamBuilder struct {
@@ -15,7 +13,7 @@ type streamBuilder struct {
 	version string
 }
 
-func Stream() streamBuilder {
+func newStreamBuilder() streamBuilder {
 	return streamBuilder{
 		source:  "*",
 		id:      "*",
@@ -38,14 +36,16 @@ func (s streamBuilder) Subject() string {
 	)
 }
 
-func (s streamBuilder) Client() streamClientBuilder {
+func Client() streamClientBuilder {
+	s := newStreamBuilder()
 	s.source = "client"
 	return streamClientBuilder{
 		stream: s,
 	}
 }
 
-func (s streamBuilder) Device() streamDeviceBuilder {
+func Device() streamDeviceBuilder {
+	s := newStreamBuilder()
 	s.source = "device"
 	return streamDeviceBuilder{
 		labels: map[string]string{},
@@ -80,25 +80,6 @@ func (s streamDeviceBuilder) Subject() string {
 	return s.stream.Subject()
 }
 
-// Core Device Builder
-type coreDeviceStream struct {
-	deviceStream streamDeviceBuilder
-}
-
-func (s coreDeviceStream) V1Alpha() coreDeviceStream {
-	s.deviceStream.stream.version = "v1alpha"
-	return s
-}
-
-func (s coreDeviceStream) Hearthbeat() coreDeviceStream {
-	s.deviceStream.stream.fn = "hearthbeat"
-	return s
-}
-
-func (s coreDeviceStream) Subject() string {
-	return s.deviceStream.Subject()
-}
-
 // Client Builder
 type streamClientBuilder struct {
 	stream streamBuilder
@@ -108,35 +89,3 @@ func (s streamClientBuilder) UserId(id string) streamClientBuilder {
 	s.stream.id = id
 	return s
 }
-
-func (s streamClientBuilder) Core() coreClientStream {
-	s.stream.module = "core"
-	return coreClientStream{
-		clientStream: s,
-	}
-}
-
-func (s streamClientBuilder) Subject() string {
-	return s.stream.Subject()
-}
-
-// Core Client Builder
-type coreClientStream struct {
-	clientStream streamClientBuilder
-}
-
-func (s coreClientStream) V1Alpha() coreClientStream {
-	s.clientStream.stream.version = "v1alpha"
-	return s
-}
-
-func (s coreClientStream) Create() coreClientStream {
-	s.clientStream.stream.fn = "create"
-	return s
-}
-
-func (s coreClientStream) Subject() string {
-	return s.clientStream.Subject()
-}
-
-type event struct{}

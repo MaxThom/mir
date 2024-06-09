@@ -2,56 +2,114 @@ package main
 
 import (
 	"context"
-	"io"
-	"os"
+	"fmt"
 	"syscall"
 
+	"github.com/maxthom/mir/api/gen/proto/v1alpha/core"
 	"github.com/maxthom/mir/libs/boiler/mir_signals"
-	"github.com/maxthom/mir/pkgs/mir_module"
+	"github.com/maxthom/mir/pkgs/module/mir"
+	"github.com/nats-io/nats.go"
 )
 
-// TODO should I add a namespace and devices are stored in namespace
-// The namespace could be kind like different tenants or device type
-// Means you could add the namespace in the subject
-// Cons: Mean the device has to know its namespace
+// TODO add namespace to device for management only
+//      this mean, device doesnt know its namespace
+//      thus it id need  to be unique accross all ns
+// TODO switch version and functions in subjects
 
-// device.<device_id>.<module>.<function>.<version>
-// client.<user_id>.<module>.<function>.<version>
+// TODO rework core integration test
+// TODO create boiler integration test code
+// TODO comment functions
+// TODO integration test
+// TODO switch core to sdk
+// TODO generate events
+// TODO listen to events
+// TODO comment functions
+// TODO integration test
 
-// When not specifying, it will be wildcard
+// TODO combine tui and cli
 
-// TODO add reconnection logic accross
-// TODO add subject plus function handler to streams
 func main() {
-	ctx, cancel := context.WithCancel(context.Background())
+	_, cancel := context.WithCancel(context.Background())
 	mir_signals.Notify(syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT)
 
-	s := mir_module.Stream().Device().Core().Hearthbeat().V1Alpha()
-	c := mir_module.Stream().Client().Core().Create().V1Alpha()
-	b := mir_module.Stream().Device().Core().V1Alpha()
-	mir, err := mir_module.Builder().
-		//Target("nats://127.0.0.1:4222").
-		//LogLevel(mir_module.LogLevelDebug).
-		LogWriters([]io.Writer{os.Stdout}).
-		DefaultConfigFile(mir_module.Yaml).
-		Streams(s, c, b).
-		Build()
+	m, err := mir.Connect("example_hearthbeat", "nats://127.0.0.1")
 	if err != nil {
 		panic(err)
 	}
-	//fmt.Println(c.Subject(), s.Subject())
-	l := mir.Logger()
 
-	l.Info().Msg("Mir is ready for launch")
-	mirWg, err := mir.Launch(ctx)
+	// We only have device streams in the sdk
+	err = m.Subscribe(mir.Stream().V1Alpha().Hearthbeat(
+		func(msg *nats.Msg, s string) {
+			fmt.Println("Hearthbeat")
+			msg.Ack()
+		}))
 	if err != nil {
 		panic(err)
 	}
-	l.Info().Msg("Mir is at maxq and nominal")
+
+	id := "CACA2MOU"
+	// Request mean youre expecting a reply
+	// We only have client request in the sdk
+	var respCreate core.CreateDeviceResponse
+	err = m.SendRequest(mir.Resquest().V1Alpha().CreateDevice(
+		core.CreateDeviceRequest{
+			DeviceId: id,
+			Name:     "VRMMOU",
+		},
+		&respCreate,
+	))
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(respCreate.GetOk())
+	fmt.Println(respCreate.GetError())
+
+	var respList core.ListDeviceResponse
+	err = m.SendRequest(mir.Resquest().V1Alpha().ListDevice(
+		core.ListDeviceRequest{},
+		&respList,
+	))
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(respList.GetOk())
+	fmt.Println(respList.GetError())
+
+	newName := "PIPI2MOU"
+	var respUpd core.UpdateDeviceResponse
+	err = m.SendRequest(mir.Resquest().V1Alpha().UpdateDevice(
+		core.UpdateDeviceRequest{
+			Targets: &core.Targets{
+				Ids: []string{id},
+			},
+			Request: &core.UpdateDeviceRequest_Meta_{
+				Meta: &core.UpdateDeviceRequest_Meta{
+					Name: &newName,
+				}}},
+		&respUpd,
+	))
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(respUpd.GetOk())
+	fmt.Println(respUpd.GetError())
+
+	var respDel core.DeleteDeviceResponse
+	err = m.SendRequest(mir.Resquest().V1Alpha().DeleteDevice(
+		core.DeleteDeviceRequest{
+			Targets: &core.Targets{
+				Ids: []string{id},
+			}},
+		&respDel,
+	))
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(respDel.GetOk())
+	fmt.Println(respDel.GetError())
 
 	mir_signals.WaitForOsSignals(func() {
 		cancel()
-		mirWg.Wait()
-		l.Info().Msg("shutdown")
+		m.Disconnect()
 	})
 }

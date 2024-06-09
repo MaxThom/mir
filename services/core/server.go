@@ -30,15 +30,24 @@ var requestCount = metrics.NewCounterVec(prometheus.CounterOpts{
 	Help: "Number of request for core",
 }, []string{"route"})
 
-var l zerolog.Logger
+var (
+	l                   zerolog.Logger
+	coreFunctionStreams = "*.*.core.*.v1alpha"
+)
 
 func RegisterMetrics(reg prometheus.Registerer) {
 	reg.Register(requestCount)
 }
 
-func NewCore(logger zerolog.Logger, bus *bus.BusConn, sub *nats.Subscription, db *surrealdb.DB) *CoreServer {
+func NewCore(logger zerolog.Logger, bus *bus.BusConn, db *surrealdb.DB) *CoreServer {
 	l = logger.With().Str("srv", "core_server").Logger()
 	hearbeats := map[string]time.Time{}
+
+	// Subscribe to stream
+	sub, err := bus.SubscribeSync(coreFunctionStreams)
+	if err != nil {
+		l.Error().Err(err).Msg("failed to subscribe to subject")
+	}
 
 	// Preload hearthbeat map. Required in case the
 	// app is down while a device is also, but report as online
@@ -471,8 +480,8 @@ func (s *CoreServer) hearthbeatRequestHandler(ch chan nats.Msg) {
 		}
 		l.Debug().Str("route", "hearthbeat").Msg("hearthbeat device request")
 		deviceId := getDeviceIdFromSubject(msg.Subject)
+		fmt.Println(deviceId)
 		s.hearthbeats[deviceId] = time.Now().UTC()
-		// TODO compute using a map
 		// map[deviceid]lasthearthbeat
 		// if last != now by >= 3 mins, the device offline
 		// every minute, a routine check the map to see if there is
@@ -506,11 +515,11 @@ func sendReplyOrAck(bus *bus.BusConn, msg nats.Msg, m protoreflect.ProtoMessage)
 }
 
 func getRoutingFunc(s string) string {
-	index := strings.LastIndex(s, ".")
-	if index == -1 {
+	parts := strings.Split(s, ".")
+	if len(parts) != 5 {
 		return ""
 	}
-	return s[index+1:]
+	return parts[3]
 }
 
 func createUpdateQueryForDeviceMeta(t *core.Targets, spec *core.UpdateDeviceRequest_Meta) (sql string, vars map[string]any) {
@@ -560,7 +569,7 @@ func createUpdateQueryForDeviceMeta(t *core.Targets, spec *core.UpdateDeviceRequ
 	}
 
 	q.WriteString("},} WHERE ")
-	q.WriteString(createWhereStatementWithTargets(t.Ids, t.Labels, t.Annotations))
+	q.WriteString(createWhereStatementWithTargets(t))
 	q.WriteString(";")
 	sql = q.String()
 
@@ -572,7 +581,7 @@ func createDeleteQueryForDevice(req *core.DeleteDeviceRequest) (sql string, vars
 	vars = map[string]any{}
 
 	q.WriteString("DELETE FROM devices WHERE ")
-	q.WriteString(createWhereStatementWithTargets(req.Targets.Ids, req.Targets.Labels, req.Targets.Annotations))
+	q.WriteString(createWhereStatementWithTargets(req.Targets))
 	q.WriteString(";")
 	sql = q.String()
 	return
@@ -583,7 +592,7 @@ func createListQueryForDevice(req *core.ListDeviceRequest) (sql string, vars map
 	vars = map[string]any{}
 
 	q.WriteString("SELECT * FROM devices")
-	where := createWhereStatementWithTargets(req.Targets.Ids, req.Targets.Labels, req.Targets.Annotations)
+	where := createWhereStatementWithTargets(req.Targets)
 	if len(where) > 0 {
 		q.WriteString(" WHERE ")
 		q.WriteString(where)
@@ -606,49 +615,56 @@ func createHeartbeatQuery(id string, t time.Time, online bool) (sql string, vars
 	q.WriteString("online: $ON,")
 	vars["ON"] = online
 	q.WriteString("},} WHERE ")
-	q.WriteString(createWhereStatementWithTargets([]string{id}, nil, nil))
+	q.WriteString(createWhereStatementWithTargets(&core.Targets{
+		Ids: []string{id},
+	}))
 	q.WriteString(";")
 	sql = q.String()
 	return
 }
 
 // TODO find how we can query using / in name in WHERE clause
-func createWhereStatementWithTargets(targetIds []string, targetLabels map[string]string, targetAnno map[string]string) string {
+func createWhereStatementWithTargets(t *core.Targets) string {
 	var q strings.Builder
+	if t == nil {
+		return ""
+	}
 
 	cond := []string{}
-	if len(targetIds) > 0 {
-		var t []string
-		for _, id := range targetIds {
-			t = append(t, fmt.Sprintf("meta.deviceId = \"%s\"", id))
+	if len(t.Ids) > 0 {
+		var i []string
+		for _, id := range t.Ids {
+			i = append(i, fmt.Sprintf("meta.deviceId = \"%s\"", id))
 		}
-		cond = append(cond, strings.Join(t, " OR "))
+		cond = append(cond, strings.Join(i, " OR "))
 	}
-	if len(targetLabels) > 0 {
-		var t []string
-		for k, v := range targetLabels {
-			t = append(t, fmt.Sprintf("meta.labels.%s = \"%s\"", k, v))
+	if len(t.Labels) > 0 {
+		var i []string
+		for k, v := range t.Labels {
+			i = append(i, fmt.Sprintf("meta.labels.%s = \"%s\"", k, v))
 		}
-		cond = append(cond, "("+strings.Join(t, " AND ")+")")
+		cond = append(cond, "("+strings.Join(i, " AND ")+")")
 	}
-	if len(targetAnno) > 0 {
-		var t []string
-		for k, v := range targetAnno {
-			t = append(t, fmt.Sprintf("meta.annotations.%s = \"%s\"", k, v))
+	if len(t.Annotations) > 0 {
+		var i []string
+		for k, v := range t.Annotations {
+			i = append(i, fmt.Sprintf("meta.annotations.%s = \"%s\"", k, v))
 		}
-		cond = append(cond, "("+strings.Join(t, " AND ")+")")
+		cond = append(cond, "("+strings.Join(i, " AND ")+")")
 	}
 	q.WriteString(strings.Join(cond, " OR "))
 	ti := q.String()
 	return ti
 }
 
+// TODO move function to api routes, same with function
+// maybe move version to <source>.<id>.<module>.<version>.<function>
 func getDeviceIdFromSubject(s string) string {
-	pos := strings.Index(s, ".")
-	if pos == -1 {
+	parts := strings.Split(s, ".")
+	if len(parts) != 5 {
 		return ""
 	}
-	return s[:pos]
+	return parts[1]
 }
 
 func executeQueryForType[T any](db *surrealdb.DB, query string, vars map[string]any) (T, error) {
