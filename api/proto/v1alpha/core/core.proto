@@ -10,9 +10,10 @@ option go_package = "gen/";
 message CreateDeviceRequest {
   string device_id = 1; // the device_id must be unique
   string name = 2; // Name of the device
-  bool disabled = 3; // If disabled, device will be cut off from communication
-  map<string, string> labels = 4; // labels are used to uniquely identify the device
-  map<string, string> annotations = 5; // annotations are used to add additional information
+  string namespace = 3; // Name of the device
+  bool disabled = 4; // If disabled, device will be cut off from communication
+  map<string, string> labels = 5; // labels are used to uniquely identify the device
+  map<string, string> annotations = 6; // annotations are used to add additional information
 }
 
 /*
@@ -43,9 +44,10 @@ message UpdateDeviceRequest {
 
   message Meta {
     optional string name = 2; // Name of the device
-    optional bool disabled = 3; // If disabled, device will be cut off from communication
-    map<string, OptString> labels = 4; // set key to nil to remove it
-    map<string, OptString> annotations = 5; // set key to nil to remove it
+    optional string namespace = 3; // Name of the device
+    optional bool disabled = 4; // If disabled, device will be cut off from communication
+    map<string, OptString> labels = 5; // set key to nil to remove it
+    map<string, OptString> annotations = 6; // set key to nil to remove it
   }
   message Status {
     optional bool online = 2; // Is device online ?
@@ -109,8 +111,9 @@ message ListDeviceResponse {
 */
 message Targets {
   repeated string ids = 1; // ids of the devices
-  map<string, string> labels = 2; // Labels are used to uniquely identify the device
-  map<string, string> annotations = 3; // Annotations are used to add additional information
+  repeated string namespaces = 2; // namespace of the devices
+  map<string, string> labels = 3; // Labels are used to uniquely identify the device
+  map<string, string> annotations = 4; // Annotations are used to add additional information
 }
 
 /*
@@ -145,9 +148,10 @@ message Device {
 message Meta {
     string device_id = 1; // Represent the Mir id of the device
     string name = 2; // Name of the device
-    bool disabled = 3; // If disabled, device will be cut off from communication
-    map<string, string> labels = 4; // Labels are used to uniquely identify the device
-    map<string, string> annotations = 5; // Annotations are used to add additional information
+    string namespace = 3; // Name of the device
+    bool disabled = 4; // If disabled, device will be cut off from communication
+    map<string, string> labels = 5; // Labels are used to uniquely identify the device
+    map<string, string> annotations = 6; // Annotations are used to add additional information
 }
 
 /*

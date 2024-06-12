@@ -1,6 +1,9 @@
 package routes
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type Subject string
 
@@ -8,12 +11,52 @@ func (s Subject) WithId(id string) string {
 	return fmt.Sprintf(string(s), id)
 }
 
+func (s Subject) GetSource() string {
+	parts := strings.Split(string(s), ".")
+	if len(parts) != 5 {
+		return ""
+	}
+	return parts[0]
+}
+
+func (s Subject) GetId() string {
+	parts := strings.Split(string(s), ".")
+	if len(parts) != 5 {
+		return ""
+	}
+	return parts[1]
+}
+
+func (s Subject) GetModule() string {
+	parts := strings.Split(string(s), ".")
+	if len(parts) != 5 {
+		return ""
+	}
+	return parts[2]
+}
+
+func (s Subject) GetVersion() string {
+	parts := strings.Split(string(s), ".")
+	if len(parts) != 5 {
+		return ""
+	}
+	return parts[3]
+}
+
+func (s Subject) GetFunction() string {
+	parts := strings.Split(string(s), ".")
+	if len(parts) != 5 {
+		return ""
+	}
+	return parts[4]
+}
+
 const (
-	CreateDeviceStream     Subject = "client.%s.core.create.v1alpha"
-	UpdateDeviceStream     Subject = "client.%s.core.update.v1alpha"
-	DeleteDeviceStream     Subject = "client.%s.core.delete.v1alpha"
-	ListDeviceStream       Subject = "client.%s.core.list.v1alpha"
-	HearthbeatDeviceStream Subject = "device.%s.core.hearthbeat.v1alpha"
+	CreateDeviceStream     Subject = "client.%s.core.v1alpha.create"
+	UpdateDeviceStream     Subject = "client.%s.core.v1alpha.update"
+	DeleteDeviceStream     Subject = "client.%s.core.v1alpha.delete"
+	ListDeviceStream       Subject = "client.%s.core.v1alpha.list"
+	HearthbeatDeviceStream Subject = "device.%s.core.v1alpha.hearthbeat"
 )
 
 // Core Builder

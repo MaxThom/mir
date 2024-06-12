@@ -32,10 +32,11 @@ var (
 )
 
 const (
-	tableColStatus   = 0
-	tableColDeviceID = 1
-	tableColName     = 2
-	tableColLabels   = 3
+	tableColStatus    = 0
+	tableColDeviceID  = 1
+	tableColName      = 2
+	tableColNamespace = 3
+	tableColLabels    = 4
 
 	refreshInterval = time.Second * 10
 )
@@ -75,7 +76,8 @@ func NewModel(ctx context.Context) *Model {
 	columns := []table.Column{
 		{Title: "", Width: 2}, // Icon with status. online/offline/desabled
 		{Title: "id", Width: 10},
-		{Title: "name", Width: 20},
+		{Title: "name", Width: 15},
+		{Title: "namespace", Width: 15},
 		{Title: "labels", Width: 50},
 	}
 
@@ -132,7 +134,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		var suggestions []string
 		m.tableRowAll, suggestions = devicesToRows(msg.Devices)
 		m.searchInput.SetSuggestions(suggestions)
-		m.table.SetRows(m.tableRowAll)
+		m.table.SetRows(filterTableRows(m.tableRowAll, m.searchInput.Value()))
 		if !msg.NoToast {
 			return m, msgs.ResMsgCmd(fmt.Sprintf("%d devices fetched", len(msg.Devices)))
 		}
@@ -268,7 +270,6 @@ var keys = keyMap{
 }
 
 func devicesToRows(devices []*core.Device) ([]table.Row, []string) {
-	l.Debug().Msg(fmt.Sprintf("%v", devices))
 	rows := []table.Row{}
 	suggestions := []string{}
 	for _, d := range devices {
@@ -290,24 +291,51 @@ func devicesToRows(devices []*core.Device) ([]table.Row, []string) {
 		}
 
 		rows = append(rows, table.Row{
-			status, d.Meta.DeviceId, d.Meta.Name, strings.Join(lbls, ","),
+			status, d.Meta.DeviceId, d.Meta.Name, d.Meta.Namespace, strings.Join(lbls, ","),
 		})
-		suggestions = append(suggestions, d.Meta.Name, d.Meta.DeviceId)
+		suggestions = append(suggestions, d.Meta.DeviceId, d.Meta.Name, d.Meta.Namespace)
 		suggestions = append(suggestions, lbls...)
 	}
-	// Sort the rows by labels then name if equal
+	// Sort the rows by namespace, then labels then name
+	// Empty value are at the bottom
 	sort.SliceStable(rows, func(i, j int) bool {
-		if rows[i][3] > rows[j][3] {
-			return false
-		} else if rows[i][3] < rows[j][3] {
-			return true
-		} else {
-			if rows[i][2] > rows[j][2] {
-				return false
-			} else if rows[i][2] < rows[j][2] {
+		// Namespace
+		if rows[i][tableColNamespace] > rows[j][tableColNamespace] {
+			if rows[j][tableColNamespace] == "" {
 				return true
 			}
+			return false
+		} else if rows[i][tableColNamespace] < rows[j][tableColNamespace] {
+			if rows[i][tableColNamespace] == "" {
+				return false
+			}
+			return true
 		}
+		// Labels
+		if rows[i][tableColLabels] > rows[j][tableColLabels] {
+			if rows[j][tableColLabels] == "" {
+				return true
+			}
+			return false
+		} else if rows[i][tableColLabels] < rows[j][tableColLabels] {
+			if rows[i][tableColLabels] == "" {
+				return false
+			}
+			return true
+		}
+		// Name
+		if rows[i][tableColName] > rows[j][tableColName] {
+			if rows[j][tableColName] == "" {
+				return true
+			}
+			return false
+		} else if rows[i][tableColName] < rows[j][tableColName] {
+			if rows[i][tableColName] == "" {
+				return false
+			}
+			return true
+		}
+
 		return false
 	})
 	return rows, suggestions

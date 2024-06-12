@@ -13,8 +13,7 @@ import (
 
 // TODO add namespace to device for management only
 //      this mean, device doesnt know its namespace
-//      thus it id need  to be unique accross all ns
-// TODO switch version and functions in subjects
+//      thus it id need to be unique accross all ns
 
 // TODO rework core integration test
 // TODO create boiler integration test code
