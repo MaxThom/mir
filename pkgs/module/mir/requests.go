@@ -45,6 +45,9 @@ func (s *createDeviceRequest) msg() (*nats.Msg, error) {
 }
 
 func (s *createDeviceRequest) response(m *nats.Msg) error {
+	if s.resp == nil {
+		return nil
+	}
 	err := proto.Unmarshal(m.Data, s.resp)
 	if err != nil {
 		return err
@@ -79,6 +82,9 @@ func (s *updateDeviceRequest) msg() (*nats.Msg, error) {
 }
 
 func (s *updateDeviceRequest) response(m *nats.Msg) error {
+	if s.resp == nil {
+		return nil
+	}
 	err := proto.Unmarshal(m.Data, s.resp)
 	if err != nil {
 		return err
@@ -113,6 +119,9 @@ func (s *listDeviceRequest) msg() (*nats.Msg, error) {
 }
 
 func (s *listDeviceRequest) response(m *nats.Msg) error {
+	if s.resp == nil {
+		return nil
+	}
 	err := proto.Unmarshal(m.Data, s.resp)
 	if err != nil {
 		return err
@@ -147,6 +156,9 @@ func (s *deleteDeviceRequest) msg() (*nats.Msg, error) {
 }
 
 func (s *deleteDeviceRequest) response(m *nats.Msg) error {
+	if s.resp == nil {
+		return nil
+	}
 	err := proto.Unmarshal(m.Data, s.resp)
 	if err != nil {
 		return err

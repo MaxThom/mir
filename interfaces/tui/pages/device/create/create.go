@@ -36,6 +36,7 @@ var (
 const (
 	deviceId = iota
 	name
+	namespace
 	description
 	disabled
 	labels
@@ -59,7 +60,7 @@ type Model struct {
 
 func NewModel(ctx context.Context) *Model {
 	l = log.With().Str("page", "device_create").Logger()
-	inputs := make([]form.Control, 9)
+	inputs := make([]form.Control, 10)
 	tiId := label_textbox.New("Unique ID  ", "Suggestions are existing IDs", form.MirValidators(form.WithMandatoryValidator()))
 	tiId.CharLimit = 50
 	tiId.Width = 60
@@ -71,6 +72,11 @@ func NewModel(ctx context.Context) *Model {
 	tiNm.CharLimit = 50
 	tiNm.Width = 60
 	inputs[name] = &tiNm
+
+	tiNs := label_textbox.New("Namespace  ", "", nil)
+	tiNs.CharLimit = 50
+	tiNs.Width = 60
+	inputs[namespace] = &tiNs
 
 	tiDesc := label_textbox.New("Description", "", nil)
 	tiDesc.CharLimit = 50
@@ -120,6 +126,7 @@ func (m *Model) InitWithData(d any) tea.Cmd {
 
 func (m *Model) Init() tea.Cmd {
 	m.inputs[deviceId].(*label_textbox.Model).SetSuggestions(store.GetDeviceIdSuggestions(store.Devices))
+	m.inputs[namespace].(*label_textbox.Model).SetSuggestions(store.GetNamespaceSuggestions(store.Devices))
 	m.inputs[labels].(*label_textbox.Model).SetSuggestions(store.GetLabelsSuggestions(store.Devices))
 	m.inputs[annotations].(*label_textbox.Model).SetSuggestions(store.GetAnnotationsSuggestions(store.Devices))
 	m.displayError = false
@@ -129,7 +136,6 @@ func (m *Model) Init() tea.Cmd {
 	}
 	cmds = append(cmds, textinput.Blink)
 	return tea.Batch(cmds...)
-
 }
 
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -153,6 +159,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				req := &core.CreateDeviceRequest{
 					DeviceId:    m.inputs[deviceId].GetValue(),
 					Name:        m.inputs[name].GetValue(),
+					Namespace:   m.inputs[namespace].GetValue(),
 					Disabled:    !boolStringToBool(m.inputs[disabled].GetValue()),
 					Labels:      keyValueStringToMap(m.inputs[labels].GetValue()),
 					Annotations: keyValueStringToMap(m.inputs[annotations].GetValue()),
@@ -222,6 +229,8 @@ func (m *Model) View() string {
 	v.WriteString("\n")
 	v.WriteString(m.inputs[name].View())
 	v.WriteString("\n")
+	v.WriteString(m.inputs[namespace].View())
+	v.WriteString("\n")
 	v.WriteString(m.inputs[description].View())
 	v.WriteString("\n")
 	v.WriteString(m.inputs[disabled].View())
@@ -280,6 +289,10 @@ func (m *Model) updateCli() {
 
 	if m.inputs[name].GetValue() != "" {
 		cli = append(cli, "--name \""+m.inputs[name].GetValue()+"\"")
+	}
+
+	if m.inputs[namespace].GetValue() != "" {
+		cli = append(cli, "--namespace \""+m.inputs[namespace].GetValue()+"\"")
 	}
 
 	if m.inputs[description].GetValue() != "" {

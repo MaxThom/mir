@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/maxthom/mir/api/gen/proto/v1alpha/core"
+	"github.com/maxthom/mir/api/routes"
 	"github.com/maxthom/mir/libs/api/metrics"
 	bus "github.com/maxthom/mir/libs/external/natsio"
 	"github.com/nats-io/nats.go"
@@ -32,7 +33,7 @@ var requestCount = metrics.NewCounterVec(prometheus.CounterOpts{
 
 var (
 	l                   zerolog.Logger
-	coreFunctionStreams = "*.*.core.*.v1alpha"
+	coreFunctionStreams = "*.*.core.v1alpha.*"
 )
 
 func RegisterMetrics(reg prometheus.Registerer) {
@@ -135,7 +136,7 @@ func (s *CoreServer) Listen(ctx context.Context) {
 				}
 				continue
 			}
-			route := getRoutingFunc(msg.Subject)
+			route := routes.Subject(msg.Subject).GetFunction()
 			l.Info().Str("route", route).Msg("device request")
 
 			channelFns[route] <- *msg
@@ -278,6 +279,7 @@ func (s *CoreServer) updateDeviceRequestHandler(ch chan nats.Msg) {
 
 		if req.Targets == nil ||
 			len(req.Targets.Ids) == 0 &&
+				len(req.Targets.Namespaces) == 0 &&
 				len(req.Targets.Labels) == 0 &&
 				len(req.Targets.Annotations) == 0 {
 			sendReplyOrAck(s.bus, msg, &core.UpdateDeviceResponse{
@@ -354,6 +356,7 @@ func (s *CoreServer) deleteDeviceRequestHandler(ch chan nats.Msg) {
 
 		if req.Targets == nil ||
 			len(req.Targets.Ids) == 0 &&
+				len(req.Targets.Namespaces) == 0 &&
 				len(req.Targets.Labels) == 0 &&
 				len(req.Targets.Annotations) == 0 {
 			sendReplyOrAck(s.bus, msg, &core.DeleteDeviceResponse{
@@ -480,7 +483,6 @@ func (s *CoreServer) hearthbeatRequestHandler(ch chan nats.Msg) {
 		}
 		l.Debug().Str("route", "hearthbeat").Msg("hearthbeat device request")
 		deviceId := getDeviceIdFromSubject(msg.Subject)
-		fmt.Println(deviceId)
 		s.hearthbeats[deviceId] = time.Now().UTC()
 		// map[deviceid]lasthearthbeat
 		// if last != now by >= 3 mins, the device offline
@@ -514,14 +516,6 @@ func sendReplyOrAck(bus *bus.BusConn, msg nats.Msg, m protoreflect.ProtoMessage)
 	}
 }
 
-func getRoutingFunc(s string) string {
-	parts := strings.Split(s, ".")
-	if len(parts) != 5 {
-		return ""
-	}
-	return parts[3]
-}
-
 func createUpdateQueryForDeviceMeta(t *core.Targets, spec *core.UpdateDeviceRequest_Meta) (sql string, vars map[string]any) {
 	var q strings.Builder
 	vars = map[string]any{}
@@ -530,6 +524,10 @@ func createUpdateQueryForDeviceMeta(t *core.Targets, spec *core.UpdateDeviceRequ
 	if spec.Name != nil {
 		q.WriteString("name: $NAME,")
 		vars["NAME"] = *spec.Name
+	}
+	if spec.Namespace != nil {
+		q.WriteString("namespace: $NS,")
+		vars["NS"] = *spec.Namespace
 	}
 	if spec.Disabled != nil {
 		q.WriteString("disabled: $DISA,")
@@ -635,6 +633,13 @@ func createWhereStatementWithTargets(t *core.Targets) string {
 		var i []string
 		for _, id := range t.Ids {
 			i = append(i, fmt.Sprintf("meta.deviceId = \"%s\"", id))
+		}
+		cond = append(cond, strings.Join(i, " OR "))
+	}
+	if len(t.Namespaces) > 0 {
+		var i []string
+		for _, ns := range t.Namespaces {
+			i = append(i, fmt.Sprintf("meta.namespace = \"%s\"", ns))
 		}
 		cond = append(cond, strings.Join(i, " OR "))
 	}

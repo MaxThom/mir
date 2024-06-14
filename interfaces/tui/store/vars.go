@@ -68,3 +68,15 @@ func GetDeviceIdSuggestions(devices []*core.Device) []string {
 	}
 	return s
 }
+
+func GetNamespaceSuggestions(devices []*core.Device) []string {
+	if devices == nil {
+		return []string{}
+	}
+
+	var s []string
+	for _, d := range devices {
+		s = append(s, d.Meta.Namespace)
+	}
+	return s
+}

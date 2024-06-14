@@ -9,6 +9,8 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
+// Expose Mir specific functions and domain
+// Publicly expose nats io connection for custom usage
 type Mir struct {
 	Bus      *nats.Conn
 	ctx      context.Context
@@ -16,11 +18,14 @@ type Mir struct {
 	wg       *sync.WaitGroup
 }
 
+// MirStream is a stream that can be subscribed to
 type MirStream interface {
 	subject() string
 	handler() nats.MsgHandler
 }
 
+// MirRequest is a request that can be sent to the Mir server
+// and will return a reply
 type MirRequest interface {
 	msg() (*nats.Msg, error)
 	response(*nats.Msg) error
@@ -28,8 +33,7 @@ type MirRequest interface {
 
 // Establish connection to the Mir server
 // This will enable communication to and from the device
-// For a gracefull shutdown, simply wait the returning waitgroup after
-// cancelling the context
+// To properly close the connection, call the Close() function
 func Connect(name string, target string) (*Mir, error) {
 	m := &Mir{
 		wg: &sync.WaitGroup{},
@@ -63,6 +67,8 @@ func Connect(name string, target string) (*Mir, error) {
 	return m, nil
 }
 
+// Subscribe to a stream, this will put the handler
+// in a go routine and listen for messages
 func (m *Mir) Subscribe(s ...MirStream) error {
 	var errs error
 	for _, stream := range s {
@@ -79,6 +85,8 @@ func (m *Mir) Subscribe(s ...MirStream) error {
 	return errs
 }
 
+// Send a request to the Mir server
+// and expect a reply
 func (m *Mir) SendRequest(r MirRequest) error {
 	msg, err := r.msg()
 	if err != nil {
@@ -91,6 +99,7 @@ func (m *Mir) SendRequest(r MirRequest) error {
 	return r.response(resp)
 }
 
+// Listen the stream and call the handler
 func listenForStream(ctx context.Context, sub *nats.Subscription, handler nats.MsgHandler) {
 	for {
 		select {
@@ -104,6 +113,8 @@ func listenForStream(ctx context.Context, sub *nats.Subscription, handler nats.M
 	}
 }
 
+// Close the connection to the Mir server
+// Release all resources and stop all go routines
 func (m *Mir) Disconnect() error {
 	m.wg.Add(1)
 	err := m.Bus.Drain()

@@ -1,11 +1,11 @@
-root = "."
+root = "../"
 testdata_dir = "testdata"
-tmp_dir = "../../.air/core"
+tmp_dir = "core"
 
 [build]
 args_bin = []
-bin = "../../bin/core"
-cmd = "go build -o ../../bin/core ."
+bin = "bin/core"
+cmd = "go build -o ./bin/core ./cmds/core"
 delay = 1000
 exclude_dir = ["assets", "tmp", "vendor", "testdata"]
 exclude_file = []
@@ -36,10 +36,10 @@ watcher = "cyan"
 
 [log]
 main_only = false
-time = false
+time = true
 
 [misc]
-clean_on_exit = false
+clean_on_exit = true
 
 [proxy]
 app_port = 0

@@ -22,6 +22,7 @@ type Device struct {
 type Meta struct {
 	DeviceId    string             `json:"deviceId"`
 	Name        string             `json:"name"`
+	Namespace   string             `json:"namespace"`
 	Disabled    bool               `json:"disabled"`
 	Labels      map[string]*string `json:"labels"`
 	Annotations map[string]*string `json:"annotations"`
@@ -57,6 +58,7 @@ func NewUpdateDeviceMetaReqFromDevice(d Device) *core.UpdateDeviceRequest {
 		Request: &core.UpdateDeviceRequest_Meta_{
 			Meta: &core.UpdateDeviceRequest_Meta{
 				Name:        &d.Meta.Name,
+				Namespace:   &d.Meta.Namespace,
 				Disabled:    &d.Meta.Disabled,
 				Labels:      toUpdateMap(d.Meta.Labels),
 				Annotations: toUpdateMap(d.Meta.Annotations),
@@ -80,6 +82,7 @@ func NewCreateDeviceReqFromDevice(d Device) *core.CreateDeviceRequest {
 	return &core.CreateDeviceRequest{
 		DeviceId:    d.Meta.DeviceId,
 		Name:        d.Meta.Name,
+		Namespace:   d.Meta.Namespace,
 		Disabled:    d.Meta.Disabled,
 		Labels:      toValueMap(d.Meta.Labels),
 		Annotations: toValueMap(d.Meta.Annotations),
@@ -110,6 +113,7 @@ func NewProtoDeviceFromDeviceWithId(d *DeviceWithId) *core.Device {
 		Meta: &core.Meta{
 			DeviceId:    d.Meta.DeviceId,
 			Name:        d.Meta.Name,
+			Namespace:   d.Meta.Namespace,
 			Disabled:    d.Meta.Disabled,
 			Labels:      toValueMap(d.Meta.Labels),
 			Annotations: toValueMap(d.Meta.Annotations),
@@ -142,6 +146,7 @@ func NewDeviceFromProtoDevice(d *core.Device) *Device {
 		Meta: Meta{
 			DeviceId:    d.Meta.DeviceId,
 			Name:        d.Meta.Name,
+			Namespace:   d.Meta.Namespace,
 			Disabled:    d.Meta.Disabled,
 			Labels:      toPtrMap(d.Meta.Labels),
 			Annotations: toPtrMap(d.Meta.Annotations),
@@ -168,6 +173,7 @@ func NewDeviceFromCreateDeviceReq(c *core.CreateDeviceRequest) Device {
 		Meta: Meta{
 			DeviceId:    c.DeviceId,
 			Name:        c.Name,
+			Namespace:   c.Namespace,
 			Disabled:    c.Disabled,
 			Labels:      toPtrMap(c.Labels),
 			Annotations: toPtrMap(c.Annotations),

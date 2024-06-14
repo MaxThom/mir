@@ -1,3 +1,5 @@
 docs/.obsidian/workspace.json
 bin/
 tmp/
+.air/*
+!.air/*.toml

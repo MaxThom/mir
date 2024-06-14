@@ -1,4 +1,4 @@
-package mir_device
+package mir
 
 import (
 	"context"

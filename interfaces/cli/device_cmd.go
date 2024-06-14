@@ -30,24 +30,26 @@ type DeviceListCmd struct {
 type DeviceCreateCmd struct {
 	Output string `short:"o" help:"output format for response [json|yaml]" default:"json"`
 
-	RandomId bool              `short:"r" help:"Set a random device id"`
-	Id       string            `help:"Set device id"`
-	Name     string            `help:"Set device name"`
-	Desc     string            `help:"Set device description"`
-	Disabled bool              `help:"if disabled, communication is cut"`
-	Labels   map[string]string `help:"Set labels to uniquely tag the device"`
-	Anno     map[string]string `help:"Set annotations to add extra information to the device"`
+	RandomId  bool              `short:"r" help:"Set a random device id"`
+	Id        string            `help:"Set device id"`
+	Name      string            `help:"Set device name"`
+	Namespace string            `help:"Set device namespace"`
+	Desc      string            `help:"Set device description"`
+	Disabled  bool              `help:"if disabled, communication is cut"`
+	Labels    map[string]string `help:"Set labels to uniquely tag the device"`
+	Anno      map[string]string `help:"Set annotations to add extra information to the device"`
 }
 
 type DeviceUpdateCmd struct {
 	Output string `short:"o" help:"output format for response" default:"json"`
 	Target `embed:"" prefix:"target."`
 
-	Name     *string           `help:"Set device name"`
-	Desc     *string           `help:"Set device description"`
-	Disabled *bool             `help:"if not enabled, communication is cut"`
-	Labels   map[string]string `help:"Set labels to uniquely tag the device (set to null to remove)"`
-	Anno     map[string]string `help:"Set annotations to add extra information to the devie (set to null to remove)"`
+	Name      *string           `help:"Set device name"`
+	Namespace *string           `help:"Set device namespace"`
+	Desc      *string           `help:"Set device description"`
+	Disabled  *bool             `help:"if not enabled, communication is cut"`
+	Labels    map[string]string `help:"Set labels to uniquely tag the device (set to null to remove)"`
+	Anno      map[string]string `help:"Set annotations to add extra information to the devie (set to null to remove)"`
 }
 
 type DeviceDeleteCmd struct {
@@ -56,9 +58,10 @@ type DeviceDeleteCmd struct {
 }
 
 type Target struct {
-	Ids    []string          `help:"List of device to fetch by ids"`
-	Labels map[string]string `help:"Set of labels to filter devices"`
-	Anno   map[string]string `help:"Set of annotations to filter devices"`
+	Ids        []string          `help:"List of device to fetch by ids"`
+	Namespaces []string          `help:"List of device to fetch by namespaces"`
+	Labels     map[string]string `help:"Set of labels to filter devices"`
+	Anno       map[string]string `help:"Set of annotations to filter devices"`
 }
 
 func (d *DeviceCmd) Run(globals *Globals) error {
@@ -91,6 +94,7 @@ func (d *DeviceListCmd) Run(globals *Globals) error {
 	resp, err := client_core.PublishDeviceListRequest(msgBus, &core.ListDeviceRequest{
 		Targets: &core.Targets{
 			Ids:         d.Ids,
+			Namespaces:  d.Namespaces,
 			Labels:      d.Labels,
 			Annotations: d.Anno,
 		},
@@ -161,6 +165,7 @@ func (d *DeviceCreateCmd) Run(globals *Globals) error {
 	resp, err := client_core.PublishDeviceCreateRequest(msgBus, &core.CreateDeviceRequest{
 		DeviceId:    d.Id,
 		Name:        d.Name,
+		Namespace:   d.Namespace,
 		Disabled:    d.Disabled,
 		Labels:      d.Labels,
 		Annotations: d.Anno,
@@ -203,6 +208,7 @@ func (d *DeviceUpdateCmd) Validate() error {
 	}
 
 	if len(d.Target.Ids) == 0 &&
+		len(d.Target.Namespaces) == 0 &&
 		len(d.Target.Labels) == 0 &&
 		len(d.Target.Anno) == 0 {
 		err.Details = append(err.Details, "Must specify targets")
@@ -254,6 +260,7 @@ func (d *DeviceUpdateCmd) Run(globals *Globals) error {
 	resp, err := client_core.PublishDeviceUpdateRequest(msgBus, &core.UpdateDeviceRequest{
 		Targets: &core.Targets{
 			Ids:         d.Target.Ids,
+			Namespaces:  d.Namespaces,
 			Labels:      d.Target.Labels,
 			Annotations: d.Target.Anno,
 		},
@@ -300,6 +307,7 @@ func (d *DeviceDeleteCmd) Validate() error {
 	}
 
 	if len(d.Target.Ids) == 0 &&
+		len(d.Target.Namespaces) == 0 &&
 		len(d.Target.Labels) == 0 &&
 		len(d.Target.Anno) == 0 {
 		err.Details = append(err.Details, "Must specify targets")
@@ -327,6 +335,7 @@ func (d *DeviceDeleteCmd) Run(globals *Globals) error {
 	resp, err := client_core.PublishDeviceDeleteRequest(msgBus, &core.DeleteDeviceRequest{
 		Targets: &core.Targets{
 			Ids:         d.Ids,
+			Namespaces:  d.Namespaces,
 			Labels:      d.Labels,
 			Annotations: d.Anno,
 		},

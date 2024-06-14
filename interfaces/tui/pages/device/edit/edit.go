@@ -12,7 +12,6 @@ import (
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/maxthom/mir/api/gen/proto/v1alpha/core"
 	mir_help "github.com/maxthom/mir/interfaces/tui/components/help"
 	"github.com/maxthom/mir/interfaces/tui/msgs"
 	device_list "github.com/maxthom/mir/interfaces/tui/pages/device/list"
@@ -30,9 +29,6 @@ var (
 )
 
 type (
-	DeviceFetchedMsg struct {
-		devices []*core.Device
-	}
 	EditorFinishedMsg struct {
 		content json.RawMessage
 		err     error
