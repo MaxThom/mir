@@ -11,27 +11,21 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-// TODO add namespace to device for management only
-//      this mean, device doesnt know its namespace
-//      thus it id need to be unique accross all ns
-
-// TODO rework core integration test
-// TODO create boiler integration test code
-// TODO comment functions
-// TODO integration test
-// TODO switch core to sdk
 // TODO generate events
 // TODO listen to events
 // TODO comment functions
 // TODO integration test
 
+// TODO switch core to sdk
 // TODO combine tui and cli
+// TODO add install of bin of 'mir' (tui/cli) in makefile to /usr/local/bin
+// TODO move device id and disabled to spec
 
 func main() {
 	_, cancel := context.WithCancel(context.Background())
 	mir_signals.Notify(syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT)
 
-	m, err := mir.Connect("example_hearthbeat", "nats://127.0.0.1")
+	m, err := mir.Connect("example_hearthbeat", "nats://127.0.0.1:4222")
 	if err != nil {
 		panic(err)
 	}

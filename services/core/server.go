@@ -483,7 +483,6 @@ func (s *CoreServer) hearthbeatRequestHandler(ch chan nats.Msg) {
 		}
 		l.Debug().Str("route", "hearthbeat").Msg("hearthbeat device request")
 		deviceId := getDeviceIdFromSubject(msg.Subject)
-		fmt.Println(deviceId)
 		s.hearthbeats[deviceId] = time.Now().UTC()
 		// map[deviceid]lasthearthbeat
 		// if last != now by >= 3 mins, the device offline
