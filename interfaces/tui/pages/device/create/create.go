@@ -179,7 +179,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case msgs.DeviceCreatedMsg:
 		s := ""
 		if len(msg.Devices) == 1 {
-			s = fmt.Sprintf("device '%s' created", msg.Devices[0].Meta.DeviceId)
+			s = fmt.Sprintf("device '%s' created", msg.Devices[0].Spec.DeviceId)
 		} else {
 			s = fmt.Sprintf("%d devices created", len(msg.Devices))
 		}

@@ -19,7 +19,7 @@ import (
 // TODO switch core to sdk
 // TODO combine tui and cli
 // TODO add install of bin of 'mir' (tui/cli) in makefile to /usr/local/bin
-// TODO move device id and disabled to spec
+// TODO module sdk integration test, add post check request with list
 
 func main() {
 	_, cancel := context.WithCancel(context.Background())
@@ -75,10 +75,9 @@ func main() {
 			Targets: &core.Targets{
 				Ids: []string{id},
 			},
-			Request: &core.UpdateDeviceRequest_Meta_{
-				Meta: &core.UpdateDeviceRequest_Meta{
-					Name: &newName,
-				}}},
+			Meta: &core.UpdateDeviceRequest_Meta{
+				Name: &newName,
+			}},
 		&respUpd,
 	))
 	if err != nil {

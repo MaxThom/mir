@@ -70,7 +70,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case msgs.DeviceUpdateMsg:
 		rsp := "device edited successfully"
 		if len(msg.Devices) > 0 {
-			rsp = fmt.Sprintf("device '%s' edited successfully", msg.Devices[0].Meta.DeviceId)
+			rsp = fmt.Sprintf("device '%s' edited successfully", msg.Devices[0].Spec.DeviceId)
 		}
 		return m, tea.Batch(msgs.ResMsgCmd(rsp), msgs.RouteChangeWithDataCmd("/devices", device_list.InputData{SilentFetch: true}))
 	case EditorFinishedMsg:
