@@ -150,7 +150,7 @@ func TestRequestCreateDevice(t *testing.T) {
 	}
 
 	// Assert
-	assert.Equal(t, respCreate.GetOk().GetDevices()[0].Meta.DeviceId, id)
+	assert.Equal(t, respCreate.GetOk().GetDevices()[0].Spec.DeviceId, id)
 	assert.Equal(t, fmt.Sprintf("%v", respCreate.GetError()), "<nil>")
 
 	if err = m.Disconnect(); err != nil {
@@ -178,10 +178,8 @@ func TestRequestUpdateDevice(t *testing.T) {
 		Targets: &core_client.Targets{
 			Ids: []string{id},
 		},
-		Request: &core_client.UpdateDeviceRequest_Meta_{
-			Meta: &core_client.UpdateDeviceRequest_Meta{
-				Name: &newName,
-			},
+		Meta: &core_client.UpdateDeviceRequest_Meta{
+			Name: &newName,
 		},
 	}
 

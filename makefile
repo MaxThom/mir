@@ -6,6 +6,9 @@ api:
 seed: build
 	./scripts/seed.sh
 
+clean_db:
+	./scripts/clean_db.sh
+
 build:
 	go build -o bin/mir cmds/cli/main.go
 	go build -o bin/tui cmds/tui/main.go

@@ -64,7 +64,7 @@ func GetDeviceIdSuggestions(devices []*core.Device) []string {
 	var s []string
 
 	for _, d := range devices {
-		s = append(s, d.Meta.DeviceId)
+		s = append(s, d.Spec.DeviceId)
 	}
 	return s
 }

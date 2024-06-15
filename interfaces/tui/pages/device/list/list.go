@@ -141,7 +141,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case msgs.DeviceDeleteMsg:
 		rsp := "device deleted successfully"
 		if len(msg.Devices) > 0 {
-			rsp = fmt.Sprintf("device '%s' deleted", msg.Devices[0].Meta.DeviceId)
+			rsp = fmt.Sprintf("device '%s' deleted", msg.Devices[0].Spec.DeviceId)
 		}
 		return m, tea.Batch(msgs.ListMirDevicesSilently(store.Bus), msgs.ResMsgCmd(rsp))
 	case timer.TickMsg:
@@ -173,10 +173,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, msgs.ErrCmd(fmt.Errorf("no device selected"), 2*time.Second)
 				}
 				return m, tea.Batch(
-					msgs.ReqMsgCmd("deleting device "+device.Meta.DeviceId+"..."),
+					msgs.ReqMsgCmd("deleting device "+device.Spec.DeviceId+"..."),
 					msgs.DeleteMirDevice(store.Bus, &core.DeleteDeviceRequest{
 						Targets: &core.Targets{
-							Ids: []string{device.Meta.DeviceId},
+							Ids: []string{device.Spec.DeviceId},
 						},
 					}))
 			} else {
@@ -284,16 +284,16 @@ func devicesToRows(devices []*core.Device) ([]table.Row, []string) {
 		}
 
 		status := "🟢"
-		if d.Meta.Disabled {
+		if d.Spec.Disabled {
 			status = "⭕"
 		} else if !d.Status.Online {
 			status = "🔴"
 		}
 
 		rows = append(rows, table.Row{
-			status, d.Meta.DeviceId, d.Meta.Name, d.Meta.Namespace, strings.Join(lbls, ","),
+			status, d.Spec.DeviceId, d.Meta.Name, d.Meta.Namespace, strings.Join(lbls, ","),
 		})
-		suggestions = append(suggestions, d.Meta.DeviceId, d.Meta.Name, d.Meta.Namespace)
+		suggestions = append(suggestions, d.Spec.DeviceId, d.Meta.Name, d.Meta.Namespace)
 		suggestions = append(suggestions, lbls...)
 	}
 	// Sort the rows by namespace, then labels then name
@@ -361,7 +361,7 @@ func rowToDevice(r table.Row) (*core.Device, bool) {
 	id := r[tableColDeviceID]
 	if store.Devices != nil {
 		for _, i := range store.Devices {
-			if id == i.Meta.DeviceId {
+			if id == i.Spec.DeviceId {
 				return i, true
 			}
 		}

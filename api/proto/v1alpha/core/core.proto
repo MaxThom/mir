@@ -36,22 +36,22 @@ message CreateDeviceResponse {
 message UpdateDeviceRequest {
   Targets targets = 1; // To target a set of devices, search using ids, labels and annotations
 
-  // You can only update the spec or status per request
-  oneof request {
-    Meta meta = 2;
-    Status status = 3;
-  }
+  optional Meta meta = 2;
+  optional Spec spec = 3;
+  optional Status status = 4;
 
   message Meta {
-    optional string name = 2; // Name of the device
-    optional string namespace = 3; // Name of the device
-    optional bool disabled = 4; // If disabled, device will be cut off from communication
+    optional string name = 3; // Name of the device
+    optional string namespace = 4; // Name of the device
     map<string, OptString> labels = 5; // set key to nil to remove it
     map<string, OptString> annotations = 6; // set key to nil to remove it
   }
+  message Spec {
+    optional bool disabled = 3; // If disabled, device will be cut off from communication
+  }
   message Status {
-    optional bool online = 2; // Is device online ?
-    optional Timestamp last_hearthbeat = 3; // Last pulse received
+    optional bool online = 3; // Is device online ?
+    optional Timestamp last_hearthbeat = 4; // Last pulse received
   }
   message OptString {
     optional string value = 1;
@@ -111,9 +111,10 @@ message ListDeviceResponse {
 */
 message Targets {
   repeated string ids = 1; // ids of the devices
-  repeated string namespaces = 2; // namespace of the devices
-  map<string, string> labels = 3; // Labels are used to uniquely identify the device
-  map<string, string> annotations = 4; // Annotations are used to add additional information
+  repeated string names = 2; // names of the devices
+  repeated string namespaces = 3; // namespace of the devices
+  map<string, string> labels = 4; // Labels are used to uniquely identify the device
+  map<string, string> annotations = 5; // Annotations are used to add additional information
 }
 
 /*
@@ -138,20 +139,28 @@ message Device {
   string api_version = 2; // Current version of the spec
   string api_name = 3; // Name of the spec
   Meta meta = 4; // Represent the specifications that can be updated
-  Properties properties = 5; // Represent set of device defined properties
-  Status status = 6; // Represent the status reported by the Mir
+  Spec spec = 5; // Represent device twin specific config from Mir
+  Properties properties = 6; // Represent set of device defined properties
+  Status status = 7; // Represent the status reported by the Mir
 }
 
 /*
 * Set of data from the Mir system to describe a device
+* or an entity in the system
 */
 message Meta {
+    string name = 1; // Name of the device
+    string namespace = 2; // Name of the device
+    map<string, string> labels = 3; // Labels are used to uniquely identify the device
+    map<string, string> annotations = 4; // Annotations are used to add additional information
+}
+
+/*
+* Represent configuration from Mir itself for the twin specifically
+*/
+message Spec {
     string device_id = 1; // Represent the Mir id of the device
-    string name = 2; // Name of the device
-    string namespace = 3; // Name of the device
-    bool disabled = 4; // If disabled, device will be cut off from communication
-    map<string, string> labels = 5; // Labels are used to uniquely identify the device
-    map<string, string> annotations = 6; // Annotations are used to add additional information
+    bool disabled = 2; // If disabled, device will be cut off from communication
 }
 
 /*

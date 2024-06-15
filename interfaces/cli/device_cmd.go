@@ -59,6 +59,7 @@ type DeviceDeleteCmd struct {
 
 type Target struct {
 	Ids        []string          `help:"List of device to fetch by ids"`
+	Names      []string          `help:"List of device to fetch by names"`
 	Namespaces []string          `help:"List of device to fetch by namespaces"`
 	Labels     map[string]string `help:"Set of labels to filter devices"`
 	Anno       map[string]string `help:"Set of annotations to filter devices"`
@@ -94,6 +95,7 @@ func (d *DeviceListCmd) Run(globals *Globals) error {
 	resp, err := client_core.PublishDeviceListRequest(msgBus, &core.ListDeviceRequest{
 		Targets: &core.Targets{
 			Ids:         d.Ids,
+			Names:       d.Names,
 			Namespaces:  d.Namespaces,
 			Labels:      d.Labels,
 			Annotations: d.Anno,
@@ -208,6 +210,7 @@ func (d *DeviceUpdateCmd) Validate() error {
 	}
 
 	if len(d.Target.Ids) == 0 &&
+		len(d.Target.Names) == 0 &&
 		len(d.Target.Namespaces) == 0 &&
 		len(d.Target.Labels) == 0 &&
 		len(d.Target.Anno) == 0 {
@@ -254,25 +257,30 @@ func (d *DeviceUpdateCmd) Run(globals *Globals) error {
 			}
 		}
 	}
-	anno["mir/device/description"] = &core.UpdateDeviceRequest_OptString{
-		Value: d.Desc,
+	if d.Desc != nil {
+		anno["mir/device/description"] = &core.UpdateDeviceRequest_OptString{
+			Value: d.Desc,
+		}
 	}
-	resp, err := client_core.PublishDeviceUpdateRequest(msgBus, &core.UpdateDeviceRequest{
+	req := &core.UpdateDeviceRequest{
 		Targets: &core.Targets{
 			Ids:         d.Target.Ids,
-			Namespaces:  d.Namespaces,
+			Names:       d.Target.Names,
+			Namespaces:  d.Target.Namespaces,
 			Labels:      d.Target.Labels,
 			Annotations: d.Target.Anno,
 		},
-		Request: &core.UpdateDeviceRequest_Meta_{
-			Meta: &core.UpdateDeviceRequest_Meta{
-				Name:        d.Name,
-				Disabled:    d.Disabled,
-				Labels:      labels,
-				Annotations: anno,
-			},
+		Meta: &core.UpdateDeviceRequest_Meta{
+			Name:        d.Name,
+			Namespace:   d.Namespace,
+			Labels:      labels,
+			Annotations: anno,
 		},
-	})
+		Spec: &core.UpdateDeviceRequest_Spec{
+			Disabled: d.Disabled,
+		},
+	}
+	resp, err := client_core.PublishDeviceUpdateRequest(msgBus, req)
 	if err != nil {
 		e := MirRequestError{Route: "device.update", e: err}
 		fmt.Println(e)
@@ -307,6 +315,7 @@ func (d *DeviceDeleteCmd) Validate() error {
 	}
 
 	if len(d.Target.Ids) == 0 &&
+		len(d.Target.Names) == 0 &&
 		len(d.Target.Namespaces) == 0 &&
 		len(d.Target.Labels) == 0 &&
 		len(d.Target.Anno) == 0 {
@@ -334,10 +343,11 @@ func (d *DeviceDeleteCmd) Run(globals *Globals) error {
 
 	resp, err := client_core.PublishDeviceDeleteRequest(msgBus, &core.DeleteDeviceRequest{
 		Targets: &core.Targets{
-			Ids:         d.Ids,
-			Namespaces:  d.Namespaces,
-			Labels:      d.Labels,
-			Annotations: d.Anno,
+			Ids:         d.Target.Ids,
+			Names:       d.Target.Names,
+			Namespaces:  d.Target.Namespaces,
+			Labels:      d.Target.Labels,
+			Annotations: d.Target.Anno,
 		},
 	})
 	if err != nil {

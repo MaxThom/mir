@@ -65,7 +65,7 @@ func NewCore(logger zerolog.Logger, bus *bus.BusConn, db *surrealdb.DB) *CoreSer
 		// to the map.
 		// If a device becomes offline, it's removed from the map
 		if d != nil && d.Status.Online {
-			hearbeats[d.Meta.DeviceId] = d.Status.LastHearthbeat
+			hearbeats[d.Spec.DeviceId] = d.Status.LastHearthbeat
 		}
 	}
 
@@ -279,6 +279,7 @@ func (s *CoreServer) updateDeviceRequestHandler(ch chan nats.Msg) {
 
 		if req.Targets == nil ||
 			len(req.Targets.Ids) == 0 &&
+				len(req.Targets.Names) == 0 &&
 				len(req.Targets.Namespaces) == 0 &&
 				len(req.Targets.Labels) == 0 &&
 				len(req.Targets.Annotations) == 0 {
@@ -301,12 +302,7 @@ func (s *CoreServer) updateDeviceRequestHandler(ch chan nats.Msg) {
 		// TODO check how to do it on type
 		q := ""
 		v := map[string]any{}
-		if spec, ok := req.Request.(*core.UpdateDeviceRequest_Meta_); ok && spec != nil {
-			q, v = createUpdateQueryForDeviceMeta(req.Targets, spec.Meta)
-		} else if status, ok := req.Request.(*core.UpdateDeviceRequest_Status_); ok && status != nil {
-			// TODO status update
-		}
-
+		q, v = createUpdateQueryForDevice(req.Targets, req)
 		respDb, err := executeQueryForType[[]*DeviceWithId](s.db, q, v)
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while executing a db query")
@@ -356,6 +352,7 @@ func (s *CoreServer) deleteDeviceRequestHandler(ch chan nats.Msg) {
 
 		if req.Targets == nil ||
 			len(req.Targets.Ids) == 0 &&
+				len(req.Targets.Names) == 0 &&
 				len(req.Targets.Namespaces) == 0 &&
 				len(req.Targets.Labels) == 0 &&
 				len(req.Targets.Annotations) == 0 {
@@ -516,54 +513,91 @@ func sendReplyOrAck(bus *bus.BusConn, msg nats.Msg, m protoreflect.ProtoMessage)
 	}
 }
 
-func createUpdateQueryForDeviceMeta(t *core.Targets, spec *core.UpdateDeviceRequest_Meta) (sql string, vars map[string]any) {
+func createUpdateQueryForDevice(t *core.Targets, upd *core.UpdateDeviceRequest) (sql string, vars map[string]any) {
 	var q strings.Builder
 	vars = map[string]any{}
 	q.WriteString("UPDATE devices MERGE {")
-	q.WriteString("meta: {")
-	if spec.Name != nil {
-		q.WriteString("name: $NAME,")
-		vars["NAME"] = *spec.Name
-	}
-	if spec.Namespace != nil {
-		q.WriteString("namespace: $NS,")
-		vars["NS"] = *spec.Namespace
-	}
-	if spec.Disabled != nil {
-		q.WriteString("disabled: $DISA,")
-		vars["DISA"] = *spec.Disabled
-	}
-	if spec.Labels != nil && len(spec.Labels) > 0 {
-		q.WriteString("labels: {")
-		for key, val := range spec.Labels {
-			q.WriteString("\"")
-			q.WriteString(key)
-			q.WriteString("\"")
-			q.WriteString(": ")
-			if val == nil || val.Value == nil {
-				q.WriteString("NONE")
-			} else {
-				q.WriteString(fmt.Sprintf("\"%s\"", val.GetValue()))
+	if upd.Meta != nil {
+		q.WriteString("meta: {")
+		if upd.Meta.Name != nil {
+			q.WriteString("name: $NAME,")
+			vars["NAME"] = *upd.Meta.Name
+		}
+		if upd.Meta.Namespace != nil {
+			q.WriteString("namespace: $NS,")
+			vars["NS"] = *upd.Meta.Namespace
+		}
+		if upd.Meta.Labels != nil && len(upd.Meta.Labels) > 0 {
+			q.WriteString("labels: {")
+			for key, val := range upd.Meta.Labels {
+				q.WriteString("\"")
+				q.WriteString(key)
+				q.WriteString("\"")
+				q.WriteString(": ")
+				if val == nil || val.Value == nil {
+					q.WriteString("NONE")
+				} else {
+					q.WriteString(fmt.Sprintf("\"%s\"", val.GetValue()))
+				}
+				q.WriteString(",")
 			}
-			q.WriteString(",")
+			q.WriteString("},")
+		}
+		if upd.Meta.Annotations != nil && len(upd.Meta.Annotations) > 0 {
+			q.WriteString("annotations: {")
+			for key, val := range upd.Meta.Annotations {
+				q.WriteString("\"")
+				q.WriteString(key)
+				q.WriteString("\"")
+				q.WriteString(": ")
+				if val == nil || val.Value == nil {
+					q.WriteString("NONE")
+				} else {
+					q.WriteString(fmt.Sprintf("\"%s\"", val.GetValue()))
+				}
+				q.WriteString(",")
+			}
+			q.WriteString("},")
 		}
 		q.WriteString("},")
 	}
-	if spec.Annotations != nil && len(spec.Annotations) > 0 {
-		q.WriteString("annotations: {")
-		for key, val := range spec.Annotations {
-			q.WriteString("\"")
-			q.WriteString(key)
-			q.WriteString("\"")
-			q.WriteString(": ")
-			if val == nil || val.Value == nil {
-				q.WriteString("NONE")
-			} else {
-				q.WriteString(fmt.Sprintf("\"%s\"", val.GetValue()))
-			}
-			q.WriteString(",")
+	if upd.Spec != nil {
+		q.WriteString("spec: {")
+		if upd.Spec.Disabled != nil {
+			q.WriteString("disabled: $DIS,")
+			vars["DIS"] = *upd.Spec.Disabled
 		}
 		q.WriteString("},")
+	}
+	if upd.Status != nil {
+		q.WriteString("status: {")
+		if upd.Status.LastHearthbeat != nil && !AsGoTime(upd.Status.LastHearthbeat).IsZero() {
+			q.WriteString("lastHearthbeat: $BEAT,")
+			vars["BEAT"] = t
+		}
+		if upd.Status.Online != nil {
+			q.WriteString("online: $ON,")
+			vars["ON"] = upd.Status.Online
+		}
+		q.WriteString("},")
+	}
+
+	q.WriteString("} WHERE ")
+	q.WriteString(createWhereStatementWithTargets(t))
+	q.WriteString(";")
+	sql = q.String()
+
+	return
+}
+
+func createUpdateQueryForDeviceSpec(t *core.Targets, upd *core.UpdateDeviceRequest_Spec) (sql string, vars map[string]any) {
+	var q strings.Builder
+	vars = map[string]any{}
+	q.WriteString("UPDATE devices MERGE {")
+	q.WriteString("spec: {")
+	if upd.Disabled != nil {
+		q.WriteString("disabled: $DIS,")
+		vars["DIS"] = *upd.Disabled
 	}
 
 	q.WriteString("},} WHERE ")
@@ -632,7 +666,14 @@ func createWhereStatementWithTargets(t *core.Targets) string {
 	if len(t.Ids) > 0 {
 		var i []string
 		for _, id := range t.Ids {
-			i = append(i, fmt.Sprintf("meta.deviceId = \"%s\"", id))
+			i = append(i, fmt.Sprintf("spec.deviceId = \"%s\"", id))
+		}
+		cond = append(cond, strings.Join(i, " OR "))
+	}
+	if len(t.Names) > 0 {
+		var i []string
+		for _, ns := range t.Names {
+			i = append(i, fmt.Sprintf("meta.name = \"%s\"", ns))
 		}
 		cond = append(cond, strings.Join(i, " OR "))
 	}
@@ -657,6 +698,7 @@ func createWhereStatementWithTargets(t *core.Targets) string {
 		}
 		cond = append(cond, "("+strings.Join(i, " AND ")+")")
 	}
+	// TODO switch this to AND, must add ( ) above
 	q.WriteString(strings.Join(cond, " OR "))
 	ti := q.String()
 	return ti
