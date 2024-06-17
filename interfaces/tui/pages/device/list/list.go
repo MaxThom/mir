@@ -92,7 +92,6 @@ func NewModel(ctx context.Context) *Model {
 	t := table.New(
 		table.WithColumns(columns),
 		table.WithFocused(true),
-		// TODO how to change height according to window height
 		table.WithHeight(10),
 		table.WithStyles(s),
 	)
@@ -129,12 +128,23 @@ func (m *Model) Init() tea.Cmd {
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		if store.ScreenHeight-10 < len(m.table.Rows()) {
+			m.table.SetHeight(store.ScreenHeight - 10)
+		}
+		return m, nil
 	case msgs.DeviceListedMsg:
 		store.Devices = msg.Devices
 		var suggestions []string
 		m.tableRowAll, suggestions = devicesToRows(msg.Devices)
 		m.searchInput.SetSuggestions(suggestions)
-		m.table.SetRows(filterTableRows(m.tableRowAll, m.searchInput.Value()))
+		rows := filterTableRows(m.tableRowAll, m.searchInput.Value())
+		if store.ScreenHeight-10 < len(rows) {
+			m.table.SetHeight(store.ScreenHeight - 10)
+		} else {
+			m.table.SetHeight(len(rows))
+		}
+		m.table.SetRows(rows)
 		if !msg.NoToast {
 			return m, msgs.ResMsgCmd(fmt.Sprintf("%d devices fetched", len(msg.Devices)))
 		}
@@ -158,7 +168,13 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.searchInput.Blur()
 			} else {
 				m.searchInput, cmd = m.searchInput.Update(msg)
-				m.table.SetRows(filterTableRows(m.tableRowAll, m.searchInput.Value()))
+				rows := filterTableRows(m.tableRowAll, m.searchInput.Value())
+				if store.ScreenHeight-10 < len(rows) {
+					m.table.SetHeight(store.ScreenHeight - 10)
+				} else {
+					m.table.SetHeight(len(rows))
+				}
+				m.table.SetRows(rows)
 			}
 		} else if m.deleteInput.Focused() {
 			if msg.Type == tea.KeyEnter {
