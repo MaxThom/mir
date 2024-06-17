@@ -86,6 +86,9 @@ func (m *Model) Init() tea.Cmd {
 
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		store.ScreenWidth = msg.Width
+		store.ScreenHeight = msg.Height
 	case msgs.ReqMsg:
 		m.lblSpinner.UpdateLabel(styles.Info.Render(string(msg)))
 		return m, m.lblSpinner.Start()
@@ -123,14 +126,14 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 		return m, cmd
-	default:
-		cmds := make([]tea.Cmd, 2)
-		var rm tea.Model
-		m.lblSpinner, cmds[0] = m.lblSpinner.Update(msg)
-		rm, cmds[1] = m.routes[m.currentRoute].Update(msg)
-		m.routes[m.currentRoute] = rm.(MirTeaModel)
-		return m, tea.Batch(cmds...)
 	}
+
+	cmds := make([]tea.Cmd, 2)
+	var rm tea.Model
+	m.lblSpinner, cmds[0] = m.lblSpinner.Update(msg)
+	rm, cmds[1] = m.routes[m.currentRoute].Update(msg)
+	m.routes[m.currentRoute] = rm.(MirTeaModel)
+	return m, tea.Batch(cmds...)
 }
 
 func (m *Model) View() string {

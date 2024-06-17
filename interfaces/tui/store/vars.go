@@ -10,6 +10,7 @@ import (
 
 var Bus *bus.BusConn
 var Devices []*core.Device
+var ScreenHeight, ScreenWidth int
 
 func GetAnnotationsSuggestions(devices []*core.Device) []string {
 	if devices == nil {
