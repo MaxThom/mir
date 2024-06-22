@@ -107,7 +107,7 @@ func run(ctx context.Context, log zerolog.Logger, cfg CliConfig) error {
 	mir_signals.Notify(syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT)
 
 	// Services
-	tuiSrv := tui.NewServer(log, cfg.MirServer)
+	tuiSrv := tui.New(log, cfg.MirServer)
 
 	var wg sync.WaitGroup
 	go func() {

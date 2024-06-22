@@ -12,6 +12,25 @@ import (
 
 type LogLevel = string
 
+func LowestLogLevel(a LogLevel, b LogLevel) bool {
+	logLevels := map[LogLevel]int{
+		LogLevelTrace:   0,
+		LogLevelDebug:   1,
+		LogLevelInfo:    2,
+		LogLevelWarning: 3,
+		LogLevelError:   4,
+		LogLevelFatal:   5,
+	}
+	return logLevels[a] < logLevels[b]
+}
+
+func CompareLogLevel(a LogLevel, b LogLevel) string {
+	if LowestLogLevel(a, b) {
+		return a
+	}
+	return b
+}
+
 var (
 	LogLevelTrace   LogLevel = "trace"
 	LogLevelDebug   LogLevel = "debug"
@@ -102,6 +121,41 @@ func WithFlagAndFileLogLevel(flagIsDebug bool, flagLogLevel LogLevel, fileLogLev
 		current = *fileLogLevel
 	}
 	*fileLogLevel = current
+	return func(log *mirLog) {
+		log.logLevel = current
+		switch current {
+		case "trace":
+			log.Logger = log.Level(zerolog.TraceLevel)
+			zerolog.SetGlobalLevel(zerolog.TraceLevel)
+		case "debug":
+			log.Logger = log.Level(zerolog.DebugLevel)
+			zerolog.SetGlobalLevel(zerolog.DebugLevel)
+		case "info":
+			log.Logger = log.Level(zerolog.InfoLevel)
+			zerolog.SetGlobalLevel(zerolog.InfoLevel)
+		case "warn":
+			log.Logger = log.Level(zerolog.WarnLevel)
+			zerolog.SetGlobalLevel(zerolog.WarnLevel)
+		case "error":
+			log.Logger = log.Level(zerolog.ErrorLevel)
+			zerolog.SetGlobalLevel(zerolog.ErrorLevel)
+		case "fatal":
+			log.Logger = log.Level(zerolog.FatalLevel)
+			zerolog.SetGlobalLevel(zerolog.FatalLevel)
+		default:
+			log.Logger = log.Level(zerolog.InfoLevel)
+			zerolog.SetGlobalLevel(zerolog.InfoLevel)
+		}
+	}
+}
+
+func WithFlagLogLevel(flagIsDebug bool, flagLogLevel LogLevel) func(*mirLog) {
+	var current LogLevel
+	if flagIsDebug {
+		current = LogLevelDebug
+	} else if flagLogLevel != "" {
+		current = flagLogLevel
+	}
 	return func(log *mirLog) {
 		log.logLevel = current
 		switch current {

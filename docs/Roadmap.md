@@ -120,16 +120,16 @@ well as doing some improvements on the boilerplate of services
 
 ### Improvements/Tech dett
 
-- [ ] rework how boiler template of app is made for services
+- [x] rework how boiler template of app is made for services
   - same tool for cli could be used for bootstrap of service
   - change how init is used to become more main and have a run method
-- [ ] Set config in a mir folder instead of per apps
+- [x] Set config in a mir folder instead of per apps
    - where is the line between using code and a spec? maybe enforcing a spec is sufficient instead of creating a maze of code abstraction for it       -
-- [ ] merge tui and cli into one binary
+- [x] merge tui and cli into one binary
 
 ### Ergonmics
 
-- [ ] air on each service app so everything reloads
+- [x] air on each service app so everything reloads
 - [ ] tmux script file in repo
 
 ## v0.2.1
