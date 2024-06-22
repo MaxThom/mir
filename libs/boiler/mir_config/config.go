@@ -180,7 +180,7 @@ func WithFilePath(path string, cff configFormat, devOnly bool) func(*MirConfig) 
 	}
 }
 
-func WithFlagRegisterFilePath(flag string, path string, cff configFormat, devOnly bool) func(*MirConfig) {
+func WithFlagFilePath(path string, cff configFormat, devOnly bool) func(*MirConfig) {
 	return func(cfg *MirConfig) {
 		if devOnly && isNotPidZero || !devOnly {
 			cfg.configFiles = append(cfg.configFiles, configFile{

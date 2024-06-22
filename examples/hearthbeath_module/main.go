@@ -17,8 +17,6 @@ import (
 // TODO integration test
 
 // TODO switch core to sdk
-// TODO combine tui and cli
-// TODO add install of bin of 'mir' (tui/cli) in makefile to /usr/local/bin
 // TODO module sdk integration test, add post check request with list
 
 func main() {

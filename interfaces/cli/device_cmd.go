@@ -65,7 +65,7 @@ type Target struct {
 	Anno       map[string]string `help:"Set of annotations to filter devices"`
 }
 
-func (d *DeviceCmd) Run(globals *Globals) error {
+func (d *DeviceCmd) Run() error {
 	return nil
 }
 
@@ -82,11 +82,11 @@ func (d *DeviceListCmd) Validate() error {
 	return nil
 }
 
-func (d *DeviceListCmd) Run(globals *Globals) error {
+func (d *DeviceListCmd) Run(c CLI) error {
 	var err error
-	msgBus, err = bus.New(globals.Target)
+	msgBus, err := bus.New(c.Target)
 	if err != nil {
-		e := MirConnectionError{Target: globals.Target, e: err}
+		e := MirConnectionError{Target: c.Target, e: err}
 		fmt.Println(e)
 		return e
 	}
@@ -144,11 +144,11 @@ func (d *DeviceCreateCmd) Validate() error {
 	return nil
 }
 
-func (d *DeviceCreateCmd) Run(globals *Globals) error {
+func (d *DeviceCreateCmd) Run(c CLI) error {
 	var err error
-	msgBus, err = bus.New(globals.Target)
+	msgBus, err := bus.New(c.Target)
 	if err != nil {
-		e := MirConnectionError{Target: globals.Target, e: err}
+		e := MirConnectionError{Target: c.Target, e: err}
 		fmt.Println(e)
 		return e
 	}
@@ -223,11 +223,11 @@ func (d *DeviceUpdateCmd) Validate() error {
 	return nil
 }
 
-func (d *DeviceUpdateCmd) Run(globals *Globals) error {
+func (d *DeviceUpdateCmd) Run(c CLI) error {
 	var err error
-	msgBus, err = bus.New(globals.Target)
+	msgBus, err := bus.New(c.Target)
 	if err != nil {
-		e := MirConnectionError{Target: globals.Target, e: err}
+		e := MirConnectionError{Target: c.Target, e: err}
 		fmt.Println(e)
 		return e
 	}
@@ -331,11 +331,11 @@ func (d *DeviceDeleteCmd) Validate() error {
 	return nil
 }
 
-func (d *DeviceDeleteCmd) Run(globals *Globals) error {
+func (d *DeviceDeleteCmd) Run(c CLI) error {
 	var err error
-	msgBus, err = bus.New(globals.Target)
+	msgBus, err := bus.New(c.Target)
 	if err != nil {
-		e := MirConnectionError{Target: globals.Target, e: err}
+		e := MirConnectionError{Target: c.Target, e: err}
 		fmt.Println(e)
 		return e
 	}
