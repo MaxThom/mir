@@ -9,6 +9,7 @@ import (
 	"time"
 
 	core_api "github.com/maxthom/mir/api/gen/proto/v1alpha/core"
+	"github.com/maxthom/mir/api/routes"
 	bus "github.com/maxthom/mir/libs/external/natsio"
 	"github.com/nats-io/nats.go"
 	logger "github.com/rs/zerolog/log"
@@ -322,6 +323,7 @@ func TestPublishDeviceUpdateTargetNames(t *testing.T) {
 	assert.Equal(t, reqUpd.Targets.Names[0], respDb[0].Spec.DeviceId)
 	assert.Equal(t, respUpd.GetOk().Devices[0].Meta.Name, id)
 }
+
 func TestPublishDeviceUpdateTargetNamespace(t *testing.T) {
 	// Arrange
 	id := "device_update_target_namespace"
@@ -1644,9 +1646,9 @@ func TestDeleteNoTargetMetafield(t *testing.T) {
 	assert.Equal(t, respDel.GetError().Message, "no target provided for delete")
 }
 
-func TestPublishHearthbeatRequest(t *testing.T) {
+func TestDeviceGoesOnline(t *testing.T) {
 	// Arrange
-	deviceIds := []string{"device_heartbeat"}
+	deviceIds := []string{"device_goes_online"}
 	reqList := &core_api.ListDeviceRequest{
 		Targets: &core_api.Targets{
 			Ids: deviceIds,
@@ -1668,6 +1670,15 @@ func TestPublishHearthbeatRequest(t *testing.T) {
 			},
 		},
 	}
+
+	// Subscribe to device online event
+	onlineEventCount := 0
+	s, err := b.Subscribe(
+		routes.DeviceOnlineEvent.WithId(deviceIds[0]),
+		func(msg *nats.Msg) {
+			onlineEventCount += 1
+			msg.Ack()
+		})
 
 	// Act
 	if _, err := createDevices(b, reqCreate); err != nil {
@@ -1694,6 +1705,8 @@ func TestPublishHearthbeatRequest(t *testing.T) {
 			assert.Equal(t, time.Now().UTC().Sub(devTs).Abs().Seconds() < 10, true)
 		}
 	}
+	assert.Equal(t, 1, onlineEventCount)
+	s.Unsubscribe()
 }
 
 // go test -v -timeout 90s -run ^TestDeviceGoesOffline\$ github.com/maxthom/mir/services/core
@@ -1721,6 +1734,15 @@ func TestDeviceGoesOffline(t *testing.T) {
 			},
 		},
 	}
+
+	// Subscribe to device offline event
+	offlineEventCount := 0
+	s, err := b.Subscribe(
+		routes.DeviceOfflineEvent.WithId(deviceIds[0]),
+		func(msg *nats.Msg) {
+			offlineEventCount += 1
+			msg.Ack()
+		})
 
 	// Act
 	if _, err := createDevices(b, reqCreate); err != nil {
@@ -1762,4 +1784,7 @@ func TestDeviceGoesOffline(t *testing.T) {
 			assert.Equal(t, time.Now().UTC().Sub(devTs).Abs().Seconds() > 30, true)
 		}
 	}
+
+	assert.Equal(t, 1, offlineEventCount)
+	s.Unsubscribe()
 }
