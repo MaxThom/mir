@@ -17,12 +17,16 @@ build:
 	go build -o bin/mir cmds/mir/main.go
 	go build -o bin/core cmds/core/main.go
 
-mir-log:
-	tail ~/.config/mir/mir.log -f
+build-mir:
+	go build -o bin/mir cmds/mir/main.go
 
 # install
-install-mir:
+install-mir: build-mir
 	sudo cp bin/mir /usr/local/bin/mir
+
+# utils
+mir-log:
+	tail ~/.config/mir/mir.log -f
 
 # air
 air-core:

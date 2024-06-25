@@ -94,3 +94,11 @@ func PublishDeviceListRequest(bus *bus.BusConn, req *core.ListDeviceRequest) (*c
 func PublishHearthbeatRequest(bus *bus.BusConn, deviceId string) error {
 	return bus.Publish(routes.HearthbeatDeviceStream.WithId(deviceId), []byte{})
 }
+
+func PublishDeviceOnlineEvent(bus *bus.BusConn, deviceId string) error {
+	return bus.Publish(routes.DeviceOnlineEvent.WithId(deviceId), []byte{})
+}
+
+func PublishDeviceOfflineEvent(bus *bus.BusConn, deviceId string) error {
+	return bus.Publish(routes.DeviceOfflineEvent.WithId(deviceId), []byte{})
+}

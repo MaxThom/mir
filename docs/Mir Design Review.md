@@ -66,7 +66,7 @@ Describe the non-functional requirements such as performance, security, and usab
 
 Provide a high-level design overview, including major system modules and their responsibilities.
 
-#### 4.1.1 Core
+#### 4.1.1 Core Module
 
 The core is responsible of the management of devices lifetime. It is also the API interface for interacting with surrealdb.
 
@@ -219,7 +219,7 @@ Together, this gives the ability to automatically apply a template to a device w
 }
 ```
 
-##### 4.1.1.3 Time Sync
+##### 4.1.2.3 Time Sync
 
 - To make sure order of received properties is maintained, the code can
 do addtionnal check using timestamps fields, or the framework could make sure to always put latest
@@ -288,7 +288,7 @@ A JSON alternative could be the timestamp field embeded next to the fields direc
 }
 ```
 
-#### 4.1.1.4 Open API Validation
+#### 4.1.2.4 Open API Validation
 
 It could be possible to generate open api validation on the different json templates. That schema would help present options or validations for any clients such as Web or TUI.
 
@@ -306,6 +306,19 @@ In the json of the properties, a new field with the linked schema could be added
 ```
 
 This could be on the json template or on the device twin as well in a more fix manner. A bit more thinking to be done here.
+
+#### 4.1.3 Events
+
+Using the module SDK, developers can subscribe to the different streams of data or requests. This make it easy to extend the system and build new modules with great ergonomics. For example, if a user want to know when a device comes online or goes offline, he/she can register to the heartbeat stream and make the required calculation to know if the device is now online or offline. If a developer want to know when a new device was created, he can register to the device create request stream and validate the fields and then if ok, a new device was created. The pros of this approach is that developer can extend the system by subscribing to different part of the systems and know what's going on. The cons is that many of those stream needs calculation that different modules perfoms so a developer would have too recreate the algorithm. Therefore, subscribing to streams or requests is not enough. This is where Events come in.
+
+Events are sever side computed trigger based on incoming data, telemetry or request. For example, the Core module computes if devices are on or off using the heartbeat stream. It will then publish a device is on/off on the event stream. This way, a developer can just subscribe to this event stream and know when a device is on or off without having to compute it using the heartbeat stream. Additionally, the core module will have the following set of events:
+- device has come online
+- device has gone offline
+- device was created
+- device was deleted
+- device was updated
+
+The goal of events is to have an easy way to extend the Mir ecosystem by subscribing to them via the module sdk interface.
 
 ### 4.2 Detailed Design
 

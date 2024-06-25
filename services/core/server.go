@@ -20,10 +20,11 @@ import (
 )
 
 type CoreServer struct {
-	sub         *nats.Subscription
-	bus         *bus.BusConn
-	db          *surrealdb.DB
-	hearthbeats map[string]time.Time
+	sub              *nats.Subscription
+	bus              *bus.BusConn
+	db               *surrealdb.DB
+	hearthbeats      map[string]time.Time
+	hearthbeatsMutex sync.RWMutex
 }
 
 var requestCount = metrics.NewCounterVec(prometheus.CounterOpts{
@@ -34,6 +35,7 @@ var requestCount = metrics.NewCounterVec(prometheus.CounterOpts{
 var (
 	l                   zerolog.Logger
 	coreFunctionStreams = "*.*.core.v1alpha.*"
+	offlineAfter        = time.Second * 30
 )
 
 func RegisterMetrics(reg prometheus.Registerer) {
@@ -115,7 +117,7 @@ func (s *CoreServer) Listen(ctx context.Context) {
 	}()
 	go func() {
 		wg.Add(1)
-		go s.hearthbeatPulsor(ctx, time.Second*10, time.Second*30)
+		go s.hearthbeatPulsor(ctx, time.Second*10, offlineAfter)
 		wg.Done()
 	}()
 
@@ -136,9 +138,13 @@ func (s *CoreServer) Listen(ctx context.Context) {
 				}
 				continue
 			}
-			route := routes.Subject(msg.Subject).GetFunction()
-			l.Info().Str("route", route).Msg("device request")
 
+			route := routes.Subject(msg.Subject).GetFunction()
+			l.Info().Str("route", route).Msg("core request")
+			if _, exists := channelFns[route]; !exists {
+				l.Warn().Str("route", route).Msg("route handler does not exist")
+				continue
+			}
 			channelFns[route] <- *msg
 			requestCount.WithLabelValues(route).Inc()
 		}
@@ -449,12 +455,13 @@ func (s *CoreServer) hearthbeatPulsor(ctx context.Context, interval time.Duratio
 			l.Debug().Msg("shutting down pulsor task")
 			return
 		case <-time.After(interval):
+			s.hearthbeatsMutex.RLock()
 			newOffline := []string{}
 			now := time.Now().UTC()
 			for k, v := range s.hearthbeats {
 				if v.Add(offlineAfter).Before(now) {
 					newOffline = append(newOffline, k)
-					// TODO create offline event
+					// TODO could be one query that does all the now offline devices instead of many
 					q, v := createHeartbeatQuery(k, time.Time{}, false)
 					_, err := executeQueryForType[[]*DeviceWithId](s.db, q, v)
 					if err != nil {
@@ -463,10 +470,14 @@ func (s *CoreServer) hearthbeatPulsor(ctx context.Context, interval time.Duratio
 					}
 				}
 			}
-			// TODO some lock on that map
+			s.hearthbeatsMutex.RUnlock()
+			s.hearthbeatsMutex.Lock()
 			for _, key := range newOffline {
+				l.Info().Str("route", "hearthbeat_pulsor").Str("event", "device_offline").Msg(key)
+				PublishDeviceOfflineEvent(s.bus, key)
 				delete(s.hearthbeats, key)
 			}
+			s.hearthbeatsMutex.Unlock()
 			l.Debug().Strs("new_offline_devices", newOffline).Msg("hearthbeats pulse")
 		}
 	}
@@ -479,14 +490,19 @@ func (s *CoreServer) hearthbeatRequestHandler(ch chan nats.Msg) {
 			return
 		}
 		l.Debug().Str("route", "hearthbeat").Msg("hearthbeat device request")
-		deviceId := getDeviceIdFromSubject(msg.Subject)
+		deviceId := routes.Subject(msg.Subject).GetId()
+		// If not in map, mean is newly online device
+		s.hearthbeatsMutex.Lock()
+		if _, ok := s.hearthbeats[deviceId]; !ok {
+			l.Info().Str("route", "hearthbeat").Str("event", "device_online").Msg(deviceId)
+			PublishDeviceOnlineEvent(s.bus, deviceId)
+		}
 		s.hearthbeats[deviceId] = time.Now().UTC()
+		s.hearthbeatsMutex.Unlock()
 		// map[deviceid]lasthearthbeat
 		// if last != now by >= 3 mins, the device offline
 		// every minute, a routine check the map to see if there is
 		// hearthbeat older then 3 mins, if so set device to offline
-		// TODO tui terminal, 10secs refresh list silently
-		// or maybe r hotkey?
 		q, v := createHeartbeatQuery(deviceId, s.hearthbeats[deviceId], true)
 		_, err := executeQueryForType[[]*DeviceWithId](s.db, q, v)
 		if err != nil {
@@ -702,16 +718,6 @@ func createWhereStatementWithTargets(t *core.Targets) string {
 	q.WriteString(strings.Join(cond, " OR "))
 	ti := q.String()
 	return ti
-}
-
-// TODO move function to api routes, same with function
-// maybe move version to <source>.<id>.<module>.<version>.<function>
-func getDeviceIdFromSubject(s string) string {
-	parts := strings.Split(s, ".")
-	if len(parts) != 5 {
-		return ""
-	}
-	return parts[1]
 }
 
 func executeQueryForType[T any](db *surrealdb.DB, query string, vars map[string]any) (T, error) {
