@@ -67,8 +67,8 @@ func Connect(name string, target string) (*Mir, error) {
 	return m, nil
 }
 
-// Subscribe to a stream, this will put the handler
-// in a go routine and listen for messages
+// Subscribe to a stream or event, this will put the handler
+// in a go routine and listen for messages on that topic
 func (m *Mir) Subscribe(s ...MirStream) error {
 	var errs error
 	for _, stream := range s {
@@ -76,8 +76,8 @@ func (m *Mir) Subscribe(s ...MirStream) error {
 		if err != nil {
 			errs = errors.Join(errs, err)
 		}
+		m.wg.Add(1)
 		go func(sub *nats.Subscription, handler nats.MsgHandler) {
-			m.wg.Add(1)
 			listenForStream(m.ctx, sub, handler)
 			m.wg.Done()
 		}(sub, stream.handler())
@@ -108,7 +108,9 @@ func listenForStream(ctx context.Context, sub *nats.Subscription, handler nats.M
 		default:
 			// TODO handle error
 			msg, _ := sub.NextMsgWithContext(ctx)
-			handler(msg)
+			if msg != nil {
+				handler(msg)
+			}
 		}
 	}
 }
