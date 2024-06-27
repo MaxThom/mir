@@ -124,6 +124,101 @@ func TestSubscribeToHearthbeat(t *testing.T) {
 	wg.Wait()
 }
 
+func TestEventDeviceOnline(t *testing.T) {
+	// Arrange
+	m, err := Connect("module_test", busUrl)
+	if err != nil {
+		t.Error(err)
+	}
+	md, err := mir_device.Builder().
+		DeviceId("TestOnlineEvent").
+		Target(busUrl).
+		LogLevel(mir_device.LogLevelInfo).
+		Build()
+	if err != nil {
+		t.Error(err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+
+	// Act
+	count := 0
+	if err = m.Subscribe(Event().V1Alpha().DeviceOnline(
+		func(msg *nats.Msg, deviceId string) {
+			count += 1
+			msg.Ack()
+		})); err != nil {
+		t.Error(err)
+	}
+
+	wg, err := md.Launch(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+
+	time.Sleep(15 * time.Second)
+	// Assert
+	assert.Equal(t, count > 0, true)
+
+	if err = m.Disconnect(); err != nil {
+		t.Error(err)
+	}
+	cancel()
+	wg.Wait()
+}
+
+func TestEventDeviceOffline(t *testing.T) {
+	// Arrange
+	m, err := Connect("module_test", busUrl)
+	if err != nil {
+		t.Error(err)
+	}
+	md, err := mir_device.Builder().
+		DeviceId("TestOfflineEvent").
+		Target(busUrl).
+		LogLevel(mir_device.LogLevelInfo).
+		Build()
+	if err != nil {
+		t.Error(err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+
+	// Act
+	countOnline := 0
+	if err = m.Subscribe(Event().V1Alpha().DeviceOnline(
+		func(msg *nats.Msg, deviceId string) {
+			countOnline += 1
+			msg.Ack()
+		})); err != nil {
+		t.Error(err)
+	}
+	countOffline := 0
+	if err = m.Subscribe(Event().V1Alpha().DeviceOffline(
+		func(msg *nats.Msg, deviceId string) {
+			countOffline += 1
+			msg.Ack()
+		})); err != nil {
+		t.Error(err)
+	}
+
+	wg, err := md.Launch(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+
+	time.Sleep(15 * time.Second)
+	cancel()
+	wg.Wait()
+	time.Sleep(45 * time.Second)
+
+	// Assert
+	assert.Equal(t, countOnline > 0, true)
+	assert.Equal(t, countOffline > 0, true)
+
+	if err = m.Disconnect(); err != nil {
+		t.Error(err)
+	}
+}
+
 func TestRequestCreateDevice(t *testing.T) {
 	// Arrange
 	m, err := Connect("module_test", busUrl)

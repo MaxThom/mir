@@ -16,8 +16,8 @@ import (
 // TODO comment functions
 // TODO integration test
 
-// TODO switch core to sdk
 // TODO module sdk integration test, add post check request with list
+// TODO bug tui list search
 
 func main() {
 	_, cancel := context.WithCancel(context.Background())
@@ -28,10 +28,27 @@ func main() {
 		panic(err)
 	}
 
-	// We only have device streams in the sdk
 	err = m.Subscribe(mir.Stream().V1Alpha().Hearthbeat(
-		func(msg *nats.Msg, s string) {
-			fmt.Println("Hearthbeat")
+		func(msg *nats.Msg, deviceId string) {
+			fmt.Println("Hearthbeat ", deviceId)
+			msg.Ack()
+		}))
+	if err != nil {
+		panic(err)
+	}
+
+	err = m.Subscribe(mir.Event().V1Alpha().DeviceOnline(
+		func(msg *nats.Msg, deviceId string) {
+			fmt.Println("Device online ", deviceId)
+			msg.Ack()
+		}))
+	if err != nil {
+		panic(err)
+	}
+
+	err = m.Subscribe(mir.Event().V1Alpha().DeviceOffline(
+		func(msg *nats.Msg, deviceId string) {
+			fmt.Println("Device offline ", deviceId)
 			msg.Ack()
 		}))
 	if err != nil {
