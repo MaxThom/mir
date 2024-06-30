@@ -14,8 +14,8 @@ import (
 func main() {
 	ctx := context.Background()
 	b, _, cons, err := createPublisherForStream(ctx, "nats://127.0.0.1:4222", jetstream.StreamConfig{
-		Name:     bus.DeviceStreamName,
-		Subjects: []string{bus.DeviceStreamSubject},
+		Name:     "device",
+		Subjects: []string{"device.*"},
 		NoAck:    true,
 	}, jetstream.ConsumerConfig{
 		Durable:        "registration_test",

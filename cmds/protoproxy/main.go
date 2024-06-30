@@ -195,8 +195,8 @@ func createConsumerForTelemetry(ctx context.Context) (*bus.BusConn, jetstream.St
 	}
 
 	stream, err := js.CreateOrUpdateStream(ctx, jetstream.StreamConfig{
-		Name:     bus.TelemetryStreamName,
-		Subjects: []string{bus.TelemetryStreamSubject},
+		Name:     "*",
+		Subjects: []string{"*"},
 	})
 	if err != nil {
 		return b, stream, nil, err
@@ -204,8 +204,8 @@ func createConsumerForTelemetry(ctx context.Context) (*bus.BusConn, jetstream.St
 
 	// retrieve consumer handle from a stream
 	cons, err := stream.CreateOrUpdateConsumer(ctx, jetstream.ConsumerConfig{
-		Durable:        "protoproxy",                         // + hash of pod for scaling?
-		FilterSubjects: []string{bus.TelemetryConsumerProto}, // can filter on specific functions
+		Durable:        "protoproxy",  // + hash of pod for scaling?
+		FilterSubjects: []string{"*"}, // can filter on specific functions
 		// Implicit for telemerty, explicity for commands and telemetry
 		AckPolicy: jetstream.AckExplicitPolicy,
 	})

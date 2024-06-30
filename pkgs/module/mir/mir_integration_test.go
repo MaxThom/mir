@@ -236,6 +236,15 @@ func TestRequestCreateDevice(t *testing.T) {
 	}
 
 	// Act
+	count := 0
+	if err = m.Subscribe(Event().V1Alpha().DeviceCreated(
+		func(msg *nats.Msg, deviceId string, d *core_client.Device) {
+			count += 1
+			msg.Ack()
+		})); err != nil {
+		t.Error(err)
+	}
+
 	var respCreate core_client.CreateDeviceResponse
 	if err = m.SendRequest(Resquest().V1Alpha().CreateDevice(
 		reqCreate,
@@ -245,8 +254,10 @@ func TestRequestCreateDevice(t *testing.T) {
 	}
 
 	// Assert
+	time.Sleep(1 * time.Second)
 	assert.Equal(t, respCreate.GetOk().GetDevices()[0].Spec.DeviceId, id)
 	assert.Equal(t, fmt.Sprintf("%v", respCreate.GetError()), "<nil>")
+	assert.Equal(t, 2, count)
 
 	if err = m.Disconnect(); err != nil {
 		t.Error(err)
@@ -279,6 +290,15 @@ func TestRequestUpdateDevice(t *testing.T) {
 	}
 
 	// Act
+	count := 0
+	if err = m.Subscribe(Event().V1Alpha().DeviceUpdated(
+		func(msg *nats.Msg, deviceId string, d *core_client.Device) {
+			count += 1
+			msg.Ack()
+		})); err != nil {
+		t.Error(err)
+	}
+
 	var respCreate core_client.CreateDeviceResponse
 	if err = m.SendRequest(Resquest().V1Alpha().CreateDevice(
 		reqCreate,
@@ -296,10 +316,12 @@ func TestRequestUpdateDevice(t *testing.T) {
 	}
 
 	// Assert
+	time.Sleep(1 * time.Second)
 	assert.Equal(t, respCreate.GetOk().GetDevices()[0].Meta.Name, id)
 	assert.Equal(t, respUpd.GetOk().GetDevices()[0].Meta.Name, newName)
 	assert.Equal(t, fmt.Sprintf("%v", respCreate.GetError()), "<nil>")
 	assert.Equal(t, fmt.Sprintf("%v", respUpd.GetError()), "<nil>")
+	assert.Equal(t, 1, count)
 
 	if err = m.Disconnect(); err != nil {
 		t.Error(err)
@@ -328,6 +350,15 @@ func TestRequestDeleteDevice(t *testing.T) {
 	}
 
 	// Act
+	count := 0
+	if err = m.Subscribe(Event().V1Alpha().DeviceDeleted(
+		func(msg *nats.Msg, deviceId string, d *core_client.Device) {
+			count += 1
+			msg.Ack()
+		})); err != nil {
+		t.Error(err)
+	}
+
 	var respCreate core_client.CreateDeviceResponse
 	if err = m.SendRequest(Resquest().V1Alpha().CreateDevice(
 		reqCreate,
@@ -345,10 +376,12 @@ func TestRequestDeleteDevice(t *testing.T) {
 	}
 
 	// Assert
+	time.Sleep(1 * time.Second)
 	assert.Equal(t, respCreate.GetOk().GetDevices()[0].Meta.Name, id)
-	assert.Equal(t, len(respDel.GetOk().GetDevices()), 0)
+	assert.Equal(t, len(respDel.GetOk().GetDevices()), 1)
 	assert.Equal(t, fmt.Sprintf("%v", respCreate.GetError()), "<nil>")
 	assert.Equal(t, fmt.Sprintf("%v", respDel.GetError()), "<nil>")
+	assert.Equal(t, 1, count)
 
 	if err = m.Disconnect(); err != nil {
 		t.Error(err)

@@ -102,3 +102,27 @@ func PublishDeviceOnlineEvent(bus *bus.BusConn, deviceId string) error {
 func PublishDeviceOfflineEvent(bus *bus.BusConn, deviceId string) error {
 	return bus.Publish(routes.DeviceOfflineEvent.WithId(deviceId), []byte{})
 }
+
+func PublishDeviceDeletedEvent(bus *bus.BusConn, deviceId string, d DeviceWithId) error {
+	b, err := proto.Marshal(NewProtoDeviceFromDeviceWithId(d))
+	if err != nil {
+		return err
+	}
+	return bus.Publish(routes.DeviceDeletedEvent.WithId(deviceId), b)
+}
+
+func PublishDeviceCreatedEvent(bus *bus.BusConn, deviceId string, d DeviceWithId) error {
+	b, err := proto.Marshal(NewProtoDeviceFromDeviceWithId(d))
+	if err != nil {
+		return err
+	}
+	return bus.Publish(routes.DeviceCreatedEvent.WithId(deviceId), b)
+}
+
+func PublishDeviceUpdatedEvent(bus *bus.BusConn, deviceId string, d DeviceWithId) error {
+	b, err := proto.Marshal(NewProtoDeviceFromDeviceWithId(d))
+	if err != nil {
+		return err
+	}
+	return bus.Publish(routes.DeviceUpdatedEvent.WithId(deviceId), b)
+}

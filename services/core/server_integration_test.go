@@ -128,6 +128,15 @@ func TestPublishDeviceCreateClient(t *testing.T) {
 		},
 	}
 
+	// Subscribe to device created event
+	count := 0
+	s, err := b.Subscribe(
+		routes.DeviceCreatedEvent.WithId(id),
+		func(msg *nats.Msg) {
+			count += 1
+			msg.Ack()
+		})
+
 	// Act
 	respCreate, err := PublishDeviceCreateRequest(b, reqCreate)
 	if err != nil {
@@ -149,6 +158,8 @@ func TestPublishDeviceCreateClient(t *testing.T) {
 	// Assert
 	assert.Equal(t, reqCreate.DeviceId, respList.GetOk().Devices[0].Spec.DeviceId)
 	assert.Equal(t, respCreate.GetOk().Devices[0].Spec.DeviceId, respList.GetOk().Devices[0].Spec.DeviceId)
+	assert.Equal(t, 1, count)
+	s.Unsubscribe()
 }
 
 func TestPublishDeviceCreateClientNoID(t *testing.T) {
@@ -197,6 +208,15 @@ func TestPublishDeviceUpdateTargetIds(t *testing.T) {
 			"mir/device/description": "hello world of devices !",
 		},
 	}
+
+	// Subscribe to device updated event
+	count := 0
+	s, err := b.Subscribe(
+		routes.DeviceUpdatedEvent.WithId(id),
+		func(msg *nats.Msg) {
+			count += 1
+			msg.Ack()
+		})
 
 	reqUpd := &core_api.UpdateDeviceRequest{
 		Targets: &core_api.Targets{
@@ -249,6 +269,8 @@ func TestPublishDeviceUpdateTargetIds(t *testing.T) {
 	// Assert
 	assert.Equal(t, reqUpd.Targets.Ids[0], respDb[0].Spec.DeviceId)
 	assert.Equal(t, respUpd.GetOk().Devices[0].Spec.DeviceId, id)
+	assert.Equal(t, 1, count)
+	s.Unsubscribe()
 }
 
 func TestPublishDeviceUpdateTargetNames(t *testing.T) {
@@ -802,13 +824,22 @@ func TestPublishDeviceDeleteTargetIds(t *testing.T) {
 		},
 	}
 
+	// Subscribe to device deleted event
+	count := 0
+	s, err := b.Subscribe(
+		routes.DeviceDeletedEvent.WithId("*"),
+		func(msg *nats.Msg) {
+			count += 1
+			msg.Ack()
+		})
+
 	// Act
 	if _, err := createDevices(b, reqCreate); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
 
-	_, err := PublishDeviceDeleteRequest(b, reqDel)
+	_, err = PublishDeviceDeleteRequest(b, reqDel)
 	if err != nil {
 		t.Error(err)
 	}
@@ -827,9 +858,9 @@ func TestPublishDeviceDeleteTargetIds(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, len(respDb), 1)
-	// TODO adjust when delete return list of devices properly
-	//assert.Equal(t, len(resp.GetOk().Devices), 2)
 	assert.Equal(t, respDb[0].Spec.DeviceId, deviceIds[2])
+	assert.Equal(t, 2, count)
+	s.Unsubscribe()
 }
 
 func TestPublishDeviceDeleteTargetNames(t *testing.T) {
@@ -1604,6 +1635,15 @@ func TestCreatedDeviceAlreadyExist(t *testing.T) {
 		},
 	}
 
+	// Subscribe to device created event
+	count := 0
+	s, err := b.Subscribe(
+		routes.DeviceCreatedEvent.WithId(deviceIds[0]),
+		func(msg *nats.Msg) {
+			count += 1
+			msg.Ack()
+		})
+
 	// Act
 	respCreate, err := createDevices(b, reqCreate)
 	if err != nil {
@@ -1614,6 +1654,9 @@ func TestCreatedDeviceAlreadyExist(t *testing.T) {
 	// Assert
 	assert.Equal(t, len(respCreate), 2)
 	assert.Equal(t, respCreate[1].GetError().Message, "a device with the same id already exists")
+
+	assert.Equal(t, 1, count) // We create two devices, so only second one is not working
+	s.Unsubscribe()
 }
 
 func TestUpdateNoTargetMetafield(t *testing.T) {
