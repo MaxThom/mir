@@ -11,12 +11,7 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-// TODO generate events
-// TODO listen to events
-// TODO comment functions
-// TODO integration test
-
-// TODO module sdk integration test, add post check request with list
+// TODO app cli write default config utils
 // TODO bug tui list search
 
 func main() {
@@ -39,7 +34,7 @@ func main() {
 
 	err = m.Subscribe(mir.Event().V1Alpha().DeviceOnline(
 		func(msg *nats.Msg, deviceId string) {
-			fmt.Println("Device online ", deviceId)
+			fmt.Println("Event device online ", deviceId)
 			msg.Ack()
 		}))
 	if err != nil {
@@ -48,18 +43,54 @@ func main() {
 
 	err = m.Subscribe(mir.Event().V1Alpha().DeviceOffline(
 		func(msg *nats.Msg, deviceId string) {
-			fmt.Println("Device offline ", deviceId)
+			fmt.Println("Event device offline ", deviceId)
 			msg.Ack()
 		}))
 	if err != nil {
 		panic(err)
 	}
 
+	err = m.Subscribe(mir.Event().V1Alpha().DeviceDeleted(
+		func(msg *nats.Msg, deviceId string, d *core.Device) {
+			fmt.Println("Event device deleted ", deviceId)
+			msg.Ack()
+		}))
+	if err != nil {
+		panic(err)
+	}
+
+	err = m.Subscribe(mir.Event().V1Alpha().DeviceCreated(
+		func(msg *nats.Msg, deviceId string, d *core.Device) {
+			fmt.Println("Event device created ", deviceId)
+			msg.Ack()
+		}))
+	if err != nil {
+		panic(err)
+	}
+
+	err = m.Subscribe(mir.Event().V1Alpha().DeviceUpdated(
+		func(msg *nats.Msg, deviceId string, d *core.Device) {
+			fmt.Println("Event device updated ", deviceId)
+			msg.Ack()
+		}))
+	if err != nil {
+		panic(err)
+	}
+
+	SendDeviceCrud(m)
+
+	mir_signals.WaitForOsSignals(func() {
+		cancel()
+		m.Disconnect()
+	})
+}
+
+func SendDeviceCrud(m *mir.Mir) {
 	id := "CACA2MOU"
 	// Request mean youre expecting a reply
 	// We only have client request in the sdk
 	var respCreate core.CreateDeviceResponse
-	err = m.SendRequest(mir.Resquest().V1Alpha().CreateDevice(
+	err := m.SendRequest(mir.Resquest().V1Alpha().CreateDevice(
 		core.CreateDeviceRequest{
 			DeviceId: id,
 			Name:     "VRMMOU",
@@ -69,8 +100,11 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(respCreate.GetOk())
-	fmt.Println(respCreate.GetError())
+	if respCreate.GetError() != nil {
+		fmt.Println(respCreate.GetError())
+	} else {
+		fmt.Println("Created device ", id)
+	}
 
 	var respList core.ListDeviceResponse
 	err = m.SendRequest(mir.Resquest().V1Alpha().ListDevice(
@@ -80,8 +114,11 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(respList.GetOk())
-	fmt.Println(respList.GetError())
+	if respList.GetError() != nil {
+		fmt.Println(respList.GetError())
+	} else {
+		fmt.Println("List device ", id)
+	}
 
 	newName := "PIPI2MOU"
 	var respUpd core.UpdateDeviceResponse
@@ -98,8 +135,11 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(respUpd.GetOk())
-	fmt.Println(respUpd.GetError())
+	if respUpd.GetError() != nil {
+		fmt.Println(respUpd.GetError())
+	} else {
+		fmt.Println("Update device ", id)
+	}
 
 	var respDel core.DeleteDeviceResponse
 	err = m.SendRequest(mir.Resquest().V1Alpha().DeleteDevice(
@@ -112,11 +152,9 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(respDel.GetOk())
-	fmt.Println(respDel.GetError())
-
-	mir_signals.WaitForOsSignals(func() {
-		cancel()
-		m.Disconnect()
-	})
+	if respDel.GetError() != nil {
+		fmt.Println(respDel.GetError())
+	} else {
+		fmt.Println("Delete device ", id)
+	}
 }

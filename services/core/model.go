@@ -93,7 +93,7 @@ func NewCreateDeviceReqFromDevice(d Device) *core.CreateDeviceRequest {
 	}
 }
 
-func NewProtoDeviceListFromDevicesWithId(d []*DeviceWithId) []*core.Device {
+func NewProtoDeviceListFromDevicesWithId(d []DeviceWithId) []*core.Device {
 	p := []*core.Device{}
 	for _, v := range d {
 		p = append(p, NewProtoDeviceFromDeviceWithId(v))
@@ -101,7 +101,7 @@ func NewProtoDeviceListFromDevicesWithId(d []*DeviceWithId) []*core.Device {
 	return p
 }
 
-func NewProtoDeviceFromDeviceWithId(d *DeviceWithId) *core.Device {
+func NewProtoDeviceFromDeviceWithId(d DeviceWithId) *core.Device {
 	toValueMap := func(m map[string]*string) map[string]string {
 		vm := map[string]string{}
 		for k, v := range m {

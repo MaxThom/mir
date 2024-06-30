@@ -235,7 +235,7 @@ func (s *CoreServer) createDeviceRequestHandler(ch chan nats.Msg) {
 			})
 			continue
 		}
-		newDev := []*DeviceWithId{}
+		newDev := []DeviceWithId{}
 		err = surrealdb.Unmarshal(respDb, &newDev)
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while deserializing a db response")
@@ -249,6 +249,14 @@ func (s *CoreServer) createDeviceRequestHandler(ch chan nats.Msg) {
 				},
 			})
 			continue
+		}
+
+		// Publish created events
+		for _, d := range newDev {
+			err := PublishDeviceCreatedEvent(s.bus, d.Spec.DeviceId, d)
+			if err != nil {
+				l.Warn().Err(err).Str("device_id", d.Spec.DeviceId).Msg("error occure while publishing device created event")
+			}
 		}
 
 		sendReplyOrAck(s.bus, msg, &core.CreateDeviceResponse{
@@ -309,7 +317,7 @@ func (s *CoreServer) updateDeviceRequestHandler(ch chan nats.Msg) {
 		q := ""
 		v := map[string]any{}
 		q, v = createUpdateQueryForDevice(req.Targets, req)
-		respDb, err := executeQueryForType[[]*DeviceWithId](s.db, q, v)
+		respDb, err := executeQueryForType[[]DeviceWithId](s.db, q, v)
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while executing a db query")
 			sendReplyOrAck(s.bus, msg, &core.UpdateDeviceResponse{
@@ -322,6 +330,14 @@ func (s *CoreServer) updateDeviceRequestHandler(ch chan nats.Msg) {
 				},
 			})
 			continue
+		}
+
+		// Publish update events
+		for _, d := range respDb {
+			err := PublishDeviceUpdatedEvent(s.bus, d.Spec.DeviceId, d)
+			if err != nil {
+				l.Warn().Err(err).Str("device_id", d.Spec.DeviceId).Msg("error occure while publishing device updated event")
+			}
 		}
 
 		sendReplyOrAck(s.bus, msg, &core.UpdateDeviceResponse{
@@ -374,9 +390,10 @@ func (s *CoreServer) deleteDeviceRequestHandler(ch chan nats.Msg) {
 			continue
 		}
 
-		// TODO find a way for delete to return the device documents
-		q, v := createDeleteQueryForDevice(req)
-		respDb, err := executeQueryForType[[]*DeviceWithId](s.db, q, v)
+		qList, vList := createListQueryForDevice(&core.ListDeviceRequest{
+			Targets: req.Targets,
+		})
+		respDbList, err := executeQueryForType[[]DeviceWithId](s.db, qList, vList)
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while executing a db query")
 			sendReplyOrAck(s.bus, msg, &core.DeleteDeviceResponse{
@@ -391,10 +408,36 @@ func (s *CoreServer) deleteDeviceRequestHandler(ch chan nats.Msg) {
 			continue
 		}
 
+		// IDEA would be nice that surreal delete statement returns the document
+		// so we dont have to do two queries
+		q, v := createDeleteQueryForDevice(req)
+		_, err = executeQueryForType[[]DeviceWithId](s.db, q, v)
+		if err != nil {
+			l.Error().Err(err).Msg("error occure while executing a db query")
+			sendReplyOrAck(s.bus, msg, &core.DeleteDeviceResponse{
+				Response: &core.DeleteDeviceResponse_Error{
+					Error: &core.Error{
+						Code:    500,
+						Message: "error occure while executing a db query",
+						Details: []string{"500 Internal Server Error", err.Error()},
+					},
+				},
+			})
+			continue
+		}
+
+		// Publish delete events
+		for _, d := range respDbList {
+			err := PublishDeviceDeletedEvent(s.bus, d.Spec.DeviceId, d)
+			if err != nil {
+				l.Warn().Err(err).Str("device_id", d.Spec.DeviceId).Msg("error occure while publishing device deleted event")
+			}
+		}
+
 		sendReplyOrAck(s.bus, msg, &core.DeleteDeviceResponse{
 			Response: &core.DeleteDeviceResponse_Ok{
 				Ok: &core.DeviceList{
-					Devices: NewProtoDeviceListFromDevicesWithId(respDb),
+					Devices: NewProtoDeviceListFromDevicesWithId(respDbList),
 				},
 			}})
 	}
@@ -424,7 +467,7 @@ func (s *CoreServer) listDeviceRequestHandler(ch chan nats.Msg) {
 		l.Debug().Str("route", "list").Str("payload", fmt.Sprintf("%v", req)).Msg("list device request")
 
 		q, v := createListQueryForDevice(req)
-		respDb, err := executeQueryForType[[]*DeviceWithId](s.db, q, v)
+		respDb, err := executeQueryForType[[]DeviceWithId](s.db, q, v)
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while executing a db query")
 			sendReplyOrAck(s.bus, msg, &core.ListDeviceResponse{
@@ -474,7 +517,10 @@ func (s *CoreServer) hearthbeatPulsor(ctx context.Context, interval time.Duratio
 			s.hearthbeatsMutex.Lock()
 			for _, key := range newOffline {
 				l.Info().Str("route", "hearthbeat_pulsor").Str("event", "device_offline").Msg(key)
-				PublishDeviceOfflineEvent(s.bus, key)
+				err := PublishDeviceOfflineEvent(s.bus, key)
+				if err != nil {
+					l.Warn().Err(err).Str("device_id", key).Msg("error occure while publishing device offline event")
+				}
 				delete(s.hearthbeats, key)
 			}
 			s.hearthbeatsMutex.Unlock()
@@ -495,7 +541,10 @@ func (s *CoreServer) hearthbeatRequestHandler(ch chan nats.Msg) {
 		s.hearthbeatsMutex.Lock()
 		if _, ok := s.hearthbeats[deviceId]; !ok {
 			l.Info().Str("route", "hearthbeat").Str("event", "device_online").Msg(deviceId)
-			PublishDeviceOnlineEvent(s.bus, deviceId)
+			err := PublishDeviceOnlineEvent(s.bus, deviceId)
+			if err != nil {
+				l.Warn().Err(err).Str("device_id", deviceId).Msg("error occure while publishing device online event")
+			}
 		}
 		s.hearthbeats[deviceId] = time.Now().UTC()
 		s.hearthbeatsMutex.Unlock()

@@ -19,6 +19,12 @@ build:
 
 build-mir:
 	go build -o bin/mir cmds/mir/main.go
+# run
+ex-module:
+	go run ./examples/hearthbeat_module
+
+ex-device:
+	go run ./examples/hearthbeat_device
 
 # install
 install-mir: build-mir

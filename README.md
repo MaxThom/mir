@@ -82,27 +82,27 @@ Mir IoT Hub, act as your command center:
   - [x] api structure defined
   - [x] health endpoints
   - [x] api unit tests
-- [ ] MirCli
-  - [ ] one cli to rule them all
+- [x] MirCli
+  - [x] one cli to rule them all
 - [ ] MirTui, the terminal ui
   - [x] main layout
-  - [ ] device create window
-  - [ ] device list and edit window
+  - [x] device create window
+  - [x] device list and edit window
   - [ ] telemetry windows
   - [ ] command windows
   - [ ] manifest windows
-- [ ] Server side sdk to interact with the hub
+- [x] Server side sdk to interact with the hub
   - [ ] api that receive the bytes and must be deserialize using protoc code gen
-  - [ ] offers utils such as api routes, disk or cli ways to upload a bpb
-  - [ ] go-sdk
+  - [x] offers utils such as api routes, disk or cli ways to upload a bpb
+  - [x] go-sdk
   - [ ] rust-sdk
   - [ ] python-sdk
-- [ ] Core
+- [x] Core
   - [x] create new devices
-  - [ ] list, edit and delete devices
-  - [ ] hearthbeat for devices
+  - [x] list, edit and delete devices
+  - [x] hearthbeat for devices
 - [ ] ProtoProxy, the templated data engine
-  - [ ] proto library from protobuff to influx line protocol at runtime
+  - [x] proto library from protobuff to influx line protocol at runtime
   - [ ] proto schema to grafana dashboard
   - [ ] proto data to timeseries db
 - [ ] ProtoStore, to store proto schema
@@ -113,7 +113,7 @@ Mir IoT Hub, act as your command center:
   - [ ] desired properties
   - [ ] reported properties
 - [ ] Client side sdk to interact with Mir
-  - [ ] go-sdk
+  - [x] go-sdk
   - [ ] rust-sdk
   - [ ] python-sdk
 - [ ] MirUI, the web ui
