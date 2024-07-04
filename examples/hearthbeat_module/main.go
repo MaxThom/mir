@@ -11,7 +11,6 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-// TODO app cli write default config utils
 // TODO bug tui list search
 
 func main() {

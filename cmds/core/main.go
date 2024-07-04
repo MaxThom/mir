@@ -81,6 +81,7 @@ func main() {
 		mir_cli.WithConfigFilePath(&flagFilePath),
 		mir_cli.WithLogLevel(&flagLogLevel),
 		mir_cli.WithLogDebug(&flagDebug),
+		mir_cli.WithDefaultConfig(&defaultCfg, mir_config.Yaml),
 		mir_cli.WithManual(
 			"Manager devices for different CRUD operations as well as managing the hearthbeat of devices.",
 			&defaultCfg, true, ""),
