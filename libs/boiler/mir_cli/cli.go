@@ -43,11 +43,13 @@
 package mir_cli
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
 	"strings"
 
+	"github.com/maxthom/mir/libs/boiler/mir_config"
 	"gopkg.in/yaml.v3"
 )
 
@@ -66,17 +68,19 @@ func init() {
 }
 
 type mirCli struct {
-	appName    string
-	desc       string
-	Manual     string
-	longDesc   string
-	envVars    bool
-	extra      string
-	defaultCfg any
+	appName   string
+	desc      string
+	Manual    string
+	longDesc  string
+	envVars   bool
+	extra     string
+	manualCfg any
+	cfgPrint  string
 }
 
 var cli *mirCli
 var flagManualOut bool
+var flagConfigPrint bool
 
 func Setup(appName string, options ...func(*mirCli)) {
 	cli = &mirCli{
@@ -89,7 +93,7 @@ func Setup(appName string, options ...func(*mirCli)) {
 	cli.Manual = "Manual of " + cli.appName + "\n"
 	cli.Manual += strings.ReplaceAll("  "+cli.longDesc, "\n", "\n  ")
 	cli.Manual += "\n\nDefault configuration in yaml"
-	yamlData, _ := yaml.Marshal(cli.defaultCfg)
+	yamlData, _ := yaml.Marshal(cli.manualCfg)
 	cli.Manual += strings.ReplaceAll("\n"+string(yamlData), "\n", "\n  ")
 	if cli.envVars {
 		cli.Manual += "\nEnvironment variables"
@@ -120,6 +124,10 @@ func Parse() error {
 		fmt.Println(cli.Manual)
 		os.Exit(0)
 	}
+	if flagConfigPrint {
+		fmt.Println(cli.cfgPrint)
+		os.Exit(0)
+	}
 	return nil
 }
 
@@ -133,10 +141,23 @@ func WithDescription(desc string) func(*mirCli) {
 	}
 }
 
+func WithDefaultConfig(defaultConfig any, format mir_config.ConfigFormat) func(*mirCli) {
+	return func(cli *mirCli) {
+		var cfg []byte
+		if format == mir_config.Yaml {
+			cfg, _ = yaml.Marshal(defaultConfig)
+		} else if format == mir_config.Json {
+			cfg, _ = json.MarshalIndent(defaultConfig, "", "  ")
+		}
+		cli.cfgPrint = string(cfg)
+		flag.BoolVar(&flagConfigPrint, "printConfig", false, "print default configuration. can pipe to file.")
+	}
+}
+
 func WithManual(desc string, defaultConfig any, envVars bool, extra string) func(*mirCli) {
 	return func(cli *mirCli) {
 		cli.longDesc = desc
-		cli.defaultCfg = defaultConfig
+		cli.manualCfg = defaultConfig
 		cli.envVars = envVars
 		cli.extra = extra
 		flag.BoolVar(&flagManualOut, "manual", false, "diplay usage manual")

@@ -62,11 +62,11 @@ var configName string
 func init() {
 }
 
-type configFormat string
+type ConfigFormat string
 
 const (
-	Yaml configFormat = "yaml"
-	Json configFormat = "json"
+	Yaml ConfigFormat = "yaml"
+	Json ConfigFormat = "json"
 )
 
 type MirConfig struct {
@@ -78,7 +78,7 @@ type MirConfig struct {
 
 type configFile struct {
 	path   string
-	format configFormat
+	format ConfigFormat
 }
 
 func Empty() *MirConfig {
@@ -167,7 +167,7 @@ func (s *MirConfig) Unmarshal(out any) error {
 	return s.k.Unmarshal("", out)
 }
 
-func WithFilePath(path string, cff configFormat, devOnly bool) func(*MirConfig) {
+func WithFilePath(path string, cff ConfigFormat, devOnly bool) func(*MirConfig) {
 	return func(cfg *MirConfig) {
 		if devOnly && isNotPidZero || !devOnly {
 			if path != "" {
@@ -180,7 +180,7 @@ func WithFilePath(path string, cff configFormat, devOnly bool) func(*MirConfig) 
 	}
 }
 
-func WithFlagFilePath(path string, cff configFormat, devOnly bool) func(*MirConfig) {
+func WithFlagFilePath(path string, cff ConfigFormat, devOnly bool) func(*MirConfig) {
 	return func(cfg *MirConfig) {
 		if devOnly && isNotPidZero || !devOnly {
 			cfg.configFiles = append(cfg.configFiles, configFile{
@@ -191,7 +191,7 @@ func WithFlagFilePath(path string, cff configFormat, devOnly bool) func(*MirConf
 	}
 }
 
-func WithEtcFilePath(filename string, cff configFormat, devOnly bool) func(*MirConfig) {
+func WithEtcFilePath(filename string, cff ConfigFormat, devOnly bool) func(*MirConfig) {
 	return func(cfg *MirConfig) {
 		if devOnly && isNotPidZero || !devOnly {
 			path := filepath.Join("/etc", filename)
@@ -203,7 +203,7 @@ func WithEtcFilePath(filename string, cff configFormat, devOnly bool) func(*MirC
 	}
 }
 
-func WithXdgConfigHomeFilePath(filename string, cff configFormat, devOnly bool) func(*MirConfig) {
+func WithXdgConfigHomeFilePath(filename string, cff ConfigFormat, devOnly bool) func(*MirConfig) {
 	return func(cfg *MirConfig) {
 		if devOnly && isNotPidZero || !devOnly {
 			userHomeDir, err := os.UserHomeDir()
