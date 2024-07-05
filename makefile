@@ -27,7 +27,7 @@ ex-device:
 	go run ./examples/hearthbeat_device
 
 book:
-	cd ../mir.wiki && mdbook serve -p 3000
+	cd ../mir.wiki && mdbook serve -p 5001
 
 # install
 install-mir: build-mir
