@@ -35,7 +35,7 @@ type (
 	CLI struct {
 		Globals
 
-		Tui    tui.Cmd       `cmd:"" help:"Open Mir in TUI mode"`
+		Tui    tui.Cmd       `cmd:"" help:"Open Mir in TUI mode" default:"withargs" hidden:""`
 		Device cli.DeviceCmd `cmd:"" help:"Manage fleet of Mir devices"`
 	}
 	VersionFlag string
