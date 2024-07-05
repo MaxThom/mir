@@ -106,7 +106,10 @@ func NewModel(ctx context.Context) *Model {
 	}
 }
 
-func (m Model) InitWithData(d any) tea.Cmd {
+func (m *Model) InitWithData(d any) tea.Cmd {
+	m.table.Focus()
+	m.searchInput.Blur()
+	m.searchInput.SetValue("")
 	if a, ok := d.(InputData); ok {
 		if a.SilentFetch {
 			return tea.Batch(m.timer.Init(), msgs.ListMirDevicesSilently(store.Bus))

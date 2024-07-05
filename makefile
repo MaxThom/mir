@@ -26,6 +26,9 @@ ex-module:
 ex-device:
 	go run ./examples/hearthbeat_device
 
+book:
+	cd ../mir.wiki && mdbook serve -p 3000
+
 # install
 install-mir: build-mir
 	sudo cp bin/mir /usr/local/bin/mir
