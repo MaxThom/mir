@@ -11,8 +11,6 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-// TODO bug tui list search
-
 func main() {
 	_, cancel := context.WithCancel(context.Background())
 	mir_signals.Notify(syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT)
