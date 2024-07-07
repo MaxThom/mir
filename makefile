@@ -40,3 +40,6 @@ mir-log:
 # air
 air-core:
 	air -c .air/core.toml
+
+air-protoflux:
+	air -c .air/protoflux.toml
