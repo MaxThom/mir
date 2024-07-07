@@ -10,31 +10,33 @@ import (
 	"syscall"
 	"time"
 
+	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/maxthom/mir/libs/api/health"
 	"github.com/maxthom/mir/libs/api/metrics"
 	"github.com/maxthom/mir/libs/boiler/mir_cli"
 	"github.com/maxthom/mir/libs/boiler/mir_config"
 	"github.com/maxthom/mir/libs/boiler/mir_log"
 	"github.com/maxthom/mir/libs/boiler/mir_signals"
-	bus "github.com/maxthom/mir/libs/external/natsio"
-	"github.com/maxthom/mir/services/core"
+	"github.com/maxthom/mir/libs/external/surreal"
+	"github.com/maxthom/mir/pkgs/module/mir"
+	"github.com/maxthom/mir/services/protoflux"
 	"github.com/rs/zerolog"
-	"github.com/surrealdb/surrealdb.go"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 )
 
 const (
-	AppName = "core"
+	AppName = "protoflux"
 	Version = "0.0.1"
 )
 
 type (
 	CoreConfig struct {
-		LogLevel       string
-		HttpServer     HttpServer
-		DataBusServer  DataBusServer
-		DatabaseServer DatabaseSever
+		LogLevel        string
+		HttpServer      HttpServer
+		DataBusServer   DataBusServer
+		DatabaseServer  DatabaseSever
+		TelemetryServer TelemetryServer
 	}
 
 	HttpServer struct {
@@ -50,18 +52,26 @@ type (
 		User     string
 		Password string `cfg:"secret"`
 	}
+	TelemetryServer struct {
+		Url      string
+		User     string
+		Password string `cfg:"secret"`
+	}
 )
 
 var (
 	defaultCfg = CoreConfig{
 		LogLevel: "info",
 		HttpServer: HttpServer{
-			Port: 3016,
+			Port: 3017,
 		},
 		DataBusServer: DataBusServer{
 			Url: "nats://127.0.0.1:4222",
 		},
 		DatabaseServer: DatabaseSever{
+			Url: "ws://127.0.0.1:8000/rpc",
+		},
+		TelemetryServer: TelemetryServer{
 			Url: "ws://127.0.0.1:8000/rpc",
 		},
 	}
@@ -77,13 +87,13 @@ func main() {
 	var flagLogLevel string
 
 	mir_cli.Setup(AppName,
-		mir_cli.WithDescription("Listen to NatsIO, manage devices in Mir"),
+		mir_cli.WithDescription("Receives and processes protobuff data from Mir devices to InfluxDB."),
 		mir_cli.WithConfigFilePath(&flagFilePath),
 		mir_cli.WithLogLevel(&flagLogLevel),
 		mir_cli.WithLogDebug(&flagDebug),
 		mir_cli.WithDefaultConfig(&defaultCfg, mir_config.Yaml),
 		mir_cli.WithManual(
-			"Manager devices for different CRUD operations as well as managing the hearthbeat of devices.",
+			"Connect to Mir Message bus to receives and processes protobuff data from Mir devices to InfluxDB.",
 			&defaultCfg, true, ""),
 		mir_cli.WithOsFlag(func() {
 			flag.StringVar(&flagMirTarget, "target", "", "set Mir server url. Default to nats://127.0.0.1:4222.")
@@ -95,8 +105,8 @@ func main() {
 	cfg := defaultCfg
 	err, lookupFiles, foundFiles := mir_config.
 		New(AppName,
-			mir_config.WithEtcFilePath("mir/core.yaml", mir_config.Yaml, false),
-			mir_config.WithXdgConfigHomeFilePath("mir/core.yaml", mir_config.Yaml, true),
+			mir_config.WithEtcFilePath("mir/protoflux.yaml", mir_config.Yaml, false),
+			mir_config.WithXdgConfigHomeFilePath("mir/protoflux.yaml", mir_config.Yaml, true),
 			mir_config.WithFilePath(flagFilePath, mir_config.Yaml, false),
 			mir_config.WithEnvVars("mir"),
 		).
@@ -146,22 +156,27 @@ func run(
 
 	// Setup
 	// Database
-	db, err := connectToDb(cfg.DatabaseServer.Url, "global", "mir", cfg.DatabaseServer.User, cfg.DatabaseServer.Password)
+	db, err := surreal.ConnectToDb(cfg.DatabaseServer.Url, "global", "mir", cfg.DatabaseServer.User, cfg.DatabaseServer.Password)
 	if err != nil {
 		return err
 	}
 	log.Info().Str("url", cfg.DatabaseServer.Url).Str("namespace", "global").Str("database", "mir").Msg("connected to database")
 
+	// Timeseries Database
+	lpClient := influxdb2.NewClient(cfg.TelemetryServer.Url, "")
+	lpWriter := lpClient.WriteAPI("", "")
+	log.Info().Str("url", cfg.TelemetryServer.Url).Msg("connected to puthost")
+
 	// Bus
-	b, err := bus.New(cfg.DataBusServer.Url)
+	m, err := mir.Connect("protoflux", cfg.DataBusServer.Url)
 	if err != nil {
 		return err
 	}
 	log.Info().Str("url", cfg.DataBusServer.Url).Msg("connected to msg bus")
 
 	// Services
-	coreSrv := core.NewCore(log, b, db)
-	core.RegisterMetrics(metrics.Registry())
+	protofluxSrv := protoflux.NewProtoFluxServer(log, m, lpWriter, db)
+	protoflux.RegisterMetrics(metrics.Registry())
 
 	// Metrics & Health
 	mux := http.NewServeMux()
@@ -189,7 +204,7 @@ func run(
 	ctx, cancel := context.WithCancel(ctx)
 	go func() {
 		wg.Add(1)
-		coreSrv.Listen(ctx)
+		protofluxSrv.Listen(ctx)
 		wg.Done()
 	}()
 
@@ -201,10 +216,8 @@ func run(
 		if err := server.Shutdown(shutdownCtx); err != nil {
 			log.Fatal().Err(err).Msg("failed to gracefully shutdown server")
 		}
-
-		b.Drain()
 		cancel()
-		b.Close()
+		m.Disconnect()
 		db.Close()
 		log.Debug().Msg("db connection closed")
 		shutdownCancel()
@@ -213,24 +226,4 @@ func run(
 	})
 
 	return nil
-}
-
-func connectToDb(url, namespace, database, user, password string) (*surrealdb.DB, error) {
-	db, err := surrealdb.New(url)
-	if err != nil {
-		return nil, err
-	}
-
-	if _, err = db.Signin(map[string]any{
-		"user": user,
-		"pass": password,
-	}); err != nil {
-		return nil, err
-	}
-
-	if _, err = db.Use(namespace, database); err != nil {
-		return nil, err
-	}
-
-	return db, nil
 }
