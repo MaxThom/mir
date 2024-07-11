@@ -320,6 +320,91 @@ Events are sever side computed trigger based on incoming data, telemetry or requ
 
 The goal of events is to have an easy way to extend the Mir ecosystem by subscribing to them via the module sdk interface.
 
+#### 4.1.4 Telemetry Module
+
+The telemetry module goal is to create a way for a device to push telemetry in an ergonomic and performant way. Gathering the telemetry to be sent by a device is, for most cases, a short task. On the other hand, creating the ingestion system, a User Interface to display the data and have an alerting system is another story. Mir Telemetry module goal is to provide all of that out of the box, to give an all battery included user experience. 
+
+To enable ergonomics and performance, Protobuff is used to define a schema of the telemetry. With a schema solution, we can read it at runtime to generate the ingestion functions as well as different tools such as a Grafana dashboards and more. Using InfluxDB as the timeseries database, we can have access to their alerting system and other toolings.
+
+The difficulty arises in how do you define the schema and where do you store it. There can be many type of devices with different schema as well as many versions of the same schema. We need to ensure that the schema used to deserialize the data matches the actual data. I foresee two different approaches:
+1.  Handshake on device startup
+2. Manually upload to store
+
+#### 4.1.4.1 Handshake 
+
+1. Device startup
+2. Device send schema as byte
+3. Protoflux receives it and creates an entry in its map of map with deviceid as first key, protomessage as second key and ingestion function as value. 
+	- The deviceid comes from the message subject
+	- The proto message name is either subject or header
+4. Upon receiving the schema, Protoflux will also save the schema in Nats KeyValue store, where key is the device id an schema is the value. Upon s
+
+```mermaid
+sequenceDiagram
+	participant dev as Device
+	participant nats as NatsIO
+	participant pf as Protoflux
+	participant inf as InfluxDB
+	pf->>nats: On startup, read for nats kv *1
+	nats-->>pf: list of schemas per device
+	pf->>pf: Generate ingestion functions per device
+    dev->>nats: On startup, send schema *2
+    nats-->>+pf: send schema 
+    pf->>pf: Compare with stored schema
+    alt is equivalent
+    pf->>pf: do nothing
+    else is different or non existent *3
+    pf->>pf: create new ingestion functions based on schema
+    pf->>nats: write new schema to kv store
+    nats-->>pf: 
+    end
+    dev->>nats: send telemtry
+    nats-->>pf: receives telemetry
+    pf->>pf: find ingestion function using deviceid and message
+    alt not found
+	pf->>nats: look for schema in kv
+	nats-->>pf: return schema or not found
+	alt not found
+	pf->>nats: request schema from device
+	nats->>dev: request fowarded to device
+	dev-->>nats: respond with schema in bytes
+	nats-->>pf: receives schema
+	pf->>pf: create ingesting function
+	pf->>nats: write schema to kv store
+	nats-->>pf: 
+	end
+    end
+    pf->>pf: deserialize telemetry
+    alt error deserialing because of wrong proto descriptor
+	pf->>nats: request schema from device
+	nats->>dev: request fowarded to device
+	dev-->>nats: respond with schema in bytes
+	nats-->>pf: receives schema
+	pf->>pf: create ingesting function
+	pf->>nats: write schema to kv store
+	nats-->>pf: 
+    end
+    pf->>inf: write to store *4
+```
+
+*1. How to organize the data? 
+- key is device id and value is schema in byte 
+- do we organize by schema name instead? that would agglomerate the number of keys per schema instead of per device, but that would make annoying to maintain a proper naming
+- or we could have a key be an hash of the schema. would not work, it need to map a device.
+
+*1a. We could also lazy load instead of loading everything. It could be a feature flag.
+*2. Instead of send schema on startup, we could start straight sending telemetry
+*3. Use history feature of Nats KV on deviceid schema's 
+*4. For table name, it would be the schema name so its the dev responsability to maintant that. each table would be one of the following:
+- **\<schema_name>_<message_name>** *(preference)*
+- \<schema_name>, each column as the message_name as prefix
+
+Device Twin, there could be a field in status with the proto schema name so we know which devices write where in influx
+
+#### 4.1.4.2 Manually upload schema
+
+The handshake approach has great flexibility and reduce the hassle of schema version management by letting the system handle it for us. That being said, the device has to send the schema via network which can be a bigger payload and create problems for specific cases. The second approach is too manually upload the schema via the MirCLI. You upload the schema in bytes with a device targets (labels, id, name, namespace, etc), and Protoflux will write the schema to each deviceid in the kv store as well as refreshing its map of ingestion functions.
+
 ### 4.2 Detailed Design
 
 Dive into the detailed design of each module, including class diagrams, data flow diagrams, and other relevant details.
