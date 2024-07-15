@@ -8,8 +8,12 @@ import (
 
 	bus "github.com/maxthom/mir/libs/external/natsio"
 	"github.com/maxthom/mir/services/core"
+	"github.com/maxthom/mir/services/protoflux"
 	"github.com/nats-io/nats.go"
 	"github.com/rs/zerolog"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/descriptorpb"
 )
 
 // IDEA on go language
@@ -22,11 +26,12 @@ import (
 // bus and db still exist here, but not err
 
 type Mir struct {
-	cfg      Cfg
-	b        *bus.BusConn
-	ctx      context.Context
-	cancelFn context.CancelFunc
-	l        zerolog.Logger
+	cfg             Cfg
+	b               *bus.BusConn
+	ctx             context.Context
+	cancelFn        context.CancelFunc
+	l               zerolog.Logger
+	telemetrySchema *descriptorpb.FileDescriptorSet
 }
 
 type Cfg struct {
@@ -95,7 +100,7 @@ func (m *Mir) hearthbeat(ctx context.Context, interval time.Duration) {
 			m.l.Debug().Msg("shuting down hearthbeat")
 			return
 		case <-time.After(interval):
-			if err := core.PublishHearthbeatRequest(m.b, m.cfg.DeviceId); err != nil {
+			if err := core.PublishHearthbeatStream(m.b, m.cfg.DeviceId); err != nil {
 				m.l.Error().Err(err).Msg("error sending hearthbeat to Mir")
 			}
 		}
@@ -123,4 +128,19 @@ func (m *Mir) shutdown(ctx context.Context) {
 func (m Mir) Logger() zerolog.Logger {
 	l := m.l.With().Logger()
 	return l
+}
+
+// Marshal the FileDescriptorSet to bytes
+func (m Mir) marshalTelemetrySchema() ([]byte, error) {
+	var schemaBytes []byte
+	var err error
+	if m.telemetrySchema != nil {
+		schemaBytes, err = proto.Marshal(m.telemetrySchema)
+	}
+	return schemaBytes, err
+}
+
+// Send proto telemetry to Mir Server
+func (m Mir) SendTelemetry(t protoreflect.ProtoMessage) error {
+	return protoflux.PublishTelemetryStream(m.b, m.cfg.DeviceId, t)
 }

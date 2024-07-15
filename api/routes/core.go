@@ -1,16 +1,19 @@
 package routes
 
 const (
-	CreateDeviceStream     Subject = "client.%s.core.v1alpha.create"
-	UpdateDeviceStream     Subject = "client.%s.core.v1alpha.update"
-	DeleteDeviceStream     Subject = "client.%s.core.v1alpha.delete"
-	ListDeviceStream       Subject = "client.%s.core.v1alpha.list"
+	CreateDeviceRequest Subject = "client.%s.core.v1alpha.create"
+	UpdateDeviceRequest Subject = "client.%s.core.v1alpha.update"
+	DeleteDeviceRequest Subject = "client.%s.core.v1alpha.delete"
+	ListDeviceRequest   Subject = "client.%s.core.v1alpha.list"
+
+	DeviceOnlineEvent  Subject = "event.%s.core.v1alpha.deviceonline"
+	DeviceOfflineEvent Subject = "event.%s.core.v1alpha.deviceoffline"
+	DeviceCreatedEvent Subject = "event.%s.core.v1alpha.devicecreated"
+	DeviceDeletedEvent Subject = "event.%s.core.v1alpha.devicedeleted"
+	DeviceUpdatedEvent Subject = "event.%s.core.v1alpha.deviceupdated"
+
 	HearthbeatDeviceStream Subject = "device.%s.core.v1alpha.hearthbeat"
-	DeviceOnlineEvent      Subject = "event.%s.core.v1alpha.deviceonline"
-	DeviceOfflineEvent     Subject = "event.%s.core.v1alpha.deviceoffline"
-	DeviceCreatedEvent     Subject = "event.%s.core.v1alpha.devicecreated"
-	DeviceDeletedEvent     Subject = "event.%s.core.v1alpha.devicedeleted"
-	DeviceUpdatedEvent     Subject = "event.%s.core.v1alpha.deviceupdated"
+	TelemetryDeviceStream  Subject = "device.%s.telemetry.v1alpha.proto"
 )
 
 // Core Builder

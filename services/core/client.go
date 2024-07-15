@@ -17,7 +17,7 @@ func PublishDeviceCreateRequest(bus *bus.BusConn, req *core.CreateDeviceRequest)
 		return &core.CreateDeviceResponse{}, err
 	}
 
-	resMsg, err := bus.Request(routes.CreateDeviceStream.WithId("todo"), bReq, 7*time.Second)
+	resMsg, err := bus.Request(routes.CreateDeviceRequest.WithId("todo"), bReq, 7*time.Second)
 	if err != nil {
 		return &core.CreateDeviceResponse{}, err
 	}
@@ -37,7 +37,7 @@ func PublishDeviceUpdateRequest(bus *bus.BusConn, req *core.UpdateDeviceRequest)
 		return &core.UpdateDeviceResponse{}, err
 	}
 
-	resMsg, err := bus.Request(routes.UpdateDeviceStream.WithId("TODO"), bReq, 7*time.Second)
+	resMsg, err := bus.Request(routes.UpdateDeviceRequest.WithId("TODO"), bReq, 7*time.Second)
 	if err != nil {
 		return &core.UpdateDeviceResponse{}, err
 	}
@@ -57,7 +57,7 @@ func PublishDeviceDeleteRequest(bus *bus.BusConn, req *core.DeleteDeviceRequest)
 		return &core.DeleteDeviceResponse{}, err
 	}
 
-	resMsg, err := bus.Request(routes.DeleteDeviceStream.WithId("TODO"), bReq, 7*time.Second)
+	resMsg, err := bus.Request(routes.DeleteDeviceRequest.WithId("TODO"), bReq, 7*time.Second)
 	if err != nil {
 		return &core.DeleteDeviceResponse{}, err
 	}
@@ -77,7 +77,7 @@ func PublishDeviceListRequest(bus *bus.BusConn, req *core.ListDeviceRequest) (*c
 		return &core.ListDeviceResponse{}, err
 	}
 
-	resMsg, err := bus.Request(routes.ListDeviceStream.WithId("TODO"), bReq, 7*time.Second)
+	resMsg, err := bus.Request(routes.ListDeviceRequest.WithId("TODO"), bReq, 7*time.Second)
 	if err != nil {
 		return &core.ListDeviceResponse{}, err
 	}
@@ -91,7 +91,7 @@ func PublishDeviceListRequest(bus *bus.BusConn, req *core.ListDeviceRequest) (*c
 	return resp, nil
 }
 
-func PublishHearthbeatRequest(bus *bus.BusConn, deviceId string) error {
+func PublishHearthbeatStream(bus *bus.BusConn, deviceId string) error {
 	return bus.Publish(routes.HearthbeatDeviceStream.WithId(deviceId), []byte{})
 }
 

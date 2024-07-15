@@ -33,7 +33,7 @@ func (s requestV1Alpha) CreateDevice(req core.CreateDeviceRequest, resp *core.Cr
 }
 
 func (s *createDeviceRequest) msg() (*nats.Msg, error) {
-	m := nats.NewMsg(routes.CreateDeviceStream.WithId("TODO"))
+	m := nats.NewMsg(routes.CreateDeviceRequest.WithId("TODO"))
 	bReq, err := proto.Marshal(s.req)
 
 	if err != nil {
@@ -70,7 +70,7 @@ func (s requestV1Alpha) UpdateDevice(req core.UpdateDeviceRequest, resp *core.Up
 }
 
 func (s *updateDeviceRequest) msg() (*nats.Msg, error) {
-	m := nats.NewMsg(routes.UpdateDeviceStream.WithId("TODO"))
+	m := nats.NewMsg(routes.UpdateDeviceRequest.WithId("TODO"))
 	bReq, err := proto.Marshal(s.req)
 
 	if err != nil {
@@ -107,7 +107,7 @@ func (s requestV1Alpha) ListDevice(req core.ListDeviceRequest, resp *core.ListDe
 }
 
 func (s *listDeviceRequest) msg() (*nats.Msg, error) {
-	m := nats.NewMsg(routes.ListDeviceStream.WithId("TODO"))
+	m := nats.NewMsg(routes.ListDeviceRequest.WithId("TODO"))
 	bReq, err := proto.Marshal(s.req)
 
 	if err != nil {
@@ -144,7 +144,7 @@ func (s requestV1Alpha) DeleteDevice(req core.DeleteDeviceRequest, resp *core.De
 }
 
 func (s *deleteDeviceRequest) msg() (*nats.Msg, error) {
-	m := nats.NewMsg(routes.DeleteDeviceStream.WithId("TODO"))
+	m := nats.NewMsg(routes.DeleteDeviceRequest.WithId("TODO"))
 	bReq, err := proto.Marshal(s.req)
 
 	if err != nil {
