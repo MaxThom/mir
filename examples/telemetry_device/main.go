@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math/rand/v2"
 	"os"
 	"syscall"
+	"time"
 
 	"github.com/maxthom/mir/examples/telemetry_device/gen"
 	"github.com/maxthom/mir/libs/boiler/mir_signals"
@@ -28,13 +30,20 @@ func main() {
 		LogLevel(mir.LogLevelInfo).
 		LogWriters([]io.Writer{os.Stdout}).
 		DefaultConfigFile(mir.Yaml).
+		TelemetrySchema(
+			gen.File_telemetry_proto,
+		).
+		TelemetrySchemaProto(
+			protodesc.ToFileDescriptorProto(gen.File_command_proto),
+			protodesc.ToFileDescriptorProto(gen.File_utils_proto),
+		).
 		Build()
 	if err != nil {
 		panic(err)
 	}
 	l := m.Logger()
 
-	l.Info().Msg("Mir is ready for launch")
+	l.Info().Msg("Mir is ready for launch... Launching!")
 	mirWg, err := m.Launch(ctx)
 	if err != nil {
 		l.Error().Err(err).Msg("Abort launch error")
@@ -42,6 +51,27 @@ func main() {
 	}
 	l.Info().Msg("Mir is at maxq and nominal")
 
+	go func() {
+		for {
+			time.Sleep(3 * time.Second)
+			data := gen.Telemetry{
+				Temperature: rand.Int32N(101),
+				Pressure:    rand.Int32N(101),
+				Humidity:    rand.Int32N(101),
+			}
+			m.SendTelemetry(&data)
+
+			l.Debug().Str("module", "telemetry").Any("data", data).Msg("send tlm")
+		}
+	}()
+
+	mir_signals.WaitForOsSignals(func() {
+		cancel()
+		mirWg.Wait()
+	})
+}
+
+func PlayWithProtoSchema() {
 	// Test data
 	data := gen.Telemetry{
 		Temperature: 25,
@@ -118,8 +148,4 @@ func main() {
 	}
 	fmt.Println(dynMsg)
 
-	mir_signals.WaitForOsSignals(func() {
-		cancel()
-		mirWg.Wait()
-	})
 }

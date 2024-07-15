@@ -1729,7 +1729,7 @@ func TestDeviceGoesOnline(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	if err := PublishHearthbeatRequest(b, deviceIds[0]); err != nil {
+	if err := PublishHearthbeatStream(b, deviceIds[0]); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
@@ -1794,7 +1794,7 @@ func TestDeviceGoesOffline(t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	hbTime := time.Now().UTC()
-	if err := PublishHearthbeatRequest(b, deviceIds[0]); err != nil {
+	if err := PublishHearthbeatStream(b, deviceIds[0]); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)

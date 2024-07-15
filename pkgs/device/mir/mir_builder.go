@@ -6,14 +6,19 @@ import (
 
 	"github.com/maxthom/mir/libs/boiler/mir_config"
 	"github.com/maxthom/mir/libs/boiler/mir_log"
+	"google.golang.org/protobuf/reflect/protodesc"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/descriptorpb"
 )
 
 type builder struct {
-	fileOpts   []func(*mir_config.MirConfig)
-	deviceId   *string
-	target     *string
-	logLevel   *logLevel
-	logWriters []io.Writer
+	fileOpts            []func(*mir_config.MirConfig)
+	deviceId            *string
+	target              *string
+	logLevel            *logLevel
+	logWriters          []io.Writer
+	telemetrySchema     *descriptorpb.FileDescriptorSet
+	telemetryModuleFlag bool
 }
 
 type configFormat string
@@ -38,7 +43,9 @@ const (
 // device built and launched !
 // Configure logging, device authentication and config loading.
 func Builder() builder {
-	return builder{}
+	return builder{
+		telemetrySchema: new(descriptorpb.FileDescriptorSet),
+	}
 }
 
 // Set unique ID of the device
@@ -126,8 +133,27 @@ func (b builder) LogWriters(writers []io.Writer) builder {
 	return b
 }
 
+func (b builder) TelemetrySchema(s ...protoreflect.FileDescriptor) builder {
+	if len(s) > 0 {
+		b.telemetryModuleFlag = true
+	}
+	for _, f := range s {
+		b.telemetrySchema.File = append(b.telemetrySchema.File,
+			protodesc.ToFileDescriptorProto(f))
+	}
+	return b
+}
+func (b builder) TelemetrySchemaProto(s ...*descriptorpb.FileDescriptorProto) builder {
+	if len(s) > 0 {
+		b.telemetryModuleFlag = true
+	}
+	b.telemetrySchema.File = append(b.telemetrySchema.File, s...)
+	return b
+}
+
 // Return the Mir device object to
 // be used to interact with the system
+// TODO returns errors instead of logs, use error.wrap and error.join
 func (b builder) Build() (*Mir, error) {
 	c := Cfg{}
 
@@ -183,8 +209,14 @@ func (b builder) Build() (*Mir, error) {
 			Fields: fieldsErr,
 		}
 	}
+
+	// Marshal the FileDescriptorSet to bytes
+	if b.telemetryModuleFlag {
+		l.Info().Str("module", "telemetry").Msg("Telemetry schema loaded")
+	}
 	return &Mir{
-		cfg: c,
-		l:   l,
+		cfg:             c,
+		l:               l,
+		telemetrySchema: b.telemetrySchema,
 	}, nil
 }
