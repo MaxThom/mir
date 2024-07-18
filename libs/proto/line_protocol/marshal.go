@@ -19,7 +19,7 @@ type (
 )
 
 const (
-	nestedChar     string = "__"
+	nestedChar     string = "."
 	arrayIndexChar string = "_"
 )
 

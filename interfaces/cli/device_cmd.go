@@ -154,6 +154,13 @@ func (d *DeviceCreateCmd) Run(c CLI) error {
 	}
 	defer msgBus.Close()
 
+	if d.Anno == nil {
+		d.Anno = make(map[string]string)
+	}
+	if d.Labels == nil {
+		d.Labels = make(map[string]string)
+	}
+
 	if d.RandomId {
 		t, err := uuid.NewRandom()
 		if err != nil {

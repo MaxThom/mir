@@ -210,10 +210,6 @@ func (b builder) Build() (*Mir, error) {
 		}
 	}
 
-	// Marshal the FileDescriptorSet to bytes
-	if b.telemetryModuleFlag {
-		l.Info().Str("module", "telemetry").Msg("Telemetry schema loaded")
-	}
 	return &Mir{
 		cfg:             c,
 		l:               l,

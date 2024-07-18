@@ -27,7 +27,7 @@ func main() {
 	m, err := mir.Builder().
 		DeviceId("0x238n9").
 		Target("nats://127.0.0.1:4222").
-		LogLevel(mir.LogLevelInfo).
+		LogLevel(mir.LogLevelDebug).
 		LogWriters([]io.Writer{os.Stdout}).
 		DefaultConfigFile(mir.Yaml).
 		TelemetrySchema(

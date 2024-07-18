@@ -1,6 +1,7 @@
 package mir
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -8,13 +9,19 @@ import (
 	"time"
 
 	core_client "github.com/maxthom/mir/api/gen/proto/v1alpha/core"
+	device_client "github.com/maxthom/mir/api/gen/proto/v1alpha/device"
 	bus "github.com/maxthom/mir/libs/external/natsio"
 	"github.com/maxthom/mir/libs/test_utils"
 	mir_device "github.com/maxthom/mir/pkgs/device/mir"
+	"github.com/maxthom/mir/pkgs/device/mir/gen/proto_test"
 	"github.com/maxthom/mir/services/core"
 	"github.com/nats-io/nats.go"
 	logger "github.com/rs/zerolog/log"
 	"github.com/surrealdb/surrealdb.go"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protodesc"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/descriptorpb"
 	"gotest.tools/assert"
 )
 
@@ -435,4 +442,77 @@ func TestRequestListDevice(t *testing.T) {
 	if err = m.Disconnect(); err != nil {
 		t.Error(err)
 	}
+}
+
+func TestRequestRetrieveSchema(t *testing.T) {
+	// Arrange
+	id := "device_retrieve_schema"
+	schemaBytes, err := marshalProtoFiles(
+		proto_test.File_proto_test_command_proto,
+		proto_test.File_proto_test_telemetry_proto,
+	)
+	if err != nil {
+		t.Error(err)
+	}
+	dev, err := mir_device.Builder().
+		DeviceId(id).
+		Target(busUrl).
+		LogLevel(mir_device.LogLevelInfo).
+		TelemetrySchema(
+			proto_test.File_proto_test_command_proto,
+		).
+		TelemetrySchemaProto(
+			protodesc.ToFileDescriptorProto(proto_test.File_proto_test_telemetry_proto),
+		).
+		Build()
+	if err != nil {
+		t.Error(err)
+	}
+
+	m, err := Connect("module_test", busUrl)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Act
+	ctx, cancel := context.WithCancel(context.Background())
+	wg, err := dev.Launch(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+
+	time.Sleep(1 * time.Second)
+	var respSchema device_client.SchemaRetrieveResponse
+	if err = m.SendRequest(Device().V1Alpha().RequestSchema(
+		id,
+		&respSchema,
+	)); err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, true, bytes.Equal(schemaBytes, respSchema.GetSchema()))
+
+	if err = m.Disconnect(); err != nil {
+		t.Error(err)
+	}
+	cancel()
+	wg.Wait()
+}
+
+func marshalProtoFiles(files ...protoreflect.FileDescriptor) ([]byte, error) {
+	set := []*descriptorpb.FileDescriptorProto{}
+	for _, f := range files {
+		set = append(set, protodesc.ToFileDescriptorProto(f))
+	}
+
+	fileDescriptorSet := &descriptorpb.FileDescriptorSet{
+		File: set,
+	}
+
+	bytes, err := proto.Marshal(fileDescriptorSet)
+	if err != nil {
+		return []byte{}, err
+	}
+	return bytes, nil
 }
