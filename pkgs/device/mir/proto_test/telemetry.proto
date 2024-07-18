@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package v1alpha.telemetry_test;
+
+option go_package = "proto_test/";
+
+message Telemetry {
+	int32 temperature = 1;
+	int32 pressure = 2;
+	int32 humidity = 3;
+}

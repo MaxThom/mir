@@ -41,3 +41,28 @@ func (s hearthbeatStream) handler() nats.MsgHandler {
 		s.fn(msg, routes.Subject(msg.Subject).GetId())
 	}
 }
+
+// Telemetry stream
+
+type telemetryStream struct {
+	// TODO add proto message name and proto message
+	fn func(msg *nats.Msg, deviceId string, protoMsgName string)
+}
+
+// Listen to the hearthbeat stream coming from each device
+// Used by the system to compute online or offline devices
+func (s streamV1alpha) Telemetry(fn func(msg *nats.Msg, deviceId string, protoMsgName string)) *telemetryStream {
+	return &telemetryStream{
+		fn: fn,
+	}
+}
+
+func (s telemetryStream) subject() string {
+	return routes.TelemetryDeviceStream.WithId("*")
+}
+
+func (s telemetryStream) handler() nats.MsgHandler {
+	return func(msg *nats.Msg) {
+		s.fn(msg, routes.Subject(msg.Subject).GetId(), msg.Header.Get("__msg"))
+	}
+}

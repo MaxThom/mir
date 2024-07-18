@@ -200,15 +200,10 @@ type UpdateDeviceRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Targets *Targets `protobuf:"bytes,1,opt,name=targets,proto3" json:"targets,omitempty"` // To target a set of devices, search using ids, labels and annotations
-	// You can only update the spec or status per request
-	// Is there a many of?
-	// repeated Parts parts = 2;
-	// message Parts {
-	// oneof request {
-	Meta   *UpdateDeviceRequest_Meta   `protobuf:"bytes,2,opt,name=meta,proto3,oneof" json:"meta,omitempty"`
-	Spec   *UpdateDeviceRequest_Spec   `protobuf:"bytes,3,opt,name=spec,proto3,oneof" json:"spec,omitempty"`
-	Status *UpdateDeviceRequest_Status `protobuf:"bytes,4,opt,name=status,proto3,oneof" json:"status,omitempty"`
+	Targets *Targets                    `protobuf:"bytes,1,opt,name=targets,proto3" json:"targets,omitempty"` // To target a set of devices, search using ids, labels and annotations
+	Meta    *UpdateDeviceRequest_Meta   `protobuf:"bytes,2,opt,name=meta,proto3,oneof" json:"meta,omitempty"`
+	Spec    *UpdateDeviceRequest_Spec   `protobuf:"bytes,3,opt,name=spec,proto3,oneof" json:"spec,omitempty"`
+	Status  *UpdateDeviceRequest_Status `protobuf:"bytes,4,opt,name=status,proto3,oneof" json:"status,omitempty"`
 }
 
 func (x *UpdateDeviceRequest) Reset() {

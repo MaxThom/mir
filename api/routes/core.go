@@ -13,7 +13,6 @@ const (
 	DeviceUpdatedEvent Subject = "event.%s.core.v1alpha.deviceupdated"
 
 	HearthbeatDeviceStream Subject = "device.%s.core.v1alpha.hearthbeat"
-	TelemetryDeviceStream  Subject = "device.%s.telemetry.v1alpha.proto"
 )
 
 // Core Builder

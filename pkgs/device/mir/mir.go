@@ -3,12 +3,13 @@ package mir
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
+	"github.com/maxthom/mir/api/routes"
 	bus "github.com/maxthom/mir/libs/external/natsio"
 	"github.com/maxthom/mir/services/core"
-	"github.com/maxthom/mir/services/protoflux"
 	"github.com/nats-io/nats.go"
 	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/proto"
@@ -76,6 +77,16 @@ func (m *Mir) Launch(ctx context.Context) (*sync.WaitGroup, error) {
 		return &wg, err
 	}
 
+	sub, err := m.b.SubscribeSync(fmt.Sprintf("%s.>", m.cfg.DeviceId))
+	if err != nil {
+		return &wg, err
+	}
+	go func() {
+		wg.Add(1)
+		m.commands(ctx, sub)
+		wg.Done()
+	}()
+
 	go func() {
 		wg.Add(1)
 		m.hearthbeat(m.ctx, time.Second*10)
@@ -91,17 +102,42 @@ func (m *Mir) Launch(ctx context.Context) (*sync.WaitGroup, error) {
 	return &wg, nil
 }
 
-// Send hearthbeat to Mir on a based intervall
+// Send hearthbeat to Mir on a based interval
 // Run in a routine for non blocking
 func (m *Mir) hearthbeat(ctx context.Context, interval time.Duration) {
 	for {
 		select {
 		case <-ctx.Done():
-			m.l.Debug().Msg("shuting down hearthbeat")
+			m.l.Debug().Msg("shutting down hearthbeat")
 			return
 		case <-time.After(interval):
 			if err := core.PublishHearthbeatStream(m.b, m.cfg.DeviceId); err != nil {
 				m.l.Error().Err(err).Msg("error sending hearthbeat to Mir")
+			}
+		}
+	}
+}
+
+// Listen to any incoming commands from Mir and redirect to handler
+// Run in a routine for non blocking
+func (m *Mir) commands(ctx context.Context, sub *nats.Subscription) {
+	for {
+		select {
+		case <-ctx.Done():
+			m.l.Debug().Msg("shutting down command listener")
+			return
+		default:
+			// TODO error channel
+			msg, err := sub.NextMsgWithContext(ctx)
+			if err != nil && !strings.Contains(err.Error(), "context canceled") { // TODO if not context canceled
+				m.l.Error().Err(err).Msg("error receiving commands")
+			}
+			if msg != nil {
+				m.l.Debug().Msg("handling command " + routes.DeviceSubject(msg.Subject).GetVersionAndFunction())
+				err = cmdHandlers[routes.DeviceSubject(msg.Subject).GetVersionAndFunction()](msg, m)
+				if err != nil {
+					m.l.Error().Err(err).Msg("error handling command " + routes.DeviceSubject(msg.Subject).GetVersionAndFunction())
+				}
 			}
 		}
 	}
@@ -142,5 +178,5 @@ func (m Mir) marshalTelemetrySchema() ([]byte, error) {
 
 // Send proto telemetry to Mir Server
 func (m Mir) SendTelemetry(t protoreflect.ProtoMessage) error {
-	return protoflux.PublishTelemetryStream(m.b, m.cfg.DeviceId, t)
+	return routes.PublishTelemetryStream(m.b, m.cfg.DeviceId, t)
 }

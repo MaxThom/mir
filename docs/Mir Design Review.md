@@ -405,6 +405,25 @@ Device Twin, there could be a field in status with the proto schema name so we k
 
 The handshake approach has great flexibility and reduce the hassle of schema version management by letting the system handle it for us. That being said, the device has to send the schema via network which can be a bigger payload and create problems for specific cases. The second approach is too manually upload the schema via the MirCLI. You upload the schema in bytes with a device targets (labels, id, name, namespace, etc), and Protoflux will write the schema to each deviceid in the kv store as well as refreshing its map of ingestion functions.
 
+#### 4.1.5 Commanding Module
+
+**Brainstorm**
+
+- Option 1: device listen to its deviceId as subject
+	- mean we will have to have a header specifying the message type
+- Option 2: device.\<deviceId\>.\<module\>.\<version\>.\<function\>
+- Option 3: device.\<deviceid\>.\<version\>.\<function\>
+- Option 4: <deviceid\>.\<version\>.\<function\>
+
+Tech:
+- Option 1: do we allow only proto commands? 
+	- users can define their proto command in the proto schema. 
+	- using the schema, we can send commands in UI via JSON to proto or proto struct directly in code
+	- for the systems command, like request the schema, we can store the proto:
+		1. in mir device sdk, could be cyclic problem ?
+		2. in mir api folder, could be the best
+	- proto message name is a header like for telemetry
+- Option
 ### 4.2 Detailed Design
 
 Dive into the detailed design of each module, including class diagrams, data flow diagrams, and other relevant details.
