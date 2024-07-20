@@ -54,8 +54,11 @@ type (
 	}
 	TelemetryServer struct {
 		Url      string
+		Token    string `cfg:"secret"`
 		User     string
 		Password string `cfg:"secret"`
+		Org      string
+		Bucket   string
 	}
 )
 
@@ -72,7 +75,12 @@ var (
 			Url: "ws://127.0.0.1:8000/rpc",
 		},
 		TelemetryServer: TelemetryServer{
-			Url: "ws://127.0.0.1:8000/rpc",
+			// QuestDB
+			//Url: "ws://127.0.0.1:8000/rpc",
+			// InfluxDB
+			Url:    "http://localhost:8086/",
+			Org:    "Mir",
+			Bucket: "mir",
 		},
 	}
 )
@@ -163,8 +171,8 @@ func run(
 	log.Info().Str("url", cfg.DatabaseServer.Url).Str("namespace", "global").Str("database", "mir").Msg("connected to database")
 
 	// Timeseries Database
-	lpClient := influxdb2.NewClient(cfg.TelemetryServer.Url, "")
-	lpWriter := lpClient.WriteAPI("", "")
+	lpClient := influxdb2.NewClient(cfg.TelemetryServer.Url, cfg.TelemetryServer.Token)
+	lpWriter := lpClient.WriteAPI(cfg.TelemetryServer.Org, cfg.TelemetryServer.Bucket)
 	log.Info().Str("url", cfg.TelemetryServer.Url).Msg("connected to puthost")
 
 	// Bus
