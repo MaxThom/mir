@@ -102,7 +102,7 @@ func GenerateMarshalFn(pinnedTags map[string]string, desc protoreflect.MessageDe
 	}, err
 }
 
-func Marhsal(in []byte, tags map[string]string, fn ProtoBytesToLpFn) string {
+func Marshal(in []byte, tags map[string]string, fn ProtoBytesToLpFn) string {
 	return fn(in, tags)
 }
 

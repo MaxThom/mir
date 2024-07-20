@@ -73,7 +73,7 @@ func TestPrimitives(t *testing.T) {
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(dataIn, map[string]string{}, fn)
+	lp := Marshal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -97,7 +97,7 @@ func TestEnums(t *testing.T) {
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(dataIn, map[string]string{}, fn)
+	lp := Marshal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -122,7 +122,7 @@ func TestRepeatedPrimitives(t *testing.T) {
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(dataIn, map[string]string{}, fn)
+	lp := Marshal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -149,7 +149,7 @@ func TestOneLevelNesting(t *testing.T) {
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(dataIn, map[string]string{}, fn)
+	lp := Marshal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -178,7 +178,7 @@ func TestTwoLevelNesting(t *testing.T) {
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(dataIn, map[string]string{}, fn)
+	lp := Marshal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -207,7 +207,7 @@ func TestOptionalTwoLevelNesting(t *testing.T) {
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(dataIn, map[string]string{}, fn)
+	lp := Marshal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -231,7 +231,7 @@ func TestOptionalTwoLevelNestingNil(t *testing.T) {
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(dataIn, map[string]string{}, fn)
+	lp := Marshal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -253,7 +253,7 @@ func TestOptionalTwoLevelNestingNilNil(t *testing.T) {
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(dataIn, map[string]string{}, fn)
+	lp := Marshal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -294,7 +294,7 @@ func TestRepeatedOneLevelNesting(t *testing.T) {
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(dataIn, map[string]string{}, fn)
+	lp := Marshal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -349,7 +349,7 @@ func TestRepeatedTwoLevelNesting(t *testing.T) {
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(dataIn, map[string]string{}, fn)
+	lp := Marshal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -374,7 +374,7 @@ func TestMapString(t *testing.T) {
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(dataIn, map[string]string{}, fn)
+	lp := Marshal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -418,7 +418,7 @@ func TestMapMessage(t *testing.T) {
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(dataIn, map[string]string{}, fn)
+	lp := Marshal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -446,7 +446,7 @@ func TestOptionalSmallSetPrimitives(t *testing.T) {
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(dataIn, map[string]string{}, fn)
+	lp := Marshal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -473,7 +473,7 @@ func TestOptionalOneLevelNesting(t *testing.T) {
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(dataIn, map[string]string{}, fn)
+	lp := Marshal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -495,7 +495,7 @@ func TestOptionalOneLevelNestingNil(t *testing.T) {
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(dataIn, map[string]string{}, fn)
+	lp := Marshal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -517,7 +517,7 @@ func TestOptionalEnumNil(t *testing.T) {
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(dataIn, map[string]string{}, fn)
+	lp := Marshal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -543,7 +543,7 @@ func TestOptionalEnum(t *testing.T) {
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(dataIn, map[string]string{}, fn)
+	lp := Marshal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -569,7 +569,7 @@ func TestOptionalNestedEnum(t *testing.T) {
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(dataIn, map[string]string{}, fn)
+	lp := Marshal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -591,7 +591,7 @@ func TestOptionalNestedEnumNil(t *testing.T) {
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(dataIn, map[string]string{}, fn)
+	lp := Marshal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -625,7 +625,7 @@ func TestRepeatedEnum(t *testing.T) {
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(dataIn, map[string]string{}, fn)
+	lp := Marshal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -661,7 +661,7 @@ func TestRepeatedOptionalEnum(t *testing.T) {
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(dataIn, map[string]string{}, fn)
+	lp := Marshal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -697,7 +697,7 @@ func TestRepeatedOptionalSmallSetPrimitives(t *testing.T) {
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(dataIn, map[string]string{}, fn)
+	lp := Marshal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -730,7 +730,7 @@ func TestThreeLevelNestingAndSomeChads(t *testing.T) {
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(dataIn, map[string]string{}, fn)
+	lp := Marshal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -773,7 +773,7 @@ func TestRepeatedThreeLevelNestingAndSomeChads(t *testing.T) {
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(dataIn, map[string]string{}, fn)
+	lp := Marshal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -816,7 +816,7 @@ func TestMultipleThreeLevelNestingAndSomeChads(t *testing.T) {
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(dataIn, map[string]string{}, fn)
+	lp := Marshal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -891,7 +891,7 @@ func TestMultipleRepeatedThreeLevelNestingAndSomeChads(t *testing.T) {
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(dataIn, map[string]string{}, fn)
+	lp := Marshal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -949,7 +949,7 @@ func TestMultipleRepeatedThreeLevelNestingAndSomeChadsEmpty(t *testing.T) {
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(dataIn, map[string]string{}, fn)
+	lp := Marshal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -1014,7 +1014,7 @@ func TestOptionalMultipleRepeatedThreeLevelNestingAndSomeChads(t *testing.T) {
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(dataIn, map[string]string{}, fn)
+	lp := Marshal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -1043,7 +1043,7 @@ func TestOptionalMultipleRepeatedThreeLevelNestingAndSomeChadsEmpty(t *testing.T
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(dataIn, map[string]string{}, fn)
+	lp := Marshal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -1068,7 +1068,7 @@ func TestImportMessage(t *testing.T) {
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(dataIn, map[string]string{}, fn)
+	lp := Marshal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -1093,7 +1093,7 @@ func TestMixIndexSmallSetPrimitives(t *testing.T) {
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(dataIn, map[string]string{}, fn)
+	lp := Marshal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert
@@ -1121,7 +1121,7 @@ func TestMixIndexOneLevelNesting(t *testing.T) {
 	// Act
 	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
 	assert.NilError(t, err)
-	lp := Marhsal(dataIn, map[string]string{}, fn)
+	lp := Marshal(dataIn, map[string]string{}, fn)
 	fmt.Println(lp)
 
 	// Assert

@@ -8,6 +8,7 @@ import (
 	"github.com/influxdata/influxdb-client-go/v2/api"
 	"github.com/maxthom/mir/api/gen/proto/v1alpha/device"
 	"github.com/maxthom/mir/libs/api/metrics"
+	proto_lineprotocol "github.com/maxthom/mir/libs/proto/line_protocol"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/nats-io/nats.go"
 	"github.com/prometheus/client_golang/prometheus"
@@ -90,6 +91,19 @@ func (s *ProtoFluxServer) Listen(ctx context.Context) {
 				log.Fatalf("Failed to deserialize message: %v", err)
 			}
 			fmt.Println(dynMsg)
+
+			// Write data to influxdb
+			fn, err := proto_lineprotocol.GenerateMarshalFn(map[string]string{
+				"deviceId":  deviceId,
+				"namespace": "mir", // TODO find device namespace
+			}, desc.(protoreflect.MessageDescriptor))
+			if err != nil {
+				log.Fatalf("Failed to generate marshal function: %v", err)
+			}
+
+			lp := fn(msg.Data, map[string]string{})
+			fmt.Println(lp)
+			s.writer.WriteRecord(lp)
 
 		}))
 }

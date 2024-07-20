@@ -8,4 +8,5 @@ message Telemetry {
 	int32 temperature = 1;
 	int32 pressure = 2;
 	int32 humidity = 3;
+	int32 wind_speed = 4;
 }

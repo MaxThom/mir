@@ -58,6 +58,7 @@ func main() {
 				Temperature: rand.Int32N(101),
 				Pressure:    rand.Int32N(101),
 				Humidity:    rand.Int32N(101),
+				WindSpeed:   rand.Int32N(101),
 			}
 			m.SendTelemetry(&data)
 
