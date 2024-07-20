@@ -68,7 +68,9 @@ func GenerateMarshalFn(pinnedTags map[string]string, desc protoreflect.MessageDe
 	}
 	sort.Strings(pinnedTagKeys)
 	for _, k := range pinnedTagKeys {
-		lpHead.WriteString(fmt.Sprintf(",%s=%s", k, pinnedTags[k]))
+		if pinnedTags[k] != "" {
+			lpHead.WriteString(fmt.Sprintf(",%s=%s", k, pinnedTags[k]))
+		}
 	}
 
 	orderedFieldDesc, fieldFns, err := formatProtoMessageToLineProtocol("", desc)
@@ -80,12 +82,16 @@ func GenerateMarshalFn(pinnedTags map[string]string, desc protoreflect.MessageDe
 		lp.WriteString(lpHead.String())
 		// Tags
 		// TODO assume tags are sorted, should be done at the source
+		// TODO could be extra fields instead of tags
 		for k, v := range tags {
-			lp.WriteString(fmt.Sprintf(",%s=%s", k, v))
+			if v != "" {
+				lp.WriteString(fmt.Sprintf(",%s=%s", k, v))
+			}
 		}
 
 		// Put the data in the proto message
 		if err := proto.Unmarshal(in, m); err != nil {
+			// TODO update function to return error
 			return ""
 		}
 		lp.WriteByte(' ')

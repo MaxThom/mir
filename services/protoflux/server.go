@@ -2,8 +2,10 @@ package protoflux
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
+	"sync"
 
 	"github.com/influxdata/influxdb-client-go/v2/api"
 	"github.com/maxthom/mir/api/gen/proto/v1alpha/device"
@@ -14,18 +16,44 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
 	"github.com/surrealdb/surrealdb.go"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/dynamicpb"
 )
 
 type ProtoFluxServer struct {
-	writer api.WriteAPI
-	sub    *nats.Subscription
-	m      *mir.Mir
-	db     *surrealdb.DB
+	writer         api.WriteAPI
+	sub            *nats.Subscription
+	m              *mir.Mir
+	db             *surrealdb.DB
+	devWriters     map[deviceProtoKey]proto_lineprotocol.ProtoBytesToLpFn
+	devWritersLock sync.RWMutex
+	devSchemas     map[string]deviceProtoSchema
+	devSchemasLock sync.RWMutex
+}
+
+// Will have to listen to device update event for new
+// data that are saved as tag such as namespace and name
+
+type deviceProtoKey struct {
+	deviceId     string
+	protoMsgName string
+}
+
+// DILLEMA could remove all the fields
+// and just use the lpPn since each change need to update
+// the lpFn
+
+type deviceProtoSchema struct {
+	deviceId   string
+	deviceName string
+	namespace  string
+	labels     map[string]string
+	schema     *protoregistry.Files
 }
 
 var (
@@ -49,16 +77,159 @@ func RegisterMetrics(reg prometheus.Registerer) {
 func NewProtoFluxServer(logger zerolog.Logger, m *mir.Mir, writer api.WriteAPI, db *surrealdb.DB) *ProtoFluxServer {
 	l = logger.With().Str("srv", "protoflux_server").Logger()
 	return &ProtoFluxServer{
-		writer: writer,
-		m:      m,
-		db:     db,
+		writer:     writer,
+		m:          m,
+		db:         db,
+		devWriters: make(map[deviceProtoKey]proto_lineprotocol.ProtoBytesToLpFn),
+		devSchemas: make(map[string]deviceProtoSchema),
 	}
 }
 
+func (s *ProtoFluxServer) handleInfluxErrorChannel() {
+	errorsCh := s.writer.Errors()
+	go func() {
+		for err := range errorsCh {
+			l.Error().Err(err).Msg("Error writing to InfluxDB")
+		}
+	}()
+}
+
 func (s *ProtoFluxServer) Listen(ctx context.Context) {
+	s.handleInfluxErrorChannel()
 	s.m.Subscribe(mir.Stream().V1Alpha().Telemetry(
 		func(msg *nats.Msg, deviceId string, protoMsgName string) {
-			fmt.Print("received data > ")
+			// TODO prometheus
+			s.devWritersLock.RLock()
+			devWriter, ok := s.devWriters[deviceProtoKey{
+				deviceId:     deviceId,
+				protoMsgName: protoMsgName,
+			}]
+			s.devWritersLock.RUnlock()
+			// Mean no ingesters for proto msg, but we might have the schema
+			if !ok {
+				// 1. Go get schema in surrealdb
+				//    Should be under status
+				// status>telemetry:
+				//   protoPackageName: "mir.v1alpha.telemetry"
+				//   compressedSchema: "..."
+				//   lastSchemaFetch: "..."
+				// 2. If not there, fetch from device
+
+				devSchema, ok := s.devSchemas[deviceId]
+				// No schema, thus we must check in db first
+				// if not found, we must request it from device
+				if !ok {
+					// TODO look for schema in db first
+
+					// Retrieve the schema from device
+					l.Info().Str("deviceId", deviceId).Msg("Request proto schema from device")
+					schemaResp := &device.SchemaRetrieveResponse{}
+					err := s.m.SendRequest(mir.Device().V1Alpha().RequestSchema(deviceId, schemaResp))
+					if err != nil {
+						l.Error().Err(err).Str("deviceId", deviceId).Msg("Failed to request schema of device")
+						if err := msg.Nak(); err != nil {
+							l.Error().Err(err).Str("deviceId", deviceId).Msg("Failed to NAK message of device ")
+						}
+						return
+						// TODO set maximum relidelivery in subscribe
+						// TODO handler error with schema if we can't have it.
+						// Nak might just create to many relideveries in case of can't find the schema
+						// Maybe a buffer zone using channels to connect many routine
+						// of this function
+					} else if schemaResp.GetError() != nil {
+						e := schemaResp.GetError()
+						l.Error().Err(errors.New(fmt.Sprintf("%d - %s\n%s", e.Code, e.Message, e.Details))).Str("deviceId", deviceId).Msg("Failed to request schema from device")
+						if err := msg.Nak(); err != nil {
+							l.Error().Err(err).Str("deviceId", deviceId).Msg("Failed to NAK message of device")
+						}
+						return
+					}
+
+					pbSet := new(descriptorpb.FileDescriptorSet)
+					if err := proto.Unmarshal(schemaResp.GetSchema(), pbSet); err != nil {
+						l.Error().Err(err).Str("deviceId", deviceId).Msg("Failed to unmarshal schema of device")
+						if err := msg.Nak(); err != nil {
+							l.Error().Err(err).Str("deviceId", deviceId).Msg("Failed to NAK message of device")
+						}
+						return
+					}
+
+					// Create registry from the FileDescriptorSet
+					reg, err := protodesc.NewFiles(pbSet)
+					if err != nil {
+						l.Error().Err(err).Str("deviceId", deviceId).Msg("Failed to create proto registry of device")
+						if err := msg.Nak(); err != nil {
+							l.Error().Err(err).Str("deviceId", deviceId).Msg("Failed to NAK message of device")
+						}
+						return
+					}
+
+					s.devSchemasLock.Lock()
+					devSchema = deviceProtoSchema{
+						deviceId: deviceId,
+						schema:   reg,
+					}
+					s.devSchemas[deviceId] = devSchema
+					s.devSchemasLock.Unlock()
+					l.Info().Str("deviceId", deviceId).Msg("Generated ingesters functions from proto schema of device")
+
+					// TODO update the schema in db with info
+					// status>telemetry:
+					//   protoPackageName: "mir.v1alpha.telemetry"
+					//   compressedSchema: "..."
+					//   lastSchemaFetch: "..."
+				}
+
+				// Find the descriptor by name
+				desc, err := devSchema.schema.FindDescriptorByName(protoreflect.FullName(protoMsgName))
+				if err != nil {
+					l.Error().Err(err).Str("deviceId", deviceId).Msg("Failed to find proto descriptor in registry of device")
+					if err := msg.Nak(); err != nil {
+						l.Error().Err(err).Str("deviceId", deviceId).Msg("Failed to NAK message of device")
+					}
+					return
+				}
+
+				// Write data to influxdb
+				// TODO find device namespace
+
+				tags := map[string]string{
+					"deviceId":   devSchema.deviceId,
+					"deviceName": devSchema.deviceName,
+					"namespace":  devSchema.namespace,
+				}
+				for k, v := range devSchema.labels {
+					tags[k] = v
+				}
+				fn, err := proto_lineprotocol.GenerateMarshalFn(tags, desc.(protoreflect.MessageDescriptor))
+				if err != nil {
+					l.Error().Err(err).Str("deviceId", deviceId).Str("protoMsg", protoMsgName).Msg("Failed to generate marshal function of device")
+					if err := msg.Nak(); err != nil {
+						l.Error().Err(err).Str("deviceId", deviceId).Msg("Failed to NAK message of device")
+					}
+					return
+				}
+
+				s.devWritersLock.Lock()
+				s.devWriters[deviceProtoKey{
+					deviceId:     deviceId,
+					protoMsgName: protoMsgName,
+				}] = fn
+				devWriter = fn
+				s.devWritersLock.Unlock()
+			}
+			// TODO update function to return error
+			lp := devWriter(msg.Data, map[string]string{})
+			fmt.Println(lp)
+			s.writer.WriteRecord(lp)
+			// TODO error channel
+		}))
+}
+
+func (s *ProtoFluxServer) listenPlayground(ctx context.Context) {
+	s.m.Subscribe(mir.Stream().V1Alpha().Telemetry(
+		func(msg *nats.Msg, deviceId string, protoMsgName string) {
+			fmt.Println("received data > ")
 			schemaResp := &device.SchemaRetrieveResponse{}
 			err := s.m.SendRequest(mir.Device().V1Alpha().RequestSchema(deviceId, schemaResp))
 			if err != nil {
@@ -91,6 +262,14 @@ func (s *ProtoFluxServer) Listen(ctx context.Context) {
 				log.Fatalf("Failed to deserialize message: %v", err)
 			}
 			fmt.Println(dynMsg)
+			b, err := protojson.Marshal(dynMsg.Interface())
+			if err != nil {
+				fmt.Println(err)
+			}
+			fmt.Println(string(b))
+			fmt.Println("schema size ", len(schemaResp.GetSchema()))
+			fmt.Println("datapoint size ", len(msg.Data))
+			fmt.Println("json dp size ", len(b))
 
 			// Write data to influxdb
 			fn, err := proto_lineprotocol.GenerateMarshalFn(map[string]string{
