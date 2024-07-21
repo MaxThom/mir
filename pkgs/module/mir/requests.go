@@ -3,6 +3,7 @@ package mir
 import (
 	"github.com/maxthom/mir/api/gen/proto/v1alpha/device"
 	"github.com/maxthom/mir/api/routes"
+	"github.com/maxthom/mir/libs/compression/zstd"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
 )
@@ -41,9 +42,13 @@ func (s *retrieveSchemaRequest) response(m *nats.Msg) error {
 	if s.resp == nil {
 		return nil
 	}
-	err := proto.Unmarshal(m.Data, s.resp)
-	if err != nil {
-		return err
+	var err error
+	data := m.Data
+	if m.Header.Get("Content-Encoding") == "zstd" {
+		data, err = zstd.DecompressData(m.Data)
+		if err != nil {
+			return err
+		}
 	}
-	return nil
+	return proto.Unmarshal(data, s.resp)
 }
