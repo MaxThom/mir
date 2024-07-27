@@ -19,3 +19,93 @@ of feature flags switch on or off the modules that are needed.
 Integrate the cli and tui as well. They are top level and a
 subcommand for server with the custom cli. We can create a
 struct and inline the mir cmd
+- [ ] Embedded database instead of Surreal. We could use BadgerDB, or else. Create an interface for surreal part of this work.
+
+- [ ]
+
+```mermaid
+flowchart LR
+	A[core_cmd] --> B[server]
+	B -->C[store]
+	C -->D[surreal]
+	C -->D[surreal]
+```
+
+```sh
+mir/
+├── bin/
+│   ├── mir
+│   ├── protoflux
+│   └── core
+├── api/
+│   ├── proto/
+│   └── health/
+├── cmd/
+│   ├── cli/
+│   │   └── main.go
+│   ├── tui/
+│   │   └── main.go
+│   └── server/
+│       └── main.go
+├── internal/
+│   ├── ui/
+│   │   ├── cli/
+│   │   │   └── cli.go
+│   │   └── tui/
+│   │       └── tui.go
+│   ├── clients/
+│   │   ├── core/
+│   │   │   └── client.go
+│   │   └── protoflux/
+│   │       └── client.go
+│   ├── services/
+│   │   ├── core/
+│   │   │   └── server.go
+│   │   └── protoflux/
+│   │       └── server.go
+│   ├── ito/
+│   │   ├── proto/ # generated code from proto files
+│   │   └── core.go # contains code to transform from dto to ito and vice-versa
+│   ├── externals/
+│   │   ├── msg/
+│   │   │   ├── interface.go # interface for natsio
+│   │   │   ├── dto.go
+│   │   │   └── natsio.go
+│   │   ├── ts/
+│   │   │   ├── interface.go # interface for timeseries db
+│   │   │   ├── dto.go
+│   │   │   ├── influxdb.go # private struct
+│   │   │   └── questdb.go
+│   │   └── mng/
+│   │       ├── interface.go # interface for mng db
+│   │       ├── dto.go
+│   │       ├── surrealdb.go
+│   │       └── bagder.go
+│   └── libs/
+│   │   ├── api/
+│   │   │   └── health.go
+│   │   ├── proto/
+│   │   │   └── line_protocol.go
+│   │   └── compression/
+│   │       └── zstd.go
+├── pkgs/
+│   ├── models/
+│   │   ├── telemetry/
+│   │   │   └── telemetry.go
+│   │   └── core/
+│   │       └── device.go
+│   ├── mir/
+│   │   └── device/
+│   │       └── mir.go
+│   └── mir/
+│       └── module/
+│           └── mir.go
+├── scripts/
+│   ├── build.sh
+│   └── deploy.sh
+├── docs/
+├── tools/
+├── infra/
+├── scripts/
+└── README.md
+```
