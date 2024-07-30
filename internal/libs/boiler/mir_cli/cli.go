@@ -49,7 +49,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/maxthom/mir/libs/boiler/mir_config"
+	"github.com/maxthom/mir/internal/libs/boiler/mir_config"
 	"gopkg.in/yaml.v3"
 )
 

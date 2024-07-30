@@ -109,3 +109,13 @@ mir/
 ├── scripts/
 └── README.md
 ```
+
+- IDEA
+instead of split per type then service. split per service per type
+```
+core/
+ - ito/
+ - server/
+ - client/
+ ...
+```
