@@ -4,6 +4,8 @@ package v1alpha.core;
 
 option go_package = "gen/";
 
+import "proto/v1alpha/common_ito/common.proto";
+
 /*
   Send a request to create a new device in the system
 */
@@ -23,7 +25,7 @@ message CreateDeviceRequest {
 message CreateDeviceResponse {
   oneof response {
     DeviceList ok = 1; // list of device that were created
-    Error error = 2;  // HTTP like error if something went wrong
+    common.Error error = 2;  // HTTP like error if something went wrong
   }
 }
 
@@ -51,7 +53,7 @@ message UpdateDeviceRequest {
   }
   message Status {
     optional bool online = 3; // Is device online ?
-    optional Timestamp last_hearthbeat = 4; // Last pulse received
+    optional common.Timestamp last_hearthbeat = 4; // Last pulse received
   }
   message OptString {
     optional string value = 1;
@@ -65,7 +67,7 @@ message UpdateDeviceRequest {
 message UpdateDeviceResponse {
   oneof response {
     DeviceList ok = 1; //  List of device that were updated
-    Error error = 2; // HTTP like error if something went wrong
+    common.Error error = 2; // HTTP like error if something went wrong
   }
 }
 
@@ -83,7 +85,7 @@ message DeleteDeviceRequest {
 message DeleteDeviceResponse {
   oneof response {
     DeviceList ok = 1; // List of device that were deleted
-    Error error = 2; // HTTP like error if something went wrong
+    common.Error error = 2; // HTTP like error if something went wrong
   }
 }
 
@@ -101,7 +103,7 @@ message ListDeviceRequest {
 message ListDeviceResponse {
   oneof response {
     DeviceList ok = 1; // Devices that were found from the search
-    Error error = 2;  // HTTP like error if something went wrong
+    common.Error error = 2;  // HTTP like error if something went wrong
   }
 }
 
@@ -175,26 +177,6 @@ message Properties {
 * Status fields describe the device conditions monitored by Mir
 */
 message Status {
-  Timestamp last_hearthbeat = 8; // Represent the time when the last hearthbeat was received
+  common.Timestamp last_hearthbeat = 8; // Represent the time when the last hearthbeat was received
   bool online = 9; // The device is online and sending heathbeath signal
-}
-
-// Generic error message
-message Error {
-    uint32 code = 1;     // HTTP like status code
-    string message = 2;  // Human-readable error message.
-    repeated string details = 3; // Optional details.
-}
-
-message Timestamp {
-  // Represents seconds of UTC time since Unix epoch
-  // 1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to
-  // 9999-12-31T23:59:59Z inclusive.
-  int64 seconds = 1;
-
-  // Non-negative fractions of a second at nanosecond resolution. Negative
-  // second values with fractions must still have non-negative nanos values
-  // that count forward in time. Must be from 0 to 999,999,999
-  // inclusive.
-  int32 nanos = 2;
 }

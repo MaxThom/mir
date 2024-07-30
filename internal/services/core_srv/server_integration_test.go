@@ -1,4 +1,4 @@
-package core
+package core_srv
 
 import (
 	"context"
@@ -8,9 +8,10 @@ import (
 	"testing"
 	"time"
 
-	core_api "github.com/maxthom/mir/api/gen/proto/v1alpha/core"
-	"github.com/maxthom/mir/api/routes"
-	bus "github.com/maxthom/mir/libs/external/natsio"
+	"github.com/maxthom/mir/internal/clients/core_client"
+	"github.com/maxthom/mir/internal/ito/proto/v1alpha/core_ito"
+	bus "github.com/maxthom/mir/internal/libs/external/natsio"
+	"github.com/maxthom/mir/pkgs/models"
 	"github.com/nats-io/nats.go"
 	logger "github.com/rs/zerolog/log"
 	"github.com/surrealdb/surrealdb.go"
@@ -71,7 +72,7 @@ func TestPublishDeviceCreate(t *testing.T) {
 	// Arrange
 	id := "device_create_raw"
 	publishStream := "device." + id + ".core.v1alpha.create"
-	reqCreate := &core_api.CreateDeviceRequest{
+	reqCreate := &core_ito.CreateDeviceRequest{
 		DeviceId:  id,
 		Namespace: "testing_core",
 		Labels: map[string]string{
@@ -96,8 +97,8 @@ func TestPublishDeviceCreate(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	respList, err := PublishDeviceListRequest(b, &core_api.ListDeviceRequest{
-		Targets: &core_api.Targets{
+	respList, err := core_client.PublishDeviceListRequest(b, &core_ito.ListDeviceRequest{
+		Targets: &core_ito.Targets{
 			Ids: []string{id},
 		},
 	})
@@ -114,7 +115,7 @@ func TestPublishDeviceCreate(t *testing.T) {
 func TestPublishDeviceCreateClient(t *testing.T) {
 	// Arrange
 	id := "device_create"
-	reqCreate := &core_api.CreateDeviceRequest{
+	reqCreate := &core_ito.CreateDeviceRequest{
 		DeviceId:  id,
 		Namespace: "testing_core",
 		Labels: map[string]string{
@@ -131,21 +132,21 @@ func TestPublishDeviceCreateClient(t *testing.T) {
 	// Subscribe to device created event
 	count := 0
 	s, err := b.Subscribe(
-		routes.DeviceCreatedEvent.WithId(id),
+		core_client.DeviceCreatedEvent.WithId(id),
 		func(msg *nats.Msg) {
 			count += 1
 			msg.Ack()
 		})
 
 	// Act
-	respCreate, err := PublishDeviceCreateRequest(b, reqCreate)
+	respCreate, err := core_client.PublishDeviceCreateRequest(b, reqCreate)
 	if err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
 
-	respList, err := PublishDeviceListRequest(b, &core_api.ListDeviceRequest{
-		Targets: &core_api.Targets{
+	respList, err := core_client.PublishDeviceListRequest(b, &core_ito.ListDeviceRequest{
+		Targets: &core_ito.Targets{
 			Ids: []string{id},
 		},
 	})
@@ -165,7 +166,7 @@ func TestPublishDeviceCreateClient(t *testing.T) {
 func TestPublishDeviceCreateClientNoID(t *testing.T) {
 	// Arrange
 	id := ""
-	reqCreate := &core_api.CreateDeviceRequest{
+	reqCreate := &core_ito.CreateDeviceRequest{
 		DeviceId:  id,
 		Namespace: "testing_core",
 		Labels: map[string]string{
@@ -180,7 +181,7 @@ func TestPublishDeviceCreateClientNoID(t *testing.T) {
 	}
 
 	// Act
-	respCreate, err := PublishDeviceCreateRequest(b, reqCreate)
+	respCreate, err := core_client.PublishDeviceCreateRequest(b, reqCreate)
 	if err != nil {
 		t.Error(err)
 	}
@@ -193,7 +194,7 @@ func TestPublishDeviceCreateClientNoID(t *testing.T) {
 func TestPublishDeviceUpdateTargetIds(t *testing.T) {
 	// Arrange
 	id := "device_update_target_ids"
-	reqCreate := &core_api.CreateDeviceRequest{
+	reqCreate := &core_ito.CreateDeviceRequest{
 		DeviceId:  id,
 		Namespace: "testing_core",
 		Labels: map[string]string{
@@ -212,18 +213,18 @@ func TestPublishDeviceUpdateTargetIds(t *testing.T) {
 	// Subscribe to device updated event
 	count := 0
 	s, err := b.Subscribe(
-		routes.DeviceUpdatedEvent.WithId(id),
+		core_client.DeviceUpdatedEvent.WithId(id),
 		func(msg *nats.Msg) {
 			count += 1
 			msg.Ack()
 		})
 
-	reqUpd := &core_api.UpdateDeviceRequest{
-		Targets: &core_api.Targets{
+	reqUpd := &core_ito.UpdateDeviceRequest{
+		Targets: &core_ito.Targets{
 			Ids: []string{id},
 		},
-		Meta: &core_api.UpdateDeviceRequest_Meta{
-			Labels: map[string]*core_api.UpdateDeviceRequest_OptString{
+		Meta: &core_ito.UpdateDeviceRequest_Meta{
+			Labels: map[string]*core_ito.UpdateDeviceRequest_OptString{
 				"factory": {
 					Value: strRef("site_b"),
 				},
@@ -235,7 +236,7 @@ func TestPublishDeviceUpdateTargetIds(t *testing.T) {
 					Value: strRef("mazda3sport"),
 				},
 			},
-			Annotations: map[string]*core_api.UpdateDeviceRequest_OptString{
+			Annotations: map[string]*core_ito.UpdateDeviceRequest_OptString{
 				"utility": {
 					Value: strRef("major"),
 				},
@@ -248,18 +249,18 @@ func TestPublishDeviceUpdateTargetIds(t *testing.T) {
 	}
 
 	// Act
-	if _, err := PublishDeviceCreateRequest(b, reqCreate); err != nil {
+	if _, err := core_client.PublishDeviceCreateRequest(b, reqCreate); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
 
-	respUpd, err := PublishDeviceUpdateRequest(b, reqUpd)
+	respUpd, err := core_client.PublishDeviceUpdateRequest(b, reqUpd)
 	if err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
 
-	respDb := executeTestQueryForType[[]Device](t, db,
+	respDb := executeTestQueryForType[[]models.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE spec.deviceId = $id;",
 		map[string]string{
 			"tb": "devices",
@@ -276,7 +277,7 @@ func TestPublishDeviceUpdateTargetIds(t *testing.T) {
 func TestPublishDeviceUpdateTargetNames(t *testing.T) {
 	// Arrange
 	id := "device_update_target_names"
-	reqCreate := &core_api.CreateDeviceRequest{
+	reqCreate := &core_ito.CreateDeviceRequest{
 		DeviceId:  id,
 		Name:      id,
 		Namespace: "testing_core",
@@ -293,12 +294,12 @@ func TestPublishDeviceUpdateTargetNames(t *testing.T) {
 		},
 	}
 
-	reqUpd := &core_api.UpdateDeviceRequest{
-		Targets: &core_api.Targets{
+	reqUpd := &core_ito.UpdateDeviceRequest{
+		Targets: &core_ito.Targets{
 			Names: []string{id},
 		},
-		Meta: &core_api.UpdateDeviceRequest_Meta{
-			Labels: map[string]*core_api.UpdateDeviceRequest_OptString{
+		Meta: &core_ito.UpdateDeviceRequest_Meta{
+			Labels: map[string]*core_ito.UpdateDeviceRequest_OptString{
 				"factory": {
 					Value: strRef("site_b"),
 				},
@@ -310,7 +311,7 @@ func TestPublishDeviceUpdateTargetNames(t *testing.T) {
 					Value: strRef("mazda3sport"),
 				},
 			},
-			Annotations: map[string]*core_api.UpdateDeviceRequest_OptString{
+			Annotations: map[string]*core_ito.UpdateDeviceRequest_OptString{
 				"utility": {
 					Value: strRef("major"),
 				},
@@ -323,18 +324,18 @@ func TestPublishDeviceUpdateTargetNames(t *testing.T) {
 	}
 
 	// Act
-	if _, err := PublishDeviceCreateRequest(b, reqCreate); err != nil {
+	if _, err := core_client.PublishDeviceCreateRequest(b, reqCreate); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
 
-	respUpd, err := PublishDeviceUpdateRequest(b, reqUpd)
+	respUpd, err := core_client.PublishDeviceUpdateRequest(b, reqUpd)
 	if err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
 
-	respDb := executeTestQueryForType[[]Device](t, db,
+	respDb := executeTestQueryForType[[]models.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE spec.deviceId = $id;",
 		map[string]string{
 			"tb": "devices",
@@ -350,7 +351,7 @@ func TestPublishDeviceUpdateTargetNamespace(t *testing.T) {
 	// Arrange
 	id := "device_update_target_namespace"
 	ns := "testing_" + id
-	reqCreate := &core_api.CreateDeviceRequest{
+	reqCreate := &core_ito.CreateDeviceRequest{
 		DeviceId:  id,
 		Namespace: ns,
 		Labels: map[string]string{
@@ -366,12 +367,12 @@ func TestPublishDeviceUpdateTargetNamespace(t *testing.T) {
 		},
 	}
 
-	reqUpd := &core_api.UpdateDeviceRequest{
-		Targets: &core_api.Targets{
+	reqUpd := &core_ito.UpdateDeviceRequest{
+		Targets: &core_ito.Targets{
 			Namespaces: []string{ns},
 		},
-		Meta: &core_api.UpdateDeviceRequest_Meta{
-			Labels: map[string]*core_api.UpdateDeviceRequest_OptString{
+		Meta: &core_ito.UpdateDeviceRequest_Meta{
+			Labels: map[string]*core_ito.UpdateDeviceRequest_OptString{
 				"factory": {
 					Value: strRef("site_b"),
 				},
@@ -383,7 +384,7 @@ func TestPublishDeviceUpdateTargetNamespace(t *testing.T) {
 					Value: strRef("mazda3sport"),
 				},
 			},
-			Annotations: map[string]*core_api.UpdateDeviceRequest_OptString{
+			Annotations: map[string]*core_ito.UpdateDeviceRequest_OptString{
 				"utility": {
 					Value: strRef("major"),
 				},
@@ -396,18 +397,18 @@ func TestPublishDeviceUpdateTargetNamespace(t *testing.T) {
 	}
 
 	// Act
-	if _, err := PublishDeviceCreateRequest(b, reqCreate); err != nil {
+	if _, err := core_client.PublishDeviceCreateRequest(b, reqCreate); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
 
-	respUpd, err := PublishDeviceUpdateRequest(b, reqUpd)
+	respUpd, err := core_client.PublishDeviceUpdateRequest(b, reqUpd)
 	if err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
 
-	respDb := executeTestQueryForType[[]Device](t, db,
+	respDb := executeTestQueryForType[[]models.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE spec.deviceId = $id;",
 		map[string]string{
 			"tb": "devices",
@@ -422,15 +423,15 @@ func TestPublishDeviceUpdateTargetNamespace(t *testing.T) {
 func TestPublishDeviceUpdateTargetLabels(t *testing.T) {
 	// Arrange
 	deviceIds := []string{"device_update_target_labels_1", "device_update_target_labels_2", "device_update_target_labels_3"}
-	reqUpd := &core_api.UpdateDeviceRequest{
-		Targets: &core_api.Targets{
+	reqUpd := &core_ito.UpdateDeviceRequest{
+		Targets: &core_ito.Targets{
 			Labels: map[string]string{
 				"factory": "D",
 				"land":    "sheep",
 			},
 		},
-		Meta: &core_api.UpdateDeviceRequest_Meta{
-			Labels: map[string]*core_api.UpdateDeviceRequest_OptString{
+		Meta: &core_ito.UpdateDeviceRequest_Meta{
+			Labels: map[string]*core_ito.UpdateDeviceRequest_OptString{
 				"owner": {
 					Value: nil,
 				},
@@ -438,7 +439,7 @@ func TestPublishDeviceUpdateTargetLabels(t *testing.T) {
 					Value: strRef("mazda3sport"),
 				},
 			},
-			Annotations: map[string]*core_api.UpdateDeviceRequest_OptString{
+			Annotations: map[string]*core_ito.UpdateDeviceRequest_OptString{
 				"utility": {
 					Value: nil,
 				},
@@ -452,7 +453,7 @@ func TestPublishDeviceUpdateTargetLabels(t *testing.T) {
 			},
 		},
 	}
-	reqCreate := []*core_api.CreateDeviceRequest{
+	reqCreate := []*core_ito.CreateDeviceRequest{
 		{
 			DeviceId:  deviceIds[0],
 			Namespace: "testing_core",
@@ -506,12 +507,12 @@ func TestPublishDeviceUpdateTargetLabels(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	if _, err := PublishDeviceUpdateRequest(b, reqUpd); err != nil {
+	if _, err := core_client.PublishDeviceUpdateRequest(b, reqUpd); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
 
-	respDb := executeTestQueryForType[[]Device](t, db,
+	respDb := executeTestQueryForType[[]models.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE spec.deviceId = $id1 OR spec.deviceId = $id2 OR spec.deviceId = $id3;",
 		map[string]string{
 			"tb":  "devices",
@@ -542,14 +543,14 @@ func TestPublishDeviceUpdateTargetLabels(t *testing.T) {
 func TestPublishDeviceUpdateTargetAnno(t *testing.T) {
 	// Arrange
 	deviceIds := []string{"device_update_target_anno_1", "device_update_target_anno_2", "device_update_target_anno_3"}
-	reqUpd := &core_api.UpdateDeviceRequest{
-		Targets: &core_api.Targets{
+	reqUpd := &core_ito.UpdateDeviceRequest{
+		Targets: &core_ito.Targets{
 			Annotations: map[string]string{
 				"utility": "hvac",
 			},
 		},
-		Meta: &core_api.UpdateDeviceRequest_Meta{
-			Labels: map[string]*core_api.UpdateDeviceRequest_OptString{
+		Meta: &core_ito.UpdateDeviceRequest_Meta{
+			Labels: map[string]*core_ito.UpdateDeviceRequest_OptString{
 				"owner": {
 					Value: nil,
 				},
@@ -557,7 +558,7 @@ func TestPublishDeviceUpdateTargetAnno(t *testing.T) {
 					Value: strRef("mazda3sport"),
 				},
 			},
-			Annotations: map[string]*core_api.UpdateDeviceRequest_OptString{
+			Annotations: map[string]*core_ito.UpdateDeviceRequest_OptString{
 				"utility": {
 					Value: nil,
 				},
@@ -568,7 +569,7 @@ func TestPublishDeviceUpdateTargetAnno(t *testing.T) {
 			},
 		},
 	}
-	reqCreate := []*core_api.CreateDeviceRequest{
+	reqCreate := []*core_ito.CreateDeviceRequest{
 		{
 			DeviceId:  deviceIds[0],
 			Namespace: "testing_core",
@@ -622,12 +623,12 @@ func TestPublishDeviceUpdateTargetAnno(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	if _, err := PublishDeviceUpdateRequest(b, reqUpd); err != nil {
+	if _, err := core_client.PublishDeviceUpdateRequest(b, reqUpd); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
 
-	respDb := executeTestQueryForType[[]Device](t, db,
+	respDb := executeTestQueryForType[[]models.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE spec.deviceId = $id1 OR spec.deviceId = $id2 OR spec.deviceId = $id3;",
 		map[string]string{
 			"tb":  "devices",
@@ -658,16 +659,16 @@ func TestPublishDeviceUpdateTargetAnno(t *testing.T) {
 func TestPublishDeviceUpdateTargetMixs(t *testing.T) {
 	// Arrange
 	deviceIds := []string{"device_update_target_mix_1", "device_update_target_mix_2", "device_update_target_mix_3"}
-	reqUpd := &core_api.UpdateDeviceRequest{
-		Targets: &core_api.Targets{
+	reqUpd := &core_ito.UpdateDeviceRequest{
+		Targets: &core_ito.Targets{
 			Ids: []string{deviceIds[2], deviceIds[0]},
 			Labels: map[string]string{
 				"factory": "D",
 				"land":    "sheep",
 			},
 		},
-		Meta: &core_api.UpdateDeviceRequest_Meta{
-			Labels: map[string]*core_api.UpdateDeviceRequest_OptString{
+		Meta: &core_ito.UpdateDeviceRequest_Meta{
+			Labels: map[string]*core_ito.UpdateDeviceRequest_OptString{
 				"owner": {
 					Value: nil,
 				},
@@ -675,7 +676,7 @@ func TestPublishDeviceUpdateTargetMixs(t *testing.T) {
 					Value: strRef("mazda3sport"),
 				},
 			},
-			Annotations: map[string]*core_api.UpdateDeviceRequest_OptString{
+			Annotations: map[string]*core_ito.UpdateDeviceRequest_OptString{
 				"utility": {
 					Value: nil,
 				},
@@ -686,7 +687,7 @@ func TestPublishDeviceUpdateTargetMixs(t *testing.T) {
 			},
 		},
 	}
-	reqCreate := []*core_api.CreateDeviceRequest{
+	reqCreate := []*core_ito.CreateDeviceRequest{
 		{
 			DeviceId:  deviceIds[0],
 			Namespace: "testing_core",
@@ -737,14 +738,14 @@ func TestPublishDeviceUpdateTargetMixs(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	if _, err := PublishDeviceUpdateRequest(b, reqUpd); err != nil {
+	if _, err := core_client.PublishDeviceUpdateRequest(b, reqUpd); err != nil {
 		t.Error(err)
 	}
 
 	// Wait for written to db
 	time.Sleep(1 * time.Second)
 
-	respDb := executeTestQueryForType[[]core_api.Device](t, db,
+	respDb := executeTestQueryForType[[]core_ito.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE device_id = $id1 OR device_id = $id2 OR device_id = $id3;",
 		map[string]string{
 			"tb":  "devices",
@@ -775,12 +776,12 @@ func TestPublishDeviceUpdateTargetMixs(t *testing.T) {
 func TestPublishDeviceDeleteTargetIds(t *testing.T) {
 	// Arrange
 	deviceIds := []string{"device_delete_target_ids_1", "device_delete_target_ids_2", "device_delete_target_ids_3"}
-	reqDel := &core_api.DeleteDeviceRequest{
-		Targets: &core_api.Targets{
+	reqDel := &core_ito.DeleteDeviceRequest{
+		Targets: &core_ito.Targets{
 			Ids: []string{deviceIds[0], deviceIds[1]},
 		},
 	}
-	reqCreate := []*core_api.CreateDeviceRequest{
+	reqCreate := []*core_ito.CreateDeviceRequest{
 		{
 			DeviceId:  deviceIds[0],
 			Namespace: "testing_core",
@@ -827,7 +828,7 @@ func TestPublishDeviceDeleteTargetIds(t *testing.T) {
 	// Subscribe to device deleted event
 	count := 0
 	s, err := b.Subscribe(
-		routes.DeviceDeletedEvent.WithId("*"),
+		core_client.DeviceDeletedEvent.WithId("*"),
 		func(msg *nats.Msg) {
 			count += 1
 			msg.Ack()
@@ -839,7 +840,7 @@ func TestPublishDeviceDeleteTargetIds(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	_, err = PublishDeviceDeleteRequest(b, reqDel)
+	_, err = core_client.PublishDeviceDeleteRequest(b, reqDel)
 	if err != nil {
 		t.Error(err)
 	}
@@ -847,7 +848,7 @@ func TestPublishDeviceDeleteTargetIds(t *testing.T) {
 	// Wait for written to db
 	time.Sleep(1 * time.Second)
 
-	respDb := executeTestQueryForType[[]Device](t, db,
+	respDb := executeTestQueryForType[[]models.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE spec.deviceId = $id1 OR spec.deviceId = $id2 OR spec.deviceId = $id3;",
 		map[string]string{
 			"tb":  "devices",
@@ -866,12 +867,12 @@ func TestPublishDeviceDeleteTargetIds(t *testing.T) {
 func TestPublishDeviceDeleteTargetNames(t *testing.T) {
 	// Arrange
 	deviceIds := []string{"device_delete_target_ids_1", "device_delete_target_ids_2", "device_delete_target_ids_3"}
-	reqDel := &core_api.DeleteDeviceRequest{
-		Targets: &core_api.Targets{
+	reqDel := &core_ito.DeleteDeviceRequest{
+		Targets: &core_ito.Targets{
 			Names: []string{deviceIds[0], deviceIds[1]},
 		},
 	}
-	reqCreate := []*core_api.CreateDeviceRequest{
+	reqCreate := []*core_ito.CreateDeviceRequest{
 		{
 			DeviceId:  deviceIds[0],
 			Name:      deviceIds[0],
@@ -924,7 +925,7 @@ func TestPublishDeviceDeleteTargetNames(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	_, err := PublishDeviceDeleteRequest(b, reqDel)
+	_, err := core_client.PublishDeviceDeleteRequest(b, reqDel)
 	if err != nil {
 		t.Error(err)
 	}
@@ -932,7 +933,7 @@ func TestPublishDeviceDeleteTargetNames(t *testing.T) {
 	// Wait for written to db
 	time.Sleep(1 * time.Second)
 
-	respDb := executeTestQueryForType[[]Device](t, db,
+	respDb := executeTestQueryForType[[]models.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE spec.deviceId = $id1 OR spec.deviceId = $id2 OR spec.deviceId = $id3;",
 		map[string]string{
 			"tb":  "devices",
@@ -952,12 +953,12 @@ func TestPublishDeviceDeleteTargetNamespace(t *testing.T) {
 	// Arrange
 	deviceIds := []string{"device_delete_target_ns_1", "device_delete_target_ns_2", "device_delete_target_ns_3"}
 	ns := "testing_" + strings.Join(deviceIds, "_")
-	reqDel := &core_api.DeleteDeviceRequest{
-		Targets: &core_api.Targets{
+	reqDel := &core_ito.DeleteDeviceRequest{
+		Targets: &core_ito.Targets{
 			Namespaces: []string{ns},
 		},
 	}
-	reqCreate := []*core_api.CreateDeviceRequest{
+	reqCreate := []*core_ito.CreateDeviceRequest{
 		{
 			DeviceId:  deviceIds[0],
 			Namespace: ns,
@@ -1008,7 +1009,7 @@ func TestPublishDeviceDeleteTargetNamespace(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	_, err := PublishDeviceDeleteRequest(b, reqDel)
+	_, err := core_client.PublishDeviceDeleteRequest(b, reqDel)
 	if err != nil {
 		t.Error(err)
 	}
@@ -1016,7 +1017,7 @@ func TestPublishDeviceDeleteTargetNamespace(t *testing.T) {
 	// Wait for written to db
 	time.Sleep(1 * time.Second)
 
-	dbResp := executeTestQueryForType[[]Device](t, db,
+	dbResp := executeTestQueryForType[[]models.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE spec.deviceId = $id1 OR spec.deviceId = $id2 OR spec.deviceId = $id3;",
 		map[string]string{
 			"tb":  "devices",
@@ -1034,8 +1035,8 @@ func TestPublishDeviceDeleteTargetNamespace(t *testing.T) {
 
 func TestPublishDeviceDeleteTargetLabels(t *testing.T) {
 	// Arrange
-	reqDel := &core_api.DeleteDeviceRequest{
-		Targets: &core_api.Targets{
+	reqDel := &core_ito.DeleteDeviceRequest{
+		Targets: &core_ito.Targets{
 			Labels: map[string]string{
 				"factory": "D",
 				"land":    "plane",
@@ -1044,7 +1045,7 @@ func TestPublishDeviceDeleteTargetLabels(t *testing.T) {
 	}
 
 	deviceIds := []string{"device_delete_target_lbls_1", "device_delete_target_lbls_2", "device_delete_target_lbls_3"}
-	reqCreate := []*core_api.CreateDeviceRequest{
+	reqCreate := []*core_ito.CreateDeviceRequest{
 		{
 			DeviceId:  deviceIds[0],
 			Namespace: "testing_core",
@@ -1095,13 +1096,13 @@ func TestPublishDeviceDeleteTargetLabels(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	_, err := PublishDeviceDeleteRequest(b, reqDel)
+	_, err := core_client.PublishDeviceDeleteRequest(b, reqDel)
 	if err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
 
-	respDb := executeTestQueryForType[[]Device](t, db,
+	respDb := executeTestQueryForType[[]models.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE spec.deviceId = $id1 OR spec.deviceId = $id2 OR spec.deviceId = $id3;",
 		map[string]string{
 			"tb":  "devices",
@@ -1120,13 +1121,13 @@ func TestPublishDeviceDeleteTargetLabels(t *testing.T) {
 func TestPublishDeviceListTargetIds(t *testing.T) {
 	// Arrange
 	deviceIds := []string{"device_list_target_ids_1", "device_list_target_ids_2", "device_list_target_ids_3"}
-	reqList := &core_api.ListDeviceRequest{
-		Targets: &core_api.Targets{
+	reqList := &core_ito.ListDeviceRequest{
+		Targets: &core_ito.Targets{
 			Ids: []string{deviceIds[0], deviceIds[1]},
 		},
 	}
 
-	reqCreate := []*core_api.CreateDeviceRequest{
+	reqCreate := []*core_ito.CreateDeviceRequest{
 		{
 			DeviceId:  deviceIds[0],
 			Namespace: "testing_core",
@@ -1177,13 +1178,13 @@ func TestPublishDeviceListTargetIds(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	respList, err := PublishDeviceListRequest(b, reqList)
+	respList, err := core_client.PublishDeviceListRequest(b, reqList)
 	if err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
 
-	respDb := executeTestQueryForType[[]Device](t, db,
+	respDb := executeTestQueryForType[[]models.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE spec.deviceId = $id1 OR spec.deviceId = $id2 OR spec.deviceId = $id3;",
 		map[string]string{
 			"tb":  "devices",
@@ -1201,14 +1202,14 @@ func TestPublishDeviceListTargetIds(t *testing.T) {
 
 func TestPublishDeviceListTargetNames(t *testing.T) {
 	// Arrange
-	deviceIds := []string{"device_list_target_ids_1", "device_list_target_ids_2", "device_list_target_ids_3"}
-	reqList := &core_api.ListDeviceRequest{
-		Targets: &core_api.Targets{
+	deviceIds := []string{"device_list_target_names_1", "device_list_target_names_2", "device_list_target_names_3"}
+	reqList := &core_ito.ListDeviceRequest{
+		Targets: &core_ito.Targets{
 			Names: []string{deviceIds[0], deviceIds[1]},
 		},
 	}
 
-	reqCreate := []*core_api.CreateDeviceRequest{
+	reqCreate := []*core_ito.CreateDeviceRequest{
 		{
 			DeviceId:  deviceIds[0],
 			Name:      deviceIds[0],
@@ -1262,13 +1263,13 @@ func TestPublishDeviceListTargetNames(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	respList, err := PublishDeviceListRequest(b, reqList)
+	respList, err := core_client.PublishDeviceListRequest(b, reqList)
 	if err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
 
-	respDb := executeTestQueryForType[[]Device](t, db,
+	respDb := executeTestQueryForType[[]models.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE spec.deviceId = $id1 OR spec.deviceId = $id2 OR spec.deviceId = $id3;",
 		map[string]string{
 			"tb":  "devices",
@@ -1288,13 +1289,13 @@ func TestPublishDeviceListTargetNamespace(t *testing.T) {
 	// Arrange
 	deviceIds := []string{"device_list_target_ns_1", "device_list_target_ns_2", "device_list_target_ns_3"}
 	ns := "testing_" + strings.Join(deviceIds, "_")
-	reqList := &core_api.ListDeviceRequest{
-		Targets: &core_api.Targets{
+	reqList := &core_ito.ListDeviceRequest{
+		Targets: &core_ito.Targets{
 			Namespaces: []string{ns},
 		},
 	}
 
-	reqCreate := []*core_api.CreateDeviceRequest{
+	reqCreate := []*core_ito.CreateDeviceRequest{
 		{
 			DeviceId:  deviceIds[0],
 			Namespace: ns,
@@ -1345,13 +1346,13 @@ func TestPublishDeviceListTargetNamespace(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	respList, err := PublishDeviceListRequest(b, reqList)
+	respList, err := core_client.PublishDeviceListRequest(b, reqList)
 	if err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
 
-	respDb := executeTestQueryForType[[]Device](t, db,
+	respDb := executeTestQueryForType[[]models.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE spec.deviceId = $id1 OR spec.deviceId = $id2 OR spec.deviceId = $id3;",
 		map[string]string{
 			"tb":  "devices",
@@ -1369,8 +1370,8 @@ func TestPublishDeviceListTargetNamespace(t *testing.T) {
 
 func TestPublishDeviceListTargetLabels(t *testing.T) {
 	// Arrange
-	reqList := &core_api.ListDeviceRequest{
-		Targets: &core_api.Targets{
+	reqList := &core_ito.ListDeviceRequest{
+		Targets: &core_ito.Targets{
 			Labels: map[string]string{
 				"factory": "D",
 				"land":    "lamb",
@@ -1379,7 +1380,7 @@ func TestPublishDeviceListTargetLabels(t *testing.T) {
 	}
 
 	deviceIds := []string{"device_list_target_lbls_1", "device_list_target_lbls_2", "device_list_target_lbls_3"}
-	reqCreate := []*core_api.CreateDeviceRequest{
+	reqCreate := []*core_ito.CreateDeviceRequest{
 		{
 			DeviceId:  deviceIds[0],
 			Namespace: "testing_core",
@@ -1430,13 +1431,13 @@ func TestPublishDeviceListTargetLabels(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	respList, err := PublishDeviceListRequest(b, reqList)
+	respList, err := core_client.PublishDeviceListRequest(b, reqList)
 	if err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
 
-	respDb := executeTestQueryForType[[]core_api.Device](t, db,
+	respDb := executeTestQueryForType[[]core_ito.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE spec.deviceId = $id1 OR spec.deviceId = $id2 OR spec.deviceId = $id3;",
 		map[string]string{
 			"tb":  "devices",
@@ -1454,8 +1455,8 @@ func TestPublishDeviceListTargetLabels(t *testing.T) {
 
 func TestPublishDeviceListTargetAnnotations(t *testing.T) {
 	// Arrange
-	reqList := &core_api.ListDeviceRequest{
-		Targets: &core_api.Targets{
+	reqList := &core_ito.ListDeviceRequest{
+		Targets: &core_ito.Targets{
 			Annotations: map[string]string{
 				"utility": "air_quality_target_anno",
 			},
@@ -1463,7 +1464,7 @@ func TestPublishDeviceListTargetAnnotations(t *testing.T) {
 	}
 
 	deviceIds := []string{"device_list_target_anno_1", "device_list_target_anno_2", "device_list_target_anno_3"}
-	reqCreate := []*core_api.CreateDeviceRequest{
+	reqCreate := []*core_ito.CreateDeviceRequest{
 		{
 			DeviceId:  deviceIds[0],
 			Namespace: "testing_core",
@@ -1512,13 +1513,13 @@ func TestPublishDeviceListTargetAnnotations(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	respList, err := PublishDeviceListRequest(b, reqList)
+	respList, err := core_client.PublishDeviceListRequest(b, reqList)
 	if err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
 
-	respDb := executeTestQueryForType[[]core_api.Device](t, db,
+	respDb := executeTestQueryForType[[]core_ito.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE spec.deviceId = $id1 OR spec.deviceId = $id2 OR spec.deviceId = $id3;",
 		map[string]string{
 			"tb":  "devices",
@@ -1535,12 +1536,12 @@ func TestPublishDeviceListTargetAnnotations(t *testing.T) {
 
 func TestPublishDeviceListNoTarget(t *testing.T) {
 	// Arrange
-	reqList := &core_api.ListDeviceRequest{
-		Targets: &core_api.Targets{},
+	reqList := &core_ito.ListDeviceRequest{
+		Targets: &core_ito.Targets{},
 	}
 
 	deviceIds := []string{"device_list_target_no_1", "device_list_target_no_2", "device_list_target_no_3"}
-	reqCreate := []*core_api.CreateDeviceRequest{
+	reqCreate := []*core_ito.CreateDeviceRequest{
 		{
 			DeviceId:  deviceIds[0],
 			Namespace: "testing_core",
@@ -1591,7 +1592,7 @@ func TestPublishDeviceListNoTarget(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	respList, err := PublishDeviceListRequest(b, reqList)
+	respList, err := core_client.PublishDeviceListRequest(b, reqList)
 	if err != nil {
 		t.Error(err)
 	}
@@ -1604,7 +1605,7 @@ func TestPublishDeviceListNoTarget(t *testing.T) {
 func TestCreatedDeviceAlreadyExist(t *testing.T) {
 	// Arrange
 	deviceIds := []string{"device_already_exist_1", "device_already_exist_1"}
-	reqCreate := []*core_api.CreateDeviceRequest{
+	reqCreate := []*core_ito.CreateDeviceRequest{
 		{
 			DeviceId:  deviceIds[0],
 			Namespace: "testing_core",
@@ -1638,7 +1639,7 @@ func TestCreatedDeviceAlreadyExist(t *testing.T) {
 	// Subscribe to device created event
 	count := 0
 	s, err := b.Subscribe(
-		routes.DeviceCreatedEvent.WithId(deviceIds[0]),
+		core_client.DeviceCreatedEvent.WithId(deviceIds[0]),
 		func(msg *nats.Msg) {
 			count += 1
 			msg.Ack()
@@ -1661,10 +1662,10 @@ func TestCreatedDeviceAlreadyExist(t *testing.T) {
 
 func TestUpdateNoTargetMetafield(t *testing.T) {
 	// Arrange
-	reqUpd := &core_api.UpdateDeviceRequest{}
+	reqUpd := &core_ito.UpdateDeviceRequest{}
 
 	// Act
-	respUpd, err := PublishDeviceUpdateRequest(b, reqUpd)
+	respUpd, err := core_client.PublishDeviceUpdateRequest(b, reqUpd)
 	if err != nil {
 		t.Error(err)
 	}
@@ -1676,10 +1677,10 @@ func TestUpdateNoTargetMetafield(t *testing.T) {
 
 func TestDeleteNoTargetMetafield(t *testing.T) {
 	// Arrange
-	reqDel := &core_api.DeleteDeviceRequest{}
+	reqDel := &core_ito.DeleteDeviceRequest{}
 
 	// Act
-	respDel, err := PublishDeviceDeleteRequest(b, reqDel)
+	respDel, err := core_client.PublishDeviceDeleteRequest(b, reqDel)
 	if err != nil {
 		t.Error(err)
 	}
@@ -1692,12 +1693,12 @@ func TestDeleteNoTargetMetafield(t *testing.T) {
 func TestDeviceGoesOnline(t *testing.T) {
 	// Arrange
 	deviceIds := []string{"device_goes_online"}
-	reqList := &core_api.ListDeviceRequest{
-		Targets: &core_api.Targets{
+	reqList := &core_ito.ListDeviceRequest{
+		Targets: &core_ito.Targets{
 			Ids: deviceIds,
 		},
 	}
-	reqCreate := []*core_api.CreateDeviceRequest{
+	reqCreate := []*core_ito.CreateDeviceRequest{
 		{
 			DeviceId:  deviceIds[0],
 			Namespace: "testing_core",
@@ -1717,7 +1718,7 @@ func TestDeviceGoesOnline(t *testing.T) {
 	// Subscribe to device online event
 	onlineEventCount := 0
 	s, err := b.Subscribe(
-		routes.DeviceOnlineEvent.WithId(deviceIds[0]),
+		core_client.DeviceOnlineEvent.WithId(deviceIds[0]),
 		func(msg *nats.Msg) {
 			onlineEventCount += 1
 			msg.Ack()
@@ -1729,12 +1730,12 @@ func TestDeviceGoesOnline(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	if err := PublishHearthbeatStream(b, deviceIds[0]); err != nil {
+	if err := core_client.PublishHearthbeatStream(b, deviceIds[0]); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
 
-	respList, err := PublishDeviceListRequest(b, reqList)
+	respList, err := core_client.PublishDeviceListRequest(b, reqList)
 	if err != nil {
 		t.Error(err)
 	}
@@ -1744,7 +1745,7 @@ func TestDeviceGoesOnline(t *testing.T) {
 		switch dev.Spec.DeviceId {
 		case deviceIds[0]:
 			assert.Equal(t, dev.Status.Online, true)
-			devTs := AsGoTime(dev.Status.LastHearthbeat)
+			devTs := core_ito.AsGoTime(dev.Status.LastHearthbeat)
 			assert.Equal(t, time.Now().UTC().Sub(devTs).Abs().Seconds() < 10, true)
 		}
 	}
@@ -1756,12 +1757,12 @@ func TestDeviceGoesOnline(t *testing.T) {
 func TestDeviceGoesOffline(t *testing.T) {
 	// Arrange
 	deviceIds := []string{"device_goes_offline"}
-	reqList := &core_api.ListDeviceRequest{
-		Targets: &core_api.Targets{
+	reqList := &core_ito.ListDeviceRequest{
+		Targets: &core_ito.Targets{
 			Ids: deviceIds,
 		},
 	}
-	reqCreate := []*core_api.CreateDeviceRequest{
+	reqCreate := []*core_ito.CreateDeviceRequest{
 		{
 			DeviceId:  deviceIds[0],
 			Namespace: "testing_core",
@@ -1781,7 +1782,7 @@ func TestDeviceGoesOffline(t *testing.T) {
 	// Subscribe to device offline event
 	offlineEventCount := 0
 	s, err := b.Subscribe(
-		routes.DeviceOfflineEvent.WithId(deviceIds[0]),
+		core_client.DeviceOfflineEvent.WithId(deviceIds[0]),
 		func(msg *nats.Msg) {
 			offlineEventCount += 1
 			msg.Ack()
@@ -1794,18 +1795,18 @@ func TestDeviceGoesOffline(t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	hbTime := time.Now().UTC()
-	if err := PublishHearthbeatStream(b, deviceIds[0]); err != nil {
+	if err := core_client.PublishHearthbeatStream(b, deviceIds[0]); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
 
-	respListOn, err := PublishDeviceListRequest(b, reqList)
+	respListOn, err := core_client.PublishDeviceListRequest(b, reqList)
 	if err != nil {
 		t.Error(err)
 	}
 	time.Sleep(60 * time.Second)
 
-	respListOff, err := PublishDeviceListRequest(b, reqList)
+	respListOff, err := core_client.PublishDeviceListRequest(b, reqList)
 	if err != nil {
 		t.Error(err)
 	}
@@ -1815,7 +1816,7 @@ func TestDeviceGoesOffline(t *testing.T) {
 		switch dev.Spec.DeviceId {
 		case deviceIds[0]:
 			assert.Equal(t, dev.Status.Online, true)
-			devTs := AsGoTime(dev.Status.LastHearthbeat)
+			devTs := core_ito.AsGoTime(dev.Status.LastHearthbeat)
 			assert.Equal(t, hbTime.Sub(devTs).Abs().Seconds() < 10, true)
 		}
 	}
@@ -1823,7 +1824,7 @@ func TestDeviceGoesOffline(t *testing.T) {
 		switch dev.Spec.DeviceId {
 		case deviceIds[0]:
 			assert.Equal(t, dev.Status.Online, false)
-			devTs := AsGoTime(dev.Status.LastHearthbeat)
+			devTs := core_ito.AsGoTime(dev.Status.LastHearthbeat)
 			assert.Equal(t, time.Now().UTC().Sub(devTs).Abs().Seconds() > 30, true)
 		}
 	}

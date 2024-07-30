@@ -1,4 +1,4 @@
-package core
+package core_srv
 
 import (
 	"context"
@@ -7,10 +7,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/maxthom/mir/api/gen/proto/v1alpha/core"
-	"github.com/maxthom/mir/api/routes"
-	"github.com/maxthom/mir/libs/api/metrics"
-	bus "github.com/maxthom/mir/libs/external/natsio"
+	"github.com/maxthom/mir/internal/clients"
+	"github.com/maxthom/mir/internal/clients/core_client"
+	"github.com/maxthom/mir/internal/ito/proto/v1alpha/common_ito"
+	"github.com/maxthom/mir/internal/ito/proto/v1alpha/core_ito"
+	"github.com/maxthom/mir/internal/libs/api/metrics"
+	bus "github.com/maxthom/mir/internal/libs/external/natsio"
+	"github.com/maxthom/mir/pkgs/models"
 	"github.com/nats-io/nats.go"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
@@ -55,8 +58,8 @@ func NewCore(logger zerolog.Logger, bus *bus.BusConn, db *surrealdb.DB) *CoreSer
 	// Preload hearthbeat map. Required in case the
 	// app is down while a device is also, but report as online
 	// because it went offline when the app was down
-	q, v := createListQueryForDevice(&core.ListDeviceRequest{Targets: &core.Targets{}})
-	devices, err := executeQueryForType[[]*DeviceWithId](db, q, v)
+	q, v := createListQueryForDevice(&core_ito.ListDeviceRequest{Targets: &core_ito.Targets{}})
+	devices, err := executeQueryForType[[]*models.DeviceWithId](db, q, v)
 	if err != nil {
 		l.Error().Err(err).Msg("error occure while executing list query")
 	}
@@ -139,7 +142,7 @@ func (s *CoreServer) Listen(ctx context.Context) {
 				continue
 			}
 
-			route := routes.Subject(msg.Subject).GetFunction()
+			route := clients.Subject(msg.Subject).GetFunction()
 			l.Info().Str("route", route).Msg("core request")
 			if _, exists := channelFns[route]; !exists {
 				l.Warn().Str("route", route).Msg("route handler does not exist")
@@ -158,13 +161,13 @@ func (s *CoreServer) createDeviceRequestHandler(ch chan nats.Msg) {
 		if !ok {
 			return
 		}
-		req := &core.CreateDeviceRequest{}
+		req := &core_ito.CreateDeviceRequest{}
 		err := proto.Unmarshal(msg.Data, req)
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while unmarhsalling request payload")
-			sendReplyOrAck(s.bus, msg, &core.CreateDeviceResponse{
-				Response: &core.CreateDeviceResponse_Error{
-					Error: &core.Error{
+			sendReplyOrAck(s.bus, msg, &core_ito.CreateDeviceResponse{
+				Response: &core_ito.CreateDeviceResponse_Error{
+					Error: &common_ito.Error{
 						Code:    400,
 						Message: "error occure while unmarhsalling request payload",
 						Details: []string{"400 Bad Request", err.Error()},
@@ -176,9 +179,9 @@ func (s *CoreServer) createDeviceRequestHandler(ch chan nats.Msg) {
 		l.Debug().Str("route", "create").Str("payload", fmt.Sprintf("%v", req)).Msg("new device request")
 
 		if req.DeviceId == "" {
-			sendReplyOrAck(s.bus, msg, &core.CreateDeviceResponse{
-				Response: &core.CreateDeviceResponse_Error{
-					Error: &core.Error{
+			sendReplyOrAck(s.bus, msg, &core_ito.CreateDeviceResponse{
+				Response: &core_ito.CreateDeviceResponse_Error{
+					Error: &common_ito.Error{
 						Code:    400,
 						Message: "Invalid device ID",
 						Details: []string{"400 Bad Request"},
@@ -188,17 +191,17 @@ func (s *CoreServer) createDeviceRequestHandler(ch chan nats.Msg) {
 			continue
 		}
 
-		q, v := createListQueryForDevice(&core.ListDeviceRequest{
-			Targets: &core.Targets{
+		q, v := createListQueryForDevice(&core_ito.ListDeviceRequest{
+			Targets: &core_ito.Targets{
 				Ids: []string{req.DeviceId},
 			},
 		})
-		respCheck, err := executeQueryForType[[]*core.Device](s.db, q, v)
+		respCheck, err := executeQueryForType[[]*core_ito.Device](s.db, q, v)
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while executing list db query")
-			sendReplyOrAck(s.bus, msg, &core.CreateDeviceResponse{
-				Response: &core.CreateDeviceResponse_Error{
-					Error: &core.Error{
+			sendReplyOrAck(s.bus, msg, &core_ito.CreateDeviceResponse{
+				Response: &core_ito.CreateDeviceResponse_Error{
+					Error: &common_ito.Error{
 						Code:    500,
 						Message: "error occure while executing list db query",
 						Details: []string{"500 Internal Server Error", err.Error()},
@@ -209,9 +212,9 @@ func (s *CoreServer) createDeviceRequestHandler(ch chan nats.Msg) {
 		}
 
 		if len(respCheck) > 0 {
-			sendReplyOrAck(s.bus, msg, &core.CreateDeviceResponse{
-				Response: &core.CreateDeviceResponse_Error{
-					Error: &core.Error{
+			sendReplyOrAck(s.bus, msg, &core_ito.CreateDeviceResponse{
+				Response: &core_ito.CreateDeviceResponse_Error{
+					Error: &common_ito.Error{
 						Code:    409,
 						Message: "a device with the same id already exists",
 						Details: []string{"409 Conflict"},
@@ -221,12 +224,12 @@ func (s *CoreServer) createDeviceRequestHandler(ch chan nats.Msg) {
 			continue
 		}
 
-		respDb, err := s.db.Create("devices", NewDeviceFromCreateDeviceReq(req))
+		respDb, err := s.db.Create("devices", core_ito.NewDeviceFromCreateDeviceReq(req))
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while executing create db query")
-			sendReplyOrAck(s.bus, msg, &core.CreateDeviceResponse{
-				Response: &core.CreateDeviceResponse_Error{
-					Error: &core.Error{
+			sendReplyOrAck(s.bus, msg, &core_ito.CreateDeviceResponse{
+				Response: &core_ito.CreateDeviceResponse_Error{
+					Error: &common_ito.Error{
 						Code:    500,
 						Message: "error occure while executing create db query",
 						Details: []string{"500 Internal Server Error", err.Error()},
@@ -235,13 +238,13 @@ func (s *CoreServer) createDeviceRequestHandler(ch chan nats.Msg) {
 			})
 			continue
 		}
-		newDev := []DeviceWithId{}
+		newDev := []models.DeviceWithId{}
 		err = surrealdb.Unmarshal(respDb, &newDev)
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while deserializing a db response")
-			sendReplyOrAck(s.bus, msg, &core.CreateDeviceResponse{
-				Response: &core.CreateDeviceResponse_Error{
-					Error: &core.Error{
+			sendReplyOrAck(s.bus, msg, &core_ito.CreateDeviceResponse{
+				Response: &core_ito.CreateDeviceResponse_Error{
+					Error: &common_ito.Error{
 						Code:    500,
 						Message: "error occure while deserializing a db response",
 						Details: []string{"500 Internal Server Error", err.Error()},
@@ -253,16 +256,16 @@ func (s *CoreServer) createDeviceRequestHandler(ch chan nats.Msg) {
 
 		// Publish created events
 		for _, d := range newDev {
-			err := PublishDeviceCreatedEvent(s.bus, d.Spec.DeviceId, d)
+			err := core_client.PublishDeviceCreatedEvent(s.bus, d.Spec.DeviceId, d)
 			if err != nil {
 				l.Warn().Err(err).Str("device_id", d.Spec.DeviceId).Msg("error occure while publishing device created event")
 			}
 		}
 
-		sendReplyOrAck(s.bus, msg, &core.CreateDeviceResponse{
-			Response: &core.CreateDeviceResponse_Ok{
-				Ok: &core.DeviceList{
-					Devices: NewProtoDeviceListFromDevicesWithId(newDev),
+		sendReplyOrAck(s.bus, msg, &core_ito.CreateDeviceResponse{
+			Response: &core_ito.CreateDeviceResponse_Ok{
+				Ok: &core_ito.DeviceList{
+					Devices: core_ito.NewProtoDeviceListFromDevicesWithId(newDev),
 				},
 			}})
 	}
@@ -274,13 +277,13 @@ func (s *CoreServer) updateDeviceRequestHandler(ch chan nats.Msg) {
 		if !ok {
 			return
 		}
-		req := &core.UpdateDeviceRequest{}
+		req := &core_ito.UpdateDeviceRequest{}
 		err := proto.Unmarshal(msg.Data, req)
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while unmarhsalling request payload")
-			sendReplyOrAck(s.bus, msg, &core.UpdateDeviceResponse{
-				Response: &core.UpdateDeviceResponse_Error{
-					Error: &core.Error{
+			sendReplyOrAck(s.bus, msg, &core_ito.UpdateDeviceResponse{
+				Response: &core_ito.UpdateDeviceResponse_Error{
+					Error: &common_ito.Error{
 						Code:    400,
 						Message: "error occure while unmarhsalling request payload",
 						Details: []string{"400 Bad Request", err.Error()},
@@ -297,9 +300,9 @@ func (s *CoreServer) updateDeviceRequestHandler(ch chan nats.Msg) {
 				len(req.Targets.Namespaces) == 0 &&
 				len(req.Targets.Labels) == 0 &&
 				len(req.Targets.Annotations) == 0 {
-			sendReplyOrAck(s.bus, msg, &core.UpdateDeviceResponse{
-				Response: &core.UpdateDeviceResponse_Error{
-					Error: &core.Error{
+			sendReplyOrAck(s.bus, msg, &core_ito.UpdateDeviceResponse{
+				Response: &core_ito.UpdateDeviceResponse_Error{
+					Error: &common_ito.Error{
 						Code:    400,
 						Message: "no target provided for update",
 						Details: []string{"400 Bad Request"},
@@ -317,12 +320,12 @@ func (s *CoreServer) updateDeviceRequestHandler(ch chan nats.Msg) {
 		q := ""
 		v := map[string]any{}
 		q, v = createUpdateQueryForDevice(req.Targets, req)
-		respDb, err := executeQueryForType[[]DeviceWithId](s.db, q, v)
+		respDb, err := executeQueryForType[[]models.DeviceWithId](s.db, q, v)
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while executing a db query")
-			sendReplyOrAck(s.bus, msg, &core.UpdateDeviceResponse{
-				Response: &core.UpdateDeviceResponse_Error{
-					Error: &core.Error{
+			sendReplyOrAck(s.bus, msg, &core_ito.UpdateDeviceResponse{
+				Response: &core_ito.UpdateDeviceResponse_Error{
+					Error: &common_ito.Error{
 						Code:    500,
 						Message: "error occure while executing a db query",
 						Details: []string{"500 Internal Server Error", err.Error()},
@@ -334,16 +337,16 @@ func (s *CoreServer) updateDeviceRequestHandler(ch chan nats.Msg) {
 
 		// Publish update events
 		for _, d := range respDb {
-			err := PublishDeviceUpdatedEvent(s.bus, d.Spec.DeviceId, d)
+			err := core_client.PublishDeviceUpdatedEvent(s.bus, d.Spec.DeviceId, d)
 			if err != nil {
 				l.Warn().Err(err).Str("device_id", d.Spec.DeviceId).Msg("error occure while publishing device updated event")
 			}
 		}
 
-		sendReplyOrAck(s.bus, msg, &core.UpdateDeviceResponse{
-			Response: &core.UpdateDeviceResponse_Ok{
-				Ok: &core.DeviceList{
-					Devices: NewProtoDeviceListFromDevicesWithId(respDb),
+		sendReplyOrAck(s.bus, msg, &core_ito.UpdateDeviceResponse{
+			Response: &core_ito.UpdateDeviceResponse_Ok{
+				Ok: &core_ito.DeviceList{
+					Devices: core_ito.NewProtoDeviceListFromDevicesWithId(respDb),
 				},
 			}})
 	}
@@ -355,13 +358,13 @@ func (s *CoreServer) deleteDeviceRequestHandler(ch chan nats.Msg) {
 		if !ok {
 			return
 		}
-		req := &core.DeleteDeviceRequest{}
+		req := &core_ito.DeleteDeviceRequest{}
 		err := proto.Unmarshal(msg.Data, req)
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while unmarhsalling request payload")
-			sendReplyOrAck(s.bus, msg, &core.DeleteDeviceResponse{
-				Response: &core.DeleteDeviceResponse_Error{
-					Error: &core.Error{
+			sendReplyOrAck(s.bus, msg, &core_ito.DeleteDeviceResponse{
+				Response: &core_ito.DeleteDeviceResponse_Error{
+					Error: &common_ito.Error{
 						Code:    400,
 						Message: "error occure while unmarhsalling request payload",
 						Details: []string{"400 Bad Request", err.Error()},
@@ -378,9 +381,9 @@ func (s *CoreServer) deleteDeviceRequestHandler(ch chan nats.Msg) {
 				len(req.Targets.Namespaces) == 0 &&
 				len(req.Targets.Labels) == 0 &&
 				len(req.Targets.Annotations) == 0 {
-			sendReplyOrAck(s.bus, msg, &core.DeleteDeviceResponse{
-				Response: &core.DeleteDeviceResponse_Error{
-					Error: &core.Error{
+			sendReplyOrAck(s.bus, msg, &core_ito.DeleteDeviceResponse{
+				Response: &core_ito.DeleteDeviceResponse_Error{
+					Error: &common_ito.Error{
 						Code:    400,
 						Message: "no target provided for delete",
 						Details: []string{"400 Bad Request"},
@@ -390,15 +393,15 @@ func (s *CoreServer) deleteDeviceRequestHandler(ch chan nats.Msg) {
 			continue
 		}
 
-		qList, vList := createListQueryForDevice(&core.ListDeviceRequest{
+		qList, vList := createListQueryForDevice(&core_ito.ListDeviceRequest{
 			Targets: req.Targets,
 		})
-		respDbList, err := executeQueryForType[[]DeviceWithId](s.db, qList, vList)
+		respDbList, err := executeQueryForType[[]models.DeviceWithId](s.db, qList, vList)
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while executing a db query")
-			sendReplyOrAck(s.bus, msg, &core.DeleteDeviceResponse{
-				Response: &core.DeleteDeviceResponse_Error{
-					Error: &core.Error{
+			sendReplyOrAck(s.bus, msg, &core_ito.DeleteDeviceResponse{
+				Response: &core_ito.DeleteDeviceResponse_Error{
+					Error: &common_ito.Error{
 						Code:    500,
 						Message: "error occure while executing a db query",
 						Details: []string{"500 Internal Server Error", err.Error()},
@@ -411,12 +414,12 @@ func (s *CoreServer) deleteDeviceRequestHandler(ch chan nats.Msg) {
 		// IDEA would be nice that surreal delete statement returns the document
 		// so we dont have to do two queries
 		q, v := createDeleteQueryForDevice(req)
-		_, err = executeQueryForType[[]DeviceWithId](s.db, q, v)
+		_, err = executeQueryForType[[]models.DeviceWithId](s.db, q, v)
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while executing a db query")
-			sendReplyOrAck(s.bus, msg, &core.DeleteDeviceResponse{
-				Response: &core.DeleteDeviceResponse_Error{
-					Error: &core.Error{
+			sendReplyOrAck(s.bus, msg, &core_ito.DeleteDeviceResponse{
+				Response: &core_ito.DeleteDeviceResponse_Error{
+					Error: &common_ito.Error{
 						Code:    500,
 						Message: "error occure while executing a db query",
 						Details: []string{"500 Internal Server Error", err.Error()},
@@ -428,16 +431,16 @@ func (s *CoreServer) deleteDeviceRequestHandler(ch chan nats.Msg) {
 
 		// Publish delete events
 		for _, d := range respDbList {
-			err := PublishDeviceDeletedEvent(s.bus, d.Spec.DeviceId, d)
+			err := core_client.PublishDeviceDeletedEvent(s.bus, d.Spec.DeviceId, d)
 			if err != nil {
 				l.Warn().Err(err).Str("device_id", d.Spec.DeviceId).Msg("error occure while publishing device deleted event")
 			}
 		}
 
-		sendReplyOrAck(s.bus, msg, &core.DeleteDeviceResponse{
-			Response: &core.DeleteDeviceResponse_Ok{
-				Ok: &core.DeviceList{
-					Devices: NewProtoDeviceListFromDevicesWithId(respDbList),
+		sendReplyOrAck(s.bus, msg, &core_ito.DeleteDeviceResponse{
+			Response: &core_ito.DeleteDeviceResponse_Ok{
+				Ok: &core_ito.DeviceList{
+					Devices: core_ito.NewProtoDeviceListFromDevicesWithId(respDbList),
 				},
 			}})
 	}
@@ -449,13 +452,13 @@ func (s *CoreServer) listDeviceRequestHandler(ch chan nats.Msg) {
 		if !ok {
 			return
 		}
-		req := &core.ListDeviceRequest{}
+		req := &core_ito.ListDeviceRequest{}
 		err := proto.Unmarshal(msg.Data, req)
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while unmarhsalling request payload")
-			sendReplyOrAck(s.bus, msg, &core.ListDeviceResponse{
-				Response: &core.ListDeviceResponse_Error{
-					Error: &core.Error{
+			sendReplyOrAck(s.bus, msg, &core_ito.ListDeviceResponse{
+				Response: &core_ito.ListDeviceResponse_Error{
+					Error: &common_ito.Error{
 						Code:    400,
 						Message: "error occure while unmarhsalling request payload",
 						Details: []string{"400 Bad Request", err.Error()},
@@ -467,12 +470,12 @@ func (s *CoreServer) listDeviceRequestHandler(ch chan nats.Msg) {
 		l.Debug().Str("route", "list").Str("payload", fmt.Sprintf("%v", req)).Msg("list device request")
 
 		q, v := createListQueryForDevice(req)
-		respDb, err := executeQueryForType[[]DeviceWithId](s.db, q, v)
+		respDb, err := executeQueryForType[[]models.DeviceWithId](s.db, q, v)
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while executing a db query")
-			sendReplyOrAck(s.bus, msg, &core.ListDeviceResponse{
-				Response: &core.ListDeviceResponse_Error{
-					Error: &core.Error{
+			sendReplyOrAck(s.bus, msg, &core_ito.ListDeviceResponse{
+				Response: &core_ito.ListDeviceResponse_Error{
+					Error: &common_ito.Error{
 						Code:    500,
 						Message: "error occure while executing a db query",
 						Details: []string{"500 Internal Server Error", err.Error()},
@@ -482,10 +485,10 @@ func (s *CoreServer) listDeviceRequestHandler(ch chan nats.Msg) {
 			continue
 		}
 
-		sendReplyOrAck(s.bus, msg, &core.ListDeviceResponse{
-			Response: &core.ListDeviceResponse_Ok{
-				Ok: &core.DeviceList{
-					Devices: NewProtoDeviceListFromDevicesWithId(respDb),
+		sendReplyOrAck(s.bus, msg, &core_ito.ListDeviceResponse{
+			Response: &core_ito.ListDeviceResponse_Ok{
+				Ok: &core_ito.DeviceList{
+					Devices: core_ito.NewProtoDeviceListFromDevicesWithId(respDb),
 				},
 			}})
 	}
@@ -506,7 +509,7 @@ func (s *CoreServer) hearthbeatPulsor(ctx context.Context, interval time.Duratio
 					newOffline = append(newOffline, k)
 					// TODO could be one query that does all the now offline devices instead of many
 					q, v := createHeartbeatQuery(k, time.Time{}, false)
-					_, err := executeQueryForType[[]*DeviceWithId](s.db, q, v)
+					_, err := executeQueryForType[[]*models.DeviceWithId](s.db, q, v)
 					if err != nil {
 						l.Error().Err(err).Msg("error occure while executing hearthbeat db query")
 						continue
@@ -517,7 +520,7 @@ func (s *CoreServer) hearthbeatPulsor(ctx context.Context, interval time.Duratio
 			s.hearthbeatsMutex.Lock()
 			for _, key := range newOffline {
 				l.Info().Str("route", "hearthbeat_pulsor").Str("event", "device_offline").Msg(key)
-				err := PublishDeviceOfflineEvent(s.bus, key)
+				err := core_client.PublishDeviceOfflineEvent(s.bus, key)
 				if err != nil {
 					l.Warn().Err(err).Str("device_id", key).Msg("error occure while publishing device offline event")
 				}
@@ -536,12 +539,12 @@ func (s *CoreServer) hearthbeatRequestHandler(ch chan nats.Msg) {
 			return
 		}
 		l.Debug().Str("route", "hearthbeat").Msg("hearthbeat device request")
-		deviceId := routes.Subject(msg.Subject).GetId()
+		deviceId := clients.Subject(msg.Subject).GetId()
 		// If not in map, mean is newly online device
 		s.hearthbeatsMutex.Lock()
 		if _, ok := s.hearthbeats[deviceId]; !ok {
 			l.Info().Str("route", "hearthbeat").Str("event", "device_online").Msg(deviceId)
-			err := PublishDeviceOnlineEvent(s.bus, deviceId)
+			err := core_client.PublishDeviceOnlineEvent(s.bus, deviceId)
 			if err != nil {
 				l.Warn().Err(err).Str("device_id", deviceId).Msg("error occure while publishing device online event")
 			}
@@ -553,7 +556,7 @@ func (s *CoreServer) hearthbeatRequestHandler(ch chan nats.Msg) {
 		// every minute, a routine check the map to see if there is
 		// hearthbeat older then 3 mins, if so set device to offline
 		q, v := createHeartbeatQuery(deviceId, s.hearthbeats[deviceId], true)
-		_, err := executeQueryForType[[]*DeviceWithId](s.db, q, v)
+		_, err := executeQueryForType[[]*models.DeviceWithId](s.db, q, v)
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while executing hearthbeat db query")
 			msg.Ack()
@@ -578,7 +581,7 @@ func sendReplyOrAck(bus *bus.BusConn, msg nats.Msg, m protoreflect.ProtoMessage)
 	}
 }
 
-func createUpdateQueryForDevice(t *core.Targets, upd *core.UpdateDeviceRequest) (sql string, vars map[string]any) {
+func createUpdateQueryForDevice(t *core_ito.Targets, upd *core_ito.UpdateDeviceRequest) (sql string, vars map[string]any) {
 	var q strings.Builder
 	vars = map[string]any{}
 	q.WriteString("UPDATE devices MERGE {")
@@ -636,7 +639,7 @@ func createUpdateQueryForDevice(t *core.Targets, upd *core.UpdateDeviceRequest) 
 	}
 	if upd.Status != nil {
 		q.WriteString("status: {")
-		if upd.Status.LastHearthbeat != nil && !AsGoTime(upd.Status.LastHearthbeat).IsZero() {
+		if upd.Status.LastHearthbeat != nil && !core_ito.AsGoTime(upd.Status.LastHearthbeat).IsZero() {
 			q.WriteString("lastHearthbeat: $BEAT,")
 			vars["BEAT"] = t
 		}
@@ -655,7 +658,7 @@ func createUpdateQueryForDevice(t *core.Targets, upd *core.UpdateDeviceRequest) 
 	return
 }
 
-func createUpdateQueryForDeviceSpec(t *core.Targets, upd *core.UpdateDeviceRequest_Spec) (sql string, vars map[string]any) {
+func createUpdateQueryForDeviceSpec(t *core_ito.Targets, upd *core_ito.UpdateDeviceRequest_Spec) (sql string, vars map[string]any) {
 	var q strings.Builder
 	vars = map[string]any{}
 	q.WriteString("UPDATE devices MERGE {")
@@ -673,7 +676,7 @@ func createUpdateQueryForDeviceSpec(t *core.Targets, upd *core.UpdateDeviceReque
 	return
 }
 
-func createDeleteQueryForDevice(req *core.DeleteDeviceRequest) (sql string, vars map[string]any) {
+func createDeleteQueryForDevice(req *core_ito.DeleteDeviceRequest) (sql string, vars map[string]any) {
 	var q strings.Builder
 	vars = map[string]any{}
 
@@ -684,7 +687,7 @@ func createDeleteQueryForDevice(req *core.DeleteDeviceRequest) (sql string, vars
 	return
 }
 
-func createListQueryForDevice(req *core.ListDeviceRequest) (sql string, vars map[string]any) {
+func createListQueryForDevice(req *core_ito.ListDeviceRequest) (sql string, vars map[string]any) {
 	var q strings.Builder
 	vars = map[string]any{}
 
@@ -712,7 +715,7 @@ func createHeartbeatQuery(id string, t time.Time, online bool) (sql string, vars
 	q.WriteString("online: $ON,")
 	vars["ON"] = online
 	q.WriteString("},} WHERE ")
-	q.WriteString(createWhereStatementWithTargets(&core.Targets{
+	q.WriteString(createWhereStatementWithTargets(&core_ito.Targets{
 		Ids: []string{id},
 	}))
 	q.WriteString(";")
@@ -721,7 +724,7 @@ func createHeartbeatQuery(id string, t time.Time, online bool) (sql string, vars
 }
 
 // TODO find how we can query using / in name in WHERE clause
-func createWhereStatementWithTargets(t *core.Targets) string {
+func createWhereStatementWithTargets(t *core_ito.Targets) string {
 	var q strings.Builder
 	if t == nil {
 		return ""

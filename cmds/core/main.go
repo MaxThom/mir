@@ -10,14 +10,14 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/maxthom/mir/libs/api/health"
-	"github.com/maxthom/mir/libs/api/metrics"
-	"github.com/maxthom/mir/libs/boiler/mir_cli"
-	"github.com/maxthom/mir/libs/boiler/mir_config"
-	"github.com/maxthom/mir/libs/boiler/mir_log"
-	"github.com/maxthom/mir/libs/boiler/mir_signals"
-	bus "github.com/maxthom/mir/libs/external/natsio"
-	"github.com/maxthom/mir/services/core"
+	"github.com/maxthom/mir/internal/libs/api/health"
+	"github.com/maxthom/mir/internal/libs/api/metrics"
+	"github.com/maxthom/mir/internal/libs/boiler/mir_cli"
+	"github.com/maxthom/mir/internal/libs/boiler/mir_config"
+	"github.com/maxthom/mir/internal/libs/boiler/mir_log"
+	"github.com/maxthom/mir/internal/libs/boiler/mir_signals"
+	bus "github.com/maxthom/mir/internal/libs/external/natsio"
+	"github.com/maxthom/mir/internal/services/core_srv"
 	"github.com/rs/zerolog"
 	"github.com/surrealdb/surrealdb.go"
 	"golang.org/x/net/http2"
@@ -160,8 +160,8 @@ func run(
 	log.Info().Str("url", cfg.DataBusServer.Url).Msg("connected to msg bus")
 
 	// Services
-	coreSrv := core.NewCore(log, b, db)
-	core.RegisterMetrics(metrics.Registry())
+	coreSrv := core_srv.NewCore(log, b, db)
+	core_srv.RegisterMetrics(metrics.Registry())
 
 	// Metrics & Health
 	mux := http.NewServeMux()
