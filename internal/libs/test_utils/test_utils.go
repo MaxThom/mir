@@ -1,9 +1,9 @@
 package test_utils
 
 import (
-	core_api "github.com/maxthom/mir/api/gen/proto/v1alpha/core"
-	bus "github.com/maxthom/mir/libs/external/natsio"
-	"github.com/maxthom/mir/services/core"
+	"github.com/maxthom/mir/internal/clients/core_client"
+	"github.com/maxthom/mir/internal/ito/proto/v1alpha/core_ito"
+	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	"github.com/surrealdb/surrealdb.go"
 )
 
@@ -40,8 +40,8 @@ func strRef(s string) *string {
 }
 
 func DeleteDevicesWithLabelsPanic(b *bus.BusConn, lbl map[string]string) {
-	if _, err := core.PublishDeviceDeleteRequest(b, &core_api.DeleteDeviceRequest{
-		Targets: &core_api.Targets{
+	if _, err := core_client.PublishDeviceDeleteRequest(b, &core_ito.DeleteDeviceRequest{
+		Targets: &core_ito.Targets{
 			Labels: lbl,
 		},
 	}); err != nil {

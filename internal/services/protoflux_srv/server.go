@@ -1,4 +1,4 @@
-package protoflux
+package protoflux_srv
 
 import (
 	"context"
@@ -8,9 +8,9 @@ import (
 	"sync"
 
 	"github.com/influxdata/influxdb-client-go/v2/api"
-	"github.com/maxthom/mir/api/gen/proto/v1alpha/device"
-	"github.com/maxthom/mir/libs/api/metrics"
-	proto_lineprotocol "github.com/maxthom/mir/libs/proto/line_protocol"
+	"github.com/maxthom/mir/internal/ito/proto/v1alpha/device_ito"
+	"github.com/maxthom/mir/internal/libs/api/metrics"
+	proto_lineprotocol "github.com/maxthom/mir/internal/libs/proto/line_protocol"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/nats-io/nats.go"
 	"github.com/prometheus/client_golang/prometheus"
@@ -200,7 +200,7 @@ func generateIngesters(devSchema deviceProtoSchema, protoMsgName string) (proto_
 }
 
 func getProtoSchemaFromDevice(m *mir.Mir, deviceId string) (*protoregistry.Files, *descriptorpb.FileDescriptorSet, error) {
-	schemaResp := &device.SchemaRetrieveResponse{}
+	schemaResp := &device_ito.SchemaRetrieveResponse{}
 	err := m.SendRequest(mir.Device().V1Alpha().RequestSchema(deviceId, schemaResp))
 	if err != nil {
 		return nil, nil, err
@@ -226,7 +226,7 @@ func (s *ProtoFluxServer) listenPlayground(ctx context.Context) {
 	s.m.Subscribe(mir.Stream().V1Alpha().Telemetry(
 		func(msg *nats.Msg, deviceId string, protoMsgName string) {
 			fmt.Println("received data > ")
-			schemaResp := &device.SchemaRetrieveResponse{}
+			schemaResp := &device_ito.SchemaRetrieveResponse{}
 			err := s.m.SendRequest(mir.Device().V1Alpha().RequestSchema(deviceId, schemaResp))
 			if err != nil {
 				fmt.Println(err)

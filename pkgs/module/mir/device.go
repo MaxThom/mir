@@ -1,8 +1,8 @@
 package mir
 
 import (
-	"github.com/maxthom/mir/api/gen/proto/v1alpha/core"
-	"github.com/maxthom/mir/api/routes"
+	"github.com/maxthom/mir/internal/clients/core_client"
+	"github.com/maxthom/mir/internal/ito/proto/v1alpha/core_ito"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
 )
@@ -21,11 +21,11 @@ func (r request) V1Alpha() requestV1Alpha {
 // Create device request
 
 type createDeviceRequest struct {
-	req  *core.CreateDeviceRequest
-	resp *core.CreateDeviceResponse
+	req  *core_ito.CreateDeviceRequest
+	resp *core_ito.CreateDeviceResponse
 }
 
-func (s requestV1Alpha) CreateDevice(req core.CreateDeviceRequest, resp *core.CreateDeviceResponse) *createDeviceRequest {
+func (s requestV1Alpha) CreateDevice(req core_ito.CreateDeviceRequest, resp *core_ito.CreateDeviceResponse) *createDeviceRequest {
 	return &createDeviceRequest{
 		req:  &req,
 		resp: resp,
@@ -33,7 +33,7 @@ func (s requestV1Alpha) CreateDevice(req core.CreateDeviceRequest, resp *core.Cr
 }
 
 func (s *createDeviceRequest) msg() (*nats.Msg, error) {
-	m := nats.NewMsg(routes.CreateDeviceRequest.WithId("TODO"))
+	m := nats.NewMsg(core_client.CreateDeviceRequest.WithId("TODO"))
 	bReq, err := proto.Marshal(s.req)
 
 	if err != nil {
@@ -58,11 +58,11 @@ func (s *createDeviceRequest) response(m *nats.Msg) error {
 // Update device request
 
 type updateDeviceRequest struct {
-	req  *core.UpdateDeviceRequest
-	resp *core.UpdateDeviceResponse
+	req  *core_ito.UpdateDeviceRequest
+	resp *core_ito.UpdateDeviceResponse
 }
 
-func (s requestV1Alpha) UpdateDevice(req core.UpdateDeviceRequest, resp *core.UpdateDeviceResponse) *updateDeviceRequest {
+func (s requestV1Alpha) UpdateDevice(req core_ito.UpdateDeviceRequest, resp *core_ito.UpdateDeviceResponse) *updateDeviceRequest {
 	return &updateDeviceRequest{
 		req:  &req,
 		resp: resp,
@@ -70,7 +70,7 @@ func (s requestV1Alpha) UpdateDevice(req core.UpdateDeviceRequest, resp *core.Up
 }
 
 func (s *updateDeviceRequest) msg() (*nats.Msg, error) {
-	m := nats.NewMsg(routes.UpdateDeviceRequest.WithId("TODO"))
+	m := nats.NewMsg(core_client.UpdateDeviceRequest.WithId("TODO"))
 	bReq, err := proto.Marshal(s.req)
 
 	if err != nil {
@@ -95,11 +95,11 @@ func (s *updateDeviceRequest) response(m *nats.Msg) error {
 // List device request
 
 type listDeviceRequest struct {
-	req  *core.ListDeviceRequest
-	resp *core.ListDeviceResponse
+	req  *core_ito.ListDeviceRequest
+	resp *core_ito.ListDeviceResponse
 }
 
-func (s requestV1Alpha) ListDevice(req core.ListDeviceRequest, resp *core.ListDeviceResponse) *listDeviceRequest {
+func (s requestV1Alpha) ListDevice(req core_ito.ListDeviceRequest, resp *core_ito.ListDeviceResponse) *listDeviceRequest {
 	return &listDeviceRequest{
 		req:  &req,
 		resp: resp,
@@ -107,7 +107,7 @@ func (s requestV1Alpha) ListDevice(req core.ListDeviceRequest, resp *core.ListDe
 }
 
 func (s *listDeviceRequest) msg() (*nats.Msg, error) {
-	m := nats.NewMsg(routes.ListDeviceRequest.WithId("TODO"))
+	m := nats.NewMsg(core_client.ListDeviceRequest.WithId("TODO"))
 	bReq, err := proto.Marshal(s.req)
 
 	if err != nil {
@@ -132,11 +132,11 @@ func (s *listDeviceRequest) response(m *nats.Msg) error {
 // Delete device request
 
 type deleteDeviceRequest struct {
-	req  *core.DeleteDeviceRequest
-	resp *core.DeleteDeviceResponse
+	req  *core_ito.DeleteDeviceRequest
+	resp *core_ito.DeleteDeviceResponse
 }
 
-func (s requestV1Alpha) DeleteDevice(req core.DeleteDeviceRequest, resp *core.DeleteDeviceResponse) *deleteDeviceRequest {
+func (s requestV1Alpha) DeleteDevice(req core_ito.DeleteDeviceRequest, resp *core_ito.DeleteDeviceResponse) *deleteDeviceRequest {
 	return &deleteDeviceRequest{
 		req:  &req,
 		resp: resp,
@@ -144,7 +144,7 @@ func (s requestV1Alpha) DeleteDevice(req core.DeleteDeviceRequest, resp *core.De
 }
 
 func (s *deleteDeviceRequest) msg() (*nats.Msg, error) {
-	m := nats.NewMsg(routes.DeleteDeviceRequest.WithId("TODO"))
+	m := nats.NewMsg(core_client.DeleteDeviceRequest.WithId("TODO"))
 	bReq, err := proto.Marshal(s.req)
 
 	if err != nil {
