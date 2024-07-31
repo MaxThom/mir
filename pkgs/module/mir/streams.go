@@ -1,7 +1,9 @@
 package mir
 
 import (
-	"github.com/maxthom/mir/api/routes"
+	"github.com/maxthom/mir/internal/clients"
+	"github.com/maxthom/mir/internal/clients/core_client"
+	"github.com/maxthom/mir/internal/clients/protoflux_client"
 	"github.com/nats-io/nats.go"
 )
 
@@ -33,12 +35,12 @@ func (s streamV1alpha) Hearthbeat(fn func(msg *nats.Msg, deviceId string)) *hear
 }
 
 func (s hearthbeatStream) subject() string {
-	return routes.HearthbeatDeviceStream.WithId("*")
+	return core_client.HearthbeatDeviceStream.WithId("*")
 }
 
 func (s hearthbeatStream) handler() nats.MsgHandler {
 	return func(msg *nats.Msg) {
-		s.fn(msg, routes.Subject(msg.Subject).GetId())
+		s.fn(msg, clients.Subject(msg.Subject).GetId())
 	}
 }
 
@@ -58,11 +60,11 @@ func (s streamV1alpha) Telemetry(fn func(msg *nats.Msg, deviceId string, protoMs
 }
 
 func (s telemetryStream) subject() string {
-	return routes.TelemetryDeviceStream.WithId("*")
+	return protoflux_client.TelemetryDeviceStream.WithId("*")
 }
 
 func (s telemetryStream) handler() nats.MsgHandler {
 	return func(msg *nats.Msg) {
-		s.fn(msg, routes.Subject(msg.Subject).GetId(), msg.Header.Get("__msg"))
+		s.fn(msg, clients.Subject(msg.Subject).GetId(), msg.Header.Get("__msg"))
 	}
 }

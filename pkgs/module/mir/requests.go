@@ -1,9 +1,9 @@
 package mir
 
 import (
-	"github.com/maxthom/mir/api/gen/proto/v1alpha/device"
-	"github.com/maxthom/mir/api/routes"
-	"github.com/maxthom/mir/libs/compression/zstd"
+	"github.com/maxthom/mir/internal/clients/device_client"
+	"github.com/maxthom/mir/internal/ito/proto/v1alpha/device_ito"
+	"github.com/maxthom/mir/internal/libs/compression/zstd"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
 )
@@ -23,10 +23,10 @@ func (r deviceCmd) V1Alpha() deviceV1Alpha {
 
 type retrieveSchemaRequest struct {
 	deviceId string
-	resp     *device.SchemaRetrieveResponse
+	resp     *device_ito.SchemaRetrieveResponse
 }
 
-func (s deviceV1Alpha) RequestSchema(deviceId string, resp *device.SchemaRetrieveResponse) *retrieveSchemaRequest {
+func (s deviceV1Alpha) RequestSchema(deviceId string, resp *device_ito.SchemaRetrieveResponse) *retrieveSchemaRequest {
 	return &retrieveSchemaRequest{
 		deviceId: deviceId,
 		resp:     resp,
@@ -34,7 +34,7 @@ func (s deviceV1Alpha) RequestSchema(deviceId string, resp *device.SchemaRetriev
 }
 
 func (s *retrieveSchemaRequest) msg() (*nats.Msg, error) {
-	m := nats.NewMsg(routes.SchemaRequest.WithId(s.deviceId))
+	m := nats.NewMsg(device_client.SchemaRequest.WithId(s.deviceId))
 	return m, nil
 }
 

@@ -11,15 +11,15 @@ import (
 	"time"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
-	"github.com/maxthom/mir/libs/api/health"
-	"github.com/maxthom/mir/libs/api/metrics"
-	"github.com/maxthom/mir/libs/boiler/mir_cli"
-	"github.com/maxthom/mir/libs/boiler/mir_config"
-	"github.com/maxthom/mir/libs/boiler/mir_log"
-	"github.com/maxthom/mir/libs/boiler/mir_signals"
-	"github.com/maxthom/mir/libs/external/surreal"
+	"github.com/maxthom/mir/internal/libs/api/health"
+	"github.com/maxthom/mir/internal/libs/api/metrics"
+	"github.com/maxthom/mir/internal/libs/boiler/mir_cli"
+	"github.com/maxthom/mir/internal/libs/boiler/mir_config"
+	"github.com/maxthom/mir/internal/libs/boiler/mir_log"
+	"github.com/maxthom/mir/internal/libs/boiler/mir_signals"
+	"github.com/maxthom/mir/internal/libs/external/surreal"
+	"github.com/maxthom/mir/internal/services/protoflux_srv"
 	"github.com/maxthom/mir/pkgs/module/mir"
-	"github.com/maxthom/mir/services/protoflux"
 	"github.com/rs/zerolog"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -183,8 +183,8 @@ func run(
 	log.Info().Str("url", cfg.DataBusServer.Url).Msg("connected to msg bus")
 
 	// Services
-	protofluxSrv := protoflux.NewProtoFluxServer(log, m, lpWriter, db)
-	protoflux.RegisterMetrics(metrics.Registry())
+	protofluxSrv := protoflux_srv.NewProtoFluxServer(log, m, lpWriter, db)
+	protoflux_srv.RegisterMetrics(metrics.Registry())
 
 	// Metrics & Health
 	mux := http.NewServeMux()

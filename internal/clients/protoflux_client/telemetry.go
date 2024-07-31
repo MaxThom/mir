@@ -1,4 +1,4 @@
-package routes
+package protoflux_client
 
 import (
 	"github.com/maxthom/mir/internal/clients"

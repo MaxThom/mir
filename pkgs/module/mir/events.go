@@ -1,8 +1,9 @@
 package mir
 
 import (
-	core_api "github.com/maxthom/mir/api/gen/proto/v1alpha/core"
-	"github.com/maxthom/mir/api/routes"
+	"github.com/maxthom/mir/internal/clients"
+	"github.com/maxthom/mir/internal/clients/core_client"
+	"github.com/maxthom/mir/internal/ito/proto/v1alpha/core_ito"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
 )
@@ -36,12 +37,12 @@ func (s eventV1alpha) DeviceOnline(fn func(msg *nats.Msg, deviceId string)) *dev
 }
 
 func (s deviceOnlineEvent) subject() string {
-	return routes.DeviceOnlineEvent.WithId("*")
+	return core_client.DeviceOnlineEvent.WithId("*")
 }
 
 func (s deviceOnlineEvent) handler() nats.MsgHandler {
 	return func(msg *nats.Msg) {
-		s.fn(msg, routes.Subject(msg.Subject).GetId())
+		s.fn(msg, clients.Subject(msg.Subject).GetId())
 	}
 }
 
@@ -60,86 +61,86 @@ func (s eventV1alpha) DeviceOffline(fn func(msg *nats.Msg, deviceId string)) *de
 }
 
 func (s deviceOfflineEvent) subject() string {
-	return routes.DeviceOfflineEvent.WithId("*")
+	return core_client.DeviceOfflineEvent.WithId("*")
 }
 
 func (s deviceOfflineEvent) handler() nats.MsgHandler {
 	return func(msg *nats.Msg) {
-		s.fn(msg, routes.Subject(msg.Subject).GetId())
+		s.fn(msg, clients.Subject(msg.Subject).GetId())
 	}
 }
 
 // Device deleted event
 
 type deviceDeletedEvent struct {
-	fn func(msg *nats.Msg, deviceId string, device *core_api.Device)
+	fn func(msg *nats.Msg, deviceId string, device *core_ito.Device)
 }
 
 // Triggered every time a device get deleted
-func (s eventV1alpha) DeviceDeleted(fn func(msg *nats.Msg, deviceId string, device *core_api.Device)) *deviceDeletedEvent {
+func (s eventV1alpha) DeviceDeleted(fn func(msg *nats.Msg, deviceId string, device *core_ito.Device)) *deviceDeletedEvent {
 	return &deviceDeletedEvent{
 		fn: fn,
 	}
 }
 
 func (s deviceDeletedEvent) subject() string {
-	return routes.DeviceDeletedEvent.WithId("*")
+	return core_client.DeviceDeletedEvent.WithId("*")
 }
 
 func (s deviceDeletedEvent) handler() nats.MsgHandler {
 	return func(msg *nats.Msg) {
-		d := &core_api.Device{}
+		d := &core_ito.Device{}
 		_ = proto.Unmarshal(msg.Data, d)
-		s.fn(msg, routes.Subject(msg.Subject).GetId(), d)
+		s.fn(msg, clients.Subject(msg.Subject).GetId(), d)
 	}
 }
 
 // Device created event
 
 type deviceCreatedEvent struct {
-	fn func(msg *nats.Msg, deviceId string, device *core_api.Device)
+	fn func(msg *nats.Msg, deviceId string, device *core_ito.Device)
 }
 
 // Triggered every time a device get created
-func (s eventV1alpha) DeviceCreated(fn func(msg *nats.Msg, deviceId string, device *core_api.Device)) *deviceCreatedEvent {
+func (s eventV1alpha) DeviceCreated(fn func(msg *nats.Msg, deviceId string, device *core_ito.Device)) *deviceCreatedEvent {
 	return &deviceCreatedEvent{
 		fn: fn,
 	}
 }
 
 func (s deviceCreatedEvent) subject() string {
-	return routes.DeviceCreatedEvent.WithId("*")
+	return core_client.DeviceCreatedEvent.WithId("*")
 }
 
 func (s deviceCreatedEvent) handler() nats.MsgHandler {
 	return func(msg *nats.Msg) {
-		d := &core_api.Device{}
+		d := &core_ito.Device{}
 		_ = proto.Unmarshal(msg.Data, d)
-		s.fn(msg, routes.Subject(msg.Subject).GetId(), d)
+		s.fn(msg, clients.Subject(msg.Subject).GetId(), d)
 	}
 }
 
 // Device updated event
 
 type deviceUpdatedEvent struct {
-	fn func(msg *nats.Msg, deviceId string, device *core_api.Device)
+	fn func(msg *nats.Msg, deviceId string, device *core_ito.Device)
 }
 
 // Triggered every time a device get updated
-func (s eventV1alpha) DeviceUpdated(fn func(msg *nats.Msg, deviceId string, device *core_api.Device)) *deviceUpdatedEvent {
+func (s eventV1alpha) DeviceUpdated(fn func(msg *nats.Msg, deviceId string, device *core_ito.Device)) *deviceUpdatedEvent {
 	return &deviceUpdatedEvent{
 		fn: fn,
 	}
 }
 
 func (s deviceUpdatedEvent) subject() string {
-	return routes.DeviceUpdatedEvent.WithId("*")
+	return core_client.DeviceUpdatedEvent.WithId("*")
 }
 
 func (s deviceUpdatedEvent) handler() nats.MsgHandler {
 	return func(msg *nats.Msg) {
-		d := &core_api.Device{}
+		d := &core_ito.Device{}
 		_ = proto.Unmarshal(msg.Data, d)
-		s.fn(msg, routes.Subject(msg.Subject).GetId(), d)
+		s.fn(msg, clients.Subject(msg.Subject).GetId(), d)
 	}
 }

@@ -94,11 +94,11 @@ mir/
 │   │   │   └── telemetry.go
 │   │   └── core/
 │   │       └── device.go
-│   ├── mir/
-│   │   └── device/
+│   ├── device/
+│   │   └── mir/
 │   │       └── mir.go
-│   └── mir/
-│       └── module/
+│   └── module/
+│       └── mir/
 │           └── mir.go
 ├── scripts/
 │   ├── build.sh
@@ -119,3 +119,12 @@ core/
  - client/
  ...
 ```
+
+the struggles
+- protobuf models and domain models
+- route subjects and clients
+  maybe device_route instead of device_client
+
+IDEA
+- change logger to standard logger
+-
