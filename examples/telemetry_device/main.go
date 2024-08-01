@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/maxthom/mir/examples/telemetry_device/gen"
-	"github.com/maxthom/mir/libs/boiler/mir_signals"
+	"github.com/maxthom/mir/internal/libs/boiler/mir_signals"
 	"github.com/maxthom/mir/pkgs/device/mir"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"

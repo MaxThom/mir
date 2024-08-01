@@ -5,6 +5,7 @@ import (
 
 	"github.com/maxthom/mir/internal/clients"
 	"github.com/maxthom/mir/internal/ito/proto/v1alpha/device_ito"
+	"github.com/maxthom/mir/internal/libs/compression/zstd"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	"google.golang.org/protobuf/proto"
 )
@@ -19,8 +20,16 @@ func PublishSchemaRetreiveRequest(bus *bus.BusConn, deviceId string) (*device_it
 		return &device_ito.SchemaRetrieveResponse{}, err
 	}
 
+	data := resMsg.Data
+	if resMsg.Header.Get("Content-Encoding") == "zstd" {
+		data, err = zstd.DecompressData(resMsg.Data)
+		if err != nil {
+			return &device_ito.SchemaRetrieveResponse{}, err
+		}
+	}
+
 	resp := &device_ito.SchemaRetrieveResponse{}
-	err = proto.Unmarshal(resMsg.Data, resp)
+	err = proto.Unmarshal(data, resp)
 	if err != nil {
 		return &device_ito.SchemaRetrieveResponse{}, err
 	}

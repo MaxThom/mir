@@ -9,11 +9,13 @@ import (
 	"testing"
 	"time"
 
-	core_api "github.com/maxthom/mir/api/gen/proto/v1alpha/core"
-	"github.com/maxthom/mir/api/routes"
-	bus "github.com/maxthom/mir/libs/external/natsio"
+	"github.com/maxthom/mir/internal/clients/core_client"
+	"github.com/maxthom/mir/internal/clients/device_client"
+	"github.com/maxthom/mir/internal/ito/proto/v1alpha/core_ito"
+	bus "github.com/maxthom/mir/internal/libs/external/natsio"
+	"github.com/maxthom/mir/internal/services/core_srv"
 	"github.com/maxthom/mir/pkgs/device/mir/gen/proto_test"
-	"github.com/maxthom/mir/services/core"
+	"github.com/maxthom/mir/pkgs/models"
 	logger "github.com/rs/zerolog/log"
 	"github.com/surrealdb/surrealdb.go"
 	"google.golang.org/protobuf/proto"
@@ -47,7 +49,7 @@ func TestMain(m *testing.M) {
 	fmt.Println(" -> db")
 	fmt.Println(" -> cleaning db")
 
-	coreSrv := core.NewCore(log, b, db)
+	coreSrv := core_srv.NewCore(log, b, db)
 	go func() {
 		coreSrv.Listen(ctx)
 	}()
@@ -55,7 +57,7 @@ func TestMain(m *testing.M) {
 	time.Sleep(1 * time.Second)
 
 	// Prepare test data
-	devReq := &core_api.CreateDeviceRequest{
+	devReq := &core_ito.CreateDeviceRequest{
 		DeviceId: "TestLaunchHearthbeat",
 		Labels: map[string]string{
 			"factory": "B",
@@ -68,7 +70,7 @@ func TestMain(m *testing.M) {
 		},
 	}
 
-	if _, err := createDevices(b, []*core_api.CreateDeviceRequest{devReq}); err != nil {
+	if _, err := createDevices(b, []*core_ito.CreateDeviceRequest{devReq}); err != nil {
 		panic(err)
 	}
 	time.Sleep(1 * time.Second)
@@ -82,8 +84,8 @@ func TestMain(m *testing.M) {
 
 	// Teardown
 	fmt.Println("Test Teardown")
-	if _, err := deleteDevices(b, &core_api.DeleteDeviceRequest{
-		Targets: &core_api.Targets{
+	if _, err := deleteDevices(b, &core_ito.DeleteDeviceRequest{
+		Targets: &core_ito.Targets{
 			Labels: map[string]string{
 				"test": "mir_device",
 			},
@@ -124,8 +126,8 @@ func TestLaunchHearthbeat(t *testing.T) {
 
 	// Takes some time for the hearthbeat to be sent
 	time.Sleep(15 * time.Second)
-	resp, err := core.PublishDeviceListRequest(b, &core_api.ListDeviceRequest{
-		Targets: &core_api.Targets{
+	resp, err := core_client.PublishDeviceListRequest(b, &core_ito.ListDeviceRequest{
+		Targets: &core_ito.Targets{
 			Ids: []string{"TestLaunchHearthbeat"},
 		},
 	})
@@ -140,7 +142,7 @@ func TestLaunchHearthbeat(t *testing.T) {
 	// Check if online and has a hearthbeat
 	devTwin := resp.GetOk().Devices[0]
 	assert.Equal(t, devTwin.Status.Online, true)
-	devTs := core.AsGoTime(devTwin.Status.LastHearthbeat)
+	devTs := core_ito.AsGoTime(devTwin.Status.LastHearthbeat)
 	assert.Equal(t, time.Now().UTC().Sub(devTs).Abs().Seconds() < 60, true)
 
 	cancel()
@@ -179,7 +181,7 @@ func TestRequestTelemetrySchema(t *testing.T) {
 	}
 
 	time.Sleep(1 * time.Second)
-	resp, err := routes.PublishSchemaRetreiveRequest(b, "TestTelemetrySchema")
+	resp, err := device_client.PublishSchemaRetreiveRequest(b, "TestTelemetrySchema")
 	if err != nil {
 		t.Error(err)
 	}
@@ -209,17 +211,17 @@ func deleteDevicesDb(t *testing.T, db *surrealdb.DB, ids []string) error {
 	q := "DELETE FROM type::table($tb) WHERE meta.deviceId = \""
 	q += strings.Join(ids, "\" OR device_id = \"")
 	q += "\";"
-	executeTestQueryForType[[]core.Device](t, db,
+	executeTestQueryForType[[]models.Device](t, db,
 		q, map[string]string{
 			"tb": "devices",
 		})
 	return nil
 }
 
-func createDevices(bus *bus.BusConn, devices []*core_api.CreateDeviceRequest) ([]*core_api.CreateDeviceResponse, error) {
-	responses := []*core_api.CreateDeviceResponse{}
+func createDevices(bus *bus.BusConn, devices []*core_ito.CreateDeviceRequest) ([]*core_ito.CreateDeviceResponse, error) {
+	responses := []*core_ito.CreateDeviceResponse{}
 	for _, dev := range devices {
-		resp, err := core.PublishDeviceCreateRequest(bus, dev)
+		resp, err := core_client.PublishDeviceCreateRequest(bus, dev)
 		responses = append(responses, resp)
 		if err != nil {
 			return responses, err
@@ -228,8 +230,8 @@ func createDevices(bus *bus.BusConn, devices []*core_api.CreateDeviceRequest) ([
 	return responses, nil
 }
 
-func deleteDevices(bus *bus.BusConn, req *core_api.DeleteDeviceRequest) (*core_api.DeleteDeviceResponse, error) {
-	resp, err := core.PublishDeviceDeleteRequest(bus, req)
+func deleteDevices(bus *bus.BusConn, req *core_ito.DeleteDeviceRequest) (*core_ito.DeleteDeviceResponse, error) {
+	resp, err := core_client.PublishDeviceDeleteRequest(bus, req)
 	if err != nil {
 		return nil, err
 	}

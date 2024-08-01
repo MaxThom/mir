@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/maxthom/mir/libs/proto/line_protocol/tests/gen"
+	"github.com/maxthom/mir/internal/libs/proto/line_protocol/tests/gen"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
