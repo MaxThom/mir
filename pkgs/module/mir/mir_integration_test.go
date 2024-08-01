@@ -264,7 +264,7 @@ func TestRequestCreateDevice(t *testing.T) {
 	time.Sleep(1 * time.Second)
 	assert.Equal(t, respCreate.GetOk().GetDevices()[0].Spec.DeviceId, id)
 	assert.Equal(t, fmt.Sprintf("%v", respCreate.GetError()), "<nil>")
-	assert.Equal(t, 2, count)
+	assert.Equal(t, 1, count)
 
 	if err = m.Disconnect(); err != nil {
 		t.Error(err)

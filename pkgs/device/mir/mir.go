@@ -7,9 +7,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/maxthom/mir/api/routes"
-	bus "github.com/maxthom/mir/libs/external/natsio"
-	"github.com/maxthom/mir/services/core"
+	"github.com/maxthom/mir/internal/clients"
+	"github.com/maxthom/mir/internal/clients/core_client"
+	"github.com/maxthom/mir/internal/clients/protoflux_client"
+	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	"github.com/nats-io/nats.go"
 	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/proto"
@@ -111,7 +112,7 @@ func (m *Mir) hearthbeat(ctx context.Context, interval time.Duration) {
 			m.l.Debug().Msg("shutting down hearthbeat")
 			return
 		case <-time.After(interval):
-			if err := core.PublishHearthbeatStream(m.b, m.cfg.DeviceId); err != nil {
+			if err := core_client.PublishHearthbeatStream(m.b, m.cfg.DeviceId); err != nil {
 				m.l.Error().Err(err).Msg("error sending hearthbeat to Mir")
 			}
 		}
@@ -133,10 +134,10 @@ func (m *Mir) commands(ctx context.Context, sub *nats.Subscription) {
 				m.l.Error().Err(err).Msg("error receiving commands")
 			}
 			if msg != nil {
-				m.l.Debug().Msg("handling command " + routes.DeviceSubject(msg.Subject).GetVersionAndFunction())
-				err = cmdHandlers[routes.DeviceSubject(msg.Subject).GetVersionAndFunction()](msg, m)
+				m.l.Debug().Msg("handling command " + clients.DeviceSubject(msg.Subject).GetVersionAndFunction())
+				err = cmdHandlers[clients.DeviceSubject(msg.Subject).GetVersionAndFunction()](msg, m)
 				if err != nil {
-					m.l.Error().Err(err).Msg("error handling command " + routes.DeviceSubject(msg.Subject).GetVersionAndFunction())
+					m.l.Error().Err(err).Msg("error handling command " + clients.DeviceSubject(msg.Subject).GetVersionAndFunction())
 				}
 			}
 		}
@@ -178,5 +179,5 @@ func (m Mir) marshalTelemetrySchema() ([]byte, error) {
 
 // Send proto telemetry to Mir Server
 func (m Mir) SendTelemetry(t protoreflect.ProtoMessage) error {
-	return routes.PublishTelemetryStream(m.b, m.cfg.DeviceId, t)
+	return protoflux_client.PublishTelemetryStream(m.b, m.cfg.DeviceId, t)
 }

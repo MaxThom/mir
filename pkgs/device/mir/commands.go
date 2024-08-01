@@ -1,10 +1,10 @@
 package mir
 
 import (
-	"github.com/maxthom/mir/api/gen/proto/v1alpha/device"
-	"github.com/maxthom/mir/api/routes"
-	"github.com/maxthom/mir/libs/compression/zstd"
-	bus "github.com/maxthom/mir/libs/external/natsio"
+	"github.com/maxthom/mir/internal/clients/device_client"
+	"github.com/maxthom/mir/internal/ito/proto/v1alpha/device_ito"
+	"github.com/maxthom/mir/internal/libs/compression/zstd"
+	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -16,15 +16,15 @@ var (
 
 func init() {
 	cmdHandlers = make(map[string]func(msg *nats.Msg, m *Mir) error)
-	cmdHandlers[routes.SchemaRequest.GetVersionAndFunction()] = SchemaRetreiveCmd
+	cmdHandlers[device_client.SchemaRequest.GetVersionAndFunction()] = SchemaRetreiveCmd
 }
 
 func SchemaRetreiveCmd(msg *nats.Msg, m *Mir) error {
 	bytes, err := proto.Marshal(m.telemetrySchema)
 	if err != nil {
-		return sendReplyOrAck(m.b, msg, &device.SchemaRetrieveResponse{
-			Response: &device.SchemaRetrieveResponse_Error{
-				Error: &device.Error{
+		return sendReplyOrAck(m.b, msg, &device_ito.SchemaRetrieveResponse{
+			Response: &device_ito.SchemaRetrieveResponse_Error{
+				Error: &device_ito.Error{
 					Code:    500,
 					Message: "error occure while marshalling schema",
 					Details: []string{"500 Internal Server Error", err.Error()},
@@ -33,8 +33,8 @@ func SchemaRetreiveCmd(msg *nats.Msg, m *Mir) error {
 		}, nil, false)
 	}
 
-	return sendReplyOrAck(m.b, msg, &device.SchemaRetrieveResponse{
-		Response: &device.SchemaRetrieveResponse_Schema{
+	return sendReplyOrAck(m.b, msg, &device_ito.SchemaRetrieveResponse{
+		Response: &device_ito.SchemaRetrieveResponse_Schema{
 			Schema: bytes,
 		},
 	}, nil, true)

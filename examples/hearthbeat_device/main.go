@@ -6,7 +6,7 @@ import (
 	"os"
 	"syscall"
 
-	"github.com/maxthom/mir/libs/boiler/mir_signals"
+	"github.com/maxthom/mir/internal/libs/boiler/mir_signals"
 	"github.com/maxthom/mir/pkgs/device/mir"
 )
 

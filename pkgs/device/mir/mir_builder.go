@@ -4,8 +4,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/maxthom/mir/libs/boiler/mir_config"
-	"github.com/maxthom/mir/libs/boiler/mir_log"
+	"github.com/maxthom/mir/internal/libs/boiler/mir_config"
+	"github.com/maxthom/mir/internal/libs/boiler/mir_log"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
