@@ -89,6 +89,11 @@ mir/
 │   │   └── compression/
 │   │       └── zstd.go
 ├── pkgs/
+│   ├── api/
+│   │   ├── proto/
+│   │   │   └── telemetry.go
+│   │   └── core/
+│   │       └── device.go
 │   ├── models/
 │   │   ├── telemetry/
 │   │   │   └── telemetry.go
@@ -127,4 +132,4 @@ the struggles
 
 IDEA
 - change logger to standard logger
--
+- all command go through command modules

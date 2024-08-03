@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"github.com/maxthom/mir/internal/clients/core_client"
-	"github.com/maxthom/mir/internal/ito/proto/v1alpha/core_ito"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
+	"github.com/maxthom/mir/pkgs/api/proto/v1alpha/core_api"
 	"github.com/surrealdb/surrealdb.go"
 )
 
@@ -38,8 +38,8 @@ func setupNatsConPanic(url string) *bus.BusConn {
 }
 
 func deleteDevicesWithLabelsPanic(b *bus.BusConn, lbl map[string]string) {
-	if _, err := core_client.PublishDeviceDeleteRequest(b, &core_ito.DeleteDeviceRequest{
-		Targets: &core_ito.Targets{
+	if _, err := core_client.PublishDeviceDeleteRequest(b, &core_api.DeleteDeviceRequest{
+		Targets: &core_api.Targets{
 			Labels: lbl,
 		},
 	}); err != nil {
@@ -47,8 +47,8 @@ func deleteDevicesWithLabelsPanic(b *bus.BusConn, lbl map[string]string) {
 	}
 }
 
-func createDevices(bus *bus.BusConn, devices []*core_ito.CreateDeviceRequest) ([]*core_ito.CreateDeviceResponse, error) {
-	responses := []*core_ito.CreateDeviceResponse{}
+func createDevices(bus *bus.BusConn, devices []*core_api.CreateDeviceRequest) ([]*core_api.CreateDeviceResponse, error) {
+	responses := []*core_api.CreateDeviceResponse{}
 	for _, dev := range devices {
 		resp, err := core_client.PublishDeviceCreateRequest(bus, dev)
 		responses = append(responses, resp)

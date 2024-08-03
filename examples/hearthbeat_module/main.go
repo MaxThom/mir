@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"syscall"
 
-	"github.com/maxthom/mir/internal/ito/proto/v1alpha/core_ito"
 	"github.com/maxthom/mir/internal/libs/boiler/mir_signals"
+	"github.com/maxthom/mir/pkgs/api/proto/v1alpha/core_api"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/nats-io/nats.go"
 )
@@ -48,7 +48,7 @@ func main() {
 	}
 
 	err = m.Subscribe(mir.Event().V1Alpha().DeviceDeleted(
-		func(msg *nats.Msg, deviceId string, d *core_ito.Device) {
+		func(msg *nats.Msg, deviceId string, d *core_api.Device) {
 			fmt.Println("Event device deleted ", deviceId)
 			msg.Ack()
 		}))
@@ -57,7 +57,7 @@ func main() {
 	}
 
 	err = m.Subscribe(mir.Event().V1Alpha().DeviceCreated(
-		func(msg *nats.Msg, deviceId string, d *core_ito.Device) {
+		func(msg *nats.Msg, deviceId string, d *core_api.Device) {
 			fmt.Println("Event device created ", deviceId)
 			msg.Ack()
 		}))
@@ -66,7 +66,7 @@ func main() {
 	}
 
 	err = m.Subscribe(mir.Event().V1Alpha().DeviceUpdated(
-		func(msg *nats.Msg, deviceId string, d *core_ito.Device) {
+		func(msg *nats.Msg, deviceId string, d *core_api.Device) {
 			fmt.Println("Event device updated ", deviceId)
 			msg.Ack()
 		}))
@@ -86,9 +86,9 @@ func SendDeviceCrud(m *mir.Mir) {
 	id := "CACA2MOU"
 	// Request mean youre expecting a reply
 	// We only have client request in the sdk
-	var respCreate core_ito.CreateDeviceResponse
+	var respCreate core_api.CreateDeviceResponse
 	err := m.SendRequest(mir.Resquest().V1Alpha().CreateDevice(
-		core_ito.CreateDeviceRequest{
+		core_api.CreateDeviceRequest{
 			DeviceId: id,
 			Name:     "VRMMOU",
 		},
@@ -103,9 +103,9 @@ func SendDeviceCrud(m *mir.Mir) {
 		fmt.Println("Created device ", id)
 	}
 
-	var respList core_ito.ListDeviceResponse
+	var respList core_api.ListDeviceResponse
 	err = m.SendRequest(mir.Resquest().V1Alpha().ListDevice(
-		core_ito.ListDeviceRequest{},
+		core_api.ListDeviceRequest{},
 		&respList,
 	))
 	if err != nil {
@@ -118,13 +118,13 @@ func SendDeviceCrud(m *mir.Mir) {
 	}
 
 	newName := "PIPI2MOU"
-	var respUpd core_ito.UpdateDeviceResponse
+	var respUpd core_api.UpdateDeviceResponse
 	err = m.SendRequest(mir.Resquest().V1Alpha().UpdateDevice(
-		core_ito.UpdateDeviceRequest{
-			Targets: &core_ito.Targets{
+		core_api.UpdateDeviceRequest{
+			Targets: &core_api.Targets{
 				Ids: []string{id},
 			},
-			Meta: &core_ito.UpdateDeviceRequest_Meta{
+			Meta: &core_api.UpdateDeviceRequest_Meta{
 				Name: &newName,
 			}},
 		&respUpd,
@@ -138,10 +138,10 @@ func SendDeviceCrud(m *mir.Mir) {
 		fmt.Println("Update device ", id)
 	}
 
-	var respDel core_ito.DeleteDeviceResponse
+	var respDel core_api.DeleteDeviceResponse
 	err = m.SendRequest(mir.Resquest().V1Alpha().DeleteDevice(
-		core_ito.DeleteDeviceRequest{
-			Targets: &core_ito.Targets{
+		core_api.DeleteDeviceRequest{
+			Targets: &core_api.Targets{
 				Ids: []string{id},
 			}},
 		&respDel,

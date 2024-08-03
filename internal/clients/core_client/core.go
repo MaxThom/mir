@@ -4,9 +4,9 @@ import (
 	"time"
 
 	"github.com/maxthom/mir/internal/clients"
-	"github.com/maxthom/mir/internal/ito/proto/v1alpha/core_ito"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
-	"github.com/maxthom/mir/pkgs/models"
+	"github.com/maxthom/mir/pkgs/api/proto/v1alpha/core_api"
+	"github.com/maxthom/mir/pkgs/mir_models"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -27,81 +27,81 @@ const (
 
 // Core Builder
 
-func PublishDeviceCreateRequest(bus *bus.BusConn, req *core_ito.CreateDeviceRequest) (*core_ito.CreateDeviceResponse, error) {
+func PublishDeviceCreateRequest(bus *bus.BusConn, req *core_api.CreateDeviceRequest) (*core_api.CreateDeviceResponse, error) {
 	bReq, err := proto.Marshal(req)
 	if err != nil {
-		return &core_ito.CreateDeviceResponse{}, err
+		return &core_api.CreateDeviceResponse{}, err
 	}
 
 	resMsg, err := bus.Request(CreateDeviceRequest.WithId("todo"), bReq, 7*time.Second)
 	if err != nil {
-		return &core_ito.CreateDeviceResponse{}, err
+		return &core_api.CreateDeviceResponse{}, err
 	}
 
-	resp := &core_ito.CreateDeviceResponse{}
+	resp := &core_api.CreateDeviceResponse{}
 	err = proto.Unmarshal(resMsg.Data, resp)
 	if err != nil {
-		return &core_ito.CreateDeviceResponse{}, err
+		return &core_api.CreateDeviceResponse{}, err
 	}
 
 	return resp, nil
 }
 
-func PublishDeviceUpdateRequest(bus *bus.BusConn, req *core_ito.UpdateDeviceRequest) (*core_ito.UpdateDeviceResponse, error) {
+func PublishDeviceUpdateRequest(bus *bus.BusConn, req *core_api.UpdateDeviceRequest) (*core_api.UpdateDeviceResponse, error) {
 	bReq, err := proto.Marshal(req)
 	if err != nil {
-		return &core_ito.UpdateDeviceResponse{}, err
+		return &core_api.UpdateDeviceResponse{}, err
 	}
 
 	resMsg, err := bus.Request(UpdateDeviceRequest.WithId("TODO"), bReq, 7*time.Second)
 	if err != nil {
-		return &core_ito.UpdateDeviceResponse{}, err
+		return &core_api.UpdateDeviceResponse{}, err
 	}
 
-	resp := &core_ito.UpdateDeviceResponse{}
+	resp := &core_api.UpdateDeviceResponse{}
 	err = proto.Unmarshal(resMsg.Data, resp)
 	if err != nil {
-		return &core_ito.UpdateDeviceResponse{}, err
+		return &core_api.UpdateDeviceResponse{}, err
 	}
 
 	return resp, nil
 }
 
-func PublishDeviceDeleteRequest(bus *bus.BusConn, req *core_ito.DeleteDeviceRequest) (*core_ito.DeleteDeviceResponse, error) {
+func PublishDeviceDeleteRequest(bus *bus.BusConn, req *core_api.DeleteDeviceRequest) (*core_api.DeleteDeviceResponse, error) {
 	bReq, err := proto.Marshal(req)
 	if err != nil {
-		return &core_ito.DeleteDeviceResponse{}, err
+		return &core_api.DeleteDeviceResponse{}, err
 	}
 
 	resMsg, err := bus.Request(DeleteDeviceRequest.WithId("TODO"), bReq, 7*time.Second)
 	if err != nil {
-		return &core_ito.DeleteDeviceResponse{}, err
+		return &core_api.DeleteDeviceResponse{}, err
 	}
 
-	resp := &core_ito.DeleteDeviceResponse{}
+	resp := &core_api.DeleteDeviceResponse{}
 	err = proto.Unmarshal(resMsg.Data, resp)
 	if err != nil {
-		return &core_ito.DeleteDeviceResponse{}, err
+		return &core_api.DeleteDeviceResponse{}, err
 	}
 
 	return resp, nil
 }
 
-func PublishDeviceListRequest(bus *bus.BusConn, req *core_ito.ListDeviceRequest) (*core_ito.ListDeviceResponse, error) {
+func PublishDeviceListRequest(bus *bus.BusConn, req *core_api.ListDeviceRequest) (*core_api.ListDeviceResponse, error) {
 	bReq, err := proto.Marshal(req)
 	if err != nil {
-		return &core_ito.ListDeviceResponse{}, err
+		return &core_api.ListDeviceResponse{}, err
 	}
 
 	resMsg, err := bus.Request(ListDeviceRequest.WithId("TODO"), bReq, 7*time.Second)
 	if err != nil {
-		return &core_ito.ListDeviceResponse{}, err
+		return &core_api.ListDeviceResponse{}, err
 	}
 
-	resp := &core_ito.ListDeviceResponse{}
+	resp := &core_api.ListDeviceResponse{}
 	err = proto.Unmarshal(resMsg.Data, resp)
 	if err != nil {
-		return &core_ito.ListDeviceResponse{}, err
+		return &core_api.ListDeviceResponse{}, err
 	}
 
 	return resp, nil
@@ -119,24 +119,24 @@ func PublishDeviceOfflineEvent(bus *bus.BusConn, deviceId string) error {
 	return bus.Publish(DeviceOfflineEvent.WithId(deviceId), []byte{})
 }
 
-func PublishDeviceDeletedEvent(bus *bus.BusConn, deviceId string, d models.DeviceWithId) error {
-	b, err := proto.Marshal(core_ito.NewProtoDeviceFromDeviceWithId(d))
+func PublishDeviceDeletedEvent(bus *bus.BusConn, deviceId string, d mir_models.DeviceWithId) error {
+	b, err := proto.Marshal(mir_models.NewProtoDeviceFromDeviceWithId(d))
 	if err != nil {
 		return err
 	}
 	return bus.Publish(DeviceDeletedEvent.WithId(deviceId), b)
 }
 
-func PublishDeviceCreatedEvent(bus *bus.BusConn, deviceId string, d models.DeviceWithId) error {
-	b, err := proto.Marshal(core_ito.NewProtoDeviceFromDeviceWithId(d))
+func PublishDeviceCreatedEvent(bus *bus.BusConn, deviceId string, d mir_models.DeviceWithId) error {
+	b, err := proto.Marshal(mir_models.NewProtoDeviceFromDeviceWithId(d))
 	if err != nil {
 		return err
 	}
 	return bus.Publish(DeviceCreatedEvent.WithId(deviceId), b)
 }
 
-func PublishDeviceUpdatedEvent(bus *bus.BusConn, deviceId string, d models.DeviceWithId) error {
-	b, err := proto.Marshal(core_ito.NewProtoDeviceFromDeviceWithId(d))
+func PublishDeviceUpdatedEvent(bus *bus.BusConn, deviceId string, d mir_models.DeviceWithId) error {
+	b, err := proto.Marshal(mir_models.NewProtoDeviceFromDeviceWithId(d))
 	if err != nil {
 		return err
 	}
