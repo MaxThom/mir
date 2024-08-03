@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package v1alpha.protoflux;
+
+option go_package = "gen/";
+
+import "v1alpha/common_api/common.proto";
+
+message UploadSchemaRequest { }
+
+message UploadSchemaResponse {
+  string msg = 1;
+}

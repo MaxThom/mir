@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package v1alpha.device;
+
+option go_package = "gen/";
+
+import "v1alpha/common_api/common.proto";
+
+/*
+  Send a request to create a new device in the system
+*/
+message SchemaRetrieveRequest {
+}
+
+/*
+  Response to the create device request
+  Only the error or the response data will be set
+*/
+message SchemaRetrieveResponse {
+  oneof response {
+  	bytes schema = 1; // Schema in bytes
+    common.Error error = 2;  // HTTP like error if something went wrong
+  }
+}

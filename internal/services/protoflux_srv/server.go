@@ -8,9 +8,9 @@ import (
 	"sync"
 
 	"github.com/influxdata/influxdb-client-go/v2/api"
-	"github.com/maxthom/mir/internal/ito/proto/v1alpha/device_ito"
 	"github.com/maxthom/mir/internal/libs/api/metrics"
 	proto_lineprotocol "github.com/maxthom/mir/internal/libs/proto/line_protocol"
+	"github.com/maxthom/mir/pkgs/api/proto/v1alpha/device_api"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/nats-io/nats.go"
 	"github.com/prometheus/client_golang/prometheus"
@@ -113,6 +113,7 @@ func (s *ProtoFluxServer) Listen(ctx context.Context) {
 			s.devWritersLock.RUnlock()
 			// Mean no ingesters for proto msg, but we might have the schema
 			if !ok {
+				// TODO put all this if inside a function
 				s.devSchemasLock.RLock()
 				devSchema, ok := s.devSchemas[deviceId]
 				s.devSchemasLock.RUnlock()
@@ -200,8 +201,8 @@ func generateIngesters(devSchema deviceProtoSchema, protoMsgName string) (proto_
 }
 
 func getProtoSchemaFromDevice(m *mir.Mir, deviceId string) (*protoregistry.Files, *descriptorpb.FileDescriptorSet, error) {
-	schemaResp := &device_ito.SchemaRetrieveResponse{}
-	err := m.SendRequest(mir.Device().V1Alpha().RequestSchema(deviceId, schemaResp))
+	schemaResp := &device_api.SchemaRetrieveResponse{}
+	err := m.SendRequest(mir.Command().V1Alpha().RequestSchema(deviceId, schemaResp))
 	if err != nil {
 		return nil, nil, err
 	} else if schemaResp.GetError() != nil {
@@ -226,8 +227,8 @@ func (s *ProtoFluxServer) listenPlayground(ctx context.Context) {
 	s.m.Subscribe(mir.Stream().V1Alpha().Telemetry(
 		func(msg *nats.Msg, deviceId string, protoMsgName string) {
 			fmt.Println("received data > ")
-			schemaResp := &device_ito.SchemaRetrieveResponse{}
-			err := s.m.SendRequest(mir.Device().V1Alpha().RequestSchema(deviceId, schemaResp))
+			schemaResp := &device_api.SchemaRetrieveResponse{}
+			err := s.m.SendRequest(mir.Command().V1Alpha().RequestSchema(deviceId, schemaResp))
 			if err != nil {
 				fmt.Println(err)
 			} else if schemaResp.GetError() != nil {
