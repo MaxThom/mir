@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/maxthom/mir/internal/externals/mng"
 	"github.com/maxthom/mir/internal/libs/api/health"
 	"github.com/maxthom/mir/internal/libs/api/metrics"
 	"github.com/maxthom/mir/internal/libs/boiler/mir_cli"
@@ -160,7 +161,7 @@ func run(
 	log.Info().Str("url", cfg.DataBusServer.Url).Msg("connected to msg bus")
 
 	// Services
-	coreSrv := core_srv.NewCore(log, b, db)
+	coreSrv := core_srv.NewCore(log, b, db, mng.NewSurrealDeviceStore(db))
 	core_srv.RegisterMetrics(metrics.Registry())
 
 	// Metrics & Health

@@ -7,7 +7,7 @@ import (
 	"log"
 	"sync"
 
-	"github.com/influxdata/influxdb-client-go/v2/api"
+	"github.com/maxthom/mir/internal/externals/ts"
 	"github.com/maxthom/mir/internal/libs/api/metrics"
 	proto_lineprotocol "github.com/maxthom/mir/internal/libs/proto/line_protocol"
 	"github.com/maxthom/mir/pkgs/api/proto/v1alpha/device_api"
@@ -26,7 +26,7 @@ import (
 )
 
 type ProtoFluxServer struct {
-	writer         api.WriteAPI
+	tlmStore       ts.TelemetryStore
 	sub            *nats.Subscription
 	m              *mir.Mir
 	db             *surrealdb.DB
@@ -74,10 +74,10 @@ func RegisterMetrics(reg prometheus.Registerer) {
 	reg.Register(datapointCount)
 }
 
-func NewProtoFluxServer(logger zerolog.Logger, m *mir.Mir, writer api.WriteAPI, db *surrealdb.DB) *ProtoFluxServer {
+func NewProtoFluxServer(logger zerolog.Logger, m *mir.Mir, tlmStore ts.TelemetryStore, db *surrealdb.DB) *ProtoFluxServer {
 	l = logger.With().Str("srv", "protoflux_server").Logger()
 	return &ProtoFluxServer{
-		writer:     writer,
+		tlmStore:   tlmStore,
 		m:          m,
 		db:         db,
 		devWriters: make(map[deviceProtoKey]proto_lineprotocol.ProtoBytesToLpFn),
@@ -86,7 +86,7 @@ func NewProtoFluxServer(logger zerolog.Logger, m *mir.Mir, writer api.WriteAPI, 
 }
 
 func (s *ProtoFluxServer) handleInfluxErrorChannel() {
-	errorsCh := s.writer.Errors()
+	errorsCh := s.tlmStore.Errors()
 	go func() {
 		for err := range errorsCh {
 			l.Error().Err(err).Msg("Error writing to InfluxDB")
@@ -172,8 +172,7 @@ func (s *ProtoFluxServer) Listen(ctx context.Context) {
 			// TODO update function to return error
 			lp := devWriter(msg.Data, map[string]string{})
 			fmt.Println(lp)
-			s.writer.WriteRecord(lp)
-			// TODO error channel
+			s.tlmStore.WriteDatapoint(lp)
 		}))
 }
 
@@ -279,7 +278,6 @@ func (s *ProtoFluxServer) listenPlayground(ctx context.Context) {
 
 			lp := fn(msg.Data, map[string]string{})
 			fmt.Println(lp)
-			s.writer.WriteRecord(lp)
-
+			s.tlmStore.WriteDatapoint(lp)
 		}))
 }
