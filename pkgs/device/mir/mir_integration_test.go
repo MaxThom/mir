@@ -11,11 +11,11 @@ import (
 
 	"github.com/maxthom/mir/internal/clients/core_client"
 	"github.com/maxthom/mir/internal/clients/device_client"
-	"github.com/maxthom/mir/internal/ito/proto/v1alpha/core_ito"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	"github.com/maxthom/mir/internal/services/core_srv"
+	"github.com/maxthom/mir/pkgs/api/proto/v1alpha/core_api"
 	"github.com/maxthom/mir/pkgs/device/mir/gen/proto_test"
-	"github.com/maxthom/mir/pkgs/models"
+	"github.com/maxthom/mir/pkgs/mir_models"
 	logger "github.com/rs/zerolog/log"
 	"github.com/surrealdb/surrealdb.go"
 	"google.golang.org/protobuf/proto"
@@ -57,7 +57,7 @@ func TestMain(m *testing.M) {
 	time.Sleep(1 * time.Second)
 
 	// Prepare test data
-	devReq := &core_ito.CreateDeviceRequest{
+	devReq := &core_api.CreateDeviceRequest{
 		DeviceId: "TestLaunchHearthbeat",
 		Labels: map[string]string{
 			"factory": "B",
@@ -70,7 +70,7 @@ func TestMain(m *testing.M) {
 		},
 	}
 
-	if _, err := createDevices(b, []*core_ito.CreateDeviceRequest{devReq}); err != nil {
+	if _, err := createDevices(b, []*core_api.CreateDeviceRequest{devReq}); err != nil {
 		panic(err)
 	}
 	time.Sleep(1 * time.Second)
@@ -84,8 +84,8 @@ func TestMain(m *testing.M) {
 
 	// Teardown
 	fmt.Println("Test Teardown")
-	if _, err := deleteDevices(b, &core_ito.DeleteDeviceRequest{
-		Targets: &core_ito.Targets{
+	if _, err := deleteDevices(b, &core_api.DeleteDeviceRequest{
+		Targets: &core_api.Targets{
 			Labels: map[string]string{
 				"test": "mir_device",
 			},
@@ -126,8 +126,8 @@ func TestLaunchHearthbeat(t *testing.T) {
 
 	// Takes some time for the hearthbeat to be sent
 	time.Sleep(15 * time.Second)
-	resp, err := core_client.PublishDeviceListRequest(b, &core_ito.ListDeviceRequest{
-		Targets: &core_ito.Targets{
+	resp, err := core_client.PublishDeviceListRequest(b, &core_api.ListDeviceRequest{
+		Targets: &core_api.Targets{
 			Ids: []string{"TestLaunchHearthbeat"},
 		},
 	})
@@ -142,7 +142,7 @@ func TestLaunchHearthbeat(t *testing.T) {
 	// Check if online and has a hearthbeat
 	devTwin := resp.GetOk().Devices[0]
 	assert.Equal(t, devTwin.Status.Online, true)
-	devTs := core_ito.AsGoTime(devTwin.Status.LastHearthbeat)
+	devTs := mir_models.AsGoTime(devTwin.Status.LastHearthbeat)
 	assert.Equal(t, time.Now().UTC().Sub(devTs).Abs().Seconds() < 60, true)
 
 	cancel()
@@ -211,15 +211,15 @@ func deleteDevicesDb(t *testing.T, db *surrealdb.DB, ids []string) error {
 	q := "DELETE FROM type::table($tb) WHERE meta.deviceId = \""
 	q += strings.Join(ids, "\" OR device_id = \"")
 	q += "\";"
-	executeTestQueryForType[[]models.Device](t, db,
+	executeTestQueryForType[[]mir_models.Device](t, db,
 		q, map[string]string{
 			"tb": "devices",
 		})
 	return nil
 }
 
-func createDevices(bus *bus.BusConn, devices []*core_ito.CreateDeviceRequest) ([]*core_ito.CreateDeviceResponse, error) {
-	responses := []*core_ito.CreateDeviceResponse{}
+func createDevices(bus *bus.BusConn, devices []*core_api.CreateDeviceRequest) ([]*core_api.CreateDeviceResponse, error) {
+	responses := []*core_api.CreateDeviceResponse{}
 	for _, dev := range devices {
 		resp, err := core_client.PublishDeviceCreateRequest(bus, dev)
 		responses = append(responses, resp)
@@ -230,7 +230,7 @@ func createDevices(bus *bus.BusConn, devices []*core_ito.CreateDeviceRequest) ([
 	return responses, nil
 }
 
-func deleteDevices(bus *bus.BusConn, req *core_ito.DeleteDeviceRequest) (*core_ito.DeleteDeviceResponse, error) {
+func deleteDevices(bus *bus.BusConn, req *core_api.DeleteDeviceRequest) (*core_api.DeleteDeviceResponse, error) {
 	resp, err := core_client.PublishDeviceDeleteRequest(bus, req)
 	if err != nil {
 		return nil, err
