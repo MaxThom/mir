@@ -1,9 +1,11 @@
 package test_utils
 
 import (
+	"testing"
+
 	"github.com/maxthom/mir/internal/clients/core_client"
-	"github.com/maxthom/mir/internal/ito/proto/v1alpha/core_ito"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
+	"github.com/maxthom/mir/pkgs/api/proto/v1alpha/core_api"
 	"github.com/surrealdb/surrealdb.go"
 )
 
@@ -35,16 +37,42 @@ func SetupNatsConPanic(url string) *bus.BusConn {
 	return b
 }
 
-func strRef(s string) *string {
-	return &s
-}
-
 func DeleteDevicesWithLabelsPanic(b *bus.BusConn, lbl map[string]string) {
-	if _, err := core_client.PublishDeviceDeleteRequest(b, &core_ito.DeleteDeviceRequest{
-		Targets: &core_ito.Targets{
+	if _, err := core_client.PublishDeviceDeleteRequest(b, &core_api.DeleteDeviceRequest{
+		Targets: &core_api.Targets{
 			Labels: lbl,
 		},
 	}); err != nil {
 		panic(err)
 	}
+}
+
+func CreateDevices(bus *bus.BusConn, devices []*core_api.CreateDeviceRequest) ([]*core_api.CreateDeviceResponse, error) {
+	responses := []*core_api.CreateDeviceResponse{}
+	for _, dev := range devices {
+		resp, err := core_client.PublishDeviceCreateRequest(bus, dev)
+		responses = append(responses, resp)
+		if err != nil {
+			return responses, err
+		}
+	}
+	return responses, nil
+}
+
+func ExecuteTestQueryForType[T any](t *testing.T, db *surrealdb.DB, query string, vars map[string]string) T {
+	result, err := db.Query(query, vars)
+	if err != nil {
+		t.Error(err)
+	}
+
+	res, err := surrealdb.SmartUnmarshal[T](result, err)
+	if err != nil {
+		t.Error(err)
+	}
+
+	return res
+}
+
+func strRef(s string) *string {
+	return &s
 }

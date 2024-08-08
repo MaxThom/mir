@@ -11,9 +11,10 @@ import (
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	"github.com/maxthom/mir/internal/libs/test_utils"
 	"github.com/maxthom/mir/internal/services/core_srv"
+	"github.com/maxthom/mir/pkgs/api/proto/v1alpha/core_api"
+	"github.com/maxthom/mir/pkgs/api/proto/v1alpha/device_api"
 	mir_device "github.com/maxthom/mir/pkgs/device/mir"
-	"github.com/maxthom/mir/pkgs/device/mir/gen/proto_test"
-	"github.com/maxthom/mir/pkgs/module/mir"
+	"github.com/maxthom/mir/pkgs/module/mir/test/gen/proto_test"
 	"github.com/nats-io/nats.go"
 	logger "github.com/rs/zerolog/log"
 	"github.com/surrealdb/surrealdb.go"
@@ -76,23 +77,23 @@ func TestMain(m *testing.M) {
 
 func TestConnectAndClose(t *testing.T) {
 	// Arrange
-	m, err := mir.Connect("module_test", busUrl)
+	m, err := Connect("module_test", busUrl)
 	if err != nil {
 		t.Error(err)
 	}
 	// Act
 	s := m.Bus.Status()
-	if err = m.Dismir.Connect(); err != nil {
+	if err = m.Disconnect(); err != nil {
 		t.Error(err)
 	}
 	// Assert
-	assert.Equal(t, s, nats.mir.ConnectED)
+	assert.Equal(t, s, nats.CONNECTED)
 	assert.Equal(t, m.Bus.Status(), nats.CLOSED)
 }
 
 func TestSubscribeToHearthbeat(t *testing.T) {
 	// Arrange
-	m, err := mir.Connect("module_test", busUrl)
+	m, err := Connect("module_test", busUrl)
 	if err != nil {
 		t.Error(err)
 	}
@@ -123,7 +124,7 @@ func TestSubscribeToHearthbeat(t *testing.T) {
 	// Assert
 	assert.Equal(t, hearthbeatCount > 0, true)
 
-	if err = m.Dismir.Connect(); err != nil {
+	if err = m.Disconnect(); err != nil {
 		t.Error(err)
 	}
 	cancel()
@@ -132,7 +133,7 @@ func TestSubscribeToHearthbeat(t *testing.T) {
 
 func TestEventDeviceOnline(t *testing.T) {
 	// Arrange
-	m, err := mir.Connect("module_test", busUrl)
+	m, err := Connect("module_test", busUrl)
 	if err != nil {
 		t.Error(err)
 	}
@@ -165,7 +166,7 @@ func TestEventDeviceOnline(t *testing.T) {
 	// Assert
 	assert.Equal(t, count > 0, true)
 
-	if err = m.Dismir.Connect(); err != nil {
+	if err = m.Disconnect(); err != nil {
 		t.Error(err)
 	}
 	cancel()
@@ -174,7 +175,7 @@ func TestEventDeviceOnline(t *testing.T) {
 
 func TestEventDeviceOffline(t *testing.T) {
 	// Arrange
-	m, err := mir.Connect("module_test", busUrl)
+	m, err := Connect("module_test", busUrl)
 	if err != nil {
 		t.Error(err)
 	}
@@ -220,19 +221,19 @@ func TestEventDeviceOffline(t *testing.T) {
 	assert.Equal(t, countOnline > 0, true)
 	assert.Equal(t, countOffline > 0, true)
 
-	if err = m.Dismir.Connect(); err != nil {
+	if err = m.Disconnect(); err != nil {
 		t.Error(err)
 	}
 }
 
 func TestRequestCreateDevice(t *testing.T) {
 	// Arrange
-	m, err := mir.Connect("module_test", busUrl)
+	m, err := Connect("module_test", busUrl)
 	if err != nil {
 		t.Error(err)
 	}
 	id := "create_device_test"
-	reqCreate := core_ito.CreateDeviceRequest{
+	reqCreate := core_api.CreateDeviceRequest{
 		DeviceId:  id,
 		Name:      id,
 		Namespace: "testing_module",
@@ -244,14 +245,14 @@ func TestRequestCreateDevice(t *testing.T) {
 	// Act
 	count := 0
 	if err = m.Subscribe(Event().V1Alpha().DeviceCreated(
-		func(msg *nats.Msg, deviceId string, d *core_ito.Device) {
+		func(msg *nats.Msg, deviceId string, d *core_api.Device) {
 			count += 1
 			msg.Ack()
 		})); err != nil {
 		t.Error(err)
 	}
 
-	var respCreate core_ito.CreateDeviceResponse
+	var respCreate core_api.CreateDeviceResponse
 	if err = m.SendRequest(Resquest().V1Alpha().CreateDevice(
 		reqCreate,
 		&respCreate,
@@ -265,19 +266,19 @@ func TestRequestCreateDevice(t *testing.T) {
 	assert.Equal(t, fmt.Sprintf("%v", respCreate.GetError()), "<nil>")
 	assert.Equal(t, 1, count)
 
-	if err = m.Dismir.Connect(); err != nil {
+	if err = m.Disconnect(); err != nil {
 		t.Error(err)
 	}
 }
 
 func TestRequestUpdateDevice(t *testing.T) {
 	// Arrange
-	m, err := mir.Connect("module_test", busUrl)
+	m, err := Connect("module_test", busUrl)
 	if err != nil {
 		t.Error(err)
 	}
 	id := "update_device_test"
-	reqCreate := core_ito.CreateDeviceRequest{
+	reqCreate := core_api.CreateDeviceRequest{
 		DeviceId:  id,
 		Name:      id,
 		Namespace: "testing_module",
@@ -286,11 +287,11 @@ func TestRequestUpdateDevice(t *testing.T) {
 		},
 	}
 	newName := "update_device_test_renamed"
-	reqUpd := core_ito.UpdateDeviceRequest{
-		Targets: &core_ito.Targets{
+	reqUpd := core_api.UpdateDeviceRequest{
+		Targets: &core_api.Targets{
 			Ids: []string{id},
 		},
-		Meta: &core_ito.UpdateDeviceRequest_Meta{
+		Meta: &core_api.UpdateDeviceRequest_Meta{
 			Name: &newName,
 		},
 	}
@@ -298,14 +299,14 @@ func TestRequestUpdateDevice(t *testing.T) {
 	// Act
 	count := 0
 	if err = m.Subscribe(Event().V1Alpha().DeviceUpdated(
-		func(msg *nats.Msg, deviceId string, d *core_ito.Device) {
+		func(msg *nats.Msg, deviceId string, d *core_api.Device) {
 			count += 1
 			msg.Ack()
 		})); err != nil {
 		t.Error(err)
 	}
 
-	var respCreate core_ito.CreateDeviceResponse
+	var respCreate core_api.CreateDeviceResponse
 	if err = m.SendRequest(Resquest().V1Alpha().CreateDevice(
 		reqCreate,
 		&respCreate,
@@ -313,7 +314,7 @@ func TestRequestUpdateDevice(t *testing.T) {
 		t.Error(err)
 	}
 
-	var respUpd core_ito.UpdateDeviceResponse
+	var respUpd core_api.UpdateDeviceResponse
 	if err = m.SendRequest(Resquest().V1Alpha().UpdateDevice(
 		reqUpd,
 		&respUpd,
@@ -329,19 +330,19 @@ func TestRequestUpdateDevice(t *testing.T) {
 	assert.Equal(t, fmt.Sprintf("%v", respUpd.GetError()), "<nil>")
 	assert.Equal(t, 1, count)
 
-	if err = m.Dismir.Connect(); err != nil {
+	if err = m.Disconnect(); err != nil {
 		t.Error(err)
 	}
 }
 
 func TestRequestDeleteDevice(t *testing.T) {
 	// Arrange
-	m, err := mir.Connect("module_test", busUrl)
+	m, err := Connect("module_test", busUrl)
 	if err != nil {
 		t.Error(err)
 	}
 	id := "delete_device_test"
-	reqCreate := core_ito.CreateDeviceRequest{
+	reqCreate := core_api.CreateDeviceRequest{
 		DeviceId:  id,
 		Name:      id,
 		Namespace: "testing_module",
@@ -349,8 +350,8 @@ func TestRequestDeleteDevice(t *testing.T) {
 			"testing": "module",
 		},
 	}
-	reqDel := core_ito.DeleteDeviceRequest{
-		Targets: &core_ito.Targets{
+	reqDel := core_api.DeleteDeviceRequest{
+		Targets: &core_api.Targets{
 			Ids: []string{id},
 		},
 	}
@@ -358,14 +359,14 @@ func TestRequestDeleteDevice(t *testing.T) {
 	// Act
 	count := 0
 	if err = m.Subscribe(Event().V1Alpha().DeviceDeleted(
-		func(msg *nats.Msg, deviceId string, d *core_ito.Device) {
+		func(msg *nats.Msg, deviceId string, d *core_api.Device) {
 			count += 1
 			msg.Ack()
 		})); err != nil {
 		t.Error(err)
 	}
 
-	var respCreate core_ito.CreateDeviceResponse
+	var respCreate core_api.CreateDeviceResponse
 	if err = m.SendRequest(Resquest().V1Alpha().CreateDevice(
 		reqCreate,
 		&respCreate,
@@ -373,7 +374,7 @@ func TestRequestDeleteDevice(t *testing.T) {
 		t.Error(err)
 	}
 
-	var respDel core_ito.DeleteDeviceResponse
+	var respDel core_api.DeleteDeviceResponse
 	if err = m.SendRequest(Resquest().V1Alpha().DeleteDevice(
 		reqDel,
 		&respDel,
@@ -389,19 +390,19 @@ func TestRequestDeleteDevice(t *testing.T) {
 	assert.Equal(t, fmt.Sprintf("%v", respDel.GetError()), "<nil>")
 	assert.Equal(t, 1, count)
 
-	if err = m.Dismir.Connect(); err != nil {
+	if err = m.Disconnect(); err != nil {
 		t.Error(err)
 	}
 }
 
 func TestRequestListDevice(t *testing.T) {
 	// Arrange
-	m, err := mir.Connect("module_test", busUrl)
+	m, err := Connect("module_test", busUrl)
 	if err != nil {
 		t.Error(err)
 	}
 	id := "list_device_test"
-	reqCreate := core_ito.CreateDeviceRequest{
+	reqCreate := core_api.CreateDeviceRequest{
 		DeviceId:  id,
 		Name:      id,
 		Namespace: "testing_module",
@@ -409,14 +410,14 @@ func TestRequestListDevice(t *testing.T) {
 			"testing": "module",
 		},
 	}
-	reqList := core_ito.ListDeviceRequest{
-		Targets: &core_ito.Targets{
+	reqList := core_api.ListDeviceRequest{
+		Targets: &core_api.Targets{
 			Ids: []string{id},
 		},
 	}
 
 	// Act
-	var respCreate core_ito.CreateDeviceResponse
+	var respCreate core_api.CreateDeviceResponse
 	if err = m.SendRequest(Resquest().V1Alpha().CreateDevice(
 		reqCreate,
 		&respCreate,
@@ -424,7 +425,7 @@ func TestRequestListDevice(t *testing.T) {
 		t.Error(err)
 	}
 
-	var respList core_ito.ListDeviceResponse
+	var respList core_api.ListDeviceResponse
 	if err = m.SendRequest(Resquest().V1Alpha().ListDevice(
 		reqList,
 		&respList,
@@ -438,7 +439,7 @@ func TestRequestListDevice(t *testing.T) {
 	assert.Equal(t, fmt.Sprintf("%v", respCreate.GetError()), "<nil>")
 	assert.Equal(t, fmt.Sprintf("%v", respList.GetError()), "<nil>")
 
-	if err = m.Dismir.Connect(); err != nil {
+	if err = m.Disconnect(); err != nil {
 		t.Error(err)
 	}
 }
@@ -468,7 +469,7 @@ func TestRequestRetrieveSchema(t *testing.T) {
 		t.Error(err)
 	}
 
-	m, err := mir.Connect("module_test", busUrl)
+	m, err := Connect("module_test", busUrl)
 	if err != nil {
 		t.Error(err)
 	}
@@ -481,7 +482,7 @@ func TestRequestRetrieveSchema(t *testing.T) {
 	}
 
 	time.Sleep(1 * time.Second)
-	var respSchema device_ito.SchemaRetrieveResponse
+	var respSchema device_api.SchemaRetrieveResponse
 	if err = m.SendRequest(Command().V1Alpha().RequestSchema(
 		id,
 		&respSchema,
@@ -492,7 +493,7 @@ func TestRequestRetrieveSchema(t *testing.T) {
 	// Assert
 	assert.Equal(t, true, bytes.Equal(schemaBytes, respSchema.GetSchema()))
 
-	if err = m.Dismir.Connect(); err != nil {
+	if err = m.Disconnect(); err != nil {
 		t.Error(err)
 	}
 	cancel()
