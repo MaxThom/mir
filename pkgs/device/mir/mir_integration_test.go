@@ -11,6 +11,7 @@ import (
 
 	"github.com/maxthom/mir/internal/clients/core_client"
 	"github.com/maxthom/mir/internal/clients/device_client"
+	"github.com/maxthom/mir/internal/externals/mng"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	"github.com/maxthom/mir/internal/services/core_srv"
 	"github.com/maxthom/mir/pkgs/api/proto/v1alpha/core_api"
@@ -49,7 +50,7 @@ func TestMain(m *testing.M) {
 	fmt.Println(" -> db")
 	fmt.Println(" -> cleaning db")
 
-	coreSrv := core_srv.NewCore(log, b, db)
+	coreSrv := core_srv.NewCore(log, b, db, mng.NewSurrealDeviceStore(db))
 	go func() {
 		coreSrv.Listen(ctx)
 	}()

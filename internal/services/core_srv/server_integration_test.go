@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/maxthom/mir/internal/clients/core_client"
+	"github.com/maxthom/mir/internal/externals/mng"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	"github.com/maxthom/mir/internal/libs/test_utils"
 	"github.com/maxthom/mir/pkgs/api/proto/v1alpha/core_api"
@@ -33,7 +34,7 @@ func TestMain(m *testing.M) {
 
 	db = test_utils.SetupSurrealDbConnsPanic("ws://127.0.0.1:8000/rpc", "root", "root", "global", "mir")
 	b = test_utils.SetupNatsConPanic(busUrl)
-	coreSrv := NewCore(log, b, db)
+	coreSrv := NewCore(log, b, db, mng.NewSurrealDeviceStore(db))
 	go func() {
 		coreSrv.Listen(ctx)
 	}()
@@ -1655,7 +1656,7 @@ func TestCreatedDeviceAlreadyExist(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, len(respCreate), 2)
-	assert.Equal(t, respCreate[1].GetError().Message, "a device with the same id already exists")
+	assert.Equal(t, respCreate[1].GetError().Message, "Device with the same ID already exist")
 
 	assert.Equal(t, 1, count) // We create two devices, so only second one is not working
 	s.Unsubscribe()
@@ -1673,7 +1674,7 @@ func TestUpdateNoTargetMetafield(t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	// Assert
-	assert.Equal(t, respUpd.GetError().Message, "no target provided for update")
+	assert.Equal(t, respUpd.GetError().Message, "No device target provided")
 }
 
 func TestDeleteNoTargetMetafield(t *testing.T) {
@@ -1688,7 +1689,7 @@ func TestDeleteNoTargetMetafield(t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	// Assert
-	assert.Equal(t, respDel.GetError().Message, "no target provided for delete")
+	assert.Equal(t, respDel.GetError().Message, "No device target provided")
 }
 
 func TestDeviceGoesOnline(t *testing.T) {

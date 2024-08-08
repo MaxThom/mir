@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/maxthom/mir/internal/externals/mng"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	"github.com/maxthom/mir/internal/libs/test_utils"
 	"github.com/maxthom/mir/internal/services/core_srv"
@@ -39,7 +40,7 @@ func TestMain(m *testing.M) {
 	fmt.Println(" -> bus")
 	fmt.Println(" -> db")
 
-	coreSrv := core_srv.NewCore(log, b, db)
+	coreSrv := core_srv.NewCore(log, b, db, mng.NewSurrealDeviceStore(db))
 	go func() {
 		coreSrv.Listen(ctx)
 	}()
