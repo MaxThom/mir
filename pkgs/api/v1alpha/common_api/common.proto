@@ -5,6 +5,11 @@ package v1alpha.common;
 
 option go_package = "gen/";
 
+// Used to have a optional value in maps to mark the key for deletion
+message OptString {
+  optional string value = 1;
+}
+
 // Generic error message
 message Error {
     uint32 code = 1;     // HTTP like status code

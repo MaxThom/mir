@@ -38,15 +38,15 @@ message CreateDeviceResponse {
 message UpdateDeviceRequest {
   Targets targets = 1; // To target a set of devices, search using ids, labels and annotations
 
-  optional Meta meta = 2;
-  optional Spec spec = 3;
-  optional Status status = 4;
+  Meta meta = 2;
+  Spec spec = 3;
+  Status status = 4;
 
   message Meta {
     optional string name = 3; // Name of the device
     optional string namespace = 4; // Name of the device
-    map<string, OptString> labels = 5; // set key to nil to remove it
-    map<string, OptString> annotations = 6; // set key to nil to remove it
+    map<string, common.OptString> labels = 5; // set key to nil to remove it
+    map<string, common.OptString> annotations = 6; // set key to nil to remove it
   }
   message Spec {
     optional bool disabled = 3; // If disabled, device will be cut off from communication
@@ -54,9 +54,6 @@ message UpdateDeviceRequest {
   message Status {
     optional bool online = 3; // Is device online ?
     optional common.Timestamp last_hearthbeat = 4; // Last pulse received
-  }
-  message OptString {
-    optional string value = 1;
   }
 }
 

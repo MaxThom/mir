@@ -8,15 +8,15 @@ import (
 )
 
 func NewUpdateDeviceMetaReqFromDevice(d Device) *core_api.UpdateDeviceRequest {
-	toUpdateMap := func(m map[string]*string) map[string]*core_api.UpdateDeviceRequest_OptString {
-		opt := map[string]*core_api.UpdateDeviceRequest_OptString{}
+	toUpdateMap := func(m map[string]*string) map[string]*common_api.OptString {
+		opt := map[string]*common_api.OptString{}
 		for k, v := range m {
 			if v == nil {
-				opt[k] = &core_api.UpdateDeviceRequest_OptString{
+				opt[k] = &common_api.OptString{
 					Value: nil,
 				}
 			} else {
-				opt[k] = &core_api.UpdateDeviceRequest_OptString{
+				opt[k] = &common_api.OptString{
 					Value: v,
 				}
 			}

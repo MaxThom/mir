@@ -10,7 +10,7 @@
 - [ ] look on how k8s sdk is made
 - [ ] ask redit for my questioning
 - [x] need a centralized place for errors, in models
-- [ ] surreal update api, maybe try to remove optional
+- [x] surreal update api, maybe try to remove optional
       optional becomes deletable fields with NONE
       non-optional presence is tested with empty/default struct/value
 
@@ -18,4 +18,6 @@
 
 - [ ] integrate database
 - [ ] add unit/integration tests
+- [ ] upload schema flow
+- [ ] cli/tui to upload, list and explore the schema?
 - [ ] work on protodash

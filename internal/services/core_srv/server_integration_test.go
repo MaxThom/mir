@@ -12,6 +12,7 @@ import (
 	"github.com/maxthom/mir/internal/externals/mng"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	"github.com/maxthom/mir/internal/libs/test_utils"
+	"github.com/maxthom/mir/pkgs/api/proto/v1alpha/common_api"
 	"github.com/maxthom/mir/pkgs/api/proto/v1alpha/core_api"
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/nats-io/nats.go"
@@ -226,7 +227,7 @@ func TestPublishDeviceUpdateTargetIds(t *testing.T) {
 			Ids: []string{id},
 		},
 		Meta: &core_api.UpdateDeviceRequest_Meta{
-			Labels: map[string]*core_api.UpdateDeviceRequest_OptString{
+			Labels: map[string]*common_api.OptString{
 				"factory": {
 					Value: strRef("site_b"),
 				},
@@ -238,7 +239,7 @@ func TestPublishDeviceUpdateTargetIds(t *testing.T) {
 					Value: strRef("mazda3sport"),
 				},
 			},
-			Annotations: map[string]*core_api.UpdateDeviceRequest_OptString{
+			Annotations: map[string]*common_api.OptString{
 				"utility": {
 					Value: strRef("major"),
 				},
@@ -301,7 +302,7 @@ func TestPublishDeviceUpdateTargetNames(t *testing.T) {
 			Names: []string{id},
 		},
 		Meta: &core_api.UpdateDeviceRequest_Meta{
-			Labels: map[string]*core_api.UpdateDeviceRequest_OptString{
+			Labels: map[string]*common_api.OptString{
 				"factory": {
 					Value: strRef("site_b"),
 				},
@@ -313,7 +314,7 @@ func TestPublishDeviceUpdateTargetNames(t *testing.T) {
 					Value: strRef("mazda3sport"),
 				},
 			},
-			Annotations: map[string]*core_api.UpdateDeviceRequest_OptString{
+			Annotations: map[string]*common_api.OptString{
 				"utility": {
 					Value: strRef("major"),
 				},
@@ -374,7 +375,7 @@ func TestPublishDeviceUpdateTargetNamespace(t *testing.T) {
 			Namespaces: []string{ns},
 		},
 		Meta: &core_api.UpdateDeviceRequest_Meta{
-			Labels: map[string]*core_api.UpdateDeviceRequest_OptString{
+			Labels: map[string]*common_api.OptString{
 				"factory": {
 					Value: strRef("site_b"),
 				},
@@ -386,7 +387,7 @@ func TestPublishDeviceUpdateTargetNamespace(t *testing.T) {
 					Value: strRef("mazda3sport"),
 				},
 			},
-			Annotations: map[string]*core_api.UpdateDeviceRequest_OptString{
+			Annotations: map[string]*common_api.OptString{
 				"utility": {
 					Value: strRef("major"),
 				},
@@ -433,7 +434,7 @@ func TestPublishDeviceUpdateTargetLabels(t *testing.T) {
 			},
 		},
 		Meta: &core_api.UpdateDeviceRequest_Meta{
-			Labels: map[string]*core_api.UpdateDeviceRequest_OptString{
+			Labels: map[string]*common_api.OptString{
 				"owner": {
 					Value: nil,
 				},
@@ -441,7 +442,7 @@ func TestPublishDeviceUpdateTargetLabels(t *testing.T) {
 					Value: strRef("mazda3sport"),
 				},
 			},
-			Annotations: map[string]*core_api.UpdateDeviceRequest_OptString{
+			Annotations: map[string]*common_api.OptString{
 				"utility": {
 					Value: nil,
 				},
@@ -552,7 +553,7 @@ func TestPublishDeviceUpdateTargetAnno(t *testing.T) {
 			},
 		},
 		Meta: &core_api.UpdateDeviceRequest_Meta{
-			Labels: map[string]*core_api.UpdateDeviceRequest_OptString{
+			Labels: map[string]*common_api.OptString{
 				"owner": {
 					Value: nil,
 				},
@@ -560,7 +561,7 @@ func TestPublishDeviceUpdateTargetAnno(t *testing.T) {
 					Value: strRef("mazda3sport"),
 				},
 			},
-			Annotations: map[string]*core_api.UpdateDeviceRequest_OptString{
+			Annotations: map[string]*common_api.OptString{
 				"utility": {
 					Value: nil,
 				},
@@ -670,7 +671,7 @@ func TestPublishDeviceUpdateTargetMixs(t *testing.T) {
 			},
 		},
 		Meta: &core_api.UpdateDeviceRequest_Meta{
-			Labels: map[string]*core_api.UpdateDeviceRequest_OptString{
+			Labels: map[string]*common_api.OptString{
 				"owner": {
 					Value: nil,
 				},
@@ -678,7 +679,7 @@ func TestPublishDeviceUpdateTargetMixs(t *testing.T) {
 					Value: strRef("mazda3sport"),
 				},
 			},
-			Annotations: map[string]*core_api.UpdateDeviceRequest_OptString{
+			Annotations: map[string]*common_api.OptString{
 				"utility": {
 					Value: nil,
 				},
