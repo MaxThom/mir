@@ -6,16 +6,19 @@ import (
 	"fmt"
 	"log"
 	"sync"
+	"time"
 
+	"github.com/maxthom/mir/internal/externals/mng"
 	"github.com/maxthom/mir/internal/externals/ts"
 	"github.com/maxthom/mir/internal/libs/api/metrics"
 	proto_lineprotocol "github.com/maxthom/mir/internal/libs/proto/line_protocol"
+	"github.com/maxthom/mir/pkgs/api/proto/v1alpha/core_api"
 	"github.com/maxthom/mir/pkgs/api/proto/v1alpha/device_api"
+	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/nats-io/nats.go"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
-	"github.com/surrealdb/surrealdb.go"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
@@ -29,7 +32,7 @@ type ProtoFluxServer struct {
 	tlmStore       ts.TelemetryStore
 	sub            *nats.Subscription
 	m              *mir.Mir
-	db             *surrealdb.DB
+	devStore       mng.DeviceStore
 	devWriters     map[deviceProtoKey]proto_lineprotocol.ProtoBytesToLpFn
 	devWritersLock sync.RWMutex
 	devSchemas     map[string]deviceProtoSchema
@@ -74,12 +77,12 @@ func RegisterMetrics(reg prometheus.Registerer) {
 	reg.Register(datapointCount)
 }
 
-func NewProtoFluxServer(logger zerolog.Logger, m *mir.Mir, tlmStore ts.TelemetryStore, db *surrealdb.DB) *ProtoFluxServer {
+func NewProtoFluxServer(logger zerolog.Logger, m *mir.Mir, devStore mng.DeviceStore, tlmStore ts.TelemetryStore) *ProtoFluxServer {
 	l = logger.With().Str("srv", "protoflux_server").Logger()
 	return &ProtoFluxServer{
 		tlmStore:   tlmStore,
 		m:          m,
-		db:         db,
+		devStore:   devStore,
 		devWriters: make(map[deviceProtoKey]proto_lineprotocol.ProtoBytesToLpFn),
 		devSchemas: make(map[string]deviceProtoSchema),
 	}
@@ -113,28 +116,17 @@ func (s *ProtoFluxServer) Listen(ctx context.Context) {
 			s.devWritersLock.RUnlock()
 			// Mean no ingesters for proto msg, but we might have the schema
 			if !ok {
-				// TODO put all this if inside a function
 				s.devSchemasLock.RLock()
 				devSchema, ok := s.devSchemas[deviceId]
 				s.devSchemasLock.RUnlock()
 				// No schema, thus we must check in db first
 				// if not found, we must request it from device
 				if !ok {
-					// TODO look for schema in db first
-					// 1. Go get schema in surrealdb
-					//    Should be under status
-					// status>telemetry:
-					//   protoPackageName: "mir.v1alpha.telemetry"
-					//   compressedSchema: "..."
-					//   lastSchemaFetch: "..."
-					// 2. If not there, fetch from device
-
-					l.Info().Str("deviceId", deviceId).Msg("Requesting proto schema from device")
-					reg, _, err := getProtoSchemaFromDevice(s.m, deviceId)
+					reg, err := s.reconcileDeviceSchema(deviceId, false)
 					if err != nil {
-						l.Error().Err(err).Str("deviceId", devSchema.deviceId).Msg("Failed to retrieve schema from device")
+						l.Error().Err(err).Str("deviceId", deviceId).Msg("Failed to retrieve schema from device")
 						if err := msg.Nak(); err != nil {
-							l.Error().Err(err).Str("deviceId", devSchema.deviceId).Msg("Failed to NAK message of device")
+							l.Error().Err(err).Str("deviceId", deviceId).Msg("Failed to NAK message of device")
 						}
 						return
 					}
@@ -145,12 +137,6 @@ func (s *ProtoFluxServer) Listen(ctx context.Context) {
 					}
 					s.devSchemas[deviceId] = devSchema
 					s.devSchemasLock.Unlock()
-
-					// TODO update the schema in db with info
-					// status>telemetry:
-					//   protoPackageName: "mir.v1alpha.telemetry"
-					//   compressedSchema: "..."
-					//   lastSchemaFetch: "..."
 				}
 				fn, err := generateIngesters(devSchema, protoMsgName)
 				if err != nil {
@@ -174,6 +160,76 @@ func (s *ProtoFluxServer) Listen(ctx context.Context) {
 			fmt.Println(lp)
 			s.tlmStore.WriteDatapoint(lp)
 		}))
+}
+
+func (s *ProtoFluxServer) reconcileDeviceSchema(deviceId string, forceRequest bool) (*protoregistry.Files, error) {
+	// TODO look for schema in db first
+	// 1. Go get schema in surrealdb
+	//    Should be under status
+	// status>proto:
+	//   protoPackageName: "mir.v1alpha.telemetry"
+	//   compressedSchema: "..."
+	//   lastSchemaFetch: "..."
+	// 2. If not there, fetch from device
+	if !forceRequest {
+		devs, err := s.devStore.ListDevice(&core_api.ListDeviceRequest{
+			Targets: &core_api.Targets{
+				Ids: []string{deviceId},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+		if len(devs) > 0 {
+			if devs[0].Status.Schema.CompressedSchema != nil &&
+				len(devs[0].Status.Schema.CompressedSchema) != 0 {
+				reg, err := mir_models.DecompressFileDescriptorSet(devs[0].Status.Schema.CompressedSchema)
+				if err == nil {
+					fmt.Println("CACA")
+					return reg, nil
+				} else {
+					l.Error().Err(err).Msg("Error retrieving schema from database")
+				}
+			}
+		}
+	}
+
+	l.Info().Str("deviceId", deviceId).Msg("Requesting proto schema from device")
+	reg, pbSet, err := getProtoSchemaFromDevice(s.m, deviceId)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO update the schema in db with info
+	// status>telemetry:
+	//   protoPackageName: "mir.v1alpha.telemetry"
+	//   compressedSchema: "..."
+	//   lastSchemaFetch: "..."
+	packNames := []string{}
+	reg.RangeFiles(func(f protoreflect.FileDescriptor) bool {
+		packNames = append(packNames, string(f.FullName()))
+		return true
+	})
+
+	compSch, err := mir_models.CompressFileDescriptorSet(pbSet)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = s.devStore.UpdateDevice(&core_api.UpdateDeviceRequest{
+		Targets: &core_api.Targets{
+			Ids: []string{deviceId},
+		},
+		Status: &core_api.UpdateDeviceRequest_Status{
+			Schema: &core_api.UpdateDeviceRequest_Schema{
+				CompressedSchema: compSch,
+				PackageNames:     packNames,
+				LastSchemaFetch:  mir_models.AsProtoTimestamp(time.Now().UTC()),
+			},
+		},
+	})
+
+	return reg, err
 }
 
 func generateIngesters(devSchema deviceProtoSchema, protoMsgName string) (proto_lineprotocol.ProtoBytesToLpFn, error) {

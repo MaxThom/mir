@@ -95,6 +95,11 @@ func NewProtoDeviceFromDeviceWithId(d DeviceWithId) *core_api.Device {
 		Status: &core_api.Status{
 			Online:         d.Status.Online,
 			LastHearthbeat: AsProtoTimestamp(d.Status.LastHearthbeat),
+			Schema: &core_api.Schema{
+				CompressedSchema: d.Status.Schema.CompressedSchema,
+				PackageNames:     d.Status.Schema.PackageNames,
+				LastSchemaFetch:  AsProtoTimestamp(d.Status.Schema.LastSchemaFetch),
+			},
 		},
 	}
 }
@@ -111,6 +116,10 @@ func NewDeviceFromProtoDevice(d *core_api.Device) *Device {
 	var lastHeartbeatTime time.Time
 	if d.Status.LastHearthbeat != nil {
 		lastHeartbeatTime = AsGoTime(d.Status.LastHearthbeat)
+	}
+	var lastSchemaFetch time.Time
+	if d.Status.Schema.LastSchemaFetch != nil {
+		lastSchemaFetch = AsGoTime(d.Status.Schema.LastSchemaFetch)
 	}
 
 	return &Device{
@@ -130,6 +139,11 @@ func NewDeviceFromProtoDevice(d *core_api.Device) *Device {
 		Status: Status{
 			Online:         d.Status.Online,
 			LastHearthbeat: lastHeartbeatTime,
+			Schema: Schema{
+				CompressedSchema: d.Status.Schema.CompressedSchema,
+				PackageNames:     d.Status.Schema.PackageNames,
+				LastSchemaFetch:  lastSchemaFetch,
+			},
 		},
 	}
 }

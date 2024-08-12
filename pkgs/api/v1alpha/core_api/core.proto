@@ -54,6 +54,12 @@ message UpdateDeviceRequest {
   message Status {
     optional bool online = 3; // Is device online ?
     optional common.Timestamp last_hearthbeat = 4; // Last pulse received
+    Schema schema = 5; // Schema for telemetry and telecommands
+  }
+  message Schema {
+	optional bytes compressedSchema = 1; // Schema in bytes
+	repeated string packageNames = 2; // Packages names in schema
+	optional common.Timestamp lastSchemaFetch = 3; // Last request for a schema update from device
   }
 }
 
@@ -174,6 +180,13 @@ message Properties {
 * Status fields describe the device conditions monitored by Mir
 */
 message Status {
-  common.Timestamp last_hearthbeat = 8; // Represent the time when the last hearthbeat was received
-  bool online = 9; // The device is online and sending heathbeath signal
+  common.Timestamp last_hearthbeat = 1; // Represent the time when the last hearthbeat was received
+  bool online = 2; // The device is online and sending heathbeath signal
+  Schema schema = 3; // Telemetry and Commanding schema using protobuff
+}
+
+message Schema {
+	bytes compressedSchema = 1; // Schema in bytes
+	repeated string packageNames = 2; // Packages names in schema
+	common.Timestamp lastSchemaFetch = 3; // Last request for a schema update from device
 }

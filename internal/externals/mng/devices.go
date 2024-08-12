@@ -6,6 +6,7 @@ import (
 
 	"github.com/maxthom/mir/pkgs/api/proto/v1alpha/core_api"
 	"github.com/maxthom/mir/pkgs/mir_models"
+	"github.com/pkg/errors"
 	"github.com/surrealdb/surrealdb.go"
 )
 
@@ -82,7 +83,7 @@ func (s *surrealDeviceStore) UpdateDevice(req *core_api.UpdateDeviceRequest) ([]
 	q, v = createUpdateQueryForDevice(req.Targets, req)
 	respDb, err := executeQueryForType[[]mir_models.DeviceWithId](s.db, q, v)
 	if err != nil {
-		return nil, mir_models.ErrorDbExecutingQuery
+		return nil, errors.Wrap(err, mir_models.ErrorDbExecutingQuery.Error())
 	}
 
 	return respDb, nil
@@ -196,6 +197,22 @@ func createUpdateQueryForDevice(t *core_api.Targets, upd *core_api.UpdateDeviceR
 		if upd.Status.Online != nil {
 			q.WriteString("online: $ON,")
 			vars["ON"] = upd.Status.Online
+		}
+		if upd.Status.Schema != nil {
+			q.WriteString("schema: {")
+			if upd.Status.Schema.CompressedSchema != nil {
+				q.WriteString("compressedSchema: $COMPSCHEMA,")
+				vars["COMPSCHEMA"] = upd.Status.Schema.CompressedSchema
+			}
+			if upd.Status.Schema.PackageNames != nil {
+				q.WriteString("packageNames: $PACKNAMES,")
+				vars["PACKNAMES"] = upd.Status.Schema.PackageNames
+			}
+			if upd.Status.Schema.LastSchemaFetch != nil && !mir_models.AsGoTime(upd.Status.Schema.LastSchemaFetch).IsZero() {
+				q.WriteString("lastSchemaFetch: $LASTSCHFETCH,")
+				vars["LASTSCHFETCH"] = mir_models.AsGoTime(upd.Status.Schema.LastSchemaFetch)
+			}
+			q.WriteString("},")
 		}
 		q.WriteString("},")
 	}

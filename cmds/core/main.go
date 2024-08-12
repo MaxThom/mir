@@ -161,7 +161,7 @@ func run(
 	log.Info().Str("url", cfg.DataBusServer.Url).Msg("connected to msg bus")
 
 	// Services
-	coreSrv := core_srv.NewCore(log, b, db, mng.NewSurrealDeviceStore(db))
+	coreSrv := core_srv.NewCore(log, b, mng.NewSurrealDeviceStore(db))
 	core_srv.RegisterMetrics(metrics.Registry())
 
 	// Metrics & Health
