@@ -11,6 +11,7 @@ import (
 	"time"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
+	"github.com/maxthom/mir/internal/externals/mng"
 	"github.com/maxthom/mir/internal/externals/ts"
 	"github.com/maxthom/mir/internal/libs/api/health"
 	"github.com/maxthom/mir/internal/libs/api/metrics"
@@ -184,7 +185,7 @@ func run(
 	log.Info().Str("url", cfg.DataBusServer.Url).Msg("connected to msg bus")
 
 	// Services
-	protofluxSrv := protoflux_srv.NewProtoFluxServer(log, m, ts.NewInfluxTelemetryStore(lpWriter), db)
+	protofluxSrv := protoflux_srv.NewProtoFluxServer(log, m, mng.NewSurrealDeviceStore(db), ts.NewInfluxTelemetryStore(lpWriter))
 	protoflux_srv.RegisterMetrics(metrics.Registry())
 
 	// Metrics & Health

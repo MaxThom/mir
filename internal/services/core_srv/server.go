@@ -18,7 +18,6 @@ import (
 	"github.com/nats-io/nats.go"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
-	"github.com/surrealdb/surrealdb.go"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
@@ -26,7 +25,6 @@ import (
 type CoreServer struct {
 	sub              *nats.Subscription
 	bus              *bus.BusConn
-	db               *surrealdb.DB
 	store            mng.DeviceStore
 	hearthbeats      map[string]time.Time
 	hearthbeatsMutex sync.RWMutex
@@ -47,7 +45,7 @@ func RegisterMetrics(reg prometheus.Registerer) {
 	reg.Register(requestCount)
 }
 
-func NewCore(logger zerolog.Logger, bus *bus.BusConn, db *surrealdb.DB, store mng.DeviceStore) *CoreServer {
+func NewCore(logger zerolog.Logger, bus *bus.BusConn, store mng.DeviceStore) *CoreServer {
 	l = logger.With().Str("srv", "core_server").Logger()
 	hearbeats := map[string]time.Time{}
 
@@ -78,7 +76,6 @@ func NewCore(logger zerolog.Logger, bus *bus.BusConn, db *surrealdb.DB, store mn
 	return &CoreServer{
 		sub:         sub,
 		bus:         bus,
-		db:          db,
 		store:       store,
 		hearthbeats: hearbeats,
 	}

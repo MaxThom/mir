@@ -25,7 +25,7 @@ func main() {
 	mir_signals.Notify(syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT)
 
 	m, err := mir.Builder().
-		DeviceId("0x1414").
+		DeviceId("0xf86ea").
 		Target("nats://127.0.0.1:4222").
 		LogLevel(mir.LogLevelDebug).
 		LogWriters([]io.Writer{os.Stdout}).

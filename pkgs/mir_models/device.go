@@ -2,6 +2,12 @@ package mir_models
 
 import (
 	"time"
+
+	"github.com/maxthom/mir/internal/libs/compression/zstd"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protodesc"
+	"google.golang.org/protobuf/reflect/protoregistry"
+	"google.golang.org/protobuf/types/descriptorpb"
 )
 
 type DeviceWithId struct {
@@ -36,4 +42,55 @@ type Properties struct {
 type Status struct {
 	Online         bool      `json:"online"`
 	LastHearthbeat time.Time `json:"lastHearthbeat"`
+	Schema         Schema    `json:"schema"`
+}
+
+type Schema struct {
+	// Compressed with ZSTD
+	CompressedSchema []byte    `json:"compressedSchema"`
+	PackageNames     []string  `json:"packageNames"`
+	LastSchemaFetch  time.Time `json:"lastSchemaFetch"`
+}
+
+func (s Schema) GetProtoSchema() (*protoregistry.Files, error) {
+	return DecompressFileDescriptorSet(s.CompressedSchema)
+}
+
+func (s *Schema) SetProtoSchema(desc *descriptorpb.FileDescriptorSet) error {
+	b, err := CompressFileDescriptorSet(desc)
+	if err != nil {
+		return err
+	}
+	s.CompressedSchema = b
+	return nil
+}
+
+func CompressFileDescriptorSet(desc *descriptorpb.FileDescriptorSet) ([]byte, error) {
+	bytes, err := proto.Marshal(desc)
+	if err != nil {
+		return []byte{}, err
+	}
+	b, err := zstd.CompressData(bytes)
+	if err != nil {
+		return []byte{}, err
+	}
+	return b, nil
+}
+
+func DecompressFileDescriptorSet(b []byte) (*protoregistry.Files, error) {
+	b, err := zstd.DecompressData(b)
+	if err == nil {
+		return nil, err
+	}
+
+	pbSet := new(descriptorpb.FileDescriptorSet)
+	if err := proto.Unmarshal(b, pbSet); err != nil {
+		return nil, err
+	}
+
+	reg, err := protodesc.NewFiles(pbSet)
+	if err != nil {
+		return nil, err
+	}
+	return reg, nil
 }
