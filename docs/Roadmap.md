@@ -85,41 +85,41 @@ is much incertainties about the feasibility of that one
 
 ### Ergonomics
 
+## v0.2.0 Telemetry module
 
-## v0.2.0
-
-The main goals of this verion is to create the Twin module as
-well as doing some improvements on the boilerplate of services
-
-- Twin module to tackle the configuration mangement of devices
-- Extend CLI, TUI and Go Device SDK with new functionnalities for this module
+The main goals of this version is to create the Telemetry module
+as well as the visualiazing tools for the data
 
 ### Features
 
-- TwinManager, the digital twin manager
+#### Server Module
 
-- [ ] extend spec with desired properties and status with reported properties
-- [ ] create the required api calls to support updates
-- [ ] create the twin template features
+- [ ] ProtoFlux, handle telemetry data from protobuf to line protocol
 
-- CLI
+#### CLI/TUI
 
-- [ ] add twin commands
+- [ ] Upload schema via CLI
+- [ ] Schema explorer via CLI and maybe TUI
+- [ ] Create ProtoDash which can generate a dashboard from a proto file
 
-- Tui
+#### Device SDK
 
-- [ ] add twin layouts
+- [ ] Custom Protobuff annotation for Mir System
+- [ ] Added telemetry function to the SDK
 
-- Go Device SDK
+#### Module SDK
 
-- [ ] add the cycle of desired properties and reported
-
+- [ ] Add new set of events regarding telemetry
+- [ ] Add stream subscriptions
 
 ### Testing
 
+- [ ] Integration test for the telemetry module
 
 ### Improvements/Tech dett
 
+- [x] Project layout refactor
+- [x] Decoupling of storage and server handlers
 - [x] rework how boiler template of app is made for services
   - same tool for cli could be used for bootstrap of service
   - change how init is used to become more main and have a run method
@@ -127,61 +127,110 @@ well as doing some improvements on the boilerplate of services
    - where is the line between using code and a spec? maybe enforcing a spec is sufficient instead of creating a maze of code abstraction for it       -
 - [x] merge tui and cli into one binary
 
-### Ergonmics
-
-- [x] air on each service app so everything reloads
-- [ ] tmux script file in repo
-
-## v0.2.1
-
-The main goals of this version is to create the Telemetry module
-as well as the visualiazing tools for the data
-
-### Features
-
-- ProtoFlux, receive proto telemetry and parse to flux line protocol
-  - [ ] Add timeseries field to proto library
-
-
-- Create ProtoDash which can generate a dashboard from a proto file
-  1. [ ] Generate dashboard for questdb
-  2. [ ] Generate dashboard for influxdb
-
-
-### Testing
-
-### Improvements/Tech dett
-
 ### Ergonomics
 
-## v0.2.3
+- [ ] Create tmuxifier layouts in repo
+- [ ] Make command for buf generate
+
+## v0.3.0 Command Module
 
 The main goal of this version is the create the Commanding module
 as well as the supporting tooling and visualization
 
 ### Features
 
+#### Server Module
+
+- [ ] Can define commands in protobuf schema
+- [ ] Send command with Targets and JSON payload to target multiple devices
+
+#### CLI/TUI
+
+- [ ] Explore commands
+- [ ] Be able to send commands via  window with parameters based on the schema
+
+#### Device SDK
+
+- [ ] Custom Protobuff annotation for Mir System for commands
+- [ ] Added commands handler to the SDK
+
+#### Module SDK
+
+- [ ] Add new set of events regarding commands
+
+### Testing
+
+- [ ] Integration test for the command module
+
+### Improvements/Tech dett
+
+
+### Ergonomics
+
+
 ### Testing
 
 ### Improvements/Tech dett
 
 ### Ergonomics
 
-## v0.2.4
+## v0.4.0 Twin Module
 
-The main goal of this version is the create the Server Side SDK
-for people to bring their own module
+Twin module to tackle the configuration mangement of devices. Flow of desired properties set by the user and reported properties set by the device.
 
 ### Features
 
+#### Server Module
+
+- [ ] Can define properties in protobuf schema
+	  	or maybe JSON is better since it will be hard with the twin template
+
+#### CLI/TUI
+
+- [ ] Can create twin template
+
+#### Device SDK
+
+- [ ] Custom Protobuff annotation for Mir System for properties
+- [ ] Add desired properties handler to the SDK
+- [ ] Add reported properties function
+
+#### Module SDK
+
+- [ ] Add new set of events regarding propeties
+- [ ] create the twin template features
+
 ### Testing
 
 ### Improvements/Tech dett
 
-### Ergonomics
+### Ergonmics
 
 
-## v0.3.0
+## v0.5.0 DeviceSDK and ModuleSDK Improvements
+
+The goal is too focus on SDK requirements or QOL that are not bound to a module
+
+### Features
+
+#### Device SDK
+
+- [ ] Add local storage for message in case of network outage
+- [ ] Add the ability to publish to custom routes
+
+#### Module SDK
+
+- [ ] Add the ability to subscribe to custome route
+- [ ] Look at replacing SurrealDB with NatsIO Keyvalue or Badger
+
+### Testing
+
+### Improvements/Tech dett
+
+### Ergonmics
+
+
+## v0.6.0
 
 The main goal of this version is to focus on the
 deployment and production toolings such as pipeline
@@ -211,39 +260,12 @@ and conternarization
 - [ ] Make sure the sdks are available via go get/install
 
 
-## v0.3.1
-### Features
 
-### Testing
+## v0.7.0 Swarm
 
-### Improvements/Tech dett
-
-### Ergonomics
-
-- [ ] look at creating a static web page for documentation
-    - maybe github pages? would be nice to also have them locally
-- [ ] write the documentation
-- [ ] write set of examples
-
-### DevOps
-
-- [ ] make the doc publish using a pipeline
-
-## v0.6.0
+Create a utility tool to virtualize devices. This will be used for extensive integration and performance testing to increase reliability and performance
 
 ### Features
-
-### Testing
-
-### Improvements/Tech dett
-
-### Ergonomics
-
-## v0.7.0
-
-### Features
-
-- MirWebUI, the Web User Interface with htmx and templ
 
 ### Testing
 

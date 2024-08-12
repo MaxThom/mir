@@ -21,7 +21,7 @@ subcommand for server with the custom cli. We can create a
 struct and inline the mir cmd
 - [ ] Embedded database instead of Surreal. We could use BadgerDB, or else. Create an interface for surreal part of this work.
 
-- [ ]
+- [ ] Add events to device twin with an event history
 
 ```mermaid
 flowchart LR
