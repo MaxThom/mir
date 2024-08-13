@@ -1,11 +1,13 @@
 package test_utils
 
 import (
+	"context"
 	"testing"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/influxdata/influxdb-client-go/v2/api"
 	"github.com/maxthom/mir/internal/clients/core_client"
+	"github.com/maxthom/mir/internal/libs/external/influx"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	"github.com/maxthom/mir/pkgs/api/proto/v1alpha/core_api"
 	"github.com/maxthom/mir/pkgs/module/mir"
@@ -34,18 +36,23 @@ type InfluxInfo struct {
 	Bucket string
 }
 
-func SetupAllExternalsPanic(conns ConnsInfo) (*mir.Mir, *bus.BusConn, *surrealdb.DB, influxdb2.Client, api.WriteAPI, api.QueryAPI) {
+func SetupAllExternalsPanic(ctx context.Context, conns ConnsInfo) (*mir.Mir, *bus.BusConn, *surrealdb.DB, influxdb2.Client, api.WriteAPI, api.QueryAPI) {
 	m := SetupMirSdkPanic(conns.Name, conns.BusUrl)
 	b := SetupNatsConPanic(conns.BusUrl)
 	s := SetupSurrealDbConnsPanic(conns.Surreal.Url, conns.Surreal.User, conns.Surreal.Pass, conns.Surreal.Ns, conns.Surreal.Db)
-	c, w, q := SetupInfluxConnsPanic(conns.Iinflux.Url, conns.Iinflux.Token, conns.Iinflux.Org, conns.Iinflux.Bucket)
+	c, w, q := SetupInfluxConnsPanic(ctx, conns.Iinflux.Url, conns.Iinflux.Token, conns.Iinflux.Org, conns.Iinflux.Bucket)
 	return m, b, s, c, w, q
 }
 
-func SetupInfluxConnsPanic(url, token, org, bucket string) (influxdb2.Client, api.WriteAPI, api.QueryAPI) {
+func SetupInfluxConnsPanic(ctx context.Context, url, token, org, bucket string) (influxdb2.Client, api.WriteAPI, api.QueryAPI) {
 	c := influxdb2.NewClient(url, token)
 	w := c.WriteAPI(org, bucket)
 	q := c.QueryAPI(org)
+
+	if err := influx.CreateOrgAndBucket(ctx, c, org, bucket); err != nil {
+		panic(err)
+	}
+
 	return c, w, q
 }
 
