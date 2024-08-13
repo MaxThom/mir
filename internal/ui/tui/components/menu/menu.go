@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/maxthom/mir/interfaces/tui/styles"
+	"github.com/maxthom/mir/internal/ui/tui/styles"
 )
 
 var v strings.Builder

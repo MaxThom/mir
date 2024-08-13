@@ -12,15 +12,15 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/google/uuid"
-	"github.com/maxthom/mir/api/gen/proto/v1alpha/core"
-	"github.com/maxthom/mir/interfaces/tui/components/form"
-	"github.com/maxthom/mir/interfaces/tui/components/form/button"
-	"github.com/maxthom/mir/interfaces/tui/components/form/label_checkbox"
-	"github.com/maxthom/mir/interfaces/tui/components/form/label_textbox"
-	mir_help "github.com/maxthom/mir/interfaces/tui/components/help"
-	"github.com/maxthom/mir/interfaces/tui/msgs"
-	"github.com/maxthom/mir/interfaces/tui/store"
-	"github.com/maxthom/mir/interfaces/tui/styles"
+	"github.com/maxthom/mir/internal/ui/tui/components/form"
+	"github.com/maxthom/mir/internal/ui/tui/components/form/button"
+	"github.com/maxthom/mir/internal/ui/tui/components/form/label_checkbox"
+	"github.com/maxthom/mir/internal/ui/tui/components/form/label_textbox"
+	mir_help "github.com/maxthom/mir/internal/ui/tui/components/help"
+	"github.com/maxthom/mir/internal/ui/tui/msgs"
+	"github.com/maxthom/mir/internal/ui/tui/store"
+	"github.com/maxthom/mir/internal/ui/tui/styles"
+	"github.com/maxthom/mir/pkgs/api/proto/v1alpha/core_api"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -156,7 +156,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 			if !formInError {
-				req := &core.CreateDeviceRequest{
+				req := &core_api.CreateDeviceRequest{
 					DeviceId:    m.inputs[deviceId].GetValue(),
 					Name:        m.inputs[name].GetValue(),
 					Namespace:   m.inputs[namespace].GetValue(),

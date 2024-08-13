@@ -16,6 +16,7 @@ build:
 	go build -o bin/tui cmds/tui/main.go
 	go build -o bin/mir cmds/mir/main.go
 	go build -o bin/core cmds/core/main.go
+	go build -o bin/protoflux cmds/protoflux/main.go
 
 build-mir:
 	go build -o bin/mir cmds/mir/main.go

@@ -6,7 +6,7 @@ import (
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/maxthom/mir/interfaces/tui/styles"
+	"github.com/maxthom/mir/internal/ui/tui/styles"
 )
 
 type globalKeyMap struct {

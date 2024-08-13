@@ -7,8 +7,8 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/maxthom/mir/interfaces/tui/components/form"
-	"github.com/maxthom/mir/interfaces/tui/styles"
+	"github.com/maxthom/mir/internal/ui/tui/components/form"
+	"github.com/maxthom/mir/internal/ui/tui/styles"
 )
 
 var (

@@ -5,9 +5,9 @@ import (
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
-	mir_help "github.com/maxthom/mir/interfaces/tui/components/help"
-	"github.com/maxthom/mir/interfaces/tui/components/menu"
-	"github.com/maxthom/mir/interfaces/tui/msgs"
+	mir_help "github.com/maxthom/mir/internal/ui/tui/components/help"
+	"github.com/maxthom/mir/internal/ui/tui/components/menu"
+	"github.com/maxthom/mir/internal/ui/tui/msgs"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
