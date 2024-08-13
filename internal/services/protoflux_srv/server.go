@@ -125,9 +125,6 @@ func (s *ProtoFluxServer) Listen(ctx context.Context) {
 					reg, err := s.reconcileDeviceSchema(deviceId, false)
 					if err != nil {
 						l.Error().Err(err).Str("deviceId", deviceId).Msg("Failed to retrieve schema from device")
-						if err := msg.Nak(); err != nil {
-							l.Error().Err(err).Str("deviceId", deviceId).Msg("Failed to NAK message of device")
-						}
 						return
 					}
 					s.devSchemasLock.Lock()
@@ -139,12 +136,26 @@ func (s *ProtoFluxServer) Listen(ctx context.Context) {
 					s.devSchemasLock.Unlock()
 				}
 				fn, err := generateIngesters(devSchema, protoMsgName)
+				// If error, means schema is invalid so request new from device
 				if err != nil {
-					l.Error().Err(err).Str("deviceId", devSchema.deviceId).Str("protoMsg", protoMsgName).Msg("Failed to generate ingester function")
-					if err := msg.Nak(); err != nil {
-						l.Error().Err(err).Str("deviceId", devSchema.deviceId).Msg("Failed to NAK message of device")
+					// TODO possibly different flow depending on error type
+					l.Warn().Err(err).Str("deviceId", devSchema.deviceId).Str("protoMsg", protoMsgName).Msg("Failed to generate ingester function, requesting schema from device")
+					reg, err := s.reconcileDeviceSchema(deviceId, true)
+					if err != nil {
+						l.Error().Err(err).Str("deviceId", deviceId).Msg("Failed to retrieve schema from device")
+						return
 					}
-					return
+					s.devSchemasLock.Lock()
+					devSchema = deviceProtoSchema{
+						deviceId: deviceId,
+						schema:   reg,
+					}
+					s.devSchemas[deviceId] = devSchema
+					s.devSchemasLock.Unlock()
+					fn, _ = generateIngesters(devSchema, protoMsgName)
+					// TODO what to do with error here, we cant reask the schema
+					// forever if fail, we need maybe a retry of 2-3 times and else
+					// it creates an alert in prometheus
 				}
 				l.Info().Str("deviceId", deviceId).Msg("Generated ingesters functions from proto schema")
 				s.devWritersLock.Lock()
@@ -162,16 +173,12 @@ func (s *ProtoFluxServer) Listen(ctx context.Context) {
 		}))
 }
 
-func (s *ProtoFluxServer) reconcileDeviceSchema(deviceId string, forceRequest bool) (*protoregistry.Files, error) {
-	// TODO look for schema in db first
+func (s *ProtoFluxServer) reconcileDeviceSchema(deviceId string, forceDeviceFetch bool) (*protoregistry.Files, error) {
 	// 1. Go get schema in surrealdb
-	//    Should be under status
-	// status>proto:
-	//   protoPackageName: "mir.v1alpha.telemetry"
-	//   compressedSchema: "..."
-	//   lastSchemaFetch: "..."
 	// 2. If not there, fetch from device
-	if !forceRequest {
+	// 3. Update db
+	// IDEA refresh if last fetch is older then a timespan
+	if !forceDeviceFetch {
 		devs, err := s.devStore.ListDevice(&core_api.ListDeviceRequest{
 			Targets: &core_api.Targets{
 				Ids: []string{deviceId},
@@ -185,7 +192,7 @@ func (s *ProtoFluxServer) reconcileDeviceSchema(deviceId string, forceRequest bo
 				len(devs[0].Status.Schema.CompressedSchema) != 0 {
 				reg, err := mir_models.DecompressFileDescriptorSet(devs[0].Status.Schema.CompressedSchema)
 				if err == nil {
-					fmt.Println("CACA")
+					l.Debug().Str("deviceId", deviceId).Msg("Found proto schema from device in database")
 					return reg, nil
 				} else {
 					l.Error().Err(err).Msg("Error retrieving schema from database")
@@ -200,11 +207,7 @@ func (s *ProtoFluxServer) reconcileDeviceSchema(deviceId string, forceRequest bo
 		return nil, err
 	}
 
-	// TODO update the schema in db with info
-	// status>telemetry:
-	//   protoPackageName: "mir.v1alpha.telemetry"
-	//   compressedSchema: "..."
-	//   lastSchemaFetch: "..."
+	// Mainly for extra info
 	packNames := []string{}
 	reg.RangeFiles(func(f protoreflect.FileDescriptor) bool {
 		packNames = append(packNames, string(f.FullName()))

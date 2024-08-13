@@ -6,6 +6,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/compression/zstd"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
+	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
@@ -65,6 +66,29 @@ func (s *Schema) SetProtoSchema(desc *descriptorpb.FileDescriptorSet) error {
 	return nil
 }
 
+func MarhsalProtoFiles(s ...protoreflect.FileDescriptor) ([]byte, error) {
+	pbSet := new(descriptorpb.FileDescriptorSet)
+	for _, f := range s {
+		pbSet.File = append(pbSet.File,
+			protodesc.ToFileDescriptorProto(f))
+	}
+
+	bytes, err := proto.Marshal(pbSet)
+	if err != nil {
+		return []byte{}, err
+	}
+	return bytes, nil
+}
+
+func CompressProtoFiles(s ...protoreflect.FileDescriptor) ([]byte, error) {
+	pbSet := new(descriptorpb.FileDescriptorSet)
+	for _, f := range s {
+		pbSet.File = append(pbSet.File,
+			protodesc.ToFileDescriptorProto(f))
+	}
+	return CompressFileDescriptorSet(pbSet)
+}
+
 func CompressFileDescriptorSet(desc *descriptorpb.FileDescriptorSet) ([]byte, error) {
 	bytes, err := proto.Marshal(desc)
 	if err != nil {
@@ -78,13 +102,13 @@ func CompressFileDescriptorSet(desc *descriptorpb.FileDescriptorSet) ([]byte, er
 }
 
 func DecompressFileDescriptorSet(b []byte) (*protoregistry.Files, error) {
-	b, err := zstd.DecompressData(b)
-	if err == nil {
+	bDecomp, err := zstd.DecompressData(b)
+	if err != nil {
 		return nil, err
 	}
 
 	pbSet := new(descriptorpb.FileDescriptorSet)
-	if err := proto.Unmarshal(b, pbSet); err != nil {
+	if err := proto.Unmarshal(bDecomp, pbSet); err != nil {
 		return nil, err
 	}
 
