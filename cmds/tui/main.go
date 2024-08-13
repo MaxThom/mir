@@ -8,11 +8,11 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/maxthom/mir/interfaces/tui"
-	"github.com/maxthom/mir/libs/boiler/mir_cli"
-	"github.com/maxthom/mir/libs/boiler/mir_config"
-	"github.com/maxthom/mir/libs/boiler/mir_log"
-	"github.com/maxthom/mir/libs/boiler/mir_signals"
+	"github.com/maxthom/mir/internal/libs/boiler/mir_cli"
+	"github.com/maxthom/mir/internal/libs/boiler/mir_config"
+	"github.com/maxthom/mir/internal/libs/boiler/mir_log"
+	"github.com/maxthom/mir/internal/libs/boiler/mir_signals"
+	"github.com/maxthom/mir/internal/ui/tui"
 	"github.com/rs/zerolog"
 )
 

@@ -16,6 +16,7 @@
 
 ## Protoflux
 
+- [ ] create the device if not exist on tlm
 - [ ] integrate database
 - [ ] add unit/integration tests
 - [ ] upload schema flow

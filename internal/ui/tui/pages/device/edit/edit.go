@@ -12,11 +12,11 @@ import (
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
-	mir_help "github.com/maxthom/mir/interfaces/tui/components/help"
-	"github.com/maxthom/mir/interfaces/tui/msgs"
-	device_list "github.com/maxthom/mir/interfaces/tui/pages/device/list"
-	"github.com/maxthom/mir/interfaces/tui/store"
-	core_srv "github.com/maxthom/mir/services/core"
+	mir_help "github.com/maxthom/mir/internal/ui/tui/components/help"
+	"github.com/maxthom/mir/internal/ui/tui/msgs"
+	device_list "github.com/maxthom/mir/internal/ui/tui/pages/device/list"
+	"github.com/maxthom/mir/internal/ui/tui/store"
+	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -80,14 +80,14 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, msgs.RouteChangeWithDataCmd("/devices", device_list.InputData{SilentFetch: true}))
 		} else {
 			l.Debug().Str("edit", "after").Msg(fmt.Sprintf("%v", string(msg.content)))
-			dev := core_srv.Device{}
+			dev := mir_models.Device{}
 			if err := json.Unmarshal(msg.content, &dev); err != nil {
 				l.Error().Err(err).Msg("can't unmarshal edited device")
 				cmds = append(cmds, msgs.ErrCmd(err, 2*time.Second))
 				cmds = append(cmds, msgs.RouteChangeWithDataCmd("/devices", device_list.InputData{SilentFetch: true}))
 			} else {
 				l.Debug().Str("edit", "unmarshalled").Msg(fmt.Sprintf("%v", dev))
-				cmds = append(cmds, msgs.UpdateMirDevice(store.Bus, core_srv.NewUpdateDeviceMetaReqFromDevice(dev)))
+				cmds = append(cmds, msgs.UpdateMirDevice(store.Bus, mir_models.NewUpdateDeviceMetaReqFromDevice(dev)))
 			}
 		}
 

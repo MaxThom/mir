@@ -6,11 +6,11 @@ import (
 	"os"
 
 	"github.com/alecthomas/kong"
-	"github.com/maxthom/mir/interfaces/cli"
-	"github.com/maxthom/mir/interfaces/tui"
-	"github.com/maxthom/mir/libs/boiler/mir_config"
-	"github.com/maxthom/mir/libs/boiler/mir_log"
-	bus "github.com/maxthom/mir/libs/external/natsio"
+	"github.com/maxthom/mir/internal/libs/boiler/mir_config"
+	"github.com/maxthom/mir/internal/libs/boiler/mir_log"
+	bus "github.com/maxthom/mir/internal/libs/external/natsio"
+	"github.com/maxthom/mir/internal/ui/cli"
+	"github.com/maxthom/mir/internal/ui/tui"
 	"github.com/rs/zerolog"
 )
 
