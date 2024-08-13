@@ -19,6 +19,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/boiler/mir_config"
 	"github.com/maxthom/mir/internal/libs/boiler/mir_log"
 	"github.com/maxthom/mir/internal/libs/boiler/mir_signals"
+	"github.com/maxthom/mir/internal/libs/external/influx"
 	"github.com/maxthom/mir/internal/libs/external/surreal"
 	"github.com/maxthom/mir/internal/services/protoflux_srv"
 	"github.com/maxthom/mir/pkgs/module/mir"
@@ -174,6 +175,9 @@ func run(
 
 	// Timeseries Database
 	lpClient := influxdb2.NewClient(cfg.TelemetryServer.Url, cfg.TelemetryServer.Token)
+	if err := influx.CreateOrgAndBucket(ctx, lpClient, cfg.TelemetryServer.Org, cfg.TelemetryServer.Bucket); err != nil {
+		return err
+	}
 	lpWriter := lpClient.WriteAPI(cfg.TelemetryServer.Org, cfg.TelemetryServer.Bucket)
 	log.Info().Str("url", cfg.TelemetryServer.Url).Msg("connected to puthost")
 

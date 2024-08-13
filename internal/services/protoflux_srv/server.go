@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"sync"
 	"time"
 
@@ -19,13 +18,11 @@ import (
 	"github.com/nats-io/nats.go"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
-	"google.golang.org/protobuf/types/dynamicpb"
 )
 
 type ProtoFluxServer struct {
@@ -279,64 +276,4 @@ func getProtoSchemaFromDevice(m *mir.Mir, deviceId string) (*protoregistry.Files
 	}
 
 	return reg, pbSet, nil
-}
-
-func (s *ProtoFluxServer) listenPlayground(ctx context.Context) {
-	s.m.Subscribe(mir.Stream().V1Alpha().Telemetry(
-		func(msg *nats.Msg, deviceId string, protoMsgName string) {
-			fmt.Println("received data > ")
-			schemaResp := &device_api.SchemaRetrieveResponse{}
-			err := s.m.SendRequest(mir.Command().V1Alpha().RequestSchema(deviceId, schemaResp))
-			if err != nil {
-				fmt.Println(err)
-			} else if schemaResp.GetError() != nil {
-				fmt.Println(schemaResp.GetError())
-			}
-
-			pbSet := new(descriptorpb.FileDescriptorSet)
-			if err := proto.Unmarshal(schemaResp.GetSchema(), pbSet); err != nil {
-				log.Fatalf("Failed to unmarshal descriptor: %v", err)
-			}
-
-			// Create registry from the FileDescriptorSet
-			reg, err := protodesc.NewFiles(pbSet)
-			if err != nil {
-				log.Fatalf("Failed to create registry: %v", err)
-			}
-
-			// Find the descriptor by name
-			desc, err := reg.FindDescriptorByName(protoreflect.FullName(protoMsgName))
-			if err != nil {
-				log.Fatalf("Failed to find descriptor: %v", err)
-			}
-
-			// Unmarshal data with the descriptor
-			msgType := desc.(protoreflect.MessageDescriptor)
-			dynMsg := dynamicpb.NewMessage(msgType)
-			if err := proto.Unmarshal(msg.Data, dynMsg); err != nil {
-				log.Fatalf("Failed to deserialize message: %v", err)
-			}
-			fmt.Println(dynMsg)
-			b, err := protojson.Marshal(dynMsg.Interface())
-			if err != nil {
-				fmt.Println(err)
-			}
-			fmt.Println(string(b))
-			fmt.Println("schema size ", len(schemaResp.GetSchema()))
-			fmt.Println("datapoint size ", len(msg.Data))
-			fmt.Println("json dp size ", len(b))
-
-			// Write data to influxdb
-			fn, err := proto_lineprotocol.GenerateMarshalFn(map[string]string{
-				"deviceId":  deviceId,
-				"namespace": "mir", // TODO find device namespace
-			}, desc.(protoreflect.MessageDescriptor))
-			if err != nil {
-				log.Fatalf("Failed to generate marshal function: %v", err)
-			}
-
-			lp := fn(msg.Data, map[string]string{})
-			fmt.Println(lp)
-			s.tlmStore.WriteDatapoint(lp)
-		}))
 }

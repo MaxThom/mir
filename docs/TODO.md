@@ -19,6 +19,7 @@
 - [x] integrate database
 - [x] read on surreal type
 - [x] add unit/integration tests
+- [ ] schema annotation for ts field
 - [ ] upload schema flow
 - [ ] cli/tui to upload, list and explore the schema?
 - [ ] work on protodash

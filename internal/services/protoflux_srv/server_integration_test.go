@@ -39,14 +39,13 @@ var b *bus.BusConn
 
 // TODO fix token, maybe no auth
 // TODO fix bug if device not started
-// TODO create bucket automaticly
 
 func TestMain(m *testing.M) {
 	// Setup
 	ctx, cancel := context.WithCancel(context.Background())
 	fmt.Println("Test Setup")
 
-	mSdk, b, db, _, lpWriter, lpQuery = test_utils.SetupAllExternalsPanic(test_utils.ConnsInfo{
+	mSdk, b, db, _, lpWriter, lpQuery = test_utils.SetupAllExternalsPanic(ctx, test_utils.ConnsInfo{
 		Name:   "test_protoflux",
 		BusUrl: busUrl,
 		Surreal: test_utils.SurrealInfo{
@@ -60,7 +59,7 @@ func TestMain(m *testing.M) {
 			Url:    "http://localhost:8086/",
 			Token:  "-NKzSScFgqhcAl-1S40otGUwuBEp8SmHoxFIYJVARrrp-a-H81Z28BfuRlUzAKVeH9-yIYXyMS0eL6TNeJfdOw==",
 			Org:    "Mir",
-			Bucket: "mir",
+			Bucket: "mir_integration_test",
 		},
 	})
 	protofluxSrv := NewProtoFluxServer(logTest, mSdk, mng.NewSurrealDeviceStore(db), ts.NewInfluxTelemetryStore(lpWriter))
