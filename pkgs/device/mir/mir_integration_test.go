@@ -50,7 +50,7 @@ func TestMain(m *testing.M) {
 	fmt.Println(" -> db")
 	fmt.Println(" -> cleaning db")
 
-	coreSrv := core_srv.NewCore(log, b, db, mng.NewSurrealDeviceStore(db))
+	coreSrv := core_srv.NewCore(log, b, mng.NewSurrealDeviceStore(db))
 	go func() {
 		coreSrv.Listen(ctx)
 	}()

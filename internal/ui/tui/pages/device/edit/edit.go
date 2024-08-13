@@ -87,7 +87,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmds = append(cmds, msgs.RouteChangeWithDataCmd("/devices", device_list.InputData{SilentFetch: true}))
 			} else {
 				l.Debug().Str("edit", "unmarshalled").Msg(fmt.Sprintf("%v", dev))
-				cmds = append(cmds, msgs.UpdateMirDevice(store.Bus, mir_models.NewUpdateDeviceMetaReqFromDevice(dev)))
+				cmds = append(cmds, msgs.UpdateMirDevice(store.Bus, mir_models.NewUpdateDeviceReqFromDevice(dev)))
 			}
 		}
 

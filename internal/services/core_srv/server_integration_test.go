@@ -35,7 +35,7 @@ func TestMain(m *testing.M) {
 
 	db = test_utils.SetupSurrealDbConnsPanic("ws://127.0.0.1:8000/rpc", "root", "root", "global", "mir")
 	b = test_utils.SetupNatsConPanic(busUrl)
-	coreSrv := NewCore(log, b, db, mng.NewSurrealDeviceStore(db))
+	coreSrv := NewCore(log, b, mng.NewSurrealDeviceStore(db))
 	go func() {
 		coreSrv.Listen(ctx)
 	}()

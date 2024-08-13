@@ -7,7 +7,7 @@ import (
 	"github.com/maxthom/mir/pkgs/api/proto/v1alpha/core_api"
 )
 
-func NewUpdateDeviceMetaReqFromDevice(d Device) *core_api.UpdateDeviceRequest {
+func NewUpdateDeviceReqFromDevice(d Device) *core_api.UpdateDeviceRequest {
 	toUpdateMap := func(m map[string]*string) map[string]*common_api.OptString {
 		opt := map[string]*common_api.OptString{}
 		for k, v := range m {

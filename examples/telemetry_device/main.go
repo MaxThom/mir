@@ -54,11 +54,27 @@ func main() {
 	go func() {
 		for {
 			time.Sleep(3 * time.Second)
-			data := gen.Telemetry{
+			data := gen.EnvironmentTlm{
 				Temperature: rand.Int32N(101),
 				Pressure:    rand.Int32N(101),
 				Humidity:    rand.Int32N(101),
 				WindSpeed:   rand.Int32N(101),
+			}
+			m.SendTelemetry(&data)
+
+			l.Debug().Str("module", "telemetry").Any("data", data).Msg("send tlm")
+		}
+	}()
+
+	go func() {
+		for {
+			amp := rand.Float64() * 100
+			volt := rand.Float64() * 100
+			time.Sleep(5 * time.Second)
+			data := gen.PowerConsuption{
+				Amp:     amp,
+				Voltage: volt,
+				Power:   amp * volt,
 			}
 			m.SendTelemetry(&data)
 
@@ -74,7 +90,7 @@ func main() {
 
 func PlayWithProtoSchema() {
 	// Test data
-	data := gen.Telemetry{
+	data := gen.EnvironmentTlm{
 		Temperature: 25,
 		Pressure:    58,
 		Humidity:    80,
@@ -143,7 +159,7 @@ func PlayWithProtoSchema() {
 	fmt.Println(dynMsg)
 
 	// Unmarshal data with the specific struct
-	dataBack := gen.Telemetry{}
+	dataBack := gen.EnvironmentTlm{}
 	if err := proto.Unmarshal(dataBytes, &dataBack); err != nil {
 		log.Fatalf("Failed to deserialize message: %v", err)
 	}
