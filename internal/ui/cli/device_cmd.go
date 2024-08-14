@@ -21,6 +21,7 @@ type DeviceCmd struct {
 	Create DeviceCreateCmd `cmd:"" help:"Create a new device"`
 	Update DeviceUpdateCmd `cmd:"" help:"Update a device"`
 	Delete DeviceDeleteCmd `cmd:"" help:"Delete a device"`
+	Schema DeviceSchemaCmd `cmd:"" help:"Upload and explore device proto schema"`
 }
 
 type DeviceListCmd struct {
@@ -48,7 +49,7 @@ type DeviceUpdateCmd struct {
 	Name      *string           `help:"Set device name"`
 	Namespace *string           `help:"Set device namespace"`
 	Desc      *string           `help:"Set device description"`
-	Disabled  *bool             `help:"if not enabled, communication is cut"`
+	Disabled  *bool             `help:"If not enabled, communication is cut"`
 	Labels    map[string]string `help:"Set labels to uniquely tag the device (set to null to remove)"`
 	Anno      map[string]string `help:"Set annotations to add extra information to the devie (set to null to remove)"`
 }
