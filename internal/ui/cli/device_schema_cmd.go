@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/maxthom/mir/internal/clients/core_client"
+	"github.com/maxthom/mir/internal/libs/compression/zstd"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	"github.com/maxthom/mir/pkgs/api/proto/v1alpha/core_api"
 	"github.com/maxthom/mir/pkgs/mir_models"
@@ -27,8 +28,8 @@ type SchemaUploadCmd struct {
 }
 
 type SchemaExploreCmd struct {
-	// TODO could be target, and we download multiple files
-	TargetDeviceId string `short:"d" help:"DeviceID to retrieve schema from"`
+	Output string `short:"o" help:"output format for response" default:"json"`
+	Target `embed:"" prefix:"target."`
 }
 
 func (d *SchemaUploadCmd) Validate() error {
@@ -142,8 +143,12 @@ func (d *SchemaExploreCmd) Validate() error {
 		Details: []string{},
 	}
 
-	if d.TargetDeviceId == "" {
-		err.Details = append(err.Details, "Must specify a device id")
+	if len(d.Target.Ids) == 0 &&
+		len(d.Target.Names) == 0 &&
+		len(d.Target.Namespaces) == 0 &&
+		len(d.Target.Labels) == 0 &&
+		len(d.Target.Anno) == 0 {
+		err.Details = append(err.Details, "Must specify targets")
 	}
 
 	if len(err.Details) > 0 {
@@ -152,7 +157,111 @@ func (d *SchemaExploreCmd) Validate() error {
 	return nil
 }
 
+type schemaDevices struct {
+	DeviceIds []string
+	PbSet     *descriptorpb.FileDescriptorSet
+}
+
 func (d *SchemaExploreCmd) Run(c CLI) error {
+	var err error
+	msgBus, err := bus.New(c.Target)
+	if err != nil {
+		e := MirConnectionError{Target: c.Target, e: err}
+		fmt.Println(e)
+		return e
+	}
+	defer msgBus.Close()
+
+	req := &core_api.ListDeviceRequest{
+		Targets: &core_api.Targets{
+			Ids:         d.Target.Ids,
+			Names:       d.Target.Names,
+			Namespaces:  d.Target.Namespaces,
+			Labels:      d.Target.Labels,
+			Annotations: d.Target.Anno,
+		},
+	}
+	resp, err := core_client.PublishDeviceListRequest(msgBus, req)
+	if err != nil {
+		e := MirRequestError{Route: "device.list", e: err}
+		fmt.Println(e)
+		return e
+	}
+	if resp.GetError() != nil {
+		e := MirResponseError{
+			Route: "device.list",
+			e: MirHttpError{
+				Code:    resp.GetError().GetCode(),
+				Message: resp.GetError().GetMessage(),
+				Details: resp.GetError().GetDetails(),
+			}}
+		fmt.Println(e)
+		return e
+	}
+
+	devs := resp.GetOk().GetDevices()
+	if len(devs) == 0 {
+		e := MirDeviceNotFoundError{
+			Targets: &core_api.Targets{
+				Ids:         d.Target.Ids,
+				Names:       d.Target.Names,
+				Namespaces:  d.Target.Namespaces,
+				Labels:      d.Target.Labels,
+				Annotations: d.Target.Anno,
+			},
+		}
+		fmt.Println(e)
+		return e
+	}
+
+	devSchemas := map[string]schemaDevices{}
+	errs := []MirProcessError{}
+	for _, dev := range devs {
+		if dev.Status.Schema == nil || dev.Status.Schema.CompressedSchema == nil {
+			continue
+		}
+
+		bDecomp, err := zstd.DecompressData(dev.Status.Schema.CompressedSchema)
+		if err != nil {
+			errs = append(errs, MirProcessError{e: err})
+		}
+
+		pbSet := new(descriptorpb.FileDescriptorSet)
+		if err := proto.Unmarshal(bDecomp, pbSet); err != nil {
+			errs = append(errs, MirProcessError{e: err})
+		}
+
+		sch, ok := devSchemas[string(bDecomp)]
+		if !ok {
+			devSchemas[string(bDecomp)] = schemaDevices{
+				DeviceIds: []string{dev.Spec.DeviceId},
+				PbSet:     pbSet,
+			}
+		} else {
+			sch.DeviceIds = append(sch.DeviceIds, dev.Spec.DeviceId)
+			devSchemas[string(bDecomp)] = sch
+		}
+	}
+
+	devSchemasArray := []struct {
+		DeviceIds []string
+		PbSet     *descriptorpb.FileDescriptorSet
+	}{}
+
+	for _, schema := range devSchemas {
+		devSchemasArray = append(devSchemasArray, schema)
+	}
+
+	if len(errs) > 0 {
+		fmt.Println(errs)
+	}
+
+	if out, e := MarhsalResponse(d.Output, devSchemasArray); e != nil {
+		fmt.Println(e)
+		return e
+	} else {
+		fmt.Println(out)
+	}
 
 	return nil
 }

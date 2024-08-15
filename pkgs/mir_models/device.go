@@ -54,7 +54,8 @@ type Schema struct {
 }
 
 func (s Schema) GetProtoSchema() (*protoregistry.Files, error) {
-	return DecompressFileDescriptorSet(s.CompressedSchema)
+	_, reg, err := DecompressFileDescriptorSet(s.CompressedSchema)
+	return reg, err
 }
 
 func (s *Schema) SetProtoSchema(desc *descriptorpb.FileDescriptorSet) error {
@@ -101,20 +102,20 @@ func CompressFileDescriptorSet(desc *descriptorpb.FileDescriptorSet) ([]byte, er
 	return b, nil
 }
 
-func DecompressFileDescriptorSet(b []byte) (*protoregistry.Files, error) {
+func DecompressFileDescriptorSet(b []byte) (*descriptorpb.FileDescriptorSet, *protoregistry.Files, error) {
 	bDecomp, err := zstd.DecompressData(b)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	pbSet := new(descriptorpb.FileDescriptorSet)
 	if err := proto.Unmarshal(bDecomp, pbSet); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	reg, err := protodesc.NewFiles(pbSet)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return reg, nil
+	return pbSet, reg, nil
 }

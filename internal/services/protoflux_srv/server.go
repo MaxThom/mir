@@ -187,7 +187,7 @@ func (s *ProtoFluxServer) reconcileDeviceSchema(deviceId string, forceDeviceFetc
 		if len(devs) > 0 {
 			if devs[0].Status.Schema.CompressedSchema != nil &&
 				len(devs[0].Status.Schema.CompressedSchema) != 0 {
-				reg, err := mir_models.DecompressFileDescriptorSet(devs[0].Status.Schema.CompressedSchema)
+				_, reg, err := mir_models.DecompressFileDescriptorSet(devs[0].Status.Schema.CompressedSchema)
 				if err == nil {
 					l.Debug().Str("deviceId", deviceId).Msg("Found proto schema from device in database")
 					return reg, nil
