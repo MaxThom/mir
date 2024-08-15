@@ -3,6 +3,8 @@ package cli
 import (
 	"fmt"
 	"strings"
+
+	"github.com/maxthom/mir/pkgs/api/proto/v1alpha/core_api"
 )
 
 type MirHttpError struct {
@@ -68,4 +70,12 @@ type MirProcessError struct {
 
 func (e MirProcessError) Error() string {
 	return fmt.Sprintf("error processing request. %s\n%s", e.Msg, e.e)
+}
+
+type MirDeviceNotFoundError struct {
+	Targets *core_api.Targets
+}
+
+func (e MirDeviceNotFoundError) Error() string {
+	return fmt.Sprintf("no devices where found with targets. \n%s", e.Targets)
 }
