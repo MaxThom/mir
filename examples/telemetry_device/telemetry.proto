@@ -16,3 +16,9 @@ message PowerConsuption {
 	double amp = 2;
 	double power = 3;
 }
+
+message Gps {
+	double latitude = 1;
+	double longitude = 2;
+	double altitude = 3;
+}
