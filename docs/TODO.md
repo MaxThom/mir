@@ -21,5 +21,6 @@
 - [x] add unit/integration tests
 - [ ] schema annotation for ts field
 - [x] upload schema flow
+- [ ] prometheus metrics
 - [ ] cli/tui to upload, list and explore the schema?
 - [ ] work on protodash

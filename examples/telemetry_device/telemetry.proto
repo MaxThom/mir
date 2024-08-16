@@ -22,3 +22,13 @@ message Gps {
 	double longitude = 2;
 	double altitude = 3;
 }
+
+message Constelletion {
+	repeated Satellite satellites = 1;
+}
+
+message Satellite {
+	string id = 1;
+	int32 signal_strength = 2;
+	Gps gps = 3;
+}
