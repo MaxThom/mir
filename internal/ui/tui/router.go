@@ -18,6 +18,7 @@ import (
 	device_create "github.com/maxthom/mir/internal/ui/tui/pages/device/create"
 	device_edit "github.com/maxthom/mir/internal/ui/tui/pages/device/edit"
 	device_list "github.com/maxthom/mir/internal/ui/tui/pages/device/list"
+	device_schema "github.com/maxthom/mir/internal/ui/tui/pages/device/schema"
 	"github.com/maxthom/mir/internal/ui/tui/pages/mainmenu"
 	"github.com/maxthom/mir/internal/ui/tui/store"
 	"github.com/maxthom/mir/internal/ui/tui/styles"
@@ -48,6 +49,7 @@ func NewModel(ctx context.Context, log zerolog.Logger, mirUrl string) *Model {
 		"/devices":        device_list.NewModel(ctx),
 		"/devices/create": device_create.NewModel(ctx),
 		"/devices/edit":   device_edit.NewModel(ctx),
+		"/devices/schema": device_schema.NewModel(ctx),
 		"/twins":          nil,
 		"/telemetry":      nil,
 	}

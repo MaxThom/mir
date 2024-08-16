@@ -55,7 +55,6 @@ func main() {
 				WindSpeed:   rand.Int32N(101),
 			}
 			m.SendTelemetry(&data)
-
 			l.Debug().Str("module", "telemetry").Any("data", data).Msg("send tlm")
 		}
 	}()
@@ -71,7 +70,46 @@ func main() {
 				Power:   amp * volt,
 			}
 			m.SendTelemetry(&data)
+			l.Debug().Str("module", "telemetry").Any("data", data).Msg("send tlm")
+		}
+	}()
 
+	go func() {
+		for {
+			time.Sleep(3 * time.Second)
+
+			data := gen.Constelletion{
+				Satellites: []*gen.Satellite{
+					{
+						Id:             "SAT-1",
+						SignalStrength: 5,
+						Gps: &gen.Gps{
+							Latitude:  rand.Float64() * 100,
+							Longitude: rand.Float64() * 100,
+							Altitude:  rand.Float64() * 1000,
+						},
+					},
+					{
+						Id:             "SAT-2",
+						SignalStrength: 4,
+						Gps: &gen.Gps{
+							Latitude:  rand.Float64() * 100,
+							Longitude: rand.Float64() * 100,
+							Altitude:  rand.Float64() * 1000,
+						},
+					},
+					{
+						Id:             "SAT-3",
+						SignalStrength: 3,
+						Gps: &gen.Gps{
+							Latitude:  rand.Float64() * 100,
+							Longitude: rand.Float64() * 100,
+							Altitude:  rand.Float64() * 1000,
+						},
+					},
+				},
+			}
+			m.SendTelemetry(&data)
 			l.Debug().Str("module", "telemetry").Any("data", data).Msg("send tlm")
 		}
 	}()

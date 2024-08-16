@@ -149,7 +149,10 @@ func (s *ProtoFluxServer) Listen(ctx context.Context) {
 					}
 					s.devSchemas[deviceId] = devSchema
 					s.devSchemasLock.Unlock()
-					fn, _ = generateIngesters(devSchema, protoMsgName)
+					fn, err = generateIngesters(devSchema, protoMsgName)
+					if err != nil {
+						l.Warn().Err(err).Msg("")
+					}
 					// TODO what to do with error here, we cant reask the schema
 					// forever if fail, we need maybe a retry of 2-3 times and else
 					// it creates an alert in prometheus

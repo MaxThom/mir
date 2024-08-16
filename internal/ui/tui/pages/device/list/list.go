@@ -28,6 +28,7 @@ var (
 	l                        zerolog.Logger
 	menuOption_device_create string = "/devices/create"
 	menuOption_device_edit   string = "/devices/edit"
+	menuOption_device_schema string = "/devices/schema"
 	v                        strings.Builder
 )
 
@@ -216,6 +217,12 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, msgs.ErrCmd(fmt.Errorf("no device selected"), 2*time.Second)
 				}
 				return m, msgs.RouteChangeWithDataCmd(menuOption_device_edit, mir_models.NewDeviceFromProtoDevice(device))
+			} else if msg.String() == "s" {
+				device, ok := rowToDevice(m.table.SelectedRow())
+				if !ok {
+					return m, msgs.ErrCmd(fmt.Errorf("no device selected"), 2*time.Second)
+				}
+				return m, msgs.RouteChangeWithDataCmd(menuOption_device_schema, mir_models.NewDeviceFromProtoDevice(device))
 			} else if msg.String() == "x" {
 				m.table.Blur()
 				m.deleteInput.SetValue("")
@@ -250,13 +257,14 @@ func (m *Model) View() string {
 type keyMap map[string]key.Binding
 
 func (k keyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k["search"], k["create"], k["edit"], k["delete"]}
+	return []key.Binding{k["search"], k["create"], k["edit"], k["schema"], k["delete"]}
 }
 
 func (k keyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{k["search"], k["create"]},
 		{k["edit"], k["delete"]},
+		{k["schema"]},
 		{k["up"], k["down"]},
 	}
 }
@@ -277,6 +285,10 @@ var keys = keyMap{
 	"delete": key.NewBinding(
 		key.WithKeys("x"),
 		key.WithHelp("x", "delete"),
+	),
+	"schema": key.NewBinding(
+		key.WithKeys("s"),
+		key.WithHelp("s", "schema"),
 	),
 	"up": key.NewBinding(
 		key.WithKeys("up", "k"),
