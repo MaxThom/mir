@@ -4,7 +4,12 @@ package v1alpha.telemetry_example;
 
 option go_package = "gen/";
 
+
+import "../../pkgs/device/schema/v1alpha/mir.proto";
+
 message EnvironmentTlm {
+	option (mir.message_type) = TELEMETRY;
+
 	int32 temperature = 1;
 	int32 pressure = 2;
 	int32 humidity = 3;
