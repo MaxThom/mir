@@ -14,8 +14,8 @@ import (
 	"github.com/maxthom/mir/internal/externals/mng"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	"github.com/maxthom/mir/internal/services/core_srv"
-	"github.com/maxthom/mir/pkgs/api/proto/v1alpha/core_api"
-	"github.com/maxthom/mir/pkgs/device/mir/gen/proto_test"
+	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
+	mir_device_testv1 "github.com/maxthom/mir/pkgs/device/mir/proto_test/gen/mir_device_test/v1"
 	"github.com/maxthom/mir/pkgs/mir_models"
 	logger "github.com/rs/zerolog/log"
 	"github.com/surrealdb/surrealdb.go"
@@ -58,7 +58,7 @@ func TestMain(m *testing.M) {
 	time.Sleep(1 * time.Second)
 
 	// Prepare test data
-	devReq := &core_api.CreateDeviceRequest{
+	devReq := &core_apiv1.CreateDeviceRequest{
 		DeviceId: "TestLaunchHearthbeat",
 		Labels: map[string]string{
 			"factory": "B",
@@ -71,7 +71,7 @@ func TestMain(m *testing.M) {
 		},
 	}
 
-	if _, err := createDevices(b, []*core_api.CreateDeviceRequest{devReq}); err != nil {
+	if _, err := createDevices(b, []*core_apiv1.CreateDeviceRequest{devReq}); err != nil {
 		panic(err)
 	}
 	time.Sleep(1 * time.Second)
@@ -85,8 +85,8 @@ func TestMain(m *testing.M) {
 
 	// Teardown
 	fmt.Println("Test Teardown")
-	if _, err := deleteDevices(b, &core_api.DeleteDeviceRequest{
-		Targets: &core_api.Targets{
+	if _, err := deleteDevices(b, &core_apiv1.DeleteDeviceRequest{
+		Targets: &core_apiv1.Targets{
 			Labels: map[string]string{
 				"test": "mir_device",
 			},
@@ -127,8 +127,8 @@ func TestLaunchHearthbeat(t *testing.T) {
 
 	// Takes some time for the hearthbeat to be sent
 	time.Sleep(15 * time.Second)
-	resp, err := core_client.PublishDeviceListRequest(b, &core_api.ListDeviceRequest{
-		Targets: &core_api.Targets{
+	resp, err := core_client.PublishDeviceListRequest(b, &core_apiv1.ListDeviceRequest{
+		Targets: &core_apiv1.Targets{
 			Ids: []string{"TestLaunchHearthbeat"},
 		},
 	})
@@ -153,8 +153,8 @@ func TestLaunchHearthbeat(t *testing.T) {
 func TestRequestTelemetrySchema(t *testing.T) {
 	// Arrange
 	schemaBytes, err := marshalProtoFiles(
-		proto_test.File_proto_test_command_proto,
-		proto_test.File_proto_test_telemetry_proto,
+		mir_device_testv1.File_mir_device_test_v1_command_proto,
+		mir_device_testv1.File_mir_device_test_v1_telemetry_proto,
 	)
 	if err != nil {
 		t.Error(err)
@@ -164,10 +164,10 @@ func TestRequestTelemetrySchema(t *testing.T) {
 		Target("nats://127.0.0.1:4222").
 		LogLevel(LogLevelInfo).
 		TelemetrySchema(
-			proto_test.File_proto_test_command_proto,
+			mir_device_testv1.File_mir_device_test_v1_command_proto,
 		).
 		TelemetrySchemaProto(
-			protodesc.ToFileDescriptorProto(proto_test.File_proto_test_telemetry_proto),
+			protodesc.ToFileDescriptorProto(mir_device_testv1.File_mir_device_test_v1_telemetry_proto),
 		).
 		Build()
 	if err != nil {
@@ -219,8 +219,8 @@ func deleteDevicesDb(t *testing.T, db *surrealdb.DB, ids []string) error {
 	return nil
 }
 
-func createDevices(bus *bus.BusConn, devices []*core_api.CreateDeviceRequest) ([]*core_api.CreateDeviceResponse, error) {
-	responses := []*core_api.CreateDeviceResponse{}
+func createDevices(bus *bus.BusConn, devices []*core_apiv1.CreateDeviceRequest) ([]*core_apiv1.CreateDeviceResponse, error) {
+	responses := []*core_apiv1.CreateDeviceResponse{}
 	for _, dev := range devices {
 		resp, err := core_client.PublishDeviceCreateRequest(bus, dev)
 		responses = append(responses, resp)
@@ -231,7 +231,7 @@ func createDevices(bus *bus.BusConn, devices []*core_api.CreateDeviceRequest) ([
 	return responses, nil
 }
 
-func deleteDevices(bus *bus.BusConn, req *core_api.DeleteDeviceRequest) (*core_api.DeleteDeviceResponse, error) {
+func deleteDevices(bus *bus.BusConn, req *core_apiv1.DeleteDeviceRequest) (*core_apiv1.DeleteDeviceResponse, error) {
 	resp, err := core_client.PublishDeviceDeleteRequest(bus, req)
 	if err != nil {
 		return nil, err

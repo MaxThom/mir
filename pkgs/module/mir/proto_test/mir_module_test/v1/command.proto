@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package mir_module_test.v1;
+
+message Command {
+	int32 power = 1;
+	bool valve_open = 2;
+	int32 gaz_level = 3;
+}

@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package protoflux_test.v1;
+
+message EnvTlm {
+	int32 temperature = 1;
+	int32 pressure = 2;
+	int32 humidity = 3;
+}
+
+message PowerTlm {
+	double amp = 1;
+	double volt = 2;
+	double power = 3;
+}

@@ -17,8 +17,8 @@ import (
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	"github.com/maxthom/mir/internal/libs/test_utils"
 	"github.com/maxthom/mir/internal/services/core_srv"
-	"github.com/maxthom/mir/internal/services/protoflux_srv/gen/proto_test"
-	"github.com/maxthom/mir/pkgs/api/proto/v1alpha/core_api"
+	protoflux_testv1 "github.com/maxthom/mir/internal/services/protoflux_srv/proto_test/gen/protoflux_test/v1"
+	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	mirDevice "github.com/maxthom/mir/pkgs/device/mir"
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/maxthom/mir/pkgs/module/mir"
@@ -107,7 +107,7 @@ func TestPublishDevicePushTelemetry(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_push_tlm"
-	reqCreate := &core_api.CreateDeviceRequest{
+	reqCreate := &core_apiv1.CreateDeviceRequest{
 		DeviceId:  id,
 		Name:      id,
 		Namespace: "testing_core",
@@ -120,8 +120,8 @@ func TestPublishDevicePushTelemetry(t *testing.T) {
 	}
 
 	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).TelemetrySchema(
-		proto_test.File_proto_test_command_proto,
-		proto_test.File_proto_test_telemetry_proto,
+		protoflux_testv1.File_protoflux_test_v1_telemetry_proto,
+		protoflux_testv1.File_protoflux_test_v1_command_proto,
 	).Build()
 	if err != nil {
 		t.Error(err)
@@ -144,7 +144,7 @@ func TestPublishDevicePushTelemetry(t *testing.T) {
 		i := 0
 		for i < 5 {
 			time.Sleep(1 * time.Second)
-			data := proto_test.EnvTlm{
+			data := protoflux_testv1.EnvTlm{
 				Temperature: int32(i * 5),
 				Pressure:    int32(i * 10),
 				Humidity:    int32(i * 15),
@@ -160,7 +160,7 @@ func TestPublishDevicePushTelemetry(t *testing.T) {
 			time.Sleep(1 * time.Second)
 			amp := float64(i * 5.0)
 			volt := float64(i * 10.0)
-			data := proto_test.PowerTlm{
+			data := protoflux_testv1.PowerTlm{
 				Amp:   amp,
 				Volt:  volt,
 				Power: amp * volt,
@@ -173,8 +173,8 @@ func TestPublishDevicePushTelemetry(t *testing.T) {
 	wgTlm.Wait()
 
 	// Assert
-	respList, err := core_client.PublishDeviceListRequest(b, &core_api.ListDeviceRequest{
-		Targets: &core_api.Targets{
+	respList, err := core_client.PublishDeviceListRequest(b, &core_apiv1.ListDeviceRequest{
+		Targets: &core_apiv1.Targets{
 			Ids: []string{id},
 		},
 	})
@@ -185,8 +185,8 @@ func TestPublishDevicePushTelemetry(t *testing.T) {
 	}
 	devDb := respList.GetOk().Devices[0]
 	originalSchemaBytes, err := mir_models.MarhsalProtoFiles(
-		proto_test.File_proto_test_telemetry_proto,
-		proto_test.File_proto_test_command_proto,
+		protoflux_testv1.File_protoflux_test_v1_telemetry_proto,
+		protoflux_testv1.File_protoflux_test_v1_command_proto,
 	)
 	if err != nil {
 		t.Error(err)
@@ -223,7 +223,7 @@ func TestPublishDeviceSchemaAlreadyPresent(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_schema_present"
-	reqCreate := &core_api.CreateDeviceRequest{
+	reqCreate := &core_apiv1.CreateDeviceRequest{
 		DeviceId:  id,
 		Name:      id,
 		Namespace: "testing_core",
@@ -235,19 +235,19 @@ func TestPublishDeviceSchemaAlreadyPresent(t *testing.T) {
 		},
 	}
 	compSch, err := mir_models.CompressProtoFiles(
-		proto_test.File_proto_test_telemetry_proto,
-		proto_test.File_proto_test_command_proto,
+		protoflux_testv1.File_protoflux_test_v1_telemetry_proto,
+		protoflux_testv1.File_protoflux_test_v1_command_proto,
 	)
 	if err != nil {
 		t.Error(err)
 	}
 	timeFetch := time.Date(1992, 10, 14, 14, 20, 00, 00, time.UTC)
-	reqUpd := &core_api.UpdateDeviceRequest{
-		Targets: &core_api.Targets{
+	reqUpd := &core_apiv1.UpdateDeviceRequest{
+		Targets: &core_apiv1.Targets{
 			Ids: []string{id},
 		},
-		Status: &core_api.UpdateDeviceRequest_Status{
-			Schema: &core_api.UpdateDeviceRequest_Schema{
+		Status: &core_apiv1.UpdateDeviceRequest_Status{
+			Schema: &core_apiv1.UpdateDeviceRequest_Schema{
 				CompressedSchema: compSch,
 				LastSchemaFetch:  mir_models.AsProtoTimestamp(timeFetch),
 			},
@@ -255,8 +255,8 @@ func TestPublishDeviceSchemaAlreadyPresent(t *testing.T) {
 	}
 
 	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).TelemetrySchema(
-		proto_test.File_proto_test_command_proto,
-		proto_test.File_proto_test_telemetry_proto,
+		protoflux_testv1.File_protoflux_test_v1_telemetry_proto,
+		protoflux_testv1.File_protoflux_test_v1_command_proto,
 	).Build()
 	if err != nil {
 		t.Error(err)
@@ -285,7 +285,7 @@ func TestPublishDeviceSchemaAlreadyPresent(t *testing.T) {
 		i := 0
 		for i < 5 {
 			time.Sleep(1 * time.Second)
-			data := proto_test.EnvTlm{
+			data := protoflux_testv1.EnvTlm{
 				Temperature: int32(i * 5),
 				Pressure:    int32(i * 10),
 				Humidity:    int32(i * 15),
@@ -301,7 +301,7 @@ func TestPublishDeviceSchemaAlreadyPresent(t *testing.T) {
 			time.Sleep(1 * time.Second)
 			amp := float64(i * 5.0)
 			volt := float64(i * 10.0)
-			data := proto_test.PowerTlm{
+			data := protoflux_testv1.PowerTlm{
 				Amp:   amp,
 				Volt:  volt,
 				Power: amp * volt,
@@ -314,8 +314,8 @@ func TestPublishDeviceSchemaAlreadyPresent(t *testing.T) {
 	wgTlm.Wait()
 
 	// Assert
-	respList, err := core_client.PublishDeviceListRequest(b, &core_api.ListDeviceRequest{
-		Targets: &core_api.Targets{
+	respList, err := core_client.PublishDeviceListRequest(b, &core_apiv1.ListDeviceRequest{
+		Targets: &core_apiv1.Targets{
 			Ids: []string{id},
 		},
 	})
@@ -358,7 +358,7 @@ func TestPublishDeviceSchemaInvalid(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_invalid_schema"
-	reqCreate := &core_api.CreateDeviceRequest{
+	reqCreate := &core_apiv1.CreateDeviceRequest{
 		DeviceId:  id,
 		Name:      id,
 		Namespace: "testing_core",
@@ -370,22 +370,22 @@ func TestPublishDeviceSchemaInvalid(t *testing.T) {
 		},
 	}
 	badSch, err := mir_models.CompressProtoFiles(
-		proto_test.File_proto_test_invalid_proto,
+		protoflux_testv1.File_protoflux_test_v1_invalid_proto,
 	)
 	goodSch, err := mir_models.CompressProtoFiles(
-		proto_test.File_proto_test_telemetry_proto,
-		proto_test.File_proto_test_command_proto,
+		protoflux_testv1.File_protoflux_test_v1_telemetry_proto,
+		protoflux_testv1.File_protoflux_test_v1_command_proto,
 	)
 	if err != nil {
 		t.Error(err)
 	}
 	timeFetch := time.Date(1992, 10, 14, 14, 20, 00, 00, time.UTC)
-	reqUpd := &core_api.UpdateDeviceRequest{
-		Targets: &core_api.Targets{
+	reqUpd := &core_apiv1.UpdateDeviceRequest{
+		Targets: &core_apiv1.Targets{
 			Ids: []string{id},
 		},
-		Status: &core_api.UpdateDeviceRequest_Status{
-			Schema: &core_api.UpdateDeviceRequest_Schema{
+		Status: &core_apiv1.UpdateDeviceRequest_Status{
+			Schema: &core_apiv1.UpdateDeviceRequest_Schema{
 				CompressedSchema: badSch,
 				LastSchemaFetch:  mir_models.AsProtoTimestamp(timeFetch),
 			},
@@ -393,8 +393,8 @@ func TestPublishDeviceSchemaInvalid(t *testing.T) {
 	}
 
 	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).TelemetrySchema(
-		proto_test.File_proto_test_command_proto,
-		proto_test.File_proto_test_telemetry_proto,
+		protoflux_testv1.File_protoflux_test_v1_telemetry_proto,
+		protoflux_testv1.File_protoflux_test_v1_command_proto,
 	).Build()
 	if err != nil {
 		t.Error(err)
@@ -423,7 +423,7 @@ func TestPublishDeviceSchemaInvalid(t *testing.T) {
 		i := 0
 		for i < 5 {
 			time.Sleep(1 * time.Second)
-			data := proto_test.EnvTlm{
+			data := protoflux_testv1.EnvTlm{
 				Temperature: int32(i * 5),
 				Pressure:    int32(i * 10),
 				Humidity:    int32(i * 15),
@@ -439,7 +439,7 @@ func TestPublishDeviceSchemaInvalid(t *testing.T) {
 			time.Sleep(1 * time.Second)
 			amp := float64(i * 5.0)
 			volt := float64(i * 10.0)
-			data := proto_test.PowerTlm{
+			data := protoflux_testv1.PowerTlm{
 				Amp:   amp,
 				Volt:  volt,
 				Power: amp * volt,
@@ -452,8 +452,8 @@ func TestPublishDeviceSchemaInvalid(t *testing.T) {
 	wgTlm.Wait()
 
 	// Assert
-	respList, err := core_client.PublishDeviceListRequest(b, &core_api.ListDeviceRequest{
-		Targets: &core_api.Targets{
+	respList, err := core_client.PublishDeviceListRequest(b, &core_apiv1.ListDeviceRequest{
+		Targets: &core_apiv1.Targets{
 			Ids: []string{id},
 		},
 	})

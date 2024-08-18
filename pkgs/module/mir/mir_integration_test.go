@@ -12,10 +12,10 @@ import (
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	"github.com/maxthom/mir/internal/libs/test_utils"
 	"github.com/maxthom/mir/internal/services/core_srv"
-	"github.com/maxthom/mir/pkgs/api/proto/v1alpha/core_api"
-	"github.com/maxthom/mir/pkgs/api/proto/v1alpha/device_api"
+	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
+	device_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/device_api"
 	mir_device "github.com/maxthom/mir/pkgs/device/mir"
-	"github.com/maxthom/mir/pkgs/module/mir/test/gen/proto_test"
+	mir_module_testv1 "github.com/maxthom/mir/pkgs/module/mir/proto_test/gen/mir_module_test/v1"
 	"github.com/nats-io/nats.go"
 	logger "github.com/rs/zerolog/log"
 	"github.com/surrealdb/surrealdb.go"
@@ -40,7 +40,7 @@ func TestMain(m *testing.M) {
 	fmt.Println(" -> bus")
 	fmt.Println(" -> db")
 
-	coreSrv := core_srv.NewCore(log, b, db, mng.NewSurrealDeviceStore(db))
+	coreSrv := core_srv.NewCore(log, b, mng.NewSurrealDeviceStore(db))
 	go func() {
 		coreSrv.Listen(ctx)
 	}()
@@ -234,7 +234,7 @@ func TestRequestCreateDevice(t *testing.T) {
 		t.Error(err)
 	}
 	id := "create_device_test"
-	reqCreate := core_api.CreateDeviceRequest{
+	reqCreate := core_apiv1.CreateDeviceRequest{
 		DeviceId:  id,
 		Name:      id,
 		Namespace: "testing_module",
@@ -246,14 +246,14 @@ func TestRequestCreateDevice(t *testing.T) {
 	// Act
 	count := 0
 	if err = m.Subscribe(Event().V1Alpha().DeviceCreated(
-		func(msg *nats.Msg, deviceId string, d *core_api.Device) {
+		func(msg *nats.Msg, deviceId string, d *core_apiv1.Device) {
 			count += 1
 			msg.Ack()
 		})); err != nil {
 		t.Error(err)
 	}
 
-	var respCreate core_api.CreateDeviceResponse
+	var respCreate core_apiv1.CreateDeviceResponse
 	if err = m.SendRequest(Resquest().V1Alpha().CreateDevice(
 		reqCreate,
 		&respCreate,
@@ -279,7 +279,7 @@ func TestRequestUpdateDevice(t *testing.T) {
 		t.Error(err)
 	}
 	id := "update_device_test"
-	reqCreate := core_api.CreateDeviceRequest{
+	reqCreate := core_apiv1.CreateDeviceRequest{
 		DeviceId:  id,
 		Name:      id,
 		Namespace: "testing_module",
@@ -288,11 +288,11 @@ func TestRequestUpdateDevice(t *testing.T) {
 		},
 	}
 	newName := "update_device_test_renamed"
-	reqUpd := core_api.UpdateDeviceRequest{
-		Targets: &core_api.Targets{
+	reqUpd := core_apiv1.UpdateDeviceRequest{
+		Targets: &core_apiv1.Targets{
 			Ids: []string{id},
 		},
-		Meta: &core_api.UpdateDeviceRequest_Meta{
+		Meta: &core_apiv1.UpdateDeviceRequest_Meta{
 			Name: &newName,
 		},
 	}
@@ -300,14 +300,14 @@ func TestRequestUpdateDevice(t *testing.T) {
 	// Act
 	count := 0
 	if err = m.Subscribe(Event().V1Alpha().DeviceUpdated(
-		func(msg *nats.Msg, deviceId string, d *core_api.Device) {
+		func(msg *nats.Msg, deviceId string, d *core_apiv1.Device) {
 			count += 1
 			msg.Ack()
 		})); err != nil {
 		t.Error(err)
 	}
 
-	var respCreate core_api.CreateDeviceResponse
+	var respCreate core_apiv1.CreateDeviceResponse
 	if err = m.SendRequest(Resquest().V1Alpha().CreateDevice(
 		reqCreate,
 		&respCreate,
@@ -315,7 +315,7 @@ func TestRequestUpdateDevice(t *testing.T) {
 		t.Error(err)
 	}
 
-	var respUpd core_api.UpdateDeviceResponse
+	var respUpd core_apiv1.UpdateDeviceResponse
 	if err = m.SendRequest(Resquest().V1Alpha().UpdateDevice(
 		reqUpd,
 		&respUpd,
@@ -343,7 +343,7 @@ func TestRequestDeleteDevice(t *testing.T) {
 		t.Error(err)
 	}
 	id := "delete_device_test"
-	reqCreate := core_api.CreateDeviceRequest{
+	reqCreate := core_apiv1.CreateDeviceRequest{
 		DeviceId:  id,
 		Name:      id,
 		Namespace: "testing_module",
@@ -351,8 +351,8 @@ func TestRequestDeleteDevice(t *testing.T) {
 			"testing": "module",
 		},
 	}
-	reqDel := core_api.DeleteDeviceRequest{
-		Targets: &core_api.Targets{
+	reqDel := core_apiv1.DeleteDeviceRequest{
+		Targets: &core_apiv1.Targets{
 			Ids: []string{id},
 		},
 	}
@@ -360,14 +360,14 @@ func TestRequestDeleteDevice(t *testing.T) {
 	// Act
 	count := 0
 	if err = m.Subscribe(Event().V1Alpha().DeviceDeleted(
-		func(msg *nats.Msg, deviceId string, d *core_api.Device) {
+		func(msg *nats.Msg, deviceId string, d *core_apiv1.Device) {
 			count += 1
 			msg.Ack()
 		})); err != nil {
 		t.Error(err)
 	}
 
-	var respCreate core_api.CreateDeviceResponse
+	var respCreate core_apiv1.CreateDeviceResponse
 	if err = m.SendRequest(Resquest().V1Alpha().CreateDevice(
 		reqCreate,
 		&respCreate,
@@ -375,7 +375,7 @@ func TestRequestDeleteDevice(t *testing.T) {
 		t.Error(err)
 	}
 
-	var respDel core_api.DeleteDeviceResponse
+	var respDel core_apiv1.DeleteDeviceResponse
 	if err = m.SendRequest(Resquest().V1Alpha().DeleteDevice(
 		reqDel,
 		&respDel,
@@ -403,7 +403,7 @@ func TestRequestListDevice(t *testing.T) {
 		t.Error(err)
 	}
 	id := "list_device_test"
-	reqCreate := core_api.CreateDeviceRequest{
+	reqCreate := core_apiv1.CreateDeviceRequest{
 		DeviceId:  id,
 		Name:      id,
 		Namespace: "testing_module",
@@ -411,14 +411,14 @@ func TestRequestListDevice(t *testing.T) {
 			"testing": "module",
 		},
 	}
-	reqList := core_api.ListDeviceRequest{
-		Targets: &core_api.Targets{
+	reqList := core_apiv1.ListDeviceRequest{
+		Targets: &core_apiv1.Targets{
 			Ids: []string{id},
 		},
 	}
 
 	// Act
-	var respCreate core_api.CreateDeviceResponse
+	var respCreate core_apiv1.CreateDeviceResponse
 	if err = m.SendRequest(Resquest().V1Alpha().CreateDevice(
 		reqCreate,
 		&respCreate,
@@ -426,7 +426,7 @@ func TestRequestListDevice(t *testing.T) {
 		t.Error(err)
 	}
 
-	var respList core_api.ListDeviceResponse
+	var respList core_apiv1.ListDeviceResponse
 	if err = m.SendRequest(Resquest().V1Alpha().ListDevice(
 		reqList,
 		&respList,
@@ -449,8 +449,8 @@ func TestRequestRetrieveSchema(t *testing.T) {
 	// Arrange
 	id := "device_retrieve_schema"
 	schemaBytes, err := marshalProtoFiles(
-		proto_test.File_proto_test_command_proto,
-		proto_test.File_proto_test_telemetry_proto,
+		mir_module_testv1.File_mir_module_test_v1_command_proto,
+		mir_module_testv1.File_mir_module_test_v1_telemetry_proto,
 	)
 	if err != nil {
 		t.Error(err)
@@ -460,10 +460,10 @@ func TestRequestRetrieveSchema(t *testing.T) {
 		Target(busUrl).
 		LogLevel(mir_device.LogLevelInfo).
 		TelemetrySchema(
-			proto_test.File_proto_test_command_proto,
+			mir_module_testv1.File_mir_module_test_v1_command_proto,
 		).
 		TelemetrySchemaProto(
-			protodesc.ToFileDescriptorProto(proto_test.File_proto_test_telemetry_proto),
+			protodesc.ToFileDescriptorProto(mir_module_testv1.File_mir_module_test_v1_telemetry_proto),
 		).
 		Build()
 	if err != nil {
@@ -483,7 +483,7 @@ func TestRequestRetrieveSchema(t *testing.T) {
 	}
 
 	time.Sleep(1 * time.Second)
-	var respSchema device_api.SchemaRetrieveResponse
+	var respSchema device_apiv1.SchemaRetrieveResponse
 	if err = m.SendRequest(Command().V1Alpha().RequestSchema(
 		id,
 		&respSchema,

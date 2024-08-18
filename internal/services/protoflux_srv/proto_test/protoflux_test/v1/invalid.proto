@@ -1,0 +1,10 @@
+
+syntax = "proto3";
+
+package protoflux_test.v1;
+
+message Beurk {
+	int32 temperature = 1;
+	int32 pressure = 2;
+	int32 humidity = 3;
+}
