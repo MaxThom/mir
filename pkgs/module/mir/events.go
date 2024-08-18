@@ -3,7 +3,7 @@ package mir
 import (
 	"github.com/maxthom/mir/internal/clients"
 	"github.com/maxthom/mir/internal/clients/core_client"
-	"github.com/maxthom/mir/pkgs/api/proto/v1alpha/core_api"
+	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
 )
@@ -73,11 +73,11 @@ func (s deviceOfflineEvent) handler() nats.MsgHandler {
 // Device deleted event
 
 type deviceDeletedEvent struct {
-	fn func(msg *nats.Msg, deviceId string, device *core_api.Device)
+	fn func(msg *nats.Msg, deviceId string, device *core_apiv1.Device)
 }
 
 // Triggered every time a device get deleted
-func (s eventV1alpha) DeviceDeleted(fn func(msg *nats.Msg, deviceId string, device *core_api.Device)) *deviceDeletedEvent {
+func (s eventV1alpha) DeviceDeleted(fn func(msg *nats.Msg, deviceId string, device *core_apiv1.Device)) *deviceDeletedEvent {
 	return &deviceDeletedEvent{
 		fn: fn,
 	}
@@ -89,7 +89,7 @@ func (s deviceDeletedEvent) subject() string {
 
 func (s deviceDeletedEvent) handler() nats.MsgHandler {
 	return func(msg *nats.Msg) {
-		d := &core_api.Device{}
+		d := &core_apiv1.Device{}
 		_ = proto.Unmarshal(msg.Data, d)
 		s.fn(msg, clients.Subject(msg.Subject).GetId(), d)
 	}
@@ -98,11 +98,11 @@ func (s deviceDeletedEvent) handler() nats.MsgHandler {
 // Device created event
 
 type deviceCreatedEvent struct {
-	fn func(msg *nats.Msg, deviceId string, device *core_api.Device)
+	fn func(msg *nats.Msg, deviceId string, device *core_apiv1.Device)
 }
 
 // Triggered every time a device get created
-func (s eventV1alpha) DeviceCreated(fn func(msg *nats.Msg, deviceId string, device *core_api.Device)) *deviceCreatedEvent {
+func (s eventV1alpha) DeviceCreated(fn func(msg *nats.Msg, deviceId string, device *core_apiv1.Device)) *deviceCreatedEvent {
 	return &deviceCreatedEvent{
 		fn: fn,
 	}
@@ -114,7 +114,7 @@ func (s deviceCreatedEvent) subject() string {
 
 func (s deviceCreatedEvent) handler() nats.MsgHandler {
 	return func(msg *nats.Msg) {
-		d := &core_api.Device{}
+		d := &core_apiv1.Device{}
 		_ = proto.Unmarshal(msg.Data, d)
 		s.fn(msg, clients.Subject(msg.Subject).GetId(), d)
 	}
@@ -123,11 +123,11 @@ func (s deviceCreatedEvent) handler() nats.MsgHandler {
 // Device updated event
 
 type deviceUpdatedEvent struct {
-	fn func(msg *nats.Msg, deviceId string, device *core_api.Device)
+	fn func(msg *nats.Msg, deviceId string, device *core_apiv1.Device)
 }
 
 // Triggered every time a device get updated
-func (s eventV1alpha) DeviceUpdated(fn func(msg *nats.Msg, deviceId string, device *core_api.Device)) *deviceUpdatedEvent {
+func (s eventV1alpha) DeviceUpdated(fn func(msg *nats.Msg, deviceId string, device *core_apiv1.Device)) *deviceUpdatedEvent {
 	return &deviceUpdatedEvent{
 		fn: fn,
 	}
@@ -139,7 +139,7 @@ func (s deviceUpdatedEvent) subject() string {
 
 func (s deviceUpdatedEvent) handler() nats.MsgHandler {
 	return func(msg *nats.Msg) {
-		d := &core_api.Device{}
+		d := &core_apiv1.Device{}
 		_ = proto.Unmarshal(msg.Data, d)
 		s.fn(msg, clients.Subject(msg.Subject).GetId(), d)
 	}

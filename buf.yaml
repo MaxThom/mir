@@ -1,0 +1,11 @@
+version: v2
+lint:
+  use:
+    - DEFAULT
+breaking:
+  use:
+    - FILE
+modules:
+  - path: pkgs/api/proto
+  - path: pkgs/device/schema
+  - path: examples/telemetry_device

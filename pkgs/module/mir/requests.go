@@ -2,7 +2,7 @@ package mir
 
 import (
 	"github.com/maxthom/mir/internal/clients/core_client"
-	"github.com/maxthom/mir/pkgs/api/proto/v1alpha/core_api"
+	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
 )
@@ -21,11 +21,11 @@ func (r request) V1Alpha() requestV1Alpha {
 // Create device request
 
 type createDeviceRequest struct {
-	req  *core_api.CreateDeviceRequest
-	resp *core_api.CreateDeviceResponse
+	req  *core_apiv1.CreateDeviceRequest
+	resp *core_apiv1.CreateDeviceResponse
 }
 
-func (s requestV1Alpha) CreateDevice(req core_api.CreateDeviceRequest, resp *core_api.CreateDeviceResponse) *createDeviceRequest {
+func (s requestV1Alpha) CreateDevice(req core_apiv1.CreateDeviceRequest, resp *core_apiv1.CreateDeviceResponse) *createDeviceRequest {
 	return &createDeviceRequest{
 		req:  &req,
 		resp: resp,
@@ -58,11 +58,11 @@ func (s *createDeviceRequest) response(m *nats.Msg) error {
 // Update device request
 
 type updateDeviceRequest struct {
-	req  *core_api.UpdateDeviceRequest
-	resp *core_api.UpdateDeviceResponse
+	req  *core_apiv1.UpdateDeviceRequest
+	resp *core_apiv1.UpdateDeviceResponse
 }
 
-func (s requestV1Alpha) UpdateDevice(req core_api.UpdateDeviceRequest, resp *core_api.UpdateDeviceResponse) *updateDeviceRequest {
+func (s requestV1Alpha) UpdateDevice(req core_apiv1.UpdateDeviceRequest, resp *core_apiv1.UpdateDeviceResponse) *updateDeviceRequest {
 	return &updateDeviceRequest{
 		req:  &req,
 		resp: resp,
@@ -95,11 +95,11 @@ func (s *updateDeviceRequest) response(m *nats.Msg) error {
 // List device request
 
 type listDeviceRequest struct {
-	req  *core_api.ListDeviceRequest
-	resp *core_api.ListDeviceResponse
+	req  *core_apiv1.ListDeviceRequest
+	resp *core_apiv1.ListDeviceResponse
 }
 
-func (s requestV1Alpha) ListDevice(req core_api.ListDeviceRequest, resp *core_api.ListDeviceResponse) *listDeviceRequest {
+func (s requestV1Alpha) ListDevice(req core_apiv1.ListDeviceRequest, resp *core_apiv1.ListDeviceResponse) *listDeviceRequest {
 	return &listDeviceRequest{
 		req:  &req,
 		resp: resp,
@@ -132,11 +132,11 @@ func (s *listDeviceRequest) response(m *nats.Msg) error {
 // Delete device request
 
 type deleteDeviceRequest struct {
-	req  *core_api.DeleteDeviceRequest
-	resp *core_api.DeleteDeviceResponse
+	req  *core_apiv1.DeleteDeviceRequest
+	resp *core_apiv1.DeleteDeviceResponse
 }
 
-func (s requestV1Alpha) DeleteDevice(req core_api.DeleteDeviceRequest, resp *core_api.DeleteDeviceResponse) *deleteDeviceRequest {
+func (s requestV1Alpha) DeleteDevice(req core_apiv1.DeleteDeviceRequest, resp *core_apiv1.DeleteDeviceResponse) *deleteDeviceRequest {
 	return &deleteDeviceRequest{
 		req:  &req,
 		resp: resp,
