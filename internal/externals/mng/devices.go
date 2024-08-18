@@ -4,17 +4,17 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/maxthom/mir/pkgs/api/proto/v1alpha/core_api"
+	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/pkg/errors"
 	"github.com/surrealdb/surrealdb.go"
 )
 
 type DeviceStore interface {
-	ListDevice(req *core_api.ListDeviceRequest) ([]mir_models.DeviceWithId, error)
-	CreateDevice(req *core_api.CreateDeviceRequest) ([]mir_models.DeviceWithId, error)
-	UpdateDevice(req *core_api.UpdateDeviceRequest) ([]mir_models.DeviceWithId, error)
-	DeleteDevice(req *core_api.DeleteDeviceRequest) ([]mir_models.DeviceWithId, error)
+	ListDevice(req *core_apiv1.ListDeviceRequest) ([]mir_models.DeviceWithId, error)
+	CreateDevice(req *core_apiv1.CreateDeviceRequest) ([]mir_models.DeviceWithId, error)
+	UpdateDevice(req *core_apiv1.UpdateDeviceRequest) ([]mir_models.DeviceWithId, error)
+	DeleteDevice(req *core_apiv1.DeleteDeviceRequest) ([]mir_models.DeviceWithId, error)
 }
 
 type surrealDeviceStore struct {
@@ -27,18 +27,18 @@ func NewSurrealDeviceStore(db *surrealdb.DB) *surrealDeviceStore {
 	}
 }
 
-func (s *surrealDeviceStore) ListDevice(req *core_api.ListDeviceRequest) ([]mir_models.DeviceWithId, error) {
+func (s *surrealDeviceStore) ListDevice(req *core_apiv1.ListDeviceRequest) ([]mir_models.DeviceWithId, error) {
 	q, v := createListQueryForDevice(req)
 	return executeQueryForType[[]mir_models.DeviceWithId](s.db, q, v)
 }
 
-func (s *surrealDeviceStore) CreateDevice(req *core_api.CreateDeviceRequest) ([]mir_models.DeviceWithId, error) {
+func (s *surrealDeviceStore) CreateDevice(req *core_apiv1.CreateDeviceRequest) ([]mir_models.DeviceWithId, error) {
 	// Validate
 	if req.DeviceId == "" {
 		return nil, mir_models.ErrorInvalidDeviceID
 	}
-	q, v := createListQueryForDevice(&core_api.ListDeviceRequest{
-		Targets: &core_api.Targets{
+	q, v := createListQueryForDevice(&core_apiv1.ListDeviceRequest{
+		Targets: &core_apiv1.Targets{
 			Ids: []string{req.DeviceId},
 		},
 	})
@@ -64,7 +64,7 @@ func (s *surrealDeviceStore) CreateDevice(req *core_api.CreateDeviceRequest) ([]
 	return newDev, nil
 }
 
-func (s *surrealDeviceStore) UpdateDevice(req *core_api.UpdateDeviceRequest) ([]mir_models.DeviceWithId, error) {
+func (s *surrealDeviceStore) UpdateDevice(req *core_apiv1.UpdateDeviceRequest) ([]mir_models.DeviceWithId, error) {
 	if req.Targets == nil ||
 		len(req.Targets.Ids) == 0 &&
 			len(req.Targets.Names) == 0 &&
@@ -89,7 +89,7 @@ func (s *surrealDeviceStore) UpdateDevice(req *core_api.UpdateDeviceRequest) ([]
 	return respDb, nil
 }
 
-func (s *surrealDeviceStore) DeleteDevice(req *core_api.DeleteDeviceRequest) ([]mir_models.DeviceWithId, error) {
+func (s *surrealDeviceStore) DeleteDevice(req *core_apiv1.DeleteDeviceRequest) ([]mir_models.DeviceWithId, error) {
 	if req.Targets == nil ||
 		len(req.Targets.Ids) == 0 &&
 			len(req.Targets.Names) == 0 &&
@@ -99,7 +99,7 @@ func (s *surrealDeviceStore) DeleteDevice(req *core_api.DeleteDeviceRequest) ([]
 		return nil, mir_models.ErrorNoDeviceTargetProvided
 	}
 
-	qList, vList := createListQueryForDevice(&core_api.ListDeviceRequest{
+	qList, vList := createListQueryForDevice(&core_apiv1.ListDeviceRequest{
 		Targets: req.Targets,
 	})
 	respDbList, err := executeQueryForType[[]mir_models.DeviceWithId](s.db, qList, vList)
@@ -116,7 +116,7 @@ func (s *surrealDeviceStore) DeleteDevice(req *core_api.DeleteDeviceRequest) ([]
 	return respDbList, nil
 }
 
-func createListQueryForDevice(req *core_api.ListDeviceRequest) (sql string, vars map[string]any) {
+func createListQueryForDevice(req *core_apiv1.ListDeviceRequest) (sql string, vars map[string]any) {
 	var q strings.Builder
 	vars = map[string]any{}
 
@@ -132,7 +132,7 @@ func createListQueryForDevice(req *core_api.ListDeviceRequest) (sql string, vars
 	return
 }
 
-func createUpdateQueryForDevice(t *core_api.Targets, upd *core_api.UpdateDeviceRequest) (sql string, vars map[string]any) {
+func createUpdateQueryForDevice(t *core_apiv1.Targets, upd *core_apiv1.UpdateDeviceRequest) (sql string, vars map[string]any) {
 	var q strings.Builder
 	vars = map[string]any{}
 	q.WriteString("UPDATE devices MERGE {")
@@ -225,7 +225,7 @@ func createUpdateQueryForDevice(t *core_api.Targets, upd *core_api.UpdateDeviceR
 	return
 }
 
-func createDeleteQueryForDevice(req *core_api.DeleteDeviceRequest) (sql string, vars map[string]any) {
+func createDeleteQueryForDevice(req *core_apiv1.DeleteDeviceRequest) (sql string, vars map[string]any) {
 	var q strings.Builder
 	vars = map[string]any{}
 
@@ -236,7 +236,7 @@ func createDeleteQueryForDevice(req *core_api.DeleteDeviceRequest) (sql string, 
 	return
 }
 
-func createWhereStatementWithTargets(t *core_api.Targets) string {
+func createWhereStatementWithTargets(t *core_apiv1.Targets) string {
 	var q strings.Builder
 	if t == nil {
 		return ""

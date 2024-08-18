@@ -11,8 +11,8 @@ import (
 	"github.com/maxthom/mir/internal/externals/ts"
 	"github.com/maxthom/mir/internal/libs/api/metrics"
 	proto_lineprotocol "github.com/maxthom/mir/internal/libs/proto/line_protocol"
-	"github.com/maxthom/mir/pkgs/api/proto/v1alpha/core_api"
-	"github.com/maxthom/mir/pkgs/api/proto/v1alpha/device_api"
+	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
+	device_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/device_api"
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/nats-io/nats.go"
@@ -179,8 +179,8 @@ func (s *ProtoFluxServer) reconcileDeviceSchema(deviceId string, forceDeviceFetc
 	// 3. Update db
 	// IDEA refresh if last fetch is older then a timespan
 	if !forceDeviceFetch {
-		devs, err := s.devStore.ListDevice(&core_api.ListDeviceRequest{
-			Targets: &core_api.Targets{
+		devs, err := s.devStore.ListDevice(&core_apiv1.ListDeviceRequest{
+			Targets: &core_apiv1.Targets{
 				Ids: []string{deviceId},
 			},
 		})
@@ -219,12 +219,12 @@ func (s *ProtoFluxServer) reconcileDeviceSchema(deviceId string, forceDeviceFetc
 		return nil, err
 	}
 
-	_, err = s.devStore.UpdateDevice(&core_api.UpdateDeviceRequest{
-		Targets: &core_api.Targets{
+	_, err = s.devStore.UpdateDevice(&core_apiv1.UpdateDeviceRequest{
+		Targets: &core_apiv1.Targets{
 			Ids: []string{deviceId},
 		},
-		Status: &core_api.UpdateDeviceRequest_Status{
-			Schema: &core_api.UpdateDeviceRequest_Schema{
+		Status: &core_apiv1.UpdateDeviceRequest_Status{
+			Schema: &core_apiv1.UpdateDeviceRequest_Schema{
 				CompressedSchema: compSch,
 				PackageNames:     packNames,
 				LastSchemaFetch:  mir_models.AsProtoTimestamp(time.Now().UTC()),
@@ -259,7 +259,7 @@ func generateIngesters(devSchema deviceProtoSchema, protoMsgName string) (proto_
 }
 
 func getProtoSchemaFromDevice(m *mir.Mir, deviceId string) (*protoregistry.Files, *descriptorpb.FileDescriptorSet, error) {
-	schemaResp := &device_api.SchemaRetrieveResponse{}
+	schemaResp := &device_apiv1.SchemaRetrieveResponse{}
 	err := m.SendRequest(mir.Command().V1Alpha().RequestSchema(deviceId, schemaResp))
 	if err != nil {
 		return nil, nil, err

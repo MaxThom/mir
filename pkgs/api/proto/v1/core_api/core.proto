@@ -1,10 +1,8 @@
 syntax = "proto3";
 
-package v1alpha.core;
+package core_api.v1;
 
-option go_package = "gen/";
-
-import "v1alpha/common_api/common.proto";
+import "v1/common_api/common.proto";
 
 /*
   Send a request to create a new device in the system
@@ -25,7 +23,7 @@ message CreateDeviceRequest {
 message CreateDeviceResponse {
   oneof response {
     DeviceList ok = 1; // list of device that were created
-    common.Error error = 2;  // HTTP like error if something went wrong
+    common_api.v1.Error error = 2;  // HTTP like error if something went wrong
   }
 }
 
@@ -45,21 +43,21 @@ message UpdateDeviceRequest {
   message Meta {
     optional string name = 3; // Name of the device
     optional string namespace = 4; // Name of the device
-    map<string, common.OptString> labels = 5; // set key to nil to remove it
-    map<string, common.OptString> annotations = 6; // set key to nil to remove it
+    map<string, common_api.v1.OptString> labels = 5; // set key to nil to remove it
+    map<string, common_api.v1.OptString> annotations = 6; // set key to nil to remove it
   }
   message Spec {
     optional bool disabled = 3; // If disabled, device will be cut off from communication
   }
   message Status {
     optional bool online = 3; // Is device online ?
-    optional common.Timestamp last_hearthbeat = 4; // Last pulse received
+    optional common_api.v1.Timestamp last_hearthbeat = 4; // Last pulse received
     Schema schema = 5; // Schema for telemetry and telecommands
   }
   message Schema {
-	optional bytes compressedSchema = 1; // Schema in bytes
-	repeated string packageNames = 2; // Packages names in schema
-	optional common.Timestamp lastSchemaFetch = 3; // Last request for a schema update from device
+	optional bytes compressed_schema = 1; // Schema in bytes
+	repeated string package_names = 2; // Packages names in schema
+	optional common_api.v1.Timestamp last_schema_fetch = 3; // Last request for a schema update from device
   }
 }
 
@@ -70,7 +68,7 @@ message UpdateDeviceRequest {
 message UpdateDeviceResponse {
   oneof response {
     DeviceList ok = 1; //  List of device that were updated
-    common.Error error = 2; // HTTP like error if something went wrong
+    common_api.v1.Error error = 2; // HTTP like error if something went wrong
   }
 }
 
@@ -88,7 +86,7 @@ message DeleteDeviceRequest {
 message DeleteDeviceResponse {
   oneof response {
     DeviceList ok = 1; // List of device that were deleted
-    common.Error error = 2; // HTTP like error if something went wrong
+    common_api.v1.Error error = 2; // HTTP like error if something went wrong
   }
 }
 
@@ -106,7 +104,7 @@ message ListDeviceRequest {
 message ListDeviceResponse {
   oneof response {
     DeviceList ok = 1; // Devices that were found from the search
-    common.Error error = 2;  // HTTP like error if something went wrong
+    common_api.v1.Error error = 2;  // HTTP like error if something went wrong
   }
 }
 
@@ -180,13 +178,13 @@ message Properties {
 * Status fields describe the device conditions monitored by Mir
 */
 message Status {
-  common.Timestamp last_hearthbeat = 1; // Represent the time when the last hearthbeat was received
+  common_api.v1.Timestamp last_hearthbeat = 1; // Represent the time when the last hearthbeat was received
   bool online = 2; // The device is online and sending heathbeath signal
   Schema schema = 3; // Telemetry and Commanding schema using protobuff
 }
 
 message Schema {
-	bytes compressedSchema = 1; // Schema in bytes
-	repeated string packageNames = 2; // Packages names in schema
-	common.Timestamp lastSchemaFetch = 3; // Last request for a schema update from device
+	bytes compressed_schema = 1; // Schema in bytes
+	repeated string package_names = 2; // Packages names in schema
+	common_api.v1.Timestamp last_schema_fetch = 3; // Last request for a schema update from device
 }

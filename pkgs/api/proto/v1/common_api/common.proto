@@ -1,9 +1,7 @@
 
 syntax = "proto3";
 
-package v1alpha.common;
-
-option go_package = "gen/";
+package common_api.v1;
 
 // Used to have a optional value in maps to mark the key for deletion
 message OptString {

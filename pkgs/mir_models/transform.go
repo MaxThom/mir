@@ -3,20 +3,20 @@ package mir_models
 import (
 	"time"
 
-	"github.com/maxthom/mir/pkgs/api/proto/v1alpha/common_api"
-	"github.com/maxthom/mir/pkgs/api/proto/v1alpha/core_api"
+	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
+	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 )
 
-func NewUpdateDeviceReqFromDevice(d Device) *core_api.UpdateDeviceRequest {
-	toUpdateMap := func(m map[string]*string) map[string]*common_api.OptString {
-		opt := map[string]*common_api.OptString{}
+func NewUpdateDeviceReqFromDevice(d Device) *core_apiv1.UpdateDeviceRequest {
+	toUpdateMap := func(m map[string]*string) map[string]*common_apiv1.OptString {
+		opt := map[string]*common_apiv1.OptString{}
 		for k, v := range m {
 			if v == nil {
-				opt[k] = &common_api.OptString{
+				opt[k] = &common_apiv1.OptString{
 					Value: nil,
 				}
 			} else {
-				opt[k] = &common_api.OptString{
+				opt[k] = &common_apiv1.OptString{
 					Value: v,
 				}
 			}
@@ -25,23 +25,23 @@ func NewUpdateDeviceReqFromDevice(d Device) *core_api.UpdateDeviceRequest {
 	}
 
 	// IDEA maybe add the possibility to update device id
-	return &core_api.UpdateDeviceRequest{
-		Meta: &core_api.UpdateDeviceRequest_Meta{
+	return &core_apiv1.UpdateDeviceRequest{
+		Meta: &core_apiv1.UpdateDeviceRequest_Meta{
 			Name:        &d.Meta.Name,
 			Namespace:   &d.Meta.Namespace,
 			Labels:      toUpdateMap(d.Meta.Labels),
 			Annotations: toUpdateMap(d.Meta.Annotations),
 		},
-		Spec: &core_api.UpdateDeviceRequest_Spec{
+		Spec: &core_apiv1.UpdateDeviceRequest_Spec{
 			Disabled: &d.Spec.Disabled,
 		},
-		Targets: &core_api.Targets{
+		Targets: &core_apiv1.Targets{
 			Ids: []string{d.Spec.DeviceId},
 		},
 	}
 }
 
-func NewCreateDeviceReqFromDevice(d Device) *core_api.CreateDeviceRequest {
+func NewCreateDeviceReqFromDevice(d Device) *core_apiv1.CreateDeviceRequest {
 	toValueMap := func(m map[string]*string) map[string]string {
 		vm := map[string]string{}
 		for k, v := range m {
@@ -50,7 +50,7 @@ func NewCreateDeviceReqFromDevice(d Device) *core_api.CreateDeviceRequest {
 		return vm
 	}
 
-	return &core_api.CreateDeviceRequest{
+	return &core_apiv1.CreateDeviceRequest{
 		DeviceId:    d.Spec.DeviceId,
 		Disabled:    d.Spec.Disabled,
 		Name:        d.Meta.Name,
@@ -60,15 +60,15 @@ func NewCreateDeviceReqFromDevice(d Device) *core_api.CreateDeviceRequest {
 	}
 }
 
-func NewProtoDeviceListFromDevicesWithId(d []DeviceWithId) []*core_api.Device {
-	p := []*core_api.Device{}
+func NewProtoDeviceListFromDevicesWithId(d []DeviceWithId) []*core_apiv1.Device {
+	p := []*core_apiv1.Device{}
 	for _, v := range d {
 		p = append(p, NewProtoDeviceFromDeviceWithId(v))
 	}
 	return p
 }
 
-func NewProtoDeviceFromDeviceWithId(d DeviceWithId) *core_api.Device {
+func NewProtoDeviceFromDeviceWithId(d DeviceWithId) *core_apiv1.Device {
 	toValueMap := func(m map[string]*string) map[string]string {
 		vm := map[string]string{}
 		for k, v := range m {
@@ -77,25 +77,25 @@ func NewProtoDeviceFromDeviceWithId(d DeviceWithId) *core_api.Device {
 		return vm
 	}
 
-	return &core_api.Device{
+	return &core_apiv1.Device{
 		Id:         d.Id,
 		ApiVersion: d.ApiVersion,
 		ApiName:    d.ApiName,
-		Meta: &core_api.Meta{
+		Meta: &core_apiv1.Meta{
 			Name:        d.Meta.Name,
 			Namespace:   d.Meta.Namespace,
 			Labels:      toValueMap(d.Meta.Labels),
 			Annotations: toValueMap(d.Meta.Annotations),
 		},
-		Spec: &core_api.Spec{
+		Spec: &core_apiv1.Spec{
 			DeviceId: d.Spec.DeviceId,
 			Disabled: d.Spec.Disabled,
 		},
-		Properties: &core_api.Properties{},
-		Status: &core_api.Status{
+		Properties: &core_apiv1.Properties{},
+		Status: &core_apiv1.Status{
 			Online:         d.Status.Online,
 			LastHearthbeat: AsProtoTimestamp(d.Status.LastHearthbeat),
-			Schema: &core_api.Schema{
+			Schema: &core_apiv1.Schema{
 				CompressedSchema: d.Status.Schema.CompressedSchema,
 				PackageNames:     d.Status.Schema.PackageNames,
 				LastSchemaFetch:  AsProtoTimestamp(d.Status.Schema.LastSchemaFetch),
@@ -104,7 +104,7 @@ func NewProtoDeviceFromDeviceWithId(d DeviceWithId) *core_api.Device {
 	}
 }
 
-func NewDeviceFromProtoDevice(d *core_api.Device) *Device {
+func NewDeviceFromProtoDevice(d *core_apiv1.Device) *Device {
 	toPtrMap := func(m map[string]string) map[string]*string {
 		mPtr := make(map[string]*string, len(m))
 		for k, v := range m {
@@ -148,7 +148,7 @@ func NewDeviceFromProtoDevice(d *core_api.Device) *Device {
 	}
 }
 
-func NewDeviceFromCreateDeviceReq(c *core_api.CreateDeviceRequest) Device {
+func NewDeviceFromCreateDeviceReq(c *core_apiv1.CreateDeviceRequest) Device {
 	toPtrMap := func(m map[string]string) map[string]*string {
 		mPtr := make(map[string]*string, len(m))
 		for k, v := range m {
@@ -173,16 +173,16 @@ func NewDeviceFromCreateDeviceReq(c *core_api.CreateDeviceRequest) Device {
 	}
 }
 
-func AsProtoTimestamp(t time.Time) *common_api.Timestamp {
+func AsProtoTimestamp(t time.Time) *common_apiv1.Timestamp {
 	if t.IsZero() {
 		return nil
 	}
-	return &common_api.Timestamp{
+	return &common_apiv1.Timestamp{
 		Seconds: int64(t.Unix()),
 		Nanos:   int32(t.Nanosecond()),
 	}
 }
 
-func AsGoTime(ts *common_api.Timestamp) time.Time {
+func AsGoTime(ts *common_apiv1.Timestamp) time.Time {
 	return time.Unix(int64(ts.GetSeconds()), int64(ts.GetNanos())).UTC()
 }

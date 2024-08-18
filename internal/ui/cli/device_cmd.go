@@ -8,8 +8,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/maxthom/mir/internal/clients/core_client"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
-	"github.com/maxthom/mir/pkgs/api/proto/v1alpha/common_api"
-	"github.com/maxthom/mir/pkgs/api/proto/v1alpha/core_api"
+	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
+	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	"gopkg.in/yaml.v3"
 )
 
@@ -94,8 +94,8 @@ func (d *DeviceListCmd) Run(c CLI) error {
 	}
 	defer msgBus.Close()
 
-	resp, err := core_client.PublishDeviceListRequest(msgBus, &core_api.ListDeviceRequest{
-		Targets: &core_api.Targets{
+	resp, err := core_client.PublishDeviceListRequest(msgBus, &core_apiv1.ListDeviceRequest{
+		Targets: &core_apiv1.Targets{
 			Ids:         d.Ids,
 			Names:       d.Names,
 			Namespaces:  d.Namespaces,
@@ -173,7 +173,7 @@ func (d *DeviceCreateCmd) Run(c CLI) error {
 		d.Id = t.String()
 	}
 	d.Anno["mir/device/description"] = d.Desc
-	resp, err := core_client.PublishDeviceCreateRequest(msgBus, &core_api.CreateDeviceRequest{
+	resp, err := core_client.PublishDeviceCreateRequest(msgBus, &core_apiv1.CreateDeviceRequest{
 		DeviceId:    d.Id,
 		Name:        d.Name,
 		Namespace:   d.Namespace,
@@ -242,50 +242,50 @@ func (d *DeviceUpdateCmd) Run(c CLI) error {
 	}
 	defer msgBus.Close()
 
-	labels := map[string]*common_api.OptString{}
+	labels := map[string]*common_apiv1.OptString{}
 	for k, v := range d.Labels {
 		if strings.ToLower(v) == "null" {
-			labels[k] = &common_api.OptString{
+			labels[k] = &common_apiv1.OptString{
 				Value: nil,
 			}
 		} else {
-			labels[k] = &common_api.OptString{
+			labels[k] = &common_apiv1.OptString{
 				Value: &v,
 			}
 		}
 	}
-	anno := map[string]*common_api.OptString{}
+	anno := map[string]*common_apiv1.OptString{}
 	for k, v := range d.Anno {
 		if strings.ToLower(v) == "null" {
-			anno[k] = &common_api.OptString{
+			anno[k] = &common_apiv1.OptString{
 				Value: nil,
 			}
 		} else {
-			anno[k] = &common_api.OptString{
+			anno[k] = &common_apiv1.OptString{
 				Value: &v,
 			}
 		}
 	}
 	if d.Desc != nil {
-		anno["mir/device/description"] = &common_api.OptString{
+		anno["mir/device/description"] = &common_apiv1.OptString{
 			Value: d.Desc,
 		}
 	}
-	req := &core_api.UpdateDeviceRequest{
-		Targets: &core_api.Targets{
+	req := &core_apiv1.UpdateDeviceRequest{
+		Targets: &core_apiv1.Targets{
 			Ids:         d.Target.Ids,
 			Names:       d.Target.Names,
 			Namespaces:  d.Target.Namespaces,
 			Labels:      d.Target.Labels,
 			Annotations: d.Target.Anno,
 		},
-		Meta: &core_api.UpdateDeviceRequest_Meta{
+		Meta: &core_apiv1.UpdateDeviceRequest_Meta{
 			Name:        d.Name,
 			Namespace:   d.Namespace,
 			Labels:      labels,
 			Annotations: anno,
 		},
-		Spec: &core_api.UpdateDeviceRequest_Spec{
+		Spec: &core_apiv1.UpdateDeviceRequest_Spec{
 			Disabled: d.Disabled,
 		},
 	}
@@ -350,8 +350,8 @@ func (d *DeviceDeleteCmd) Run(c CLI) error {
 	}
 	defer msgBus.Close()
 
-	resp, err := core_client.PublishDeviceDeleteRequest(msgBus, &core_api.DeleteDeviceRequest{
-		Targets: &core_api.Targets{
+	resp, err := core_client.PublishDeviceDeleteRequest(msgBus, &core_apiv1.DeleteDeviceRequest{
+		Targets: &core_apiv1.Targets{
 			Ids:         d.Target.Ids,
 			Names:       d.Target.Names,
 			Namespaces:  d.Target.Namespaces,

@@ -1,9 +1,7 @@
 
 syntax = "proto3";
 
-package v1alpha.mir;
-
-option go_package = "gen/";
+package mir.v1;
 
 import "google/protobuf/descriptor.proto";
 

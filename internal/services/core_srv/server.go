@@ -12,8 +12,8 @@ import (
 	"github.com/maxthom/mir/internal/externals/mng"
 	"github.com/maxthom/mir/internal/libs/api/metrics"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
-	"github.com/maxthom/mir/pkgs/api/proto/v1alpha/common_api"
-	"github.com/maxthom/mir/pkgs/api/proto/v1alpha/core_api"
+	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
+	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/nats-io/nats.go"
 	"github.com/prometheus/client_golang/prometheus"
@@ -58,7 +58,7 @@ func NewCore(logger zerolog.Logger, bus *bus.BusConn, store mng.DeviceStore) *Co
 	// Preload hearthbeat map. Required in case the
 	// app is down while a device is also, but report as online
 	// because it went offline when the app was down
-	devices, err := store.ListDevice(&core_api.ListDeviceRequest{Targets: &core_api.Targets{}})
+	devices, err := store.ListDevice(&core_apiv1.ListDeviceRequest{Targets: &core_apiv1.Targets{}})
 	if err != nil {
 		l.Error().Err(err).Msg("error occure while executing list query")
 	}
@@ -160,13 +160,13 @@ func (s *CoreServer) createDeviceRequestHandler(ch chan nats.Msg) {
 		if !ok {
 			return
 		}
-		req := &core_api.CreateDeviceRequest{}
+		req := &core_apiv1.CreateDeviceRequest{}
 		err := proto.Unmarshal(msg.Data, req)
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while unmarhsalling request payload")
-			sendReplyOrAck(s.bus, msg, &core_api.CreateDeviceResponse{
-				Response: &core_api.CreateDeviceResponse_Error{
-					Error: &common_api.Error{
+			sendReplyOrAck(s.bus, msg, &core_apiv1.CreateDeviceResponse{
+				Response: &core_apiv1.CreateDeviceResponse_Error{
+					Error: &common_apiv1.Error{
 						Code:    400,
 						Message: mir_models.ErrorApiDeserializingRequest.Error(),
 						Details: []string{"400 Bad Request", err.Error()},
@@ -180,9 +180,9 @@ func (s *CoreServer) createDeviceRequestHandler(ch chan nats.Msg) {
 		newDev, err := s.store.CreateDevice(req)
 		if err != nil {
 			if errors.Is(err, mir_models.ErrorInvalidDeviceID) {
-				sendReplyOrAck(s.bus, msg, &core_api.CreateDeviceResponse{
-					Response: &core_api.CreateDeviceResponse_Error{
-						Error: &common_api.Error{
+				sendReplyOrAck(s.bus, msg, &core_apiv1.CreateDeviceResponse{
+					Response: &core_apiv1.CreateDeviceResponse_Error{
+						Error: &common_apiv1.Error{
 							Code:    400,
 							Message: err.Error(),
 							Details: []string{"400 Bad Request"},
@@ -190,9 +190,9 @@ func (s *CoreServer) createDeviceRequestHandler(ch chan nats.Msg) {
 					},
 				})
 			} else if errors.Is(err, mir_models.ErrorDeviceIdAlreadyExist) {
-				sendReplyOrAck(s.bus, msg, &core_api.CreateDeviceResponse{
-					Response: &core_api.CreateDeviceResponse_Error{
-						Error: &common_api.Error{
+				sendReplyOrAck(s.bus, msg, &core_apiv1.CreateDeviceResponse{
+					Response: &core_apiv1.CreateDeviceResponse_Error{
+						Error: &common_apiv1.Error{
 							Code:    409,
 							Message: err.Error(),
 							Details: []string{"409 Conflict"},
@@ -200,9 +200,9 @@ func (s *CoreServer) createDeviceRequestHandler(ch chan nats.Msg) {
 					},
 				})
 			} else if errors.Is(err, mir_models.ErrorDbExecutingQuery) {
-				sendReplyOrAck(s.bus, msg, &core_api.CreateDeviceResponse{
-					Response: &core_api.CreateDeviceResponse_Error{
-						Error: &common_api.Error{
+				sendReplyOrAck(s.bus, msg, &core_apiv1.CreateDeviceResponse{
+					Response: &core_apiv1.CreateDeviceResponse_Error{
+						Error: &common_apiv1.Error{
 							Code:    500,
 							Message: err.Error(),
 							Details: []string{"500 Internal Server Error", err.Error()},
@@ -210,9 +210,9 @@ func (s *CoreServer) createDeviceRequestHandler(ch chan nats.Msg) {
 					},
 				})
 			} else if errors.Is(err, mir_models.ErrorDbDeserializingResponse) {
-				sendReplyOrAck(s.bus, msg, &core_api.CreateDeviceResponse{
-					Response: &core_api.CreateDeviceResponse_Error{
-						Error: &common_api.Error{
+				sendReplyOrAck(s.bus, msg, &core_apiv1.CreateDeviceResponse{
+					Response: &core_apiv1.CreateDeviceResponse_Error{
+						Error: &common_apiv1.Error{
 							Code:    500,
 							Message: err.Error(),
 							Details: []string{"500 Internal Server Error", err.Error()},
@@ -232,9 +232,9 @@ func (s *CoreServer) createDeviceRequestHandler(ch chan nats.Msg) {
 			}
 		}
 
-		sendReplyOrAck(s.bus, msg, &core_api.CreateDeviceResponse{
-			Response: &core_api.CreateDeviceResponse_Ok{
-				Ok: &core_api.DeviceList{
+		sendReplyOrAck(s.bus, msg, &core_apiv1.CreateDeviceResponse{
+			Response: &core_apiv1.CreateDeviceResponse_Ok{
+				Ok: &core_apiv1.DeviceList{
 					Devices: mir_models.NewProtoDeviceListFromDevicesWithId(newDev),
 				},
 			}})
@@ -247,13 +247,13 @@ func (s *CoreServer) updateDeviceRequestHandler(ch chan nats.Msg) {
 		if !ok {
 			return
 		}
-		req := &core_api.UpdateDeviceRequest{}
+		req := &core_apiv1.UpdateDeviceRequest{}
 		err := proto.Unmarshal(msg.Data, req)
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while unmarhsalling request payload")
-			sendReplyOrAck(s.bus, msg, &core_api.UpdateDeviceResponse{
-				Response: &core_api.UpdateDeviceResponse_Error{
-					Error: &common_api.Error{
+			sendReplyOrAck(s.bus, msg, &core_apiv1.UpdateDeviceResponse{
+				Response: &core_apiv1.UpdateDeviceResponse_Error{
+					Error: &common_apiv1.Error{
 						Code:    400,
 						Message: mir_models.ErrorApiDeserializingRequest.Error(),
 						Details: []string{"400 Bad Request", err.Error()},
@@ -267,9 +267,9 @@ func (s *CoreServer) updateDeviceRequestHandler(ch chan nats.Msg) {
 		respDb, err := s.store.UpdateDevice(req)
 		if err != nil {
 			if errors.Is(err, mir_models.ErrorNoDeviceTargetProvided) {
-				sendReplyOrAck(s.bus, msg, &core_api.UpdateDeviceResponse{
-					Response: &core_api.UpdateDeviceResponse_Error{
-						Error: &common_api.Error{
+				sendReplyOrAck(s.bus, msg, &core_apiv1.UpdateDeviceResponse{
+					Response: &core_apiv1.UpdateDeviceResponse_Error{
+						Error: &common_apiv1.Error{
 							Code:    400,
 							Message: err.Error(),
 							Details: []string{"400 Bad Request"},
@@ -277,9 +277,9 @@ func (s *CoreServer) updateDeviceRequestHandler(ch chan nats.Msg) {
 					},
 				})
 			} else if errors.Is(err, mir_models.ErrorDbExecutingQuery) {
-				sendReplyOrAck(s.bus, msg, &core_api.UpdateDeviceResponse{
-					Response: &core_api.UpdateDeviceResponse_Error{
-						Error: &common_api.Error{
+				sendReplyOrAck(s.bus, msg, &core_apiv1.UpdateDeviceResponse{
+					Response: &core_apiv1.UpdateDeviceResponse_Error{
+						Error: &common_apiv1.Error{
 							Code:    500,
 							Message: err.Error(),
 							Details: []string{"500 Internal Server Error", err.Error()},
@@ -299,9 +299,9 @@ func (s *CoreServer) updateDeviceRequestHandler(ch chan nats.Msg) {
 			}
 		}
 
-		sendReplyOrAck(s.bus, msg, &core_api.UpdateDeviceResponse{
-			Response: &core_api.UpdateDeviceResponse_Ok{
-				Ok: &core_api.DeviceList{
+		sendReplyOrAck(s.bus, msg, &core_apiv1.UpdateDeviceResponse{
+			Response: &core_apiv1.UpdateDeviceResponse_Ok{
+				Ok: &core_apiv1.DeviceList{
 					Devices: mir_models.NewProtoDeviceListFromDevicesWithId(respDb),
 				},
 			}})
@@ -314,13 +314,13 @@ func (s *CoreServer) deleteDeviceRequestHandler(ch chan nats.Msg) {
 		if !ok {
 			return
 		}
-		req := &core_api.DeleteDeviceRequest{}
+		req := &core_apiv1.DeleteDeviceRequest{}
 		err := proto.Unmarshal(msg.Data, req)
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while unmarhsalling request payload")
-			sendReplyOrAck(s.bus, msg, &core_api.DeleteDeviceResponse{
-				Response: &core_api.DeleteDeviceResponse_Error{
-					Error: &common_api.Error{
+			sendReplyOrAck(s.bus, msg, &core_apiv1.DeleteDeviceResponse{
+				Response: &core_apiv1.DeleteDeviceResponse_Error{
+					Error: &common_apiv1.Error{
 						Code:    400,
 						Message: mir_models.ErrorApiDeserializingRequest.Error(),
 						Details: []string{"400 Bad Request", err.Error()},
@@ -334,9 +334,9 @@ func (s *CoreServer) deleteDeviceRequestHandler(ch chan nats.Msg) {
 		devList, err := s.store.DeleteDevice(req)
 		if err != nil {
 			if errors.Is(err, mir_models.ErrorNoDeviceTargetProvided) {
-				sendReplyOrAck(s.bus, msg, &core_api.DeleteDeviceResponse{
-					Response: &core_api.DeleteDeviceResponse_Error{
-						Error: &common_api.Error{
+				sendReplyOrAck(s.bus, msg, &core_apiv1.DeleteDeviceResponse{
+					Response: &core_apiv1.DeleteDeviceResponse_Error{
+						Error: &common_apiv1.Error{
 							Code:    400,
 							Message: err.Error(),
 							Details: []string{"400 Bad Request"},
@@ -344,9 +344,9 @@ func (s *CoreServer) deleteDeviceRequestHandler(ch chan nats.Msg) {
 					},
 				})
 			} else if errors.Is(err, mir_models.ErrorDbExecutingQuery) {
-				sendReplyOrAck(s.bus, msg, &core_api.DeleteDeviceResponse{
-					Response: &core_api.DeleteDeviceResponse_Error{
-						Error: &common_api.Error{
+				sendReplyOrAck(s.bus, msg, &core_apiv1.DeleteDeviceResponse{
+					Response: &core_apiv1.DeleteDeviceResponse_Error{
+						Error: &common_apiv1.Error{
 							Code:    500,
 							Message: err.Error(),
 							Details: []string{"500 Internal Server Error", err.Error()},
@@ -366,9 +366,9 @@ func (s *CoreServer) deleteDeviceRequestHandler(ch chan nats.Msg) {
 			}
 		}
 
-		sendReplyOrAck(s.bus, msg, &core_api.DeleteDeviceResponse{
-			Response: &core_api.DeleteDeviceResponse_Ok{
-				Ok: &core_api.DeviceList{
+		sendReplyOrAck(s.bus, msg, &core_apiv1.DeleteDeviceResponse{
+			Response: &core_apiv1.DeleteDeviceResponse_Ok{
+				Ok: &core_apiv1.DeviceList{
 					Devices: mir_models.NewProtoDeviceListFromDevicesWithId(devList),
 				},
 			}})
@@ -381,13 +381,13 @@ func (s *CoreServer) listDeviceRequestHandler(ch chan nats.Msg) {
 		if !ok {
 			return
 		}
-		req := &core_api.ListDeviceRequest{}
+		req := &core_apiv1.ListDeviceRequest{}
 		err := proto.Unmarshal(msg.Data, req)
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while unmarhsalling request payload")
-			sendReplyOrAck(s.bus, msg, &core_api.ListDeviceResponse{
-				Response: &core_api.ListDeviceResponse_Error{
-					Error: &common_api.Error{
+			sendReplyOrAck(s.bus, msg, &core_apiv1.ListDeviceResponse{
+				Response: &core_apiv1.ListDeviceResponse_Error{
+					Error: &common_apiv1.Error{
 						Code:    400,
 						Message: mir_models.ErrorApiDeserializingRequest.Error(),
 						Details: []string{"400 Bad Request", err.Error()},
@@ -401,9 +401,9 @@ func (s *CoreServer) listDeviceRequestHandler(ch chan nats.Msg) {
 		respDb, err := s.store.ListDevice(req)
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while executing a db query")
-			sendReplyOrAck(s.bus, msg, &core_api.ListDeviceResponse{
-				Response: &core_api.ListDeviceResponse_Error{
-					Error: &common_api.Error{
+			sendReplyOrAck(s.bus, msg, &core_apiv1.ListDeviceResponse{
+				Response: &core_apiv1.ListDeviceResponse_Error{
+					Error: &common_apiv1.Error{
 						Code:    500,
 						Message: mir_models.ErrorDbExecutingQuery.Error(),
 						Details: []string{"500 Internal Server Error", err.Error()},
@@ -413,9 +413,9 @@ func (s *CoreServer) listDeviceRequestHandler(ch chan nats.Msg) {
 			continue
 		}
 
-		sendReplyOrAck(s.bus, msg, &core_api.ListDeviceResponse{
-			Response: &core_api.ListDeviceResponse_Ok{
-				Ok: &core_api.DeviceList{
+		sendReplyOrAck(s.bus, msg, &core_apiv1.ListDeviceResponse{
+			Response: &core_apiv1.ListDeviceResponse_Ok{
+				Ok: &core_apiv1.DeviceList{
 					Devices: mir_models.NewProtoDeviceListFromDevicesWithId(respDb),
 				},
 			}})
@@ -441,11 +441,11 @@ func (s *CoreServer) hearthbeatPulsor(ctx context.Context, interval time.Duratio
 				toBoolRef := func(b bool) *bool {
 					return &b
 				}
-				_, err := s.store.UpdateDevice(&core_api.UpdateDeviceRequest{
-					Targets: &core_api.Targets{
+				_, err := s.store.UpdateDevice(&core_apiv1.UpdateDeviceRequest{
+					Targets: &core_apiv1.Targets{
 						Ids: newOffline,
 					},
-					Status: &core_api.UpdateDeviceRequest_Status{
+					Status: &core_apiv1.UpdateDeviceRequest_Status{
 						Online: toBoolRef(false),
 					},
 				})
@@ -498,11 +498,11 @@ func (s *CoreServer) hearthbeatRequestHandler(ch chan nats.Msg) {
 		toBoolRef := func(b bool) *bool {
 			return &b
 		}
-		_, err := s.store.UpdateDevice(&core_api.UpdateDeviceRequest{
-			Targets: &core_api.Targets{
+		_, err := s.store.UpdateDevice(&core_apiv1.UpdateDeviceRequest{
+			Targets: &core_apiv1.Targets{
 				Ids: []string{deviceId},
 			},
-			Status: &core_api.UpdateDeviceRequest_Status{
+			Status: &core_apiv1.UpdateDeviceRequest_Status{
 				Online:         toBoolRef(true),
 				LastHearthbeat: mir_models.AsProtoTimestamp(s.hearthbeats[deviceId]),
 			},

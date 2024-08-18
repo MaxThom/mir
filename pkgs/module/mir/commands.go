@@ -3,7 +3,7 @@ package mir
 import (
 	"github.com/maxthom/mir/internal/clients/device_client"
 	"github.com/maxthom/mir/internal/libs/compression/zstd"
-	"github.com/maxthom/mir/pkgs/api/proto/v1alpha/device_api"
+	device_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/device_api"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
 )
@@ -23,10 +23,10 @@ func (r command) V1Alpha() commandV1Alpha {
 
 type retrieveSchemaRequest struct {
 	deviceId string
-	resp     *device_api.SchemaRetrieveResponse
+	resp     *device_apiv1.SchemaRetrieveResponse
 }
 
-func (s commandV1Alpha) RequestSchema(deviceId string, resp *device_api.SchemaRetrieveResponse) *retrieveSchemaRequest {
+func (s commandV1Alpha) RequestSchema(deviceId string, resp *device_apiv1.SchemaRetrieveResponse) *retrieveSchemaRequest {
 	return &retrieveSchemaRequest{
 		deviceId: deviceId,
 		resp:     resp,

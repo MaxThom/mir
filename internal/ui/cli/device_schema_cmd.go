@@ -7,7 +7,7 @@ import (
 	"github.com/maxthom/mir/internal/clients/core_client"
 	"github.com/maxthom/mir/internal/libs/compression/zstd"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
-	"github.com/maxthom/mir/pkgs/api/proto/v1alpha/core_api"
+	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
@@ -97,16 +97,16 @@ func (d *SchemaUploadCmd) Run(c CLI) error {
 		return true
 	})
 
-	req := &core_api.UpdateDeviceRequest{
-		Targets: &core_api.Targets{
+	req := &core_apiv1.UpdateDeviceRequest{
+		Targets: &core_apiv1.Targets{
 			Ids:         d.Target.Ids,
 			Names:       d.Target.Names,
 			Namespaces:  d.Target.Namespaces,
 			Labels:      d.Target.Labels,
 			Annotations: d.Target.Anno,
 		},
-		Status: &core_api.UpdateDeviceRequest_Status{
-			Schema: &core_api.UpdateDeviceRequest_Schema{
+		Status: &core_apiv1.UpdateDeviceRequest_Status{
+			Schema: &core_apiv1.UpdateDeviceRequest_Schema{
 				CompressedSchema: compSch,
 				PackageNames:     packNames,
 			},
@@ -172,8 +172,8 @@ func (d *SchemaExploreCmd) Run(c CLI) error {
 	}
 	defer msgBus.Close()
 
-	req := &core_api.ListDeviceRequest{
-		Targets: &core_api.Targets{
+	req := &core_apiv1.ListDeviceRequest{
+		Targets: &core_apiv1.Targets{
 			Ids:         d.Target.Ids,
 			Names:       d.Target.Names,
 			Namespaces:  d.Target.Namespaces,
@@ -202,7 +202,7 @@ func (d *SchemaExploreCmd) Run(c CLI) error {
 	devs := resp.GetOk().GetDevices()
 	if len(devs) == 0 {
 		e := MirDeviceNotFoundError{
-			Targets: &core_api.Targets{
+			Targets: &core_apiv1.Targets{
 				Ids:         d.Target.Ids,
 				Names:       d.Target.Names,
 				Namespaces:  d.Target.Namespaces,

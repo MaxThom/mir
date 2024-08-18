@@ -16,7 +16,7 @@ import (
 	mir_help "github.com/maxthom/mir/internal/ui/tui/components/help"
 	"github.com/maxthom/mir/internal/ui/tui/msgs"
 	"github.com/maxthom/mir/internal/ui/tui/store"
-	"github.com/maxthom/mir/pkgs/api/proto/v1alpha/core_api"
+	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -194,8 +194,8 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				return m, tea.Batch(
 					msgs.ReqMsgCmd("deleting device "+device.Spec.DeviceId+"..."),
-					msgs.DeleteMirDevice(store.Bus, &core_api.DeleteDeviceRequest{
-						Targets: &core_api.Targets{
+					msgs.DeleteMirDevice(store.Bus, &core_apiv1.DeleteDeviceRequest{
+						Targets: &core_apiv1.Targets{
 							Ids: []string{device.Spec.DeviceId},
 						},
 					}))
@@ -300,7 +300,7 @@ var keys = keyMap{
 	),
 }
 
-func devicesToRows(devices []*core_api.Device) ([]table.Row, []string) {
+func devicesToRows(devices []*core_apiv1.Device) ([]table.Row, []string) {
 	rows := []table.Row{}
 	suggestions := []string{}
 	for _, d := range devices {
@@ -385,7 +385,7 @@ func filterTableRows(rows []table.Row, filter string) []table.Row {
 	return filteredRows
 }
 
-func rowToDevice(r table.Row) (*core_api.Device, bool) {
+func rowToDevice(r table.Row) (*core_apiv1.Device, bool) {
 	if len(r) < 2 {
 		return nil, false
 	}

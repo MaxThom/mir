@@ -7,24 +7,24 @@ import (
 
 	"github.com/maxthom/mir/internal/clients/core_client"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
-	"github.com/maxthom/mir/pkgs/api/proto/v1alpha/core_api"
+	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 )
 
 type (
 	DeviceListedMsg struct {
-		Devices []*core_api.Device
+		Devices []*core_apiv1.Device
 		NoToast bool
 	}
 	DeviceCreatedMsg struct {
-		Devices []*core_api.Device
+		Devices []*core_apiv1.Device
 		NoToast bool
 	}
 	DeviceDeleteMsg struct {
-		Devices []*core_api.Device
+		Devices []*core_apiv1.Device
 		NoToast bool
 	}
 	DeviceUpdateMsg struct {
-		Devices []*core_api.Device
+		Devices []*core_apiv1.Device
 		NoToast bool
 	}
 )
@@ -39,8 +39,8 @@ func ListMirDevices(bus *bus.BusConn) tea.Cmd {
 
 func listMirDevicesCmd(bus *bus.BusConn, noToast bool) func() tea.Msg {
 	return func() tea.Msg {
-		resp, err := core_client.PublishDeviceListRequest(bus, &core_api.ListDeviceRequest{
-			Targets: &core_api.Targets{},
+		resp, err := core_client.PublishDeviceListRequest(bus, &core_apiv1.ListDeviceRequest{
+			Targets: &core_apiv1.Targets{},
 		})
 		if err != nil {
 			// TODO move error from cli to next to core client and use it here as well
@@ -54,15 +54,15 @@ func listMirDevicesCmd(bus *bus.BusConn, noToast bool) func() tea.Msg {
 	}
 }
 
-func CreateMirDeviceSilently(bus *bus.BusConn, req *core_api.CreateDeviceRequest) tea.Cmd {
+func CreateMirDeviceSilently(bus *bus.BusConn, req *core_apiv1.CreateDeviceRequest) tea.Cmd {
 	return createMirDeviceCmd(bus, true, req)
 }
 
-func CreateMirDevice(bus *bus.BusConn, req *core_api.CreateDeviceRequest) tea.Cmd {
+func CreateMirDevice(bus *bus.BusConn, req *core_apiv1.CreateDeviceRequest) tea.Cmd {
 	return createMirDeviceCmd(bus, false, req)
 }
 
-func createMirDeviceCmd(bus *bus.BusConn, noToast bool, req *core_api.CreateDeviceRequest) tea.Cmd {
+func createMirDeviceCmd(bus *bus.BusConn, noToast bool, req *core_apiv1.CreateDeviceRequest) tea.Cmd {
 	return func() tea.Msg {
 		resp, err := core_client.PublishDeviceCreateRequest(bus, req)
 		if err != nil {
@@ -77,15 +77,15 @@ func createMirDeviceCmd(bus *bus.BusConn, noToast bool, req *core_api.CreateDevi
 	}
 }
 
-func DeleteMirDeviceSilently(bus *bus.BusConn, req *core_api.DeleteDeviceRequest) tea.Cmd {
+func DeleteMirDeviceSilently(bus *bus.BusConn, req *core_apiv1.DeleteDeviceRequest) tea.Cmd {
 	return deleteMirDeviceCmd(bus, true, req)
 }
 
-func DeleteMirDevice(bus *bus.BusConn, req *core_api.DeleteDeviceRequest) tea.Cmd {
+func DeleteMirDevice(bus *bus.BusConn, req *core_apiv1.DeleteDeviceRequest) tea.Cmd {
 	return deleteMirDeviceCmd(bus, false, req)
 }
 
-func deleteMirDeviceCmd(bus *bus.BusConn, noToast bool, req *core_api.DeleteDeviceRequest) tea.Cmd {
+func deleteMirDeviceCmd(bus *bus.BusConn, noToast bool, req *core_apiv1.DeleteDeviceRequest) tea.Cmd {
 	return func() tea.Msg {
 		resp, err := core_client.PublishDeviceDeleteRequest(bus, req)
 		if err != nil {
@@ -100,15 +100,15 @@ func deleteMirDeviceCmd(bus *bus.BusConn, noToast bool, req *core_api.DeleteDevi
 	}
 }
 
-func UpdateMirDeviceSilently(bus *bus.BusConn, req *core_api.UpdateDeviceRequest) tea.Cmd {
+func UpdateMirDeviceSilently(bus *bus.BusConn, req *core_apiv1.UpdateDeviceRequest) tea.Cmd {
 	return updateMirDeviceCmd(bus, true, req)
 }
 
-func UpdateMirDevice(bus *bus.BusConn, req *core_api.UpdateDeviceRequest) tea.Cmd {
+func UpdateMirDevice(bus *bus.BusConn, req *core_apiv1.UpdateDeviceRequest) tea.Cmd {
 	return updateMirDeviceCmd(bus, false, req)
 }
 
-func updateMirDeviceCmd(bus *bus.BusConn, noToast bool, req *core_api.UpdateDeviceRequest) tea.Cmd {
+func updateMirDeviceCmd(bus *bus.BusConn, noToast bool, req *core_apiv1.UpdateDeviceRequest) tea.Cmd {
 	return func() tea.Msg {
 		resp, err := core_client.PublishDeviceUpdateRequest(bus, req)
 		if err != nil {
