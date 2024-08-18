@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package telemetry_device.v1;
+
+import "mir/device/v1/mir.proto";
+
+message EnvironmentTlm {
+	option (mir.device.v1.message_type) = MESSAGE_TYPE_TELEMETRY;
+
+	int32 temperature = 1;
+	int32 pressure = 2;
+	int32 humidity = 3;
+	int32 wind_speed = 4;
+}
+
+message PowerConsuption {
+	double voltage = 1;
+	double amp = 2;
+	double power = 3;
+}
+
+message Gps {
+	double latitude = 1;
+	double longitude = 2;
+	double altitude = 3;
+}
+
+message Constelletion {
+	repeated Satellite satellites = 1;
+}
+
+message Satellite {
+	string id = 1;
+	int32 signal_strength = 2;
+	Gps gps = 3;
+}

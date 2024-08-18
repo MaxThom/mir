@@ -6,6 +6,12 @@ breaking:
   use:
     - FILE
 modules:
+  # mir proto
   - path: pkgs/api/proto
-  - path: pkgs/device/schema
-  - path: examples/telemetry_device
+  - path: pkgs/device/proto
+  # example proto
+  - path: examples/telemetry_device/proto
+  # test proto
+  - path: internal/services/protoflux_srv/proto_test
+  - path: pkgs/device/mir/proto_test
+  - path: pkgs/module/mir/proto_test

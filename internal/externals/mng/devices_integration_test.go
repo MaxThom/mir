@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/maxthom/mir/internal/libs/test_utils"
-	"github.com/maxthom/mir/pkgs/api/proto/v1alpha/core_api"
+	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 )
 
 var store surrealDeviceStore
@@ -15,8 +15,8 @@ func TestMain(m *testing.M) {
 	db := test_utils.SetupSurrealDbConnsPanic("ws://127.0.0.1:8000/rpc", "root", "root", "global", "mir")
 	store = *NewSurrealDeviceStore(db)
 
-	store.DeleteDevice(&core_api.DeleteDeviceRequest{
-		Targets: &core_api.Targets{
+	store.DeleteDevice(&core_apiv1.DeleteDeviceRequest{
+		Targets: &core_apiv1.Targets{
 			Labels: map[string]string{
 				"testing": "mng_store",
 			},
@@ -25,8 +25,8 @@ func TestMain(m *testing.M) {
 
 	exitVal := m.Run()
 
-	store.DeleteDevice(&core_api.DeleteDeviceRequest{
-		Targets: &core_api.Targets{
+	store.DeleteDevice(&core_apiv1.DeleteDeviceRequest{
+		Targets: &core_apiv1.Targets{
 			Labels: map[string]string{
 				"testing": "mng_store",
 			},
@@ -37,7 +37,7 @@ func TestMain(m *testing.M) {
 
 func TestUpdateRequest(t *testing.T) {
 	// Arrange
-	_, err := store.CreateDevice(&core_api.CreateDeviceRequest{
+	_, err := store.CreateDevice(&core_apiv1.CreateDeviceRequest{
 		DeviceId:  "TestUpdateFreeRequest",
 		Name:      "bob",
 		Namespace: "integration_test",

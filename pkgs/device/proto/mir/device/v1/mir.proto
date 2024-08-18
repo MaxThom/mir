@@ -1,0 +1,22 @@
+
+syntax = "proto3";
+
+package mir.device.v1;
+
+import "google/protobuf/descriptor.proto";
+
+extend google.protobuf.MessageOptions {
+  optional MessageType message_type = 50001;
+}
+
+enum MessageType {
+  MESSAGE_TYPE_UNSPECIFIED = 0;
+  MESSAGE_TYPE_TELEMETRY = 1;
+  MESSAGE_TYPE_TELECOMMAND = 2;
+  MESSAGE_TYPE_DESIRED_PROPERTIES = 3;
+  MESSAGE_TYPE_REPORTED_PROPERTIES = 4;
+}
+
+extend google.protobuf.FieldOptions {
+  optional float my_field_option = 50002;
+}

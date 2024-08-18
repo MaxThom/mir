@@ -12,8 +12,8 @@ import (
 	"github.com/maxthom/mir/internal/externals/mng"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	"github.com/maxthom/mir/internal/libs/test_utils"
-	"github.com/maxthom/mir/pkgs/api/proto/v1alpha/common_api"
-	"github.com/maxthom/mir/pkgs/api/proto/v1alpha/core_api"
+	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
+	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/nats-io/nats.go"
 	logger "github.com/rs/zerolog/log"
@@ -75,7 +75,7 @@ func TestPublishDeviceCreate(t *testing.T) {
 	// Arrange
 	id := "device_create_raw"
 	publishStream := "device." + id + ".core.v1alpha.create"
-	reqCreate := &core_api.CreateDeviceRequest{
+	reqCreate := &core_apiv1.CreateDeviceRequest{
 		DeviceId:  id,
 		Namespace: "testing_core",
 		Labels: map[string]string{
@@ -100,8 +100,8 @@ func TestPublishDeviceCreate(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	respList, err := core_client.PublishDeviceListRequest(b, &core_api.ListDeviceRequest{
-		Targets: &core_api.Targets{
+	respList, err := core_client.PublishDeviceListRequest(b, &core_apiv1.ListDeviceRequest{
+		Targets: &core_apiv1.Targets{
 			Ids: []string{id},
 		},
 	})
@@ -118,7 +118,7 @@ func TestPublishDeviceCreate(t *testing.T) {
 func TestPublishDeviceCreateClient(t *testing.T) {
 	// Arrange
 	id := "device_create"
-	reqCreate := &core_api.CreateDeviceRequest{
+	reqCreate := &core_apiv1.CreateDeviceRequest{
 		DeviceId:  id,
 		Namespace: "testing_core",
 		Labels: map[string]string{
@@ -148,8 +148,8 @@ func TestPublishDeviceCreateClient(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	respList, err := core_client.PublishDeviceListRequest(b, &core_api.ListDeviceRequest{
-		Targets: &core_api.Targets{
+	respList, err := core_client.PublishDeviceListRequest(b, &core_apiv1.ListDeviceRequest{
+		Targets: &core_apiv1.Targets{
 			Ids: []string{id},
 		},
 	})
@@ -169,7 +169,7 @@ func TestPublishDeviceCreateClient(t *testing.T) {
 func TestPublishDeviceCreateClientNoID(t *testing.T) {
 	// Arrange
 	id := ""
-	reqCreate := &core_api.CreateDeviceRequest{
+	reqCreate := &core_apiv1.CreateDeviceRequest{
 		DeviceId:  id,
 		Namespace: "testing_core",
 		Labels: map[string]string{
@@ -197,7 +197,7 @@ func TestPublishDeviceCreateClientNoID(t *testing.T) {
 func TestPublishDeviceUpdateTargetIds(t *testing.T) {
 	// Arrange
 	id := "device_update_target_ids"
-	reqCreate := &core_api.CreateDeviceRequest{
+	reqCreate := &core_apiv1.CreateDeviceRequest{
 		DeviceId:  id,
 		Namespace: "testing_core",
 		Labels: map[string]string{
@@ -222,12 +222,12 @@ func TestPublishDeviceUpdateTargetIds(t *testing.T) {
 			msg.Ack()
 		})
 
-	reqUpd := &core_api.UpdateDeviceRequest{
-		Targets: &core_api.Targets{
+	reqUpd := &core_apiv1.UpdateDeviceRequest{
+		Targets: &core_apiv1.Targets{
 			Ids: []string{id},
 		},
-		Meta: &core_api.UpdateDeviceRequest_Meta{
-			Labels: map[string]*common_api.OptString{
+		Meta: &core_apiv1.UpdateDeviceRequest_Meta{
+			Labels: map[string]*common_apiv1.OptString{
 				"factory": {
 					Value: strRef("site_b"),
 				},
@@ -239,7 +239,7 @@ func TestPublishDeviceUpdateTargetIds(t *testing.T) {
 					Value: strRef("mazda3sport"),
 				},
 			},
-			Annotations: map[string]*common_api.OptString{
+			Annotations: map[string]*common_apiv1.OptString{
 				"utility": {
 					Value: strRef("major"),
 				},
@@ -280,7 +280,7 @@ func TestPublishDeviceUpdateTargetIds(t *testing.T) {
 func TestPublishDeviceUpdateTargetNames(t *testing.T) {
 	// Arrange
 	id := "device_update_target_names"
-	reqCreate := &core_api.CreateDeviceRequest{
+	reqCreate := &core_apiv1.CreateDeviceRequest{
 		DeviceId:  id,
 		Name:      id,
 		Namespace: "testing_core",
@@ -297,12 +297,12 @@ func TestPublishDeviceUpdateTargetNames(t *testing.T) {
 		},
 	}
 
-	reqUpd := &core_api.UpdateDeviceRequest{
-		Targets: &core_api.Targets{
+	reqUpd := &core_apiv1.UpdateDeviceRequest{
+		Targets: &core_apiv1.Targets{
 			Names: []string{id},
 		},
-		Meta: &core_api.UpdateDeviceRequest_Meta{
-			Labels: map[string]*common_api.OptString{
+		Meta: &core_apiv1.UpdateDeviceRequest_Meta{
+			Labels: map[string]*common_apiv1.OptString{
 				"factory": {
 					Value: strRef("site_b"),
 				},
@@ -314,7 +314,7 @@ func TestPublishDeviceUpdateTargetNames(t *testing.T) {
 					Value: strRef("mazda3sport"),
 				},
 			},
-			Annotations: map[string]*common_api.OptString{
+			Annotations: map[string]*common_apiv1.OptString{
 				"utility": {
 					Value: strRef("major"),
 				},
@@ -354,7 +354,7 @@ func TestPublishDeviceUpdateTargetNamespace(t *testing.T) {
 	// Arrange
 	id := "device_update_target_namespace"
 	ns := "testing_" + id
-	reqCreate := &core_api.CreateDeviceRequest{
+	reqCreate := &core_apiv1.CreateDeviceRequest{
 		DeviceId:  id,
 		Namespace: ns,
 		Labels: map[string]string{
@@ -370,12 +370,12 @@ func TestPublishDeviceUpdateTargetNamespace(t *testing.T) {
 		},
 	}
 
-	reqUpd := &core_api.UpdateDeviceRequest{
-		Targets: &core_api.Targets{
+	reqUpd := &core_apiv1.UpdateDeviceRequest{
+		Targets: &core_apiv1.Targets{
 			Namespaces: []string{ns},
 		},
-		Meta: &core_api.UpdateDeviceRequest_Meta{
-			Labels: map[string]*common_api.OptString{
+		Meta: &core_apiv1.UpdateDeviceRequest_Meta{
+			Labels: map[string]*common_apiv1.OptString{
 				"factory": {
 					Value: strRef("site_b"),
 				},
@@ -387,7 +387,7 @@ func TestPublishDeviceUpdateTargetNamespace(t *testing.T) {
 					Value: strRef("mazda3sport"),
 				},
 			},
-			Annotations: map[string]*common_api.OptString{
+			Annotations: map[string]*common_apiv1.OptString{
 				"utility": {
 					Value: strRef("major"),
 				},
@@ -426,15 +426,15 @@ func TestPublishDeviceUpdateTargetNamespace(t *testing.T) {
 func TestPublishDeviceUpdateTargetLabels(t *testing.T) {
 	// Arrange
 	deviceIds := []string{"device_update_target_labels_1", "device_update_target_labels_2", "device_update_target_labels_3"}
-	reqUpd := &core_api.UpdateDeviceRequest{
-		Targets: &core_api.Targets{
+	reqUpd := &core_apiv1.UpdateDeviceRequest{
+		Targets: &core_apiv1.Targets{
 			Labels: map[string]string{
 				"factory": "D",
 				"land":    "sheep",
 			},
 		},
-		Meta: &core_api.UpdateDeviceRequest_Meta{
-			Labels: map[string]*common_api.OptString{
+		Meta: &core_apiv1.UpdateDeviceRequest_Meta{
+			Labels: map[string]*common_apiv1.OptString{
 				"owner": {
 					Value: nil,
 				},
@@ -442,7 +442,7 @@ func TestPublishDeviceUpdateTargetLabels(t *testing.T) {
 					Value: strRef("mazda3sport"),
 				},
 			},
-			Annotations: map[string]*common_api.OptString{
+			Annotations: map[string]*common_apiv1.OptString{
 				"utility": {
 					Value: nil,
 				},
@@ -456,7 +456,7 @@ func TestPublishDeviceUpdateTargetLabels(t *testing.T) {
 			},
 		},
 	}
-	reqCreate := []*core_api.CreateDeviceRequest{
+	reqCreate := []*core_apiv1.CreateDeviceRequest{
 		{
 			DeviceId:  deviceIds[0],
 			Namespace: "testing_core",
@@ -546,14 +546,14 @@ func TestPublishDeviceUpdateTargetLabels(t *testing.T) {
 func TestPublishDeviceUpdateTargetAnno(t *testing.T) {
 	// Arrange
 	deviceIds := []string{"device_update_target_anno_1", "device_update_target_anno_2", "device_update_target_anno_3"}
-	reqUpd := &core_api.UpdateDeviceRequest{
-		Targets: &core_api.Targets{
+	reqUpd := &core_apiv1.UpdateDeviceRequest{
+		Targets: &core_apiv1.Targets{
 			Annotations: map[string]string{
 				"utility": "hvac",
 			},
 		},
-		Meta: &core_api.UpdateDeviceRequest_Meta{
-			Labels: map[string]*common_api.OptString{
+		Meta: &core_apiv1.UpdateDeviceRequest_Meta{
+			Labels: map[string]*common_apiv1.OptString{
 				"owner": {
 					Value: nil,
 				},
@@ -561,7 +561,7 @@ func TestPublishDeviceUpdateTargetAnno(t *testing.T) {
 					Value: strRef("mazda3sport"),
 				},
 			},
-			Annotations: map[string]*common_api.OptString{
+			Annotations: map[string]*common_apiv1.OptString{
 				"utility": {
 					Value: nil,
 				},
@@ -572,7 +572,7 @@ func TestPublishDeviceUpdateTargetAnno(t *testing.T) {
 			},
 		},
 	}
-	reqCreate := []*core_api.CreateDeviceRequest{
+	reqCreate := []*core_apiv1.CreateDeviceRequest{
 		{
 			DeviceId:  deviceIds[0],
 			Namespace: "testing_core",
@@ -662,16 +662,16 @@ func TestPublishDeviceUpdateTargetAnno(t *testing.T) {
 func TestPublishDeviceUpdateTargetMixs(t *testing.T) {
 	// Arrange
 	deviceIds := []string{"device_update_target_mix_1", "device_update_target_mix_2", "device_update_target_mix_3"}
-	reqUpd := &core_api.UpdateDeviceRequest{
-		Targets: &core_api.Targets{
+	reqUpd := &core_apiv1.UpdateDeviceRequest{
+		Targets: &core_apiv1.Targets{
 			Ids: []string{deviceIds[2], deviceIds[0]},
 			Labels: map[string]string{
 				"factory": "D",
 				"land":    "sheep",
 			},
 		},
-		Meta: &core_api.UpdateDeviceRequest_Meta{
-			Labels: map[string]*common_api.OptString{
+		Meta: &core_apiv1.UpdateDeviceRequest_Meta{
+			Labels: map[string]*common_apiv1.OptString{
 				"owner": {
 					Value: nil,
 				},
@@ -679,7 +679,7 @@ func TestPublishDeviceUpdateTargetMixs(t *testing.T) {
 					Value: strRef("mazda3sport"),
 				},
 			},
-			Annotations: map[string]*common_api.OptString{
+			Annotations: map[string]*common_apiv1.OptString{
 				"utility": {
 					Value: nil,
 				},
@@ -690,7 +690,7 @@ func TestPublishDeviceUpdateTargetMixs(t *testing.T) {
 			},
 		},
 	}
-	reqCreate := []*core_api.CreateDeviceRequest{
+	reqCreate := []*core_apiv1.CreateDeviceRequest{
 		{
 			DeviceId:  deviceIds[0],
 			Namespace: "testing_core",
@@ -748,7 +748,7 @@ func TestPublishDeviceUpdateTargetMixs(t *testing.T) {
 	// Wait for written to db
 	time.Sleep(1 * time.Second)
 
-	respDb := test_utils.ExecuteTestQueryForType[[]core_api.Device](t, db,
+	respDb := test_utils.ExecuteTestQueryForType[[]core_apiv1.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE device_id = $id1 OR device_id = $id2 OR device_id = $id3;",
 		map[string]string{
 			"tb":  "devices",
@@ -779,12 +779,12 @@ func TestPublishDeviceUpdateTargetMixs(t *testing.T) {
 func TestPublishDeviceDeleteTargetIds(t *testing.T) {
 	// Arrange
 	deviceIds := []string{"device_delete_target_ids_1", "device_delete_target_ids_2", "device_delete_target_ids_3"}
-	reqDel := &core_api.DeleteDeviceRequest{
-		Targets: &core_api.Targets{
+	reqDel := &core_apiv1.DeleteDeviceRequest{
+		Targets: &core_apiv1.Targets{
 			Ids: []string{deviceIds[0], deviceIds[1]},
 		},
 	}
-	reqCreate := []*core_api.CreateDeviceRequest{
+	reqCreate := []*core_apiv1.CreateDeviceRequest{
 		{
 			DeviceId:  deviceIds[0],
 			Namespace: "testing_core",
@@ -817,6 +817,7 @@ func TestPublishDeviceDeleteTargetIds(t *testing.T) {
 			DeviceId:  deviceIds[2],
 			Namespace: "testing_core",
 			Labels: map[string]string{
+				"testing": "core",
 				"factory": "D",
 				"land":    "cow",
 				"owner":   "bob_morrisson",
@@ -870,12 +871,12 @@ func TestPublishDeviceDeleteTargetIds(t *testing.T) {
 func TestPublishDeviceDeleteTargetNames(t *testing.T) {
 	// Arrange
 	deviceIds := []string{"device_delete_target_ids_1", "device_delete_target_ids_2", "device_delete_target_ids_3"}
-	reqDel := &core_api.DeleteDeviceRequest{
-		Targets: &core_api.Targets{
+	reqDel := &core_apiv1.DeleteDeviceRequest{
+		Targets: &core_apiv1.Targets{
 			Names: []string{deviceIds[0], deviceIds[1]},
 		},
 	}
-	reqCreate := []*core_api.CreateDeviceRequest{
+	reqCreate := []*core_apiv1.CreateDeviceRequest{
 		{
 			DeviceId:  deviceIds[0],
 			Name:      deviceIds[0],
@@ -911,6 +912,7 @@ func TestPublishDeviceDeleteTargetNames(t *testing.T) {
 			Name:      deviceIds[2],
 			Namespace: "testing_core",
 			Labels: map[string]string{
+				"testing": "core",
 				"factory": "D",
 				"land":    "cow",
 				"owner":   "bob_morrisson",
@@ -956,12 +958,12 @@ func TestPublishDeviceDeleteTargetNamespace(t *testing.T) {
 	// Arrange
 	deviceIds := []string{"device_delete_target_ns_1", "device_delete_target_ns_2", "device_delete_target_ns_3"}
 	ns := "testing_" + strings.Join(deviceIds, "_")
-	reqDel := &core_api.DeleteDeviceRequest{
-		Targets: &core_api.Targets{
+	reqDel := &core_apiv1.DeleteDeviceRequest{
+		Targets: &core_apiv1.Targets{
 			Namespaces: []string{ns},
 		},
 	}
-	reqCreate := []*core_api.CreateDeviceRequest{
+	reqCreate := []*core_apiv1.CreateDeviceRequest{
 		{
 			DeviceId:  deviceIds[0],
 			Namespace: ns,
@@ -1038,8 +1040,8 @@ func TestPublishDeviceDeleteTargetNamespace(t *testing.T) {
 
 func TestPublishDeviceDeleteTargetLabels(t *testing.T) {
 	// Arrange
-	reqDel := &core_api.DeleteDeviceRequest{
-		Targets: &core_api.Targets{
+	reqDel := &core_apiv1.DeleteDeviceRequest{
+		Targets: &core_apiv1.Targets{
 			Labels: map[string]string{
 				"factory": "D",
 				"land":    "plane",
@@ -1048,7 +1050,7 @@ func TestPublishDeviceDeleteTargetLabels(t *testing.T) {
 	}
 
 	deviceIds := []string{"device_delete_target_lbls_1", "device_delete_target_lbls_2", "device_delete_target_lbls_3"}
-	reqCreate := []*core_api.CreateDeviceRequest{
+	reqCreate := []*core_apiv1.CreateDeviceRequest{
 		{
 			DeviceId:  deviceIds[0],
 			Namespace: "testing_core",
@@ -1124,13 +1126,13 @@ func TestPublishDeviceDeleteTargetLabels(t *testing.T) {
 func TestPublishDeviceListTargetIds(t *testing.T) {
 	// Arrange
 	deviceIds := []string{"device_list_target_ids_1", "device_list_target_ids_2", "device_list_target_ids_3"}
-	reqList := &core_api.ListDeviceRequest{
-		Targets: &core_api.Targets{
+	reqList := &core_apiv1.ListDeviceRequest{
+		Targets: &core_apiv1.Targets{
 			Ids: []string{deviceIds[0], deviceIds[1]},
 		},
 	}
 
-	reqCreate := []*core_api.CreateDeviceRequest{
+	reqCreate := []*core_apiv1.CreateDeviceRequest{
 		{
 			DeviceId:  deviceIds[0],
 			Namespace: "testing_core",
@@ -1206,13 +1208,13 @@ func TestPublishDeviceListTargetIds(t *testing.T) {
 func TestPublishDeviceListTargetNames(t *testing.T) {
 	// Arrange
 	deviceIds := []string{"device_list_target_names_1", "device_list_target_names_2", "device_list_target_names_3"}
-	reqList := &core_api.ListDeviceRequest{
-		Targets: &core_api.Targets{
+	reqList := &core_apiv1.ListDeviceRequest{
+		Targets: &core_apiv1.Targets{
 			Names: []string{deviceIds[0], deviceIds[1]},
 		},
 	}
 
-	reqCreate := []*core_api.CreateDeviceRequest{
+	reqCreate := []*core_apiv1.CreateDeviceRequest{
 		{
 			DeviceId:  deviceIds[0],
 			Name:      deviceIds[0],
@@ -1292,13 +1294,13 @@ func TestPublishDeviceListTargetNamespace(t *testing.T) {
 	// Arrange
 	deviceIds := []string{"device_list_target_ns_1", "device_list_target_ns_2", "device_list_target_ns_3"}
 	ns := "testing_" + strings.Join(deviceIds, "_")
-	reqList := &core_api.ListDeviceRequest{
-		Targets: &core_api.Targets{
+	reqList := &core_apiv1.ListDeviceRequest{
+		Targets: &core_apiv1.Targets{
 			Namespaces: []string{ns},
 		},
 	}
 
-	reqCreate := []*core_api.CreateDeviceRequest{
+	reqCreate := []*core_apiv1.CreateDeviceRequest{
 		{
 			DeviceId:  deviceIds[0],
 			Namespace: ns,
@@ -1373,8 +1375,8 @@ func TestPublishDeviceListTargetNamespace(t *testing.T) {
 
 func TestPublishDeviceListTargetLabels(t *testing.T) {
 	// Arrange
-	reqList := &core_api.ListDeviceRequest{
-		Targets: &core_api.Targets{
+	reqList := &core_apiv1.ListDeviceRequest{
+		Targets: &core_apiv1.Targets{
 			Labels: map[string]string{
 				"factory": "D",
 				"land":    "lamb",
@@ -1383,7 +1385,7 @@ func TestPublishDeviceListTargetLabels(t *testing.T) {
 	}
 
 	deviceIds := []string{"device_list_target_lbls_1", "device_list_target_lbls_2", "device_list_target_lbls_3"}
-	reqCreate := []*core_api.CreateDeviceRequest{
+	reqCreate := []*core_apiv1.CreateDeviceRequest{
 		{
 			DeviceId:  deviceIds[0],
 			Namespace: "testing_core",
@@ -1440,7 +1442,7 @@ func TestPublishDeviceListTargetLabels(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	respDb := test_utils.ExecuteTestQueryForType[[]core_api.Device](t, db,
+	respDb := test_utils.ExecuteTestQueryForType[[]core_apiv1.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE spec.deviceId = $id1 OR spec.deviceId = $id2 OR spec.deviceId = $id3;",
 		map[string]string{
 			"tb":  "devices",
@@ -1458,8 +1460,8 @@ func TestPublishDeviceListTargetLabels(t *testing.T) {
 
 func TestPublishDeviceListTargetAnnotations(t *testing.T) {
 	// Arrange
-	reqList := &core_api.ListDeviceRequest{
-		Targets: &core_api.Targets{
+	reqList := &core_apiv1.ListDeviceRequest{
+		Targets: &core_apiv1.Targets{
 			Annotations: map[string]string{
 				"utility": "air_quality_target_anno",
 			},
@@ -1467,7 +1469,7 @@ func TestPublishDeviceListTargetAnnotations(t *testing.T) {
 	}
 
 	deviceIds := []string{"device_list_target_anno_1", "device_list_target_anno_2", "device_list_target_anno_3"}
-	reqCreate := []*core_api.CreateDeviceRequest{
+	reqCreate := []*core_apiv1.CreateDeviceRequest{
 		{
 			DeviceId:  deviceIds[0],
 			Namespace: "testing_core",
@@ -1486,6 +1488,7 @@ func TestPublishDeviceListTargetAnnotations(t *testing.T) {
 			DeviceId:  deviceIds[1],
 			Namespace: "testing_core",
 			Labels: map[string]string{
+				"testing": "core",
 				"factory": "D",
 				"land":    "sheep",
 				"owner":   "bob_morrisson",
@@ -1499,6 +1502,7 @@ func TestPublishDeviceListTargetAnnotations(t *testing.T) {
 			DeviceId:  deviceIds[2],
 			Namespace: "testing_core",
 			Labels: map[string]string{
+				"testing": "core",
 				"factory": "D",
 				"land":    "cow",
 				"owner":   "bob_morrisson",
@@ -1522,7 +1526,7 @@ func TestPublishDeviceListTargetAnnotations(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	respDb := test_utils.ExecuteTestQueryForType[[]core_api.Device](t, db,
+	respDb := test_utils.ExecuteTestQueryForType[[]core_apiv1.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE spec.deviceId = $id1 OR spec.deviceId = $id2 OR spec.deviceId = $id3;",
 		map[string]string{
 			"tb":  "devices",
@@ -1539,12 +1543,12 @@ func TestPublishDeviceListTargetAnnotations(t *testing.T) {
 
 func TestPublishDeviceListNoTarget(t *testing.T) {
 	// Arrange
-	reqList := &core_api.ListDeviceRequest{
-		Targets: &core_api.Targets{},
+	reqList := &core_apiv1.ListDeviceRequest{
+		Targets: &core_apiv1.Targets{},
 	}
 
 	deviceIds := []string{"device_list_target_no_1", "device_list_target_no_2", "device_list_target_no_3"}
-	reqCreate := []*core_api.CreateDeviceRequest{
+	reqCreate := []*core_apiv1.CreateDeviceRequest{
 		{
 			DeviceId:  deviceIds[0],
 			Namespace: "testing_core",
@@ -1608,7 +1612,7 @@ func TestPublishDeviceListNoTarget(t *testing.T) {
 func TestCreatedDeviceAlreadyExist(t *testing.T) {
 	// Arrange
 	deviceIds := []string{"device_already_exist_1", "device_already_exist_1"}
-	reqCreate := []*core_api.CreateDeviceRequest{
+	reqCreate := []*core_apiv1.CreateDeviceRequest{
 		{
 			DeviceId:  deviceIds[0],
 			Namespace: "testing_core",
@@ -1665,7 +1669,7 @@ func TestCreatedDeviceAlreadyExist(t *testing.T) {
 
 func TestUpdateNoTargetMetafield(t *testing.T) {
 	// Arrange
-	reqUpd := &core_api.UpdateDeviceRequest{}
+	reqUpd := &core_apiv1.UpdateDeviceRequest{}
 
 	// Act
 	respUpd, err := core_client.PublishDeviceUpdateRequest(b, reqUpd)
@@ -1680,7 +1684,7 @@ func TestUpdateNoTargetMetafield(t *testing.T) {
 
 func TestDeleteNoTargetMetafield(t *testing.T) {
 	// Arrange
-	reqDel := &core_api.DeleteDeviceRequest{}
+	reqDel := &core_apiv1.DeleteDeviceRequest{}
 
 	// Act
 	respDel, err := core_client.PublishDeviceDeleteRequest(b, reqDel)
@@ -1696,12 +1700,12 @@ func TestDeleteNoTargetMetafield(t *testing.T) {
 func TestDeviceGoesOnline(t *testing.T) {
 	// Arrange
 	deviceIds := []string{"device_goes_online"}
-	reqList := &core_api.ListDeviceRequest{
-		Targets: &core_api.Targets{
+	reqList := &core_apiv1.ListDeviceRequest{
+		Targets: &core_apiv1.Targets{
 			Ids: deviceIds,
 		},
 	}
-	reqCreate := []*core_api.CreateDeviceRequest{
+	reqCreate := []*core_apiv1.CreateDeviceRequest{
 		{
 			DeviceId:  deviceIds[0],
 			Namespace: "testing_core",
@@ -1760,12 +1764,12 @@ func TestDeviceGoesOnline(t *testing.T) {
 func TestDeviceGoesOffline(t *testing.T) {
 	// Arrange
 	deviceIds := []string{"device_goes_offline"}
-	reqList := &core_api.ListDeviceRequest{
-		Targets: &core_api.Targets{
+	reqList := &core_apiv1.ListDeviceRequest{
+		Targets: &core_apiv1.Targets{
 			Ids: deviceIds,
 		},
 	}
-	reqCreate := []*core_api.CreateDeviceRequest{
+	reqCreate := []*core_apiv1.CreateDeviceRequest{
 		{
 			DeviceId:  deviceIds[0],
 			Namespace: "testing_core",

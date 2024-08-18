@@ -38,6 +38,15 @@ install-mir: build-mir
 mir-log:
 	tail ~/.config/mir/mir.log -f
 
+protogen:
+	buf lint || true
+	buf generate --template buf.gen.api.yaml
+	buf generate --template buf.gen.device.yaml
+	buf generate --template examples/telemetry_device/buf.gen.yaml
+	buf generate --template pkgs/device/mir/proto_test/buf.gen.yaml
+	buf generate --template pkgs/module/mir/proto_test/buf.gen.yaml
+	buf generate --template internal/services/protoflux_srv/proto_test/buf.gen.yaml
+
 # air
 air-core:
 	air -c .air/core.toml
