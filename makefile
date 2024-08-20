@@ -46,6 +46,8 @@ protogen:
 	buf generate --template pkgs/device/mir/proto_test/buf.gen.yaml
 	buf generate --template pkgs/module/mir/proto_test/buf.gen.yaml
 	buf generate --template internal/services/protoflux_srv/proto_test/buf.gen.yaml
+	buf generate --template internal/libs/proto/line_protocol/proto_test/buf.gen.yaml
+	buf build --path internal/libs/proto/line_protocol/proto_test/lp_test/v1/marshal.proto -o lp.binpb
 
 # air
 air-core:

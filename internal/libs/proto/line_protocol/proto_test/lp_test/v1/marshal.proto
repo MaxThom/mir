@@ -9,20 +9,18 @@
 // - OptionalMultipleRepeatedTwoLevelNestingAndSomeChads
 // - SomeChads is a set of primitive types
 
-
 syntax = "proto3";
-package marshal;
-option go_package = "gen/";
-
-import "google/protobuf/timestamp.proto";
+package lp_test.v1;
+import "lp_test/v1/utils.proto";
 
 enum EnumABC {
-    A = 0;
-    B = 1;
-    C = 2;
+    ENUM_ABC_UNSPECIFIED = 0;
+    ENUM_ABC_A = 1;
+    ENUM_ABC_B = 2;
+    ENUM_ABC_C = 3;
 }
 
-message Primitives { 
+message Primitives {
  double a = 1;
  float b = 2;
  int32 c = 3;
@@ -179,5 +177,5 @@ message RepeatedOptionalSmallSetPrimitive {
 }
 
 message ImportMessage {
-  google.protobuf.Timestamp a = 1;
+  lp_test.v1.Timestamp a = 1;
 }
