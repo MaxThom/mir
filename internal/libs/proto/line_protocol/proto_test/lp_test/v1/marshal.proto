@@ -11,7 +11,7 @@
 
 syntax = "proto3";
 package lp_test.v1;
-import "lp_test/v1/utils.proto";
+import "mir/device/v1/mir.proto";
 
 enum EnumABC {
     ENUM_ABC_UNSPECIFIED = 0;
@@ -177,5 +177,156 @@ message RepeatedOptionalSmallSetPrimitive {
 }
 
 message ImportMessage {
-  lp_test.v1.Timestamp a = 1;
+  mir.device.v1.Timestamp a = 1;
+}
+
+message DeviceTlmTsFrac {
+	option (mir.device.v1.message_type) = MESSAGE_TYPE_TELEMETRY;
+	option (mir.device.v1.meta) = {
+		tags: [{
+			key: "building",
+			value: "A"
+		}, {
+			key: "floor",
+			value: "1"
+		}, {
+			key: "room",
+			value: ""
+		}]
+	};
+
+	mir.device.v1.Timestamp ts = 1 [(mir.device.v1.timestamp) = TIMESTAMP_TYPE_FRACTION];
+	int32 temperature = 2;
+	int32 pressure = 3;
+	int32 humidity = 4;
+}
+
+message DeviceTlmTsSec {
+	option (mir.device.v1.message_type) = MESSAGE_TYPE_TELEMETRY;
+	option (mir.device.v1.meta) = {
+		tags: [{
+			key: "twice",
+			value: "toes"
+		}, {
+			key: "twice",
+			value: "fingers"
+		}]
+	};
+
+	int32 temperature = 1;
+	int32 pressure = 2;
+	int32 humidity = 3;
+	int64 ts = 4 [(mir.device.v1.timestamp) = TIMESTAMP_TYPE_SEC];
+}
+
+message DeviceTlmTsMilli {
+	option (mir.device.v1.message_type) = MESSAGE_TYPE_TELEMETRY;
+	option (mir.device.v1.meta) = {
+		tags: []
+	};
+
+	int32 temperature = 1;
+	int64 ts = 2 [(mir.device.v1.timestamp) = TIMESTAMP_TYPE_MILLI];
+	int32 pressure = 3;
+	int32 humidity = 4;
+}
+
+message DeviceTlmTsMicro {
+	option (mir.device.v1.message_type) = MESSAGE_TYPE_TELEMETRY;
+
+	int32 temperature = 1;
+	int32 pressure = 2;
+	int64 ts = 3 [(mir.device.v1.timestamp) = TIMESTAMP_TYPE_MICRO];
+	int32 humidity = 4;
+}
+
+message DeviceTlmTsNano {
+	option (mir.device.v1.message_type) = MESSAGE_TYPE_TELEMETRY;
+	option (mir.device.v1.meta) = {
+		tags: []
+	};
+
+	int64 ts = 1 [(mir.device.v1.timestamp) = TIMESTAMP_TYPE_NANO];
+	int32 temperature = 2;
+	int32 pressure = 3;
+	int32 humidity = 4;
+}
+
+message DeviceTlmTsUnspecified {
+	option (mir.device.v1.message_type) = MESSAGE_TYPE_TELEMETRY;
+	option (mir.device.v1.meta) = {
+		tags: []
+	};
+
+	int64 ts = 1 [(mir.device.v1.timestamp) = TIMESTAMP_TYPE_UNSPECIFIED];
+	int32 temperature = 2;
+	int32 pressure = 3;
+	int32 humidity = 4;
+}
+
+message DeviceTlmTsMissing {
+	option (mir.device.v1.message_type) = MESSAGE_TYPE_TELEMETRY;
+	option (mir.device.v1.meta) = {
+		tags: []
+	};
+
+	int32 temperature = 1;
+	int32 pressure = 2;
+	int32 humidity = 3;
+}
+
+
+message DeviceTlmNestedTags {
+	option (mir.device.v1.message_type) = MESSAGE_TYPE_TELEMETRY;
+	option (mir.device.v1.meta) = {
+		tags: [{
+			key: "level",
+			value: "one"
+		}]
+	};
+
+	int64 ts = 1 [(mir.device.v1.timestamp) = TIMESTAMP_TYPE_NANO];
+	EnvTlm env = 2;
+}
+
+message EnvTlm {
+	option (mir.device.v1.meta) = {
+		tags: [{
+			key: "floor",
+			value: "two"
+		}]
+	};
+
+	int32 temperature = 1 [(mir.device.v1.field_meta) = {
+		tags: [{
+			key: "field_temp",
+			value: "hot"
+		}]
+	}];
+	int32 pressure = 2;
+	int32 humidity = 3;
+}
+
+
+message DeviceTlmFieldTags {
+	option (mir.device.v1.message_type) = MESSAGE_TYPE_TELEMETRY;
+	option (mir.device.v1.meta) = {
+		tags: [{
+			key: "level",
+			value: "one"
+		}]
+	};
+
+	int64 ts = 1 [(mir.device.v1.timestamp) = TIMESTAMP_TYPE_NANO];
+	int32 temperature = 2 [(mir.device.v1.field_meta) = {
+		tags: [{
+			key: "field_temp",
+			value: "hot"
+		}, {
+			key: "void",
+			value: ""
+		}]
+	}];
+	int32 pressure = 3;
+	int32 humidity = 4;
 }

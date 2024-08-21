@@ -155,6 +155,7 @@ func TestRequestTelemetrySchema(t *testing.T) {
 	schemaBytes, err := marshalProtoFiles(
 		mir_device_testv1.File_mir_device_test_v1_command_proto,
 		mir_device_testv1.File_mir_device_test_v1_telemetry_proto,
+		descriptorpb.File_google_protobuf_descriptor_proto,
 	)
 	if err != nil {
 		t.Error(err)

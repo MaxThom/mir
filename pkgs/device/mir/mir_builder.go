@@ -210,6 +210,15 @@ func (b builder) Build() (*Mir, error) {
 		}
 	}
 
+	if b.telemetryModuleFlag {
+		// Add descriptordb for mir options imports
+		b.telemetrySchema.File = append(b.telemetrySchema.File,
+			protodesc.ToFileDescriptorProto(
+				descriptorpb.File_google_protobuf_descriptor_proto,
+			),
+		)
+	}
+
 	return &Mir{
 		cfg:             c,
 		l:               l,

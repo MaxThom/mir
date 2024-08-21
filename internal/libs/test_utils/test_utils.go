@@ -10,7 +10,6 @@ import (
 	"github.com/maxthom/mir/internal/libs/external/influx"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
-	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/surrealdb/surrealdb.go"
 )
 
@@ -36,12 +35,11 @@ type InfluxInfo struct {
 	Bucket string
 }
 
-func SetupAllExternalsPanic(ctx context.Context, conns ConnsInfo) (*mir.Mir, *bus.BusConn, *surrealdb.DB, influxdb2.Client, api.WriteAPI, api.QueryAPI) {
-	m := SetupMirSdkPanic(conns.Name, conns.BusUrl)
+func SetupAllExternalsPanic(ctx context.Context, conns ConnsInfo) (*bus.BusConn, *surrealdb.DB, influxdb2.Client, api.WriteAPI, api.QueryAPI) {
 	b := SetupNatsConPanic(conns.BusUrl)
 	s := SetupSurrealDbConnsPanic(conns.Surreal.Url, conns.Surreal.User, conns.Surreal.Pass, conns.Surreal.Ns, conns.Surreal.Db)
 	c, w, q := SetupInfluxConnsPanic(ctx, conns.Iinflux.Url, conns.Iinflux.Token, conns.Iinflux.Org, conns.Iinflux.Bucket)
-	return m, b, s, c, w, q
+	return b, s, c, w, q
 }
 
 func SetupInfluxConnsPanic(ctx context.Context, url, token, org, bucket string) (influxdb2.Client, api.WriteAPI, api.QueryAPI) {
@@ -54,14 +52,6 @@ func SetupInfluxConnsPanic(ctx context.Context, url, token, org, bucket string) 
 	}
 
 	return c, w, q
-}
-
-func SetupMirSdkPanic(name, url string) *mir.Mir {
-	m, err := mir.Connect(name, url)
-	if err != nil {
-		panic(err)
-	}
-	return m
 }
 
 func SetupSurrealDbConnsPanic(url, user, pass, ns, db string) *surrealdb.DB {

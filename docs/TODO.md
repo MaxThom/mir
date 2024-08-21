@@ -19,8 +19,13 @@
 - [x] integrate database
 - [x] read on surreal type
 - [x] add unit/integration tests
-- [ ] schema annotation for ts field
+- [x] schema annotation for ts field
+- [x] schema annotation for labels of msgs
 - [x] upload schema flow
-- [ ] prometheus metrics
-- [ ] cli/tui to upload, list and explore the schema?
+- [ ] prometheus metrics (jitter, tlm_count, schema_req, schema_err, etc)
+- [x] cli/tui to upload, list and explore the schema?
 - [ ] work on protodash
+- [x] unit test for schema
+- [ ] cli for telemetry
+- [ ] tui for telemetry
+- [ ] schema force update or version or something

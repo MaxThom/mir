@@ -10,3 +10,4 @@ plugins:
     opt: paths=source_relative
 inputs:
   - directory: internal/libs/proto/line_protocol/proto_test
+  - directory: pkgs/device/proto
