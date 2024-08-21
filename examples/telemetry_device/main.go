@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"time"
 
+	devicev1 "github.com/maxthom/mir/examples/telemetry_device/gen/mir/device/v1"
 	telemetry_devicev1 "github.com/maxthom/mir/examples/telemetry_device/gen/telemetry_device/v1"
 	"github.com/maxthom/mir/internal/libs/boiler/mir_signals"
 	"github.com/maxthom/mir/pkgs/device/mir"
@@ -25,6 +26,7 @@ func main() {
 		LogWriters([]io.Writer{os.Stdout}).
 		DefaultConfigFile(mir.Yaml).
 		TelemetrySchema(
+			devicev1.File_mir_device_v1_mir_proto,
 			telemetry_devicev1.File_telemetry_device_v1_telemetry_proto,
 		).
 		TelemetrySchemaProto(
@@ -49,6 +51,10 @@ func main() {
 		for {
 			time.Sleep(3 * time.Second)
 			data := telemetry_devicev1.EnvironmentTlm{
+				Ts: &devicev1.Timestamp{
+					Seconds: time.Now().UTC().Unix(),
+					Nanos:   int32(time.Now().Nanosecond()),
+				},
 				Temperature: rand.Int32N(101),
 				Pressure:    rand.Int32N(101),
 				Humidity:    rand.Int32N(101),
@@ -65,6 +71,7 @@ func main() {
 			volt := rand.Float64() * 100
 			time.Sleep(5 * time.Second)
 			data := telemetry_devicev1.PowerConsuption{
+				Ts:      time.Now().UTC().UnixNano(),
 				Amp:     amp,
 				Voltage: volt,
 				Power:   amp * volt,
@@ -79,6 +86,7 @@ func main() {
 			time.Sleep(3 * time.Second)
 
 			data := telemetry_devicev1.Constelletion{
+				Ts: time.Now().UTC().Unix(),
 				Satellites: []*telemetry_devicev1.Satellite{
 					{
 						Id:             "SAT-1",

@@ -451,6 +451,7 @@ func TestRequestRetrieveSchema(t *testing.T) {
 	schemaBytes, err := marshalProtoFiles(
 		mir_module_testv1.File_mir_module_test_v1_command_proto,
 		mir_module_testv1.File_mir_module_test_v1_telemetry_proto,
+		descriptorpb.File_google_protobuf_descriptor_proto,
 	)
 	if err != nil {
 		t.Error(err)

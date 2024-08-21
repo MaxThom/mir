@@ -24,6 +24,7 @@ import (
 	"github.com/maxthom/mir/pkgs/module/mir"
 	logger "github.com/rs/zerolog/log"
 	"github.com/surrealdb/surrealdb.go"
+	"google.golang.org/protobuf/types/descriptorpb"
 	"gotest.tools/assert"
 )
 
@@ -45,7 +46,7 @@ func TestMain(m *testing.M) {
 	ctx, cancel := context.WithCancel(context.Background())
 	fmt.Println("Test Setup")
 
-	mSdk, b, db, _, lpWriter, lpQuery = test_utils.SetupAllExternalsPanic(ctx, test_utils.ConnsInfo{
+	b, db, _, lpWriter, lpQuery = test_utils.SetupAllExternalsPanic(ctx, test_utils.ConnsInfo{
 		Name:   "test_protoflux",
 		BusUrl: busUrl,
 		Surreal: test_utils.SurrealInfo{
@@ -62,6 +63,11 @@ func TestMain(m *testing.M) {
 			Bucket: "mir_integration_test",
 		},
 	})
+	var err error
+	mSdk, err = mir.Connect("test_protoflux", busUrl)
+	if err != nil {
+		panic(err)
+	}
 	protofluxSrv := NewProtoFluxServer(logTest, mSdk, mng.NewSurrealDeviceStore(db), ts.NewInfluxTelemetryStore(lpWriter))
 	go func() {
 		protofluxSrv.Listen(ctx)
@@ -187,6 +193,7 @@ func TestPublishDevicePushTelemetry(t *testing.T) {
 	originalSchemaBytes, err := mir_models.MarhsalProtoFiles(
 		protoflux_testv1.File_protoflux_test_v1_telemetry_proto,
 		protoflux_testv1.File_protoflux_test_v1_command_proto,
+		descriptorpb.File_google_protobuf_descriptor_proto,
 	)
 	if err != nil {
 		t.Error(err)
@@ -196,7 +203,7 @@ func TestPublishDevicePushTelemetry(t *testing.T) {
 		t.Error(err)
 	}
 
-	dpResult, err := lpQuery.Query(ctx, `from(bucket: "mir") |> range(start: -7s) |> filter(fn: (r) => r["_measurement"] == "v1alpha.integration_test.telemetry.EnvTlm" or r["_measurement"] == "v1alpha.integration_test.telemetry.PowerTlm") |> filter(fn: (r) => r["deviceId"] == "device_push_tlm")`)
+	dpResult, err := lpQuery.Query(ctx, `from(bucket: "mir_integration_test") |> range(start: -7s) |> filter(fn: (r) => r["_measurement"] == "protoflux_test.v1.EnvTlm" or r["_measurement"] == "protoflux_test.v1.PowerTlm") |> filter(fn: (r) => r["deviceId"] == "device_push_tlm")`)
 	if err != nil {
 		t.Error(err)
 	}
@@ -213,7 +220,7 @@ func TestPublishDevicePushTelemetry(t *testing.T) {
 	lastFetch := mir_models.AsGoTime(devDb.Status.Schema.LastSchemaFetch)
 	tspan := time.Now().UTC().Sub(lastFetch)
 	assert.Equal(t, true, tspan.Seconds() < 10)
-	assert.Equal(t, 48, dpCount)
+	assert.Equal(t, 24, dpCount)
 
 	cancel()
 	wg.Wait()
@@ -237,6 +244,7 @@ func TestPublishDeviceSchemaAlreadyPresent(t *testing.T) {
 	compSch, err := mir_models.CompressProtoFiles(
 		protoflux_testv1.File_protoflux_test_v1_telemetry_proto,
 		protoflux_testv1.File_protoflux_test_v1_command_proto,
+		descriptorpb.File_google_protobuf_descriptor_proto,
 	)
 	if err != nil {
 		t.Error(err)
@@ -333,7 +341,7 @@ func TestPublishDeviceSchemaAlreadyPresent(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	dpResult, err := lpQuery.Query(ctx, `from(bucket: "mir") |> range(start: -7s) |> filter(fn: (r) => r["_measurement"] == "v1alpha.integration_test.telemetry.EnvTlm" or r["_measurement"] == "v1alpha.integration_test.telemetry.PowerTlm") |> filter(fn: (r) => r["deviceId"] == "device_schema_present")`)
+	dpResult, err := lpQuery.Query(ctx, `from(bucket: "mir_integration_test") |> range(start: -7s) |> filter(fn: (r) => r["_measurement"] == "protoflux_test.v1.EnvTlm" or r["_measurement"] == "protoflux_test.v1.PowerTlm") |> filter(fn: (r) => r["deviceId"] == "device_schema_present")`)
 	if err != nil {
 		t.Error(err)
 	}
@@ -348,7 +356,7 @@ func TestPublishDeviceSchemaAlreadyPresent(t *testing.T) {
 	assert.Equal(t, reqCreate.DeviceId, devDb.Spec.DeviceId)
 	assert.Equal(t, len(decompSch), len(decompStoredSchemaBytes))
 	assert.Equal(t, timeFetch, mir_models.AsGoTime(devDb.Status.Schema.LastSchemaFetch))
-	assert.Equal(t, 48, dpCount)
+	assert.Equal(t, 24, dpCount)
 
 	cancel()
 	wg.Wait()
@@ -375,6 +383,7 @@ func TestPublishDeviceSchemaInvalid(t *testing.T) {
 	goodSch, err := mir_models.CompressProtoFiles(
 		protoflux_testv1.File_protoflux_test_v1_telemetry_proto,
 		protoflux_testv1.File_protoflux_test_v1_command_proto,
+		descriptorpb.File_google_protobuf_descriptor_proto,
 	)
 	if err != nil {
 		t.Error(err)
@@ -471,7 +480,7 @@ func TestPublishDeviceSchemaInvalid(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	dpResult, err := lpQuery.Query(ctx, `from(bucket: "mir") |> range(start: -7s) |> filter(fn: (r) => r["_measurement"] == "v1alpha.integration_test.telemetry.EnvTlm" or r["_measurement"] == "v1alpha.integration_test.telemetry.PowerTlm") |> filter(fn: (r) => r["deviceId"] == "device_invalid_schema")`)
+	dpResult, err := lpQuery.Query(ctx, `from(bucket: "mir_integration_test") |> range(start: -7s) |> filter(fn: (r) => r["_measurement"] == "protoflux_test.v1.EnvTlm" or r["_measurement"] == "protoflux_test.v1.PowerTlm") |> filter(fn: (r) => r["deviceId"] == "device_invalid_schema")`)
 	if err != nil {
 		t.Error(err)
 	}
@@ -488,7 +497,7 @@ func TestPublishDeviceSchemaInvalid(t *testing.T) {
 	lastFetch := mir_models.AsGoTime(devDb.Status.Schema.LastSchemaFetch)
 	tspan := time.Now().UTC().Sub(lastFetch)
 	assert.Equal(t, true, tspan.Seconds() < 10)
-	assert.Equal(t, 48, dpCount)
+	assert.Equal(t, 24, dpCount)
 
 	cancel()
 	wg.Wait()

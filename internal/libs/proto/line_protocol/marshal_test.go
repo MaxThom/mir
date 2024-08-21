@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	lp_testv1 "github.com/maxthom/mir/internal/libs/proto/line_protocol/proto_test/gen/lp_test/v1"
+	devicev1 "github.com/maxthom/mir/internal/libs/proto/line_protocol/proto_test/gen/mir/device/v1"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -43,6 +44,13 @@ func init() {
 		}
 		protoRegistry.RegisterFile(fd)
 	}
+
+	// protoRegistry.RangeFiles(func(fd protoreflect.FileDescriptor) bool {
+	// 	for i := 0; i < fd.Messages().Len(); i++ {
+	// 		fmt.Println(fd.Messages().Get(i).FullName())
+	// 	}
+	// 	return true
+	// })
 }
 
 func TestPrimitives(t *testing.T) {
@@ -1057,7 +1065,7 @@ func TestImportMessage(t *testing.T) {
 		assert.NilError(t, err)
 	}
 	testCase := &lp_testv1.ImportMessage{
-		A: &lp_testv1.Timestamp{
+		A: &devicev1.Timestamp{
 			Seconds: 123,
 			Nanos:   256,
 		},
@@ -1126,6 +1134,211 @@ func TestMixIndexOneLevelNesting(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, true, strings.Contains(lp, "lp_test.v1.MixIndexOneLevelNesting a.a=1.000000,a.b=2u,a.c=3i,a.d=\"d\",b=2u,c=0i,d=\"\""))
+}
+
+func TestDeviceTlmTsFrac(t *testing.T) {
+	// Arrange
+	desc, err := protoRegistry.FindDescriptorByName("lp_test.v1.DeviceTlmTsFrac")
+	if err != nil {
+		assert.NilError(t, err)
+	}
+	testCase := &lp_testv1.DeviceTlmTsFrac{
+		Ts: &devicev1.Timestamp{
+			Seconds: 1257894000,
+			Nanos:   256,
+		},
+		Temperature: int32(12),
+		Pressure:    int32(42),
+		Humidity:    int32(88),
+	}
+
+	dataIn, _ := proto.Marshal(testCase)
+
+	// Act
+	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
+	assert.NilError(t, err)
+	lp := Marshal(dataIn, map[string]string{}, fn)
+	fmt.Println(lp)
+
+	// Assert
+	assert.Equal(t, true, strings.Contains(lp, "lp_test.v1.DeviceTlmTsFrac,building=A,floor=1 temperature=12i,pressure=42i,humidity=88i 1257894000000000256"))
+}
+
+func TestDeviceTlmTsSec(t *testing.T) {
+	// Arrange
+	desc, err := protoRegistry.FindDescriptorByName("lp_test.v1.DeviceTlmTsSec")
+	if err != nil {
+		assert.NilError(t, err)
+	}
+	testCase := &lp_testv1.DeviceTlmTsSec{
+		Ts:          int64(1257894000),
+		Temperature: int32(12),
+		Pressure:    int32(42),
+		Humidity:    int32(88),
+	}
+
+	dataIn, _ := proto.Marshal(testCase)
+
+	// Act
+	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
+	assert.NilError(t, err)
+	lp := Marshal(dataIn, map[string]string{}, fn)
+	fmt.Println(lp)
+
+	// Assert
+	assert.Equal(t, true, strings.Contains(lp, "lp_test.v1.DeviceTlmTsSec,twice=fingers temperature=12i,pressure=42i,humidity=88i 1257894000000000000"))
+}
+
+func TestDeviceTlmTsMilli(t *testing.T) {
+	// Arrange
+	desc, err := protoRegistry.FindDescriptorByName("lp_test.v1.DeviceTlmTsMilli")
+	if err != nil {
+		assert.NilError(t, err)
+	}
+	testCase := &lp_testv1.DeviceTlmTsMilli{
+		Ts:          int64(1257894000000),
+		Temperature: int32(12),
+		Pressure:    int32(42),
+		Humidity:    int32(88),
+	}
+
+	dataIn, _ := proto.Marshal(testCase)
+
+	// Act
+	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
+	assert.NilError(t, err)
+	lp := Marshal(dataIn, map[string]string{}, fn)
+	fmt.Println(lp)
+
+	// Assert
+	assert.Equal(t, true, strings.Contains(lp, "lp_test.v1.DeviceTlmTsMilli temperature=12i,pressure=42i,humidity=88i 1257894000000000000"))
+}
+
+func TestDeviceTlmTsMicro(t *testing.T) {
+	// Arrange
+	desc, err := protoRegistry.FindDescriptorByName("lp_test.v1.DeviceTlmTsMicro")
+	if err != nil {
+		assert.NilError(t, err)
+	}
+	testCase := &lp_testv1.DeviceTlmTsMicro{
+		Ts:          int64(1257894000000000),
+		Temperature: int32(12),
+		Pressure:    int32(42),
+		Humidity:    int32(88),
+	}
+
+	dataIn, _ := proto.Marshal(testCase)
+
+	// Act
+	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
+	assert.NilError(t, err)
+	lp := Marshal(dataIn, map[string]string{}, fn)
+	fmt.Println(lp)
+
+	// Assert
+	assert.Equal(t, true, strings.Contains(lp, "lp_test.v1.DeviceTlmTsMicro temperature=12i,pressure=42i,humidity=88i 1257894000000000000"))
+}
+
+func TestDeviceTlmTsNano(t *testing.T) {
+	// Arrange
+	desc, err := protoRegistry.FindDescriptorByName("lp_test.v1.DeviceTlmTsNano")
+	if err != nil {
+		assert.NilError(t, err)
+	}
+	testCase := &lp_testv1.DeviceTlmTsNano{
+		Ts:          int64(1257894000000000000),
+		Temperature: int32(12),
+		Pressure:    int32(42),
+		Humidity:    int32(88),
+	}
+
+	dataIn, _ := proto.Marshal(testCase)
+
+	// Act
+	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
+	assert.NilError(t, err)
+	lp := Marshal(dataIn, map[string]string{}, fn)
+	fmt.Println(lp)
+
+	// Assert
+	assert.Equal(t, true, strings.Contains(lp, "lp_test.v1.DeviceTlmTsNano temperature=12i,pressure=42i,humidity=88i 1257894000000000000"))
+}
+
+func TestDeviceTlmTsUnspecified(t *testing.T) {
+	// Arrange
+	desc, err := protoRegistry.FindDescriptorByName("lp_test.v1.DeviceTlmTsUnspecified")
+	if err != nil {
+		assert.NilError(t, err)
+	}
+	testCase := &lp_testv1.DeviceTlmTsUnspecified{
+		Ts:          int64(1257894000),
+		Temperature: int32(12),
+		Pressure:    int32(42),
+		Humidity:    int32(88),
+	}
+
+	dataIn, _ := proto.Marshal(testCase)
+
+	// Act
+	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
+	assert.NilError(t, err)
+	lp := Marshal(dataIn, map[string]string{}, fn)
+	fmt.Println(lp)
+
+	// Assert
+	assert.Equal(t, true, strings.Contains(lp, "lp_test.v1.DeviceTlmTsUnspecified ts=1257894000i,temperature=12i,pressure=42i,humidity=88i"))
+}
+
+func TestDeviceTlmNestedTags(t *testing.T) {
+	// Arrange
+	desc, err := protoRegistry.FindDescriptorByName("lp_test.v1.DeviceTlmNestedTags")
+	if err != nil {
+		assert.NilError(t, err)
+	}
+	testCase := &lp_testv1.DeviceTlmNestedTags{
+		Ts: int64(1257894000000000),
+		Env: &lp_testv1.EnvTlm{
+			Temperature: int32(12),
+			Pressure:    int32(42),
+			Humidity:    int32(88),
+		},
+	}
+
+	dataIn, _ := proto.Marshal(testCase)
+
+	// Act
+	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
+	assert.NilError(t, err)
+	lp := Marshal(dataIn, map[string]string{}, fn)
+	fmt.Println(lp)
+
+	// Assert
+	assert.Equal(t, true, strings.Contains(lp, "lp_test.v1.DeviceTlmNestedTags,field_temp=hot,floor=two,level=one env.temperature=12i,env.pressure=42i,env.humidity=88i 1257894000000000"))
+}
+
+func TestDeviceTlmFieldTags(t *testing.T) {
+	// Arrange
+	desc, err := protoRegistry.FindDescriptorByName("lp_test.v1.DeviceTlmFieldTags")
+	if err != nil {
+		assert.NilError(t, err)
+	}
+	testCase := &lp_testv1.DeviceTlmFieldTags{
+		Ts:          int64(1257894000000000),
+		Temperature: int32(12),
+		Pressure:    int32(42),
+		Humidity:    int32(88),
+	}
+
+	dataIn, _ := proto.Marshal(testCase)
+
+	// Act
+	fn, err := GenerateMarshalFn(map[string]string{}, desc.(protoreflect.MessageDescriptor))
+	assert.NilError(t, err)
+	lp := Marshal(dataIn, map[string]string{}, fn)
+	fmt.Println(lp)
+
+	// Assert
+	assert.Equal(t, true, strings.Contains(lp, "lp_test.v1.DeviceTlmFieldTags,field_temp=hot,level=one temperature=12i,pressure=42i,humidity=88i 1257894000000000"))
 }
 
 func ptr[T any](t T) *T {

@@ -3,9 +3,9 @@ package proto_lineprotocol
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
-	"time"
 
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -56,11 +56,21 @@ const (
 // - [x] more unit test
 // - [ ] one of field
 // - [ ] enum options
+// - [x] timestamp field
+// - [x] labels field
 func GenerateMarshalFn(pinnedTags map[string]string, desc protoreflect.MessageDescriptor) (ProtoBytesToLpFn, error) {
 	var lpHead strings.Builder
 	lpHead.WriteString(string(desc.FullName()))
 
 	// Pinned tags
+	// Get meta opts
+	lbl := retrieveMessageTags(desc)
+	for k, v := range lbl {
+		if v != "" {
+			pinnedTags[k] = v
+		}
+	}
+
 	// Good practices to sort them else its done by the db
 	pinnedTagKeys := make([]string, 0, len(pinnedTags))
 	for k := range pinnedTags {
@@ -73,7 +83,15 @@ func GenerateMarshalFn(pinnedTags map[string]string, desc protoreflect.MessageDe
 		}
 	}
 
-	orderedFieldDesc, fieldFns, err := formatProtoMessageToLineProtocol("", desc)
+	// Timestamp special field
+	skippedFields := []int{}
+	timeFn, tsFieldIndex := generateTimeFn(desc)
+	if tsFieldIndex != -1 {
+		skippedFields = append(skippedFields, tsFieldIndex)
+	}
+
+	// Generate the field functions
+	orderedFieldDesc, fieldFns, err := formatProtoMessageToLineProtocol("", desc, skippedFields)
 	m := dynamicpb.NewMessage(desc)
 	mr := m.ProtoReflect()
 
@@ -102,7 +120,7 @@ func GenerateMarshalFn(pinnedTags map[string]string, desc protoreflect.MessageDe
 		lpStr := strings.TrimSuffix(lp.String(), ",")
 
 		// Timestamp
-		lpStr += fmt.Sprint(" ", time.Now().UTC().UnixNano())
+		lpStr += fmt.Sprint(" ", timeFn(mr))
 
 		return lpStr
 	}, err
@@ -112,14 +130,19 @@ func Marshal(in []byte, tags map[string]string, fn ProtoBytesToLpFn) string {
 	return fn(in, tags)
 }
 
-func formatProtoMessageToLineProtocol(prefix string, desc protoreflect.MessageDescriptor) ([]protoreflect.FieldDescriptor, []WriteValueToLpFn, error) {
+func formatProtoMessageToLineProtocol(prefix string, desc protoreflect.MessageDescriptor, fieldIndexToSkip []int) ([]protoreflect.FieldDescriptor, []WriteValueToLpFn, error) {
 	var errs error
 	var err error
 
-	orderedFieldDesc := make([]protoreflect.FieldDescriptor, desc.Fields().Len())
+	orderedFieldDesc := make([]protoreflect.FieldDescriptor, desc.Fields().Len()-len(fieldIndexToSkip))
+	skippedCounter := 0
 	for i := 0; i < desc.Fields().Len(); i++ {
+		if slices.Contains(fieldIndexToSkip, i) {
+			skippedCounter += 1
+			continue
+		}
 		fd := desc.Fields().Get(i)
-		orderedFieldDesc[i] = fd
+		orderedFieldDesc[i-skippedCounter] = fd
 	}
 
 	// Create a set of function that will be called for each field
@@ -147,7 +170,7 @@ func formatProtoFieldToLineProtocol(prefix string, fd protoreflect.FieldDescript
 		// Primitive types and nested messages
 		switch fd.Kind() {
 		case protoreflect.MessageKind:
-			fds, fns, err := formatProtoMessageToLineProtocol(prefix+fieldName+nestedChar, fd.Message())
+			fds, fns, err := formatProtoMessageToLineProtocol(prefix+fieldName+nestedChar, fd.Message(), []int{})
 			errs = errors.Join(errs, err)
 
 			return func(value protoreflect.Value, mr protoreflect.Message, args []any) string {
@@ -172,7 +195,7 @@ func formatProtoFieldToLineProtocol(prefix string, fd protoreflect.FieldDescript
 		if fd.IsList() {
 			switch fd.Kind() {
 			case protoreflect.MessageKind:
-				fds, fns, err := formatProtoMessageToLineProtocol(prefix+fieldName+arrayIndexChar+"%d"+nestedChar, fd.Message())
+				fds, fns, err := formatProtoMessageToLineProtocol(prefix+fieldName+arrayIndexChar+"%d"+nestedChar, fd.Message(), []int{})
 				errs = errors.Join(errs, err)
 				return func(value protoreflect.Value, mr protoreflect.Message, args []any) string {
 					var lp strings.Builder
