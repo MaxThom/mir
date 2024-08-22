@@ -1,4 +1,10 @@
 # TODO
+
+## Bug
+
+- [ ] add to tooltip for newly created device
+- [ ] search bug
+
 ## Immediate
 
 - [x] fix cycle of clients and mir module

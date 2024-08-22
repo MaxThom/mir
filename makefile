@@ -49,6 +49,9 @@ protogen:
 	buf generate --template internal/libs/proto/line_protocol/proto_test/buf.gen.yaml
 	buf build --path internal/libs/proto/line_protocol/proto_test/lp_test/v1/marshal.proto -o internal/libs/proto/line_protocol/proto_test/gen/lp.binpb
 
+make tx:
+	tmuxifier s ./.tmux/mir.session.sh
+
 # air
 air-core:
 	air -c .air/core.toml

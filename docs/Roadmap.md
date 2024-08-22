@@ -94,27 +94,28 @@ as well as the visualiazing tools for the data
 
 #### Server Module
 
-- [ ] ProtoFlux, handle telemetry data from protobuf to line protocol
+- [x] ProtoFlux, handle telemetry data from protobuf to line protocol
 
 #### CLI/TUI
 
-- [ ] Upload schema via CLI
-- [ ] Schema explorer via CLI and maybe TUI
+- [x] Upload schema via CLI
+- [x] Schema explorer via CLI and maybe TUI
 - [ ] Create ProtoDash which can generate a dashboard from a proto file
+- [ ] Create subscribe client in protoflux for cli and tui to see telemetry
 
 #### Device SDK
 
-- [ ] Custom Protobuff annotation for Mir System
-- [ ] Added telemetry function to the SDK
+- [x] Custom Protobuff annotation for Mir System
+- [x] Added telemetry function to the SDK
 
 #### Module SDK
 
 - [ ] Add new set of events regarding telemetry
-- [ ] Add stream subscriptions
+- [x] Add stream subscriptions
 
 ### Testing
 
-- [ ] Integration test for the telemetry module
+- [x] Integration test for the telemetry module
 
 ### Improvements/Tech dett
 
@@ -129,8 +130,8 @@ as well as the visualiazing tools for the data
 
 ### Ergonomics
 
-- [ ] Create tmuxifier layouts in repo
-- [ ] Make command for buf generate
+- [x] Create tmuxifier layouts in repo
+- [x] Make command for buf generate
 
 ## v0.3.0 Command Module
 
