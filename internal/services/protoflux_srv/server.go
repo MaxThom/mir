@@ -36,6 +36,12 @@ type ProtoFluxServer struct {
 	devSchemasLock sync.RWMutex
 }
 
+// TODO prom metics
+// - count on number of dev schema
+// - count on nb of writers
+// - dp count
+// - number of device schema fetch
+
 // Will have to listen to device update event for new
 // data that are saved as tag such as namespace and name
 
