@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package cmd_api.v1;
+
+//import "v1/common_api/common.proto";
+
+message UploadSchemaRequest { }
+
+message UploadSchemaResponse {
+  string msg = 1;
+}

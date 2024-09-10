@@ -17,6 +17,7 @@ build:
 	go build -o bin/mir cmds/mir/main.go
 	go build -o bin/core cmds/core/main.go
 	go build -o bin/protoflux cmds/protoflux/main.go
+	go build -o bin/protocmd cmds/protocmd/main.go
 
 build-mir:
 	go build -o bin/mir cmds/mir/main.go
@@ -58,3 +59,6 @@ air-core:
 
 air-protoflux:
 	air -c .air/protoflux.toml
+
+air-protocmd:
+	air -c .air/protocmd.toml

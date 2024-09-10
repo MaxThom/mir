@@ -10,18 +10,15 @@ import (
 	"syscall"
 	"time"
 
-	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/maxthom/mir/internal/externals/mng"
-	"github.com/maxthom/mir/internal/externals/ts"
 	"github.com/maxthom/mir/internal/libs/api/health"
 	"github.com/maxthom/mir/internal/libs/api/metrics"
 	"github.com/maxthom/mir/internal/libs/boiler/mir_cli"
 	"github.com/maxthom/mir/internal/libs/boiler/mir_config"
 	"github.com/maxthom/mir/internal/libs/boiler/mir_log"
 	"github.com/maxthom/mir/internal/libs/boiler/mir_signals"
-	"github.com/maxthom/mir/internal/libs/external/influx"
 	"github.com/maxthom/mir/internal/libs/external/surreal"
-	"github.com/maxthom/mir/internal/services/protoflux_srv"
+	"github.com/maxthom/mir/internal/services/protocmd_srv"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/rs/zerolog"
 	"golang.org/x/net/http2"
@@ -29,17 +26,16 @@ import (
 )
 
 const (
-	AppName = "protoflux"
+	AppName = "protocmd"
 	Version = "0.0.1"
 )
 
 type (
 	CoreConfig struct {
-		LogLevel        string
-		HttpServer      HttpServer
-		DataBusServer   DataBusServer
-		DatabaseServer  DatabaseSever
-		TelemetryServer TelemetryServer
+		LogLevel       string
+		HttpServer     HttpServer
+		DataBusServer  DataBusServer
+		DatabaseServer DatabaseSever
 	}
 
 	HttpServer struct {
@@ -55,35 +51,19 @@ type (
 		User     string
 		Password string `cfg:"secret"`
 	}
-	TelemetryServer struct {
-		Url      string
-		Token    string `cfg:"secret"`
-		User     string
-		Password string `cfg:"secret"`
-		Org      string
-		Bucket   string
-	}
 )
 
 var (
 	defaultCfg = CoreConfig{
 		LogLevel: "info",
 		HttpServer: HttpServer{
-			Port: 3017,
+			Port: 3018,
 		},
 		DataBusServer: DataBusServer{
 			Url: "nats://127.0.0.1:4222",
 		},
 		DatabaseServer: DatabaseSever{
 			Url: "ws://127.0.0.1:8000/rpc",
-		},
-		TelemetryServer: TelemetryServer{
-			// QuestDB
-			//Url: "ws://127.0.0.1:8000/rpc",
-			// InfluxDB
-			Url:    "http://localhost:8086/",
-			Org:    "Mir",
-			Bucket: "mir",
 		},
 	}
 )
@@ -98,13 +78,13 @@ func main() {
 	var flagLogLevel string
 
 	mir_cli.Setup(AppName,
-		mir_cli.WithDescription("Receives and processes protobuff data from Mir devices to InfluxDB."),
+		mir_cli.WithDescription("Receives and processes Mir commands to send to devices."),
 		mir_cli.WithConfigFilePath(&flagFilePath),
 		mir_cli.WithLogLevel(&flagLogLevel),
 		mir_cli.WithLogDebug(&flagDebug),
 		mir_cli.WithDefaultConfig(&defaultCfg, mir_config.Yaml),
 		mir_cli.WithManual(
-			"Connect to Mir Message bus to receives and processes protobuff data from Mir devices to InfluxDB.",
+			"Connect to Mir Message bus to receives and sends protobuf commands to Mir devices.",
 			&defaultCfg, true, ""),
 		mir_cli.WithOsFlag(func() {
 			flag.StringVar(&flagMirTarget, "target", "", "set Mir server url. Default to nats://127.0.0.1:4222.")
@@ -116,8 +96,8 @@ func main() {
 	cfg := defaultCfg
 	err, lookupFiles, foundFiles := mir_config.
 		New(AppName,
-			mir_config.WithEtcFilePath("mir/protoflux.yaml", mir_config.Yaml, false),
-			mir_config.WithXdgConfigHomeFilePath("mir/protoflux.yaml", mir_config.Yaml, true),
+			mir_config.WithEtcFilePath("mir/protocmd.yaml", mir_config.Yaml, false),
+			mir_config.WithXdgConfigHomeFilePath("mir/protocmd.yaml", mir_config.Yaml, true),
 			mir_config.WithFilePath(flagFilePath, mir_config.Yaml, false),
 			mir_config.WithEnvVars("mir"),
 		).
@@ -173,14 +153,6 @@ func run(
 	}
 	log.Info().Str("url", cfg.DatabaseServer.Url).Str("namespace", "global").Str("database", "mir").Msg("connected to database")
 
-	// Timeseries Database
-	lpClient := influxdb2.NewClient(cfg.TelemetryServer.Url, cfg.TelemetryServer.Token)
-	if err := influx.CreateOrgAndBucket(ctx, lpClient, cfg.TelemetryServer.Org, cfg.TelemetryServer.Bucket); err != nil {
-		return err
-	}
-	lpWriter := lpClient.WriteAPI(cfg.TelemetryServer.Org, cfg.TelemetryServer.Bucket)
-	log.Info().Str("url", cfg.TelemetryServer.Url).Msg("connected to puthost")
-
 	// Bus
 	m, err := mir.Connect("protoflux", cfg.DataBusServer.Url)
 	if err != nil {
@@ -189,8 +161,8 @@ func run(
 	log.Info().Str("url", cfg.DataBusServer.Url).Msg("connected to msg bus")
 
 	// Services
-	protofluxSrv := protoflux_srv.NewProtoFluxServer(log, m, mng.NewSurrealDeviceStore(db), ts.NewInfluxTelemetryStore(lpWriter))
-	protoflux_srv.RegisterMetrics(metrics.Registry())
+	protocmdSrv := protocmd_srv.NewProtoCmdServer(log, m, mng.NewSurrealDeviceStore(db))
+	protocmd_srv.RegisterMetrics(metrics.Registry())
 
 	// Metrics & Health
 	mux := http.NewServeMux()
@@ -218,7 +190,7 @@ func run(
 	ctx, cancel := context.WithCancel(ctx)
 	wg.Add(1)
 	go func() {
-		protofluxSrv.Listen(ctx)
+		protocmdSrv.Listen(ctx)
 		wg.Done()
 	}()
 
