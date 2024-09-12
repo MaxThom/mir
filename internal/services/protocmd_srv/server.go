@@ -2,9 +2,13 @@ package protocmd_srv
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/maxthom/mir/internal/clients/cmd_client"
 	"github.com/maxthom/mir/internal/externals/mng"
 	"github.com/maxthom/mir/internal/libs/api/metrics"
+	bus "github.com/maxthom/mir/internal/libs/external/natsio"
+	cmd_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cmd_api"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/nats-io/nats.go"
 	"github.com/prometheus/client_golang/prometheus"
@@ -51,7 +55,14 @@ func NewProtoCmdServer(logger zerolog.Logger, m *mir.Mir, devStore mng.DeviceSto
 }
 
 func (s *ProtoCmdServer) Listen(ctx context.Context) {
-	s.m.Subscribe(mir.Stream().V1Alpha().Telemetry(
-		func(msg *nats.Msg, deviceId string, protoMsgName string) {
-		}))
+	s.m.SubscribeRaw(cmd_client.SendCommandRequest.WithId("*"),
+		nats.MsgHandler(func(msg *nats.Msg) {
+			fmt.Println("COMMAND RECEIVED")
+			bus.SendProtoReplyOrAck(s.m.Bus, msg, &cmd_apiv1.SendCommandResponse{
+				Response: &cmd_apiv1.SendCommandResponse_Ok{
+					Ok: "COMMAND EXECUTED",
+				},
+			})
+		}),
+	)
 }

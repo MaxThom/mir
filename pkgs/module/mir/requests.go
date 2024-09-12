@@ -1,7 +1,9 @@
 package mir
 
 import (
+	"github.com/maxthom/mir/internal/clients/cmd_client"
 	"github.com/maxthom/mir/internal/clients/core_client"
+	cmd_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cmd_api"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
@@ -156,6 +158,43 @@ func (s *deleteDeviceRequest) msg() (*nats.Msg, error) {
 }
 
 func (s *deleteDeviceRequest) response(m *nats.Msg) error {
+	if s.resp == nil {
+		return nil
+	}
+	err := proto.Unmarshal(m.Data, s.resp)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// Send command request
+
+type sendDeviceCommandRequest struct {
+	req  *cmd_apiv1.SendCommandRequest
+	resp *cmd_apiv1.SendCommandResponse
+}
+
+func (s requestV1Alpha) SendDeviceCommand(req *cmd_apiv1.SendCommandRequest, resp *cmd_apiv1.SendCommandResponse) *sendDeviceCommandRequest {
+	return &sendDeviceCommandRequest{
+		req:  req,
+		resp: resp,
+	}
+}
+
+func (s *sendDeviceCommandRequest) msg() (*nats.Msg, error) {
+	m := nats.NewMsg(cmd_client.SendCommandRequest.WithId("TODO"))
+	bReq, err := proto.Marshal(s.req)
+
+	if err != nil {
+		return m, err
+	}
+	m.Data = bReq
+
+	return m, nil
+}
+
+func (s *sendDeviceCommandRequest) response(m *nats.Msg) error {
 	if s.resp == nil {
 		return nil
 	}

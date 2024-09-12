@@ -2,10 +2,18 @@ syntax = "proto3";
 
 package cmd_api.v1;
 
-//import "v1/common_api/common.proto";
+import "v1/common_api/common.proto";
+import "v1/core_api/core.proto";
 
-message UploadSchemaRequest { }
+message SendCommandRequest {
+	core_api.v1.Targets targets = 1; // To target a set of devices, search using ids, labels and annotations
+	string name = 2; // name of the command
+	string payload = 3; // payload of the command
+}
 
-message UploadSchemaResponse {
-  string msg = 1;
+message SendCommandResponse {
+  oneof response {
+  	string ok = 1; // response of the command
+    common_api.v1.Error error = 2;  // HTTP like error if something went wrong
+  }
 }

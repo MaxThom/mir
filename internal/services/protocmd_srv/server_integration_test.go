@@ -9,13 +9,17 @@ import (
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/influxdata/influxdb-client-go/v2/api"
+	"github.com/maxthom/mir/internal/clients/cmd_client"
 	"github.com/maxthom/mir/internal/externals/mng"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	"github.com/maxthom/mir/internal/libs/test_utils"
 	"github.com/maxthom/mir/internal/services/core_srv"
+	cmd_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cmd_api"
+	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	logger "github.com/rs/zerolog/log"
 	"github.com/surrealdb/surrealdb.go"
+	"gotest.tools/assert"
 )
 
 var db *surrealdb.DB
@@ -101,4 +105,19 @@ func TestMain(m *testing.M) {
 func TestPublishCmdRequest(t *testing.T) {
 	// Arrange
 	_, _ = context.WithCancel(context.Background())
+	reqCmd := &cmd_apiv1.SendCommandRequest{
+		Targets: &core_apiv1.Targets{
+			Ids: []string{"cmd_send"},
+		},
+	}
+
+	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	fmt.Println(respCmd)
+	assert.Equal(t, true, true)
+
 }
