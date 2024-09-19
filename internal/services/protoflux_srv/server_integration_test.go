@@ -127,7 +127,6 @@ func TestPublishDevicePushTelemetry(t *testing.T) {
 
 	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).TelemetrySchema(
 		protoflux_testv1.File_protoflux_test_v1_telemetry_proto,
-		protoflux_testv1.File_protoflux_test_v1_command_proto,
 	).Build()
 	if err != nil {
 		t.Error(err)
@@ -192,7 +191,6 @@ func TestPublishDevicePushTelemetry(t *testing.T) {
 	devDb := respList.GetOk().Devices[0]
 	originalSchemaBytes, err := mir_models.MarhsalProtoFiles(
 		protoflux_testv1.File_protoflux_test_v1_telemetry_proto,
-		protoflux_testv1.File_protoflux_test_v1_command_proto,
 		descriptorpb.File_google_protobuf_descriptor_proto,
 	)
 	if err != nil {
@@ -243,7 +241,6 @@ func TestPublishDeviceSchemaAlreadyPresent(t *testing.T) {
 	}
 	compSch, err := mir_models.CompressProtoFiles(
 		protoflux_testv1.File_protoflux_test_v1_telemetry_proto,
-		protoflux_testv1.File_protoflux_test_v1_command_proto,
 		descriptorpb.File_google_protobuf_descriptor_proto,
 	)
 	if err != nil {
@@ -264,7 +261,6 @@ func TestPublishDeviceSchemaAlreadyPresent(t *testing.T) {
 
 	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).TelemetrySchema(
 		protoflux_testv1.File_protoflux_test_v1_telemetry_proto,
-		protoflux_testv1.File_protoflux_test_v1_command_proto,
 	).Build()
 	if err != nil {
 		t.Error(err)
@@ -382,7 +378,6 @@ func TestPublishDeviceSchemaInvalid(t *testing.T) {
 	)
 	goodSch, err := mir_models.CompressProtoFiles(
 		protoflux_testv1.File_protoflux_test_v1_telemetry_proto,
-		protoflux_testv1.File_protoflux_test_v1_command_proto,
 		descriptorpb.File_google_protobuf_descriptor_proto,
 	)
 	if err != nil {
@@ -403,7 +398,6 @@ func TestPublishDeviceSchemaInvalid(t *testing.T) {
 
 	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).TelemetrySchema(
 		protoflux_testv1.File_protoflux_test_v1_telemetry_proto,
-		protoflux_testv1.File_protoflux_test_v1_command_proto,
 	).Build()
 	if err != nil {
 		t.Error(err)

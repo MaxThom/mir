@@ -17,3 +17,32 @@ message SendCommandResponse {
     common_api.v1.Error error = 2;  // HTTP like error if something went wrong
   }
 }
+
+message SendListCommandsRequest {
+	core_api.v1.Targets targets = 1; // To target a set of devices, search using ids, labels and annotations
+}
+
+message SendListCommandsResponse {
+  oneof response {
+  	DevicesCommands ok = 1; // all commands per devices
+    common_api.v1.Error error = 2;  // HTTP like error if something went wrong
+  }
+}
+
+// Map of device id and its list of commands
+message DevicesCommands {
+	map<string, Commands> device_commands = 1; // all commands per devices
+}
+
+// List of commands
+message Commands {
+	repeated CommandDescriptor commands = 1; // Array of command descriptor
+}
+
+// Descriptor of a command
+message CommandDescriptor {
+	string name = 1; // Name of command
+	string description = 2; // Description of commands
+	map<string, string> labels = 3; // Labels are used to tag a command
+	string payload = 4; // JSON payload boilerplate for an example
+}

@@ -10,7 +10,8 @@ import (
 )
 
 const (
-	SendCommandRequest clients.Subject = "client.%s.cmd.v1alpha.send"
+	SendCommandRequest  clients.Subject = "client.%s.cmd.v1alpha.send"
+	ListCommandsRequest clients.Subject = "client.%s.cmd.v1alpha.list"
 )
 
 func PublishSendCommandRequest(bus *bus.BusConn, req *cmd_apiv1.SendCommandRequest) (*cmd_apiv1.SendCommandResponse, error) {
@@ -29,6 +30,27 @@ func PublishSendCommandRequest(bus *bus.BusConn, req *cmd_apiv1.SendCommandReque
 	err = proto.Unmarshal(resMsg.Data, resp)
 	if err != nil {
 		return &cmd_apiv1.SendCommandResponse{}, err
+	}
+
+	return resp, nil
+}
+
+func PublishListCommandsRequest(bus *bus.BusConn, req *cmd_apiv1.SendListCommandsRequest) (*cmd_apiv1.SendListCommandsResponse, error) {
+	b, err := proto.Marshal(req)
+	if err != nil {
+		return &cmd_apiv1.SendListCommandsResponse{}, err
+	}
+
+	// TODO revist timeout
+	resMsg, err := bus.Request(ListCommandsRequest.WithId("todo"), b, 20*time.Second)
+	if err != nil {
+		return &cmd_apiv1.SendListCommandsResponse{}, err
+	}
+
+	resp := &cmd_apiv1.SendListCommandsResponse{}
+	err = proto.Unmarshal(resMsg.Data, resp)
+	if err != nil {
+		return &cmd_apiv1.SendListCommandsResponse{}, err
 	}
 
 	return resp, nil

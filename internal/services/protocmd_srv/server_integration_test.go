@@ -10,12 +10,15 @@ import (
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/influxdata/influxdb-client-go/v2/api"
 	"github.com/maxthom/mir/internal/clients/cmd_client"
+	"github.com/maxthom/mir/internal/clients/core_client"
 	"github.com/maxthom/mir/internal/externals/mng"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	"github.com/maxthom/mir/internal/libs/test_utils"
 	"github.com/maxthom/mir/internal/services/core_srv"
+	protocmd_testv1 "github.com/maxthom/mir/internal/services/protocmd_srv/proto_test/gen/protocmd_test/v1"
 	cmd_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cmd_api"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
+	mirDevice "github.com/maxthom/mir/pkgs/device/mir"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	logger "github.com/rs/zerolog/log"
 	"github.com/surrealdb/surrealdb.go"
@@ -120,4 +123,73 @@ func TestPublishCmdRequest(t *testing.T) {
 	fmt.Println(respCmd)
 	assert.Equal(t, true, true)
 
+}
+
+func TestPublishCmdListRequest(t *testing.T) {
+	// Arrange
+	ctx, cancel := context.WithCancel(context.Background())
+	id := "device_list_cmd"
+	reqCreate := &core_apiv1.CreateDeviceRequest{
+		DeviceId:  id,
+		Name:      id,
+		Namespace: "testing_cmd",
+		Labels: map[string]string{
+			"testing": "cmd",
+		},
+		Annotations: map[string]string{
+			"mir/device/description": "hello world of devices !",
+		},
+	}
+
+	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).TelemetrySchema(
+		protocmd_testv1.File_protocmd_test_v1_command_proto,
+	).Build()
+	if err != nil {
+		t.Error(err)
+	}
+
+	reqListCmd := &cmd_apiv1.SendListCommandsRequest{
+		Targets: &core_apiv1.Targets{
+			Ids: []string{id},
+		},
+	}
+
+	// Act
+	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate)
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	wg, err := dev.Launch(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	respListCmd, err := cmd_client.PublishListCommandsRequest(b, reqListCmd)
+	if err != nil {
+		t.Error(err)
+	} else if respListCmd.GetError() != nil {
+		t.Error(respListCmd.GetError())
+	}
+	fmt.Println(respListCmd.Response)
+
+	// Assert
+	respList, err := core_client.PublishDeviceListRequest(b, &core_apiv1.ListDeviceRequest{
+		Targets: &core_apiv1.Targets{
+			Ids: []string{id},
+		},
+	})
+	if err != nil {
+		t.Error(err)
+	} else if respList.GetError() != nil {
+		t.Error(respList.GetError())
+	}
+	devDb := respList.GetOk().Devices[0]
+
+	assert.Equal(t, reqCreate.DeviceId, devDb.Spec.DeviceId)
+
+	cancel()
+	wg.Wait()
 }

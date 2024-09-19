@@ -65,4 +65,35 @@ func (s *ProtoCmdServer) Listen(ctx context.Context) {
 			})
 		}),
 	)
+
+	s.m.SubscribeRaw(cmd_client.ListCommandsRequest.WithId("*"),
+		nats.MsgHandler(func(msg *nats.Msg) {
+			fmt.Println("LIST COMMAND RECEIVED")
+			bus.SendProtoReplyOrAck(s.m.Bus, msg, &cmd_apiv1.SendListCommandsResponse{
+				Response: &cmd_apiv1.SendListCommandsResponse_Ok{
+					Ok: &cmd_apiv1.DevicesCommands{
+						DeviceCommands: map[string]*cmd_apiv1.Commands{
+							"device1": {
+								Commands: []*cmd_apiv1.CommandDescriptor{
+									{
+										Name: "Command One",
+									},
+									{
+										Name: "Command Two",
+									},
+								},
+							},
+							"device2": {
+								Commands: []*cmd_apiv1.CommandDescriptor{
+									{
+										Name: "Command Three",
+									},
+								},
+							},
+						},
+					},
+				},
+			})
+		}),
+	)
 }
