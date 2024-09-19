@@ -35,3 +35,17 @@
 - [ ] cli for telemetry
 - [ ] tui for telemetry
 - [ ] schema force update or version or something
+
+## Protocmd
+
+- [x] Setup new app
+- [x] Basic client send command + integration test
+- [ ] Add cmd annotations and labels to schema
+- [ ] Add cmd list to explore commands and cli
+- [ ] Select devices
+- [ ] Json Payload to proto
+- [ ] Send cmd to devices
+- [ ] Device SDK handler
+- [ ] Response back to protocmd and then client
+- [ ] Event on send cmds and resp
+- [ ] Prometheus metrics

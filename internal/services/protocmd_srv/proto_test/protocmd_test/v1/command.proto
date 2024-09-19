@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package protocmd_test.v1;
+import "mir/device/v1/mir.proto";
+
+message Command {
+	option (mir.device.v1.message_type) = MESSAGE_TYPE_TELECOMMAND;
+	option (mir.device.v1.meta) = {
+		tags: [{
+			key: "building",
+			value: "A"
+		}, {
+			key: "floor",
+			value: "1"
+		}]
+	};
+
+	int32 power = 1;
+	bool valve_open = 2;
+	int32 gaz_level = 3;
+}
