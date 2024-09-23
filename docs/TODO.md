@@ -49,3 +49,6 @@
 - [ ] Response back to protocmd and then client
 - [ ] Event on send cmds and resp
 - [ ] Prometheus metrics
+
+- [ ] Retweak client handler to return an error and that get handled by the sdk
+- [ ] Send schema on bootup

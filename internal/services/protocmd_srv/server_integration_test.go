@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -15,6 +16,10 @@ import (
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	"github.com/maxthom/mir/internal/libs/test_utils"
 	"github.com/maxthom/mir/internal/services/core_srv"
+
+	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
+
+	//devicev1 "github.com/maxthom/mir/internal/services/protocmd_srv/proto_test/gen/mir/device/v1"
 	protocmd_testv1 "github.com/maxthom/mir/internal/services/protocmd_srv/proto_test/gen/protocmd_test/v1"
 	cmd_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cmd_api"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
@@ -142,6 +147,7 @@ func TestPublishCmdListRequest(t *testing.T) {
 	}
 
 	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).TelemetrySchema(
+		devicev1.File_mir_device_v1_mir_proto,
 		protocmd_testv1.File_protocmd_test_v1_command_proto,
 	).Build()
 	if err != nil {
@@ -173,7 +179,14 @@ func TestPublishCmdListRequest(t *testing.T) {
 	} else if respListCmd.GetError() != nil {
 		t.Error(respListCmd.GetError())
 	}
-	fmt.Println(respListCmd.Response)
+	sb := strings.Builder{}
+	for k, v := range respListCmd.GetOk().DeviceCommands {
+		sb.WriteString(k + "\n")
+		for i, c := range v.Commands {
+			sb.WriteString(fmt.Sprintf("\t%d. %s\n", i+1, c.Name))
+		}
+	}
+	fmt.Println(sb.String())
 
 	// Assert
 	respList, err := core_client.PublishDeviceListRequest(b, &core_apiv1.ListDeviceRequest{

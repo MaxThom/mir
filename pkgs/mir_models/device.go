@@ -53,7 +53,7 @@ type Schema struct {
 	LastSchemaFetch  time.Time `json:"lastSchemaFetch"`
 }
 
-func (s Schema) GetProtoSchema() (*protoregistry.Files, error) {
+func (s Schema) GetProtoFiles() (*protoregistry.Files, error) {
 	_, reg, err := DecompressFileDescriptorSet(s.CompressedSchema)
 	return reg, err
 }
@@ -67,7 +67,7 @@ func (s *Schema) SetProtoSchema(desc *descriptorpb.FileDescriptorSet) error {
 	return nil
 }
 
-func MarhsalProtoFiles(s ...protoreflect.FileDescriptor) ([]byte, error) {
+func MarshalProtoFiles(s ...protoreflect.FileDescriptor) ([]byte, error) {
 	pbSet := new(descriptorpb.FileDescriptorSet)
 	for _, f := range s {
 		pbSet.File = append(pbSet.File,

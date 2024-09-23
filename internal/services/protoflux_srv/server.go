@@ -2,27 +2,19 @@ package protoflux_srv
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/maxthom/mir/internal/externals/mng"
 	"github.com/maxthom/mir/internal/externals/ts"
 	"github.com/maxthom/mir/internal/libs/api/metrics"
 	proto_lineprotocol "github.com/maxthom/mir/internal/libs/proto/line_protocol"
-	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
-	device_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/device_api"
-	"github.com/maxthom/mir/pkgs/mir_models"
+	"github.com/maxthom/mir/internal/mir_utils"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/nats-io/nats.go"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
-	"google.golang.org/protobuf/reflect/protoregistry"
-	"google.golang.org/protobuf/types/descriptorpb"
 )
 
 type ProtoFluxServer struct {
@@ -59,7 +51,7 @@ type deviceProtoSchema struct {
 	deviceName string
 	namespace  string
 	labels     map[string]string
-	schema     *protoregistry.Files
+	schema     *mir_utils.MirProtoSchema
 }
 
 var (
@@ -125,7 +117,7 @@ func (s *ProtoFluxServer) Listen(ctx context.Context) {
 				// No schema, thus we must check in db first
 				// if not found, we must request it from device
 				if !ok {
-					reg, err := s.reconcileDeviceSchema(deviceId, false)
+					reg, err := mir_utils.ReconcileDeviceSchema(s.m, s.devStore, deviceId, false)
 					if err != nil {
 						l.Error().Err(err).Str("deviceId", deviceId).Msg("Failed to retrieve schema from device")
 						return
@@ -143,7 +135,7 @@ func (s *ProtoFluxServer) Listen(ctx context.Context) {
 				if err != nil {
 					// TODO possibly different flow depending on error type
 					l.Warn().Err(err).Str("deviceId", devSchema.deviceId).Str("protoMsg", protoMsgName).Msg("Failed to generate ingester function, requesting schema from device")
-					reg, err := s.reconcileDeviceSchema(deviceId, true)
+					reg, err := mir_utils.ReconcileDeviceSchema(s.m, s.devStore, deviceId, true)
 					if err != nil {
 						l.Error().Err(err).Str("deviceId", deviceId).Msg("Failed to retrieve schema from device")
 						return
@@ -179,68 +171,6 @@ func (s *ProtoFluxServer) Listen(ctx context.Context) {
 		}))
 }
 
-func (s *ProtoFluxServer) reconcileDeviceSchema(deviceId string, forceDeviceFetch bool) (*protoregistry.Files, error) {
-	// 1. Go get schema in surrealdb
-	// 2. If not there, fetch from device
-	// 3. Update db
-	// IDEA refresh if last fetch is older then a timespan
-	if !forceDeviceFetch {
-		devs, err := s.devStore.ListDevice(&core_apiv1.ListDeviceRequest{
-			Targets: &core_apiv1.Targets{
-				Ids: []string{deviceId},
-			},
-		})
-		if err != nil {
-			return nil, err
-		}
-		if len(devs) > 0 {
-			if devs[0].Status.Schema.CompressedSchema != nil &&
-				len(devs[0].Status.Schema.CompressedSchema) != 0 {
-				_, reg, err := mir_models.DecompressFileDescriptorSet(devs[0].Status.Schema.CompressedSchema)
-				if err == nil {
-					l.Debug().Str("deviceId", deviceId).Msg("Found proto schema from device in database")
-					return reg, nil
-				} else {
-					l.Error().Err(err).Msg("Error retrieving schema from database")
-				}
-			}
-		}
-	}
-
-	l.Info().Str("deviceId", deviceId).Msg("Requesting proto schema from device")
-	reg, pbSet, err := getProtoSchemaFromDevice(s.m, deviceId)
-	if err != nil {
-		return nil, err
-	}
-
-	// Mainly for extra info
-	packNames := []string{}
-	reg.RangeFiles(func(f protoreflect.FileDescriptor) bool {
-		packNames = append(packNames, string(f.FullName()))
-		return true
-	})
-
-	compSch, err := mir_models.CompressFileDescriptorSet(pbSet)
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = s.devStore.UpdateDevice(&core_apiv1.UpdateDeviceRequest{
-		Targets: &core_apiv1.Targets{
-			Ids: []string{deviceId},
-		},
-		Status: &core_apiv1.UpdateDeviceRequest_Status{
-			Schema: &core_apiv1.UpdateDeviceRequest_Schema{
-				CompressedSchema: compSch,
-				PackageNames:     packNames,
-				LastSchemaFetch:  mir_models.AsProtoTimestamp(time.Now().UTC()),
-			},
-		},
-	})
-
-	return reg, err
-}
-
 func generateIngesters(devSchema deviceProtoSchema, protoMsgName string) (proto_lineprotocol.ProtoBytesToLpFn, error) {
 	// Find the descriptor by name
 	desc, err := devSchema.schema.FindDescriptorByName(protoreflect.FullName(protoMsgName))
@@ -262,27 +192,4 @@ func generateIngesters(devSchema deviceProtoSchema, protoMsgName string) (proto_
 	}
 
 	return fn, err
-}
-
-func getProtoSchemaFromDevice(m *mir.Mir, deviceId string) (*protoregistry.Files, *descriptorpb.FileDescriptorSet, error) {
-	schemaResp := &device_apiv1.SchemaRetrieveResponse{}
-	err := m.SendRequest(mir.Command().V1Alpha().RequestSchema(deviceId, schemaResp))
-	if err != nil {
-		return nil, nil, err
-	} else if schemaResp.GetError() != nil {
-		e := schemaResp.GetError()
-		return nil, nil, errors.New(fmt.Sprintf("%d - %s\n%s", e.Code, e.Message, e.Details))
-	}
-
-	pbSet := new(descriptorpb.FileDescriptorSet)
-	if err := proto.Unmarshal(schemaResp.GetSchema(), pbSet); err != nil {
-		return nil, nil, err
-	}
-
-	reg, err := protodesc.NewFiles(pbSet)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return reg, pbSet, nil
 }

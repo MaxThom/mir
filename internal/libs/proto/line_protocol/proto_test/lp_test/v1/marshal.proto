@@ -10,7 +10,10 @@
 // - SomeChads is a set of primitive types
 
 syntax = "proto3";
+
 package lp_test.v1;
+option go_package = "github.com/maxthom/mir/internal/libs/proto/line_protocol/proto_test/gen/lp_test/mir";
+
 import "mir/device/v1/mir.proto";
 
 enum EnumABC {

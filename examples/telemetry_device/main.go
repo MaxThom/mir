@@ -8,9 +8,9 @@ import (
 	"syscall"
 	"time"
 
-	devicev1 "github.com/maxthom/mir/examples/telemetry_device/gen/mir/device/v1"
 	telemetry_devicev1 "github.com/maxthom/mir/examples/telemetry_device/gen/telemetry_device/v1"
 	"github.com/maxthom/mir/internal/libs/boiler/mir_signals"
+	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
 	"github.com/maxthom/mir/pkgs/device/mir"
 	"google.golang.org/protobuf/reflect/protodesc"
 )
@@ -30,7 +30,6 @@ func main() {
 			telemetry_devicev1.File_telemetry_device_v1_telemetry_proto,
 		).
 		TelemetrySchemaProto(
-			protodesc.ToFileDescriptorProto(telemetry_devicev1.File_telemetry_device_v1_command_proto),
 			protodesc.ToFileDescriptorProto(telemetry_devicev1.File_telemetry_device_v1_utils_proto),
 		).
 		Build()

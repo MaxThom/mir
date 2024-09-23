@@ -1,6 +1,8 @@
 syntax = "proto3";
 
 package protocmd_test.v1;
+option go_package = "github.com/maxthom/mir/internal/services/protocmd_srv/proto_test/gen/protocmd_test/v1";
+
 import "mir/device/v1/mir.proto";
 
 message Command {

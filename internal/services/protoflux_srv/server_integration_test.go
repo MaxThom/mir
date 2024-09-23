@@ -189,7 +189,7 @@ func TestPublishDevicePushTelemetry(t *testing.T) {
 		t.Error(respList.GetError())
 	}
 	devDb := respList.GetOk().Devices[0]
-	originalSchemaBytes, err := mir_models.MarhsalProtoFiles(
+	originalSchemaBytes, err := mir_models.MarshalProtoFiles(
 		protoflux_testv1.File_protoflux_test_v1_telemetry_proto,
 		descriptorpb.File_google_protobuf_descriptor_proto,
 	)

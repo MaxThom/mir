@@ -7,8 +7,8 @@ import (
 	"syscall"
 
 	command_devicev1 "github.com/maxthom/mir/examples/command_device/gen/command_device/v1"
-	devicev1 "github.com/maxthom/mir/examples/telemetry_device/gen/mir/device/v1"
 	"github.com/maxthom/mir/internal/libs/boiler/mir_signals"
+	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
 	"github.com/maxthom/mir/pkgs/device/mir"
 )
 

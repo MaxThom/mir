@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 package telemetry_device.v1;
+option go_package = "github.com/maxthom/mir/examples/telemetry_device/gen/telemetry_device/v1";
 
 import "mir/device/v1/mir.proto";
 

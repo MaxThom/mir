@@ -3,7 +3,7 @@ package proto_lineprotocol
 import (
 	"time"
 
-	devicev1 "github.com/maxthom/mir/internal/libs/proto/line_protocol/proto_test/gen/mir/device/v1"
+	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"

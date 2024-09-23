@@ -13,13 +13,13 @@ func (e MirBuilderFieldsError) Error() string {
 	return fmt.Sprintf("Fields required for the device is missing or invalid: %s", strings.Join(e.Fields, ", "))
 }
 
-type MirHttpError struct {
+type MirApiError struct {
 	Code    uint32
 	Message string
 	Details []string
 }
 
-func (e MirHttpError) Error() string {
+func (e MirApiError) Error() string {
 	return fmt.Sprintf("code %d\n%s\n%s", e.Code, e.Message, e.Details)
 }
 

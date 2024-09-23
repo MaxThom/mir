@@ -10,6 +10,8 @@ import (
 type stream struct{}
 type streamV1alpha struct{}
 
+// TODO rename stream to device
+
 // A Stream of data coming from a single or set of devices
 func Stream() stream {
 	return stream{}

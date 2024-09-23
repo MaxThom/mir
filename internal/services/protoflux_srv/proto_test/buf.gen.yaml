@@ -1,9 +1,6 @@
 version: v2
 managed:
   enabled: true
-  override:
-    - file_option: go_package_prefix
-      value: github.com/maxthom/mir/internal/services/protoflux_srv/proto_test/gen
 plugins:
   - local: protoc-gen-go
     out: internal/services/protoflux_srv/proto_test/gen
