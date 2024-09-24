@@ -5,7 +5,7 @@ tmp_dir = "protocmd"
 [build]
 args_bin = ["--debug"]
 bin = "bin/protocmd"
-cmd = "go build -o ./bin/protoflux ./cmds/protocmd"
+cmd = "go build -o ./bin/protocmd ./cmds/protocmd"
 delay = 1000
 exclude_dir = ["assets", "tmp", "vendor", "testdata"]
 exclude_file = []

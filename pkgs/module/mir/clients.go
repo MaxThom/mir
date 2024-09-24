@@ -28,8 +28,6 @@ type listCommandStream struct {
 	fn func(msg *nats.Msg, req *cmd_apiv1.SendListCommandsRequest, e error)
 }
 
-// Listen to the hearthbeat stream coming from each device
-// Used by the system to compute online or offline devices
 func (s clientV1Alpha) ListCommands(fn func(msg *nats.Msg, req *cmd_apiv1.SendListCommandsRequest, e error)) *listCommandStream {
 	return &listCommandStream{
 		fn: fn,
@@ -43,6 +41,29 @@ func (s listCommandStream) subject() string {
 func (s listCommandStream) handler() nats.MsgHandler {
 	return func(msg *nats.Msg) {
 		var req cmd_apiv1.SendListCommandsRequest
+		s.fn(msg, &req, proto.Unmarshal(msg.Data, &req))
+	}
+}
+
+// Send command request
+
+type sendCommandStream struct {
+	fn func(msg *nats.Msg, req *cmd_apiv1.SendCommandRequest, e error)
+}
+
+func (s clientV1Alpha) SendCommand(fn func(msg *nats.Msg, req *cmd_apiv1.SendCommandRequest, e error)) *sendCommandStream {
+	return &sendCommandStream{
+		fn: fn,
+	}
+}
+
+func (s sendCommandStream) subject() string {
+	return cmd_client.SendCommandRequest.WithId("*")
+}
+
+func (s sendCommandStream) handler() nats.MsgHandler {
+	return func(msg *nats.Msg) {
+		var req cmd_apiv1.SendCommandRequest
 		s.fn(msg, &req, proto.Unmarshal(msg.Data, &req))
 	}
 }

@@ -204,3 +204,40 @@ func (s *sendDeviceCommandRequest) response(m *nats.Msg) error {
 	}
 	return nil
 }
+
+// List commands request
+
+type listDeviceCommandsRequest struct {
+	req  *cmd_apiv1.SendListCommandsRequest
+	resp *cmd_apiv1.SendListCommandsResponse
+}
+
+func (s requestV1Alpha) ListCommandsCommand(req *cmd_apiv1.SendListCommandsRequest, resp *cmd_apiv1.SendListCommandsResponse) *listDeviceCommandsRequest {
+	return &listDeviceCommandsRequest{
+		req:  req,
+		resp: resp,
+	}
+}
+
+func (s *listDeviceCommandsRequest) msg() (*nats.Msg, error) {
+	m := nats.NewMsg(cmd_client.ListCommandsRequest.WithId("TODO"))
+	bReq, err := proto.Marshal(s.req)
+
+	if err != nil {
+		return m, err
+	}
+	m.Data = bReq
+
+	return m, nil
+}
+
+func (s *listDeviceCommandsRequest) response(m *nats.Msg) error {
+	if s.resp == nil {
+		return nil
+	}
+	err := proto.Unmarshal(m.Data, s.resp)
+	if err != nil {
+		return err
+	}
+	return nil
+}

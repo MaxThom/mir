@@ -9,6 +9,9 @@ message SendCommandRequest {
 	core_api.v1.Targets targets = 1; // To target a set of devices, search using ids, labels and annotations
 	string name = 2; // name of the command
 	string payload = 3; // payload of the command
+	bool refresh_schema = 4; // Force a schema refresh from the device
+	bool show_template = 5; // Show the json template of the command
+	bool dry_run = 6; // Do not execute the command, just validate it
 }
 
 message SendCommandResponse {
@@ -20,6 +23,7 @@ message SendCommandResponse {
 
 message SendListCommandsRequest {
 	core_api.v1.Targets targets = 1; // To target a set of devices, search using ids, labels and annotations
+	bool refresh_schema = 2; // Force a schema refresh from the device
 }
 
 message SendListCommandsResponse {
@@ -44,5 +48,6 @@ message CommandDescriptor {
 	string name = 1; // Name of command
 	string description = 2; // Description of commands
 	map<string, string> labels = 3; // Labels are used to tag a command
-	string payload = 4; // JSON payload boilerplate for an example
+	map<string, string> arguments = 4; // List of arguments for the command
+	string boilerplate = 5; // JSON payload boilerplate for an example
 }

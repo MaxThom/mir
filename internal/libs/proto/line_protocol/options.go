@@ -4,9 +4,11 @@ import (
 	"time"
 
 	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
+	"google.golang.org/protobuf/types/dynamicpb"
 )
 
 func findTimestampField(desc protoreflect.MessageDescriptor) {
@@ -77,7 +79,7 @@ func generateTimeFn(desc protoreflect.MessageDescriptor) (func(protoreflect.Mess
 	}
 }
 
-func retrieveMessageTags(desc protoreflect.MessageDescriptor) map[string]string {
+func RetrieveMessageTags(desc protoreflect.MessageDescriptor) map[string]string {
 	tags := make(map[string]string)
 	retrieveTagsFromDescriptor(desc, tags)
 	return tags
@@ -115,4 +117,30 @@ func retrieveTagsFromDescriptor(desc protoreflect.MessageDescriptor, tags map[st
 			retrieveTagsFromDescriptor(fd.Message(), tags)
 		}
 	}
+}
+
+func RetrieveMessageArguments(desc protoreflect.MessageDescriptor) map[string]string {
+	args := make(map[string]string)
+	retrieveArgumentsFromDescriptor(desc, args)
+	return args
+}
+
+func retrieveArgumentsFromDescriptor(desc protoreflect.MessageDescriptor, args map[string]string) {
+	for i := 0; i < desc.Fields().Len(); i++ {
+		fd := desc.Fields().Get(i)
+		if fd.Kind() == protoreflect.MessageKind {
+			retrieveTagsFromDescriptor(fd.Message(), args)
+		} else {
+			args[string(fd.FullName())] = fd.Kind().String()
+		}
+	}
+}
+
+// TODO create custom marshaller to get full json including nested messages
+// and one example of a map and array
+// Can't use protojson, does not do that
+func GetJsonBoilerTemplate(desc protoreflect.MessageDescriptor) ([]byte, error) {
+	m := protojson.MarshalOptions{AllowPartial: true, EmitUnpopulated: true, Multiline: false, EmitDefaultValues: false}
+	dm := dynamicpb.NewMessage(desc)
+	return m.Marshal(dm)
 }

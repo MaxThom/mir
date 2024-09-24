@@ -7,7 +7,11 @@
 
 ## Immediate
 
-- [x] fix cycle of clients and mir module
+- [ ] redo module sdk
+- [ ] proto to json template
+- [ ] testing for list commands
+- [ ] send commands to device
+- [ ] device sdk command handler
 
 ## Refactoring
 

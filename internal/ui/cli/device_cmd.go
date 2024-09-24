@@ -17,11 +17,12 @@ import (
 // TODO set yaml indent to two spaces
 // TODO check if json to remove key value pair should be NONE or NULL. check json doc
 type DeviceCmd struct {
-	List   DeviceListCmd   `cmd:"" help:"List devices"`
-	Create DeviceCreateCmd `cmd:"" help:"Create a new device"`
-	Update DeviceUpdateCmd `cmd:"" help:"Update a device"`
-	Delete DeviceDeleteCmd `cmd:"" help:"Delete a device"`
-	Schema DeviceSchemaCmd `cmd:"" help:"Upload and explore device proto schema"`
+	List    DeviceListCmd    `cmd:"" help:"List devices"`
+	Create  DeviceCreateCmd  `cmd:"" help:"Create a new device"`
+	Update  DeviceUpdateCmd  `cmd:"" help:"Update a device"`
+	Delete  DeviceDeleteCmd  `cmd:"" help:"Delete a device"`
+	Schema  DeviceSchemaCmd  `cmd:"" help:"Upload and explore device proto schema"`
+	Command DeviceCommandCmd `cmd:"cmd" help:"Send and explore commands to devices"`
 }
 
 type DeviceListCmd struct {
