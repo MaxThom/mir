@@ -6,6 +6,7 @@ import (
 
 	"github.com/maxthom/mir/internal/libs/boiler/mir_config"
 	"github.com/maxthom/mir/internal/libs/boiler/mir_log"
+	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
@@ -215,6 +216,11 @@ func (b builder) Build() (*Mir, error) {
 		b.telemetrySchema.File = append(b.telemetrySchema.File,
 			protodesc.ToFileDescriptorProto(
 				descriptorpb.File_google_protobuf_descriptor_proto,
+			),
+		)
+		b.telemetrySchema.File = append(b.telemetrySchema.File,
+			protodesc.ToFileDescriptorProto(
+				devicev1.File_mir_device_v1_mir_proto,
 			),
 		)
 	}

@@ -26,7 +26,6 @@ func main() {
 		LogWriters([]io.Writer{os.Stdout}).
 		DefaultConfigFile(mir.Yaml).
 		TelemetrySchema(
-			devicev1.File_mir_device_v1_mir_proto,
 			telemetry_devicev1.File_telemetry_device_v1_telemetry_proto,
 		).
 		TelemetrySchemaProto(

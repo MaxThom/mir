@@ -17,8 +17,6 @@ import (
 	"github.com/maxthom/mir/internal/libs/test_utils"
 	"github.com/maxthom/mir/internal/services/core_srv"
 
-	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
-
 	//devicev1 "github.com/maxthom/mir/internal/services/protocmd_srv/proto_test/gen/mir/device/v1"
 	protocmd_testv1 "github.com/maxthom/mir/internal/services/protocmd_srv/proto_test/gen/protocmd_test/v1"
 	cmd_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cmd_api"
@@ -147,7 +145,6 @@ func TestPublishCmdListRequest(t *testing.T) {
 	}
 
 	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).TelemetrySchema(
-		devicev1.File_mir_device_v1_mir_proto,
 		protocmd_testv1.File_protocmd_test_v1_command_proto,
 	).Build()
 	if err != nil {

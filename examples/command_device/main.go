@@ -8,7 +8,6 @@ import (
 
 	command_devicev1 "github.com/maxthom/mir/examples/command_device/gen/command_device/v1"
 	"github.com/maxthom/mir/internal/libs/boiler/mir_signals"
-	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
 	"github.com/maxthom/mir/pkgs/device/mir"
 )
 
@@ -23,7 +22,6 @@ func main() {
 		LogWriters([]io.Writer{os.Stdout}).
 		DefaultConfigFile(mir.Yaml).
 		TelemetrySchema(
-			devicev1.File_mir_device_v1_mir_proto,
 			command_devicev1.File_command_device_v1_command_proto,
 		).
 		Build()
