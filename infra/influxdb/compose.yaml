@@ -16,6 +16,7 @@ services:
       DOCKER_INFLUXDB_INIT_PASSWORD: mir-operator
       DOCKER_INFLUXDB_INIT_ORG: Mir
       DOCKER_INFLUXDB_INIT_BUCKET: mir
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: mir-operator-token
 
 volumes:
   influxdb_data:

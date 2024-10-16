@@ -58,7 +58,7 @@ func TestMain(m *testing.M) {
 		},
 		Iinflux: test_utils.InfluxInfo{
 			Url:    "http://localhost:8086/",
-			Token:  "-NKzSScFgqhcAl-1S40otGUwuBEp8SmHoxFIYJVARrrp-a-H81Z28BfuRlUzAKVeH9-yIYXyMS0eL6TNeJfdOw==",
+			Token:  "mir-operator-token",
 			Org:    "Mir",
 			Bucket: "mir_integration_test",
 		},
