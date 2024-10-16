@@ -63,7 +63,9 @@ var (
 			Url: "nats://127.0.0.1:4222",
 		},
 		DatabaseServer: DatabaseSever{
-			Url: "ws://127.0.0.1:8000/rpc",
+			Url:      "ws://127.0.0.1:8000/rpc",
+			User:     "root",
+			Password: "root",
 		},
 	}
 )
