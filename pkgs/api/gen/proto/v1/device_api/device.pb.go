@@ -21,7 +21,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// Send a request to create a new device in the system
+// Send a request to retreive the schema of the device
 type SchemaRetrieveRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -58,8 +58,7 @@ func (*SchemaRetrieveRequest) Descriptor() ([]byte, []int) {
 	return file_v1_device_api_device_proto_rawDescGZIP(), []int{0}
 }
 
-// Response to the create device request
-// Only the error or the response data will be set
+// Schema of the device or error
 type SchemaRetrieveResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

@@ -27,3 +27,9 @@ message Timestamp {
   // inclusive.
   int32 nanos = 2;
 }
+
+enum Encoding {
+  ENCODING_UNSPECIFIED = 0;
+  ENCODING_PROTOBUF = 1;
+  ENCODING_JSON = 2;
+}

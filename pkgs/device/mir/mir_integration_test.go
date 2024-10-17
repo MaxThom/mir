@@ -183,7 +183,7 @@ func TestRequestTelemetrySchema(t *testing.T) {
 	}
 
 	time.Sleep(1 * time.Second)
-	resp, err := device_client.PublishSchemaRetreiveRequest(b, "TestTelemetrySchema")
+	resp, err := device_client.PublishSchemaRetrieveRequest(b, "TestTelemetrySchema")
 	if err != nil {
 		t.Error(err)
 	}

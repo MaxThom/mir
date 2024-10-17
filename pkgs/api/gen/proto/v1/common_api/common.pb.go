@@ -20,6 +20,55 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type Encoding int32
+
+const (
+	Encoding_ENCODING_UNSPECIFIED Encoding = 0
+	Encoding_ENCODING_PROTOBUF    Encoding = 1
+	Encoding_ENCODING_JSON        Encoding = 2
+)
+
+// Enum value maps for Encoding.
+var (
+	Encoding_name = map[int32]string{
+		0: "ENCODING_UNSPECIFIED",
+		1: "ENCODING_PROTOBUF",
+		2: "ENCODING_JSON",
+	}
+	Encoding_value = map[string]int32{
+		"ENCODING_UNSPECIFIED": 0,
+		"ENCODING_PROTOBUF":    1,
+		"ENCODING_JSON":        2,
+	}
+)
+
+func (x Encoding) Enum() *Encoding {
+	p := new(Encoding)
+	*p = x
+	return p
+}
+
+func (x Encoding) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (Encoding) Descriptor() protoreflect.EnumDescriptor {
+	return file_v1_common_api_common_proto_enumTypes[0].Descriptor()
+}
+
+func (Encoding) Type() protoreflect.EnumType {
+	return &file_v1_common_api_common_proto_enumTypes[0]
+}
+
+func (x Encoding) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use Encoding.Descriptor instead.
+func (Encoding) EnumDescriptor() ([]byte, []int) {
+	return file_v1_common_api_common_proto_rawDescGZIP(), []int{0}
+}
+
 // Used to have a optional value in maps to mark the key for deletion
 type OptString struct {
 	state         protoimpl.MessageState
@@ -205,7 +254,12 @@ var file_v1_common_api_common_proto_rawDesc = []byte{
 	0x0a, 0x09, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x12, 0x18, 0x0a, 0x07, 0x73,
 	0x65, 0x63, 0x6f, 0x6e, 0x64, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x07, 0x73, 0x65,
 	0x63, 0x6f, 0x6e, 0x64, 0x73, 0x12, 0x14, 0x0a, 0x05, 0x6e, 0x61, 0x6e, 0x6f, 0x73, 0x18, 0x02,
-	0x20, 0x01, 0x28, 0x05, 0x52, 0x05, 0x6e, 0x61, 0x6e, 0x6f, 0x73, 0x42, 0xb7, 0x01, 0x0a, 0x11,
+	0x20, 0x01, 0x28, 0x05, 0x52, 0x05, 0x6e, 0x61, 0x6e, 0x6f, 0x73, 0x2a, 0x4e, 0x0a, 0x08, 0x45,
+	0x6e, 0x63, 0x6f, 0x64, 0x69, 0x6e, 0x67, 0x12, 0x18, 0x0a, 0x14, 0x45, 0x4e, 0x43, 0x4f, 0x44,
+	0x49, 0x4e, 0x47, 0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x45, 0x44, 0x10,
+	0x00, 0x12, 0x15, 0x0a, 0x11, 0x45, 0x4e, 0x43, 0x4f, 0x44, 0x49, 0x4e, 0x47, 0x5f, 0x50, 0x52,
+	0x4f, 0x54, 0x4f, 0x42, 0x55, 0x46, 0x10, 0x01, 0x12, 0x11, 0x0a, 0x0d, 0x45, 0x4e, 0x43, 0x4f,
+	0x44, 0x49, 0x4e, 0x47, 0x5f, 0x4a, 0x53, 0x4f, 0x4e, 0x10, 0x02, 0x42, 0xb7, 0x01, 0x0a, 0x11,
 	0x63, 0x6f, 0x6d, 0x2e, 0x63, 0x6f, 0x6d, 0x6d, 0x6f, 0x6e, 0x5f, 0x61, 0x70, 0x69, 0x2e, 0x76,
 	0x31, 0x42, 0x0b, 0x43, 0x6f, 0x6d, 0x6d, 0x6f, 0x6e, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01,
 	0x5a, 0x44, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x6d, 0x61, 0x78,
@@ -232,11 +286,13 @@ func file_v1_common_api_common_proto_rawDescGZIP() []byte {
 	return file_v1_common_api_common_proto_rawDescData
 }
 
+var file_v1_common_api_common_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_v1_common_api_common_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_v1_common_api_common_proto_goTypes = []any{
-	(*OptString)(nil), // 0: common_api.v1.OptString
-	(*Error)(nil),     // 1: common_api.v1.Error
-	(*Timestamp)(nil), // 2: common_api.v1.Timestamp
+	(Encoding)(0),     // 0: common_api.v1.Encoding
+	(*OptString)(nil), // 1: common_api.v1.OptString
+	(*Error)(nil),     // 2: common_api.v1.Error
+	(*Timestamp)(nil), // 3: common_api.v1.Timestamp
 }
 var file_v1_common_api_common_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
@@ -257,13 +313,14 @@ func file_v1_common_api_common_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_v1_common_api_common_proto_rawDesc,
-			NumEnums:      0,
+			NumEnums:      1,
 			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_v1_common_api_common_proto_goTypes,
 		DependencyIndexes: file_v1_common_api_common_proto_depIdxs,
+		EnumInfos:         file_v1_common_api_common_proto_enumTypes,
 		MessageInfos:      file_v1_common_api_common_proto_msgTypes,
 	}.Build()
 	File_v1_common_api_common_proto = out.File

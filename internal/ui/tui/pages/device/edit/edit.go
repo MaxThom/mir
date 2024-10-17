@@ -76,6 +76,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case msgs.EditorFinishedMsg:
 		var cmds []tea.Cmd
 		if msg.Err != nil {
+			l.Debug().Err(msg.Err).Msg("")
 			cmds = append(cmds, msgs.ErrCmd(msg.Err, 2*time.Second))
 			cmds = append(cmds, msgs.RouteChangeWithDataCmd("/devices", device_list.InputData{SilentFetch: true}))
 		} else {

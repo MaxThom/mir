@@ -15,6 +15,7 @@ import (
 	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
@@ -28,12 +29,14 @@ import (
 // bus and db still exist here, but not err
 
 type Mir struct {
-	cfg             Cfg
-	b               *bus.BusConn
-	ctx             context.Context
-	cancelFn        context.CancelFunc
-	l               zerolog.Logger
-	telemetrySchema *descriptorpb.FileDescriptorSet
+	cfg         Cfg
+	b           *bus.BusConn
+	ctx         context.Context
+	cancelFn    context.CancelFunc
+	l           zerolog.Logger
+	schema      *descriptorpb.FileDescriptorSet
+	schemaReg   *protoregistry.Files
+	cmdHandlers map[string]func(protoreflect.ProtoMessage) (protoreflect.ProtoMessage, error)
 }
 
 type Cfg struct {
@@ -171,8 +174,8 @@ func (m Mir) Logger() zerolog.Logger {
 func (m Mir) marshalTelemetrySchema() ([]byte, error) {
 	var schemaBytes []byte
 	var err error
-	if m.telemetrySchema != nil {
-		schemaBytes, err = proto.Marshal(m.telemetrySchema)
+	if m.schema != nil {
+		schemaBytes, err = proto.Marshal(m.schema)
 	}
 	return schemaBytes, err
 }
@@ -180,4 +183,8 @@ func (m Mir) marshalTelemetrySchema() ([]byte, error) {
 // Send proto telemetry to Mir Server
 func (m Mir) SendTelemetry(t protoreflect.ProtoMessage) error {
 	return protoflux_client.PublishTelemetryStream(m.b, m.cfg.DeviceId, t)
+}
+
+func (m Mir) HandleCommand(key string, handler func(protoreflect.ProtoMessage) (protoreflect.ProtoMessage, error)) {
+	m.cmdHandlers[key] = handler
 }

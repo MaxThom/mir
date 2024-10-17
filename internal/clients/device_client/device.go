@@ -11,10 +11,11 @@ import (
 )
 
 const (
-	SchemaRequest clients.DeviceSubject = "%s.v1alpha.schema"
+	SchemaRequest  clients.DeviceSubject = "%s.v1alpha.schema"
+	CommandRequest clients.DeviceSubject = "%s.v1alpha.command"
 )
 
-func PublishSchemaRetreiveRequest(bus *bus.BusConn, deviceId string) (*device_apiv1.SchemaRetrieveResponse, error) {
+func PublishSchemaRetrieveRequest(bus *bus.BusConn, deviceId string) (*device_apiv1.SchemaRetrieveResponse, error) {
 	resMsg, err := bus.Request(SchemaRequest.WithId(deviceId), []byte{}, 10*time.Second)
 	if err != nil {
 		return &device_apiv1.SchemaRetrieveResponse{}, err

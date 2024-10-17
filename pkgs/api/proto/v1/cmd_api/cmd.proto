@@ -8,17 +8,23 @@ import "v1/core_api/core.proto";
 message SendCommandRequest {
 	core_api.v1.Targets targets = 1; // To target a set of devices, search using ids, labels and annotations
 	string name = 2; // name of the command
-	string payload = 3; // payload of the command
-	bool refresh_schema = 4; // Force a schema refresh from the device
-	bool show_template = 5; // Show the json template of the command
-	bool dry_run = 6; // Do not execute the command, just validate it
+	bytes payload = 3; // payload of the command
+	common_api.v1.Encoding payload_encoding = 4; // Encoding type of payload
+	bool refresh_schema = 5; // Force a schema refresh from the device
+	bool show_template = 6; // Show the json template of the command
+	bool dry_run = 7; // Do not execute the command, just validate it
 }
 
 message SendCommandResponse {
-  oneof response {
-  	string ok = 1; // response of the command
-    common_api.v1.Error error = 2;  // HTTP like error if something went wrong
-  }
+    oneof response {
+  	    Payload ok = 1; // response of the command
+        common_api.v1.Error error = 2;  // HTTP like error if something went wrong
+    }
+    message Payload {
+        string name = 1; // name of the payload
+        bytes payload = 2; // actual payload
+        common_api.v1.Encoding encoding = 3; // encoding of the payload
+    }
 }
 
 message SendListCommandsRequest {

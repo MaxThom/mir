@@ -16,6 +16,10 @@ import (
 	"github.com/nats-io/nats.go"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/dynamicpb"
 )
 
 type ProtoCmdServer struct {
@@ -105,27 +109,54 @@ func (s *ProtoCmdServer) sendCommandSub() func(msg *nats.Msg, req *cmd_apiv1.Sen
 				continue
 			}
 
-			cmds, err := reg.GetCommandsList()
-			if err != nil {
-				cmdsList = append(cmdsList, &cmd_apiv1.CommandDescriptor{
-					Name: err.Error(),
-				})
+			// TODO add no validation option
+			msgReqDesc, _ := reg.FindDescriptorByName(protoreflect.FullName(req.Name))
+			cmdReq := dynamicpb.NewMessage(msgReqDesc.(protoreflect.MessageDescriptor))
+
+			if req.PayloadEncoding == common_apiv1.Encoding_ENCODING_JSON {
+				_ = protojson.Unmarshal(req.Payload, cmdReq)
 			} else {
-				for _, cmd := range cmds {
-					cmdsList = append(cmdsList, cmd)
-				}
+				_ = proto.Unmarshal(req.Payload, cmdReq)
 			}
-			devsCmds[dev.Spec.DeviceId] = &cmd_apiv1.Commands{
-				Commands: cmdsList,
+
+			fmt.Println("SERVER RECEIVE", cmdReq)
+
+			cmdResp := &mir.ProtoCmdDesc{}
+			err = s.m.SendRequest(mir.Command().V1Alpha().SendCommand(dev.Spec.DeviceId, cmdReq, cmdResp))
+			if err != nil {
+				// TODO handle error
+				l.Error().Err(err).Msg("")
 			}
+			fmt.Println("SERVER RESPONSE", cmdResp)
+
+			// if proto encoding, dont need to marshal it (except for validation)
+			// TODO
+			// If cant find command, try refresh devices
+			// for each device, prepare the command, any errors returns the errors list
+			// if no errors, send the command to the devices
+			// if force flag, send commands to working devices
+			// Return json of response
+
+			respPayload := cmdResp.Payload
+			if req.PayloadEncoding == common_apiv1.Encoding_ENCODING_JSON {
+				msgRespDesc, _ := reg.FindDescriptorByName(protoreflect.FullName(cmdResp.Name))
+				msgResp := dynamicpb.NewMessage(msgRespDesc.(protoreflect.MessageDescriptor))
+				err = proto.Unmarshal(respPayload, msgResp)
+				respPayload, err = protojson.Marshal(msgResp)
+				fmt.Println(string(respPayload))
+			}
+
+			bus.SendProtoReplyOrAck(s.m.Bus, msg, &cmd_apiv1.SendCommandResponse{
+				Response: &cmd_apiv1.SendCommandResponse_Ok{
+					Ok: &cmd_apiv1.SendCommandResponse_Payload{
+						Name:     cmdResp.Name,
+						Payload:  respPayload,
+						Encoding: req.PayloadEncoding,
+					},
+				},
+			})
 		}
 
-		fmt.Println(req)
-		bus.SendProtoReplyOrAck(s.m.Bus, msg, &cmd_apiv1.SendCommandResponse{
-			Response: &cmd_apiv1.SendCommandResponse_Ok{
-				Ok: "COMMAND EXECUTED",
-			},
-		})
 	}
 }
 
