@@ -1,11 +1,14 @@
 package cli
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 
 	"github.com/maxthom/mir/internal/clients/cmd_client"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	cmd_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cmd_api"
+	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 )
 
@@ -25,7 +28,7 @@ type CommandSendCmd struct {
 	Command          string `short:"n" help:"command name to send"`
 	Payload          string `short:"p" help:"payload to send in json"`
 	ShowJsonTemplate bool   `short:"t" help:"show json template for command"`
-	RefreshSchema    bool   `short:"f" help:"Refresh schema from device even if in store" default:"false"`
+	RefreshSchema    bool   `short:"r" help:"Refresh schema from device even if in store" default:"false"`
 	DryRun           bool   `short:"d" help:"dry run command" default:"false"`
 	Output           string `short:"o" help:"output format for response" default:"json"`
 }
@@ -112,7 +115,7 @@ func (d *CommandSendCmd) Validate() error {
 		err.Details = append(err.Details, "Must specify command name")
 	}
 
-	// Also test payload for json validity
+	// TODO Also test payload for json validity
 	if d.Payload == "" && !d.ShowJsonTemplate {
 		err.Details = append(err.Details, "Must set payload. Use -p to see json template")
 	}
@@ -141,11 +144,12 @@ func (d *CommandSendCmd) Run(c CLI) error {
 			Labels:      d.Target.Labels,
 			Annotations: d.Target.Anno,
 		},
-		Name:          d.Command,
-		Payload:       d.Payload,
-		RefreshSchema: d.RefreshSchema,
-		ShowTemplate:  d.ShowJsonTemplate,
-		DryRun:        d.DryRun,
+		Name:            d.Command,
+		Payload:         []byte(d.Payload),
+		PayloadEncoding: common_apiv1.Encoding_ENCODING_JSON,
+		RefreshSchema:   d.RefreshSchema,
+		ShowTemplate:    d.ShowJsonTemplate,
+		DryRun:          d.DryRun,
 	}
 	resp, err := cmd_client.PublishSendCommandRequest(msgBus, req)
 	if err != nil {
@@ -164,6 +168,13 @@ func (d *CommandSendCmd) Run(c CLI) error {
 		fmt.Println(e)
 		return e
 	}
+	var prettyJSON bytes.Buffer
+	error := json.Indent(&prettyJSON, resp.GetOk().Payload, "", "  ")
+	if error != nil {
+		fmt.Println("Failed to generate pretty JSON:", error)
+	}
+	fmt.Println(resp.GetOk().GetName())
+	fmt.Println(prettyJSON.String())
 
 	return nil
 }

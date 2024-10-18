@@ -35,3 +35,7 @@ message ChangePower {
 
 	int32 power = 1;
 }
+
+message ChangePowerResponse {
+    bool success = 1;
+}

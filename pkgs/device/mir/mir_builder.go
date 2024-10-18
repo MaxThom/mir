@@ -234,6 +234,6 @@ func (b builder) Build() (*Mir, error) {
 		l:           l,
 		schema:      b.schema,
 		schemaReg:   reg,
-		cmdHandlers: make(map[string]func(protoreflect.ProtoMessage) (protoreflect.ProtoMessage, error)),
+		cmdHandlers: make(map[string]cmdHandlerValue),
 	}, nil
 }

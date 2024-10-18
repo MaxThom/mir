@@ -3,6 +3,7 @@ package mir
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"strings"
 	"sync"
 	"time"
@@ -36,13 +37,18 @@ type Mir struct {
 	l           zerolog.Logger
 	schema      *descriptorpb.FileDescriptorSet
 	schemaReg   *protoregistry.Files
-	cmdHandlers map[string]func(protoreflect.ProtoMessage) (protoreflect.ProtoMessage, error)
+	cmdHandlers map[string]cmdHandlerValue
 }
 
 type Cfg struct {
 	DeviceId string `json:"deviceId" yaml:"deviceId" cfg:""`
 	Target   string `json:"target" yaml:"target"`
 	LogLevel string `json:"logLevel" yaml:"logLevel"`
+}
+
+type cmdHandlerValue struct {
+	t reflect.Type
+	h func(protoreflect.ProtoMessage) (protoreflect.ProtoMessage, error)
 }
 
 const ()
@@ -185,6 +191,9 @@ func (m Mir) SendTelemetry(t protoreflect.ProtoMessage) error {
 	return protoflux_client.PublishTelemetryStream(m.b, m.cfg.DeviceId, t)
 }
 
-func (m Mir) HandleCommand(key string, handler func(protoreflect.ProtoMessage) (protoreflect.ProtoMessage, error)) {
-	m.cmdHandlers[key] = handler
+func (m Mir) HandleCommand(t protoreflect.ProtoMessage, handler func(protoreflect.ProtoMessage) (protoreflect.ProtoMessage, error)) {
+	m.cmdHandlers[string(t.ProtoReflect().Descriptor().FullName())] = cmdHandlerValue{
+		t: reflect.TypeOf(t).Elem(),
+		h: handler,
+	}
 }

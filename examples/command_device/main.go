@@ -5,10 +5,12 @@ import (
 	"io"
 	"os"
 	"syscall"
+	"time"
 
 	command_devicev1 "github.com/maxthom/mir/examples/command_device/gen/command_device/v1"
 	"github.com/maxthom/mir/internal/libs/boiler/mir_signals"
 	"github.com/maxthom/mir/pkgs/device/mir"
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 func main() {
@@ -38,7 +40,18 @@ func main() {
 	}
 	l.Info().Msg("Mir is at maxq and nominal")
 
-	// TODO cmd handler
+	m.HandleCommand(
+		&command_devicev1.ChangePower{},
+		func(m protoreflect.ProtoMessage) (protoreflect.ProtoMessage, error) {
+			cmd := m.(*command_devicev1.ChangePower)
+
+			l.Info().Msg("ChangePower command received " + cmd.String())
+			time.Sleep(2 * time.Second)
+			l.Info().Msg("Power changed successfully")
+
+			return &command_devicev1.ChangePowerResponse{Success: true}, nil
+		},
+	)
 
 	mir_signals.WaitForOsSignals(func() {
 		cancel()

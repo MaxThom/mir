@@ -1,6 +1,9 @@
 package mir
 
 import (
+	"fmt"
+	"reflect"
+
 	"github.com/maxthom/mir/internal/clients/device_client"
 	"github.com/maxthom/mir/internal/libs/compression/zstd"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
@@ -10,7 +13,6 @@ import (
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
-	"google.golang.org/protobuf/types/dynamicpb"
 )
 
 var (
@@ -46,7 +48,7 @@ func SchemaRetrieveHandler(msg *nats.Msg, m *Mir) error {
 
 func DefinedCommandHandler(msg *nats.Msg, m *Mir) error {
 	descName := msg.Header.Get("__msg")
-	desc, err := m.schemaReg.FindDescriptorByName(protoreflect.FullName(descName))
+	_, err := m.schemaReg.FindDescriptorByName(protoreflect.FullName(descName))
 	if err != nil {
 		return sendReplyOrAck(m.b, msg, &devicev1.Error{
 			Code:    500,
@@ -55,14 +57,6 @@ func DefinedCommandHandler(msg *nats.Msg, m *Mir) error {
 		}, nil, false)
 	}
 
-	cmdMsg := dynamicpb.NewMessage(desc.(protoreflect.MessageDescriptor))
-	if err = proto.Unmarshal(msg.Data, cmdMsg); err != nil {
-		return sendReplyOrAck(m.b, msg, &devicev1.Error{
-			Code:    500,
-			Message: "error occure while processing command",
-			Details: []string{"500 Internal Server Error", err.Error()},
-		}, nil, false)
-	}
 	h, ok := m.cmdHandlers[descName]
 	if !ok {
 		return sendReplyOrAck(m.b, msg, &devicev1.Error{
@@ -72,7 +66,19 @@ func DefinedCommandHandler(msg *nats.Msg, m *Mir) error {
 		}, nil, false)
 	}
 
-	cmdResp, err := h(cmdMsg)
+	v := reflect.New(h.t).Interface()
+	fmt.Println(reflect.TypeOf(v))
+	cmdMsg := v.(protoreflect.ProtoMessage)
+
+	if err = proto.Unmarshal(msg.Data, cmdMsg); err != nil {
+		return sendReplyOrAck(m.b, msg, &devicev1.Error{
+			Code:    500,
+			Message: "error occure while processing command",
+			Details: []string{"500 Internal Server Error", err.Error()},
+		}, nil, false)
+	}
+
+	cmdResp, err := h.h(cmdMsg)
 	if err != nil {
 		return sendReplyOrAck(m.b, msg, &devicev1.Error{
 			Code:    500,
