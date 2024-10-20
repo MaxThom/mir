@@ -7,14 +7,19 @@
 
 ## Immediate
 
-- [ ] redo module sdk
+- [ ] integration test for command send
+- [ ] integration test for command list
+- [ ] sdk for send command
 - [ ] proto to json template
-- [ ] testing for list commands
-- [ ] send commands to device
-- [ ] device sdk command handler
+- [x] send commands to device
+- [x] device sdk command handler
+- [ ] show template in command
+- [ ] event on command sent
 
 ## Refactoring
 
+- [ ] redo module sdk
+- [ ] get rid of surrealdb
 - [x] create external with interfaces
 - [x] hide itos from domain objects in sdk
 - [ ] look on how k8s sdk is made

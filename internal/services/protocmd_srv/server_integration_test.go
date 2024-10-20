@@ -112,92 +112,6 @@ func TestMain(m *testing.M) {
 	os.Exit(exitVal)
 }
 
-func TestPublishCmdRequest(t *testing.T) {
-	// Arrange
-	ctx, cancel := context.WithCancel(context.Background())
-	id := "device_send_cmd"
-	reqCreate := &core_apiv1.CreateDeviceRequest{
-		DeviceId:  id,
-		Name:      id,
-		Namespace: "testing_cmd",
-		Labels: map[string]string{
-			"testing": "cmd",
-		},
-		Annotations: map[string]string{
-			"mir/device/description": "hello world of devices !",
-		},
-	}
-
-	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).TelemetrySchema(
-		protocmd_testv1.File_protocmd_test_v1_command_proto,
-	).Build()
-	if err != nil {
-		t.Error(err)
-	}
-
-	te := protocmd_testv1.ChangePower{}
-	dev.HandleCommand(string(te.ProtoReflect().Descriptor().FullName()),
-		func(m protoreflect.ProtoMessage) (protoreflect.ProtoMessage, error) {
-			fmt.Println("HANDLER", m)
-			//return &protocmd_testv1.ChangePowerResp{Success: true}, nil
-			// return nil, nil
-			return nil, fmt.Errorf("error in handler")
-		})
-
-	p := protocmd_testv1.ChangePower{
-		Power: 5,
-	}
-	payloadBytes, err := proto.Marshal(&p)
-	if err != nil {
-		t.Error(err)
-	}
-
-	reqCmd := &cmd_apiv1.SendCommandRequest{
-		Targets: &core_apiv1.Targets{
-			Ids: []string{id},
-		},
-		Name:            "protocmd_test.v1.ChangePower",
-		PayloadEncoding: common_apiv1.Encoding_ENCODING_PROTOBUF,
-		Payload:         payloadBytes,
-		RefreshSchema:   true,
-	}
-
-	// Act
-	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate)
-	if err != nil {
-		t.Error(err)
-	}
-	time.Sleep(1 * time.Second)
-
-	wg, err := dev.Launch(ctx)
-	if err != nil {
-		t.Error(err)
-	}
-	time.Sleep(1 * time.Second)
-
-	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
-	if err != nil {
-		t.Error(err)
-	} else if respCmd.GetError() != nil {
-		t.Error(respCmd.GetError())
-	}
-
-	// msgRespDesc, err := reg.FindDescriptorByName(protoreflect.FullName(cmdResp.Name))
-	// msgResp := dynamicpb.NewMessage(msgRespDesc.(protoreflect.MessageDescriptor))
-	msgResp := &protocmd_testv1.ChangePowerResp{}
-	err = proto.Unmarshal(respCmd.GetOk().Payload, msgResp)
-	fmt.Println("FE RESPONSE", msgResp)
-
-	time.Sleep(1 * time.Second)
-
-	fmt.Println(respCmd)
-	assert.Equal(t, true, true)
-
-	// Assert
-	cancel()
-	wg.Wait()
-}
-
 func TestPublishCmdListRequest(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
@@ -274,6 +188,98 @@ func TestPublishCmdListRequest(t *testing.T) {
 	wg.Wait()
 }
 
+func TestPublishCmdRequest(t *testing.T) {
+	// Arrange
+	ctx, cancel := context.WithCancel(context.Background())
+	id := "device_send_cmd"
+	reqCreate := &core_apiv1.CreateDeviceRequest{
+		DeviceId:  id,
+		Name:      id,
+		Namespace: "testing_cmd",
+		Labels: map[string]string{
+			"testing": "cmd",
+		},
+		Annotations: map[string]string{
+			"mir/device/description": "hello world of devices !",
+		},
+	}
+
+	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).TelemetrySchema(
+		protocmd_testv1.File_protocmd_test_v1_command_proto,
+	).Build()
+	if err != nil {
+		t.Error(err)
+	}
+
+	cmdHandled := &protocmd_testv1.ChangePower{}
+	dev.HandleCommand(
+		cmdHandled,
+		func(m protoreflect.ProtoMessage) (protoreflect.ProtoMessage, error) {
+			cmdHandled = m.(*protocmd_testv1.ChangePower)
+			return &protocmd_testv1.ChangePowerResp{Success: true}, nil
+		},
+	)
+
+	reqPayload := protocmd_testv1.ChangePower{
+		Power: 5,
+	}
+	payloadBytes, err := proto.Marshal(&reqPayload)
+	if err != nil {
+		t.Error(err)
+	}
+
+	reqCmd := &cmd_apiv1.SendCommandRequest{
+		Targets: &core_apiv1.Targets{
+			Ids: []string{id},
+		},
+		Name:            string(reqPayload.ProtoReflect().Descriptor().FullName()),
+		PayloadEncoding: common_apiv1.Encoding_ENCODING_PROTOBUF,
+		Payload:         payloadBytes,
+		RefreshSchema:   true,
+	}
+
+	// Act
+	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate)
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	wg, err := dev.Launch(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
+	if err != nil {
+		t.Error(err)
+	} else if respCmd.GetError() != nil {
+		t.Error(respCmd.GetError())
+	}
+
+	msgResp := &protocmd_testv1.ChangePowerResp{}
+	for k, v := range respCmd.GetOk().DeviceResponses {
+		if v.Error != "" {
+			t.Error(v.Error)
+		}
+		assert.Equal(t, string(msgResp.ProtoReflect().Descriptor().FullName()), v.Name)
+		assert.Equal(t, cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_SUCCESS, v.Status)
+		if err = proto.Unmarshal(v.Payload, msgResp); err != nil {
+			t.Error(err)
+		}
+		fmt.Println(k, v.Status, v.Name)
+		fmt.Println(msgResp)
+	}
+
+	// Assert
+	assert.Equal(t, true, msgResp.Success)
+	assert.Equal(t, int32(5), cmdHandled.Power)
+	assert.Equal(t, common_apiv1.Encoding_ENCODING_PROTOBUF, respCmd.GetOk().Encoding)
+	cancel()
+	wg.Wait()
+}
+
 func TestPublishCmdJsonRequest(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
@@ -297,13 +303,12 @@ func TestPublishCmdJsonRequest(t *testing.T) {
 		t.Error(err)
 	}
 
-	te := protocmd_testv1.ChangePower{}
-	dev.HandleCommand(string(te.ProtoReflect().Descriptor().FullName()),
+	cmdHandled := &protocmd_testv1.ChangePower{}
+	dev.HandleCommand(
+		cmdHandled,
 		func(m protoreflect.ProtoMessage) (protoreflect.ProtoMessage, error) {
-			fmt.Println("HANDLER", m)
+			cmdHandled = m.(*protocmd_testv1.ChangePower)
 			return &protocmd_testv1.ChangePowerResp{Success: true}, nil
-			// return nil, nil
-			// return nil, fmt.Errorf("error in handler")
 		})
 
 	p := protocmd_testv1.ChangePower{
@@ -318,7 +323,7 @@ func TestPublishCmdJsonRequest(t *testing.T) {
 		Targets: &core_apiv1.Targets{
 			Ids: []string{id},
 		},
-		Name:            "protocmd_test.v1.ChangePower",
+		Name:            string(p.ProtoReflect().Descriptor().FullName()),
 		PayloadEncoding: common_apiv1.Encoding_ENCODING_JSON,
 		Payload:         payloadBytes,
 		RefreshSchema:   true,
@@ -344,18 +349,24 @@ func TestPublishCmdJsonRequest(t *testing.T) {
 		t.Error(respCmd.GetError())
 	}
 
-	// msgRespDesc, err := reg.FindDescriptorByName(protoreflect.FullName(cmdResp.Name))
-	// msgResp := dynamicpb.NewMessage(msgRespDesc.(protoreflect.MessageDescriptor))
 	msgResp := &protocmd_testv1.ChangePowerResp{}
-	err = protojson.Unmarshal(respCmd.GetOk().Payload, msgResp)
-	fmt.Println("FE RESPONSE", msgResp)
-
-	time.Sleep(1 * time.Second)
-
-	fmt.Println(respCmd)
-	assert.Equal(t, true, true)
+	for k, v := range respCmd.GetOk().DeviceResponses {
+		if v.Error != "" {
+			t.Error(v.Error)
+		}
+		assert.Equal(t, string(msgResp.ProtoReflect().Descriptor().FullName()), v.Name)
+		assert.Equal(t, cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_SUCCESS, v.Status)
+		if err = protojson.Unmarshal(v.Payload, msgResp); err != nil {
+			t.Error(err)
+		}
+		fmt.Println(k, v.Status, v.Name)
+		fmt.Println(msgResp)
+	}
 
 	// Assert
+	assert.Equal(t, true, msgResp.Success)
+	assert.Equal(t, int32(5), cmdHandled.Power)
+	assert.Equal(t, common_apiv1.Encoding_ENCODING_JSON, respCmd.GetOk().Encoding)
 	cancel()
 	wg.Wait()
 }

@@ -1,7 +1,6 @@
 package mir
 
 import (
-	"fmt"
 	"reflect"
 
 	"github.com/maxthom/mir/internal/clients/device_client"
@@ -67,7 +66,6 @@ func DefinedCommandHandler(msg *nats.Msg, m *Mir) error {
 	}
 
 	v := reflect.New(h.t).Interface()
-	fmt.Println(reflect.TypeOf(v))
 	cmdMsg := v.(protoreflect.ProtoMessage)
 
 	if err = proto.Unmarshal(msg.Data, cmdMsg); err != nil {

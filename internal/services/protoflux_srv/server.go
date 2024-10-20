@@ -34,6 +34,9 @@ type ProtoFluxServer struct {
 // - dp count
 // - number of device schema fetch
 
+// IDEA clean ingesters map for schema refresh after timespan
+// for better schema mng
+
 // Will have to listen to device update event for new
 // data that are saved as tag such as namespace and name
 

@@ -115,6 +115,18 @@ func (m *Mir) SendRequest(r MirRequest) error {
 	return r.response(resp)
 }
 
+func (m *Mir) SendRequestWithTimeout(r MirRequest, t time.Duration) error {
+	msg, err := r.msg()
+	if err != nil {
+		return err
+	}
+	resp, err := m.Bus.RequestMsg(msg, t)
+	if err != nil {
+		return err
+	}
+	return r.response(resp)
+}
+
 // Listen the stream and call the handler
 func listenForStream(ctx context.Context, sub *nats.Subscription, handler nats.MsgHandler) {
 	for {

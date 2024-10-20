@@ -62,6 +62,12 @@ type sendCommandRequest struct {
 	resp     *ProtoCmdDesc
 }
 
+type sendRawCommandRequest struct {
+	deviceId string
+	req      *ProtoCmdDesc
+	resp     *ProtoCmdDesc
+}
+
 type ProtoCmdDesc struct {
 	Name    string
 	Payload []byte
@@ -80,18 +86,6 @@ func (s *sendCommandRequest) msg() (*nats.Msg, error) {
 	if err != nil {
 		return nil, err
 	}
-	// r := &device_apiv1.SendCommandRequest{
-	// 	Msg: &device_apiv1.ProtoPayload{
-	// 		Name:    string(s.req.ProtoReflect().Descriptor().FullName()),
-	// 		Payload: b,
-	// 	},
-	// }
-	// bp, err := proto.Marshal(r)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	//m := nats.NewMsg(device_client.CommandRequest.WithId(s.deviceId))
 	m := &nats.Msg{
 		Subject: device_client.CommandRequest.WithId(s.deviceId),
 		Header: nats.Header{
@@ -103,6 +97,44 @@ func (s *sendCommandRequest) msg() (*nats.Msg, error) {
 }
 
 func (s *sendCommandRequest) response(m *nats.Msg) error {
+	if s.resp == nil {
+		return nil
+	}
+	var err error
+	data := m.Data
+	if m.Header.Get("Content-Encoding") == "zstd" {
+		data, err = zstd.DecompressData(m.Data)
+		if err != nil {
+			return err
+		}
+	}
+
+	s.resp.Name = m.Header.Get("__msg")
+	s.resp.Payload = data
+	return nil
+}
+
+// In rework, we need to be able to set timeout
+func (s commandV1Alpha) SendRawCommand(deviceId string, req *ProtoCmdDesc, resp *ProtoCmdDesc) *sendRawCommandRequest {
+	return &sendRawCommandRequest{
+		deviceId: deviceId,
+		req:      req,
+		resp:     resp,
+	}
+}
+
+func (s *sendRawCommandRequest) msg() (*nats.Msg, error) {
+	m := &nats.Msg{
+		Subject: device_client.CommandRequest.WithId(s.deviceId),
+		Header: nats.Header{
+			"__msg": []string{s.req.Name},
+		},
+		Data: s.req.Payload,
+	}
+	return m, nil
+}
+
+func (s *sendRawCommandRequest) response(m *nats.Msg) error {
 	if s.resp == nil {
 		return nil
 	}

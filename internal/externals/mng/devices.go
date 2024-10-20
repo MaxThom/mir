@@ -10,6 +10,10 @@ import (
 	"github.com/surrealdb/surrealdb.go"
 )
 
+var (
+	ErrorListingDevices = errors.New("error listing devices from database")
+)
+
 type DeviceStore interface {
 	ListDevice(req *core_apiv1.ListDeviceRequest) ([]mir_models.DeviceWithId, error)
 	CreateDevice(req *core_apiv1.CreateDeviceRequest) ([]mir_models.DeviceWithId, error)
@@ -29,7 +33,11 @@ func NewSurrealDeviceStore(db *surrealdb.DB) *surrealDeviceStore {
 
 func (s *surrealDeviceStore) ListDevice(req *core_apiv1.ListDeviceRequest) ([]mir_models.DeviceWithId, error) {
 	q, v := createListQueryForDevice(req)
-	return executeQueryForType[[]mir_models.DeviceWithId](s.db, q, v)
+	devs, err := executeQueryForType[[]mir_models.DeviceWithId](s.db, q, v)
+	if err != nil {
+		return nil, errors.Wrap(err, ErrorListingDevices.Error())
+	}
+	return devs, nil
 }
 
 func (s *surrealDeviceStore) CreateDevice(req *core_apiv1.CreateDeviceRequest) ([]mir_models.DeviceWithId, error) {

@@ -25,6 +25,10 @@ type Device struct {
 	Status     Status     `json:"status"`
 }
 
+func (d Device) GetNameNamespace() string {
+	return d.Meta.Name + "/" + d.Meta.Namespace
+}
+
 type Meta struct {
 	Name        string             `json:"name"`
 	Namespace   string             `json:"namespace"`

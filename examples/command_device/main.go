@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"io"
 	"os"
 	"syscall"
@@ -17,8 +18,11 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	mir_signals.Notify(syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT)
 
+	deviceId := flag.String("id", "0xf86cmd", "Device ID")
+	flag.Parse()
+
 	m, err := mir.Builder().
-		DeviceId("0xf86cmd").
+		DeviceId(*deviceId).
 		Target("nats://127.0.0.1:4222").
 		LogLevel(mir.LogLevelDebug).
 		LogWriters([]io.Writer{os.Stdout}).
