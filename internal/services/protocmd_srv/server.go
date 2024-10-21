@@ -3,6 +3,7 @@ package protocmd_srv
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	cmd_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cmd_api"
 	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
+	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/nats-io/nats.go"
@@ -47,6 +49,10 @@ var (
 )
 
 var l zerolog.Logger
+var (
+	devMirErrType = devicev1.Error{}
+	devMirErrStr  = string(devMirErrType.ProtoReflect().Descriptor().FullName())
+)
 
 func RegisterMetrics(reg prometheus.Registerer) {
 	reg.Register(uploadMetric)
@@ -82,18 +88,32 @@ func (s *ProtoCmdServer) sendCommandSub() func(msg *nats.Msg, req *cmd_apiv1.Sen
 			})
 		}
 
+		errs := []string{}
 		if req.Targets == nil ||
 			len(req.Targets.Ids) == 0 &&
 				len(req.Targets.Names) == 0 &&
 				len(req.Targets.Namespaces) == 0 &&
 				len(req.Targets.Labels) == 0 &&
 				len(req.Targets.Annotations) == 0 {
+			errs = append(errs, mir_models.ErrorNoDeviceTargetProvided.Error())
+		}
+		if req.Name == "" {
+			errs = append(errs, mir_models.ErrorCommandNameNotProvided.Error())
+		}
+		if req.PayloadEncoding == common_apiv1.Encoding_ENCODING_UNSPECIFIED {
+			errs = append(errs, mir_models.ErrorCommandEncodingNotSpecified.Error())
+		}
+		if req.Payload == nil || len(req.Payload) == 0 {
+			errs = append(errs, mir_models.ErrorCommandPayloadNotProvided.Error())
+		}
+		if len(errs) > 0 {
+			l.Err(fmt.Errorf("%w: %s", mir_models.ErrorBadRequest, strings.Join(errs, ", "))).Msg("")
 			bus.SendProtoReplyOrAck(s.m.Bus, msg, &cmd_apiv1.SendCommandResponse{
 				Response: &cmd_apiv1.SendCommandResponse_Error{
 					Error: &common_apiv1.Error{
 						Code:    400,
-						Message: mir_models.ErrorNoDeviceTargetProvided.Error(),
-						Details: []string{"400 Bad Request", mir_models.ErrorNoDeviceTargetProvided.Error()},
+						Message: mir_models.ErrorBadRequest.Error(),
+						Details: errs,
 					},
 				},
 			})
@@ -255,10 +275,13 @@ func (s *ProtoCmdServer) sendCommandToDevices(req *cmd_apiv1.SendCommandRequest)
 					return
 				}
 			}
-
+			if cmdResp.Name == devMirErrStr {
+				devResp[nameNs].Status = cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_ERROR
+			} else {
+				devResp[nameNs].Status = cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_SUCCESS
+			}
 			devResp[nameNs].Name = cmdResp.Name
 			devResp[nameNs].Payload = respPayload
-			devResp[nameNs].Status = cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_SUCCESS
 		}()
 	}
 	wg.Wait()

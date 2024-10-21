@@ -65,4 +65,7 @@
 ## General Improvements
 
 - [ ] need a way to know when a device gets updated to refresh caches
-- [ ]
+- [ ] add a self identifier for each mir sdk user which is the app-name +  generated guid.
+      each request from the sdk should have this identifier. Subsequent request such as events
+      should have this id. With this, a service can subcribe to a device update event as well
+      as publishing device update events. This will prevent a loop of request/events.

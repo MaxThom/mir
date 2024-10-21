@@ -163,7 +163,6 @@ func (d *CommandSendCmd) Run(c CLI) error {
 	resp, err := cmd_client.PublishSendCommandRequest(msgBus, req)
 	if err != nil {
 		e := MirRequestError{Route: "command.send", e: err}
-		fmt.Println(e)
 		return e
 	}
 	if resp.GetError() != nil {

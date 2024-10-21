@@ -4,11 +4,15 @@ import "errors"
 
 var (
 	// Models Validation
-	ErrorInvalidDeviceID        = errors.New("Invalid device ID")
-	ErrorDeviceIdAlreadyExist   = errors.New("Device with the same ID already exist")
-	ErrorNoDeviceTargetProvided = errors.New("No device target provided")
+	ErrorInvalidDeviceID             = errors.New("Invalid device ID")
+	ErrorDeviceIdAlreadyExist        = errors.New("Device with the same ID already exist")
+	ErrorNoDeviceTargetProvided      = errors.New("No device target provided")
+	ErrorCommandNameNotProvided      = errors.New("No command name provided")
+	ErrorCommandPayloadNotProvided   = errors.New("No command payload provided")
+	ErrorCommandEncodingNotSpecified = errors.New("Command encoding not specified")
 
 	// API Requests
+	ErrorBadRequest              = errors.New("error occure because of bad request")
 	ErrorApiDeserializingRequest = errors.New("error occure while unmarhsalling request")
 
 	// DB Requests

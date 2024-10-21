@@ -59,6 +59,10 @@ func (m Mir) GetConfig() Cfg {
 	return m.cfg
 }
 
+func (m Mir) GetDeviceId() string {
+	return m.cfg.DeviceId
+}
+
 // Establish connection to the Mir server
 // This will enable communication to and from the device
 // For a gracefull shutdown, simply wait the returning waitgroup after

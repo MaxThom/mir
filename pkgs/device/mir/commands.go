@@ -72,7 +72,7 @@ func DefinedCommandHandler(msg *nats.Msg, m *Mir) error {
 		return sendReplyOrAck(m.b, msg, &devicev1.Error{
 			Code:    500,
 			Message: "error occure while processing command",
-			Details: []string{"500 Internal Server Error", err.Error()},
+			Details: []string{"500 Internal Server Error", "could not unmarshal command payload", err.Error()},
 		}, nil, false)
 	}
 
@@ -81,7 +81,7 @@ func DefinedCommandHandler(msg *nats.Msg, m *Mir) error {
 		return sendReplyOrAck(m.b, msg, &devicev1.Error{
 			Code:    500,
 			Message: "error occure while processing command",
-			Details: []string{"500 Internal Server Error", err.Error()},
+			Details: []string{"500 Internal Server Error", "error in command handler", err.Error()},
 		}, nil, false)
 	}
 
