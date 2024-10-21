@@ -27,11 +27,10 @@ import (
 
 // IDEA possible perf improvement, cache of descriptor
 type ProtoCmdServer struct {
-	sub            *nats.Subscription
-	m              *mir.Mir
-	devStore       mng.DeviceStore
-	devSchemas     map[string]*mir_utils.MirProtoSchema
-	devSchemasLock sync.RWMutex
+	sub      *nats.Subscription
+	m        *mir.Mir
+	devStore mng.DeviceStore
+	schStore mir_utils.MirProtoCache
 }
 
 // TODO prom metics
@@ -57,9 +56,9 @@ func RegisterMetrics(reg prometheus.Registerer) {
 func NewProtoCmdServer(logger zerolog.Logger, m *mir.Mir, devStore mng.DeviceStore) *ProtoCmdServer {
 	l = logger.With().Str("srv", "protoflux_server").Logger()
 	return &ProtoCmdServer{
-		m:          m,
-		devStore:   devStore,
-		devSchemas: make(map[string]*mir_utils.MirProtoSchema),
+		m:        m,
+		devStore: devStore,
+		schStore: *mir_utils.NewMirProtoCache(l, m, devStore),
 	}
 }
 
@@ -130,11 +129,12 @@ type cmdDevicePayload struct {
 	payload  []byte
 }
 
-// TODO reconcile device schema with descriptor name as well
 func (s *ProtoCmdServer) sendCommandToDevices(req *cmd_apiv1.SendCommandRequest) (map[string]*cmd_apiv1.SendCommandResponse_CommandResponse, error) {
 	devs, err := s.devStore.ListDevice(&core_apiv1.ListDeviceRequest{Targets: req.Targets})
 	if err != nil {
 		return nil, err
+	} else if len(devs) == 0 {
+		return nil, mng.ErrorNoDeviceFound
 	}
 	devResp := make(map[string]*cmd_apiv1.SendCommandResponse_CommandResponse)
 
@@ -146,52 +146,19 @@ func (s *ProtoCmdServer) sendCommandToDevices(req *cmd_apiv1.SendCommandRequest)
 	devInError := false
 	if !req.NoValidation || req.PayloadEncoding == common_apiv1.Encoding_ENCODING_JSON {
 		for _, dev := range devs {
-
-			s.devSchemasLock.RLock()
-			devSchema, ok := s.devSchemas[dev.Spec.DeviceId]
-			s.devSchemasLock.RUnlock()
-			if !ok || req.RefreshSchema {
-				devSchema, err = mir_utils.ReconcileDeviceSchema(s.m, s.devStore, dev.Spec.DeviceId, false)
-				s.devSchemasLock.Lock()
-				s.devSchemas[dev.Spec.DeviceId] = devSchema
-				s.devSchemasLock.Unlock()
-				if err != nil {
-					devResp[dev.GetNameNamespace()] = &cmd_apiv1.SendCommandResponse_CommandResponse{
-						Status: cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_ERROR,
-						Error:  errors.Wrap(err, "error reconciling device schema").Error(),
-					}
-					devInError = true
-					continue
-				}
-			}
-
-			msgReqDesc, err := devSchema.FindDescriptorByName(protoreflect.FullName(req.Name))
+			// Retrieve descriptor
+			msgReqDesc, _, _, err := s.schStore.GetDeviceSchemaAndDescriptor(dev.Spec.DeviceId, req.Name, req.RefreshSchema, false)
 			if err != nil {
-				// This time we reconcile and make sure we fetch the schema from the device itself and not db
-				devSchema, err = mir_utils.ReconcileDeviceSchema(s.m, s.devStore, dev.Spec.DeviceId, true)
-				s.devSchemasLock.Lock()
-				s.devSchemas[dev.Spec.DeviceId] = devSchema
-				s.devSchemasLock.Unlock()
-				if err != nil {
-					devResp[dev.GetNameNamespace()] = &cmd_apiv1.SendCommandResponse_CommandResponse{
-						Status: cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_ERROR,
-						Error:  errors.Wrap(err, "error reconciling device schema").Error(),
-					}
-					devInError = true
-					continue
+				devResp[dev.GetNameNamespace()] = &cmd_apiv1.SendCommandResponse_CommandResponse{
+					Status: cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_ERROR,
+					Error:  errors.Wrap(err, "error retrieve command descriptor from device schema").Error(),
 				}
-				msgReqDesc, err = devSchema.FindDescriptorByName(protoreflect.FullName(req.Name))
-				if err != nil {
-					devResp[dev.GetNameNamespace()] = &cmd_apiv1.SendCommandResponse_CommandResponse{
-						Status: cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_ERROR,
-						Error:  errors.Wrap(err, "error finding command. make sure schema is up to date and command name is correct").Error(),
-					}
-					devInError = true
-					continue
-				}
+				devInError = true
+				continue
 			}
 			payloadReq := dynamicpb.NewMessage(msgReqDesc.(protoreflect.MessageDescriptor))
 
+			// Encoding and validation
 			err = nil
 			bytePayload := req.Payload
 			if req.PayloadEncoding == common_apiv1.Encoding_ENCODING_JSON {
@@ -211,11 +178,11 @@ func (s *ProtoCmdServer) sendCommandToDevices(req *cmd_apiv1.SendCommandRequest)
 				continue
 			}
 
+			// Prepare
 			devResp[dev.GetNameNamespace()] = &cmd_apiv1.SendCommandResponse_CommandResponse{
 				Status: cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_VALIDATED,
 			}
 			commandsToSend[dev.GetNameNamespace()] = &cmdDevicePayload{payload: bytePayload, deviceId: dev.Spec.DeviceId}
-
 			l.Debug().Str("payload", fmt.Sprintf("%s", payloadReq)).Msgf("command %s validated for device %s", req.Name, dev.GetNameNamespace())
 		}
 	} else {
@@ -227,8 +194,9 @@ func (s *ProtoCmdServer) sendCommandToDevices(req *cmd_apiv1.SendCommandRequest)
 		}
 	}
 
-	// If we we have validation error or it is a dry run, we return the request
+	// If we have validation error or it is a dry run, we return the request
 	// If ForcePush is on, means we send the command to each validated devices
+	// even if some errors
 	if (devInError && !req.ForcePush) || req.DryRun {
 		return devResp, nil
 	}
@@ -261,12 +229,11 @@ func (s *ProtoCmdServer) sendCommandToDevices(req *cmd_apiv1.SendCommandRequest)
 
 			respPayload := cmdResp.Payload
 			if req.PayloadEncoding == common_apiv1.Encoding_ENCODING_JSON {
-				msgRespDesc, err := s.devSchemas[p.deviceId].FindDescriptorByName(protoreflect.FullName(cmdResp.Name))
-				// TODO refetch schema
+				msgRespDesc, _, _, err := s.schStore.GetDeviceSchemaAndDescriptor(p.deviceId, cmdResp.Name, false, false)
 				if err != nil {
 					devResp[nameNs] = &cmd_apiv1.SendCommandResponse_CommandResponse{
 						Status: cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_ERROR,
-						Error:  errors.Wrap(err, "error finding command response in schema. make sure schema is up to date and command name is correct").Error(),
+						Error:  errors.Wrap(err, "error finding command response in schema").Error(),
 					}
 					return
 				}
@@ -335,8 +302,8 @@ func (s *ProtoCmdServer) listCommandsSub() func(msg *nats.Msg, req *cmd_apiv1.Se
 		devsCmds := make(map[string]*cmd_apiv1.Commands)
 		for _, dev := range devs {
 			cmdsList := []*cmd_apiv1.CommandDescriptor{}
-			// TODO force options
-			reg, err := mir_utils.ReconcileDeviceSchema(s.m, s.devStore, dev.Spec.DeviceId, req.RefreshSchema)
+			// TODO force hard force opt
+			reg, _, err := s.schStore.GetDeviceSchema(dev.Spec.DeviceId, req.RefreshSchema, false)
 			if err != nil {
 				cmdsList = append(cmdsList, &cmd_apiv1.CommandDescriptor{
 					Name: err.Error(),

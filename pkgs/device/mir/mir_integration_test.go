@@ -15,6 +15,7 @@ import (
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	"github.com/maxthom/mir/internal/services/core_srv"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
+	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
 	mir_device_testv1 "github.com/maxthom/mir/pkgs/device/mir/proto_test/gen/mir_device_test/v1"
 	"github.com/maxthom/mir/pkgs/mir_models"
 	logger "github.com/rs/zerolog/log"
@@ -156,6 +157,7 @@ func TestRequestTelemetrySchema(t *testing.T) {
 		mir_device_testv1.File_mir_device_test_v1_command_proto,
 		mir_device_testv1.File_mir_device_test_v1_telemetry_proto,
 		descriptorpb.File_google_protobuf_descriptor_proto,
+		devicev1.File_mir_device_v1_mir_proto,
 	)
 	if err != nil {
 		t.Error(err)
@@ -192,6 +194,7 @@ func TestRequestTelemetrySchema(t *testing.T) {
 	}
 
 	// Assert
+	assert.Equal(t, len(schemaBytes), len(resp.GetSchema()))
 	assert.Equal(t, true, bytes.Equal(schemaBytes, resp.GetSchema()))
 
 	cancel()

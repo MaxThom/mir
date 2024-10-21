@@ -19,6 +19,7 @@ import (
 	"github.com/maxthom/mir/internal/services/core_srv"
 	protoflux_testv1 "github.com/maxthom/mir/internal/services/protoflux_srv/proto_test/gen/protoflux_test/v1"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
+	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
 	mirDevice "github.com/maxthom/mir/pkgs/device/mir"
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/maxthom/mir/pkgs/module/mir"
@@ -192,6 +193,7 @@ func TestPublishDevicePushTelemetry(t *testing.T) {
 	originalSchemaBytes, err := mir_models.MarshalProtoFiles(
 		protoflux_testv1.File_protoflux_test_v1_telemetry_proto,
 		descriptorpb.File_google_protobuf_descriptor_proto,
+		devicev1.File_mir_device_v1_mir_proto,
 	)
 	if err != nil {
 		t.Error(err)
@@ -201,7 +203,7 @@ func TestPublishDevicePushTelemetry(t *testing.T) {
 		t.Error(err)
 	}
 
-	dpResult, err := lpQuery.Query(ctx, `from(bucket: "mir_integration_test") |> range(start: -7s) |> filter(fn: (r) => r["_measurement"] == "protoflux_test.v1.EnvTlm" or r["_measurement"] == "protoflux_test.v1.PowerTlm") |> filter(fn: (r) => r["deviceId"] == "device_push_tlm")`)
+	dpResult, err := lpQuery.Query(ctx, `from(bucket: "mir_integration_test") |> range(start: -7s) |> filter(fn: (r) => r["_measurement"] == "protoflux_test.v1.EnvTlm" or r["_measurement"] == "protoflux_test.v1.PowerTlm") |> filter(fn: (r) => r["__id"] == "device_push_tlm")`)
 	if err != nil {
 		t.Error(err)
 	}
@@ -337,7 +339,7 @@ func TestPublishDeviceSchemaAlreadyPresent(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	dpResult, err := lpQuery.Query(ctx, `from(bucket: "mir_integration_test") |> range(start: -7s) |> filter(fn: (r) => r["_measurement"] == "protoflux_test.v1.EnvTlm" or r["_measurement"] == "protoflux_test.v1.PowerTlm") |> filter(fn: (r) => r["deviceId"] == "device_schema_present")`)
+	dpResult, err := lpQuery.Query(ctx, `from(bucket: "mir_integration_test") |> range(start: -7s) |> filter(fn: (r) => r["_measurement"] == "protoflux_test.v1.EnvTlm" or r["_measurement"] == "protoflux_test.v1.PowerTlm") |> filter(fn: (r) => r["__id"] == "device_schema_present")`)
 	if err != nil {
 		t.Error(err)
 	}
@@ -379,6 +381,7 @@ func TestPublishDeviceSchemaInvalid(t *testing.T) {
 	goodSch, err := mir_models.CompressProtoFiles(
 		protoflux_testv1.File_protoflux_test_v1_telemetry_proto,
 		descriptorpb.File_google_protobuf_descriptor_proto,
+		devicev1.File_mir_device_v1_mir_proto,
 	)
 	if err != nil {
 		t.Error(err)
@@ -474,7 +477,7 @@ func TestPublishDeviceSchemaInvalid(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	dpResult, err := lpQuery.Query(ctx, `from(bucket: "mir_integration_test") |> range(start: -7s) |> filter(fn: (r) => r["_measurement"] == "protoflux_test.v1.EnvTlm" or r["_measurement"] == "protoflux_test.v1.PowerTlm") |> filter(fn: (r) => r["deviceId"] == "device_invalid_schema")`)
+	dpResult, err := lpQuery.Query(ctx, `from(bucket: "mir_integration_test") |> range(start: -7s) |> filter(fn: (r) => r["_measurement"] == "protoflux_test.v1.EnvTlm" or r["_measurement"] == "protoflux_test.v1.PowerTlm") |> filter(fn: (r) => r["__id"] == "device_invalid_schema")`)
 	if err != nil {
 		t.Error(err)
 	}

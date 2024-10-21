@@ -10,6 +10,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/api/metrics"
 	proto_lineprotocol "github.com/maxthom/mir/internal/libs/proto/line_protocol"
 	"github.com/maxthom/mir/internal/mir_utils"
+	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/nats-io/nats.go"
 	"github.com/prometheus/client_golang/prometheus"
@@ -24,8 +25,7 @@ type ProtoFluxServer struct {
 	devStore       mng.DeviceStore
 	devWriters     map[deviceProtoKey]proto_lineprotocol.ProtoBytesToLpFn
 	devWritersLock sync.RWMutex
-	devSchemas     map[string]deviceProtoSchema
-	devSchemasLock sync.RWMutex
+	schStore       *mir_utils.MirProtoCache
 }
 
 // TODO prom metics
@@ -50,11 +50,9 @@ type deviceProtoKey struct {
 // the lpFn
 
 type deviceProtoSchema struct {
-	deviceId   string
-	deviceName string
-	namespace  string
-	labels     map[string]string
-	schema     *mir_utils.MirProtoSchema
+	deviceId string
+	labels   map[string]string
+	schema   *mir_utils.MirProtoSchema
 }
 
 var (
@@ -82,7 +80,7 @@ func NewProtoFluxServer(logger zerolog.Logger, m *mir.Mir, devStore mng.DeviceSt
 		m:          m,
 		devStore:   devStore,
 		devWriters: make(map[deviceProtoKey]proto_lineprotocol.ProtoBytesToLpFn),
-		devSchemas: make(map[string]deviceProtoSchema),
+		schStore:   mir_utils.NewMirProtoCache(l, m, devStore),
 	}
 }
 
@@ -114,43 +112,22 @@ func (s *ProtoFluxServer) Listen(ctx context.Context) {
 			s.devWritersLock.RUnlock()
 			// Mean no ingesters for proto msg, but we might have the schema
 			if !ok {
-				s.devSchemasLock.RLock()
-				devSchema, ok := s.devSchemas[deviceId]
-				s.devSchemasLock.RUnlock()
-				// No schema, thus we must check in db first
-				// if not found, we must request it from device
-				if !ok {
-					reg, err := mir_utils.ReconcileDeviceSchema(s.m, s.devStore, deviceId, false)
-					if err != nil {
-						l.Error().Err(err).Str("deviceId", deviceId).Msg("Failed to retrieve schema from device")
-						return
-					}
-					s.devSchemasLock.Lock()
-					devSchema = deviceProtoSchema{
-						deviceId: deviceId,
-						schema:   reg,
-					}
-					s.devSchemas[deviceId] = devSchema
-					s.devSchemasLock.Unlock()
+				desc, _, dev, err := s.schStore.GetDeviceSchemaAndDescriptor(deviceId, protoMsgName, false, false)
+				if err != nil {
+					l.Error().Err(err).Str("deviceId", deviceId).Msg("Failed to retrieve schema from device")
+					return
 				}
-				fn, err := generateIngesters(devSchema, protoMsgName)
+				fn, err := generateIngesters(desc, deviceId, dev)
 				// If error, means schema is invalid so request new from device
 				if err != nil {
 					// TODO possibly different flow depending on error type
-					l.Warn().Err(err).Str("deviceId", devSchema.deviceId).Str("protoMsg", protoMsgName).Msg("Failed to generate ingester function, requesting schema from device")
-					reg, err := mir_utils.ReconcileDeviceSchema(s.m, s.devStore, deviceId, true)
+					l.Warn().Err(err).Str("deviceId", deviceId).Str("protoMsg", protoMsgName).Msg("Failed to generate ingester function, requesting schema from device")
+					desc, _, dev, err := s.schStore.GetDeviceSchemaAndDescriptor(deviceId, protoMsgName, true, true)
 					if err != nil {
 						l.Error().Err(err).Str("deviceId", deviceId).Msg("Failed to retrieve schema from device")
 						return
 					}
-					s.devSchemasLock.Lock()
-					devSchema = deviceProtoSchema{
-						deviceId: deviceId,
-						schema:   reg,
-					}
-					s.devSchemas[deviceId] = devSchema
-					s.devSchemasLock.Unlock()
-					fn, err = generateIngesters(devSchema, protoMsgName)
+					fn, err = generateIngesters(desc, deviceId, dev)
 					if err != nil {
 						l.Warn().Err(err).Msg("")
 					}
@@ -174,20 +151,15 @@ func (s *ProtoFluxServer) Listen(ctx context.Context) {
 		}))
 }
 
-func generateIngesters(devSchema deviceProtoSchema, protoMsgName string) (proto_lineprotocol.ProtoBytesToLpFn, error) {
-	// Find the descriptor by name
-	desc, err := devSchema.schema.FindDescriptorByName(protoreflect.FullName(protoMsgName))
-	if err != nil {
-		return nil, err
-	}
-
+// TODO have some device info
+func generateIngesters(desc protoreflect.Descriptor, deviceId string, device mir_models.Device) (proto_lineprotocol.ProtoBytesToLpFn, error) {
 	tags := map[string]string{
-		"deviceId":   devSchema.deviceId,
-		"deviceName": devSchema.deviceName,
-		"namespace":  devSchema.namespace,
+		"__id":        deviceId,
+		"__name":      device.Meta.Name,
+		"__namespace": device.Meta.Namespace,
 	}
-	for k, v := range devSchema.labels {
-		tags[k] = v
+	for k, v := range device.Meta.Labels {
+		tags[k] = *v
 	}
 	fn, err := proto_lineprotocol.GenerateMarshalFn(tags, desc.(protoreflect.MessageDescriptor))
 	if err != nil {

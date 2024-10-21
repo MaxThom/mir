@@ -14,6 +14,7 @@ import (
 	"github.com/maxthom/mir/internal/services/core_srv"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	device_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/device_api"
+	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
 	mir_device "github.com/maxthom/mir/pkgs/device/mir"
 	mir_module_testv1 "github.com/maxthom/mir/pkgs/module/mir/proto_test/gen/mir_module_test/v1"
 	"github.com/nats-io/nats.go"
@@ -260,6 +261,9 @@ func TestRequestCreateDevice(t *testing.T) {
 	)); err != nil {
 		t.Error(err)
 	}
+	if respCreate.GetError() != nil {
+		t.Error(respCreate.GetError())
+	}
 
 	// Assert
 	time.Sleep(1 * time.Second)
@@ -452,6 +456,7 @@ func TestRequestRetrieveSchema(t *testing.T) {
 		mir_module_testv1.File_mir_module_test_v1_command_proto,
 		mir_module_testv1.File_mir_module_test_v1_telemetry_proto,
 		descriptorpb.File_google_protobuf_descriptor_proto,
+		devicev1.File_mir_device_v1_mir_proto,
 	)
 	if err != nil {
 		t.Error(err)

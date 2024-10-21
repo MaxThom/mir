@@ -12,6 +12,7 @@ import (
 
 var (
 	ErrorListingDevices = errors.New("error listing devices from database")
+	ErrorNoDeviceFound  = errors.New("no device found with current targets criteria")
 )
 
 type DeviceStore interface {

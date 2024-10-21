@@ -49,15 +49,20 @@
 
 - [x] Setup new app
 - [x] Basic client send command + integration test
-- [ ] Add cmd annotations and labels to schema
-- [ ] Add cmd list to explore commands and cli
-- [ ] Select devices
-- [ ] Json Payload to proto
-- [ ] Send cmd to devices
+- [x] Add cmd annotations and labels to schema
+- [x] Add cmd list to explore commands and cli
+- [x] Select devices
+- [x] Json Payload to proto
+- [x] Send cmd to devices
 - [ ] Device SDK handler
-- [ ] Response back to protocmd and then client
+- [x] Response back to protocmd and then client
 - [ ] Event on send cmds and resp
 - [ ] Prometheus metrics
 
 - [ ] Retweak client handler to return an error and that get handled by the sdk
 - [ ] Send schema on bootup
+
+## General Improvements
+
+- [ ] need a way to know when a device gets updated to refresh caches
+- [ ]

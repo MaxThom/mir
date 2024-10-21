@@ -174,7 +174,6 @@ func (d *CommandSendCmd) Run(c CLI) error {
 				Message: resp.GetError().GetMessage(),
 				Details: resp.GetError().GetDetails(),
 			}}
-		fmt.Println(e)
 		return e
 	}
 
