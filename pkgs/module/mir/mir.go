@@ -85,6 +85,22 @@ func (m *Mir) Subscribe(s ...MirStream) error {
 	return errs
 }
 
+// Subscribe to a stream or event, this will put the handler
+// in a go routine and listen for messages on that topic
+func (m *Mir) SubscribeRaw(subject string, handler nats.MsgHandler) error {
+	var errs error
+	sub, err := m.Bus.SubscribeSync(subject)
+	if err != nil {
+		errs = errors.Join(errs, err)
+	}
+	m.wg.Add(1)
+	go func(sub *nats.Subscription, handler nats.MsgHandler) {
+		listenForStream(m.ctx, sub, handler)
+		m.wg.Done()
+	}(sub, handler)
+	return errs
+}
+
 // Send a request to the Mir server
 // and expect a reply
 func (m *Mir) SendRequest(r MirRequest) error {
@@ -93,6 +109,18 @@ func (m *Mir) SendRequest(r MirRequest) error {
 		return err
 	}
 	resp, err := m.Bus.RequestMsg(msg, 7*time.Second)
+	if err != nil {
+		return err
+	}
+	return r.response(resp)
+}
+
+func (m *Mir) SendRequestWithTimeout(r MirRequest, t time.Duration) error {
+	msg, err := r.msg()
+	if err != nil {
+		return err
+	}
+	resp, err := m.Bus.RequestMsg(msg, t)
 	if err != nil {
 		return err
 	}

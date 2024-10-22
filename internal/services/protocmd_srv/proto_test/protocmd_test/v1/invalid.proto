@@ -1,0 +1,11 @@
+
+syntax = "proto3";
+
+package protocmd_test.v1;
+option go_package = "github.com/maxthom/mir/internal/services/protocmd_srv/proto_test/gen/protocmd_test/v1";
+
+message Beurk {
+	int32 temperature = 1;
+	int32 pressure = 2;
+	int32 humidity = 3;
+}

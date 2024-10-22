@@ -177,6 +177,13 @@ func (s *CoreServer) createDeviceRequestHandler(ch chan nats.Msg) {
 		}
 		l.Debug().Str("route", "create").Str("payload", fmt.Sprintf("%v", req)).Msg("new device request")
 
+		if req.Name == "" {
+			req.Name = req.DeviceId
+		}
+		if req.Namespace == "" {
+			req.Namespace = "default"
+		}
+
 		newDev, err := s.store.CreateDevice(req)
 		if err != nil {
 			if errors.Is(err, mir_models.ErrorInvalidDeviceID) {

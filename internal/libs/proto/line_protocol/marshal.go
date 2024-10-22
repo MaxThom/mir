@@ -64,7 +64,7 @@ func GenerateMarshalFn(pinnedTags map[string]string, desc protoreflect.MessageDe
 
 	// Pinned tags
 	// Get meta opts
-	lbl := retrieveMessageTags(desc)
+	lbl := RetrieveMessageTags(desc)
 	for k, v := range lbl {
 		if v != "" {
 			pinnedTags[k] = v

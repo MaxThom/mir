@@ -3,6 +3,12 @@ syntax = "proto3";
 
 package common_api.v1;
 
+// Represent a unique composable key for a resource
+message NameNamespace {
+    string name = 1;
+    string namespace = 2;
+}
+
 // Used to have a optional value in maps to mark the key for deletion
 message OptString {
   optional string value = 1;
@@ -26,4 +32,10 @@ message Timestamp {
   // that count forward in time. Must be from 0 to 999,999,999
   // inclusive.
   int32 nanos = 2;
+}
+
+enum Encoding {
+  ENCODING_UNSPECIFIED = 0;
+  ENCODING_PROTOBUF = 1;
+  ENCODING_JSON = 2;
 }

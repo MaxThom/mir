@@ -1,6 +1,6 @@
 root = "../"
 testdata_dir = "testdata"
-tmp_dir = "core"
+tmp_dir = "protoflux"
 
 [build]
 args_bin = ["--debug"]

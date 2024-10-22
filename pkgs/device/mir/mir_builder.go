@@ -1,11 +1,13 @@
 package mir
 
 import (
+	"fmt"
 	"io"
 	"os"
 
 	"github.com/maxthom/mir/internal/libs/boiler/mir_config"
 	"github.com/maxthom/mir/internal/libs/boiler/mir_log"
+	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
@@ -17,7 +19,7 @@ type builder struct {
 	target              *string
 	logLevel            *logLevel
 	logWriters          []io.Writer
-	telemetrySchema     *descriptorpb.FileDescriptorSet
+	schema              *descriptorpb.FileDescriptorSet
 	telemetryModuleFlag bool
 }
 
@@ -44,7 +46,7 @@ const (
 // Configure logging, device authentication and config loading.
 func Builder() builder {
 	return builder{
-		telemetrySchema: new(descriptorpb.FileDescriptorSet),
+		schema: new(descriptorpb.FileDescriptorSet),
 	}
 }
 
@@ -138,7 +140,7 @@ func (b builder) TelemetrySchema(s ...protoreflect.FileDescriptor) builder {
 		b.telemetryModuleFlag = true
 	}
 	for _, f := range s {
-		b.telemetrySchema.File = append(b.telemetrySchema.File,
+		b.schema.File = append(b.schema.File,
 			protodesc.ToFileDescriptorProto(f))
 	}
 	return b
@@ -147,7 +149,7 @@ func (b builder) TelemetrySchemaProto(s ...*descriptorpb.FileDescriptorProto) bu
 	if len(s) > 0 {
 		b.telemetryModuleFlag = true
 	}
-	b.telemetrySchema.File = append(b.telemetrySchema.File, s...)
+	b.schema.File = append(b.schema.File, s...)
 	return b
 }
 
@@ -210,18 +212,28 @@ func (b builder) Build() (*Mir, error) {
 		}
 	}
 
-	if b.telemetryModuleFlag {
-		// Add descriptordb for mir options imports
-		b.telemetrySchema.File = append(b.telemetrySchema.File,
-			protodesc.ToFileDescriptorProto(
-				descriptorpb.File_google_protobuf_descriptor_proto,
-			),
-		)
+	// Add descriptordb for mir options imports
+	b.schema.File = append(b.schema.File,
+		protodesc.ToFileDescriptorProto(
+			descriptorpb.File_google_protobuf_descriptor_proto,
+		),
+	)
+	b.schema.File = append(b.schema.File,
+		protodesc.ToFileDescriptorProto(
+			devicev1.File_mir_device_v1_mir_proto,
+		),
+	)
+
+	reg, err := protodesc.NewFiles(b.schema)
+	if err != nil {
+		return nil, fmt.Errorf("error creating schema registry: %w", err)
 	}
 
 	return &Mir{
-		cfg:             c,
-		l:               l,
-		telemetrySchema: b.telemetrySchema,
+		cfg:         c,
+		l:           l,
+		schema:      b.schema,
+		schemaReg:   reg,
+		cmdHandlers: make(map[string]cmdHandlerValue),
 	}, nil
 }

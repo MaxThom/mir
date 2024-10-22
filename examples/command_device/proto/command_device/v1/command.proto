@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package command_device.v1;
+option go_package = "github.com/maxthom/mir/examples/command_device/gen/command_device/v1";
+
+import "mir/device/v1/mir.proto";
+
+// Description HAHAHA
+message Command {
+	option (mir.device.v1.message_type) = MESSAGE_TYPE_TELECOMMAND;
+	option (mir.device.v1.meta) = {
+		tags: [{
+			key: "building",
+			value: "A"
+		}, {
+			key: "floor",
+			value: "1"
+		}]
+	};
+
+	int32 power = 1;
+	bool valve_open = 2;
+	int32 gaz_level = 3;
+	Args args = 4;
+}
+
+message Args {
+ int32 pizza_count = 1;
+ repeated string names = 2;
+ map<string, int32> ingredients = 3;
+}
+
+message ChangePower {
+	option (mir.device.v1.message_type) = MESSAGE_TYPE_TELECOMMAND;
+
+	int32 power = 1;
+}
+
+message ChangePowerResponse {
+    bool success = 1;
+}

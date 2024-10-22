@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package protocmd_test.v1;
+option go_package = "github.com/maxthom/mir/internal/services/protocmd_srv/proto_test/gen/protocmd_test/v1";
+
+import "mir/device/v1/mir.proto";
+
+message Command {
+	option (mir.device.v1.message_type) = MESSAGE_TYPE_TELECOMMAND;
+	option (mir.device.v1.meta) = {
+		tags: [{
+			key: "building",
+			value: "A"
+		}, {
+			key: "floor",
+			value: "1"
+		}]
+	};
+
+	int32 power = 1;
+	bool valve_open = 2;
+	int32 gaz_level = 3;
+}
+
+message ChangePower {
+	option (mir.device.v1.message_type) = MESSAGE_TYPE_TELECOMMAND;
+	option (mir.device.v1.meta) = {
+		tags: [{
+			key: "building",
+			value: "A"
+		}, {
+			key: "floor",
+			value: "1"
+		}]
+	};
+
+	int32 power = 1;
+}
+
+message SetTargetVector {
+	option (mir.device.v1.message_type) = MESSAGE_TYPE_TELECOMMAND;
+
+	int32 x = 1;
+	int32 y = 2;
+	int32 z = 3;
+}
+
+message SetDestination {
+	option (mir.device.v1.message_type) = MESSAGE_TYPE_TELECOMMAND;
+
+	string name = 1;
+	SetTargetVector target = 2;
+}
+
+message ChangePowerResp {
+    bool success = 1;
+}

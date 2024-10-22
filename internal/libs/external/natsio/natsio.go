@@ -4,6 +4,8 @@ import (
 	"time"
 
 	"github.com/nats-io/nats.go"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 //
@@ -73,4 +75,32 @@ func WithCustom(options ...nats.Option) func(*BusConn) {
 	return func(bus *BusConn) {
 		bus.opts = append(bus.opts, options...)
 	}
+}
+
+func SendProtoReplyOrAck(b *nats.Conn, msg *nats.Msg, m protoreflect.ProtoMessage) error {
+	if msg.Reply != "" {
+		bResp, err := proto.Marshal(m)
+		if err != nil {
+			return err
+		}
+		err = b.Publish(msg.Reply, bResp)
+		if err != nil {
+			return err
+		}
+	} else {
+		msg.Ack()
+	}
+	return nil
+}
+
+func SendReplyOrAck(b *nats.Conn, msg *nats.Msg, data []byte) error {
+	if msg.Reply != "" {
+		err := b.Publish(msg.Reply, data)
+		if err != nil {
+			return err
+		}
+	} else {
+		msg.Ack()
+	}
+	return nil
 }

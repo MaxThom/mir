@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	lp_testv1 "github.com/maxthom/mir/internal/libs/proto/line_protocol/proto_test/gen/lp_test/v1"
-	devicev1 "github.com/maxthom/mir/internal/libs/proto/line_protocol/proto_test/gen/mir/device/v1"
+	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"

@@ -1,7 +1,7 @@
 version: "3.8"
 services:
   surrealdb:
-    image: surrealdb/surrealdb:latest
+    image: surrealdb/surrealdb:v1.5.4 # Last release of surrealdb before v2
     ports:
       - "8000:8000"
     volumes:

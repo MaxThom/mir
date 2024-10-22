@@ -1,0 +1,10 @@
+version: v2
+managed:
+  enabled: true
+plugins:
+  - local: protoc-gen-go
+    out: internal/services/protocmd_srv/proto_test/gen
+    opt: paths=source_relative
+    #include_imports: true
+inputs:
+  - directory: internal/services/protocmd_srv/proto_test

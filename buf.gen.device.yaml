@@ -1,11 +1,8 @@
 version: v2
 managed:
   enabled: true
-  override:
-    - file_option: go_package_prefix
-      value: github.com/maxthom/mir/pkgs/device/gen/proto
 plugins:
-  - remote: buf.build/protocolbuffers/go
+  - local: protoc-gen-go
     out: pkgs/device/gen/proto
     opt: paths=source_relative
 inputs:

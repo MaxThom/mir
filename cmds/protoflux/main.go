@@ -75,7 +75,9 @@ var (
 			Url: "nats://127.0.0.1:4222",
 		},
 		DatabaseServer: DatabaseSever{
-			Url: "ws://127.0.0.1:8000/rpc",
+			Url:      "ws://127.0.0.1:8000/rpc",
+			User:     "root",
+			Password: "root",
 		},
 		TelemetryServer: TelemetryServer{
 			// QuestDB
@@ -84,6 +86,7 @@ var (
 			Url:    "http://localhost:8086/",
 			Org:    "Mir",
 			Bucket: "mir",
+			Token:  "mir-operator-token",
 		},
 	}
 )
@@ -204,8 +207,8 @@ func run(
 	}
 
 	wg := &sync.WaitGroup{}
+	wg.Add(1)
 	go func() {
-		wg.Add(1)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Err(err).Msg("")
 			health.SetUneady()
@@ -216,8 +219,8 @@ func run(
 	}()
 
 	ctx, cancel := context.WithCancel(ctx)
+	wg.Add(1)
 	go func() {
-		wg.Add(1)
 		protofluxSrv.Listen(ctx)
 		wg.Done()
 	}()

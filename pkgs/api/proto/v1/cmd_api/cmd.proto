@@ -1,0 +1,88 @@
+syntax = "proto3";
+
+package cmd_api.v1;
+
+import "v1/common_api/common.proto";
+import "v1/core_api/core.proto";
+
+// Send a command to a set of devices
+// Data payload can be encoded in json or protobuf.
+// Command Response will be in the same encoding as the request.
+// There will always be validation if JSON encoding.
+// - DryRun validate the command for each devices but do not send the command
+// - NoValidation only work for protobuf encoding and will not ensure the command
+// is properly encoded with the schema of the devices. Performance boost.
+// - ForcePush will send the command to validated devices even if others are in errors
+// - DryRun, NoValidation and Proto encoding together does nothing
+// - NoValidation, Proto encoding and ForcePush is useless together. There will be no errors if
+// NoValidation is on
+message SendCommandRequest {
+	core_api.v1.Targets targets = 1; // To target a set of devices, search using ids, labels and annotations
+	string name = 2; // name of the command
+	bytes payload = 3; // payload of the command
+	common_api.v1.Encoding payload_encoding = 4; // Encoding type of payload
+	bool refresh_schema = 5; // Force a schema refresh from the device, else will only try refresh if cant deserialize
+	bool show_template = 6; // Show the json template of the command
+	bool dry_run = 7; // Do not execute the command, just validate it
+	bool no_validation = 8; // Do not validate the command (only for encoding protobuf)
+	bool force_push = 9; // Send commands to validated devices even if some are in errors
+	uint32 timeoutSec = 10; // Time to wait for response in second, default to 10
+}
+
+message SendCommandResponse {
+    oneof response {
+  	    CommandResponses ok = 1; // response of the command
+        common_api.v1.Error error = 2;  // HTTP like error if something went wrong
+    }
+
+    message CommandResponses {
+        map<string, CommandResponse> device_responses = 1; // response per device
+        common_api.v1.Encoding encoding = 2; // encoding of the response
+    }
+
+    message CommandResponse {
+        string name = 1; // name of the command response
+        bytes payload = 2; // actual response payload
+        CommandResponseStatus status = 3; // status of command
+        string error = 4; // HTTP like error if something went wrong
+    }
+}
+
+enum CommandResponseStatus {
+    COMMAND_RESPONSE_STATUS_UNSPECIFIED = 0; // Default, unspecified response status
+    COMMAND_RESPONSE_STATUS_PENDING = 1; // Waiting to be sent and no validation required
+    COMMAND_RESPONSE_STATUS_VALIDATED = 2; // Command was validated
+    COMMAND_RESPONSE_STATUS_ERROR = 3; // Command execution failed
+    COMMAND_RESPONSE_STATUS_SUCCESS = 4; // Command execution was successfull
+}
+
+message SendListCommandsRequest {
+	core_api.v1.Targets targets = 1; // To target a set of devices, search using ids, labels and annotations
+	bool refresh_schema = 2; // Force a schema refresh from the device
+}
+
+message SendListCommandsResponse {
+  oneof response {
+  	DevicesCommands ok = 1; // all commands per devices
+    common_api.v1.Error error = 2;  // HTTP like error if something went wrong
+  }
+}
+
+// Map of device id and its list of commands
+message DevicesCommands {
+	map<string, Commands> device_commands = 1; // all commands per devices
+}
+
+// List of commands
+message Commands {
+	repeated CommandDescriptor commands = 1; // Array of command descriptor
+}
+
+// Descriptor of a command
+message CommandDescriptor {
+	string name = 1; // Name of command
+	string description = 2; // Description of commands
+	map<string, string> labels = 3; // Labels are used to tag a command
+	map<string, string> arguments = 4; // List of arguments for the command
+	string boilerplate = 5; // JSON payload boilerplate for an example
+}

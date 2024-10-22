@@ -28,8 +28,9 @@ type SchemaUploadCmd struct {
 }
 
 type SchemaExploreCmd struct {
-	Output string `short:"o" help:"output format for response" default:"json"`
-	Target `embed:"" prefix:"target."`
+	Output            string `short:"o" help:"output format for response" default:"json"`
+	IncludeMirImports bool   `short:"i" help:"includes Mir proto dependencies" default:"false"`
+	Target            `embed:"" prefix:"target."`
 }
 
 func (d *SchemaUploadCmd) Validate() error {
@@ -229,6 +230,16 @@ func (d *SchemaExploreCmd) Run(c CLI) error {
 		pbSet := new(descriptorpb.FileDescriptorSet)
 		if err := proto.Unmarshal(bDecomp, pbSet); err != nil {
 			errs = append(errs, MirProcessError{e: err})
+		}
+		if !d.IncludeMirImports {
+			pbSetSmall := new(descriptorpb.FileDescriptorSet)
+			for _, v := range pbSet.File {
+				if v.GetName() != "google/protobuf/descriptor.proto" &&
+					v.GetName() != "mir/device/v1/mir.proto" {
+					pbSetSmall.File = append(pbSetSmall.File, v)
+				}
+			}
+			pbSet = pbSetSmall
 		}
 
 		sch, ok := devSchemas[string(bDecomp)]

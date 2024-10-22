@@ -19,6 +19,7 @@ import (
 	"github.com/maxthom/mir/internal/services/core_srv"
 	protoflux_testv1 "github.com/maxthom/mir/internal/services/protoflux_srv/proto_test/gen/protoflux_test/v1"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
+	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
 	mirDevice "github.com/maxthom/mir/pkgs/device/mir"
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/maxthom/mir/pkgs/module/mir"
@@ -58,7 +59,7 @@ func TestMain(m *testing.M) {
 		},
 		Iinflux: test_utils.InfluxInfo{
 			Url:    "http://localhost:8086/",
-			Token:  "-NKzSScFgqhcAl-1S40otGUwuBEp8SmHoxFIYJVARrrp-a-H81Z28BfuRlUzAKVeH9-yIYXyMS0eL6TNeJfdOw==",
+			Token:  "mir-operator-token",
 			Org:    "Mir",
 			Bucket: "mir_integration_test",
 		},
@@ -127,7 +128,6 @@ func TestPublishDevicePushTelemetry(t *testing.T) {
 
 	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).TelemetrySchema(
 		protoflux_testv1.File_protoflux_test_v1_telemetry_proto,
-		protoflux_testv1.File_protoflux_test_v1_command_proto,
 	).Build()
 	if err != nil {
 		t.Error(err)
@@ -190,10 +190,10 @@ func TestPublishDevicePushTelemetry(t *testing.T) {
 		t.Error(respList.GetError())
 	}
 	devDb := respList.GetOk().Devices[0]
-	originalSchemaBytes, err := mir_models.MarhsalProtoFiles(
+	originalSchemaBytes, err := mir_models.MarshalProtoFiles(
 		protoflux_testv1.File_protoflux_test_v1_telemetry_proto,
-		protoflux_testv1.File_protoflux_test_v1_command_proto,
 		descriptorpb.File_google_protobuf_descriptor_proto,
+		devicev1.File_mir_device_v1_mir_proto,
 	)
 	if err != nil {
 		t.Error(err)
@@ -203,7 +203,7 @@ func TestPublishDevicePushTelemetry(t *testing.T) {
 		t.Error(err)
 	}
 
-	dpResult, err := lpQuery.Query(ctx, `from(bucket: "mir_integration_test") |> range(start: -7s) |> filter(fn: (r) => r["_measurement"] == "protoflux_test.v1.EnvTlm" or r["_measurement"] == "protoflux_test.v1.PowerTlm") |> filter(fn: (r) => r["deviceId"] == "device_push_tlm")`)
+	dpResult, err := lpQuery.Query(ctx, `from(bucket: "mir_integration_test") |> range(start: -7s) |> filter(fn: (r) => r["_measurement"] == "protoflux_test.v1.EnvTlm" or r["_measurement"] == "protoflux_test.v1.PowerTlm") |> filter(fn: (r) => r["__id"] == "device_push_tlm")`)
 	if err != nil {
 		t.Error(err)
 	}
@@ -243,7 +243,6 @@ func TestPublishDeviceSchemaAlreadyPresent(t *testing.T) {
 	}
 	compSch, err := mir_models.CompressProtoFiles(
 		protoflux_testv1.File_protoflux_test_v1_telemetry_proto,
-		protoflux_testv1.File_protoflux_test_v1_command_proto,
 		descriptorpb.File_google_protobuf_descriptor_proto,
 	)
 	if err != nil {
@@ -264,7 +263,6 @@ func TestPublishDeviceSchemaAlreadyPresent(t *testing.T) {
 
 	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).TelemetrySchema(
 		protoflux_testv1.File_protoflux_test_v1_telemetry_proto,
-		protoflux_testv1.File_protoflux_test_v1_command_proto,
 	).Build()
 	if err != nil {
 		t.Error(err)
@@ -341,7 +339,7 @@ func TestPublishDeviceSchemaAlreadyPresent(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	dpResult, err := lpQuery.Query(ctx, `from(bucket: "mir_integration_test") |> range(start: -7s) |> filter(fn: (r) => r["_measurement"] == "protoflux_test.v1.EnvTlm" or r["_measurement"] == "protoflux_test.v1.PowerTlm") |> filter(fn: (r) => r["deviceId"] == "device_schema_present")`)
+	dpResult, err := lpQuery.Query(ctx, `from(bucket: "mir_integration_test") |> range(start: -7s) |> filter(fn: (r) => r["_measurement"] == "protoflux_test.v1.EnvTlm" or r["_measurement"] == "protoflux_test.v1.PowerTlm") |> filter(fn: (r) => r["__id"] == "device_schema_present")`)
 	if err != nil {
 		t.Error(err)
 	}
@@ -382,8 +380,8 @@ func TestPublishDeviceSchemaInvalid(t *testing.T) {
 	)
 	goodSch, err := mir_models.CompressProtoFiles(
 		protoflux_testv1.File_protoflux_test_v1_telemetry_proto,
-		protoflux_testv1.File_protoflux_test_v1_command_proto,
 		descriptorpb.File_google_protobuf_descriptor_proto,
+		devicev1.File_mir_device_v1_mir_proto,
 	)
 	if err != nil {
 		t.Error(err)
@@ -403,7 +401,6 @@ func TestPublishDeviceSchemaInvalid(t *testing.T) {
 
 	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).TelemetrySchema(
 		protoflux_testv1.File_protoflux_test_v1_telemetry_proto,
-		protoflux_testv1.File_protoflux_test_v1_command_proto,
 	).Build()
 	if err != nil {
 		t.Error(err)
@@ -480,7 +477,7 @@ func TestPublishDeviceSchemaInvalid(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	dpResult, err := lpQuery.Query(ctx, `from(bucket: "mir_integration_test") |> range(start: -7s) |> filter(fn: (r) => r["_measurement"] == "protoflux_test.v1.EnvTlm" or r["_measurement"] == "protoflux_test.v1.PowerTlm") |> filter(fn: (r) => r["deviceId"] == "device_invalid_schema")`)
+	dpResult, err := lpQuery.Query(ctx, `from(bucket: "mir_integration_test") |> range(start: -7s) |> filter(fn: (r) => r["_measurement"] == "protoflux_test.v1.EnvTlm" or r["_measurement"] == "protoflux_test.v1.PowerTlm") |> filter(fn: (r) => r["__id"] == "device_invalid_schema")`)
 	if err != nil {
 		t.Error(err)
 	}

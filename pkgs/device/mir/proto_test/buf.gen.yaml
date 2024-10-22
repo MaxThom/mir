@@ -5,7 +5,7 @@ managed:
     - file_option: go_package_prefix
       value: github.com/maxthom/mir/pkgs/device/mir/proto_test/gen
 plugins:
-  - remote: buf.build/protocolbuffers/go
+  - local: protoc-gen-go
     out: pkgs/device/mir/proto_test/gen
     opt: paths=source_relative
 inputs:

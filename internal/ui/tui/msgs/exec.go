@@ -29,7 +29,7 @@ func EditorFinishedCmd(content json.RawMessage, err error) tea.Cmd {
 func OpenEditorCmd(data json.RawMessage, headerComments []string) tea.Cmd {
 	editor := os.Getenv("EDITOR")
 	if editor == "" {
-		editor = "vim"
+		editor = "nano"
 	}
 
 	// Create a temporary file
@@ -40,7 +40,7 @@ func OpenEditorCmd(data json.RawMessage, headerComments []string) tea.Cmd {
 	}
 
 	// Write initial device to the temp file
-	for i, _ := range headerComments {
+	for i := range headerComments {
 		headerComments[i] = "// " + headerComments[i] + "\n"
 	}
 

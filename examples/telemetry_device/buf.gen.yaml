@@ -1,13 +1,9 @@
 version: v2
 managed:
   enabled: true
-  override:
-    - file_option: go_package_prefix
-      value: github.com/maxthom/mir/examples/telemetry_device/gen
 plugins:
-  - remote: buf.build/protocolbuffers/go
+  - local: protoc-gen-go
     out: examples/telemetry_device/gen
     opt: paths=source_relative
-    include_imports: true
 inputs:
   - directory: examples/telemetry_device/proto
