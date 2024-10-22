@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"sync"
+	"time"
 
 	"github.com/maxthom/mir/internal/clients/core_client"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
@@ -118,6 +119,7 @@ func (b *devicesBuilder) Incubate() ([]*core_apiv1.CreateDeviceResponse, error) 
 			responses = append(responses, resp)
 		}
 	}
+	time.Sleep(2 * time.Second)
 	return responses, errs
 }
 
@@ -145,5 +147,7 @@ func (b *deviceBuilder) Incubate() (*core_apiv1.CreateDeviceResponse, error) {
 	}
 	b.s.Devices = append(b.s.Devices, dev)
 
-	return core_client.PublishDeviceCreateRequest(b.s.bus, b.deviceReq)
+	resp, err := core_client.PublishDeviceCreateRequest(b.s.bus, b.deviceReq)
+	time.Sleep(2 * time.Second)
+	return resp, err
 }

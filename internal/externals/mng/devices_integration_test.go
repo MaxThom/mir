@@ -12,7 +12,7 @@ var store surrealDeviceStore
 
 func TestMain(m *testing.M) {
 
-	db := test_utils.SetupSurrealDbConnsPanic("ws://127.0.0.1:8000/rpc", "root", "root", "global", "mir")
+	db := test_utils.SetupSurrealDbConnsPanic("ws://127.0.0.1:8000/rpc", "root", "root", "global", "mir_testing")
 	store = *NewSurrealDeviceStore(db)
 
 	store.DeleteDevice(&core_apiv1.DeleteDeviceRequest{

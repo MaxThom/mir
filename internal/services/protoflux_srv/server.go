@@ -55,6 +55,10 @@ type deviceProtoSchema struct {
 	schema   *mir_utils.MirProtoSchema
 }
 
+const (
+	ServiceName = "mir_telemetry"
+)
+
 var (
 	uploadMetric = metrics.NewCounter(prometheus.CounterOpts{
 		Name: "upload_schema_counter",
@@ -95,7 +99,7 @@ func (s *ProtoFluxServer) handleInfluxErrorChannel() {
 
 func (s *ProtoFluxServer) Listen(ctx context.Context) {
 	s.handleInfluxErrorChannel()
-	s.m.Subscribe(mir.Stream().V1Alpha().Telemetry(
+	s.m.QueueSubscribe(ServiceName, mir.Stream().V1Alpha().Telemetry(
 		func(msg *nats.Msg, deviceId string, protoMsgName string) {
 			// TODO prometheus
 			// TODO set maximum relidelivery in subscribe

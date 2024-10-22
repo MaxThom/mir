@@ -29,6 +29,7 @@ import (
 	mirDevice "github.com/maxthom/mir/pkgs/device/mir"
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/maxthom/mir/pkgs/module/mir"
+	"github.com/rs/zerolog"
 	logger "github.com/rs/zerolog/log"
 	"github.com/surrealdb/surrealdb.go"
 	"gotest.tools/assert"
@@ -37,7 +38,7 @@ import (
 var db *surrealdb.DB
 var mSdk *mir.Mir
 var busUrl = "nats://127.0.0.1:4222"
-var logTest = logger.With().Str("test", "core").Logger()
+var logTest = logger.With().Str("test", "core").Logger().Level(zerolog.DebugLevel)
 var lpClient influxdb2.Client
 var lpWriter api.WriteAPI
 var lpQuery api.QueryAPI
@@ -60,9 +61,9 @@ func TestMain(m *testing.M) {
 			User: "root",
 			Pass: "root",
 			Ns:   "global",
-			Db:   "mir",
+			Db:   "mir_testing",
 		},
-		Iinflux: test_utils.InfluxInfo{
+		Influx: test_utils.InfluxInfo{
 			Url:    "http://localhost:8086/",
 			Token:  "mir-operator-token",
 			Org:    "Mir",

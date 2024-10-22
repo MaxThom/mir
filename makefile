@@ -24,6 +24,15 @@ build:
 build-mir:
 	go build -o bin/mir cmds/mir/main.go
 
+# test
+test:
+	mkdir -p ./.tmp
+	go test -coverprofile ./.tmp/coverage.out ./...
+	go tool cover -html ./.tmp/coverage.out
+
+ci-test:
+	go test -coverprofile coverage.out -count 1 ./...
+
 # run
 ex-module:
 	go run ./examples/hearthbeat_module

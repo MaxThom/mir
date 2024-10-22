@@ -17,6 +17,6 @@ protoc --go_out=. --go_opt=paths=source_relative     --go-grpc_out=. --go-grpc_o
 ### Test coverage
 
 ```sh
-go test -coverprofile cover.out <package_name>
+go test -coverprofile coverage.out <package_name>
 go tool cover -html cover.out
 ```

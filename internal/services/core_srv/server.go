@@ -30,6 +30,10 @@ type CoreServer struct {
 	hearthbeatsMutex sync.RWMutex
 }
 
+const (
+	ServiceName = "mir_core"
+)
+
 var requestCount = metrics.NewCounterVec(prometheus.CounterOpts{
 	Name: "request_count",
 	Help: "Number of request for core",
@@ -50,7 +54,7 @@ func NewCore(logger zerolog.Logger, bus *bus.BusConn, store mng.DeviceStore) *Co
 	hearbeats := map[string]time.Time{}
 
 	// Subscribe to stream
-	sub, err := bus.SubscribeSync(coreFunctionStreams)
+	sub, err := bus.QueueSubscribeSync(coreFunctionStreams, ServiceName)
 	if err != nil {
 		l.Error().Err(err).Msg("failed to subscribe to subject")
 	}
