@@ -45,6 +45,9 @@ mir-log:
 make dev:
 	tmuxifier s ./.tmux/mir.session.sh
 
+make tx:
+	tmuxifier s ./.tmux/mir.session.sh
+
 # air
 air-core:
 	air -c .air/core.toml
