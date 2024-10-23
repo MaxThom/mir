@@ -1,7 +1,6 @@
 # NATS.io is a lightweight and high-performance messaging system that
 # provides publish-subscribe and request-reply messaging patterns.
 # It is designed for building distributed systems and microservices architectures.
-version: "3.8"
 services:
   nats:
     image: nats:latest
