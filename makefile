@@ -31,7 +31,7 @@ test:
 	go tool cover -html ./.tmp/coverage.out
 
 ci-test:
-	docker compose -f infra/ci/compose.yaml up
+	docker compose -f infra/ci/compose.yaml up -d
 	go test -coverprofile coverage.out -count 1 ./...
 	docker compose -f infra/ci/compose.yaml down
 
