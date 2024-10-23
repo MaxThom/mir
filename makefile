@@ -53,10 +53,8 @@ install-mir: build-mir
 mir-log:
 	tail ~/.config/mir/mir.log -f
 
-make dev:
-	tmuxifier s ./.tmux/mir.session.sh
-
-make tx:
+# local dev with tmuxifier
+dev-tx:
 	tmuxifier s ./.tmux/mir.session.sh
 
 # air

@@ -21,7 +21,7 @@ if initialize_session "mir"; then
 	load_window "./.tmux/influxdb.window.sh"
 	load_window "./.tmux/questdb.window.sh"
 	load_window "./.tmux/promstack.window.sh"
-	load_window "./.tmux/mir.wiki.window.sh"
+	load_window "./.tmux/book.window.sh"
 
 	# Select the default active window on session creation.
 	select_window 1
