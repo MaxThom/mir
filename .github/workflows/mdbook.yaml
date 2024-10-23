@@ -1,4 +1,4 @@
-name: Deploy mdBook site to Pages
+name: Deploy Book to Pages
 
 on:
   push:
@@ -34,7 +34,7 @@ jobs:
         id: pages
         uses: actions/configure-pages@v5
       - name: Build with mdBook
-        run: ls && ls /book/src && mdbook build
+        run: ls && ls ./book/src && cd ./book && mdbook build
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
