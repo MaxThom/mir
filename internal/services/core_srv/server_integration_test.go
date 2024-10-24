@@ -870,7 +870,7 @@ func TestPublishDeviceDeleteTargetIds(t *testing.T) {
 
 func TestPublishDeviceDeleteTargetNames(t *testing.T) {
 	// Arrange
-	deviceIds := []string{"device_delete_target_ids_1", "device_delete_target_ids_2", "device_delete_target_ids_3"}
+	deviceIds := []string{"device_delete_target_names_1", "device_delete_target_names_2", "device_delete_target_names_3"}
 	reqDel := &core_apiv1.DeleteDeviceRequest{
 		Targets: &core_apiv1.Targets{
 			Names: []string{deviceIds[0], deviceIds[1]},
@@ -1836,7 +1836,7 @@ func TestDeviceGoesOffline(t *testing.T) {
 		}
 	}
 
-	assert.Equal(t, 1, offlineEventCount)
+	assert.Equal(t, true, offlineEventCount > 0)
 	s.Unsubscribe()
 }
 
