@@ -489,7 +489,7 @@ func TestPublishCmdProtoNoValidationDryRun(t *testing.T) {
 func TestPublishCmdProtoInvalidPayloadNoValidation(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
-	id := "device_send_cmd"
+	id := "device_send_cmd_no_validation"
 	reqCreate := &core_apiv1.CreateDeviceRequest{
 		DeviceId:  id,
 		Name:      id,
@@ -584,7 +584,7 @@ func TestPublishCmdRequestMultipleDevices(t *testing.T) {
 	swarm := swarm.NewSwarm(b)
 	handlerCount := 0
 	_, err := swarm.AddDevices(&core_apiv1.CreateDeviceRequest{
-		DeviceId:  "device_send_cmd",
+		DeviceId:  "device_send_cmd_multiple_devices",
 		Namespace: "testing_cmd",
 		Labels: map[string]string{
 			"testing": "cmd",
@@ -751,7 +751,7 @@ func TestPublishCmdRequestMultipleDevicesOneNoHandler(t *testing.T) {
 func TestPublishCmdRequestMultipleDevicesOneTimeout(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
-	id := "device_send_cmd"
+	id := "device_send_cmd_multi_timeout"
 	reqCreate := &core_apiv1.CreateDeviceRequest{
 		DeviceId:  id,
 		Name:      id,
@@ -867,7 +867,7 @@ func TestPublishCmdRequestMultipleDevicesJson(t *testing.T) {
 	handlerCount := 0
 	_, err := swarm.AddDevices(
 		&core_apiv1.CreateDeviceRequest{
-			DeviceId:  "device_send_cmd",
+			DeviceId:  "device_send_cmd_multi_json",
 			Namespace: "testing_cmd",
 			Labels: map[string]string{
 				"testing": "cmd",
