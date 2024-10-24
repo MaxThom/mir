@@ -67,6 +67,40 @@ func Connect(name string, target string) (*Mir, error) {
 	return m, nil
 }
 
+// Subscribe to a stream or event as a worker queue, this will put the handler
+// in a go routine and listen for messages on that topic
+func (m *Mir) QueueSubscribe(queue string, s ...MirStream) error {
+	var errs error
+	for _, stream := range s {
+		sub, err := m.Bus.QueueSubscribeSync(stream.subject(), queue)
+		if err != nil {
+			errs = errors.Join(errs, err)
+		}
+		m.wg.Add(1)
+		go func(sub *nats.Subscription, handler nats.MsgHandler) {
+			listenForStream(m.ctx, sub, handler)
+			m.wg.Done()
+		}(sub, stream.handler())
+	}
+	return errs
+}
+
+// Subscribe to a stream or event as a worker queue, this will put the handler
+// in a go routine and listen for messages on that topic
+func (m *Mir) QueueSubscribeRaw(subject string, queue string, handler nats.MsgHandler) error {
+	var errs error
+	sub, err := m.Bus.QueueSubscribeSync(subject, queue)
+	if err != nil {
+		errs = errors.Join(errs, err)
+	}
+	m.wg.Add(1)
+	go func(sub *nats.Subscription, handler nats.MsgHandler) {
+		listenForStream(m.ctx, sub, handler)
+		m.wg.Done()
+	}(sub, handler)
+	return errs
+}
+
 // Subscribe to a stream or event, this will put the handler
 // in a go routine and listen for messages on that topic
 func (m *Mir) Subscribe(s ...MirStream) error {

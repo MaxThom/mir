@@ -55,9 +55,9 @@ func TestMain(m *testing.M) {
 			User: "root",
 			Pass: "root",
 			Ns:   "global",
-			Db:   "mir",
+			Db:   "mir_testing",
 		},
-		Iinflux: test_utils.InfluxInfo{
+		Influx: test_utils.InfluxInfo{
 			Url:    "http://localhost:8086/",
 			Token:  "mir-operator-token",
 			Org:    "Mir",

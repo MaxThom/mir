@@ -3,3 +3,5 @@ bin/
 tmp/
 .air/*
 !.air/*.toml
+.tmp/
+book/book/

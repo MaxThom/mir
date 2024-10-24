@@ -2,6 +2,8 @@ package test_utils
 
 import (
 	"context"
+	"os"
+	"strings"
 	"testing"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
@@ -17,7 +19,7 @@ type ConnsInfo struct {
 	Name    string
 	BusUrl  string
 	Surreal SurrealInfo
-	Iinflux InfluxInfo
+	Influx  InfluxInfo
 }
 
 type SurrealInfo struct {
@@ -38,7 +40,7 @@ type InfluxInfo struct {
 func SetupAllExternalsPanic(ctx context.Context, conns ConnsInfo) (*bus.BusConn, *surrealdb.DB, influxdb2.Client, api.WriteAPI, api.QueryAPI) {
 	b := SetupNatsConPanic(conns.BusUrl)
 	s := SetupSurrealDbConnsPanic(conns.Surreal.Url, conns.Surreal.User, conns.Surreal.Pass, conns.Surreal.Ns, conns.Surreal.Db)
-	c, w, q := SetupInfluxConnsPanic(ctx, conns.Iinflux.Url, conns.Iinflux.Token, conns.Iinflux.Org, conns.Iinflux.Bucket)
+	c, w, q := SetupInfluxConnsPanic(ctx, conns.Influx.Url, conns.Influx.Token, conns.Influx.Org, conns.Influx.Bucket)
 	return b, s, c, w, q
 }
 
@@ -120,4 +122,12 @@ func ExecuteTestQueryForType[T any](t *testing.T, db *surrealdb.DB, query string
 
 func strRef(s string) *string {
 	return &s
+}
+
+func IsIntegratedServices() bool {
+	integratedSrv := os.Getenv("MIR_TEST_INTEGRATED_SRV")
+	if strings.ToLower(integratedSrv) == "true" {
+		return true
+	}
+	return false
 }

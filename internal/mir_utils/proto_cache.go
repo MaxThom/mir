@@ -49,8 +49,8 @@ type cacheEntry struct {
 // the cache will be invalidated and schema will be fetch from database or device
 // If hard refresh is true, it will fetch from device skipping database
 func (c *MirProtoCache) GetDeviceSchema(deviceId string, refreshSchema bool, hardRefreshSchema bool) (*MirProtoSchema, mir_models.Device, error) {
-	_, ok := c.cache[deviceId]
-	if !ok || refreshSchema || hardRefreshSchema {
+	val, ok := c.cache[deviceId]
+	if !ok || val.sch == nil || refreshSchema || hardRefreshSchema {
 		c.cacheLock.Lock()
 		defer c.cacheLock.Unlock()
 		dev, sch, err := c.reconcileDeviceSchema(deviceId, hardRefreshSchema)

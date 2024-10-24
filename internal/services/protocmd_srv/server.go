@@ -37,6 +37,10 @@ type ProtoCmdServer struct {
 
 // TODO prom metics
 
+const (
+	ServiceName = "mir_command"
+)
+
 var (
 	uploadMetric = metrics.NewCounter(prometheus.CounterOpts{
 		Name: "upload_schema_counter",
@@ -69,8 +73,8 @@ func NewProtoCmdServer(logger zerolog.Logger, m *mir.Mir, devStore mng.DeviceSto
 }
 
 func (s *ProtoCmdServer) Listen(ctx context.Context) {
-	s.m.Subscribe(mir.Client().V1Alpha().SendCommand(s.sendCommandSub()))
-	s.m.Subscribe(mir.Client().V1Alpha().ListCommands(s.listCommandsSub()))
+	s.m.QueueSubscribe(ServiceName, mir.Client().V1Alpha().SendCommand(s.sendCommandSub()))
+	s.m.QueueSubscribe(ServiceName, mir.Client().V1Alpha().ListCommands(s.listCommandsSub()))
 }
 
 func (s *ProtoCmdServer) sendCommandSub() func(msg *nats.Msg, req *cmd_apiv1.SendCommandRequest, e error) {

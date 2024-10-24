@@ -24,6 +24,17 @@ build:
 build-mir:
 	go build -o bin/mir cmds/mir/main.go
 
+# test
+test:
+	mkdir -p ./.tmp
+	go test -coverprofile ./.tmp/coverage.out ./...
+	go tool cover -html ./.tmp/coverage.out
+
+ci-test:
+	docker compose -f infra/ci/compose.yaml up -d
+	go test -coverprofile coverage.out -count 1 ./...
+	docker compose -f infra/ci/compose.yaml down
+
 # run
 ex-module:
 	go run ./examples/hearthbeat_module
@@ -42,10 +53,8 @@ install-mir: build-mir
 mir-log:
 	tail ~/.config/mir/mir.log -f
 
-make dev:
-	tmuxifier s ./.tmux/mir.session.sh
-
-make tx:
+# local dev with tmuxifier
+dev-tx:
 	tmuxifier s ./.tmux/mir.session.sh
 
 # air

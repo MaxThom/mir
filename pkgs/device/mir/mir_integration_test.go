@@ -288,7 +288,7 @@ func setupConns() (*surrealdb.DB, *bus.BusConn, error) {
 		return db, nil, err
 	}
 
-	if _, err = db.Use("global", "mir"); err != nil {
+	if _, err = db.Use("global", "mir_testing"); err != nil {
 		return db, nil, err
 	}
 

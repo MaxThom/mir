@@ -36,7 +36,7 @@ func TestMain(m *testing.M) {
 	ctx, cancel := context.WithCancel(context.Background())
 	// Setup cons and services
 	fmt.Println("Test Setup")
-	db = test_utils.SetupSurrealDbConnsPanic("ws://127.0.0.1:8000/rpc", "root", "root", "global", "mir")
+	db = test_utils.SetupSurrealDbConnsPanic("ws://127.0.0.1:8000/rpc", "root", "root", "global", "mir_testing")
 	b = test_utils.SetupNatsConPanic(busUrl)
 	fmt.Println(" -> bus")
 	fmt.Println(" -> db")
