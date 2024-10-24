@@ -15,6 +15,7 @@ import (
 	"github.com/maxthom/mir/internal/clients/core_client"
 	"github.com/maxthom/mir/internal/externals/mng"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
+	"github.com/maxthom/mir/internal/libs/swarm"
 	"github.com/maxthom/mir/internal/libs/test_utils"
 	"github.com/maxthom/mir/internal/services/core_srv"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -580,7 +581,7 @@ func TestPublishCmdRequestMultipleDevices(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	cmdHandled := &protocmd_testv1.ChangePower{}
-	swarm := test_utils.NewSwarm(b)
+	swarm := swarm.NewSwarm(b)
 	handlerCount := 0
 	_, err := swarm.AddDevices(&core_apiv1.CreateDeviceRequest{
 		DeviceId:  "device_send_cmd",
@@ -657,7 +658,7 @@ func TestPublishCmdRequestMultipleDevicesOneNoHandler(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	cmdHandled := &protocmd_testv1.ChangePower{}
-	swarm := test_utils.NewSwarm(b)
+	swarm := swarm.NewSwarm(b)
 	handlerCount := 0
 	_, err := swarm.AddDevices(&core_apiv1.CreateDeviceRequest{
 		DeviceId:  "device_send_cmd_1",
@@ -862,7 +863,7 @@ func TestPublishCmdRequestMultipleDevicesJson(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	cmdHandled := &protocmd_testv1.ChangePower{}
-	swarm := test_utils.NewSwarm(b)
+	swarm := swarm.NewSwarm(b)
 	handlerCount := 0
 	_, err := swarm.AddDevices(
 		&core_apiv1.CreateDeviceRequest{
@@ -940,7 +941,7 @@ func TestPublishCmdRequestMultipleDevicesDescriptorNotFound(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	cmdHandled := &protocmd_testv1.ChangePower{}
-	swarm := test_utils.NewSwarm(b)
+	swarm := swarm.NewSwarm(b)
 	handlerCount := 0
 	_, err := swarm.AddDevices(
 		&core_apiv1.CreateDeviceRequest{
@@ -1016,7 +1017,7 @@ func TestPublishCmdRequestMultipleDevicesSingleDescriptorNotFoundForcePush(t *te
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	cmdHandled := &protocmd_testv1.ChangePower{}
-	swarm := test_utils.NewSwarm(b)
+	swarm := swarm.NewSwarm(b)
 	handlerCount := 0
 	_, err := swarm.AddDevice(
 		&core_apiv1.CreateDeviceRequest{

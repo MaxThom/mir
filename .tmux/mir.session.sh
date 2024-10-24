@@ -19,7 +19,6 @@ if initialize_session "mir"; then
 	load_window "./.tmux/nats.window.sh"
 	load_window "./.tmux/surreal.window.sh"
 	load_window "./.tmux/influxdb.window.sh"
-	load_window "./.tmux/questdb.window.sh"
 	load_window "./.tmux/promstack.window.sh"
 	load_window "./.tmux/book.window.sh"
 

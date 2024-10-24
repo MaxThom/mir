@@ -2,6 +2,8 @@ package test_utils
 
 import (
 	"context"
+	"os"
+	"strings"
 	"testing"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
@@ -120,4 +122,12 @@ func ExecuteTestQueryForType[T any](t *testing.T, db *surrealdb.DB, query string
 
 func strRef(s string) *string {
 	return &s
+}
+
+func IsIntegratedServices() bool {
+	integratedSrv := os.Getenv("MIR_TEST_INTEGRATED_SRV")
+	if strings.ToLower(integratedSrv) == "true" {
+		return true
+	}
+	return false
 }
