@@ -14,6 +14,13 @@ syntax = "proto3";
 package json_template_test.v1;
 option go_package = "github.com/maxthom/mir/internal/libs/proto/json_template/proto_test/gen/json_template_testv1";
 
+enum EnumABC {
+    ENUM_ABC_UNSPECIFIED = 0;
+    ENUM_ABC_A = 1;
+    ENUM_ABC_B = 2;
+    ENUM_ABC_C = 3;
+}
+
 message Primitives {
  double a = 1;
  float b = 2;
@@ -30,4 +37,142 @@ message Primitives {
  bool m = 13;
  string n = 14;
  //bytes o = 15;
+}
+
+message EnumsSimple {
+  EnumABC a = 1;
+  EnumABC b = 2;
+  EnumABC c = 3;
+}
+
+message OptionalEnumsSimple {
+  optional EnumABC a = 1;
+  optional EnumABC b = 2;
+  optional EnumABC c = 3;
+}
+
+message RepeatedPrimitives {
+  repeated double a = 1;
+  repeated uint32 b = 2;
+  repeated int32 c = 3;
+  repeated string d = 4;
+}
+
+message SmallSetPrimitives {
+  double a = 1;
+  uint32 b = 2;
+  int32 c = 3;
+  string d = 4;
+}
+
+message MixIndexSmallSetPrimitives {
+  double a = 3;
+  uint32 b = 14;
+  int32 c = 7;
+  string d = 11;
+}
+
+
+message OneLevelNesting {
+  SmallSetPrimitives a = 1;
+}
+
+message MixIndexOneLevelNesting {
+  MixIndexSmallSetPrimitives a = 34;
+  uint32 b = 4;
+  int32 c = 12403;
+  string d = 4542;
+}
+
+message RepeatedOneLevelNesting {
+  repeated SmallSetPrimitives a = 1;
+}
+
+message ThreeLevelNestingAndSomeChads {
+  OneLevelNesting a = 1;
+  int32 b = 2;
+  string c = 3;
+  double d = 4;
+}
+
+message RepeatedThreeLevelNestingAndSomeChads {
+  repeated OneLevelNesting a = 1;
+  int32 b = 2;
+  string c = 3;
+  double d = 4;
+}
+
+message MultipleThreeLevelNestingAndSomeChads {
+  OneLevelNesting a = 1;
+  TwoLevelNesting b = 2;
+  int32 c = 3;
+  string d = 4;
+  double e = 5;
+}
+
+message MultipleRepeatedThreeLevelNestingAndSomeChads {
+  repeated OneLevelNesting a = 1;
+  repeated TwoLevelNesting b = 2;
+  int32 c = 3;
+  string d = 4;
+  double e = 5;
+}
+
+message OptionalMultipleRepeatedThreeLevelNestingAndSomeChads {
+  optional OptionalOneLevelNesting a = 1;
+  repeated TwoLevelNesting b = 2;
+  int32 c = 3;
+  string d = 4;
+  optional double e = 5;
+}
+
+message TwoLevelNesting {
+  OneLevelNesting a = 1;
+}
+
+message OptionalTwoLevelNesting {
+  optional OptionalOneLevelNesting a = 1;
+}
+
+message RepeatedTwoLevelNesting {
+  repeated RepeatedOneLevelNesting a = 1;
+}
+
+message MapString {
+  map<string, string> a = 1;
+}
+
+message MapMessage {
+  map<int32, SmallSetPrimitives> a = 1;
+}
+
+message OptionalSmallSetPrimitives {
+  optional double a = 1;
+  optional uint32 b = 2;
+  optional int32 c = 3;
+  optional string d = 4;
+}
+
+message OptionalOneLevelNesting {
+  optional OptionalSmallSetPrimitives a = 1;
+}
+
+message OptionalEnum {
+  OptionalEnumsSimple a = 1;
+}
+
+message OptionalNestedEnum {
+  optional OptionalEnumsSimple a = 1;
+}
+
+message RepeatedEnum {
+  repeated EnumsSimple a = 1;
+}
+
+message RepeatedOptionalEnum {
+  repeated OptionalEnumsSimple a = 1;
+}
+
+message RepeatedOptionalSmallSetPrimitive {
+  repeated OptionalSmallSetPrimitives a = 1;
 }
