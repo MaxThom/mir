@@ -11,7 +11,7 @@ if initialize_session "mir"; then
 
 	# Load a defined window layout.
 	load_window "./.tmux/mir.window.sh"
-	load_window "./.tmux/tui.window.sh"
+	load_window "./.tmux/wiki.window.sh"
 	load_window "./.tmux/cfg.window.sh"
 	load_window "./.tmux/core.window.sh"
 	load_window "./.tmux/protoflux.window.sh"
