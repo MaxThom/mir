@@ -1,0 +1,33 @@
+// Lot of unit test here to test the core of the proto to influx line protocol
+// Trying to name the messages with some consistency to have a reusable components
+// examples:
+// - Nesting: OneLevelNesting, TwoLevelNesting, ThreeLevelNesting, etc
+// - Repeated: RepeatedOneLevelNesting, RepeatedTwoLevelNesting, RepeatedThreeLevelNesting, etc
+// - Optional: OptionalOneLevelNesting, OptionalTwoLevelNesting, OptionalThreeLevelNesting, etc
+// - Multiple: MultipleOneLevelNesting, MultipleTwoLevelNesting, MultipleThreeLevelNesting, etc
+// you can mix and match the nesting, repeated and optional to create more complex messages
+// - OptionalMultipleRepeatedTwoLevelNestingAndSomeChads
+// - SomeChads is a set of primitive types
+
+syntax = "proto3";
+
+package json_template_test.v1;
+option go_package = "github.com/maxthom/mir/internal/libs/proto/json_template/proto_test/gen/json_template_testv1";
+
+message Primitives {
+ double a = 1;
+ float b = 2;
+ int32 c = 3;
+ int64 d = 4;
+ uint32 e = 5;
+ uint64 f = 6;
+ sint32 g = 7;
+ sint64 h = 8;
+ fixed32 i = 9;
+ fixed64 j = 10;
+ sfixed32 k = 11;
+ sfixed64 l = 12;
+ bool m = 13;
+ string n = 14;
+ //bytes o = 15;
+}
