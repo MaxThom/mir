@@ -3,7 +3,7 @@ package mir_utils
 import (
 	"fmt"
 
-	proto_lineprotocol "github.com/maxthom/mir/internal/libs/proto/line_protocol"
+	"github.com/maxthom/mir/internal/libs/proto/proto_mir"
 	cmd_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cmd_api"
 
 	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
@@ -31,20 +31,17 @@ func (m *MirProtoSchema) GetCommandsList() ([]*cmd_apiv1.CommandDescriptor, erro
 			if !ok {
 				continue
 			}
-			//import "google.golang.org/protobuf/encoding/protojson"
-			//m := protojson.MarshalOptions{EmitUnpopulated: true}
-			//resp, err := m.Marshal(w)
 			msgType, ok := proto.GetExtension(opts, devicev1.E_MessageType).(devicev1.MessageType)
 			if ok && msgType == devicev1.MessageType_MESSAGE_TYPE_TELECOMMAND {
-				boiler, err := proto_lineprotocol.GetJsonBoilerTemplate(msgDesc)
+				boiler, err := proto_mir.GetJsonBoilerTemplate(msgDesc)
 				if err != nil {
 					fmt.Println(err)
 				}
 				cmd := cmd_apiv1.CommandDescriptor{
 					Name:        string(msgDesc.FullName()),
 					Description: "",
-					Labels:      proto_lineprotocol.RetrieveMessageTags(msgDesc),
-					Arguments:   proto_lineprotocol.RetrieveMessageArguments(msgDesc),
+					Labels:      proto_mir.RetrieveMessageTags(msgDesc),
+					Arguments:   proto_mir.RetrieveMessageArguments(msgDesc),
 					Boilerplate: string(boiler),
 				}
 				commands = append(commands, &cmd)

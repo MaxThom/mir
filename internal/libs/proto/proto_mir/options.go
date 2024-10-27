@@ -1,14 +1,13 @@
-package proto_lineprotocol
+package proto_mir
 
 import (
 	"time"
 
+	"github.com/maxthom/mir/internal/libs/proto/json_template"
 	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
-	"google.golang.org/protobuf/types/dynamicpb"
 )
 
 func findTimestampField(desc protoreflect.MessageDescriptor) {
@@ -136,11 +135,6 @@ func retrieveArgumentsFromDescriptor(desc protoreflect.MessageDescriptor, args m
 	}
 }
 
-// TODO create custom marshaller to get full json including nested messages
-// and one example of a map and array
-// Can't use protojson, does not do that
 func GetJsonBoilerTemplate(desc protoreflect.MessageDescriptor) ([]byte, error) {
-	m := protojson.MarshalOptions{AllowPartial: true, EmitUnpopulated: true, Multiline: false, EmitDefaultValues: false}
-	dm := dynamicpb.NewMessage(desc)
-	return m.Marshal(dm)
+	return json_template.GeneratePrettyTemplate(desc)
 }
