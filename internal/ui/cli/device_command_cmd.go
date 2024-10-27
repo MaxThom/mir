@@ -35,7 +35,6 @@ type CommandSendCmd struct {
 	NoValidation     bool   `help:"do not validate command with device's schema. Only for protobuf encoding" default:"false"`
 	ForcePush        bool   `short:"f" help:"force send commands even if some devices are in error" default:"false"`
 	Timeout          int    `short:"t" help:"timeout in second for command to reach device" default:"10"`
-	Output           string `short:"o" help:"output format for response" default:"json"`
 }
 
 func (d *CommandListCmd) Validate() error {
@@ -182,7 +181,12 @@ func (d *CommandSendCmd) Run(c CLI) error {
 			if v.Error != "" {
 				tpls[string(v.Error)] = append(tpls[string(v.Error)], k)
 			} else {
-				tpls[string(v.Payload)] = append(tpls[string(v.Payload)], k)
+				var prettyJSON bytes.Buffer
+				if err = json.Indent(&prettyJSON, v.Payload, "", "  "); err != nil {
+					tpls[err.Error()] = append(tpls[err.Error()], k)
+				} else {
+					tpls[prettyJSON.String()] = append(tpls[prettyJSON.String()], k)
+				}
 			}
 		}
 

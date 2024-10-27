@@ -1102,3 +1102,147 @@ func TestPublishCmdRequestMultipleDevicesSingleDescriptorNotFoundForcePush(t *te
 		v.Wait()
 	}
 }
+
+func TestPublishCmdRequestMultipleDevicesJsonTemplate(t *testing.T) {
+	// Arrange
+	ctx, cancel := context.WithCancel(context.Background())
+	swarm := swarm.NewSwarm(b)
+	_, err := swarm.AddDevices(
+		&core_apiv1.CreateDeviceRequest{
+			DeviceId:  "device_send_cmd_multi_json_tlm_1",
+			Namespace: "testing_cmd",
+			Labels: map[string]string{
+				"testing": "cmd",
+			},
+		}, &core_apiv1.CreateDeviceRequest{
+			DeviceId:  "device_send_cmd_multi_json_tlm_2",
+			Namespace: "testing_cmd",
+			Labels: map[string]string{
+				"testing": "cmd",
+			},
+		}).
+		WithSchema(protocmd_testv1.File_protocmd_test_v1_command_proto).
+		Incubate()
+	wg, err := swarm.Deploy(ctx)
+
+	reqPayload := protocmd_testv1.ChangePower{}
+	cmdName := string(reqPayload.ProtoReflect().Descriptor().FullName())
+	reqCmd := &cmd_apiv1.SendCommandRequest{
+		Targets:      swarm.ToTarget(),
+		Name:         cmdName,
+		ShowTemplate: true,
+	}
+
+	// Act
+	time.Sleep(1 * time.Second)
+
+	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
+	if err != nil {
+		t.Error(err)
+	} else if respCmd.GetError() != nil {
+		t.Error(respCmd.GetError())
+	}
+
+	// Assert
+	resp := respCmd.GetOk()
+	dev1 := resp.DeviceResponses["device_send_cmd_multi_json_tlm_1/testing_cmd"]
+	dev2 := resp.DeviceResponses["device_send_cmd_multi_json_tlm_2/testing_cmd"]
+	fmt.Println(dev1)
+	fmt.Println(dev2)
+	assert.Equal(t, cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_SUCCESS, dev1.Status)
+	assert.Equal(t, cmdName, dev1.Name)
+	assert.Equal(t, `{"power":0}`, string(dev1.Payload))
+	assert.Equal(t, cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_SUCCESS, dev2.Status)
+	assert.Equal(t, cmdName, dev2.Name)
+	assert.Equal(t, `{"power":0}`, string(dev2.Payload))
+
+	cancel()
+	for _, v := range wg {
+		v.Wait()
+	}
+}
+
+func TestPublishCmdRequestMultipleDevicesOneTimeoutJsonTemplate(t *testing.T) {
+	// Arrange
+	ctx, cancel := context.WithCancel(context.Background())
+	id := "device_send_cmd_multi_timeout_json_template_1"
+	reqCreate := &core_apiv1.CreateDeviceRequest{
+		DeviceId:  id,
+		Name:      id,
+		Namespace: "testing_cmd",
+		Labels: map[string]string{
+			"testing": "cmd",
+		},
+		Annotations: map[string]string{
+			"mir/device/description": "hello world of devices !",
+		},
+	}
+
+	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).TelemetrySchema(
+		protocmd_testv1.File_protocmd_test_v1_command_proto,
+	).Build()
+	if err != nil {
+		t.Error(err)
+	}
+
+	id2 := "device_send_cmd_multi_timeout_json_template_2"
+	reqCreate2 := &core_apiv1.CreateDeviceRequest{
+		DeviceId:  id2,
+		Name:      id2,
+		Namespace: "testing_cmd",
+		Labels: map[string]string{
+			"testing": "cmd",
+		},
+		Annotations: map[string]string{
+			"mir/device/description": "hello world of devices !",
+		},
+	}
+
+	reqCmdPayload := &protocmd_testv1.ChangePower{}
+	reqCmdName := string(reqCmdPayload.ProtoReflect().Descriptor().FullName())
+	reqCmd := &cmd_apiv1.SendCommandRequest{
+		Targets: &core_apiv1.Targets{
+			Ids: []string{id, id2},
+		},
+		Name:         reqCmdName,
+		ShowTemplate: true,
+	}
+
+	// Act
+	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate)
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate2)
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	wg, err := dev.Launch(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+
+	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
+	if err != nil {
+		t.Error(err)
+	} else if respCmd.GetError() != nil {
+		t.Error(respCmd.GetError())
+	}
+
+	// Assert
+	resp := respCmd.GetOk()
+	dev1 := resp.DeviceResponses[id+"/testing_cmd"]
+	dev2 := resp.DeviceResponses[id2+"/testing_cmd"]
+	assert.Equal(t, cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_SUCCESS, dev1.Status)
+	assert.Equal(t, reqCmdName, dev1.Name)
+	assert.Equal(t, `{"power":0}`, string(dev1.Payload))
+	assert.Equal(t, cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_ERROR, dev2.Status)
+	assert.Equal(t, "", dev2.Name)
+	assert.Equal(t, "", string(dev2.Payload))
+	assert.Equal(t, `error retrieve command descriptor from device schema: cannot reconcile device schema: nats: no responders available for request`, dev2.Error)
+
+	cancel()
+	wg.Wait()
+}

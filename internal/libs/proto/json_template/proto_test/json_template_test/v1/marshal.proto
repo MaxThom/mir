@@ -36,7 +36,10 @@ message Primitives {
  sfixed64 l = 12;
  bool m = 13;
  string n = 14;
- //bytes o = 15;
+}
+
+message BasicBytes {
+  bytes a = 1;
 }
 
 message EnumsSimple {

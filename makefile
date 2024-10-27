@@ -66,3 +66,7 @@ air-protoflux:
 
 air-protocmd:
 	air -c .air/protocmd.toml
+
+# random
+line-count:
+	find . -name '*.go' | xargs -I {} cat {} | wc -l

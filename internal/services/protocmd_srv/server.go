@@ -105,7 +105,7 @@ func (s *ProtoCmdServer) sendCommandSub() func(msg *nats.Msg, req *cmd_apiv1.Sen
 		if req.Name == "" {
 			errs = append(errs, mir_models.ErrorCommandNameNotProvided.Error())
 		}
-		if req.PayloadEncoding == common_apiv1.Encoding_ENCODING_UNSPECIFIED {
+		if req.PayloadEncoding == common_apiv1.Encoding_ENCODING_UNSPECIFIED && !req.ShowTemplate {
 			errs = append(errs, mir_models.ErrorCommandEncodingNotSpecified.Error())
 		}
 		if (req.Payload == nil || len(req.Payload) == 0) && !req.ShowTemplate {

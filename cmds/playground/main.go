@@ -1,13 +1,28 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 
 	epkgs "github.com/pkg/errors"
 )
 
+type jsonTest struct {
+	B []byte
+}
+
 func main() {
+
+	t := jsonTest{
+		B: []byte("test"),
+	}
+	fmt.Println(json.MarshalIndent(t, "", "  "))
+
+	j := `{"B": [116]}`
+	err := json.Unmarshal([]byte(j), &t)
+	fmt.Println(t, err)
+
 	e1 := errors.New("error one")
 	e2 := errors.New("error two")
 	e3 := errors.New("error three")
