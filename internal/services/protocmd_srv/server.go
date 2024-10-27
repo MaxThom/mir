@@ -10,6 +10,7 @@ import (
 	"github.com/maxthom/mir/internal/externals/mng"
 	"github.com/maxthom/mir/internal/libs/api/metrics"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
+	"github.com/maxthom/mir/internal/libs/proto/proto_mir"
 	"github.com/maxthom/mir/internal/mir_utils"
 	cmd_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cmd_api"
 	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
@@ -107,7 +108,7 @@ func (s *ProtoCmdServer) sendCommandSub() func(msg *nats.Msg, req *cmd_apiv1.Sen
 		if req.PayloadEncoding == common_apiv1.Encoding_ENCODING_UNSPECIFIED {
 			errs = append(errs, mir_models.ErrorCommandEncodingNotSpecified.Error())
 		}
-		if req.Payload == nil || len(req.Payload) == 0 {
+		if (req.Payload == nil || len(req.Payload) == 0) && !req.ShowTemplate {
 			errs = append(errs, mir_models.ErrorCommandPayloadNotProvided.Error())
 		}
 		if len(errs) > 0 {
@@ -180,6 +181,23 @@ func (s *ProtoCmdServer) sendCommandToDevices(req *cmd_apiv1.SendCommandRequest)
 				devInError = true
 				continue
 			}
+
+			if req.ShowTemplate {
+				tpl, err := proto_mir.GetJsonBoilerTemplate(msgReqDesc.(protoreflect.MessageDescriptor))
+				if err != nil {
+					devResp[dev.GetNameNamespace()] = &cmd_apiv1.SendCommandResponse_CommandResponse{
+						Status: cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_ERROR,
+						Error:  errors.Wrap(err, "error generating command template from device schema").Error(),
+					}
+				}
+				devResp[dev.GetNameNamespace()] = &cmd_apiv1.SendCommandResponse_CommandResponse{
+					Name:    req.Name,
+					Payload: tpl,
+					Status:  cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_SUCCESS,
+				}
+				continue
+			}
+
 			payloadReq := dynamicpb.NewMessage(msgReqDesc.(protoreflect.MessageDescriptor))
 
 			// Encoding and validation

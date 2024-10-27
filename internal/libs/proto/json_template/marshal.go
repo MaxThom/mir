@@ -1,4 +1,4 @@
-package jsontemplate
+package json_template
 
 import (
 	"bytes"

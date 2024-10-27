@@ -176,6 +176,37 @@ func (d *CommandSendCmd) Run(c CLI) error {
 		return e
 	}
 
+	if req.ShowTemplate {
+		tpls := map[string][]string{}
+		for k, v := range resp.GetOk().DeviceResponses {
+			if v.Error != "" {
+				tpls[string(v.Error)] = append(tpls[string(v.Error)], k)
+			} else {
+				tpls[string(v.Payload)] = append(tpls[string(v.Payload)], k)
+			}
+		}
+
+		var sb strings.Builder
+		if len(tpls) == 1 {
+			for k := range tpls {
+				sb.WriteString(k)
+			}
+		} else {
+			i := 1
+			for k, v := range tpls {
+				sb.WriteString(fmt.Sprintf("%d. ", i))
+				sb.WriteString(strings.Join(v, ", "))
+				sb.WriteString("\n")
+				sb.WriteString(k)
+				sb.WriteString("\n")
+				i++
+			}
+		}
+
+		fmt.Println(sb.String())
+		return nil
+	}
+
 	var sb strings.Builder
 	i := 1
 	for k, v := range resp.GetOk().DeviceResponses {
