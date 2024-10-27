@@ -81,7 +81,7 @@ func getJsonTemplateValue_SingleField(sb *strings.Builder, fd protoreflect.Field
 	case protoreflect.BoolKind:
 		sb.WriteString("false")
 	case protoreflect.StringKind:
-		sb.WriteString("\"string\"")
+		sb.WriteString("\"\"")
 	case protoreflect.Int32Kind, protoreflect.Sint32Kind, protoreflect.Sfixed32Kind,
 		protoreflect.Int64Kind, protoreflect.Sint64Kind, protoreflect.Sfixed64Kind,
 		protoreflect.Uint32Kind, protoreflect.Fixed32Kind,
@@ -92,15 +92,22 @@ func getJsonTemplateValue_SingleField(sb *strings.Builder, fd protoreflect.Field
 	case protoreflect.EnumKind:
 		// Use the first enum value as default
 		if fd.Enum().Values().Len() > 0 {
-			sb.WriteString(fmt.Sprintf("%q", fd.Enum().Values().Get(0).Name()))
+			sb.WriteString("\"")
+			vals := []string{}
+			for i := 0; i < fd.Enum().Values().Len(); i++ {
+				vals = append(vals, string(fd.Enum().Values().Get(i).Name()))
+			}
+			sb.WriteString(strings.Join(vals, "|"))
+			sb.WriteString("\"")
 		} else {
 			sb.WriteString("\"UNKNOWN\"")
 		}
 	case protoreflect.MessageKind:
 		return formatMessageToJson(sb, fd.Message())
 	case protoreflect.BytesKind:
-		// TODO check how to represent bytes
-		sb.WriteString("0x12")
+		sb.WriteString("[")
+		sb.WriteString("0, 255")
+		sb.WriteString("]")
 	default:
 		return fmt.Errorf("unsupported field kind: %v", fd.Kind())
 	}

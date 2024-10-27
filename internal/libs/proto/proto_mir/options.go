@@ -136,5 +136,5 @@ func retrieveArgumentsFromDescriptor(desc protoreflect.MessageDescriptor, args m
 }
 
 func GetJsonBoilerTemplate(desc protoreflect.MessageDescriptor) ([]byte, error) {
-	return json_template.GeneratePrettyTemplate(desc)
+	return json_template.GenerateTemplate(desc)
 }
