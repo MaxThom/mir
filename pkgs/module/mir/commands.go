@@ -114,7 +114,6 @@ func (s *sendCommandRequest) response(m *nats.Msg) error {
 	return nil
 }
 
-// In rework, we need to be able to set timeout
 func (s commandV1Alpha) SendRawCommand(deviceId string, req *ProtoCmdDesc, resp *ProtoCmdDesc) *sendRawCommandRequest {
 	return &sendRawCommandRequest{
 		deviceId: deviceId,

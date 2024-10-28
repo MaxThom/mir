@@ -1,9 +1,27 @@
 syntax = "proto3";
 
 package mir_module_test.v1;
+option go_package = "github.com/maxthom/mir/pkgs/module/mir/proto_test/gen/mir_module_test/v1/mir_module_testv1";
+import "mir/device/v1/mir.proto";
 
 message Command {
 	int32 power = 1;
 	bool valve_open = 2;
 	int32 gaz_level = 3;
+}
+
+
+message ChangePower {
+	option (mir.device.v1.message_type) = MESSAGE_TYPE_TELECOMMAND;
+	option (mir.device.v1.meta) = {
+		tags: [{
+			key: "building",
+			value: "A"
+		}, {
+			key: "floor",
+			value: "2"
+		}]
+	};
+
+	int32 power = 1;
 }

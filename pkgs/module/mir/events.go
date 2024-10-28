@@ -2,7 +2,9 @@ package mir
 
 import (
 	"github.com/maxthom/mir/internal/clients"
+	"github.com/maxthom/mir/internal/clients/cmd_client"
 	"github.com/maxthom/mir/internal/clients/core_client"
+	cmd_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cmd_api"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
@@ -140,6 +142,30 @@ func (s deviceUpdatedEvent) subject() string {
 func (s deviceUpdatedEvent) handler() nats.MsgHandler {
 	return func(msg *nats.Msg) {
 		d := &core_apiv1.Device{}
+		_ = proto.Unmarshal(msg.Data, d)
+		s.fn(msg, clients.Subject(msg.Subject).GetId(), d)
+	}
+}
+
+// Device command succeed
+
+type deviceCommandEvent struct {
+	fn func(msg *nats.Msg, deviceId string, cmd *cmd_apiv1.SendCommandResponse_CommandResponse)
+}
+
+func (s eventV1alpha) DeviceCommand(fn func(msg *nats.Msg, deviceId string, cmd *cmd_apiv1.SendCommandResponse_CommandResponse)) *deviceCommandEvent {
+	return &deviceCommandEvent{
+		fn: fn,
+	}
+}
+
+func (s deviceCommandEvent) subject() string {
+	return cmd_client.DeviceCommandEvent.WithId("*")
+}
+
+func (s deviceCommandEvent) handler() nats.MsgHandler {
+	return func(msg *nats.Msg) {
+		d := &cmd_apiv1.SendCommandResponse_CommandResponse{}
 		_ = proto.Unmarshal(msg.Data, d)
 		s.fn(msg, clients.Subject(msg.Subject).GetId(), d)
 	}
