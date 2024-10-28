@@ -1,8 +1,6 @@
 package mir_utils
 
 import (
-	"fmt"
-
 	"github.com/maxthom/mir/internal/libs/proto/proto_mir"
 	cmd_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cmd_api"
 
@@ -18,7 +16,7 @@ type MirProtoSchema struct {
 	*protoregistry.Files
 }
 
-func (m *MirProtoSchema) GetCommandsList() ([]*cmd_apiv1.CommandDescriptor, error) {
+func (m *MirProtoSchema) GetCommandsList(filterLabels map[string]string) ([]*cmd_apiv1.CommandDescriptor, error) {
 	commands := []*cmd_apiv1.CommandDescriptor{}
 	// 1. Add labels
 	// 2. Add arguments
@@ -33,16 +31,18 @@ func (m *MirProtoSchema) GetCommandsList() ([]*cmd_apiv1.CommandDescriptor, erro
 			}
 			msgType, ok := proto.GetExtension(opts, devicev1.E_MessageType).(devicev1.MessageType)
 			if ok && msgType == devicev1.MessageType_MESSAGE_TYPE_TELECOMMAND {
-				boiler, err := proto_mir.GetJsonBoilerTemplate(msgDesc)
-				if err != nil {
-					fmt.Println(err)
+				lbls := proto_mir.RetrieveMessageTags(msgDesc)
+				if !IsSubsetContainedInSet(filterLabels, lbls) {
+					continue
 				}
+				boiler, err := proto_mir.GetJsonBoilerTemplate(msgDesc)
 				cmd := cmd_apiv1.CommandDescriptor{
-					Name:        string(msgDesc.FullName()),
-					Description: "",
-					Labels:      proto_mir.RetrieveMessageTags(msgDesc),
-					Arguments:   proto_mir.RetrieveMessageArguments(msgDesc),
-					Boilerplate: string(boiler),
+					Name:     string(msgDesc.FullName()),
+					Labels:   lbls,
+					Template: string(boiler),
+				}
+				if err != nil {
+					cmd.Error = err.Error()
 				}
 				commands = append(commands, &cmd)
 			}
@@ -50,4 +50,19 @@ func (m *MirProtoSchema) GetCommandsList() ([]*cmd_apiv1.CommandDescriptor, erro
 		return true
 	})
 	return commands, nil
+}
+
+func IsSubsetContainedInSet(subset, set map[string]string) bool {
+	if len(subset) > len(set) {
+		return false
+	}
+
+	for key, val := range subset {
+		setVal, ok := set[key]
+		if !ok || val != setVal {
+			return false
+		}
+	}
+
+	return true
 }

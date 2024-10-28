@@ -6,9 +6,13 @@ import (
 	"slices"
 	"sort"
 	"strings"
+	"time"
 
+	"github.com/maxthom/mir/internal/libs/proto/proto_mir"
+	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/dynamicpb"
 )
 
@@ -64,7 +68,7 @@ func GenerateMarshalFn(pinnedTags map[string]string, desc protoreflect.MessageDe
 
 	// Pinned tags
 	// Get meta opts
-	lbl := RetrieveMessageTags(desc)
+	lbl := proto_mir.RetrieveMessageTags(desc)
 	for k, v := range lbl {
 		if v != "" {
 			pinnedTags[k] = v
@@ -301,5 +305,69 @@ func formatProtoPrimitiveToSymbol(fd protoreflect.FieldDescriptor) (string, erro
 	// TODO array of byte, could be store as string base64
 	default:
 		return "%q", fmt.Errorf("unknown field kind %q for %q", fd.Kind(), fd.FullName())
+	}
+}
+
+func generateTimeFn(desc protoreflect.MessageDescriptor) (func(protoreflect.Message) int64, int) {
+	tsFieldIndex := -1
+	tsType := devicev1.TimestampType_TIMESTAMP_TYPE_UNSPECIFIED
+	opts, ok := desc.Options().(*descriptorpb.MessageOptions)
+	msgType, ok := proto.GetExtension(opts, devicev1.E_MessageType).(devicev1.MessageType)
+	fieldsDesc := desc.Fields()
+	if ok {
+		if msgType == devicev1.MessageType_MESSAGE_TYPE_TELEMETRY {
+			for i := 0; i < desc.Fields().Len(); i++ {
+				fieldOpts, ok := desc.Fields().Get(i).Options().(*descriptorpb.FieldOptions)
+				if ok {
+					tsType, ok = proto.GetExtension(fieldOpts, devicev1.E_Timestamp).(devicev1.TimestampType)
+					if ok && tsType != devicev1.TimestampType_TIMESTAMP_TYPE_UNSPECIFIED {
+						tsFieldIndex = i
+						break
+					}
+				}
+			}
+		}
+	}
+
+	if tsFieldIndex == -1 || tsType == devicev1.TimestampType_TIMESTAMP_TYPE_UNSPECIFIED {
+		return func(_ protoreflect.Message) int64 {
+			return time.Now().UTC().UnixNano()
+		}, tsFieldIndex
+	}
+	switch tsType {
+	case devicev1.TimestampType_TIMESTAMP_TYPE_SEC:
+		return func(m protoreflect.Message) int64 {
+			v := m.Get(fieldsDesc.Get(tsFieldIndex))
+			return v.Int() * 1e9
+		}, tsFieldIndex
+	case devicev1.TimestampType_TIMESTAMP_TYPE_MILLI:
+		return func(m protoreflect.Message) int64 {
+			v := m.Get(fieldsDesc.Get(tsFieldIndex))
+			return v.Int() * 1e6
+		}, tsFieldIndex
+	case devicev1.TimestampType_TIMESTAMP_TYPE_MICRO:
+		return func(m protoreflect.Message) int64 {
+			v := m.Get(fieldsDesc.Get(tsFieldIndex))
+			return v.Int() * 1e3
+		}, tsFieldIndex
+	case devicev1.TimestampType_TIMESTAMP_TYPE_NANO:
+		return func(m protoreflect.Message) int64 {
+			v := m.Get(fieldsDesc.Get(tsFieldIndex))
+			return v.Int()
+		}, tsFieldIndex
+	case devicev1.TimestampType_TIMESTAMP_TYPE_FRACTION:
+		return func(m protoreflect.Message) int64 {
+			v := m.Get(fieldsDesc.Get(tsFieldIndex))
+			mrNested := v.Message()
+			secondsField := mrNested.Descriptor().Fields().ByName("seconds")
+			nanosField := mrNested.Descriptor().Fields().ByName("nanos")
+			seconds := mrNested.Get(secondsField).Int()
+			nanos := mrNested.Get(nanosField).Int()
+			return seconds*1e9 + nanos
+		}, tsFieldIndex
+	default:
+		return func(_ protoreflect.Message) int64 {
+			return time.Now().UTC().UnixNano()
+		}, tsFieldIndex
 	}
 }

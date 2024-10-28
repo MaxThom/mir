@@ -30,7 +30,7 @@ message ChangePower {
 			value: "A"
 		}, {
 			key: "floor",
-			value: "1"
+			value: "2"
 		}]
 	};
 

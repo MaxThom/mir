@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/maxthom/mir/internal/clients/cmd_client"
@@ -20,9 +21,10 @@ type DeviceCommandCmd struct {
 }
 
 type CommandListCmd struct {
-	Target        `embed:"" prefix:"target."`
-	Output        string `short:"o" help:"output format for response" default:"json"`
-	RefreshSchema bool   `short:"f" help:"Refresh schema from device even if in store" default:"false"`
+	Target           `embed:"" prefix:"target."`
+	FilterLabels     map[string]string `help:"Set of labels to filter commands"`
+	RefreshSchema    bool              `short:"r" help:"Refresh schema from device even if in store" default:"false"`
+	ShowJsonTemplate bool              `short:"j" help:"show json template for command"`
 }
 
 type CommandSendCmd struct {
@@ -40,14 +42,6 @@ type CommandSendCmd struct {
 func (d *CommandListCmd) Validate() error {
 	err := MirInvalidInputError{
 		Details: []string{},
-	}
-
-	if len(d.Target.Ids) == 0 &&
-		len(d.Target.Names) == 0 &&
-		len(d.Target.Namespaces) == 0 &&
-		len(d.Target.Labels) == 0 &&
-		len(d.Target.Anno) == 0 {
-		err.Details = append(err.Details, "Must specify targets")
 	}
 
 	if len(err.Details) > 0 {
@@ -74,32 +68,90 @@ func (d *CommandListCmd) Run(c CLI) error {
 			Labels:      d.Target.Labels,
 			Annotations: d.Target.Anno,
 		},
+		FilterLabels:  d.FilterLabels,
 		RefreshSchema: d.RefreshSchema,
 	}
 	resp, err := cmd_client.PublishListCommandsRequest(msgBus, req)
 	if err != nil {
-		e := MirRequestError{Route: "command.list", e: err}
-		fmt.Println(e)
-		return e
+		return MirRequestError{Route: "command.list", e: err}
 	}
 	if resp.GetError() != nil {
-		e := MirResponseError{
+		return MirResponseError{
 			Route: "command.list",
 			e: MirHttpError{
 				Code:    resp.GetError().GetCode(),
 				Message: resp.GetError().GetMessage(),
 				Details: resp.GetError().GetDetails(),
 			}}
-		fmt.Println(e)
-		return e
 	}
-	if out, e := MarhsalResponse(d.Output, resp.GetOk()); e != nil {
-		fmt.Println(e)
-		return e
-	} else {
-		fmt.Println(out)
+
+	tpls := map[string][]string{}
+	var sb strings.Builder
+	for devNameNs, cmds := range resp.GetOk().DeviceCommands {
+		if cmds.Error != "" {
+			sb.WriteString(cmds.Error)
+		} else {
+			for _, cmd := range cmds.Commands {
+				sb.WriteString(cmd.Name)
+				sb.WriteString("{")
+				sb.WriteString(mapToSortedString(cmd.Labels))
+				sb.WriteString("}\n")
+				if cmd.Error != "" {
+					sb.WriteString(cmd.Error)
+					sb.WriteString("\n")
+				} else if d.ShowJsonTemplate {
+					var prettyJSON bytes.Buffer
+					if err = json.Indent(&prettyJSON, []byte(cmd.Template), "", "  "); err != nil {
+						sb.WriteString(err.Error())
+					} else {
+						sb.WriteString(prettyJSON.String())
+					}
+					sb.WriteString("\n")
+				}
+
+			}
+		}
+		tpls[sb.String()] = append(tpls[sb.String()], devNameNs)
+		sb.Reset()
 	}
+
+	i := 1
+	for k, v := range tpls {
+		sb.WriteString(fmt.Sprintf("%d. ", i))
+		sb.WriteString(strings.Join(v, ", "))
+		sb.WriteString("\n")
+		sb.WriteString(k)
+		sb.WriteString("\n")
+		i++
+	}
+	fmt.Println(sb.String())
+
 	return nil
+}
+
+func mapToSortedString(m map[string]string) string {
+	if len(m) == 0 {
+		return ""
+	}
+
+	// Get sorted keys
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	// Build sorted string
+	var sb strings.Builder
+	for i, k := range keys {
+		if i > 0 {
+			sb.WriteString(", ")
+		}
+		sb.WriteString(k)
+		sb.WriteString("=")
+		sb.WriteString(m[k])
+	}
+	return sb.String()
 }
 
 func (d *CommandSendCmd) Validate() error {
@@ -122,7 +174,7 @@ func (d *CommandSendCmd) Validate() error {
 		d.Payload = piped
 	}
 	if d.Payload == "" && !d.ShowJsonTemplate {
-		err.Details = append(err.Details, "Must set payload. Use -p to see json template")
+		err.Details = append(err.Details, "Must set payload. Use -j to see json template")
 	}
 
 	if len(err.Details) > 0 {
