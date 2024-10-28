@@ -123,6 +123,10 @@ func (s *ProtoCmdServer) sendCommandSub() func(msg *nats.Msg, req *cmd_apiv1.Sen
 				},
 			})
 		}
+		// If command was specified with labels
+		if index := strings.Index(req.Name, "{"); index != -1 {
+			req.Name = req.Name[:index]
+		}
 
 		resp, err := s.sendCommandToDevices(req)
 		if err != nil {
@@ -346,30 +350,28 @@ func (s *ProtoCmdServer) listCommandsSub() func(msg *nats.Msg, req *cmd_apiv1.Se
 
 		devsCmds := make(map[string]*cmd_apiv1.Commands)
 		for _, dev := range devs {
-			cmdsList := []*cmd_apiv1.CommandDescriptor{}
 			// TODO force hard force opt
 			reg, _, err := s.schStore.GetDeviceSchema(dev.Spec.DeviceId, req.RefreshSchema, false)
 			if err != nil {
-				cmdsList = append(cmdsList, &cmd_apiv1.CommandDescriptor{
-					Name: err.Error(),
-				})
-				devsCmds[dev.Spec.DeviceId] = &cmd_apiv1.Commands{
-					Commands: cmdsList,
+				devsCmds[dev.GetNameNamespace()] = &cmd_apiv1.Commands{
+					Error: err.Error(),
 				}
 				continue
 			}
 
-			cmds, err := reg.GetCommandsList()
+			cmds, err := reg.GetCommandsList(req.FilterLabels)
 			if err != nil {
-				cmdsList = append(cmdsList, &cmd_apiv1.CommandDescriptor{
-					Name: err.Error(),
-				})
-			} else {
-				for _, cmd := range cmds {
-					cmdsList = append(cmdsList, cmd)
+				devsCmds[dev.GetNameNamespace()] = &cmd_apiv1.Commands{
+					Error: err.Error(),
 				}
+				continue
 			}
-			devsCmds[dev.Spec.DeviceId] = &cmd_apiv1.Commands{
+
+			cmdsList := []*cmd_apiv1.CommandDescriptor{}
+			for _, cmd := range cmds {
+				cmdsList = append(cmdsList, cmd)
+			}
+			devsCmds[dev.GetNameNamespace()] = &cmd_apiv1.Commands{
 				Commands: cmdsList,
 			}
 		}

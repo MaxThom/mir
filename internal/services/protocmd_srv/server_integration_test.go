@@ -120,7 +120,8 @@ func TestPublishCmdListRequest(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_list_cmd"
-	reqCreate := &core_apiv1.CreateDeviceRequest{
+	s := swarm.NewSwarm(b)
+	if _, err := s.AddDevice(&core_apiv1.CreateDeviceRequest{
 		DeviceId:  id,
 		Name:      id,
 		Namespace: "testing_cmd",
@@ -130,66 +131,99 @@ func TestPublishCmdListRequest(t *testing.T) {
 		Annotations: map[string]string{
 			"mir/device/description": "hello world of devices !",
 		},
-	}
-
-	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).TelemetrySchema(
-		protocmd_testv1.File_protocmd_test_v1_command_proto,
-	).Build()
-	if err != nil {
+	}).WithSchema(protocmd_testv1.File_protocmd_test_v1_command_proto).Incubate(); err != nil {
 		t.Error(err)
-	}
-
-	reqListCmd := &cmd_apiv1.SendListCommandsRequest{
-		Targets: &core_apiv1.Targets{
-			Ids: []string{id},
-		},
 	}
 
 	// Act
-	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate)
+	wgs, err := s.Deploy(ctx)
 	if err != nil {
 		t.Error(err)
 	}
-	time.Sleep(1 * time.Second)
 
-	wg, err := dev.Launch(ctx)
-	if err != nil {
-		t.Error(err)
-	}
-	time.Sleep(1 * time.Second)
-
-	respListCmd, err := cmd_client.PublishListCommandsRequest(b, reqListCmd)
+	respListCmd, err := cmd_client.PublishListCommandsRequest(b, &cmd_apiv1.SendListCommandsRequest{
+		Targets:       s.ToTarget(),
+		FilterLabels:  map[string]string{},
+		RefreshSchema: false,
+	})
 	if err != nil {
 		t.Error(err)
 	} else if respListCmd.GetError() != nil {
 		t.Error(respListCmd.GetError())
 	}
-	sb := strings.Builder{}
-	for k, v := range respListCmd.GetOk().DeviceCommands {
-		sb.WriteString(k + "\n")
-		for i, c := range v.Commands {
-			sb.WriteString(fmt.Sprintf("\t%d. %s\n", i+1, c.Name))
-		}
-	}
-	fmt.Println(sb.String())
 
 	// Assert
-	respList, err := core_client.PublishDeviceListRequest(b, &core_apiv1.ListDeviceRequest{
-		Targets: &core_apiv1.Targets{
-			Ids: []string{id},
+	dev := respListCmd.GetOk().DeviceCommands[id+"/testing_cmd"]
+	assert.Equal(t, dev.Error, "")
+	assert.Equal(t, len(dev.Commands), 4)
+	assert.Equal(t, dev.Commands[0].Name, "protocmd_test.v1.Command")
+	assert.Equal(t, dev.Commands[0].Labels["building"], "A")
+	assert.Equal(t, dev.Commands[0].Labels["floor"], "1")
+	assert.Equal(t, dev.Commands[1].Name, "protocmd_test.v1.ChangePower")
+	assert.Equal(t, dev.Commands[1].Labels["building"], "A")
+	assert.Equal(t, dev.Commands[1].Labels["floor"], "2")
+	assert.Equal(t, dev.Commands[2].Name, "protocmd_test.v1.SetTargetVector")
+	assert.Equal(t, len(dev.Commands[2].Labels), 0)
+	assert.Equal(t, dev.Commands[3].Name, "protocmd_test.v1.SetDestination")
+	assert.Equal(t, len(dev.Commands[3].Labels), 0)
+
+	cancel()
+	for _, wg := range wgs {
+		wg.Wait()
+	}
+}
+
+func TestPublishCmdListFiltersRequest(t *testing.T) {
+	// Arrange
+	ctx, cancel := context.WithCancel(context.Background())
+	id := "device_list_cmd_filters"
+	s := swarm.NewSwarm(b)
+	if _, err := s.AddDevice(&core_apiv1.CreateDeviceRequest{
+		DeviceId:  id,
+		Name:      id,
+		Namespace: "testing_cmd",
+		Labels: map[string]string{
+			"testing": "cmd",
 		},
+		Annotations: map[string]string{
+			"mir/device/description": "hello world of devices !",
+		},
+	}).WithSchema(protocmd_testv1.File_protocmd_test_v1_command_proto).Incubate(); err != nil {
+		t.Error(err)
+	}
+
+	// Act
+	wgs, err := s.Deploy(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+
+	respListCmd, err := cmd_client.PublishListCommandsRequest(b, &cmd_apiv1.SendListCommandsRequest{
+		Targets: s.ToTarget(),
+		FilterLabels: map[string]string{
+			"building": "A",
+			"floor":    "2",
+		},
+		RefreshSchema: true,
 	})
 	if err != nil {
 		t.Error(err)
-	} else if respList.GetError() != nil {
-		t.Error(respList.GetError())
+	} else if respListCmd.GetError() != nil {
+		t.Error(respListCmd.GetError())
 	}
-	devDb := respList.GetOk().Devices[0]
 
-	assert.Equal(t, reqCreate.DeviceId, devDb.Spec.DeviceId)
+	// Assert
+	dev := respListCmd.GetOk().DeviceCommands[id+"/testing_cmd"]
+	assert.Equal(t, dev.Error, "")
+	assert.Equal(t, len(dev.Commands), 1)
+	assert.Equal(t, dev.Commands[0].Name, "protocmd_test.v1.ChangePower")
+	assert.Equal(t, dev.Commands[0].Labels["building"], "A")
+	assert.Equal(t, dev.Commands[0].Labels["floor"], "2")
 
 	cancel()
-	wg.Wait()
+	for _, wg := range wgs {
+		wg.Wait()
+	}
 }
 
 func TestPublishCmdRequest(t *testing.T) {
@@ -1243,6 +1277,95 @@ func TestPublishCmdRequestMultipleDevicesOneTimeoutJsonTemplate(t *testing.T) {
 	assert.Equal(t, "", string(dev2.Payload))
 	assert.Equal(t, `error retrieve command descriptor from device schema: cannot reconcile device schema: nats: no responders available for request`, dev2.Error)
 
+	cancel()
+	wg.Wait()
+}
+
+func TestPublishCmdJsonNameWithCurlyRequest(t *testing.T) {
+	// Arrange
+	ctx, cancel := context.WithCancel(context.Background())
+	id := "device_send_cmd_json_curly"
+	reqCreate := &core_apiv1.CreateDeviceRequest{
+		DeviceId:  id,
+		Name:      id,
+		Namespace: "testing_cmd",
+		Labels: map[string]string{
+			"testing": "cmd",
+		},
+		Annotations: map[string]string{
+			"mir/device/description": "hello world of devices !",
+		},
+	}
+
+	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).TelemetrySchema(
+		protocmd_testv1.File_protocmd_test_v1_command_proto,
+	).Build()
+	if err != nil {
+		t.Error(err)
+	}
+
+	cmdHandled := &protocmd_testv1.ChangePower{}
+	dev.HandleCommand(
+		cmdHandled,
+		func(m protoreflect.ProtoMessage) (protoreflect.ProtoMessage, error) {
+			cmdHandled = m.(*protocmd_testv1.ChangePower)
+			return &protocmd_testv1.ChangePowerResp{Success: true}, nil
+		})
+
+	p := protocmd_testv1.ChangePower{
+		Power: 5,
+	}
+	payloadBytes, err := protojson.Marshal(&p)
+	if err != nil {
+		t.Error(err)
+	}
+
+	reqCmd := &cmd_apiv1.SendCommandRequest{
+		Targets: &core_apiv1.Targets{
+			Ids: []string{id},
+		},
+		Name:            string(p.ProtoReflect().Descriptor().FullName()) + "{x=y}",
+		PayloadEncoding: common_apiv1.Encoding_ENCODING_JSON,
+		Payload:         payloadBytes,
+		RefreshSchema:   true,
+	}
+
+	// Act
+	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate)
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	wg, err := dev.Launch(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
+	if err != nil {
+		t.Error(err)
+	} else if respCmd.GetError() != nil {
+		t.Error(respCmd.GetError())
+	}
+
+	msgResp := &protocmd_testv1.ChangePowerResp{}
+	for _, v := range respCmd.GetOk().DeviceResponses {
+		if v.Error != "" {
+			t.Error(v.Error)
+		}
+		assert.Equal(t, string(msgResp.ProtoReflect().Descriptor().FullName()), v.Name)
+		assert.Equal(t, cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_SUCCESS, v.Status)
+		if err = protojson.Unmarshal(v.Payload, msgResp); err != nil {
+			t.Error(err)
+		}
+	}
+
+	// Assert
+	assert.Equal(t, true, msgResp.Success)
+	assert.Equal(t, int32(5), cmdHandled.Power)
+	assert.Equal(t, common_apiv1.Encoding_ENCODING_JSON, respCmd.GetOk().Encoding)
 	cancel()
 	wg.Wait()
 }

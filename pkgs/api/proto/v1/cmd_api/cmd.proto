@@ -58,7 +58,8 @@ enum CommandResponseStatus {
 
 message SendListCommandsRequest {
 	core_api.v1.Targets targets = 1; // To target a set of devices, search using ids, labels and annotations
-	bool refresh_schema = 2; // Force a schema refresh from the device
+	map<string, string> filter_labels = 2; // Filter commands by labels
+	bool refresh_schema = 3; // Force a schema refresh from the device
 }
 
 message SendListCommandsResponse {
@@ -76,13 +77,13 @@ message DevicesCommands {
 // List of commands
 message Commands {
 	repeated CommandDescriptor commands = 1; // Array of command descriptor
+	string error = 2; // HTTP like error if something went wrong
 }
 
 // Descriptor of a command
 message CommandDescriptor {
 	string name = 1; // Name of command
-	string description = 2; // Description of commands
-	map<string, string> labels = 3; // Labels are used to tag a command
-	map<string, string> arguments = 4; // List of arguments for the command
-	string boilerplate = 5; // JSON payload boilerplate for an example
+	map<string, string> labels = 2; // Labels are used to tag a command
+	string template = 3; // JSON payload boilerplate for an example
+	string error = 4; // HTTP like error if something went wrong
 }
