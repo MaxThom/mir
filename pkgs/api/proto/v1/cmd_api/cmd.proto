@@ -41,10 +41,11 @@ message SendCommandResponse {
     }
 
     message CommandResponse {
-        string name = 1; // name of the command response
-        bytes payload = 2; // actual response payload
-        CommandResponseStatus status = 3; // status of command
-        string error = 4; // HTTP like error if something went wrong
+        string device_id = 1; // device unique id
+        string name = 2; // name of the command response
+        bytes payload = 3; // actual response payload
+        CommandResponseStatus status = 4; // status of command
+        string error = 5; // HTTP like error if something went wrong
     }
 }
 
