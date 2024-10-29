@@ -179,7 +179,7 @@ func (s *ProtoCmdServer) sendCommandToDevices(req *cmd_apiv1.SendCommandRequest)
 	if !req.NoValidation || req.PayloadEncoding == common_apiv1.Encoding_ENCODING_JSON {
 		for _, dev := range devs {
 			// Retrieve descriptor
-			msgReqDesc, _, _, err := s.schStore.GetDeviceSchemaAndDescriptor(dev.Spec.DeviceId, req.Name, req.RefreshSchema, false)
+			msgReqDesc, _, _, err := s.schStore.GetDeviceSchemaAndDescriptor(dev.Spec.DeviceId, req.Name, req.RefreshSchema)
 			if err != nil {
 				l.Error().Err(err).Str("device_id", dev.Spec.DeviceId).Msg("error retrieving command descriptor from device schema")
 				devResp[dev.GetNameNamespace()] = &cmd_apiv1.SendCommandResponse_CommandResponse{
@@ -309,8 +309,9 @@ func (s *ProtoCmdServer) sendCommandToDevices(req *cmd_apiv1.SendCommandRequest)
 				devResp[nameNs].DeviceId = p.deviceId
 				return
 			}
+
 			if !req.NoValidation || req.PayloadEncoding == common_apiv1.Encoding_ENCODING_JSON {
-				msgRespDesc, _, _, err := s.schStore.GetDeviceSchemaAndDescriptor(p.deviceId, cmdResp.Name, false, false)
+				msgRespDesc, _, _, err := s.schStore.GetDeviceSchemaAndDescriptor(p.deviceId, cmdResp.Name, false)
 				if err != nil {
 					l.Error().Err(err).Str("device_id", p.deviceId).Msg("error finding command response in schema")
 					devResp[nameNs] = &cmd_apiv1.SendCommandResponse_CommandResponse{
@@ -399,7 +400,7 @@ func (s *ProtoCmdServer) listCommandsSub() func(msg *nats.Msg, req *cmd_apiv1.Se
 		devsCmds := make(map[string]*cmd_apiv1.Commands)
 		for _, dev := range devs {
 			// TODO force hard force opt
-			reg, _, err := s.schStore.GetDeviceSchema(dev.Spec.DeviceId, req.RefreshSchema, false)
+			reg, _, err := s.schStore.GetDeviceSchema(dev.Spec.DeviceId, req.RefreshSchema)
 			if err != nil {
 				devsCmds[dev.GetNameNamespace()] = &cmd_apiv1.Commands{
 					Error: err.Error(),
