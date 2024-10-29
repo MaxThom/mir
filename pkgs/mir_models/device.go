@@ -72,7 +72,7 @@ func (s *Schema) SetProtoSchema(desc *descriptorpb.FileDescriptorSet) error {
 }
 
 func MarshalProtoFiles(s ...protoreflect.FileDescriptor) ([]byte, error) {
-	pbSet := new(descriptorpb.FileDescriptorSet)
+	pbSet := &descriptorpb.FileDescriptorSet{}
 	for _, f := range s {
 		pbSet.File = append(pbSet.File,
 			protodesc.ToFileDescriptorProto(f))

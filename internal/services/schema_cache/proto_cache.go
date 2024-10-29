@@ -14,11 +14,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/proto/proto_mir"
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/maxthom/mir/pkgs/module/mir"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
-	"google.golang.org/protobuf/reflect/protoregistry"
-	"google.golang.org/protobuf/types/descriptorpb"
 )
 
 // TODO listen to device update event
@@ -49,12 +45,12 @@ type cacheEntry struct {
 // Get the device schema from cache. If missing or refresh schema is true,
 // the cache will be invalidated and schema will be fetch from database or device
 // If hard refresh is true, it will fetch from device skipping database
-func (c *MirProtoCache) GetDeviceSchema(deviceId string, refreshSchema bool, hardRefreshSchema bool) (*proto_mir.MirProtoSchema, mir_models.Device, error) {
+func (c *MirProtoCache) GetDeviceSchema(deviceId string, refreshSchema bool) (*proto_mir.MirProtoSchema, mir_models.Device, error) {
 	val, ok := c.cache[deviceId]
-	if !ok || val.sch == nil || refreshSchema || hardRefreshSchema {
+	if !ok || val.sch == nil || refreshSchema {
 		c.cacheLock.Lock()
 		defer c.cacheLock.Unlock()
-		dev, sch, err := c.reconcileDeviceSchema(deviceId, hardRefreshSchema)
+		dev, sch, err := c.reconcileDeviceSchema(deviceId, refreshSchema)
 		c.cache[deviceId] = cacheEntry{
 			dev: dev,
 			sch: sch,
@@ -72,15 +68,15 @@ func (c *MirProtoCache) GetDeviceSchema(deviceId string, refreshSchema bool, har
 // If db missing, fetch from device.
 // If refreshSchema is true, force refresh from db
 // If hardRefreshSchema is true, force refresh from device
-func (c *MirProtoCache) GetDeviceSchemaAndDescriptor(deviceId string, descName string, refreshSchema bool, hardRefreshSchema bool) (protoreflect.Descriptor, *proto_mir.MirProtoSchema, mir_models.Device, error) {
-	sch, dev, err := c.GetDeviceSchema(deviceId, refreshSchema, hardRefreshSchema)
+func (c *MirProtoCache) GetDeviceSchemaAndDescriptor(deviceId string, descName string, refreshSchema bool) (protoreflect.Descriptor, *proto_mir.MirProtoSchema, mir_models.Device, error) {
+	sch, dev, err := c.GetDeviceSchema(deviceId, refreshSchema)
 	if err != nil {
 		return nil, nil, dev, err
 	}
 	desc, err := sch.FindDescriptorByName(protoreflect.FullName(descName))
 	if err != nil {
 		// If error finding descriptor, we force a hard refresh
-		sch, dev, err = c.GetDeviceSchema(deviceId, refreshSchema, true)
+		sch, dev, err = c.GetDeviceSchema(deviceId, true)
 		if err != nil {
 			return nil, nil, dev, err
 		}
@@ -94,10 +90,11 @@ func (c *MirProtoCache) GetDeviceSchemaAndDescriptor(deviceId string, descName s
 
 // Get the proto schema from surrealdb, if missing fetch from device
 func (c *MirProtoCache) reconcileDeviceSchema(deviceId string, forceDeviceFetch bool) (mir_models.Device, *proto_mir.MirProtoSchema, error) {
-	// 1. Go get schema in surrealdb
+	// 1. Go get schema in db
 	// 2. If not there, fetch from device
 	// 3. Update db
 	// IDEA refresh if last fetch is older then a timespan
+	l.Debug().Str("device_id", deviceId).Msg("device schema not in cache, reconciling...")
 	devs, err := c.store.ListDevice(&core_apiv1.ListDeviceRequest{
 		Targets: &core_apiv1.Targets{
 			Ids: []string{deviceId},
@@ -110,68 +107,61 @@ func (c *MirProtoCache) reconcileDeviceSchema(deviceId string, forceDeviceFetch 
 		if len(devs) > 0 {
 			if devs[0].Status.Schema.CompressedSchema != nil &&
 				len(devs[0].Status.Schema.CompressedSchema) != 0 {
-				_, reg, err := mir_models.DecompressFileDescriptorSet(devs[0].Status.Schema.CompressedSchema)
+				sch, err := proto_mir.DecompressSchema(devs[0].Status.Schema.CompressedSchema)
 				if err == nil {
-					l.Debug().Msgf("reconciled schema for %s from db", deviceId)
-					return devs[0].Device, &proto_mir.MirProtoSchema{Files: reg}, nil
+					l.Info().Str("device_id", deviceId).Msgf("reconciled schema for %s from db", deviceId)
+					return devs[0].Device, sch, nil
 				}
+				// If error, we fetch from device
 			}
 		}
 	}
 
-	reg, pbSet, err := c.getProtoSchemaFromDevice(deviceId)
+	l.Debug().Str("device_id", deviceId).Msg("device schema not in db, fetching from device...")
+	sch, err := c.getProtoSchemaFromDevice(deviceId)
+	if err != nil {
+		return mir_models.Device{}, nil, err
+	}
+	compressSch, err := sch.CompressSchema()
 	if err != nil {
 		return mir_models.Device{}, nil, err
 	}
 
-	// Mainly for extra info
-	packNames := []string{}
-	reg.RangeFiles(func(f protoreflect.FileDescriptor) bool {
-		packNames = append(packNames, string(f.FullName()))
-		return true
-	})
-
-	compSch, err := mir_models.CompressFileDescriptorSet(pbSet)
-	if err != nil {
-		return mir_models.Device{}, nil, err
-	}
-
-	_, err = c.store.UpdateDevice(&core_apiv1.UpdateDeviceRequest{
-		Targets: &core_apiv1.Targets{
-			Ids: []string{deviceId},
-		},
-		Status: &core_apiv1.UpdateDeviceRequest_Status{
-			Schema: &core_apiv1.UpdateDeviceRequest_Schema{
-				CompressedSchema: compSch,
-				PackageNames:     packNames,
-				LastSchemaFetch:  mir_models.AsProtoTimestamp(time.Now().UTC()),
+	updResp := &core_apiv1.UpdateDeviceResponse{}
+	err = c.m.SendRequest(mir.Resquest().V1Alpha().UpdateDevice(
+		core_apiv1.UpdateDeviceRequest{
+			Targets: &core_apiv1.Targets{
+				Ids: []string{deviceId},
 			},
-		},
-	})
+			Status: &core_apiv1.UpdateDeviceRequest_Status{
+				Schema: &core_apiv1.UpdateDeviceRequest_Schema{
+					CompressedSchema: compressSch,
+					PackageNames:     sch.GetPackageList(),
+					LastSchemaFetch:  mir_models.AsProtoTimestamp(time.Now().UTC()),
+				},
+			},
+		}, updResp))
+	if err != nil {
+		return mir_models.Device{}, nil, err
+	}
+	if updResp.GetError() != nil {
+		return mir_models.Device{}, nil, fmt.Errorf("%s", updResp.GetError().Message)
+	}
 
-	l.Debug().Msgf("reconciled schema for %s from device", deviceId)
-	return devs[0].Device, &proto_mir.MirProtoSchema{Files: reg}, err
+	l.Info().Str("device_id", deviceId).Msgf("reconciled schema for %s from device", deviceId)
+	return devs[0].Device, sch, err
 }
 
-func (c *MirProtoCache) getProtoSchemaFromDevice(deviceId string) (*protoregistry.Files, *descriptorpb.FileDescriptorSet, error) {
+func (c *MirProtoCache) getProtoSchemaFromDevice(deviceId string) (*proto_mir.MirProtoSchema, error) {
 	schemaResp := &device_apiv1.SchemaRetrieveResponse{}
 	err := c.m.SendRequest(mir.Command().V1Alpha().RequestSchema(deviceId, schemaResp))
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	} else if schemaResp.GetError() != nil {
 		e := schemaResp.GetError()
-		return nil, nil, errors.New(fmt.Sprintf("%d - %s\n%s", e.Code, e.Message, e.Details))
+		return nil, errors.New(fmt.Sprintf("%d - %s\n%s", e.Code, e.Message, e.Details))
 	}
 
-	pbSet := new(descriptorpb.FileDescriptorSet)
-	if err := proto.Unmarshal(schemaResp.GetSchema(), pbSet); err != nil {
-		return nil, nil, err
-	}
-
-	reg, err := protodesc.NewFiles(pbSet)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return reg, pbSet, nil
+	// Decompress already from using the sdk
+	return proto_mir.UnmarshalSchema(schemaResp.GetSchema())
 }

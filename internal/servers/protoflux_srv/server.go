@@ -117,7 +117,7 @@ func (s *ProtoFluxServer) Listen(ctx context.Context) {
 			s.devWritersLock.RUnlock()
 			// Mean no ingesters for proto msg, but we might have the schema
 			if !ok {
-				desc, _, dev, err := s.schStore.GetDeviceSchemaAndDescriptor(deviceId, protoMsgName, false, false)
+				desc, _, dev, err := s.schStore.GetDeviceSchemaAndDescriptor(deviceId, protoMsgName, false)
 				if err != nil {
 					l.Error().Err(err).Str("deviceId", deviceId).Msg("Failed to retrieve schema from device")
 					return
@@ -127,7 +127,7 @@ func (s *ProtoFluxServer) Listen(ctx context.Context) {
 				if err != nil {
 					// TODO possibly different flow depending on error type
 					l.Warn().Err(err).Str("deviceId", deviceId).Str("protoMsg", protoMsgName).Msg("Failed to generate ingester function, requesting schema from device")
-					desc, _, dev, err := s.schStore.GetDeviceSchemaAndDescriptor(deviceId, protoMsgName, true, true)
+					desc, _, dev, err := s.schStore.GetDeviceSchemaAndDescriptor(deviceId, protoMsgName, true)
 					if err != nil {
 						l.Error().Err(err).Str("deviceId", deviceId).Msg("Failed to retrieve schema from device")
 						return
