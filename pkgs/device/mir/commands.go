@@ -1,6 +1,7 @@
 package mir
 
 import (
+	"fmt"
 	"reflect"
 
 	"github.com/maxthom/mir/internal/clients/device_client"
@@ -50,18 +51,14 @@ func DefinedCommandHandler(msg *nats.Msg, m *Mir) error {
 	_, err := m.schemaReg.FindDescriptorByName(protoreflect.FullName(descName))
 	if err != nil {
 		return sendReplyOrAck(m.b, msg, &devicev1.Error{
-			Code:    500,
-			Message: "error occure while processing command",
-			Details: []string{"500 Internal Server Error", err.Error()},
+			Message: fmt.Errorf("device error while looking for command descriptor: %w", err).Error(),
 		}, nil, false)
 	}
 
 	h, ok := m.cmdHandlers[descName]
 	if !ok {
 		return sendReplyOrAck(m.b, msg, &devicev1.Error{
-			Code:    500,
-			Message: "error occure while processing command",
-			Details: []string{"500 Internal Server Error", "no handler for command " + descName + " found"},
+			Message: "device error: no handler for command " + descName + " found",
 		}, nil, false)
 	}
 
@@ -70,18 +67,14 @@ func DefinedCommandHandler(msg *nats.Msg, m *Mir) error {
 
 	if err = proto.Unmarshal(msg.Data, cmdMsg); err != nil {
 		return sendReplyOrAck(m.b, msg, &devicev1.Error{
-			Code:    500,
-			Message: "error occure while processing command",
-			Details: []string{"500 Internal Server Error", "could not unmarshal command payload", err.Error()},
+			Message: fmt.Errorf("device error while unmarshalling command payload: %w", err).Error(),
 		}, nil, false)
 	}
 
 	cmdResp, err := h.h(cmdMsg)
 	if err != nil {
 		return sendReplyOrAck(m.b, msg, &devicev1.Error{
-			Code:    500,
-			Message: "error occure while processing command",
-			Details: []string{"500 Internal Server Error", "error in command handler", err.Error()},
+			Message: fmt.Errorf("device error in command handler: %w", err).Error(),
 		}, nil, false)
 	}
 

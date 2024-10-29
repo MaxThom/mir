@@ -596,16 +596,9 @@ func TestPublishCmdProtoInvalidPayloadNoValidation(t *testing.T) {
 	}
 
 	// Assert
-	msgResp := &common_apiv1.Error{}
 	for _, v := range respCmd.GetOk().DeviceResponses {
-		if v.Error != "" {
-			t.Error(v.Error)
-		}
 		assert.Equal(t, cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_ERROR, v.Status)
-		if err = proto.Unmarshal(v.Payload, msgResp); err != nil {
-			t.Error(err)
-		}
-		assert.Equal(t, "error occure while processing command", msgResp.Message)
+		assert.Equal(t, "device error in command handler: error on purpose", v.Error)
 	}
 	cancel()
 	wg.Wait()
@@ -767,11 +760,7 @@ func TestPublishCmdRequestMultipleDevicesOneNoHandler(t *testing.T) {
 			assert.Equal(t, common_apiv1.Encoding_ENCODING_PROTOBUF, respCmd.GetOk().Encoding)
 		} else if k == "device_send_cmd_3/testing_cmd" {
 			assert.Equal(t, cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_ERROR, v.Status)
-			msgRespErr := &common_apiv1.Error{}
-			if err := proto.Unmarshal(v.Payload, msgRespErr); err != nil {
-				t.Error(err)
-			}
-			assert.Equal(t, true, strings.Contains(strings.Join(msgRespErr.Details, " "), "no handler for command"))
+			assert.Equal(t, "device error: no handler for command protocmd_test.v1.ChangePower found", v.Error)
 		}
 	}
 
