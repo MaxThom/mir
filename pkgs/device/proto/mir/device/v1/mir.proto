@@ -65,7 +65,5 @@ message Void {
     An error message to mimic http error messages
 */
 message Error {
-    uint32 code = 1;     // HTTP like status code
-    string message = 2;  // Human-readable error message.
-    repeated string details = 3; // Optional details.
+    string message = 1;  // Human-readable error message.
 }

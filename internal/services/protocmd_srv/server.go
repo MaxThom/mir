@@ -297,7 +297,19 @@ func (s *ProtoCmdServer) sendCommandToDevices(req *cmd_apiv1.SendCommandRequest)
 
 			l.Debug().Str("device_id", p.deviceId).Msgf("received command response from device")
 			respPayload := cmdResp.Payload
-			if req.PayloadEncoding == common_apiv1.Encoding_ENCODING_JSON {
+			if cmdResp.Name == devMirErrStr {
+				var errPl devicev1.Error
+				if err = proto.Unmarshal(respPayload, &errPl); err != nil {
+					l.Error().Err(err).Str("device_id", p.deviceId).Msg("error unmarshaling error payload")
+					devResp[nameNs].Error = fmt.Errorf("error unmarshaling error payload: %w", err).Error()
+				} else {
+					devResp[nameNs].Error = errPl.GetMessage()
+				}
+				devResp[nameNs].Status = cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_ERROR
+				devResp[nameNs].DeviceId = p.deviceId
+				return
+			}
+			if !req.NoValidation || req.PayloadEncoding == common_apiv1.Encoding_ENCODING_JSON {
 				msgRespDesc, _, _, err := s.schStore.GetDeviceSchemaAndDescriptor(p.deviceId, cmdResp.Name, false, false)
 				if err != nil {
 					l.Error().Err(err).Str("device_id", p.deviceId).Msg("error finding command response in schema")
@@ -319,22 +331,21 @@ func (s *ProtoCmdServer) sendCommandToDevices(req *cmd_apiv1.SendCommandRequest)
 					}
 					return
 				}
-				respPayload, err = protojson.Marshal(msgResp)
-				if err != nil {
-					l.Error().Err(err).Str("device_id", p.deviceId).Msg("error marshaling proto payload to json")
-					devResp[nameNs] = &cmd_apiv1.SendCommandResponse_CommandResponse{
-						DeviceId: p.deviceId,
-						Status:   cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_ERROR,
-						Error:    errors.Wrap(err, "error marshaling proto payload to json").Error(),
+				if req.PayloadEncoding == common_apiv1.Encoding_ENCODING_JSON {
+					respPayload, err = protojson.Marshal(msgResp)
+					if err != nil {
+						l.Error().Err(err).Str("device_id", p.deviceId).Msg("error marshaling proto payload to json")
+						devResp[nameNs] = &cmd_apiv1.SendCommandResponse_CommandResponse{
+							DeviceId: p.deviceId,
+							Status:   cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_ERROR,
+							Error:    errors.Wrap(err, "error marshaling proto payload to json").Error(),
+						}
+						return
 					}
-					return
 				}
 			}
-			if cmdResp.Name == devMirErrStr {
-				devResp[nameNs].Status = cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_ERROR
-			} else {
-				devResp[nameNs].Status = cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_SUCCESS
-			}
+			devResp[nameNs].DeviceId = p.deviceId
+			devResp[nameNs].Status = cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_SUCCESS
 			devResp[nameNs].Name = cmdResp.Name
 			devResp[nameNs].Payload = respPayload
 		}()

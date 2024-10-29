@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"io"
 	"os"
@@ -53,7 +54,8 @@ func main() {
 			time.Sleep(2 * time.Second)
 			l.Info().Msg("Power changed successfully")
 
-			return &command_devicev1.ChangePowerResponse{Success: true}, nil
+			//return &command_devicev1.ChangePowerResponse{Success: true}, nil
+			return nil, errors.New("Fuck this shit")
 		},
 	)
 
