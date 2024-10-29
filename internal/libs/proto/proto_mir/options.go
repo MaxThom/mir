@@ -1,7 +1,6 @@
 package proto_mir
 
 import (
-	"github.com/maxthom/mir/internal/libs/proto/json_template"
 	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -50,25 +49,4 @@ func retrieveTagsFromDescriptor(desc protoreflect.MessageDescriptor, tags map[st
 			retrieveTagsFromDescriptor(fd.Message(), tags)
 		}
 	}
-}
-
-func RetrieveMessageArguments(desc protoreflect.MessageDescriptor) map[string]string {
-	args := make(map[string]string)
-	retrieveArgumentsFromDescriptor(desc, args)
-	return args
-}
-
-func retrieveArgumentsFromDescriptor(desc protoreflect.MessageDescriptor, args map[string]string) {
-	for i := 0; i < desc.Fields().Len(); i++ {
-		fd := desc.Fields().Get(i)
-		if fd.Kind() == protoreflect.MessageKind {
-			retrieveTagsFromDescriptor(fd.Message(), args)
-		} else {
-			args[string(fd.FullName())] = fd.Kind().String()
-		}
-	}
-}
-
-func GetJsonBoilerTemplate(desc protoreflect.MessageDescriptor) ([]byte, error) {
-	return json_template.GenerateTemplate(desc)
 }

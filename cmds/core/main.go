@@ -18,7 +18,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/boiler/mir_log"
 	"github.com/maxthom/mir/internal/libs/boiler/mir_signals"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
-	"github.com/maxthom/mir/internal/services/core_srv"
+	"github.com/maxthom/mir/internal/servers/core_srv"
 	"github.com/rs/zerolog"
 	"github.com/surrealdb/surrealdb.go"
 	"golang.org/x/net/http2"

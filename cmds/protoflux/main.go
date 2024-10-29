@@ -21,7 +21,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/boiler/mir_signals"
 	"github.com/maxthom/mir/internal/libs/external/influx"
 	"github.com/maxthom/mir/internal/libs/external/surreal"
-	"github.com/maxthom/mir/internal/services/protoflux_srv"
+	"github.com/maxthom/mir/internal/servers/protoflux_srv"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/rs/zerolog"
 	"golang.org/x/net/http2"

@@ -1,4 +1,4 @@
-package mir_utils
+package schema_cache
 
 import (
 	"fmt"
@@ -11,6 +11,7 @@ import (
 	"github.com/rs/zerolog"
 
 	"github.com/maxthom/mir/internal/externals/mng"
+	"github.com/maxthom/mir/internal/libs/proto/proto_mir"
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"google.golang.org/protobuf/proto"
@@ -42,13 +43,13 @@ func NewMirProtoCache(logger zerolog.Logger, m *mir.Mir, store mng.DeviceStore) 
 
 type cacheEntry struct {
 	dev mir_models.Device
-	sch *MirProtoSchema
+	sch *proto_mir.MirProtoSchema
 }
 
 // Get the device schema from cache. If missing or refresh schema is true,
 // the cache will be invalidated and schema will be fetch from database or device
 // If hard refresh is true, it will fetch from device skipping database
-func (c *MirProtoCache) GetDeviceSchema(deviceId string, refreshSchema bool, hardRefreshSchema bool) (*MirProtoSchema, mir_models.Device, error) {
+func (c *MirProtoCache) GetDeviceSchema(deviceId string, refreshSchema bool, hardRefreshSchema bool) (*proto_mir.MirProtoSchema, mir_models.Device, error) {
 	val, ok := c.cache[deviceId]
 	if !ok || val.sch == nil || refreshSchema || hardRefreshSchema {
 		c.cacheLock.Lock()
@@ -71,7 +72,7 @@ func (c *MirProtoCache) GetDeviceSchema(deviceId string, refreshSchema bool, har
 // If db missing, fetch from device.
 // If refreshSchema is true, force refresh from db
 // If hardRefreshSchema is true, force refresh from device
-func (c *MirProtoCache) GetDeviceSchemaAndDescriptor(deviceId string, descName string, refreshSchema bool, hardRefreshSchema bool) (protoreflect.Descriptor, *MirProtoSchema, mir_models.Device, error) {
+func (c *MirProtoCache) GetDeviceSchemaAndDescriptor(deviceId string, descName string, refreshSchema bool, hardRefreshSchema bool) (protoreflect.Descriptor, *proto_mir.MirProtoSchema, mir_models.Device, error) {
 	sch, dev, err := c.GetDeviceSchema(deviceId, refreshSchema, hardRefreshSchema)
 	if err != nil {
 		return nil, nil, dev, err
@@ -92,7 +93,7 @@ func (c *MirProtoCache) GetDeviceSchemaAndDescriptor(deviceId string, descName s
 }
 
 // Get the proto schema from surrealdb, if missing fetch from device
-func (c *MirProtoCache) reconcileDeviceSchema(deviceId string, forceDeviceFetch bool) (mir_models.Device, *MirProtoSchema, error) {
+func (c *MirProtoCache) reconcileDeviceSchema(deviceId string, forceDeviceFetch bool) (mir_models.Device, *proto_mir.MirProtoSchema, error) {
 	// 1. Go get schema in surrealdb
 	// 2. If not there, fetch from device
 	// 3. Update db
@@ -112,7 +113,7 @@ func (c *MirProtoCache) reconcileDeviceSchema(deviceId string, forceDeviceFetch 
 				_, reg, err := mir_models.DecompressFileDescriptorSet(devs[0].Status.Schema.CompressedSchema)
 				if err == nil {
 					l.Debug().Msgf("reconciled schema for %s from db", deviceId)
-					return devs[0].Device, &MirProtoSchema{reg}, nil
+					return devs[0].Device, &proto_mir.MirProtoSchema{Files: reg}, nil
 				}
 			}
 		}
@@ -149,7 +150,7 @@ func (c *MirProtoCache) reconcileDeviceSchema(deviceId string, forceDeviceFetch 
 	})
 
 	l.Debug().Msgf("reconciled schema for %s from device", deviceId)
-	return devs[0].Device, &MirProtoSchema{reg}, err
+	return devs[0].Device, &proto_mir.MirProtoSchema{Files: reg}, err
 }
 
 func (c *MirProtoCache) getProtoSchemaFromDevice(deviceId string) (*protoregistry.Files, *descriptorpb.FileDescriptorSet, error) {

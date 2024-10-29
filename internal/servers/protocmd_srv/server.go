@@ -11,8 +11,8 @@ import (
 	"github.com/maxthom/mir/internal/externals/mng"
 	"github.com/maxthom/mir/internal/libs/api/metrics"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
-	"github.com/maxthom/mir/internal/libs/proto/proto_mir"
-	"github.com/maxthom/mir/internal/mir_utils"
+	"github.com/maxthom/mir/internal/libs/proto/json_template"
+	"github.com/maxthom/mir/internal/services/schema_cache"
 	cmd_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cmd_api"
 	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
@@ -34,7 +34,7 @@ type ProtoCmdServer struct {
 	sub      *nats.Subscription
 	m        *mir.Mir
 	devStore mng.DeviceStore
-	schStore mir_utils.MirProtoCache
+	schStore schema_cache.MirProtoCache
 }
 
 // TODO prom metics
@@ -69,7 +69,7 @@ func NewProtoCmdServer(logger zerolog.Logger, m *mir.Mir, devStore mng.DeviceSto
 	return &ProtoCmdServer{
 		m:        m,
 		devStore: devStore,
-		schStore: *mir_utils.NewMirProtoCache(l, m, devStore),
+		schStore: *schema_cache.NewMirProtoCache(l, m, devStore),
 	}
 }
 
@@ -192,7 +192,7 @@ func (s *ProtoCmdServer) sendCommandToDevices(req *cmd_apiv1.SendCommandRequest)
 			}
 
 			if req.ShowTemplate {
-				tpl, err := proto_mir.GetJsonBoilerTemplate(msgReqDesc.(protoreflect.MessageDescriptor))
+				tpl, err := json_template.GenerateTemplate(msgReqDesc.(protoreflect.MessageDescriptor))
 				if err != nil {
 					l.Error().Err(err).Str("device_id", dev.Spec.DeviceId).Msg("error generating command template from device schema")
 					devResp[dev.GetNameNamespace()] = &cmd_apiv1.SendCommandResponse_CommandResponse{
