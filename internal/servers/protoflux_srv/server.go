@@ -9,7 +9,8 @@ import (
 	"github.com/maxthom/mir/internal/externals/ts"
 	"github.com/maxthom/mir/internal/libs/api/metrics"
 	proto_lineprotocol "github.com/maxthom/mir/internal/libs/proto/line_protocol"
-	"github.com/maxthom/mir/internal/mir_utils"
+	"github.com/maxthom/mir/internal/libs/proto/proto_mir"
+	"github.com/maxthom/mir/internal/services/schema_cache"
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/nats-io/nats.go"
@@ -25,7 +26,7 @@ type ProtoFluxServer struct {
 	devStore       mng.DeviceStore
 	devWriters     map[deviceProtoKey]proto_lineprotocol.ProtoBytesToLpFn
 	devWritersLock sync.RWMutex
-	schStore       *mir_utils.MirProtoCache
+	schStore       *schema_cache.MirProtoCache
 }
 
 // TODO prom metics
@@ -52,7 +53,7 @@ type deviceProtoKey struct {
 type deviceProtoSchema struct {
 	deviceId string
 	labels   map[string]string
-	schema   *mir_utils.MirProtoSchema
+	schema   *proto_mir.MirProtoSchema
 }
 
 const (
@@ -84,7 +85,7 @@ func NewProtoFluxServer(logger zerolog.Logger, m *mir.Mir, devStore mng.DeviceSt
 		m:          m,
 		devStore:   devStore,
 		devWriters: make(map[deviceProtoKey]proto_lineprotocol.ProtoBytesToLpFn),
-		schStore:   mir_utils.NewMirProtoCache(l, m, devStore),
+		schStore:   schema_cache.NewMirProtoCache(l, m, devStore),
 	}
 }
 

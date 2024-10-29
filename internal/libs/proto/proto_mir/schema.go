@@ -1,7 +1,7 @@
-package mir_utils
+package proto_mir
 
 import (
-	"github.com/maxthom/mir/internal/libs/proto/proto_mir"
+	"github.com/maxthom/mir/internal/libs/proto/json_template"
 	cmd_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cmd_api"
 
 	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
@@ -31,11 +31,11 @@ func (m *MirProtoSchema) GetCommandsList(filterLabels map[string]string) ([]*cmd
 			}
 			msgType, ok := proto.GetExtension(opts, devicev1.E_MessageType).(devicev1.MessageType)
 			if ok && msgType == devicev1.MessageType_MESSAGE_TYPE_TELECOMMAND {
-				lbls := proto_mir.RetrieveMessageTags(msgDesc)
-				if !IsSubsetContainedInSet(filterLabels, lbls) {
+				lbls := RetrieveMessageTags(msgDesc)
+				if !isSubsetContainedInSet(filterLabels, lbls) {
 					continue
 				}
-				boiler, err := proto_mir.GetJsonBoilerTemplate(msgDesc)
+				boiler, err := json_template.GenerateTemplate(msgDesc)
 				cmd := cmd_apiv1.CommandDescriptor{
 					Name:     string(msgDesc.FullName()),
 					Labels:   lbls,
@@ -52,7 +52,7 @@ func (m *MirProtoSchema) GetCommandsList(filterLabels map[string]string) ([]*cmd
 	return commands, nil
 }
 
-func IsSubsetContainedInSet(subset, set map[string]string) bool {
+func isSubsetContainedInSet(subset, set map[string]string) bool {
 	if len(subset) > len(set) {
 		return false
 	}

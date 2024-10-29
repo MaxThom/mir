@@ -11,7 +11,7 @@ import (
 	"github.com/maxthom/mir/internal/externals/mng"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	"github.com/maxthom/mir/internal/libs/test_utils"
-	"github.com/maxthom/mir/internal/services/core_srv"
+	"github.com/maxthom/mir/internal/servers/core_srv"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	device_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/device_api"
 	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
