@@ -49,5 +49,5 @@ datasources:
       version: Flux
     secureJsonData:
       # Token must be retrieve from influxdb
-      token: "yEj8M_fq9UTvQ_L6eZPxkCmznWvUUzLPrMiSjRJTyGwi5fPKX0uTVR7WYEPtDn2mo3Pbq5dU8T6GsC-Izg1VoA=="
+      token: mir-operator-token
     readOnly: false

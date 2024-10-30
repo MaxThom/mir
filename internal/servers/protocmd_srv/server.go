@@ -259,7 +259,7 @@ func (s *ProtoCmdServer) sendCommandToDevices(req *cmd_apiv1.SendCommandRequest)
 		l.Info().Bool("device_in_error", devInError).Bool("force_push", req.ForcePush).Bool("dry_run", req.DryRun).Msgf("commands processed but not sent")
 		// Events
 		for _, cmdResp := range devResp {
-			if err := cmd_client.PublishDeviceCommandEvent(s.m.Bus, cmdResp.DeviceId, cmdResp); err != nil {
+			if err := cmd_client.PublishDeviceCommandEvent(s.m.Bus, "protocmd", cmdResp.DeviceId, cmdResp); err != nil {
 				l.Error().Err(err).Msg("error while publishing device command event")
 			}
 		}
@@ -355,7 +355,7 @@ func (s *ProtoCmdServer) sendCommandToDevices(req *cmd_apiv1.SendCommandRequest)
 
 	// Event
 	for _, cmdResp := range devResp {
-		if err := cmd_client.PublishDeviceCommandEvent(s.m.Bus, cmdResp.DeviceId, cmdResp); err != nil {
+		if err := cmd_client.PublishDeviceCommandEvent(s.m.Bus, "protocmd", cmdResp.DeviceId, cmdResp); err != nil {
 			l.Error().Err(err).Msg("error while publishing device command event")
 		}
 	}

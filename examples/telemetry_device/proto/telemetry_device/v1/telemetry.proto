@@ -60,3 +60,13 @@ message Gps {
 	double longitude = 2;
 	double altitude = 3;
 }
+
+message ChangePower {
+	option (mir.device.v1.message_type) = MESSAGE_TYPE_TELECOMMAND;
+
+	int32 power = 1;
+}
+
+message ChangePowerResponse {
+    bool success = 1;
+}

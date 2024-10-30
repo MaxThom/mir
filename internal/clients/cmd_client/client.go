@@ -59,10 +59,16 @@ func PublishListCommandsRequest(bus *bus.BusConn, req *cmd_apiv1.SendListCommand
 	return resp, nil
 }
 
-func PublishDeviceCommandEvent(bus *nats.Conn, deviceId string, d *cmd_apiv1.SendCommandResponse_CommandResponse) error {
+func PublishDeviceCommandEvent(bus *nats.Conn, originalInstance string, deviceId string, d *cmd_apiv1.SendCommandResponse_CommandResponse) error {
 	b, err := proto.Marshal(d)
 	if err != nil {
 		return err
 	}
-	return bus.Publish(DeviceCommandEvent.WithId(deviceId), b)
+	msg := &nats.Msg{
+		Subject: DeviceCommandEvent.WithId(deviceId),
+		Data:    b,
+		Header:  nats.Header{},
+	}
+	msg.Header.Add("o-instance", originalInstance)
+	return bus.PublishMsg(msg)
 }

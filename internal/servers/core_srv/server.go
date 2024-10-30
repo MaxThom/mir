@@ -237,7 +237,7 @@ func (s *CoreServer) createDeviceRequestHandler(ch chan nats.Msg) {
 
 		// Publish created events
 		for _, d := range newDev {
-			err := core_client.PublishDeviceCreatedEvent(s.bus, d.Spec.DeviceId, d)
+			err := core_client.PublishDeviceCreatedEvent(s.bus, msg.Header.Get("instance"), d.Spec.DeviceId, d)
 			if err != nil {
 				l.Warn().Err(err).Str("deviceId", d.Spec.DeviceId).Msg("error occure while publishing device created event")
 			}
@@ -304,7 +304,7 @@ func (s *CoreServer) updateDeviceRequestHandler(ch chan nats.Msg) {
 
 		// Publish update events
 		for _, d := range respDb {
-			err := core_client.PublishDeviceUpdatedEvent(s.bus, d.Spec.DeviceId, d)
+			err := core_client.PublishDeviceUpdatedEvent(s.bus, msg.Header.Get("instance"), d.Spec.DeviceId, d)
 			if err != nil {
 				l.Warn().Err(err).Str("device_id", d.Spec.DeviceId).Msg("error occure while publishing device updated event")
 			}
@@ -371,7 +371,7 @@ func (s *CoreServer) deleteDeviceRequestHandler(ch chan nats.Msg) {
 
 		// Publish delete events
 		for _, d := range devList {
-			err := core_client.PublishDeviceDeletedEvent(s.bus, d.Spec.DeviceId, d)
+			err := core_client.PublishDeviceDeletedEvent(s.bus, msg.Header.Get("instance"), d.Spec.DeviceId, d)
 			if err != nil {
 				l.Warn().Err(err).Str("deviceId", d.Spec.DeviceId).Msg("error occure while publishing device deleted event")
 			}
@@ -470,7 +470,7 @@ func (s *CoreServer) hearthbeatPulsor(ctx context.Context, interval time.Duratio
 			s.hearthbeatsMutex.Lock()
 			for _, key := range newOffline {
 				l.Info().Str("route", "hearthbeat_pulsor").Str("event", "device_offline").Msg(key)
-				err := core_client.PublishDeviceOfflineEvent(s.bus, key)
+				err := core_client.PublishDeviceOfflineEvent(s.bus, "core", key)
 				if err != nil {
 					l.Warn().Err(err).Str("device_id", key).Msg("error occure while publishing device offline event")
 				}
@@ -494,7 +494,7 @@ func (s *CoreServer) hearthbeatRequestHandler(ch chan nats.Msg) {
 		s.hearthbeatsMutex.Lock()
 		if _, ok := s.hearthbeats[deviceId]; !ok {
 			l.Info().Str("route", "hearthbeat").Str("event", "device_online").Msg(deviceId)
-			err := core_client.PublishDeviceOnlineEvent(s.bus, deviceId)
+			err := core_client.PublishDeviceOnlineEvent(s.bus, msg.Header.Get("instance"), deviceId)
 			if err != nil {
 				l.Warn().Err(err).Str("device_id", deviceId).Msg("error occure while publishing device online event")
 			}

@@ -18,6 +18,17 @@ type MirProtoSchema struct {
 	*protoregistry.Files
 }
 
+func NewMirProtoSchema(s ...protoreflect.FileDescriptor) (*MirProtoSchema, error) {
+	pbSet := &descriptorpb.FileDescriptorSet{}
+	for _, f := range s {
+		pbSet.File = append(pbSet.File,
+			protodesc.ToFileDescriptorProto(f))
+	}
+
+	reg, err := protodesc.NewFiles(pbSet)
+	return &MirProtoSchema{Files: reg}, err
+}
+
 func (m *MirProtoSchema) GetCommandsList(filterLabels map[string]string) ([]*cmd_apiv1.CommandDescriptor, error) {
 	commands := []*cmd_apiv1.CommandDescriptor{}
 	// 1. Add labels
@@ -129,20 +140,49 @@ func isSubsetContainedInSet(subset, set map[string]string) bool {
 }
 
 func AreSchemaEqual(sch1, sch2 *MirProtoSchema) bool {
-	b1, err := sch1.MarshalSchema()
-	if err != nil {
-		return false
-	}
-	b2, err := sch2.MarshalSchema()
-	if err != nil {
+	map1 := make(map[string]protoreflect.FileDescriptor)
+	map2 := make(map[string]protoreflect.FileDescriptor)
+
+	// Populate first map
+	sch1.RangeFiles(func(fd protoreflect.FileDescriptor) bool {
+		map1[fd.Path()] = fd
+		return true
+	})
+
+	// Populate second map
+	sch2.RangeFiles(func(fd protoreflect.FileDescriptor) bool {
+		map2[fd.Path()] = fd
+		return true
+	})
+
+	// Check if number of files is different
+	if len(map1) != len(map2) {
 		return false
 	}
 
-	if len(b1) != len(b2) {
-		return false
-	}
-	if string(b1) != string(b2) {
-		return false
+	// Compare each file descriptor
+	for path, fd1 := range map1 {
+		fd2, exists := map2[path]
+		if !exists {
+			return false
+		}
+
+		// Compare file descriptor properties
+		if fd1.Path() != fd2.Path() ||
+			fd1.Package() != fd2.Package() ||
+			fd1.Messages().Len() != fd2.Messages().Len() ||
+			fd1.Enums().Len() != fd2.Enums().Len() ||
+			fd1.Extensions().Len() != fd2.Extensions().Len() ||
+			fd1.Services().Len() != fd2.Services().Len() {
+			return false
+		}
+
+		// Compare actual proto content
+		proto1 := protodesc.ToFileDescriptorProto(fd1)
+		proto2 := protodesc.ToFileDescriptorProto(fd2)
+		if !proto.Equal(proto1, proto2) {
+			return false
+		}
 	}
 	return true
 }

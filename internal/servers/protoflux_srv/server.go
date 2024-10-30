@@ -24,7 +24,7 @@ type ProtoFluxServer struct {
 	sub            *nats.Subscription
 	m              *mir.Mir
 	devStore       mng.DeviceStore
-	devWriters     map[deviceProtoKey]proto_lineprotocol.ProtoBytesToLpFn
+	devWriters     map[string]map[string]proto_lineprotocol.ProtoBytesToLpFn
 	devWritersLock sync.RWMutex
 	schStore       *schema_cache.MirProtoCache
 }
@@ -50,12 +50,6 @@ type deviceProtoKey struct {
 // and just use the lpPn since each change need to update
 // the lpFn
 
-type deviceProtoSchema struct {
-	deviceId string
-	labels   map[string]string
-	schema   *proto_mir.MirProtoSchema
-}
-
 const (
 	ServiceName = "mir_telemetry"
 )
@@ -80,13 +74,15 @@ func RegisterMetrics(reg prometheus.Registerer) {
 
 func NewProtoFluxServer(logger zerolog.Logger, m *mir.Mir, devStore mng.DeviceStore, tlmStore ts.TelemetryStore) *ProtoFluxServer {
 	l = logger.With().Str("srv", "protoflux_server").Logger()
-	return &ProtoFluxServer{
+	srv := &ProtoFluxServer{
 		tlmStore:   tlmStore,
 		m:          m,
 		devStore:   devStore,
-		devWriters: make(map[deviceProtoKey]proto_lineprotocol.ProtoBytesToLpFn),
+		devWriters: make(map[string]map[string]proto_lineprotocol.ProtoBytesToLpFn),
 		schStore:   schema_cache.NewMirProtoCache(l, m),
 	}
+	srv.schStore.AddDeviceUpdateSub(srv.handleDeviceUpdate)
+	return srv
 }
 
 func (s *ProtoFluxServer) handleInfluxErrorChannel() {
@@ -110,10 +106,13 @@ func (s *ProtoFluxServer) Listen(ctx context.Context) {
 			// of this function
 
 			s.devWritersLock.RLock()
-			devWriter, ok := s.devWriters[deviceProtoKey{
-				deviceId:     deviceId,
-				protoMsgName: protoMsgName,
-			}]
+			var devWriter proto_lineprotocol.ProtoBytesToLpFn
+			devMsgs, ok := s.devWriters[deviceId]
+			if ok {
+				devWriter, ok = devMsgs[protoMsgName]
+			} else {
+				s.devWriters[deviceId] = make(map[string]proto_lineprotocol.ProtoBytesToLpFn)
+			}
 			s.devWritersLock.RUnlock()
 			// Mean no ingesters for proto msg, but we might have the schema
 			if !ok {
@@ -142,10 +141,7 @@ func (s *ProtoFluxServer) Listen(ctx context.Context) {
 				}
 				l.Info().Str("deviceId", deviceId).Msg("Generated ingesters functions from proto schema")
 				s.devWritersLock.Lock()
-				s.devWriters[deviceProtoKey{
-					deviceId:     deviceId,
-					protoMsgName: protoMsgName,
-				}] = fn
+				s.devWriters[deviceId][protoMsgName] = fn
 				devWriter = fn
 				s.devWritersLock.Unlock()
 			}
@@ -154,6 +150,13 @@ func (s *ProtoFluxServer) Listen(ctx context.Context) {
 			fmt.Println(lp)
 			s.tlmStore.WriteDatapoint(lp)
 		}))
+}
+
+func (s *ProtoFluxServer) handleDeviceUpdate(deviceId string, device mir_models.Device, schema proto_mir.MirProtoSchema) {
+	l.Debug().Str("device_id", deviceId).Msg("device updated, invalidating device ingesters")
+	s.devWritersLock.Lock()
+	delete(s.devWriters, deviceId)
+	s.devWritersLock.Unlock()
 }
 
 // TODO have some device info

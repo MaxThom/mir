@@ -3,7 +3,7 @@ managed:
   enabled: true
 plugins:
   - local: protoc-gen-go
-    out: internal/services/protoflux_srv/proto_test/gen
+    out: internal/servers/protoflux_srv/proto_test/gen
     opt: paths=source_relative
 inputs:
-  - directory: internal/services/protoflux_srv/proto_test
+  - directory: internal/servers/protoflux_srv/proto_test

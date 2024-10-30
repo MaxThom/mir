@@ -15,6 +15,7 @@ import (
 	"github.com/maxthom/mir/internal/externals/ts"
 	"github.com/maxthom/mir/internal/libs/compression/zstd"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
+	"github.com/maxthom/mir/internal/libs/proto/proto_mir"
 	"github.com/maxthom/mir/internal/libs/test_utils"
 	"github.com/maxthom/mir/internal/servers/core_srv"
 	protoflux_testv1 "github.com/maxthom/mir/internal/servers/protoflux_srv/proto_test/gen/protoflux_test/v1"
@@ -39,7 +40,6 @@ var lpQuery api.QueryAPI
 
 var b *bus.BusConn
 
-// TODO fix token, maybe no auth
 // TODO fix bug if device not started
 
 func TestMain(m *testing.M) {
@@ -190,7 +190,7 @@ func TestPublishDevicePushTelemetry(t *testing.T) {
 		t.Error(respList.GetError())
 	}
 	devDb := respList.GetOk().Devices[0]
-	originalSchemaBytes, err := mir_models.MarshalProtoFiles(
+	originalSchema, err := proto_mir.NewMirProtoSchema(
 		protoflux_testv1.File_protoflux_test_v1_telemetry_proto,
 		descriptorpb.File_google_protobuf_descriptor_proto,
 		devicev1.File_mir_device_v1_mir_proto,
@@ -198,7 +198,7 @@ func TestPublishDevicePushTelemetry(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	storedSchemaBytes, err := zstd.DecompressData(devDb.Status.Schema.CompressedSchema)
+	storedSchema, err := proto_mir.DecompressSchema(devDb.Status.Schema.CompressedSchema)
 	if err != nil {
 		t.Error(err)
 	}
@@ -216,7 +216,7 @@ func TestPublishDevicePushTelemetry(t *testing.T) {
 	}
 
 	assert.Equal(t, reqCreate.DeviceId, devDb.Spec.DeviceId)
-	assert.Equal(t, len(originalSchemaBytes), len(storedSchemaBytes))
+	assert.Equal(t, true, proto_mir.AreSchemaEqual(originalSchema, storedSchema))
 	lastFetch := mir_models.AsGoTime(devDb.Status.Schema.LastSchemaFetch)
 	tspan := time.Now().UTC().Sub(lastFetch)
 	assert.Equal(t, true, tspan.Seconds() < 10)
@@ -469,14 +469,16 @@ func TestPublishDeviceSchemaInvalid(t *testing.T) {
 		t.Error(respList.GetError())
 	}
 	devDb := respList.GetOk().Devices[0]
-	decompGoodSch, err := zstd.DecompressData(goodSch)
+	decompGoodSch, err := proto_mir.DecompressSchema(goodSch)
 	if err != nil {
 		t.Error(err)
 	}
-	decompStoredSchemaBytes, err := zstd.DecompressData(devDb.Status.Schema.CompressedSchema)
+
+	decompStoredSchema, err := proto_mir.DecompressSchema(devDb.Status.Schema.CompressedSchema)
 	if err != nil {
 		t.Error(err)
 	}
+
 	dpResult, err := lpQuery.Query(ctx, `from(bucket: "mir_integration_test") |> range(start: -7s) |> filter(fn: (r) => r["_measurement"] == "protoflux_test.v1.EnvTlm" or r["_measurement"] == "protoflux_test.v1.PowerTlm") |> filter(fn: (r) => r["__id"] == "device_invalid_schema")`)
 	if err != nil {
 		t.Error(err)
@@ -490,7 +492,7 @@ func TestPublishDeviceSchemaInvalid(t *testing.T) {
 	}
 
 	assert.Equal(t, reqCreate.DeviceId, devDb.Spec.DeviceId)
-	assert.Equal(t, len(decompGoodSch), len(decompStoredSchemaBytes))
+	assert.Equal(t, true, proto_mir.AreSchemaEqual(decompGoodSch, decompStoredSchema))
 	lastFetch := mir_models.AsGoTime(devDb.Status.Schema.LastSchemaFetch)
 	tspan := time.Now().UTC().Sub(lastFetch)
 	assert.Equal(t, true, tspan.Seconds() < 10)

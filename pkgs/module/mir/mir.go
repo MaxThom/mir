@@ -3,6 +3,7 @@ package mir
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -12,10 +13,12 @@ import (
 // Expose Mir specific functions and domain
 // Publicly expose nats io connection for custom usage
 type Mir struct {
-	Bus      *nats.Conn
-	ctx      context.Context
-	cancelFn context.CancelFunc
-	wg       *sync.WaitGroup
+	Bus          *nats.Conn
+	ctx          context.Context
+	cancelFn     context.CancelFunc
+	wg           *sync.WaitGroup
+	name         string
+	instanceName string
 }
 
 // MirStream is a stream that can be subscribed to
@@ -36,8 +39,11 @@ type MirRequest interface {
 // To properly close the connection, call the Close() function
 func Connect(name string, target string) (*Mir, error) {
 	m := &Mir{
-		wg: &sync.WaitGroup{},
+		wg:           &sync.WaitGroup{},
+		name:         name,
+		instanceName: nats.NewInbox()[7:],
 	}
+
 	m.ctx, m.cancelFn = context.WithCancel(context.Background())
 
 	// Setup Mir bus
@@ -135,10 +141,15 @@ func (m *Mir) SubscribeRaw(subject string, handler nats.MsgHandler) error {
 	return errs
 }
 
+func (m Mir) GetInstanceName() string {
+	return fmt.Sprint(m.name, "-", m.instanceName)
+}
+
 // Send a request to the Mir server
 // and expect a reply
 func (m *Mir) SendRequest(r MirRequest) error {
 	msg, err := r.msg()
+	msg.Header.Add("instance", m.GetInstanceName())
 	if err != nil {
 		return err
 	}
@@ -151,6 +162,7 @@ func (m *Mir) SendRequest(r MirRequest) error {
 
 func (m *Mir) SendRequestWithTimeout(r MirRequest, t time.Duration) error {
 	msg, err := r.msg()
+	msg.Header.Add("instance", m.GetInstanceName())
 	if err != nil {
 		return err
 	}
