@@ -85,7 +85,7 @@ func NewProtoFluxServer(logger zerolog.Logger, m *mir.Mir, devStore mng.DeviceSt
 		m:          m,
 		devStore:   devStore,
 		devWriters: make(map[deviceProtoKey]proto_lineprotocol.ProtoBytesToLpFn),
-		schStore:   schema_cache.NewMirProtoCache(l, m, devStore),
+		schStore:   schema_cache.NewMirProtoCache(l, m),
 	}
 }
 

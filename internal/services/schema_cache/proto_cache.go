@@ -7,10 +7,10 @@ import (
 
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	device_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/device_api"
+	"github.com/nats-io/nats.go"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 
-	"github.com/maxthom/mir/internal/externals/mng"
 	"github.com/maxthom/mir/internal/libs/proto/proto_mir"
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/maxthom/mir/pkgs/module/mir"
@@ -23,18 +23,18 @@ var l zerolog.Logger
 
 type MirProtoCache struct {
 	m         *mir.Mir
-	store     mng.DeviceStore
 	cache     map[string]cacheEntry
 	cacheLock sync.RWMutex
 }
 
-func NewMirProtoCache(logger zerolog.Logger, m *mir.Mir, store mng.DeviceStore) *MirProtoCache {
+func NewMirProtoCache(logger zerolog.Logger, m *mir.Mir) *MirProtoCache {
 	l = logger.With().Str("sub", "proto_cache").Logger()
-	return &MirProtoCache{
+	cache := &MirProtoCache{
 		m:     m,
-		store: store,
 		cache: make(map[string]cacheEntry),
 	}
+	m.Subscribe(mir.Event().V1Alpha().DeviceUpdated(cache.deviceUpdateSub))
+	return cache
 }
 
 type cacheEntry struct {
@@ -46,16 +46,19 @@ type cacheEntry struct {
 // the cache will be invalidated and schema will be fetch from database or device
 // If hard refresh is true, it will fetch from device skipping database
 func (c *MirProtoCache) GetDeviceSchema(deviceId string, refreshSchema bool) (*proto_mir.MirProtoSchema, mir_models.Device, error) {
+	c.cacheLock.RLock()
 	val, ok := c.cache[deviceId]
+	c.cacheLock.RUnlock()
 	if !ok || val.sch == nil || refreshSchema {
-		c.cacheLock.Lock()
-		defer c.cacheLock.Unlock()
 		dev, sch, err := c.reconcileDeviceSchema(deviceId, refreshSchema)
+		c.cacheLock.Lock()
 		c.cache[deviceId] = cacheEntry{
 			dev: dev,
 			sch: sch,
 		}
+		c.cacheLock.Unlock()
 		if err != nil {
+			l.Error().Err(err).Str("device_id", deviceId).Msg("cannot reconcile device schema")
 			return nil, mir_models.Device{}, errors.Wrap(err, "cannot reconcile device schema")
 		}
 	}
@@ -95,14 +98,21 @@ func (c *MirProtoCache) reconcileDeviceSchema(deviceId string, forceDeviceFetch 
 	// 3. Update db
 	// IDEA refresh if last fetch is older then a timespan
 	l.Debug().Str("device_id", deviceId).Msg("device schema not in cache, reconciling...")
-	devs, err := c.store.ListDevice(&core_apiv1.ListDeviceRequest{
-		Targets: &core_apiv1.Targets{
-			Ids: []string{deviceId},
+	respList := &core_apiv1.ListDeviceResponse{}
+	if err := c.m.SendRequest(mir.Resquest().V1Alpha().ListDevice(
+		core_apiv1.ListDeviceRequest{
+			Targets: &core_apiv1.Targets{
+				Ids: []string{deviceId},
+			},
 		},
-	})
-	if err != nil {
+		respList,
+	)); err != nil {
 		return mir_models.Device{}, nil, err
 	}
+	if respList.GetError() != nil {
+		return mir_models.Device{}, nil, fmt.Errorf("error listing devices: %s", respList.GetError().GetMessage())
+	}
+	devs := respList.GetOk().Devices
 	if !forceDeviceFetch {
 		if len(devs) > 0 {
 			if devs[0].Status.Schema.CompressedSchema != nil &&
@@ -110,7 +120,7 @@ func (c *MirProtoCache) reconcileDeviceSchema(deviceId string, forceDeviceFetch 
 				sch, err := proto_mir.DecompressSchema(devs[0].Status.Schema.CompressedSchema)
 				if err == nil {
 					l.Info().Str("device_id", deviceId).Msgf("reconciled schema for %s from db", deviceId)
-					return devs[0].Device, sch, nil
+					return *mir_models.NewDeviceFromProtoDevice(devs[0]), sch, nil
 				}
 				// If error, we fetch from device
 			}
@@ -149,7 +159,7 @@ func (c *MirProtoCache) reconcileDeviceSchema(deviceId string, forceDeviceFetch 
 	}
 
 	l.Info().Str("device_id", deviceId).Msgf("reconciled schema for %s from device", deviceId)
-	return devs[0].Device, sch, err
+	return *mir_models.NewDeviceFromProtoDevice(devs[0]), sch, err
 }
 
 func (c *MirProtoCache) getProtoSchemaFromDevice(deviceId string) (*proto_mir.MirProtoSchema, error) {
@@ -164,4 +174,23 @@ func (c *MirProtoCache) getProtoSchemaFromDevice(deviceId string) (*proto_mir.Mi
 
 	// Decompress already from using the sdk
 	return proto_mir.UnmarshalSchema(schemaResp.GetSchema())
+}
+
+// TODO must not update if this cache is responsible of the update event
+// TODO go channel to update subscriber such as protoflux server
+// TODO protoflux cache must be rework to be two level cache, deviceid then protoName
+// TODO
+func (c *MirProtoCache) deviceUpdateSub(msg *nats.Msg, deviceId string, device *core_apiv1.Device) {
+	sch, err := proto_mir.DecompressSchema(device.Status.Schema.CompressedSchema)
+	if err != nil {
+		l.Error().Str("device_id", deviceId).Err(err).Msg("error decompressing schema")
+		return
+	}
+	l.Info().Str("device_id", deviceId).Msg("cache updated")
+	c.cacheLock.Lock()
+	c.cache[deviceId] = cacheEntry{
+		dev: *mir_models.NewDeviceFromProtoDevice(device),
+		sch: sch,
+	}
+	c.cacheLock.Unlock()
 }

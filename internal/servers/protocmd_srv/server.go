@@ -69,7 +69,7 @@ func NewProtoCmdServer(logger zerolog.Logger, m *mir.Mir, devStore mng.DeviceSto
 	return &ProtoCmdServer{
 		m:        m,
 		devStore: devStore,
-		schStore: *schema_cache.NewMirProtoCache(l, m, devStore),
+		schStore: *schema_cache.NewMirProtoCache(l, m),
 	}
 }
 
