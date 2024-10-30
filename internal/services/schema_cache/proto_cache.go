@@ -22,9 +22,10 @@ import (
 var l zerolog.Logger
 
 type MirProtoCache struct {
-	m         *mir.Mir
-	cache     map[string]cacheEntry
-	cacheLock sync.RWMutex
+	m           *mir.Mir
+	cache       map[string]cacheEntry
+	cacheLock   sync.RWMutex
+	subscribers []func(deviceId string, device mir_models.Device, schema proto_mir.MirProtoSchema)
 }
 
 func NewMirProtoCache(logger zerolog.Logger, m *mir.Mir) *MirProtoCache {
@@ -40,6 +41,10 @@ func NewMirProtoCache(logger zerolog.Logger, m *mir.Mir) *MirProtoCache {
 type cacheEntry struct {
 	dev mir_models.Device
 	sch *proto_mir.MirProtoSchema
+}
+
+func (c *MirProtoCache) AddDeviceUpdateSub(fn func(deviceId string, device mir_models.Device, schema proto_mir.MirProtoSchema)) {
+	c.subscribers = append(c.subscribers, fn)
 }
 
 // Get the device schema from cache. If missing or refresh schema is true,
@@ -176,21 +181,26 @@ func (c *MirProtoCache) getProtoSchemaFromDevice(deviceId string) (*proto_mir.Mi
 	return proto_mir.UnmarshalSchema(schemaResp.GetSchema())
 }
 
-// TODO must not update if this cache is responsible of the update event
-// TODO go channel to update subscriber such as protoflux server
-// TODO protoflux cache must be rework to be two level cache, deviceid then protoName
-// TODO
 func (c *MirProtoCache) deviceUpdateSub(msg *nats.Msg, deviceId string, device *core_apiv1.Device) {
+	if c.m.GetInstanceName() == msg.Header.Get("o-instance") {
+		msg.Ack()
+		return
+	}
 	sch, err := proto_mir.DecompressSchema(device.Status.Schema.CompressedSchema)
 	if err != nil {
 		l.Error().Str("device_id", deviceId).Err(err).Msg("error decompressing schema")
 		return
 	}
+	dev := *mir_models.NewDeviceFromProtoDevice(device)
 	l.Info().Str("device_id", deviceId).Msg("cache updated")
 	c.cacheLock.Lock()
 	c.cache[deviceId] = cacheEntry{
-		dev: *mir_models.NewDeviceFromProtoDevice(device),
+		dev: dev,
 		sch: sch,
 	}
 	c.cacheLock.Unlock()
+	for _, fn := range c.subscribers {
+		fn(deviceId, dev, *sch)
+	}
+	msg.Ack()
 }

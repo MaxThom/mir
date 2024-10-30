@@ -13,6 +13,7 @@ import (
 	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
 	"github.com/maxthom/mir/pkgs/device/mir"
 	"google.golang.org/protobuf/reflect/protodesc"
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 func main() {
@@ -37,6 +38,12 @@ func main() {
 	}
 	l := m.Logger()
 
+	m.HandleCommand(&telemetry_devicev1.ChangePower{},
+		func(protoreflect.ProtoMessage) (protoreflect.ProtoMessage, error) {
+			return &telemetry_devicev1.ChangePowerResponse{Success: true}, nil
+		},
+	)
+
 	l.Info().Msg("Mir is ready for launch... Launching!")
 	mirWg, err := m.Launch(ctx)
 	if err != nil {
@@ -59,7 +66,7 @@ func main() {
 				WindSpeed:   rand.Int32N(101),
 			}
 			m.SendTelemetry(&data)
-			l.Debug().Str("module", "telemetry").Any("data", data).Msg("send tlm")
+			//	l.Debug().Str("module", "telemetry").Any("data", data).Msg("send tlm")
 		}
 	}()
 
@@ -75,7 +82,7 @@ func main() {
 				Power:   amp * volt,
 			}
 			m.SendTelemetry(&data)
-			l.Debug().Str("module", "telemetry").Any("data", data).Msg("send tlm")
+			//	l.Debug().Str("module", "telemetry").Any("data", data).Msg("send tlm")
 		}
 	}()
 
@@ -116,7 +123,7 @@ func main() {
 				},
 			}
 			m.SendTelemetry(&data)
-			l.Debug().Str("module", "telemetry").Any("data", data).Msg("send tlm")
+			//	l.Debug().Str("module", "telemetry").Any("data", data).Msg("send tlm")
 		}
 	}()
 

@@ -7,6 +7,7 @@ import (
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	"github.com/maxthom/mir/pkgs/mir_models"
+	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -111,34 +112,64 @@ func PublishHearthbeatStream(bus *bus.BusConn, deviceId string) error {
 	return bus.Publish(HearthbeatDeviceStream.WithId(deviceId), []byte{})
 }
 
-func PublishDeviceOnlineEvent(bus *bus.BusConn, deviceId string) error {
-	return bus.Publish(DeviceOnlineEvent.WithId(deviceId), []byte{})
+func PublishDeviceOnlineEvent(bus *bus.BusConn, originalInstance string, deviceId string) error {
+	msg := &nats.Msg{
+		Subject: DeviceOnlineEvent.WithId(deviceId),
+		Data:    []byte{},
+		Header:  nats.Header{},
+	}
+	msg.Header.Add("o-instance", originalInstance)
+	return bus.PublishMsg(msg)
 }
 
-func PublishDeviceOfflineEvent(bus *bus.BusConn, deviceId string) error {
-	return bus.Publish(DeviceOfflineEvent.WithId(deviceId), []byte{})
+func PublishDeviceOfflineEvent(bus *bus.BusConn, originalInstance string, deviceId string) error {
+	msg := &nats.Msg{
+		Subject: DeviceOfflineEvent.WithId(deviceId),
+		Data:    []byte{},
+		Header:  nats.Header{},
+	}
+	msg.Header.Add("o-instance", originalInstance)
+	return bus.PublishMsg(msg)
 }
 
-func PublishDeviceDeletedEvent(bus *bus.BusConn, deviceId string, d mir_models.DeviceWithId) error {
+func PublishDeviceDeletedEvent(bus *bus.BusConn, originalInstance string, deviceId string, d mir_models.DeviceWithId) error {
 	b, err := proto.Marshal(mir_models.NewProtoDeviceFromDeviceWithId(d))
 	if err != nil {
 		return err
 	}
-	return bus.Publish(DeviceDeletedEvent.WithId(deviceId), b)
+	msg := &nats.Msg{
+		Subject: DeviceDeletedEvent.WithId(deviceId),
+		Data:    b,
+		Header:  nats.Header{},
+	}
+	msg.Header.Add("o-instance", originalInstance)
+	return bus.PublishMsg(msg)
 }
 
-func PublishDeviceCreatedEvent(bus *bus.BusConn, deviceId string, d mir_models.DeviceWithId) error {
+func PublishDeviceCreatedEvent(bus *bus.BusConn, originalInstance string, deviceId string, d mir_models.DeviceWithId) error {
 	b, err := proto.Marshal(mir_models.NewProtoDeviceFromDeviceWithId(d))
 	if err != nil {
 		return err
 	}
-	return bus.Publish(DeviceCreatedEvent.WithId(deviceId), b)
+	msg := &nats.Msg{
+		Subject: DeviceCreatedEvent.WithId(deviceId),
+		Data:    b,
+		Header:  nats.Header{},
+	}
+	msg.Header.Add("o-instance", originalInstance)
+	return bus.PublishMsg(msg)
 }
 
-func PublishDeviceUpdatedEvent(bus *bus.BusConn, deviceId string, d mir_models.DeviceWithId) error {
+func PublishDeviceUpdatedEvent(bus *bus.BusConn, originalInstance string, deviceId string, d mir_models.DeviceWithId) error {
 	b, err := proto.Marshal(mir_models.NewProtoDeviceFromDeviceWithId(d))
 	if err != nil {
 		return err
 	}
-	return bus.Publish(DeviceUpdatedEvent.WithId(deviceId), b)
+	msg := &nats.Msg{
+		Subject: DeviceUpdatedEvent.WithId(deviceId),
+		Data:    b,
+		Header:  nats.Header{},
+	}
+	msg.Header.Add("o-instance", originalInstance)
+	return bus.PublishMsg(msg)
 }
