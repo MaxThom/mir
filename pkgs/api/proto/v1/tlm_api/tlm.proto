@@ -2,10 +2,39 @@ syntax = "proto3";
 
 package tlm_api.v1;
 
-//import "v1/common_api/common.proto";
+import "v1/common_api/common.proto";
+import "v1/core_api/core.proto";
 
-message UploadSchemaRequest { }
 
-message UploadSchemaResponse {
-  string msg = 1;
+message SendListTelemetryRequest {
+	core_api.v1.Targets targets = 1; // To target a set of devices, search using ids, labels and annotations
+	repeated string measurements = 2; // List of measurements to exapend
+	map<string, string> filters= 3; // Filter measurements by labels, if key has no value, expand to see all options
+	bool refresh_schema = 4; // Force a schema refresh from the device
+}
+
+message SendListTelemetryResponse {
+  oneof response {
+  	DevicesTelemetry ok = 1; // all commands per devices
+    common_api.v1.Error error = 2;  // HTTP like error if something went wrong
+  }
+}
+
+// Map of device id and its list of telemetry
+message DevicesTelemetry {
+	map<string, Telemetry> device_telemetry = 1; // all telemetry per devices
+}
+
+// List of telemetry
+message Telemetry {
+	repeated TelemetryDescriptor tlm_descriptors = 1; // Array of telemetry descriptor
+	string error = 2; // HTTP like error if something went wrong
+}
+
+// Descriptor of a command
+message TelemetryDescriptor {
+	string name = 1; // Name of telemetry
+	map<string, string> labels = 2; // Labels are used to tag a telemetry
+	string query = 3; // JSON payload boilerplate for an example
+	string error = 4; // HTTP like error if something went wrong
 }

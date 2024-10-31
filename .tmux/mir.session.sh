@@ -14,7 +14,7 @@ if initialize_session "mir"; then
 	load_window "./.tmux/wiki.window.sh"
 	load_window "./.tmux/cfg.window.sh"
 	load_window "./.tmux/core.window.sh"
-	load_window "./.tmux/protoflux.window.sh"
+	load_window "./.tmux/prototlm.window.sh"
 	load_window "./.tmux/protocmd.window.sh"
 	load_window "./.tmux/nats.window.sh"
 	load_window "./.tmux/surreal.window.sh"

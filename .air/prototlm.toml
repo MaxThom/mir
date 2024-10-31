@@ -1,11 +1,11 @@
 root = "../"
 testdata_dir = "testdata"
-tmp_dir = "protoflux"
+tmp_dir = "prototlm"
 
 [build]
 args_bin = ["--debug"]
-bin = "bin/protoflux"
-cmd = "go build -o ./bin/protoflux ./cmds/protoflux"
+bin = "bin/prototlm"
+cmd = "go build -o ./bin/prototlm ./cmds/prototlm"
 delay = 1000
 exclude_dir = ["assets", "tmp", "vendor", "testdata"]
 exclude_file = []
