@@ -17,8 +17,6 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-// TODO listen to device update event
-
 var l zerolog.Logger
 
 type MirProtoCache struct {
@@ -182,6 +180,8 @@ func (c *MirProtoCache) getProtoSchemaFromDevice(deviceId string) (*proto_mir.Mi
 }
 
 func (c *MirProtoCache) deviceUpdateSub(msg *nats.Msg, deviceId string, device *core_apiv1.Device) {
+	// TODO this wont work if one instance of Mir with many cache from flux or cmd. If we have single binary
+	// need a subcomponent header or something
 	if c.m.GetInstanceName() == msg.Header.Get("o-instance") {
 		msg.Ack()
 		return

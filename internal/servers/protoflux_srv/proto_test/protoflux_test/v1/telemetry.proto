@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 package protoflux_test.v1;
-option go_package = "github.com/maxthom/mir/internal/services/protoflux_srv/proto_test/gen/protoflux_test/v1";
+option go_package = "github.com/maxthom/mir/internal/servers/protoflux_srv/proto_test/gen/protoflux_test/v1";
 
 message EnvTlm {
 	int32 temperature = 1;

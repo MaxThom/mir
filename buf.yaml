@@ -15,6 +15,7 @@ modules:
   # test proto
   - path: internal/servers/protoflux_srv/proto_test
   - path: internal/servers/protocmd_srv/proto_test
+  - path: internal/services/schema_cache/proto_test
   - path: pkgs/device/mir/proto_test
   - path: pkgs/module/mir/proto_test
   - path: internal/libs/proto/line_protocol/proto_test

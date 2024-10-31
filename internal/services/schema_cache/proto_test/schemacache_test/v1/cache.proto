@@ -1,7 +1,7 @@
 syntax = "proto3";
 
-package protocmd_test.v1;
-option go_package = "github.com/maxthom/mir/internal/servers/protocmd_srv/proto_test/gen/protocmd_test/v1";
+package schemacache_test.v1;
+option go_package = "github.com/maxthom/mir/internal/services/schema_cache/proto_test/gen/schemacache_test/v1/schemacache_testv1";
 
 import "mir/device/v1/mir.proto";
 
