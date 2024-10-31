@@ -8,9 +8,12 @@ import (
 	"github.com/maxthom/mir/internal/externals/mng"
 	"github.com/maxthom/mir/internal/externals/ts"
 	"github.com/maxthom/mir/internal/libs/api/metrics"
+	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	proto_lineprotocol "github.com/maxthom/mir/internal/libs/proto/line_protocol"
 	"github.com/maxthom/mir/internal/libs/proto/proto_mir"
 	"github.com/maxthom/mir/internal/services/schema_cache"
+	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
+	tlm_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/tlm_api"
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/nats-io/nats.go"
@@ -96,60 +99,62 @@ func (s *ProtoFluxServer) handleInfluxErrorChannel() {
 
 func (s *ProtoFluxServer) Listen(ctx context.Context) {
 	s.handleInfluxErrorChannel()
-	s.m.QueueSubscribe(ServiceName, mir.Stream().V1Alpha().Telemetry(
-		func(msg *nats.Msg, deviceId string, protoMsgName string) {
-			// TODO prometheus
-			// TODO set maximum relidelivery in subscribe
-			// TODO handler error with schema if we can't have it.
-			// Nak might just create to many relideveries in case of can't find the schema
-			// Maybe a buffer zone using channels to connect many routine
-			// of this function
+	s.m.QueueSubscribe(ServiceName, mir.Stream().V1Alpha().Telemetry(s.handleTelemetryStream))
+	s.m.QueueSubscribe(ServiceName, mir.Client().V1Alpha().ListTelemetry(s.handleTelemetryListRequest))
+}
 
-			s.devWritersLock.RLock()
-			var devWriter proto_lineprotocol.ProtoBytesToLpFn
-			devMsgs, ok := s.devWriters[deviceId]
-			if ok {
-				devWriter, ok = devMsgs[protoMsgName]
-			} else {
-				s.devWriters[deviceId] = make(map[string]proto_lineprotocol.ProtoBytesToLpFn)
+func (s *ProtoFluxServer) handleTelemetryStream(msg *nats.Msg, deviceId string, protoMsgName string) {
+	// TODO prometheus
+	// TODO set maximum relidelivery in subscribe
+	// TODO handler error with schema if we can't have it.
+	// Nak might just create to many relideveries in case of can't find the schema
+	// Maybe a buffer zone using channels to connect many routine
+	// of this function
+
+	s.devWritersLock.RLock()
+	var devWriter proto_lineprotocol.ProtoBytesToLpFn
+	devMsgs, ok := s.devWriters[deviceId]
+	if ok {
+		devWriter, ok = devMsgs[protoMsgName]
+	} else {
+		s.devWriters[deviceId] = make(map[string]proto_lineprotocol.ProtoBytesToLpFn)
+	}
+	s.devWritersLock.RUnlock()
+	// Mean no ingesters for proto msg, but we might have the schema
+	if !ok {
+		desc, _, dev, err := s.schStore.GetDeviceSchemaAndDescriptor(deviceId, protoMsgName, false)
+		if err != nil {
+			l.Error().Err(err).Str("deviceId", deviceId).Msg("Failed to retrieve schema from device")
+			return
+		}
+		fn, err := generateIngesters(desc, deviceId, dev)
+		// If error, means schema is invalid so request new from device
+		if err != nil {
+			// TODO possibly different flow depending on error type
+			l.Warn().Err(err).Str("deviceId", deviceId).Str("protoMsg", protoMsgName).Msg("Failed to generate ingester function, requesting schema from device")
+			desc, _, dev, err := s.schStore.GetDeviceSchemaAndDescriptor(deviceId, protoMsgName, true)
+			if err != nil {
+				l.Error().Err(err).Str("deviceId", deviceId).Msg("Failed to retrieve schema from device")
+				return
 			}
-			s.devWritersLock.RUnlock()
-			// Mean no ingesters for proto msg, but we might have the schema
-			if !ok {
-				desc, _, dev, err := s.schStore.GetDeviceSchemaAndDescriptor(deviceId, protoMsgName, false)
-				if err != nil {
-					l.Error().Err(err).Str("deviceId", deviceId).Msg("Failed to retrieve schema from device")
-					return
-				}
-				fn, err := generateIngesters(desc, deviceId, dev)
-				// If error, means schema is invalid so request new from device
-				if err != nil {
-					// TODO possibly different flow depending on error type
-					l.Warn().Err(err).Str("deviceId", deviceId).Str("protoMsg", protoMsgName).Msg("Failed to generate ingester function, requesting schema from device")
-					desc, _, dev, err := s.schStore.GetDeviceSchemaAndDescriptor(deviceId, protoMsgName, true)
-					if err != nil {
-						l.Error().Err(err).Str("deviceId", deviceId).Msg("Failed to retrieve schema from device")
-						return
-					}
-					fn, err = generateIngesters(desc, deviceId, dev)
-					if err != nil {
-						l.Warn().Err(err).Msg("")
-					}
-					// TODO what to do with error here, we cant reask the schema
-					// forever if fail, we need maybe a retry of 2-3 times and else
-					// it creates an alert in prometheus
-				}
-				l.Info().Str("deviceId", deviceId).Msg("Generated ingesters functions from proto schema")
-				s.devWritersLock.Lock()
-				s.devWriters[deviceId][protoMsgName] = fn
-				devWriter = fn
-				s.devWritersLock.Unlock()
+			fn, err = generateIngesters(desc, deviceId, dev)
+			if err != nil {
+				l.Warn().Err(err).Msg("")
 			}
-			// TODO update function to return error
-			lp := devWriter(msg.Data, map[string]string{})
-			fmt.Println(lp)
-			s.tlmStore.WriteDatapoint(lp)
-		}))
+			// TODO what to do with error here, we cant reask the schema
+			// forever if fail, we need maybe a retry of 2-3 times and else
+			// it creates an alert in prometheus
+		}
+		l.Info().Str("deviceId", deviceId).Msg("Generated ingesters functions from proto schema")
+		s.devWritersLock.Lock()
+		s.devWriters[deviceId][protoMsgName] = fn
+		devWriter = fn
+		s.devWritersLock.Unlock()
+	}
+	// TODO update function to return error
+	lp := devWriter(msg.Data, map[string]string{})
+	fmt.Println(lp)
+	s.tlmStore.WriteDatapoint(lp)
 }
 
 func (s *ProtoFluxServer) handleDeviceUpdate(deviceId string, device mir_models.Device, schema proto_mir.MirProtoSchema) {
@@ -157,6 +162,20 @@ func (s *ProtoFluxServer) handleDeviceUpdate(deviceId string, device mir_models.
 	s.devWritersLock.Lock()
 	delete(s.devWriters, deviceId)
 	s.devWritersLock.Unlock()
+}
+
+func (s *ProtoFluxServer) handleTelemetryListRequest(msg *nats.Msg, req *tlm_apiv1.SendListTelemetryRequest, e error) {
+	fmt.Println("HANDLING")
+	e = fmt.Errorf("new error to test")
+	bus.SendProtoReplyOrAck(s.m.Bus, msg, &tlm_apiv1.SendListTelemetryResponse{
+		Response: &tlm_apiv1.SendListTelemetryResponse_Error{
+			Error: &common_apiv1.Error{
+				Code:    400,
+				Message: mir_models.ErrorApiDeserializingRequest.Error(),
+				Details: []string{"400 Bad Request", e.Error()},
+			},
+		},
+	})
 }
 
 // TODO have some device info

@@ -2,7 +2,9 @@ package mir
 
 import (
 	"github.com/maxthom/mir/internal/clients/cmd_client"
+	"github.com/maxthom/mir/internal/clients/tlm_client"
 	cmd_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cmd_api"
+	tlm_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/tlm_api"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
 )
@@ -64,6 +66,29 @@ func (s sendCommandStream) subject() string {
 func (s sendCommandStream) handler() nats.MsgHandler {
 	return func(msg *nats.Msg) {
 		var req cmd_apiv1.SendCommandRequest
+		s.fn(msg, &req, proto.Unmarshal(msg.Data, &req))
+	}
+}
+
+// List telemetry request
+
+type listTelemetryStream struct {
+	fn func(msg *nats.Msg, req *tlm_apiv1.SendListTelemetryRequest, e error)
+}
+
+func (s clientV1Alpha) ListTelemetry(fn func(msg *nats.Msg, req *tlm_apiv1.SendListTelemetryRequest, e error)) *listTelemetryStream {
+	return &listTelemetryStream{
+		fn: fn,
+	}
+}
+
+func (s listTelemetryStream) subject() string {
+	return tlm_client.TelemetryListRequest.WithId("*")
+}
+
+func (s listTelemetryStream) handler() nats.MsgHandler {
+	return func(msg *nats.Msg) {
+		var req tlm_apiv1.SendListTelemetryRequest
 		s.fn(msg, &req, proto.Unmarshal(msg.Data, &req))
 	}
 }

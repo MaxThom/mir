@@ -7,9 +7,11 @@ import (
 
 	"github.com/maxthom/mir/internal/clients/cmd_client"
 	"github.com/maxthom/mir/internal/clients/core_client"
+	"github.com/maxthom/mir/internal/clients/tlm_client"
 	cmd_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cmd_api"
 	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
+	tlm_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/tlm_api"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -328,6 +330,43 @@ func (s *listDeviceCommandsRequest) msg() (*nats.Msg, error) {
 }
 
 func (s *listDeviceCommandsRequest) response(m *nats.Msg) error {
+	if s.resp == nil {
+		return nil
+	}
+	err := proto.Unmarshal(m.Data, s.resp)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// List commands request
+
+type listDeviceTelemetryRequest struct {
+	req  *tlm_apiv1.SendListTelemetryRequest
+	resp *tlm_apiv1.SendListTelemetryResponse
+}
+
+func (s requestV1Alpha) ListDeviceTelemetry(req *tlm_apiv1.SendListTelemetryRequest, resp *tlm_apiv1.SendListTelemetryResponse) *listDeviceTelemetryRequest {
+	return &listDeviceTelemetryRequest{
+		req:  req,
+		resp: resp,
+	}
+}
+
+func (s *listDeviceTelemetryRequest) msg() (*nats.Msg, error) {
+	m := nats.NewMsg(tlm_client.TelemetryListRequest.WithId("TODO"))
+	bReq, err := proto.Marshal(s.req)
+
+	if err != nil {
+		return m, err
+	}
+	m.Data = bReq
+
+	return m, nil
+}
+
+func (s *listDeviceTelemetryRequest) response(m *nats.Msg) error {
 	if s.resp == nil {
 		return nil
 	}

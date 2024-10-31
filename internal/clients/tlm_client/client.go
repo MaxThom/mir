@@ -1,8 +1,11 @@
-package protoflux_client
+package tlm_client
 
 import (
+	"time"
+
 	"github.com/maxthom/mir/internal/clients"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
+	tlm_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/tlm_api"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -10,6 +13,7 @@ import (
 
 const (
 	TelemetryDeviceStream clients.Subject = "device.%s.telemetry.v1alpha.proto"
+	TelemetryListRequest  clients.Subject = "client.%s.telemetry.v1alpha.list"
 )
 
 func PublishTelemetryStream(bus *bus.BusConn, deviceId string, t protoreflect.ProtoMessage) error {
@@ -25,4 +29,25 @@ func PublishTelemetryStream(bus *bus.BusConn, deviceId string, t protoreflect.Pr
 		},
 		Data: b,
 	})
+}
+
+func PublishTelemetryListRequest(bus *bus.BusConn, req *tlm_apiv1.SendListTelemetryRequest) (*tlm_apiv1.SendListTelemetryResponse, error) {
+	b, err := proto.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO revist timeout
+	resMsg, err := bus.Request(TelemetryListRequest.WithId("todo"), b, 20*time.Second)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := &tlm_apiv1.SendListTelemetryResponse{}
+	err = proto.Unmarshal(resMsg.Data, resp)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, err
 }

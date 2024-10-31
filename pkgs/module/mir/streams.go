@@ -3,7 +3,7 @@ package mir
 import (
 	"github.com/maxthom/mir/internal/clients"
 	"github.com/maxthom/mir/internal/clients/core_client"
-	"github.com/maxthom/mir/internal/clients/protoflux_client"
+	"github.com/maxthom/mir/internal/clients/tlm_client"
 	"github.com/nats-io/nats.go"
 )
 
@@ -62,7 +62,7 @@ func (s streamV1alpha) Telemetry(fn func(msg *nats.Msg, deviceId string, protoMs
 }
 
 func (s telemetryStream) subject() string {
-	return protoflux_client.TelemetryDeviceStream.WithId("*")
+	return tlm_client.TelemetryDeviceStream.WithId("*")
 }
 
 func (s telemetryStream) handler() nats.MsgHandler {

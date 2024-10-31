@@ -29,7 +29,7 @@ import (
 )
 
 const (
-	AppName = "protoflux"
+	AppName = "prototlm"
 	Version = "0.0.1"
 )
 
