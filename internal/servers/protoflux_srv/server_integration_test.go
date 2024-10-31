@@ -19,6 +19,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/test_utils"
 	"github.com/maxthom/mir/internal/servers/core_srv"
 	protoflux_testv1 "github.com/maxthom/mir/internal/servers/protoflux_srv/proto_test/gen/protoflux_test/v1"
+	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
 	mirDevice "github.com/maxthom/mir/pkgs/device/mir"
@@ -208,6 +209,7 @@ func TestPublishDevicePushTelemetry(t *testing.T) {
 		t.Error(err)
 	}
 	dpCount := 0
+
 	for dpResult.Next() {
 		dpCount++
 	}
@@ -497,6 +499,111 @@ func TestPublishDeviceSchemaInvalid(t *testing.T) {
 	tspan := time.Now().UTC().Sub(lastFetch)
 	assert.Equal(t, true, tspan.Seconds() < 10)
 	assert.Equal(t, 24, dpCount)
+
+	cancel()
+	wg.Wait()
+}
+
+func TestPublishDevicePushTelemetryDeviceUpdate(t *testing.T) {
+	// Arrange
+	ctx, cancel := context.WithCancel(context.Background())
+	id := "device_push_tlm_upd"
+	reqCreate := &core_apiv1.CreateDeviceRequest{
+		DeviceId:  id,
+		Name:      id,
+		Namespace: "testing_core",
+		Labels: map[string]string{
+			"testing": "tlm",
+		},
+		Annotations: map[string]string{
+			"mir/device/description": "hello world of devices !",
+		},
+	}
+
+	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).TelemetrySchema(
+		protoflux_testv1.File_protoflux_test_v1_telemetry_proto,
+	).Build()
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Act
+	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate)
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	wg, err := dev.Launch(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+	wgTlm := &sync.WaitGroup{}
+	wgTlm.Add(2)
+	go func() {
+		i := 0
+		for i < 5 {
+			time.Sleep(1 * time.Second)
+			data := protoflux_testv1.EnvTlm{
+				Temperature: int32(i * 5),
+				Pressure:    int32(i * 10),
+				Humidity:    int32(i * 15),
+			}
+			dev.SendTelemetry(&data)
+			i++
+		}
+		wgTlm.Done()
+	}()
+	go func() {
+		i := 0
+		for i < 5 {
+			time.Sleep(1 * time.Second)
+			amp := float64(i * 5.0)
+			volt := float64(i * 10.0)
+			data := protoflux_testv1.PowerTlm{
+				Amp:   amp,
+				Volt:  volt,
+				Power: amp * volt,
+			}
+			dev.SendTelemetry(&data)
+			i++
+		}
+		wgTlm.Done()
+	}()
+	time.Sleep(2 * time.Second)
+	str := "update"
+	if _, err = core_client.PublishDeviceUpdateRequest(b, &core_apiv1.UpdateDeviceRequest{
+		Targets: &core_apiv1.Targets{
+			Ids: []string{id},
+		},
+		Meta: &core_apiv1.UpdateDeviceRequest_Meta{
+			Labels: map[string]*common_apiv1.OptString{
+				"test": {
+					Value: &str,
+				},
+			},
+		},
+	}); err != nil {
+		t.Error(err)
+	}
+	wgTlm.Wait()
+
+	// Assert
+	dpResult, err := lpQuery.Query(ctx, `from(bucket: "mir_integration_test") |> range(start: -7s) |> filter(fn: (r) => r["_measurement"] == "protoflux_test.v1.EnvTlm" or r["_measurement"] == "protoflux_test.v1.PowerTlm") |> filter(fn: (r) => r["__id"] == "device_push_tlm_upd") |> filter(fn: (r) => r["test"] == "update")`)
+	if err != nil {
+		t.Error(err)
+	} else if dpResult.Err() != nil {
+		t.Error(dpResult.Err())
+	}
+	dpCount := 0
+	for dpResult.Next() {
+		dpCount++
+	}
+	if dpResult.Err() != nil {
+		t.Error(err)
+	}
+
+	assert.Equal(t, 12, dpCount)
 
 	cancel()
 	wg.Wait()
