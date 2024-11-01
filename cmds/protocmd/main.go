@@ -156,7 +156,7 @@ func run(
 	log.Info().Str("url", cfg.DatabaseServer.Url).Str("namespace", "global").Str("database", "mir").Msg("connected to database")
 
 	// Bus
-	m, err := mir.Connect("protoflux", cfg.DataBusServer.Url)
+	m, err := mir.Connect("protocmd", cfg.DataBusServer.Url)
 	if err != nil {
 		return err
 	}

@@ -7,7 +7,7 @@ buf generate --clean --template examples/telemetry_device/buf.gen.yaml
 buf generate --clean --template examples/command_device/buf.gen.yaml
 buf generate --clean --template pkgs/device/mir/proto_test/buf.gen.yaml
 buf generate --clean --template pkgs/module/mir/proto_test/buf.gen.yaml
-buf generate --clean --template internal/servers/protoflux_srv/proto_test/buf.gen.yaml
+buf generate --clean --template internal/servers/prototlm_srv/proto_test/buf.gen.yaml
 buf generate --clean --template internal/servers/protocmd_srv/proto_test/buf.gen.yaml
 buf generate --clean --template internal/services/schema_cache/proto_test/buf.gen.yaml
 buf generate --clean --template internal/libs/proto/line_protocol/proto_test/buf.gen.yaml

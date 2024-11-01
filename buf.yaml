@@ -13,7 +13,7 @@ modules:
   - path: examples/telemetry_device/proto
   - path: examples/command_device/proto
   # test proto
-  - path: internal/servers/protoflux_srv/proto_test
+  - path: internal/servers/prototlm_srv/proto_test
   - path: internal/servers/protocmd_srv/proto_test
   - path: internal/services/schema_cache/proto_test
   - path: pkgs/device/mir/proto_test
