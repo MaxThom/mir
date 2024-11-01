@@ -21,7 +21,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/boiler/mir_signals"
 	"github.com/maxthom/mir/internal/libs/external/influx"
 	"github.com/maxthom/mir/internal/libs/external/surreal"
-	"github.com/maxthom/mir/internal/servers/protoflux_srv"
+	"github.com/maxthom/mir/internal/servers/prototlm_srv"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/rs/zerolog"
 	"golang.org/x/net/http2"
@@ -119,8 +119,8 @@ func main() {
 	cfg := defaultCfg
 	err, lookupFiles, foundFiles := mir_config.
 		New(AppName,
-			mir_config.WithEtcFilePath("mir/protoflux.yaml", mir_config.Yaml, false),
-			mir_config.WithXdgConfigHomeFilePath("mir/protoflux.yaml", mir_config.Yaml, true),
+			mir_config.WithEtcFilePath("mir/prototlm.yaml", mir_config.Yaml, false),
+			mir_config.WithXdgConfigHomeFilePath("mir/prototlm.yaml", mir_config.Yaml, true),
 			mir_config.WithFilePath(flagFilePath, mir_config.Yaml, false),
 			mir_config.WithEnvVars("mir"),
 		).
@@ -185,15 +185,15 @@ func run(
 	log.Info().Str("url", cfg.TelemetryServer.Url).Msg("connected to puthost")
 
 	// Bus
-	m, err := mir.Connect("protoflux", cfg.DataBusServer.Url)
+	m, err := mir.Connect("prototlm", cfg.DataBusServer.Url)
 	if err != nil {
 		return err
 	}
 	log.Info().Str("url", cfg.DataBusServer.Url).Msg("connected to msg bus")
 
 	// Services
-	protofluxSrv := protoflux_srv.NewProtoFluxServer(log, m, mng.NewSurrealDeviceStore(db), ts.NewInfluxTelemetryStore(lpWriter))
-	protoflux_srv.RegisterMetrics(metrics.Registry())
+	prototlmSrv := prototlm_srv.NewProtoTlmServer(log, m, mng.NewSurrealDeviceStore(db), ts.NewInfluxTelemetryStore(lpWriter))
+	prototlm_srv.RegisterMetrics(metrics.Registry())
 
 	// Metrics & Health
 	mux := http.NewServeMux()
@@ -221,7 +221,7 @@ func run(
 	ctx, cancel := context.WithCancel(ctx)
 	wg.Add(1)
 	go func() {
-		protofluxSrv.Listen(ctx)
+		prototlmSrv.Listen(ctx)
 		wg.Done()
 	}()
 

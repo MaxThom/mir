@@ -1,4 +1,4 @@
-package protoflux_srv
+package prototlm_srv
 
 import (
 	"context"
@@ -22,7 +22,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-type ProtoFluxServer struct {
+type ProtoTlmServer struct {
 	tlmStore       ts.TelemetryStore
 	sub            *nats.Subscription
 	m              *mir.Mir
@@ -75,9 +75,9 @@ func RegisterMetrics(reg prometheus.Registerer) {
 	reg.Register(datapointCount)
 }
 
-func NewProtoFluxServer(logger zerolog.Logger, m *mir.Mir, devStore mng.DeviceStore, tlmStore ts.TelemetryStore) *ProtoFluxServer {
-	l = logger.With().Str("srv", "protoflux_server").Logger()
-	srv := &ProtoFluxServer{
+func NewProtoTlmServer(logger zerolog.Logger, m *mir.Mir, devStore mng.DeviceStore, tlmStore ts.TelemetryStore) *ProtoTlmServer {
+	l = logger.With().Str("srv", "prototlm_server").Logger()
+	srv := &ProtoTlmServer{
 		tlmStore:   tlmStore,
 		m:          m,
 		devStore:   devStore,
@@ -88,7 +88,7 @@ func NewProtoFluxServer(logger zerolog.Logger, m *mir.Mir, devStore mng.DeviceSt
 	return srv
 }
 
-func (s *ProtoFluxServer) handleInfluxErrorChannel() {
+func (s *ProtoTlmServer) handleInfluxErrorChannel() {
 	errorsCh := s.tlmStore.Errors()
 	go func() {
 		for err := range errorsCh {
@@ -97,13 +97,13 @@ func (s *ProtoFluxServer) handleInfluxErrorChannel() {
 	}()
 }
 
-func (s *ProtoFluxServer) Listen(ctx context.Context) {
+func (s *ProtoTlmServer) Listen(ctx context.Context) {
 	s.handleInfluxErrorChannel()
 	s.m.QueueSubscribe(ServiceName, mir.Stream().V1Alpha().Telemetry(s.handleTelemetryStream))
 	s.m.QueueSubscribe(ServiceName, mir.Client().V1Alpha().ListTelemetry(s.handleTelemetryListRequest))
 }
 
-func (s *ProtoFluxServer) handleTelemetryStream(msg *nats.Msg, deviceId string, protoMsgName string) {
+func (s *ProtoTlmServer) handleTelemetryStream(msg *nats.Msg, deviceId string, protoMsgName string) {
 	// TODO prometheus
 	// TODO set maximum relidelivery in subscribe
 	// TODO handler error with schema if we can't have it.
@@ -157,14 +157,14 @@ func (s *ProtoFluxServer) handleTelemetryStream(msg *nats.Msg, deviceId string, 
 	s.tlmStore.WriteDatapoint(lp)
 }
 
-func (s *ProtoFluxServer) handleDeviceUpdate(deviceId string, device mir_models.Device, schema proto_mir.MirProtoSchema) {
+func (s *ProtoTlmServer) handleDeviceUpdate(deviceId string, device mir_models.Device, schema proto_mir.MirProtoSchema) {
 	l.Debug().Str("device_id", deviceId).Msg("device updated, invalidating device ingesters")
 	s.devWritersLock.Lock()
 	delete(s.devWriters, deviceId)
 	s.devWritersLock.Unlock()
 }
 
-func (s *ProtoFluxServer) handleTelemetryListRequest(msg *nats.Msg, req *tlm_apiv1.SendListTelemetryRequest, e error) {
+func (s *ProtoTlmServer) handleTelemetryListRequest(msg *nats.Msg, req *tlm_apiv1.SendListTelemetryRequest, e error) {
 	fmt.Println("HANDLING")
 	e = fmt.Errorf("new error to test")
 	bus.SendProtoReplyOrAck(s.m.Bus, msg, &tlm_apiv1.SendListTelemetryResponse{

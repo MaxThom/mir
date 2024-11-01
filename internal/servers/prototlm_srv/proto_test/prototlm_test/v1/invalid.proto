@@ -1,0 +1,11 @@
+
+syntax = "proto3";
+
+package prototlm_test.v1;
+option go_package = "github.com/maxthom/mir/internal/servers/prototlm_srv/proto_test/gen/prototlm_test/v1";
+
+message Beurk {
+	int32 temperature = 1;
+	int32 pressure = 2;
+	int32 humidity = 3;
+}

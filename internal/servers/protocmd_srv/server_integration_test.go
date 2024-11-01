@@ -54,7 +54,7 @@ func TestMain(m *testing.M) {
 	fmt.Println("Test Setup")
 
 	b, db, _, _, _ = test_utils.SetupAllExternalsPanic(ctx, test_utils.ConnsInfo{
-		Name:   "test_protoflux",
+		Name:   "test_prototlm",
 		BusUrl: busUrl,
 		Surreal: test_utils.SurrealInfo{
 			Url:  "ws://127.0.0.1:8000/rpc",

@@ -10,7 +10,7 @@ import (
 
 	"github.com/maxthom/mir/internal/clients"
 	"github.com/maxthom/mir/internal/clients/core_client"
-	"github.com/maxthom/mir/internal/clients/protoflux_client"
+	"github.com/maxthom/mir/internal/clients/tlm_client"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	"github.com/nats-io/nats.go"
 	"github.com/rs/zerolog"
@@ -192,7 +192,7 @@ func (m Mir) marshalTelemetrySchema() ([]byte, error) {
 
 // Send proto telemetry to Mir Server
 func (m Mir) SendTelemetry(t protoreflect.ProtoMessage) error {
-	return protoflux_client.PublishTelemetryStream(m.b, m.cfg.DeviceId, t)
+	return tlm_client.PublishTelemetryStream(m.b, m.cfg.DeviceId, t)
 }
 
 func (m Mir) HandleCommand(t protoreflect.ProtoMessage, handler func(protoreflect.ProtoMessage) (protoreflect.ProtoMessage, error)) {

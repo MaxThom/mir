@@ -3,7 +3,7 @@
 bin="./bin/mir"
 
 go build -o bin/core cmds/core/main.go
-go build -o bin/protoflux cmds/protoflux/main.go
+go build -o bin/prototlm cmds/prototlm/main.go
 go build -o bin/protocmd cmds/protocmd/main.go
 
 mkdir -p .tmp
