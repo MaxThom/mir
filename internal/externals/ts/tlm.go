@@ -7,11 +7,11 @@ import (
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/influxdata/influxdb-client-go/v2/api"
-	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 )
 
 type TelemetryStore interface {
 	RetrieveMeasurementsFields(ctx context.Context, measurement string) ([]string, error)
+	GetExploreQuery(ids []string, measurement string) string
 	WriteDatapoint(string)
 	Errors() <-chan error
 }
@@ -73,28 +73,19 @@ func (s *influxTelemetryStore) RetrieveMeasurementsFields(ctx context.Context, m
 	return fields, nil
 }
 
-func (s *influxTelemetryStore) GenerateTelemetryQuery(target *core_apiv1.Targets, measurement string) string {
+func (s *influxTelemetryStore) GetExploreQuery(ids []string, measurement string) string {
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf(
-		`from(bucket: "%s")
-  			|> range(start: v.timeRangeStart, stop: v.timeRangeStop)
-			|> filter(fn: (r) => r["_measurement"] == "%s")
-			|> filter(fn: (r) => r["__id"] == "0xf86tlm")
-	`, s.bucket, measurement))
+	sb.WriteString(fmt.Sprintf(`from(bucket: "%s")`, s.bucket))
+	sb.WriteString("\n")
+	sb.WriteString(`  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)`)
+	sb.WriteString("\n")
 
-	sb.WriteString(fmt.Sprintf(`|> filter(fn: (r) => )`))
 	conds := []string{}
-	for _, id := range target.Ids {
+	for _, id := range ids {
 		conds = append(conds, fmt.Sprintf(`r["__id"] == "%s"`, id))
 	}
-	for _, name := range target.Names {
-		conds = append(conds, fmt.Sprintf(`r["__name"] == "%s"`, name))
-	}
-	for _, ns := range target.Namespaces {
-		conds = append(conds, fmt.Sprintf(`r["__namespace"] == "%s"`, ns))
-	}
-	for k, v := range target.Labels {
-		sb.WriteString(fmt.Sprintf(`|> filter(fn: (r) => r["%s"] == "%s")`, k, v))
-	}
-	return ""
+	sb.WriteString(fmt.Sprintf(`  |> filter(fn: (r) => %s)`, strings.Join(conds, " or ")))
+	sb.WriteString("\n")
+	sb.WriteString(fmt.Sprintf(`  |> filter(fn: (r) => r["_measurement"] == "%s")`, measurement))
+	return sb.String()
 }

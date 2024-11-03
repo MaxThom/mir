@@ -2,8 +2,6 @@ package prototlm_srv
 
 import (
 	"context"
-	"fmt"
-	"net/url"
 	"sync"
 
 	"github.com/maxthom/mir/internal/externals/mng"
@@ -157,7 +155,7 @@ func (s *ProtoTlmServer) handleTelemetryStream(msg *nats.Msg, deviceId string, p
 	}
 	// TODO update function to return error
 	lp := devWriter(msg.Data, map[string]string{})
-	fmt.Println(lp)
+	// fmt.Println(lp)
 	s.tlmStore.WriteDatapoint(lp)
 }
 
@@ -169,8 +167,10 @@ func (s *ProtoTlmServer) handleDeviceUpdate(deviceId string, device mir_models.D
 }
 
 type schemaPerDevices struct {
-	sch proto_mir.MirProtoSchema
-	devs []mir_models.Device
+	sch        *proto_mir.MirProtoSchema
+	err        error
+	devsId     []string
+	devsNameNs []string
 }
 
 func (s *ProtoTlmServer) handleTelemetryListRequest(msg *nats.Msg, req *tlm_apiv1.SendListTelemetryRequest, e error) {
@@ -206,41 +206,73 @@ func (s *ProtoTlmServer) handleTelemetryListRequest(msg *nats.Msg, req *tlm_apiv
 		})
 	}
 
-	devsTlm := make(map[string]*tlm_apiv1.Telemetry)
-	schemas := []schemaPerDevices{}
+	devsTlm := []*tlm_apiv1.DevicesTelemetry{}
+	devSchemas := []*schemaPerDevices{}
 	for _, dev := range devs {
 		reg, _, err := s.schStore.GetDeviceSchema(dev.Spec.DeviceId, req.RefreshSchema)
 		if err != nil {
-			devsTlm[dev.GetNameNamespace()] = &tlm_apiv1.Telemetry{
-				Error: err.Error(),
+			found := false
+			for _, d := range devsTlm {
+				if d.Error == err.Error() {
+					d.DevicesNamens = append(d.DevicesNamens, dev.GetNameNamespace())
+					found = true
+				}
+			}
+			if !found {
+				devsTlm = append(devsTlm, &tlm_apiv1.DevicesTelemetry{
+					DevicesNamens: []string{dev.GetNameNamespace()},
+					Error:         err.Error(),
+				})
 			}
 			continue
 		}
-		for _, sch := schemas {
-			if
-		}
-
-		tlms, err := reg.GetTelemetryList(req.Measurements, req.Filters)
-		if err != nil {
-			devsTlm[dev.GetNameNamespace()] = &tlm_apiv1.Telemetry{
-				Error: err.Error(),
+		found := false
+		for _, sch := range devSchemas {
+			if proto_mir.AreSchemaEqual(sch.sch, reg) {
+				sch.devsId = append(sch.devsId, dev.Device.Spec.DeviceId)
+				sch.devsNameNs = append(sch.devsNameNs, dev.GetNameNamespace())
+				found = true
 			}
+
+		}
+		if !found {
+			devSchemas = append(devSchemas, &schemaPerDevices{
+				sch:        reg,
+				devsId:     []string{dev.Device.Spec.DeviceId},
+				devsNameNs: []string{dev.GetNameNamespace()},
+			})
+		}
+	}
+
+	for _, sch := range devSchemas {
+		tlms, err := sch.sch.GetTelemetryList(req.Measurements, req.Filters)
+		if err != nil {
+			devsTlm = append(devsTlm, &tlm_apiv1.DevicesTelemetry{
+				DevicesNamens: sch.devsNameNs,
+				Error:         err.Error(),
+			})
 			continue
 		}
 
 		for _, tlm := range tlms {
 			tlm.Fields, err = s.tlmStore.RetrieveMeasurementsFields(s.ctx, tlm.Name)
+			if err != nil {
+				tlm.Error = err.Error()
+				continue
+			}
+			tlm.ExploreQuery = s.tlmStore.GetExploreQuery(sch.devsId, tlm.Name)
 		}
-		devsTlm[dev.GetNameNamespace()] = &tlm_apiv1.Telemetry{
+		devsTlm = append(devsTlm, &tlm_apiv1.DevicesTelemetry{
+			DevicesNamens:  sch.devsNameNs,
 			TlmDescriptors: tlms,
-		}
+		})
 	}
 
 	l.Info().Msg("list command request processed successfully")
 	bus.SendProtoReplyOrAck(s.m.Bus, msg, &tlm_apiv1.SendListTelemetryResponse{
 		Response: &tlm_apiv1.SendListTelemetryResponse_Ok{
-			Ok: &tlm_apiv1.DevicesTelemetry{
-				DeviceTelemetry: devsTlm,
+			Ok: &tlm_apiv1.TelemetryResponse{
+				DevicesTelemetry: devsTlm,
 			},
 		},
 	})
@@ -262,19 +294,4 @@ func generateIngesters(desc protoreflect.Descriptor, deviceId string, device mir
 	}
 
 	return fn, err
-}
-
-func generateExploreLink(host string, target *core_apiv1.Targets, measurement string) string {
-	u := url.URL{
-		Scheme: "http",
-		Host:   host,
-		Path:   "explore",
-	}
-
-	return u.String()
-}
-
-func generateTlmQuery(target *core_apiv1.Targets, measurement string) string {
-
-	return ""
 }

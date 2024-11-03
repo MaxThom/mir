@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/maxthom/mir/internal/clients/tlm_client"
+	"github.com/maxthom/mir/internal/libs/external/grafana"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	tlm_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/tlm_api"
@@ -74,23 +75,27 @@ func (d *TelemetryListCmd) Run(c CLI) error {
 		return e
 	}
 
-	tpls := map[string][]string{}
 	var sb strings.Builder
-	for devNameNs, tlms := range resp.GetOk().DeviceTelemetry {
+	i := 0
+	tlmsErr := []*tlm_apiv1.DevicesTelemetry{}
+	for _, tlms := range resp.GetOk().DevicesTelemetry {
 		if tlms.Error != "" {
-			sb.WriteString(tlms.Error)
+			tlmsErr = append(tlmsErr, tlms)
+			continue
 		} else {
+			i += 1
+			sb.WriteString(fmt.Sprintf("%d. ", i))
+			sb.WriteString(strings.Join(tlms.DevicesNamens, ", "))
+			sb.WriteString("\n")
 			for _, tlm := range tlms.TlmDescriptors {
 				sb.WriteString(tlm.Name)
 				sb.WriteString("{")
 				sb.WriteString(mapToSortedString(tlm.Labels))
-				sb.WriteString("}\n")
+				sb.WriteString("} ")
+				sb.WriteString(FormatHyperlink(d.GrafanaUrl+"/explore", grafana.CreateExploreLink(d.GrafanaUrl, tlm.ExploreQuery)))
+				sb.WriteString("\n")
 				if tlm.Error != "" {
 					sb.WriteString(tlm.Error)
-					sb.WriteString("\n")
-				} else if d.Query {
-					// TODO pretty print
-					//sb.WriteString(tlm.Query)
 					sb.WriteString("\n")
 				} else if len(tlm.Fields) > 0 {
 					for _, f := range tlm.Fields {
@@ -101,19 +106,27 @@ func (d *TelemetryListCmd) Run(c CLI) error {
 				}
 			}
 		}
-		tpls[sb.String()] = append(tpls[sb.String()], devNameNs)
-		sb.Reset()
+		sb.WriteString("\n")
 	}
 
-	i := 1
-	for k, v := range tpls {
+	for _, tlms := range tlmsErr {
+		i += 1
 		sb.WriteString(fmt.Sprintf("%d. ", i))
-		sb.WriteString(strings.Join(v, ", "))
+		sb.WriteString(strings.Join(tlms.DevicesNamens, ", "))
 		sb.WriteString("\n")
-		sb.WriteString(k)
-		sb.WriteString("\n")
-		i++
+		sb.WriteString(tlms.Error)
 	}
+
 	fmt.Println(sb.String())
 	return nil
+}
+
+// OSC 8 hyperlink escape sequence
+// Supported by most new terminal
+func FormatHyperlink(text, url string) string {
+	reset := "\033[0m"
+	blue := "\033[34m"
+	underline := "\033[4m"
+	text = blue + underline + text + reset
+	return fmt.Sprintf("\033]8;;%s\033\\%s\033]8;;\033\\", url, text)
 }

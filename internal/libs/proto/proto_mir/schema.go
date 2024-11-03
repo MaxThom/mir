@@ -170,19 +170,16 @@ func AreSchemaEqual(sch1, sch2 *MirProtoSchema) bool {
 	map1 := make(map[string]protoreflect.FileDescriptor)
 	map2 := make(map[string]protoreflect.FileDescriptor)
 
-	// Populate first map
 	sch1.RangeFiles(func(fd protoreflect.FileDescriptor) bool {
 		map1[fd.Path()] = fd
 		return true
 	})
 
-	// Populate second map
 	sch2.RangeFiles(func(fd protoreflect.FileDescriptor) bool {
 		map2[fd.Path()] = fd
 		return true
 	})
 
-	// Check if number of files is different
 	if len(map1) != len(map2) {
 		return false
 	}
