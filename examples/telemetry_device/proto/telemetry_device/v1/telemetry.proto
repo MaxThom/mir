@@ -50,15 +50,39 @@ message Constelletion {
 }
 
 message Satellite {
+    option (mir.device.v1.meta) = {
+		tags: [{
+			key: "space",
+			value: "deep"
+		}, {
+			key: "orbit",
+			value: "geo"
+		}]
+	};
 	string id = 1;
 	int32 signal_strength = 2;
 	Gps gps = 3;
 }
 
 message Gps {
-	double latitude = 1;
-	double longitude = 2;
-	double altitude = 3;
+	double latitude = 1 [(mir.device.v1.field_meta) = {
+	    tags: [{
+		key: "gpsx",
+		value: "x"
+		}]
+	}];
+	double longitude = 2 [(mir.device.v1.field_meta) = {
+	    tags: [{
+			key: "gpsy",
+			value: "y"
+		}]
+	}];
+	double altitude = 3 [(mir.device.v1.field_meta) = {
+	    tags: [{
+			key: "gpsz",
+			value: "z"
+		}]
+	}];
 }
 
 message ChangePower {

@@ -2,9 +2,11 @@ package cli
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/maxthom/mir/internal/clients/tlm_client"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
+	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	tlm_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/tlm_api"
 )
 
@@ -34,14 +36,6 @@ func (d *TelemetryListCmd) Validate() error {
 		Details: []string{},
 	}
 
-	if len(d.Target.Ids) == 0 &&
-		len(d.Target.Names) == 0 &&
-		len(d.Target.Namespaces) == 0 &&
-		len(d.Target.Labels) == 0 &&
-		len(d.Target.Anno) == 0 {
-		err.Details = append(err.Details, "Must specify targets")
-	}
-
 	if len(err.Details) > 0 {
 		return err
 	}
@@ -58,12 +52,68 @@ func (d *TelemetryListCmd) Run(c CLI) error {
 	}
 	defer msgBus.Close()
 
-	req := &tlm_apiv1.SendListTelemetryRequest{}
+	req := &tlm_apiv1.SendListTelemetryRequest{
+		Targets: &core_apiv1.Targets{
+			Ids:         d.Target.Ids,
+			Names:       d.Target.Names,
+			Namespaces:  d.Target.Namespaces,
+			Labels:      d.Target.Labels,
+			Annotations: d.Target.Anno,
+		},
+		Measurements:  d.Measuremeants,
+		Filters:       d.Filters,
+		RefreshSchema: d.RefreshSchema,
+	}
 	resp, err := tlm_client.PublishTelemetryListRequest(msgBus, req)
 	if err != nil {
 		e := MirRequestError{Route: "telemetry.list", e: err}
 		return e
 	}
-	fmt.Println(resp)
+	if resp.GetError() != nil {
+		e := MirResponseError{Route: "telemetry.list", e: fmt.Errorf(resp.GetError().Message)}
+		return e
+	}
+
+	tpls := map[string][]string{}
+	var sb strings.Builder
+	for devNameNs, tlms := range resp.GetOk().DeviceTelemetry {
+		if tlms.Error != "" {
+			sb.WriteString(tlms.Error)
+		} else {
+			for _, tlm := range tlms.TlmDescriptors {
+				sb.WriteString(tlm.Name)
+				sb.WriteString("{")
+				sb.WriteString(mapToSortedString(tlm.Labels))
+				sb.WriteString("}\n")
+				if tlm.Error != "" {
+					sb.WriteString(tlm.Error)
+					sb.WriteString("\n")
+				} else if d.Query {
+					// TODO pretty print
+					//sb.WriteString(tlm.Query)
+					sb.WriteString("\n")
+				} else if len(tlm.Fields) > 0 {
+					for _, f := range tlm.Fields {
+						sb.WriteString("    ")
+						sb.WriteString(f)
+						sb.WriteString("\n")
+					}
+				}
+			}
+		}
+		tpls[sb.String()] = append(tpls[sb.String()], devNameNs)
+		sb.Reset()
+	}
+
+	i := 1
+	for k, v := range tpls {
+		sb.WriteString(fmt.Sprintf("%d. ", i))
+		sb.WriteString(strings.Join(v, ", "))
+		sb.WriteString("\n")
+		sb.WriteString(k)
+		sb.WriteString("\n")
+		i++
+	}
+	fmt.Println(sb.String())
 	return nil
 }

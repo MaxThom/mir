@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"io"
 	"math/rand/v2"
 	"os"
@@ -20,8 +21,11 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	mir_signals.Notify(syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT)
 
+	deviceId := flag.String("id", "0xf86tlm", "Device ID")
+	flag.Parse()
+
 	m, err := mir.Builder().
-		DeviceId("0xf86tlm").
+		DeviceId(*deviceId).
 		Target("nats://127.0.0.1:4222").
 		LogLevel(mir.LogLevelDebug).
 		LogWriters([]io.Writer{os.Stdout}).
@@ -66,7 +70,6 @@ func main() {
 				WindSpeed:   rand.Int32N(101),
 			}
 			m.SendTelemetry(&data)
-			//	l.Debug().Str("module", "telemetry").Any("data", data).Msg("send tlm")
 		}
 	}()
 
@@ -82,7 +85,6 @@ func main() {
 				Power:   amp * volt,
 			}
 			m.SendTelemetry(&data)
-			//	l.Debug().Str("module", "telemetry").Any("data", data).Msg("send tlm")
 		}
 	}()
 

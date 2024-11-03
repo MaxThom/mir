@@ -1,9 +1,12 @@
 package proto_mir
 
 import (
+	"slices"
+
 	"github.com/maxthom/mir/internal/libs/compression/zstd"
 	"github.com/maxthom/mir/internal/libs/proto/json_template"
 	cmd_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cmd_api"
+	tlm_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/tlm_api"
 
 	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
 
@@ -29,12 +32,36 @@ func NewMirProtoSchema(s ...protoreflect.FileDescriptor) (*MirProtoSchema, error
 	return &MirProtoSchema{Files: reg}, err
 }
 
+func (m *MirProtoSchema) GetTelemetryList(filterMeasurements []string, filterLabels map[string]string) ([]*tlm_apiv1.TelemetryDescriptor, error) {
+	telemetry := []*tlm_apiv1.TelemetryDescriptor{}
+	m.RangeFiles(func(fd protoreflect.FileDescriptor) bool {
+		for i := 0; i < fd.Messages().Len(); i++ {
+			msgDesc := fd.Messages().Get(i)
+			opts, ok := msgDesc.Options().(*descriptorpb.MessageOptions)
+			if !ok {
+				continue
+			}
+			msgType, ok := proto.GetExtension(opts, devicev1.E_MessageType).(devicev1.MessageType)
+			if ok && msgType == devicev1.MessageType_MESSAGE_TYPE_TELEMETRY {
+				lbls := RetrieveMessageTags(msgDesc)
+				if !isSubsetContainedInSet(filterLabels, lbls) ||
+					(len(filterMeasurements) > 0 && !slices.Contains(filterMeasurements, string(msgDesc.FullName()))) {
+					continue
+				}
+				tlm := tlm_apiv1.TelemetryDescriptor{
+					Name:   string(msgDesc.FullName()),
+					Labels: lbls,
+				}
+				telemetry = append(telemetry, &tlm)
+			}
+		}
+		return true
+	})
+	return telemetry, nil
+}
+
 func (m *MirProtoSchema) GetCommandsList(filterLabels map[string]string) ([]*cmd_apiv1.CommandDescriptor, error) {
 	commands := []*cmd_apiv1.CommandDescriptor{}
-	// 1. Add labels
-	// 2. Add arguments
-	// 3. Add json template
-	// 4. Add description metadata?
 	m.RangeFiles(func(fd protoreflect.FileDescriptor) bool {
 		for i := 0; i < fd.Messages().Len(); i++ {
 			msgDesc := fd.Messages().Get(i)

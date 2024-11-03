@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"sort"
 	"strings"
 
 	"github.com/maxthom/mir/internal/clients/cmd_client"
@@ -108,7 +107,6 @@ func (d *CommandListCmd) Run(c CLI) error {
 					}
 					sb.WriteString("\n")
 				}
-
 			}
 		}
 		tpls[sb.String()] = append(tpls[sb.String()], devNameNs)
@@ -125,33 +123,7 @@ func (d *CommandListCmd) Run(c CLI) error {
 		i++
 	}
 	fmt.Println(sb.String())
-
 	return nil
-}
-
-func mapToSortedString(m map[string]string) string {
-	if len(m) == 0 {
-		return ""
-	}
-
-	// Get sorted keys
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	// Build sorted string
-	var sb strings.Builder
-	for i, k := range keys {
-		if i > 0 {
-			sb.WriteString(", ")
-		}
-		sb.WriteString(k)
-		sb.WriteString("=")
-		sb.WriteString(m[k])
-	}
-	return sb.String()
 }
 
 func (d *CommandSendCmd) Validate() error {
