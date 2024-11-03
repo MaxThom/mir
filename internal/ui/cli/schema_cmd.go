@@ -15,7 +15,7 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
-type DeviceSchemaCmd struct {
+type SchemaCmd struct {
 	Upload  SchemaUploadCmd  `cmd:"" help:"Upload schema of a set of devices. To generate: 'protoc <proto_files...> --descriptor_set_out=./<file_name>.bproto --include_imports'"`
 	Explore SchemaExploreCmd `cmd:"" help:"Explore a device schema"`
 }

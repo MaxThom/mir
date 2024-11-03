@@ -38,6 +38,8 @@ type (
 		Tui       tui.Cmd          `cmd:"" help:"Open Mir in TUI mode" default:"withargs" hidden:""`
 		Device    cli.DeviceCmd    `cmd:"" help:"Manage fleet of Mir devices"`
 		Telemetry cli.TelemetryCmd `cmd:"" help:"Explore Mir devices telemetry"`
+		Schema    cli.SchemaCmd    `cmd:"" help:"Upload and explore device proto schema"`
+		Command   cli.CommandCmd   `cmd:"" help:"Send and explore commands to devices"`
 	}
 	VersionFlag string
 )

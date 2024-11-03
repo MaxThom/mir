@@ -14,7 +14,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-type DeviceCommandCmd struct {
+type CommandCmd struct {
 	List CommandListCmd `cmd:"" help:"List all commands belonging to a set of devices"`
 	Send CommandSendCmd `cmd:"" help:"Send a commands to all targeted devices"`
 }
