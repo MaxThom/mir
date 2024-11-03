@@ -181,7 +181,6 @@ func run(
 	if err := influx.CreateOrgAndBucket(ctx, lpClient, cfg.TelemetryServer.Org, cfg.TelemetryServer.Bucket); err != nil {
 		return err
 	}
-	lpWriter := lpClient.WriteAPI(cfg.TelemetryServer.Org, cfg.TelemetryServer.Bucket)
 	log.Info().Str("url", cfg.TelemetryServer.Url).Msg("connected to puthost")
 
 	// Bus
@@ -192,7 +191,7 @@ func run(
 	log.Info().Str("url", cfg.DataBusServer.Url).Msg("connected to msg bus")
 
 	// Services
-	prototlmSrv := prototlm_srv.NewProtoTlmServer(log, m, mng.NewSurrealDeviceStore(db), ts.NewInfluxTelemetryStore(lpWriter))
+	prototlmSrv := prototlm_srv.NewProtoTlmServer(log, m, mng.NewSurrealDeviceStore(db), ts.NewInfluxTelemetryStore(cfg.TelemetryServer.Org, cfg.TelemetryServer.Bucket, lpClient))
 	prototlm_srv.RegisterMetrics(metrics.Registry())
 
 	// Metrics & Health

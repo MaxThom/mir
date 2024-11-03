@@ -3,6 +3,7 @@ package prototlm_srv
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"sync"
 
 	"github.com/maxthom/mir/internal/externals/mng"
@@ -13,6 +14,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/proto/proto_mir"
 	"github.com/maxthom/mir/internal/services/schema_cache"
 	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
+	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	tlm_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/tlm_api"
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/maxthom/mir/pkgs/module/mir"
@@ -23,6 +25,7 @@ import (
 )
 
 type ProtoTlmServer struct {
+	ctx            context.Context
 	tlmStore       ts.TelemetryStore
 	sub            *nats.Subscription
 	m              *mir.Mir
@@ -98,6 +101,7 @@ func (s *ProtoTlmServer) handleInfluxErrorChannel() {
 }
 
 func (s *ProtoTlmServer) Listen(ctx context.Context) {
+	s.ctx = ctx
 	s.handleInfluxErrorChannel()
 	s.m.QueueSubscribe(ServiceName, mir.Stream().V1Alpha().Telemetry(s.handleTelemetryStream))
 	s.m.QueueSubscribe(ServiceName, mir.Client().V1Alpha().ListTelemetry(s.handleTelemetryListRequest))
@@ -164,15 +168,79 @@ func (s *ProtoTlmServer) handleDeviceUpdate(deviceId string, device mir_models.D
 	s.devWritersLock.Unlock()
 }
 
+type schemaPerDevices struct {
+	sch proto_mir.MirProtoSchema
+	devs []mir_models.Device
+}
+
 func (s *ProtoTlmServer) handleTelemetryListRequest(msg *nats.Msg, req *tlm_apiv1.SendListTelemetryRequest, e error) {
-	fmt.Println("HANDLING")
-	e = fmt.Errorf("new error to test")
+	l.Info().Any("req", req).Msg("list telemetry request")
+	if e != nil {
+		l.Error().Err(e).Msg("error occure while receiving request")
+		bus.SendProtoReplyOrAck(s.m.Bus, msg, &tlm_apiv1.SendListTelemetryResponse{
+			Response: &tlm_apiv1.SendListTelemetryResponse_Error{
+				Error: &common_apiv1.Error{
+					Code:    400,
+					Message: mir_models.ErrorApiDeserializingRequest.Error(),
+					Details: []string{"400 Bad Request", e.Error()},
+				},
+			},
+		})
+	}
+
+	// 1. get device list
+	// 2. for each device, get stored schema, if empty, fetch from device
+	// 3. return list of telemetry
+
+	devs, err := s.devStore.ListDevice(&core_apiv1.ListDeviceRequest{Targets: req.Targets})
+	if err != nil {
+		l.Error().Err(e).Msg("error occure while listing devices")
+		bus.SendProtoReplyOrAck(s.m.Bus, msg, &tlm_apiv1.SendListTelemetryResponse{
+			Response: &tlm_apiv1.SendListTelemetryResponse_Error{
+				Error: &common_apiv1.Error{
+					Code:    500,
+					Message: mir_models.ErrorDbExecutingQuery.Error(),
+					Details: []string{"500 Bad Request", e.Error()},
+				},
+			},
+		})
+	}
+
+	devsTlm := make(map[string]*tlm_apiv1.Telemetry)
+	schemas := []schemaPerDevices{}
+	for _, dev := range devs {
+		reg, _, err := s.schStore.GetDeviceSchema(dev.Spec.DeviceId, req.RefreshSchema)
+		if err != nil {
+			devsTlm[dev.GetNameNamespace()] = &tlm_apiv1.Telemetry{
+				Error: err.Error(),
+			}
+			continue
+		}
+		for _, sch := schemas {
+			if
+		}
+
+		tlms, err := reg.GetTelemetryList(req.Measurements, req.Filters)
+		if err != nil {
+			devsTlm[dev.GetNameNamespace()] = &tlm_apiv1.Telemetry{
+				Error: err.Error(),
+			}
+			continue
+		}
+
+		for _, tlm := range tlms {
+			tlm.Fields, err = s.tlmStore.RetrieveMeasurementsFields(s.ctx, tlm.Name)
+		}
+		devsTlm[dev.GetNameNamespace()] = &tlm_apiv1.Telemetry{
+			TlmDescriptors: tlms,
+		}
+	}
+
+	l.Info().Msg("list command request processed successfully")
 	bus.SendProtoReplyOrAck(s.m.Bus, msg, &tlm_apiv1.SendListTelemetryResponse{
-		Response: &tlm_apiv1.SendListTelemetryResponse_Error{
-			Error: &common_apiv1.Error{
-				Code:    400,
-				Message: mir_models.ErrorApiDeserializingRequest.Error(),
-				Details: []string{"400 Bad Request", e.Error()},
+		Response: &tlm_apiv1.SendListTelemetryResponse_Ok{
+			Ok: &tlm_apiv1.DevicesTelemetry{
+				DeviceTelemetry: devsTlm,
 			},
 		},
 	})
@@ -186,7 +254,7 @@ func generateIngesters(desc protoreflect.Descriptor, deviceId string, device mir
 		"__namespace": device.Meta.Namespace,
 	}
 	for k, v := range device.Meta.Labels {
-		tags[k] = *v
+		tags["__label_"+k] = *v
 	}
 	fn, err := proto_lineprotocol.GenerateMarshalFn(tags, desc.(protoreflect.MessageDescriptor))
 	if err != nil {
@@ -194,4 +262,19 @@ func generateIngesters(desc protoreflect.Descriptor, deviceId string, device mir
 	}
 
 	return fn, err
+}
+
+func generateExploreLink(host string, target *core_apiv1.Targets, measurement string) string {
+	u := url.URL{
+		Scheme: "http",
+		Host:   host,
+		Path:   "explore",
+	}
+
+	return u.String()
+}
+
+func generateTlmQuery(target *core_apiv1.Targets, measurement string) string {
+
+	return ""
 }

@@ -399,7 +399,6 @@ func (s *ProtoCmdServer) listCommandsSub() func(msg *nats.Msg, req *cmd_apiv1.Se
 
 		devsCmds := make(map[string]*cmd_apiv1.Commands)
 		for _, dev := range devs {
-			// TODO force hard force opt
 			reg, _, err := s.schStore.GetDeviceSchema(dev.Spec.DeviceId, req.RefreshSchema)
 			if err != nil {
 				devsCmds[dev.GetNameNamespace()] = &cmd_apiv1.Commands{

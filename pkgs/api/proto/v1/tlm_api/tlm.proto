@@ -35,6 +35,7 @@ message Telemetry {
 message TelemetryDescriptor {
 	string name = 1; // Name of telemetry
 	map<string, string> labels = 2; // Labels are used to tag a telemetry
-	string query = 3; // JSON payload boilerplate for an example
-	string error = 4; // HTTP like error if something went wrong
+	repeated string fields = 3; // Fields are all the data channel of a telemetry
+	string explore_link = 4; // Grafana URL to explore the telemetry
+	string error = 5; // HTTP like error if something went wrong
 }
