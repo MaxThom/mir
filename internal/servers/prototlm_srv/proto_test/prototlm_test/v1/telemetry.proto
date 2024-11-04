@@ -2,14 +2,31 @@ syntax = "proto3";
 
 package prototlm_test.v1;
 option go_package = "github.com/maxthom/mir/internal/servers/prototlm_srv/proto_test/gen/prototlm_test/v1";
+import "mir/device/v1/mir.proto";
 
 message EnvTlm {
+    option (mir.device.v1.message_type) = MESSAGE_TYPE_TELEMETRY;
 	int32 temperature = 1;
 	int32 pressure = 2;
-	int32 humidity = 3;
+	int32 humidity = 3 [(mir.device.v1.field_meta) = {
+		    tags: [{
+				key: "severity",
+				value: "high"
+			}]
+		}];
 }
 
 message PowerTlm {
+    option (mir.device.v1.message_type) = MESSAGE_TYPE_TELEMETRY;
+    option (mir.device.v1.meta) = {
+		tags: [{
+			key: "building",
+			value: "A"
+		}, {
+			key: "floor",
+			value: "2"
+		}]
+	};
 	double amp = 1;
 	double volt = 2;
 	double power = 3;

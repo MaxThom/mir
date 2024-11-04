@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package prototlm_test.v1;
+option go_package = "github.com/maxthom/mir/internal/servers/prototlm_srv/proto_test/gen/prototlm_test/v1";
+import "mir/device/v1/mir.proto";
+
+message Pizza {
+    option (mir.device.v1.message_type) = MESSAGE_TYPE_TELEMETRY;
+	option (mir.device.v1.meta) = {
+		tags: [{
+			key: "food",
+			value: "pizza"
+		}, {
+			key: "category",
+			value: "vegie"
+		}]
+	};
+
+	int64 ts = 1 [(mir.device.v1.timestamp) = TIMESTAMP_TYPE_SEC];
+    string name = 2;
+    int32 size = 3;
+    PizzaToppings toppings = 4;
+    PizzaCrust crust = 5;
+}
+
+message PizzaToppings{
+    int32 pepperoni = 1;
+    int32 mushrooms = 2;
+    int32 onions = 3;
+    int32 sausage = 4;
+}
+
+message PizzaCrust {
+    string name = 1;
+    int32 thickness = 2;
+}

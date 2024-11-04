@@ -188,10 +188,6 @@ func (s *ProtoTlmServer) handleTelemetryListRequest(msg *nats.Msg, req *tlm_apiv
 		})
 	}
 
-	// 1. get device list
-	// 2. for each device, get stored schema, if empty, fetch from device
-	// 3. return list of telemetry
-
 	devs, err := s.devStore.ListDevice(&core_apiv1.ListDeviceRequest{Targets: req.Targets})
 	if err != nil {
 		l.Error().Err(e).Msg("error occure while listing devices")
