@@ -22,6 +22,21 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
+// How to make this service scalable
+// The problem is with the hearthbeat map, it need to reconcile between the instances
+//
+// Option 1, remove the map
+//  Do a list query on the store for each new hearthbeat
+//  Fetch all devices in the pulsor and do the check
+//  The number of db request increase by a lot
+//
+// Option 2, keep the map
+//  Listen to device update event and add to map entry if online, or delete entry if offline
+//  For pulsor, use distributed locking mechanism
+//
+// Option 3, distributed keyvalue store
+//  Use a distributed keyvalue store like etcd or natskv to store the map
+
 type CoreServer struct {
 	sub              *nats.Subscription
 	bus              *bus.BusConn
@@ -509,6 +524,7 @@ func (s *CoreServer) hearthbeatRequestHandler(ch chan nats.Msg) {
 		toBoolRef := func(b bool) *bool {
 			return &b
 		}
+		// Since this update is only for hearthbeat and often, we dont want to have a device update event
 		_, err := s.store.UpdateDevice(&core_apiv1.UpdateDeviceRequest{
 			Targets: &core_apiv1.Targets{
 				Ids: []string{deviceId},

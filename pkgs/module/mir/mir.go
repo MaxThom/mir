@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/maxthom/mir/internal/externals/distributed_lock"
 	"github.com/nats-io/nats.go"
 )
 
@@ -19,6 +20,7 @@ type Mir struct {
 	wg           *sync.WaitGroup
 	name         string
 	instanceName string
+	LockStore    distributed_lock.DistributedLockStore
 }
 
 // MirStream is a stream that can be subscribed to
@@ -65,7 +67,10 @@ func Connect(name string, target string) (*Mir, error) {
 			}),
 		}...,
 	)
-
+	if err != nil {
+		return nil, err
+	}
+	m.LockStore, err = distributed_lock.NewNatsLockStore(m.Bus, m.instanceName)
 	if err != nil {
 		return nil, err
 	}

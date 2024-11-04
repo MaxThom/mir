@@ -144,13 +144,16 @@ func WithDescription(desc string) func(*mirCli) {
 func WithDefaultConfig(defaultConfig any, format mir_config.ConfigFormat) func(*mirCli) {
 	return func(cli *mirCli) {
 		var cfg []byte
+		var ext string
 		if format == mir_config.Yaml {
 			cfg, _ = yaml.Marshal(defaultConfig)
+			ext = "yaml"
 		} else if format == mir_config.Json {
 			cfg, _ = json.MarshalIndent(defaultConfig, "", "  ")
+			ext = "json"
 		}
 		cli.cfgPrint = string(cfg)
-		flag.BoolVar(&flagConfigPrint, "printConfig", false, "print default configuration. can pipe to file.")
+		flag.BoolVar(&flagConfigPrint, "printConfig", false, "print default configuration. see logs for default config file location. './<bin> -printConfig > <filepath>."+ext+"'")
 	}
 }
 
