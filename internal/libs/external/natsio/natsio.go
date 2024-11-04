@@ -39,23 +39,6 @@ func New(url string, options ...func(*BusConn)) (*BusConn, error) {
 	// 	Storage: nats.MemoryStorage,
 	// })
 
-	// Memory vs File Storage
-	// lock was acquired
-	// nats crashes and restarts
-	// if memory
-	//   cannot acquire nor releases
-	//   when back, there is no stuck lock
-	//   another process can get the same lock and double execution
-	//   if trying to release, it will be ok
-	// if file
-	//   cannot acquire nor releases
-	//   when back, locks are still there
-	//   another process cant get the same lock
-	//   but if trying to release while down, we got a forever lock
-	// main diff is, memory can lead to double execution, while file forever lock
-	// solution could be file with ttl
-	// version 2.11 will have ttl per keys. planned release in 2024
-
 	return bus, err
 }
 
