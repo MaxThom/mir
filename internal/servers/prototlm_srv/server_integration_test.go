@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"slices"
 	"sync"
 	"testing"
 	"time"
@@ -11,16 +12,19 @@ import (
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/influxdata/influxdb-client-go/v2/api"
 	"github.com/maxthom/mir/internal/clients/core_client"
+	"github.com/maxthom/mir/internal/clients/tlm_client"
 	"github.com/maxthom/mir/internal/externals/mng"
 	"github.com/maxthom/mir/internal/externals/ts"
 	"github.com/maxthom/mir/internal/libs/compression/zstd"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	"github.com/maxthom/mir/internal/libs/proto/proto_mir"
+	"github.com/maxthom/mir/internal/libs/swarm"
 	"github.com/maxthom/mir/internal/libs/test_utils"
 	"github.com/maxthom/mir/internal/servers/core_srv"
 	prototlm_testv1 "github.com/maxthom/mir/internal/servers/prototlm_srv/proto_test/gen/prototlm_test/v1"
 	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
+	tlm_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/tlm_api"
 	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
 	mirDevice "github.com/maxthom/mir/pkgs/device/mir"
 	"github.com/maxthom/mir/pkgs/mir_models"
@@ -48,7 +52,7 @@ func TestMain(m *testing.M) {
 	ctx, cancel := context.WithCancel(context.Background())
 	fmt.Println("Test Setup")
 
-	b, db, _, lpWriter, lpQuery = test_utils.SetupAllExternalsPanic(ctx, test_utils.ConnsInfo{
+	b, db, lpClient, lpWriter, lpQuery = test_utils.SetupAllExternalsPanic(ctx, test_utils.ConnsInfo{
 		Name:   "test_prototlm",
 		BusUrl: busUrl,
 		Surreal: test_utils.SurrealInfo{
@@ -70,7 +74,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	protofluxSrv := NewProtoTlmServer(logTest, mSdk, mng.NewSurrealDeviceStore(db), ts.NewInfluxTelemetryStore(lpWriter))
+	protofluxSrv := NewProtoTlmServer(logTest, mSdk, mng.NewSurrealDeviceStore(db), ts.NewInfluxTelemetryStore("Mir", "mir_integration_test", lpClient))
 	go func() {
 		protofluxSrv.Listen(ctx)
 	}()
@@ -246,6 +250,7 @@ func TestPublishDeviceSchemaAlreadyPresent(t *testing.T) {
 	compSch, err := mir_models.CompressProtoFiles(
 		prototlm_testv1.File_prototlm_test_v1_telemetry_proto,
 		descriptorpb.File_google_protobuf_descriptor_proto,
+		devicev1.File_mir_device_v1_mir_proto,
 	)
 	if err != nil {
 		t.Error(err)
@@ -589,7 +594,7 @@ func TestPublishDevicePushTelemetryDeviceUpdate(t *testing.T) {
 	wgTlm.Wait()
 
 	// Assert
-	dpResult, err := lpQuery.Query(ctx, `from(bucket: "mir_integration_test") |> range(start: -7s) |> filter(fn: (r) => r["_measurement"] == "prototlm_test.v1.EnvTlm" or r["_measurement"] == "prototlm_test.v1.PowerTlm") |> filter(fn: (r) => r["__id"] == "device_push_tlm_upd") |> filter(fn: (r) => r["test"] == "update")`)
+	dpResult, err := lpQuery.Query(ctx, `from(bucket: "mir_integration_test") |> range(start: -7s) |> filter(fn: (r) => r["_measurement"] == "prototlm_test.v1.EnvTlm" or r["_measurement"] == "prototlm_test.v1.PowerTlm") |> filter(fn: (r) => r["__id"] == "device_push_tlm_upd") |> filter(fn: (r) => r["__label_test"] == "update")`)
 	if err != nil {
 		t.Error(err)
 	} else if dpResult.Err() != nil {
@@ -607,4 +612,253 @@ func TestPublishDevicePushTelemetryDeviceUpdate(t *testing.T) {
 
 	cancel()
 	wg.Wait()
+}
+
+func TestPublishTelemetryListPairs(t *testing.T) {
+	// Arrange
+	ctx, cancel := context.WithCancel(context.Background())
+	s := swarm.NewSwarm(b)
+	_, err := s.AddDevices(
+		&core_apiv1.CreateDeviceRequest{
+			DeviceId:  "dev_tlm_list_1",
+			Name:      "dev_tlm_list_1",
+			Namespace: "testing_core",
+			Labels: map[string]string{
+				"testing": "tlm",
+			},
+			Annotations: map[string]string{
+				"mir/device/description": "hello world of devices !",
+			},
+		},
+		&core_apiv1.CreateDeviceRequest{
+			DeviceId:  "dev_tlm_list_2",
+			Name:      "dev_tlm_list_2",
+			Namespace: "testing_core",
+			Labels: map[string]string{
+				"testing": "tlm",
+			},
+			Annotations: map[string]string{
+				"mir/device/description": "hello world of devices !",
+			},
+		}).WithSchema(
+		prototlm_testv1.File_prototlm_test_v1_telemetry_proto,
+	).Incubate()
+	_, err = s.AddDevices(
+		&core_apiv1.CreateDeviceRequest{
+			DeviceId:  "dev_tlm_list_3",
+			Name:      "dev_tlm_list_3",
+			Namespace: "testing_core",
+			Labels: map[string]string{
+				"testing": "tlm",
+			},
+			Annotations: map[string]string{
+				"mir/device/description": "hello world of devices !",
+			},
+		},
+		&core_apiv1.CreateDeviceRequest{
+			DeviceId:  "dev_tlm_list_4",
+			Name:      "dev_tlm_list_4",
+			Namespace: "testing_core",
+			Labels: map[string]string{
+				"testing": "tlm",
+			},
+			Annotations: map[string]string{
+				"mir/device/description": "hello world of devices !",
+			},
+		}).WithSchema(
+		prototlm_testv1.File_prototlm_test_v1_telemetry2_proto,
+	).Incubate()
+	_, err = s.AddDevices(
+		&core_apiv1.CreateDeviceRequest{
+			DeviceId:  "dev_tlm_list_6",
+			Name:      "dev_tlm_list_6",
+			Namespace: "testing_core",
+			Labels: map[string]string{
+				"testing": "tlm",
+			},
+			Annotations: map[string]string{
+				"mir/device/description": "hello world of devices !",
+			},
+		},
+		&core_apiv1.CreateDeviceRequest{
+			DeviceId:  "dev_tlm_list_5",
+			Name:      "dev_tlm_list_5",
+			Namespace: "testing_core",
+			Labels: map[string]string{
+				"testing": "tlm",
+			},
+			Annotations: map[string]string{
+				"mir/device/description": "hello world of devices !",
+			},
+		}).WithSchema(
+		prototlm_testv1.File_prototlm_test_v1_telemetry_proto,
+		prototlm_testv1.File_prototlm_test_v1_telemetry2_proto,
+	).Incubate()
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Act
+	wgs, err := s.Deploy(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+
+	resp, err := tlm_client.PublishTelemetryListRequest(b, &tlm_apiv1.SendListTelemetryRequest{
+		Targets: &core_apiv1.Targets{
+			Ids: s.ToTarget().Ids,
+		},
+		RefreshSchema: true,
+	})
+	if err != nil {
+		t.Error(err)
+	}
+	if resp.GetError() != nil {
+		t.Error(resp.GetError().Message)
+	}
+
+	// Assert
+	tlmResp := resp.GetOk()
+
+	for _, dt := range tlmResp.DevicesTelemetry {
+		assert.Equal(t, 2, len(dt.DevicesNamens))
+		if slices.Contains(dt.DevicesNamens, "dev_tlm_list_1") &&
+			slices.Contains(dt.DevicesNamens, "dev_tlm_list_2") {
+			assert.Equal(t, true, true)
+		} else if slices.Contains(dt.DevicesNamens, "dev_tlm_list_3") &&
+			slices.Contains(dt.DevicesNamens, "dev_tlm_list_4") {
+			assert.Equal(t, true, true)
+		} else if slices.Contains(dt.DevicesNamens, "dev_tlm_list_5") &&
+			slices.Contains(dt.DevicesNamens, "dev_tlm_list_6") {
+			assert.Equal(t, true, true)
+		} else {
+			assert.Assert(t, true, false)
+		}
+	}
+
+	cancel()
+	for _, wg := range wgs {
+		wg.Wait()
+	}
+}
+
+func TestPublishTelemetryList(t *testing.T) {
+	// Arrange
+	ctx, cancel := context.WithCancel(context.Background())
+	s := swarm.NewSwarm(b)
+	_, err := s.AddDevices(
+		&core_apiv1.CreateDeviceRequest{
+			DeviceId:  "dev_tlm_list_1",
+			Name:      "dev_tlm_list_1",
+			Namespace: "testing_core",
+			Labels: map[string]string{
+				"testing": "tlm",
+			},
+			Annotations: map[string]string{
+				"mir/device/description": "hello world of devices !",
+			},
+		},
+	).WithSchema(prototlm_testv1.File_prototlm_test_v1_telemetry_proto).
+		Incubate()
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Act
+	wgs, err := s.Deploy(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+
+	resp, err := tlm_client.PublishTelemetryListRequest(b, &tlm_apiv1.SendListTelemetryRequest{
+		Targets: &core_apiv1.Targets{
+			Ids: s.ToTarget().Ids,
+		},
+		RefreshSchema: true,
+	})
+	if err != nil {
+		t.Error(err)
+	}
+	if resp.GetError() != nil {
+		t.Error(resp.GetError().Message)
+	}
+
+	// Assert
+	dt := resp.GetOk().DevicesTelemetry[0]
+
+	assert.Equal(t, 1, len(dt.DevicesNamens))
+	if slices.Contains(dt.DevicesNamens, "dev_tlm_list_1") {
+		assert.Equal(t, true, true)
+	}
+	for _, td := range dt.TlmDescriptors {
+		if td.Name == "prototlm_test.v1.EnvTlm" {
+			assert.Equal(t, true, slices.Contains(td.Fields, "temperature"))
+			assert.Equal(t, true, slices.Contains(td.Fields, "humidity"))
+			assert.Equal(t, true, slices.Contains(td.Fields, "pressure"))
+			assert.Equal(t, 1, len(td.Labels))
+			if k, ok := td.Labels["severity"]; ok && k == "high" {
+				assert.Equal(t, true, true)
+			}
+		} else if td.Name == "prototlm_test.v1.PowerTlm" {
+			assert.Equal(t, true, slices.Contains(td.Fields, "amp"))
+			assert.Equal(t, true, slices.Contains(td.Fields, "volt"))
+			assert.Equal(t, true, slices.Contains(td.Fields, "power"))
+			assert.Equal(t, 2, len(td.Labels))
+			if k, ok := td.Labels["building"]; ok && k == "A" {
+				assert.Equal(t, true, true)
+			}
+			if k, ok := td.Labels["floor"]; ok && k == "2" {
+				assert.Equal(t, true, true)
+			}
+		}
+	}
+
+	cancel()
+	for _, wg := range wgs {
+		wg.Wait()
+	}
+}
+
+func TestPublishTelemetryListError(t *testing.T) {
+	// Arrange
+	s := swarm.NewSwarm(b)
+	_, err := s.AddDevices(
+		&core_apiv1.CreateDeviceRequest{
+			DeviceId:  "dev_tlm_list_offline",
+			Name:      "dev_tlm_list_offline",
+			Namespace: "testing_core",
+			Labels: map[string]string{
+				"testing": "tlm",
+			},
+			Annotations: map[string]string{
+				"mir/device/description": "hello world of devices !",
+			},
+		},
+	).WithSchema(prototlm_testv1.File_prototlm_test_v1_telemetry_proto).
+		Incubate()
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Act
+	resp, err := tlm_client.PublishTelemetryListRequest(b, &tlm_apiv1.SendListTelemetryRequest{
+		Targets: &core_apiv1.Targets{
+			Ids: []string{"dev_tlm_list_offline"},
+		},
+		RefreshSchema: true,
+	})
+	if err != nil {
+		t.Error(err)
+	}
+	if resp.GetError() != nil {
+		t.Error(resp.GetError().Message)
+	}
+
+	// Assert
+	dt := resp.GetOk().DevicesTelemetry[0]
+	assert.Equal(t, 1, len(dt.DevicesNamens))
+	if slices.Contains(dt.DevicesNamens, "dev_tlm_list_offline") {
+		assert.Equal(t, true, true)
+	}
+	assert.Equal(t, dt.Error, "cannot reconcile device schema: nats: no responders available for request")
 }

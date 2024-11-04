@@ -25,6 +25,7 @@ func NewSwarm(bus *bus.BusConn) swarm {
 }
 
 func (s *swarm) Deploy(ctx context.Context) ([]*sync.WaitGroup, error) {
+	time.Sleep(2 * time.Second)
 	var errs error
 	var wgs []*sync.WaitGroup
 	for _, d := range s.Devices {
@@ -119,7 +120,6 @@ func (b *devicesBuilder) Incubate() ([]*core_apiv1.CreateDeviceResponse, error) 
 			responses = append(responses, resp)
 		}
 	}
-	time.Sleep(2 * time.Second)
 	return responses, errs
 }
 
