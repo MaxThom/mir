@@ -1,0 +1,113 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Mir local dev",
+            "type": "shell",
+            "dependsOn": [
+                "Mir core run", 
+                "Mir prototlm run",
+                "Mir protocmd run",
+                "Mir infra run",
+                "Mir book run"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "Mir core run",
+            "type": "shell",
+            "command": "sleep 5 && make air-core",
+            "problemMatcher": [],
+            "group": {
+                "kind": "none",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "new",
+                "focus": false,
+                "close": false
+            },
+            "runOptions": {
+                "instanceLimit": 1
+            },
+        },
+        {
+            "label": "Mir prototlm run",
+            "type": "shell",
+            "command": "sleep 5 && make air-prototlm",
+            "problemMatcher": [],
+            "group": {
+                "kind": "none",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "new",
+                "focus": false,
+                "close": false
+            },
+            "runOptions": {
+                "instanceLimit": 1
+            },
+        },
+        {
+            "label": "Mir protocmd run",
+            "type": "shell",
+            "command": "sleep 5 && make air-protocmd",
+            "problemMatcher": [],
+            "group": {
+                "kind": "none",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "new",
+                "focus": false,
+                "close": false
+            },
+            "runOptions": {
+                "instanceLimit": 1
+            },
+        },
+        {
+            "label": "Mir infra run",
+            "type": "shell",
+            "command": "make docker-infra",
+            "problemMatcher": [],
+            "group": {
+                "kind": "none",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "new",
+                "focus": false,
+                "close": false
+            },
+            "runOptions": {
+                "instanceLimit": 1
+            },
+        },
+        {
+            "label": "Mir book run",
+            "type": "shell",
+            "command": "make mir-book",
+            "problemMatcher": [],
+            "group": {
+                "kind": "none",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "new",
+                "focus": false,
+                "close": false
+            },
+            "runOptions": {
+                "instanceLimit": 1
+            },
+        }
+
+    ]
+}

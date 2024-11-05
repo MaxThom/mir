@@ -3,7 +3,6 @@ module github.com/maxthom/mir
 go 1.23.2
 
 require (
-	dario.cat/mergo v1.0.0
 	github.com/alecthomas/kong v0.9.0
 	github.com/charmbracelet/bubbles v0.18.0
 	github.com/charmbracelet/bubbletea v0.25.0

@@ -42,8 +42,8 @@ ex-module:
 ex-device:
 	go run ./examples/hearthbeat_device
 
-book:
-	cd ../mir.wiki && mdbook serve -p 5001
+mir-book:
+	cd book && mdbook serve -p 5001
 
 # install
 install-mir: build-mir
@@ -56,6 +56,10 @@ mir-log:
 # local dev with tmuxifier
 dev-tx:
 	tmuxifier s ./.tmux/mir.session.sh
+
+# docker
+docker-infra:
+	docker compose -f infra/dev/compose.yaml up --force-recreate
 
 # air
 air-core:
