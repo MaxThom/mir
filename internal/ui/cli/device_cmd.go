@@ -3,6 +3,7 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/google/uuid"
@@ -10,6 +11,7 @@ import (
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
+	"github.com/maxthom/mir/pkgs/mir_models"
 	"gopkg.in/yaml.v3"
 )
 
@@ -24,12 +26,12 @@ type DeviceCmd struct {
 }
 
 type DeviceListCmd struct {
-	Output string `short:"o" help:"output format for response" default:"json"`
+	Output string `short:"o" help:"output format for response [pretty|json|yaml]" default:"pretty"`
 	Target `embed:"" prefix:"target."`
 }
 
 type DeviceCreateCmd struct {
-	Output string `short:"o" help:"output format for response [json|yaml]" default:"json"`
+	Output string `short:"o" help:"output format for response [pretty|json|yaml]" default:"pretty"`
 
 	RandomId  bool              `short:"r" help:"Set a random device id"`
 	Id        string            `help:"Set device id"`
@@ -42,7 +44,7 @@ type DeviceCreateCmd struct {
 }
 
 type DeviceUpdateCmd struct {
-	Output string `short:"o" help:"output format for response" default:"json"`
+	Output string `short:"o" help:"output format for response [pretty|json|yaml]" default:"pretty"`
 	Target `embed:"" prefix:"target."`
 
 	Name      *string           `help:"Set device name"`
@@ -54,7 +56,7 @@ type DeviceUpdateCmd struct {
 }
 
 type DeviceDeleteCmd struct {
-	Output string `short:"o" help:"output format for response" default:"json"`
+	Output string `short:"o" help:"output format for response [pretty|json|yaml]" default:"pretty"`
 	Target `embed:"" prefix:"target."`
 }
 
@@ -74,8 +76,8 @@ func (d *DeviceListCmd) Validate() error {
 	err := MirInvalidInputError{
 		Details: []string{},
 	}
-	if strings.ToLower(d.Output) != "yaml" && strings.ToLower(d.Output) != "json" {
-		err.Details = append(err.Details, "The output format is invalid")
+	if strings.ToLower(d.Output) != "pretty" && strings.ToLower(d.Output) != "yaml" && strings.ToLower(d.Output) != "json" {
+		d.Output = "pretty"
 	}
 	if len(err.Details) > 0 {
 		return err
@@ -104,7 +106,6 @@ func (d *DeviceListCmd) Run(c CLI) error {
 	})
 	if err != nil {
 		e := MirRequestError{Route: "device.list", e: err}
-		fmt.Println(e)
 		return e
 	}
 
@@ -116,15 +117,18 @@ func (d *DeviceListCmd) Run(c CLI) error {
 				Message: resp.GetError().GetMessage(),
 				Details: resp.GetError().GetDetails(),
 			}}
-		fmt.Println(e)
 		return e
 	} else {
-		if out, e := MarhsalResponse(d.Output, resp.GetOk()); e != nil {
-			fmt.Println(e)
-			return e
+		if d.Output == "pretty" {
+			fmt.Println(prettyStringDevices(resp.GetOk().Devices))
 		} else {
-			fmt.Println(out)
+			if out, e := MarhsalResponse(d.Output, resp.GetOk()); e != nil {
+				return e
+			} else {
+				fmt.Println(out)
+			}
 		}
+
 	}
 	return nil
 }
@@ -136,8 +140,8 @@ func (d *DeviceCreateCmd) Validate() error {
 	if d.Id == "" && !d.RandomId {
 		err.Details = append(err.Details, "The device ID is mandatory")
 	}
-	if strings.ToLower(d.Output) != "yaml" && strings.ToLower(d.Output) != "json" {
-		err.Details = append(err.Details, "The output format is invalid")
+	if strings.ToLower(d.Output) != "pretty" && strings.ToLower(d.Output) != "yaml" && strings.ToLower(d.Output) != "json" {
+		d.Output = "pretty"
 	}
 	if len(err.Details) > 0 {
 		return err
@@ -195,14 +199,16 @@ func (d *DeviceCreateCmd) Run(c CLI) error {
 				Message: resp.GetError().GetMessage(),
 				Details: resp.GetError().GetDetails(),
 			}}
-		fmt.Println(e)
 		return e
 	} else {
-		if out, e := MarhsalResponse(d.Output, resp.GetOk()); e != nil {
-			fmt.Println(e)
-			return e
+		if d.Output == "pretty" {
+			fmt.Println(prettyStringDevices(resp.GetOk().Devices))
 		} else {
-			fmt.Println(out)
+			if out, e := MarhsalResponse(d.Output, resp.GetOk()); e != nil {
+				return e
+			} else {
+				fmt.Println(out)
+			}
 		}
 	}
 	return nil
@@ -213,8 +219,8 @@ func (d *DeviceUpdateCmd) Validate() error {
 		Details: []string{},
 	}
 
-	if strings.ToLower(d.Output) != "yaml" && strings.ToLower(d.Output) != "json" {
-		err.Details = append(err.Details, "The output format is invalid")
+	if strings.ToLower(d.Output) != "pretty" && strings.ToLower(d.Output) != "yaml" && strings.ToLower(d.Output) != "json" {
+		d.Output = "pretty"
 	}
 
 	if len(d.Target.Ids) == 0 &&
@@ -306,11 +312,14 @@ func (d *DeviceUpdateCmd) Run(c CLI) error {
 		fmt.Println(e)
 		return e
 	} else {
-		if out, e := MarhsalResponse(d.Output, resp.GetOk()); e != nil {
-			fmt.Println(e)
-			return e
+		if d.Output == "pretty" {
+			fmt.Println(prettyStringDevices(resp.GetOk().Devices))
 		} else {
-			fmt.Println(out)
+			if out, e := MarhsalResponse(d.Output, resp.GetOk()); e != nil {
+				return e
+			} else {
+				fmt.Println(out)
+			}
 		}
 	}
 
@@ -330,9 +339,10 @@ func (d *DeviceDeleteCmd) Validate() error {
 		err.Details = append(err.Details, "Must specify targets")
 	}
 
-	if strings.ToLower(d.Output) != "yaml" && strings.ToLower(d.Output) != "json" {
-		err.Details = append(err.Details, "The output format is invalid")
+	if strings.ToLower(d.Output) != "pretty" && strings.ToLower(d.Output) != "yaml" && strings.ToLower(d.Output) != "json" {
+		d.Output = "pretty"
 	}
+
 	if len(err.Details) > 0 {
 		return err
 	}
@@ -375,11 +385,14 @@ func (d *DeviceDeleteCmd) Run(c CLI) error {
 		fmt.Println(e)
 		return e
 	} else {
-		if out, e := MarhsalResponse(d.Output, resp.GetOk()); e != nil {
-			fmt.Println(e)
-			return e
+		if d.Output == "pretty" {
+			fmt.Println(prettyStringDevices(resp.GetOk().Devices))
 		} else {
-			fmt.Println(out)
+			if out, e := MarhsalResponse(d.Output, resp.GetOk()); e != nil {
+				return e
+			} else {
+				fmt.Println(out)
+			}
 		}
 	}
 	return nil
@@ -410,4 +423,52 @@ func MarhsalResponse(format string, v any) (string, error) {
 	}
 
 	return string(out), e
+}
+
+func prettyStringDevices(list []*core_apiv1.Device) string {
+	format := "%-45s %-10s %-20s %-20s %-60s\n"
+	timeFormat := "2006-01-02 15:04:05"
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf(format, "NAME/NAMESPACE", "STATUS", "LAST_HEARTHBEAT", "LAST_SCHEMA_FETCH", "LABELS"))
+
+	sort.Slice(list, func(i, j int) bool {
+		return list[i].Meta.Namespace < list[j].Meta.Namespace
+	})
+
+	for _, d := range list {
+		st := ""
+		if d.Spec.Disabled {
+			st = "disabled"
+		} else if d.Status.Online {
+			st = "online"
+		} else {
+			st = "offline"
+		}
+
+		hb := ""
+		if d.Status.LastHearthbeat != nil {
+			hb = mir_models.AsGoTime(d.Status.LastHearthbeat).Format(timeFormat)
+		}
+		sf := ""
+		if d.Status.LastHearthbeat != nil {
+			sf = mir_models.AsGoTime(d.Status.Schema.LastSchemaFetch).Format(timeFormat)
+		}
+
+		sb.WriteString(fmt.Sprintf(format, d.Meta.Name+"/"+d.Meta.Namespace, st, hb, sf, formatLabels(d.Meta.Labels)))
+	}
+	return sb.String()
+}
+
+func formatLabels(m map[string]string) string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	pairs := make([]string, 0, len(m))
+	for _, k := range keys {
+		pairs = append(pairs, fmt.Sprintf("%s=%s", k, m[k]))
+	}
+	return strings.Join(pairs, ",")
 }

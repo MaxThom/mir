@@ -28,7 +28,7 @@ type SchemaUploadCmd struct {
 }
 
 type SchemaExploreCmd struct {
-	Output            string `short:"o" help:"output format for response" default:"json"`
+	Output            string `short:"o" help:"output format for response [pretty|json|yaml]" default:"pretty"`
 	IncludeMirImports bool   `short:"i" help:"includes Mir proto dependencies" default:"false"`
 	Target            `embed:"" prefix:"target."`
 }
@@ -130,11 +130,15 @@ func (d *SchemaUploadCmd) Run(c CLI) error {
 		fmt.Println(e)
 		return e
 	}
-	if out, e := MarhsalResponse(d.Output, resp.GetOk()); e != nil {
-		fmt.Println(e)
-		return e
+
+	if d.Output == "pretty" {
+		fmt.Println(prettyStringDevices(resp.GetOk().Devices))
 	} else {
-		fmt.Println(out)
+		if out, e := MarhsalResponse(d.Output, resp.GetOk()); e != nil {
+			return e
+		} else {
+			fmt.Println(out)
+		}
 	}
 	return nil
 }
