@@ -61,11 +61,10 @@ func (d *CommandListCmd) Run(c CLI) error {
 
 	req := &cmd_apiv1.SendListCommandsRequest{
 		Targets: &core_apiv1.Targets{
-			Ids:         d.Target.Ids,
-			Names:       d.Target.Names,
-			Namespaces:  d.Target.Namespaces,
-			Labels:      d.Target.Labels,
-			Annotations: d.Target.Anno,
+			Ids:        d.Target.Ids,
+			Names:      d.Target.Names,
+			Namespaces: d.Target.Namespaces,
+			Labels:     d.Target.Labels,
 		},
 		FilterLabels:  d.FilterLabels,
 		RefreshSchema: d.RefreshSchema,
@@ -134,8 +133,7 @@ func (d *CommandSendCmd) Validate() error {
 	if len(d.Target.Ids) == 0 &&
 		len(d.Target.Names) == 0 &&
 		len(d.Target.Namespaces) == 0 &&
-		len(d.Target.Labels) == 0 &&
-		len(d.Target.Anno) == 0 {
+		len(d.Target.Labels) == 0 {
 		err.Details = append(err.Details, "Must specify targets")
 	}
 
@@ -167,11 +165,10 @@ func (d *CommandSendCmd) Run(c CLI) error {
 
 	req := &cmd_apiv1.SendCommandRequest{
 		Targets: &core_apiv1.Targets{
-			Ids:         d.Target.Ids,
-			Names:       d.Target.Names,
-			Namespaces:  d.Target.Namespaces,
-			Labels:      d.Target.Labels,
-			Annotations: d.Target.Anno,
+			Ids:        d.Target.Ids,
+			Names:      d.Target.Names,
+			Namespaces: d.Target.Namespaces,
+			Labels:     d.Target.Labels,
 		},
 		Name:            d.Command,
 		Payload:         []byte(d.Payload),

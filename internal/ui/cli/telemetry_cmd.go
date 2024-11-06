@@ -55,11 +55,10 @@ func (d *TelemetryListCmd) Run(c CLI) error {
 
 	req := &tlm_apiv1.SendListTelemetryRequest{
 		Targets: &core_apiv1.Targets{
-			Ids:         d.Target.Ids,
-			Names:       d.Target.Names,
-			Namespaces:  d.Target.Namespaces,
-			Labels:      d.Target.Labels,
-			Annotations: d.Target.Anno,
+			Ids:        d.Target.Ids,
+			Names:      d.Target.Names,
+			Namespaces: d.Target.Namespaces,
+			Labels:     d.Target.Labels,
 		},
 		Measurements:  d.Measuremeants,
 		Filters:       d.Filters,

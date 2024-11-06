@@ -225,7 +225,7 @@ func (s *ProtoTlmServer) handleTelemetryListRequest(msg *nats.Msg, req *tlm_apiv
 		found := false
 		for _, sch := range devSchemas {
 			if proto_mir.AreSchemaEqual(sch.sch, reg) {
-				sch.devsId = append(sch.devsId, dev.Device.Spec.DeviceId)
+				sch.devsId = append(sch.devsId, dev.Spec.DeviceId)
 				sch.devsNameNs = append(sch.devsNameNs, dev.GetNameNamespace())
 				found = true
 			}
@@ -234,7 +234,7 @@ func (s *ProtoTlmServer) handleTelemetryListRequest(msg *nats.Msg, req *tlm_apiv
 		if !found {
 			devSchemas = append(devSchemas, &schemaPerDevices{
 				sch:        reg,
-				devsId:     []string{dev.Device.Spec.DeviceId},
+				devsId:     []string{dev.Spec.DeviceId},
 				devsNameNs: []string{dev.GetNameNamespace()},
 			})
 		}

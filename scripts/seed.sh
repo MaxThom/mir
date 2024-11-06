@@ -5,7 +5,7 @@
 bin="./bin/mir"
 
 echo "DELETED"
-$bin device delete --target.labels "source=seed" -o json
+$bin device delete --target.labels "source=seed"
 
 $bin device create --random-id --name "clean_hvac"  --namespace "monitoring" --desc "To monitor and control hvac system"      --labels "source=seed;factory=A;room=clean"     --anno "utility=low;managed=true"       >/dev/null
 $bin device create --random-id --name "server_temp" --namespace "monitoring" --desc "To monitor and control temperature"      --labels "source=seed;factory=A;room=server"    --anno "utility=moderate;managed=true"  >/dev/null
@@ -35,4 +35,4 @@ $bin device create --id "0xf86tlm" --name "dev1" --namespace "dev" --desc "Devic
 $bin device create --id "0xf86cmd" --name "dev2" --namespace "dev" --desc "Device hard two" --labels "source=seed;" --anno "" >/dev/null
 
 echo "CREATED"
-$bin device list --target.labels "source=seed" -o json
+$bin device list --target.labels "source=seed"

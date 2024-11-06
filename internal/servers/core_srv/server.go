@@ -261,7 +261,7 @@ func (s *CoreServer) createDeviceRequestHandler(ch chan nats.Msg) {
 		sendReplyOrAck(s.bus, msg, &core_apiv1.CreateDeviceResponse{
 			Response: &core_apiv1.CreateDeviceResponse_Ok{
 				Ok: &core_apiv1.DeviceList{
-					Devices: mir_models.NewProtoDeviceListFromDevicesWithId(newDev),
+					Devices: mir_models.NewProtoDeviceListFromDevices(newDev),
 				},
 			}})
 	}
@@ -302,7 +302,7 @@ func (s *CoreServer) updateDeviceRequestHandler(ch chan nats.Msg) {
 						},
 					},
 				})
-			} else if errors.Is(err, mir_models.ErrorDbExecutingQuery) {
+			} else {
 				sendReplyOrAck(s.bus, msg, &core_apiv1.UpdateDeviceResponse{
 					Response: &core_apiv1.UpdateDeviceResponse_Error{
 						Error: &common_apiv1.Error{
@@ -328,7 +328,7 @@ func (s *CoreServer) updateDeviceRequestHandler(ch chan nats.Msg) {
 		sendReplyOrAck(s.bus, msg, &core_apiv1.UpdateDeviceResponse{
 			Response: &core_apiv1.UpdateDeviceResponse_Ok{
 				Ok: &core_apiv1.DeviceList{
-					Devices: mir_models.NewProtoDeviceListFromDevicesWithId(respDb),
+					Devices: mir_models.NewProtoDeviceListFromDevices(respDb),
 				},
 			}})
 	}
@@ -395,7 +395,7 @@ func (s *CoreServer) deleteDeviceRequestHandler(ch chan nats.Msg) {
 		sendReplyOrAck(s.bus, msg, &core_apiv1.DeleteDeviceResponse{
 			Response: &core_apiv1.DeleteDeviceResponse_Ok{
 				Ok: &core_apiv1.DeviceList{
-					Devices: mir_models.NewProtoDeviceListFromDevicesWithId(devList),
+					Devices: mir_models.NewProtoDeviceListFromDevices(devList),
 				},
 			}})
 	}
@@ -442,7 +442,7 @@ func (s *CoreServer) listDeviceRequestHandler(ch chan nats.Msg) {
 		sendReplyOrAck(s.bus, msg, &core_apiv1.ListDeviceResponse{
 			Response: &core_apiv1.ListDeviceResponse_Ok{
 				Ok: &core_apiv1.DeviceList{
-					Devices: mir_models.NewProtoDeviceListFromDevicesWithId(respDb),
+					Devices: mir_models.NewProtoDeviceListFromDevices(respDb),
 				},
 			}})
 	}

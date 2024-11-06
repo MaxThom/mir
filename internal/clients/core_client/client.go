@@ -132,8 +132,8 @@ func PublishDeviceOfflineEvent(bus *bus.BusConn, originalInstance string, device
 	return bus.PublishMsg(msg)
 }
 
-func PublishDeviceDeletedEvent(bus *bus.BusConn, originalInstance string, deviceId string, d mir_models.DeviceWithId) error {
-	b, err := proto.Marshal(mir_models.NewProtoDeviceFromDeviceWithId(d))
+func PublishDeviceDeletedEvent(bus *bus.BusConn, originalInstance string, deviceId string, d mir_models.Device) error {
+	b, err := proto.Marshal(mir_models.NewProtoDeviceFromDevice(d))
 	if err != nil {
 		return err
 	}
@@ -146,8 +146,8 @@ func PublishDeviceDeletedEvent(bus *bus.BusConn, originalInstance string, device
 	return bus.PublishMsg(msg)
 }
 
-func PublishDeviceCreatedEvent(bus *bus.BusConn, originalInstance string, deviceId string, d mir_models.DeviceWithId) error {
-	b, err := proto.Marshal(mir_models.NewProtoDeviceFromDeviceWithId(d))
+func PublishDeviceCreatedEvent(bus *bus.BusConn, originalInstance string, deviceId string, d mir_models.Device) error {
+	b, err := proto.Marshal(mir_models.NewProtoDeviceFromDevice(d))
 	if err != nil {
 		return err
 	}
@@ -160,8 +160,8 @@ func PublishDeviceCreatedEvent(bus *bus.BusConn, originalInstance string, device
 	return bus.PublishMsg(msg)
 }
 
-func PublishDeviceUpdatedEvent(bus *bus.BusConn, originalInstance string, deviceId string, d mir_models.DeviceWithId) error {
-	b, err := proto.Marshal(mir_models.NewProtoDeviceFromDeviceWithId(d))
+func PublishDeviceUpdatedEvent(bus *bus.BusConn, originalInstance string, deviceId string, d mir_models.Device) error {
+	b, err := proto.Marshal(mir_models.NewProtoDeviceFromDevice(d))
 	if err != nil {
 		return err
 	}

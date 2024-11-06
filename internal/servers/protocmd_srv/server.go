@@ -99,8 +99,7 @@ func (s *ProtoCmdServer) sendCommandSub() func(msg *nats.Msg, req *cmd_apiv1.Sen
 			len(req.Targets.Ids) == 0 &&
 				len(req.Targets.Names) == 0 &&
 				len(req.Targets.Namespaces) == 0 &&
-				len(req.Targets.Labels) == 0 &&
-				len(req.Targets.Annotations) == 0 {
+				len(req.Targets.Labels) == 0 {
 			errs = append(errs, mir_models.ErrorNoDeviceTargetProvided.Error())
 		}
 		if req.Name == "" {
