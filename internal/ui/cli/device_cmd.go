@@ -3,6 +3,7 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"sort"
 	"strings"
 
@@ -65,7 +66,6 @@ type Target struct {
 	Names      []string          `help:"List of device to fetch by names"`
 	Namespaces []string          `help:"List of device to fetch by namespaces"`
 	Labels     map[string]string `help:"Set of labels to filter devices"`
-	Anno       map[string]string `help:"Set of annotations to filter devices"`
 }
 
 func (d *DeviceCmd) Run() error {
@@ -97,11 +97,10 @@ func (d *DeviceListCmd) Run(c CLI) error {
 
 	resp, err := core_client.PublishDeviceListRequest(msgBus, &core_apiv1.ListDeviceRequest{
 		Targets: &core_apiv1.Targets{
-			Ids:         d.Ids,
-			Names:       d.Names,
-			Namespaces:  d.Namespaces,
-			Labels:      d.Labels,
-			Annotations: d.Anno,
+			Ids:        d.Ids,
+			Names:      d.Names,
+			Namespaces: d.Namespaces,
+			Labels:     d.Labels,
 		},
 	})
 	if err != nil {
@@ -122,7 +121,7 @@ func (d *DeviceListCmd) Run(c CLI) error {
 		if d.Output == "pretty" {
 			fmt.Println(prettyStringDevices(resp.GetOk().Devices))
 		} else {
-			if out, e := MarhsalResponse(d.Output, resp.GetOk()); e != nil {
+			if out, e := MarhsalResponse(d.Output, resp.GetOk().Devices); e != nil {
 				return e
 			} else {
 				fmt.Println(out)
@@ -204,7 +203,7 @@ func (d *DeviceCreateCmd) Run(c CLI) error {
 		if d.Output == "pretty" {
 			fmt.Println(prettyStringDevices(resp.GetOk().Devices))
 		} else {
-			if out, e := MarhsalResponse(d.Output, resp.GetOk()); e != nil {
+			if out, e := MarhsalResponse(d.Output, resp.GetOk().Devices); e != nil {
 				return e
 			} else {
 				fmt.Println(out)
@@ -226,8 +225,7 @@ func (d *DeviceUpdateCmd) Validate() error {
 	if len(d.Target.Ids) == 0 &&
 		len(d.Target.Names) == 0 &&
 		len(d.Target.Namespaces) == 0 &&
-		len(d.Target.Labels) == 0 &&
-		len(d.Target.Anno) == 0 {
+		len(d.Target.Labels) == 0 {
 		err.Details = append(err.Details, "Must specify targets")
 	}
 
@@ -278,22 +276,28 @@ func (d *DeviceUpdateCmd) Run(c CLI) error {
 	}
 	req := &core_apiv1.UpdateDeviceRequest{
 		Targets: &core_apiv1.Targets{
-			Ids:         d.Target.Ids,
-			Names:       d.Target.Names,
-			Namespaces:  d.Target.Namespaces,
-			Labels:      d.Target.Labels,
-			Annotations: d.Target.Anno,
+			Ids:        d.Target.Ids,
+			Names:      d.Target.Names,
+			Namespaces: d.Target.Namespaces,
+			Labels:     d.Target.Labels,
 		},
 		Meta: &core_apiv1.UpdateDeviceRequest_Meta{
-			Name:        d.Name,
-			Namespace:   d.Namespace,
 			Labels:      labels,
 			Annotations: anno,
 		},
-		Spec: &core_apiv1.UpdateDeviceRequest_Spec{
-			Disabled: d.Disabled,
-		},
+		Spec: &core_apiv1.UpdateDeviceRequest_Spec{},
 	}
+
+	if d.Name != nil {
+		req.Meta.Name = d.Name
+	}
+	if d.Namespace != nil {
+		req.Meta.Namespace = d.Namespace
+	}
+	if d.Disabled != nil {
+		req.Spec.Disabled = d.Disabled
+	}
+
 	resp, err := core_client.PublishDeviceUpdateRequest(msgBus, req)
 	if err != nil {
 		e := MirRequestError{Route: "device.update", e: err}
@@ -315,7 +319,7 @@ func (d *DeviceUpdateCmd) Run(c CLI) error {
 		if d.Output == "pretty" {
 			fmt.Println(prettyStringDevices(resp.GetOk().Devices))
 		} else {
-			if out, e := MarhsalResponse(d.Output, resp.GetOk()); e != nil {
+			if out, e := MarhsalResponse(d.Output, resp.GetOk().Devices); e != nil {
 				return e
 			} else {
 				fmt.Println(out)
@@ -334,8 +338,7 @@ func (d *DeviceDeleteCmd) Validate() error {
 	if len(d.Target.Ids) == 0 &&
 		len(d.Target.Names) == 0 &&
 		len(d.Target.Namespaces) == 0 &&
-		len(d.Target.Labels) == 0 &&
-		len(d.Target.Anno) == 0 {
+		len(d.Target.Labels) == 0 {
 		err.Details = append(err.Details, "Must specify targets")
 	}
 
@@ -361,11 +364,10 @@ func (d *DeviceDeleteCmd) Run(c CLI) error {
 
 	resp, err := core_client.PublishDeviceDeleteRequest(msgBus, &core_apiv1.DeleteDeviceRequest{
 		Targets: &core_apiv1.Targets{
-			Ids:         d.Target.Ids,
-			Names:       d.Target.Names,
-			Namespaces:  d.Target.Namespaces,
-			Labels:      d.Target.Labels,
-			Annotations: d.Target.Anno,
+			Ids:        d.Target.Ids,
+			Names:      d.Target.Names,
+			Namespaces: d.Target.Namespaces,
+			Labels:     d.Target.Labels,
 		},
 	})
 	if err != nil {
@@ -388,7 +390,7 @@ func (d *DeviceDeleteCmd) Run(c CLI) error {
 		if d.Output == "pretty" {
 			fmt.Println(prettyStringDevices(resp.GetOk().Devices))
 		} else {
-			if out, e := MarhsalResponse(d.Output, resp.GetOk()); e != nil {
+			if out, e := MarhsalResponse(d.Output, resp.GetOk().Devices); e != nil {
 				return e
 			} else {
 				fmt.Println(out)
@@ -401,6 +403,12 @@ func (d *DeviceDeleteCmd) Run(c CLI) error {
 func MarhsalResponse(format string, v any) (string, error) {
 	var out []byte
 	var e error
+
+	rv := reflect.ValueOf(v)
+	if rv.Kind() == reflect.Slice && rv.Len() == 1 {
+		v = rv.Index(0).Interface()
+	}
+
 	if strings.ToLower(format) == "json" {
 		var err error
 		out, err = json.MarshalIndent(v, "", "  ")
