@@ -60,15 +60,15 @@ func NewCreateDeviceReqFromDevice(d Device) *core_apiv1.CreateDeviceRequest {
 	}
 }
 
-func NewProtoDeviceListFromDevicesWithId(d []DeviceWithId) []*core_apiv1.Device {
+func NewProtoDeviceListFromDevices(d []Device) []*core_apiv1.Device {
 	p := []*core_apiv1.Device{}
 	for _, v := range d {
-		p = append(p, NewProtoDeviceFromDeviceWithId(v))
+		p = append(p, NewProtoDeviceFromDevice(v))
 	}
 	return p
 }
 
-func NewProtoDeviceFromDeviceWithId(d DeviceWithId) *core_apiv1.Device {
+func NewProtoDeviceFromDevice(d Device) *core_apiv1.Device {
 	toValueMap := func(m map[string]*string) map[string]string {
 		vm := map[string]string{}
 		for k, v := range m {
@@ -78,7 +78,6 @@ func NewProtoDeviceFromDeviceWithId(d DeviceWithId) *core_apiv1.Device {
 	}
 
 	return &core_apiv1.Device{
-		Id:         d.Id,
 		ApiVersion: d.ApiVersion,
 		ApiName:    d.ApiName,
 		Meta: &core_apiv1.Meta{

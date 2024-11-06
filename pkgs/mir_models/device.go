@@ -11,11 +11,6 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
-type DeviceWithId struct {
-	Id string `json:"id"`
-	Device
-}
-
 type Device struct {
 	ApiVersion string     `json:"apiVersion"`
 	ApiName    string     `json:"apiName"`

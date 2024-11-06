@@ -15,7 +15,6 @@ import (
 	"github.com/maxthom/mir/internal/clients/tlm_client"
 	"github.com/maxthom/mir/internal/externals/mng"
 	"github.com/maxthom/mir/internal/externals/ts"
-	"github.com/maxthom/mir/internal/libs/compression/zstd"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	"github.com/maxthom/mir/internal/libs/proto/proto_mir"
 	"github.com/maxthom/mir/internal/libs/swarm"
@@ -338,11 +337,11 @@ func TestPublishDeviceSchemaAlreadyPresent(t *testing.T) {
 		t.Error(respList.GetError())
 	}
 	devDb := respList.GetOk().Devices[0]
-	decompSch, err := zstd.DecompressData(compSch)
+	decompSch, err := proto_mir.DecompressSchema(compSch)
 	if err != nil {
 		t.Error(err)
 	}
-	decompStoredSchemaBytes, err := zstd.DecompressData(devDb.Status.Schema.CompressedSchema)
+	decompStoredSchema, err := proto_mir.DecompressSchema(devDb.Status.Schema.CompressedSchema)
 	if err != nil {
 		t.Error(err)
 	}
@@ -359,7 +358,7 @@ func TestPublishDeviceSchemaAlreadyPresent(t *testing.T) {
 	}
 
 	assert.Equal(t, reqCreate.DeviceId, devDb.Spec.DeviceId)
-	assert.Equal(t, len(decompSch), len(decompStoredSchemaBytes))
+	assert.Equal(t, true, proto_mir.AreSchemaEqual(decompSch, decompStoredSchema))
 	assert.Equal(t, timeFetch, mir_models.AsGoTime(devDb.Status.Schema.LastSchemaFetch))
 	assert.Equal(t, 24, dpCount)
 

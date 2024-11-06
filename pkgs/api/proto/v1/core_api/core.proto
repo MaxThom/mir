@@ -117,7 +117,6 @@ message Targets {
   repeated string names = 2; // names of the devices
   repeated string namespaces = 3; // namespace of the devices
   map<string, string> labels = 4; // Labels are used to uniquely identify the device
-  map<string, string> annotations = 5; // Annotations are used to add additional information
 }
 
 /*
@@ -138,13 +137,12 @@ message DeviceIdList {
   Represent a device in the system
 */
 message Device {
-  string id = 1; // Represent the database id of the device
-  string api_version = 2; // Current version of the spec
-  string api_name = 3; // Name of the spec
-  Meta meta = 4; // Represent the specifications that can be updated
-  Spec spec = 5; // Represent device twin specific config from Mir
-  Properties properties = 6; // Represent set of device defined properties
-  Status status = 7; // Represent the status reported by the Mir
+  string api_version = 1; // Current version of the spec
+  string api_name = 2; // Name of the spec
+  Meta meta = 3; // Represent the specifications that can be updated
+  Spec spec = 4; // Represent device twin specific config from Mir
+  Properties properties = 5; // Represent set of device defined properties
+  Status status = 6; // Represent the status reported by the Mir
 }
 
 /*

@@ -41,8 +41,7 @@ func (d *SchemaUploadCmd) Validate() error {
 	if len(d.Target.Ids) == 0 &&
 		len(d.Target.Names) == 0 &&
 		len(d.Target.Namespaces) == 0 &&
-		len(d.Target.Labels) == 0 &&
-		len(d.Target.Anno) == 0 {
+		len(d.Target.Labels) == 0 {
 		err.Details = append(err.Details, "Must specify targets")
 	}
 
@@ -100,11 +99,10 @@ func (d *SchemaUploadCmd) Run(c CLI) error {
 
 	req := &core_apiv1.UpdateDeviceRequest{
 		Targets: &core_apiv1.Targets{
-			Ids:         d.Target.Ids,
-			Names:       d.Target.Names,
-			Namespaces:  d.Target.Namespaces,
-			Labels:      d.Target.Labels,
-			Annotations: d.Target.Anno,
+			Ids:        d.Target.Ids,
+			Names:      d.Target.Names,
+			Namespaces: d.Target.Namespaces,
+			Labels:     d.Target.Labels,
 		},
 		Status: &core_apiv1.UpdateDeviceRequest_Status{
 			Schema: &core_apiv1.UpdateDeviceRequest_Schema{
@@ -134,7 +132,7 @@ func (d *SchemaUploadCmd) Run(c CLI) error {
 	if d.Output == "pretty" {
 		fmt.Println(prettyStringDevices(resp.GetOk().Devices))
 	} else {
-		if out, e := MarhsalResponse(d.Output, resp.GetOk()); e != nil {
+		if out, e := MarhsalResponse(d.Output, resp.GetOk().Devices); e != nil {
 			return e
 		} else {
 			fmt.Println(out)
@@ -151,8 +149,7 @@ func (d *SchemaExploreCmd) Validate() error {
 	if len(d.Target.Ids) == 0 &&
 		len(d.Target.Names) == 0 &&
 		len(d.Target.Namespaces) == 0 &&
-		len(d.Target.Labels) == 0 &&
-		len(d.Target.Anno) == 0 {
+		len(d.Target.Labels) == 0 {
 		err.Details = append(err.Details, "Must specify targets")
 	}
 
@@ -179,11 +176,10 @@ func (d *SchemaExploreCmd) Run(c CLI) error {
 
 	req := &core_apiv1.ListDeviceRequest{
 		Targets: &core_apiv1.Targets{
-			Ids:         d.Target.Ids,
-			Names:       d.Target.Names,
-			Namespaces:  d.Target.Namespaces,
-			Labels:      d.Target.Labels,
-			Annotations: d.Target.Anno,
+			Ids:        d.Target.Ids,
+			Names:      d.Target.Names,
+			Namespaces: d.Target.Namespaces,
+			Labels:     d.Target.Labels,
 		},
 	}
 	resp, err := core_client.PublishDeviceListRequest(msgBus, req)
@@ -208,11 +204,10 @@ func (d *SchemaExploreCmd) Run(c CLI) error {
 	if len(devs) == 0 {
 		e := MirDeviceNotFoundError{
 			Targets: &core_apiv1.Targets{
-				Ids:         d.Target.Ids,
-				Names:       d.Target.Names,
-				Namespaces:  d.Target.Namespaces,
-				Labels:      d.Target.Labels,
-				Annotations: d.Target.Anno,
+				Ids:        d.Target.Ids,
+				Names:      d.Target.Names,
+				Namespaces: d.Target.Namespaces,
+				Labels:     d.Target.Labels,
 			},
 		}
 		fmt.Println(e)
