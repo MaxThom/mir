@@ -23,6 +23,8 @@ type DeviceCmd struct {
 	List   DeviceListCmd   `cmd:"" help:"List devices"`
 	Create DeviceCreateCmd `cmd:"" help:"Create a new device"`
 	Update DeviceUpdateCmd `cmd:"" help:"Update a device"`
+	Edit   DeviceEditCmd   `cmd:"" help:"Interactive editing of a device"`
+	Apply  DeviceApplyCmd  `cmd:"" help:"Update a device using a declarative format"`
 	Delete DeviceDeleteCmd `cmd:"" help:"Delete a device"`
 }
 
@@ -121,7 +123,7 @@ func (d *DeviceListCmd) Run(c CLI) error {
 		if d.Output == "pretty" {
 			fmt.Println(prettyStringDevices(resp.GetOk().Devices))
 		} else {
-			if out, e := MarhsalResponse(d.Output, resp.GetOk().Devices); e != nil {
+			if out, e := MarshalResponse(d.Output, mir_models.NewDeviceListFromProtoDevices(resp.GetOk().Devices)); e != nil {
 				return e
 			} else {
 				fmt.Println(out)
@@ -203,7 +205,7 @@ func (d *DeviceCreateCmd) Run(c CLI) error {
 		if d.Output == "pretty" {
 			fmt.Println(prettyStringDevices(resp.GetOk().Devices))
 		} else {
-			if out, e := MarhsalResponse(d.Output, resp.GetOk().Devices); e != nil {
+			if out, e := MarshalResponse(d.Output, mir_models.NewDeviceListFromProtoDevices(resp.GetOk().Devices)); e != nil {
 				return e
 			} else {
 				fmt.Println(out)
@@ -319,7 +321,7 @@ func (d *DeviceUpdateCmd) Run(c CLI) error {
 		if d.Output == "pretty" {
 			fmt.Println(prettyStringDevices(resp.GetOk().Devices))
 		} else {
-			if out, e := MarhsalResponse(d.Output, resp.GetOk().Devices); e != nil {
+			if out, e := MarshalResponse(d.Output, mir_models.NewDeviceListFromProtoDevices(resp.GetOk().Devices)); e != nil {
 				return e
 			} else {
 				fmt.Println(out)
@@ -390,7 +392,7 @@ func (d *DeviceDeleteCmd) Run(c CLI) error {
 		if d.Output == "pretty" {
 			fmt.Println(prettyStringDevices(resp.GetOk().Devices))
 		} else {
-			if out, e := MarhsalResponse(d.Output, resp.GetOk().Devices); e != nil {
+			if out, e := MarshalResponse(d.Output, mir_models.NewDeviceListFromProtoDevices(resp.GetOk().Devices)); e != nil {
 				return e
 			} else {
 				fmt.Println(out)
@@ -400,7 +402,7 @@ func (d *DeviceDeleteCmd) Run(c CLI) error {
 	return nil
 }
 
-func MarhsalResponse(format string, v any) (string, error) {
+func MarshalResponse(format string, v any) (string, error) {
 	var out []byte
 	var e error
 
@@ -433,7 +435,9 @@ func MarhsalResponse(format string, v any) (string, error) {
 	return string(out), e
 }
 
-func prettyStringDevices(list []*core_apiv1.Device) string {
+func prettyStringDevices(devs []*core_apiv1.Device) string {
+	list := mir_models.NewDeviceListFromProtoDevices(devs)
+
 	format := "%-45s %-10s %-20s %-20s %-60s\n"
 	timeFormat := "2006-01-02 15:04:05"
 	var sb strings.Builder
@@ -454,12 +458,12 @@ func prettyStringDevices(list []*core_apiv1.Device) string {
 		}
 
 		hb := ""
-		if d.Status.LastHearthbeat != nil {
-			hb = mir_models.AsGoTime(d.Status.LastHearthbeat).Format(timeFormat)
+		if !d.Status.LastHearthbeat.IsZero() {
+			hb = d.Status.LastHearthbeat.Format(timeFormat)
 		}
 		sf := ""
-		if d.Status.LastHearthbeat != nil {
-			sf = mir_models.AsGoTime(d.Status.Schema.LastSchemaFetch).Format(timeFormat)
+		if !d.Status.Schema.LastSchemaFetch.IsZero() {
+			sf = d.Status.Schema.LastSchemaFetch.Format(timeFormat)
 		}
 
 		sb.WriteString(fmt.Sprintf(format, d.Meta.Name+"/"+d.Meta.Namespace, st, hb, sf, formatLabels(d.Meta.Labels)))
@@ -467,7 +471,7 @@ func prettyStringDevices(list []*core_apiv1.Device) string {
 	return sb.String()
 }
 
-func formatLabels(m map[string]string) string {
+func formatLabels(m map[string]*string) string {
 	keys := make([]string, 0, len(m))
 	for k := range m {
 		keys = append(keys, k)
@@ -476,7 +480,7 @@ func formatLabels(m map[string]string) string {
 
 	pairs := make([]string, 0, len(m))
 	for _, k := range keys {
-		pairs = append(pairs, fmt.Sprintf("%s=%s", k, m[k]))
+		pairs = append(pairs, fmt.Sprintf("%s=%s", k, *m[k]))
 	}
 	return strings.Join(pairs, ",")
 }

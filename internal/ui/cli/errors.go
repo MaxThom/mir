@@ -63,6 +63,15 @@ func (e MirSerializationError) Error() string {
 	return fmt.Sprintf("error serializing data to %s\n%s", e.Format, e.e)
 }
 
+type MirDeserializationError struct {
+	Format string
+	e      error
+}
+
+func (e MirDeserializationError) Error() string {
+	return fmt.Sprintf("error deserializing data to %s\n%s", e.Format, e.e)
+}
+
 type MirProcessError struct {
 	Msg string
 	e   error
@@ -78,4 +87,13 @@ type MirDeviceNotFoundError struct {
 
 func (e MirDeviceNotFoundError) Error() string {
 	return fmt.Sprintf("no devices where found with targets. \n%s", e.Targets)
+}
+
+type MirEditError struct {
+	Msg string
+	e   error
+}
+
+func (e MirEditError) Error() string {
+	return fmt.Sprintf("error editing resource. %s\n%s", e.Msg, e.e)
 }

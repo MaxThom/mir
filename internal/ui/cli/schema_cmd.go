@@ -132,7 +132,7 @@ func (d *SchemaUploadCmd) Run(c CLI) error {
 	if d.Output == "pretty" {
 		fmt.Println(prettyStringDevices(resp.GetOk().Devices))
 	} else {
-		if out, e := MarhsalResponse(d.Output, resp.GetOk().Devices); e != nil {
+		if out, e := MarshalResponse(d.Output, mir_models.NewDeviceListFromProtoDevices(resp.GetOk().Devices)); e != nil {
 			return e
 		} else {
 			fmt.Println(out)
@@ -266,7 +266,7 @@ func (d *SchemaExploreCmd) Run(c CLI) error {
 		fmt.Println(errs)
 	}
 
-	if out, e := MarhsalResponse(d.Output, devSchemasArray); e != nil {
+	if out, e := MarshalResponse(d.Output, devSchemasArray); e != nil {
 		fmt.Println(e)
 		return e
 	} else {

@@ -12,12 +12,12 @@ import (
 )
 
 type Device struct {
-	ApiVersion string     `json:"apiVersion"`
-	ApiName    string     `json:"apiName"`
-	Meta       Meta       `json:"meta"`
-	Spec       Spec       `json:"spec"`
-	Properties Properties `json:"properties"`
-	Status     Status     `json:"status"`
+	ApiVersion string     `json:"apiVersion" yaml:"apiVersion"`
+	ApiName    string     `json:"apiName" yaml:"apiName"`
+	Meta       Meta       `json:"meta" yaml:"meta"`
+	Spec       Spec       `json:"spec" yaml:"spec"`
+	Properties Properties `json:"properties" yaml:"properties"`
+	Status     Status     `json:"status" yaml:"status"`
 }
 
 func (d Device) GetNameNamespace() string {
@@ -25,31 +25,31 @@ func (d Device) GetNameNamespace() string {
 }
 
 type Meta struct {
-	Name        string             `json:"name"`
-	Namespace   string             `json:"namespace"`
-	Labels      map[string]*string `json:"labels"`
-	Annotations map[string]*string `json:"annotations"`
+	Name        string             `json:"name" yaml:"name"`
+	Namespace   string             `json:"namespace" yaml:"namespace"`
+	Labels      map[string]*string `json:"labels" yaml:"labels"`
+	Annotations map[string]*string `json:"annotations" yaml:"annotations"`
 }
 
 type Spec struct {
-	DeviceId string `json:"deviceId"`
-	Disabled bool   `json:"disabled"`
+	DeviceId string `json:"deviceId" yaml:"deviceId"`
+	Disabled bool   `json:"disabled" yaml:"disabled"`
 }
 
 type Properties struct {
 }
 
 type Status struct {
-	Online         bool      `json:"online"`
-	LastHearthbeat time.Time `json:"lastHearthbeat"`
-	Schema         Schema    `json:"schema"`
+	Online         bool      `json:"online" yaml:"online"`
+	LastHearthbeat time.Time `json:"lastHearthbeat" yaml:"lastHearthbeat"`
+	Schema         Schema    `json:"schema" yaml:"schema"`
 }
 
 type Schema struct {
 	// Compressed with ZSTD
-	CompressedSchema []byte    `json:"compressedSchema"`
-	PackageNames     []string  `json:"packageNames"`
-	LastSchemaFetch  time.Time `json:"lastSchemaFetch"`
+	CompressedSchema []byte    `json:"compressedSchema" yaml:"compressedSchema"`
+	PackageNames     []string  `json:"packageNames" yaml:"packageNames"`
+	LastSchemaFetch  time.Time `json:"lastSchemaFetch" yaml:"lastSchemaFetch"`
 }
 
 func (s Schema) GetProtoFiles() (*protoregistry.Files, error) {
