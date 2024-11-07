@@ -7,6 +7,14 @@ import (
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 )
 
+func NewDeviceListFromProtoDevices(d []*core_apiv1.Device) []*Device {
+	p := []*Device{}
+	for _, v := range d {
+		p = append(p, NewDeviceFromProtoDevice(v))
+	}
+	return p
+}
+
 func NewUpdateDeviceReqFromDevice(d Device) *core_apiv1.UpdateDeviceRequest {
 	toUpdateMap := func(m map[string]*string) map[string]*common_apiv1.OptString {
 		opt := map[string]*common_apiv1.OptString{}

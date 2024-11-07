@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -29,7 +30,16 @@ func EditorFinishedCmd(content json.RawMessage, err error) tea.Cmd {
 func OpenEditorCmd(data json.RawMessage, headerComments []string) tea.Cmd {
 	editor := os.Getenv("EDITOR")
 	if editor == "" {
-		editor = "nano"
+		switch runtime.GOOS {
+		case "windows":
+			editor = "notepad.exe"
+		case "linux":
+			editor = "nano"
+		case "darwin":
+			editor = "nano"
+		default:
+			editor = "nano"
+		}
 	}
 
 	// Create a temporary file
