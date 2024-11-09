@@ -5,7 +5,7 @@ import "errors"
 var (
 	// Models Validation
 	ErrorInvalidDeviceID             = errors.New("Invalid device ID")
-	ErrorDeviceIdAlreadyExist        = errors.New("Device with the same ID already exist")
+	ErrorDeviceIdAlreadyExist        = errors.New("Device with the same ID or name/namespace already exist")
 	ErrorNoDeviceTargetProvided      = errors.New("No device target provided")
 	ErrorCommandNameNotProvided      = errors.New("No command name provided")
 	ErrorCommandPayloadNotProvided   = errors.New("No command payload provided")

@@ -196,13 +196,6 @@ func (s *CoreServer) createDeviceRequestHandler(ch chan nats.Msg) {
 		}
 		l.Debug().Str("route", "create").Str("payload", fmt.Sprintf("%v", req)).Msg("new device request")
 
-		if req.Name == "" {
-			req.Name = req.DeviceId
-		}
-		if req.Namespace == "" {
-			req.Namespace = "default"
-		}
-
 		newDev, err := s.store.CreateDevice(req)
 		if err != nil {
 			if errors.Is(err, mir_models.ErrorInvalidDeviceID) {
@@ -236,6 +229,16 @@ func (s *CoreServer) createDeviceRequestHandler(ch chan nats.Msg) {
 					},
 				})
 			} else if errors.Is(err, mir_models.ErrorDbDeserializingResponse) {
+				sendReplyOrAck(s.bus, msg, &core_apiv1.CreateDeviceResponse{
+					Response: &core_apiv1.CreateDeviceResponse_Error{
+						Error: &common_apiv1.Error{
+							Code:    500,
+							Message: err.Error(),
+							Details: []string{"500 Internal Server Error", err.Error()},
+						},
+					},
+				})
+			} else {
 				sendReplyOrAck(s.bus, msg, &core_apiv1.CreateDeviceResponse{
 					Response: &core_apiv1.CreateDeviceResponse_Error{
 						Error: &common_apiv1.Error{

@@ -16,16 +16,16 @@ func NewDeviceListFromProtoDevices(d []*core_apiv1.Device) []*Device {
 }
 
 func NewUpdateDeviceReqFromDevice(d Device) *core_apiv1.UpdateDeviceRequest {
-	toUpdateMap := func(m map[string]*string) map[string]*common_apiv1.OptString {
+	toUpdateMap := func(m map[string]string) map[string]*common_apiv1.OptString {
 		opt := map[string]*common_apiv1.OptString{}
 		for k, v := range m {
-			if v == nil {
+			if v == "none" {
 				opt[k] = &common_apiv1.OptString{
 					Value: nil,
 				}
 			} else {
 				opt[k] = &common_apiv1.OptString{
-					Value: v,
+					Value: &v,
 				}
 			}
 		}
@@ -44,28 +44,30 @@ func NewUpdateDeviceReqFromDevice(d Device) *core_apiv1.UpdateDeviceRequest {
 			Disabled: &d.Spec.Disabled,
 		},
 		Targets: &core_apiv1.Targets{
-			Ids: []string{d.Spec.DeviceId},
+			Names:      []string{d.Meta.Name},
+			Namespaces: []string{d.Meta.Namespace},
 		},
 	}
 }
 
-func NewCreateDeviceReqFromDevice(d Device) *core_apiv1.CreateDeviceRequest {
-	toValueMap := func(m map[string]*string) map[string]string {
-		vm := map[string]string{}
-		for k, v := range m {
-			vm[k] = *v
-		}
-		return vm
+func NewCreateDeviceReqFromDevices(devices []*Device) *core_apiv1.CreateDeviceRequest {
+	devReq := []*core_apiv1.CreateDeviceRequest_DeviceEdit{}
+	for _, d := range devices {
+		devReq = append(devReq, &core_apiv1.CreateDeviceRequest_DeviceEdit{
+			Meta: &core_apiv1.Meta{
+				Name:        d.Meta.Name,
+				Namespace:   d.Meta.Namespace,
+				Labels:      d.Meta.Labels,
+				Annotations: d.Meta.Annotations,
+			},
+			Spec: &core_apiv1.Spec{
+				DeviceId: d.Spec.DeviceId,
+				Disabled: d.Spec.Disabled,
+			},
+			Properties: &core_apiv1.Properties{},
+		})
 	}
-
-	return &core_apiv1.CreateDeviceRequest{
-		DeviceId:    d.Spec.DeviceId,
-		Disabled:    d.Spec.Disabled,
-		Name:        d.Meta.Name,
-		Namespace:   d.Meta.Namespace,
-		Labels:      toValueMap(d.Meta.Labels),
-		Annotations: toValueMap(d.Meta.Annotations),
-	}
+	return &core_apiv1.CreateDeviceRequest{Devices: devReq}
 }
 
 func NewProtoDeviceListFromDevices(d []Device) []*core_apiv1.Device {
@@ -77,22 +79,14 @@ func NewProtoDeviceListFromDevices(d []Device) []*core_apiv1.Device {
 }
 
 func NewProtoDeviceFromDevice(d Device) *core_apiv1.Device {
-	toValueMap := func(m map[string]*string) map[string]string {
-		vm := map[string]string{}
-		for k, v := range m {
-			vm[k] = *v
-		}
-		return vm
-	}
-
 	return &core_apiv1.Device{
 		ApiVersion: d.ApiVersion,
 		ApiName:    d.ApiName,
 		Meta: &core_apiv1.Meta{
 			Name:        d.Meta.Name,
 			Namespace:   d.Meta.Namespace,
-			Labels:      toValueMap(d.Meta.Labels),
-			Annotations: toValueMap(d.Meta.Annotations),
+			Labels:      d.Meta.Labels,
+			Annotations: d.Meta.Annotations,
 		},
 		Spec: &core_apiv1.Spec{
 			DeviceId: d.Spec.DeviceId,
@@ -112,14 +106,6 @@ func NewProtoDeviceFromDevice(d Device) *core_apiv1.Device {
 }
 
 func NewDeviceFromProtoDevice(d *core_apiv1.Device) *Device {
-	toPtrMap := func(m map[string]string) map[string]*string {
-		mPtr := make(map[string]*string, len(m))
-		for k, v := range m {
-			mPtr[k] = &v
-		}
-		return mPtr
-	}
-
 	var lastHeartbeatTime time.Time
 	if d.Status.LastHearthbeat != nil {
 		lastHeartbeatTime = AsGoTime(d.Status.LastHearthbeat)
@@ -135,8 +121,8 @@ func NewDeviceFromProtoDevice(d *core_apiv1.Device) *Device {
 		Meta: Meta{
 			Name:        d.Meta.Name,
 			Namespace:   d.Meta.Namespace,
-			Labels:      toPtrMap(d.Meta.Labels),
-			Annotations: toPtrMap(d.Meta.Annotations),
+			Labels:      d.Meta.Labels,
+			Annotations: d.Meta.Annotations,
 		},
 		Spec: Spec{
 			DeviceId: d.Spec.DeviceId,
@@ -155,29 +141,26 @@ func NewDeviceFromProtoDevice(d *core_apiv1.Device) *Device {
 	}
 }
 
-func NewDeviceFromCreateDeviceReq(c *core_apiv1.CreateDeviceRequest) Device {
-	toPtrMap := func(m map[string]string) map[string]*string {
-		mPtr := make(map[string]*string, len(m))
-		for k, v := range m {
-			mPtr[k] = &v
-		}
-		return mPtr
+func NewDevicesFromCreateDeviceReq(c *core_apiv1.CreateDeviceRequest) []Device {
+	devs := []Device{}
+	for _, d := range c.Devices {
+		devs = append(devs, Device{
+			ApiVersion: "v1alpha",
+			ApiName:    "device",
+			Meta: Meta{
+				Name:        d.Meta.Name,
+				Namespace:   d.Meta.Namespace,
+				Labels:      d.Meta.Labels,
+				Annotations: d.Meta.Annotations,
+			},
+			Spec: Spec{
+				DeviceId: d.Spec.DeviceId,
+				Disabled: d.Spec.Disabled,
+			},
+			Status: Status{},
+		})
 	}
-	return Device{
-		ApiVersion: "v1alpha",
-		ApiName:    "twin",
-		Meta: Meta{
-			Name:        c.Name,
-			Namespace:   c.Namespace,
-			Labels:      toPtrMap(c.Labels),
-			Annotations: toPtrMap(c.Annotations),
-		},
-		Spec: Spec{
-			DeviceId: c.DeviceId,
-			Disabled: c.Disabled,
-		},
-		Status: Status{},
-	}
+	return devs
 }
 
 func AsProtoTimestamp(t time.Time) *common_apiv1.Timestamp {

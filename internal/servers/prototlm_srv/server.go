@@ -282,7 +282,7 @@ func generateIngesters(desc protoreflect.Descriptor, deviceId string, device mir
 		"__namespace": device.Meta.Namespace,
 	}
 	for k, v := range device.Meta.Labels {
-		tags["__label_"+k] = *v
+		tags["__label_"+k] = v
 	}
 	fn, err := proto_lineprotocol.GenerateMarshalFn(tags, desc.(protoreflect.MessageDescriptor))
 	if err != nil {

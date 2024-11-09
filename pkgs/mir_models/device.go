@@ -17,7 +17,14 @@ type Device struct {
 	Meta       Meta       `json:"meta" yaml:"meta"`
 	Spec       Spec       `json:"spec" yaml:"spec"`
 	Properties Properties `json:"properties" yaml:"properties"`
-	Status     Status     `json:"status" yaml:"status"`
+	Status     Status     `json:"status,omitempty" yaml:"status,omitempty"`
+}
+
+func NewDevice() Device {
+	return Device{
+		ApiVersion: "v1alpha",
+		ApiName:    "device",
+	}
 }
 
 func (d Device) GetNameNamespace() string {
@@ -25,10 +32,10 @@ func (d Device) GetNameNamespace() string {
 }
 
 type Meta struct {
-	Name        string             `json:"name" yaml:"name"`
-	Namespace   string             `json:"namespace" yaml:"namespace"`
-	Labels      map[string]*string `json:"labels" yaml:"labels"`
-	Annotations map[string]*string `json:"annotations" yaml:"annotations"`
+	Name        string            `json:"name" yaml:"name"`
+	Namespace   string            `json:"namespace" yaml:"namespace"`
+	Labels      map[string]string `json:"labels" yaml:"labels"`
+	Annotations map[string]string `json:"annotations" yaml:"annotations"`
 }
 
 type Spec struct {
