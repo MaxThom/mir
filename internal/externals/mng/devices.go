@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	errrs "errors"
+
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/pkg/errors"
@@ -48,34 +50,45 @@ func (s *surrealDeviceStore) ListDevice(req *core_apiv1.ListDeviceRequest) ([]mi
 
 func (s *surrealDeviceStore) CreateDevice(req *core_apiv1.CreateDeviceRequest) ([]mir_models.Device, error) {
 	// Validate
-	if req.DeviceId == "" {
-		return nil, mir_models.ErrorInvalidDeviceID
-	}
-	q, v := createListQueryForDevice(&core_apiv1.ListDeviceRequest{
-		Targets: &core_apiv1.Targets{
-			Ids: []string{req.DeviceId},
-		},
-	})
-	respCheck, err := executeQueryForType[[]mir_models.Device](s.db, q, v)
-	if err != nil {
-		// TODO check on how to use error.wrap
-		return nil, mir_models.ErrorDbExecutingQuery
-	}
-	if len(respCheck) > 0 {
-		return nil, mir_models.ErrorDeviceIdAlreadyExist
-	}
+	var errs error
+	devs := []mir_models.Device{}
+	for _, cdr := range mir_models.NewDevicesFromCreateDeviceReq(req) {
+		if cdr.Meta.Name == "" && cdr.Spec.DeviceId == "" {
+			errs = errrs.Join(errs, fmt.Errorf("device with namens %s/%s and id %s is missing", cdr.Meta.Name, cdr.Meta.Namespace, cdr.Spec.DeviceId))
+			continue
+		}
+		if cdr.Meta.Name == "" {
+			cdr.Meta.Name = cdr.Spec.DeviceId
+		}
+		if cdr.Meta.Namespace == "" {
+			cdr.Meta.Namespace = "default"
+		}
+		q, v := createIsDeviceUniqueQuery(cdr.Meta.Name, cdr.Meta.Namespace, cdr.Spec.DeviceId)
+		respCheck, err := executeQueryForType[[]mir_models.Device](s.db, q, v)
+		if err != nil {
+			errs = errrs.Join(errs, errors.Wrap(err, mir_models.ErrorDbExecutingQuery.Error()))
+			continue
+		}
+		if len(respCheck) > 0 {
+			errs = errrs.Join(errs, fmt.Errorf("device with namens %s/%s or id %s already exist", cdr.Meta.Name, cdr.Meta.Namespace, cdr.Spec.DeviceId))
+			continue
+		}
 
-	// Create
-	respDb, err := s.db.Create("devices", mir_models.NewDeviceFromCreateDeviceReq(req))
-	if err != nil {
-		return nil, mir_models.ErrorDbExecutingQuery
+		// Create
+		respDb, err := s.db.Create("devices", cdr)
+		if err != nil {
+			errs = errrs.Join(errs, errors.Wrap(err, mir_models.ErrorDbExecutingQuery.Error()))
+			continue
+		}
+		newDev := []mir_models.Device{}
+		err = surrealdb.Unmarshal(respDb, &newDev)
+		if err != nil {
+			errs = errrs.Join(errs, errors.Wrap(err, mir_models.ErrorDbDeserializingResponse.Error()))
+			continue
+		}
+		devs = append(devs, newDev...)
 	}
-	newDev := []mir_models.Device{}
-	err = surrealdb.Unmarshal(respDb, &newDev)
-	if err != nil {
-		return nil, mir_models.ErrorDbDeserializingResponse
-	}
-	return newDev, nil
+	return devs, errs
 }
 
 func (s *surrealDeviceStore) UpdateDevice(req *core_apiv1.UpdateDeviceRequest) ([]mir_models.Device, error) {
@@ -131,6 +144,21 @@ func (s *surrealDeviceStore) DeleteDevice(req *core_apiv1.DeleteDeviceRequest) (
 	}
 
 	return respDbList, nil
+}
+
+func createIsDeviceUniqueQuery(name, ns, id string) (sql string, vars map[string]any) {
+	var q strings.Builder
+	q.WriteString("SELECT * FROM devices WHERE ")
+	if id != "" {
+		q.WriteString(fmt.Sprintf("spec.deviceId = \"%s\"", id))
+		q.WriteString(" OR ")
+	}
+	q.WriteString(fmt.Sprintf("(meta.name = \"%s\"", name))
+	q.WriteString(" AND ")
+	q.WriteString(fmt.Sprintf("meta.namespace = \"%s\")", ns))
+	q.WriteString(";")
+	sql = q.String()
+	return
 }
 
 func createListQueryForDevice(req *core_apiv1.ListDeviceRequest) (sql string, vars map[string]any) {
@@ -281,21 +309,21 @@ func createWhereStatementWithTargets(t *core_apiv1.Targets) string {
 		for _, id := range t.Ids {
 			i = append(i, fmt.Sprintf("spec.deviceId = \"%s\"", id))
 		}
-		cond = append(cond, strings.Join(i, " OR "))
+		cond = append(cond, "("+strings.Join(i, " OR ")+")")
 	}
 	if len(t.Names) > 0 {
 		var i []string
 		for _, ns := range t.Names {
 			i = append(i, fmt.Sprintf("meta.name = \"%s\"", ns))
 		}
-		cond = append(cond, strings.Join(i, " OR "))
+		cond = append(cond, "("+strings.Join(i, " OR ")+")")
 	}
 	if len(t.Namespaces) > 0 {
 		var i []string
 		for _, ns := range t.Namespaces {
 			i = append(i, fmt.Sprintf("meta.namespace = \"%s\"", ns))
 		}
-		cond = append(cond, strings.Join(i, " OR "))
+		cond = append(cond, "("+strings.Join(i, " OR ")+")")
 	}
 	if len(t.Labels) > 0 {
 		var i []string
@@ -304,8 +332,7 @@ func createWhereStatementWithTargets(t *core_apiv1.Targets) string {
 		}
 		cond = append(cond, "("+strings.Join(i, " AND ")+")")
 	}
-	// TODO switch this to AND, must add ( ) above
-	q.WriteString(strings.Join(cond, " OR "))
+	q.WriteString(strings.Join(cond, " AND "))
 	ti := q.String()
 	return ti
 }

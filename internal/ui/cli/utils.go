@@ -1,12 +1,64 @@
 package cli
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"sort"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 )
+
+func unmarshalTypeFromStdInOrFile[T any](path string) ([]*T, error) {
+	var empty []*T
+	content, ok := ReadFromPipedStdIn()
+	if !ok {
+		contentB, err := os.ReadFile(path)
+		content = string(contentB)
+		if err != nil {
+			e := MirDeserializationError{e: err}
+			return empty, e
+		}
+	}
+	var devs []*T
+	if isJsonString(content) {
+		if isJsonArray(content) {
+			err := json.Unmarshal([]byte(content), &devs)
+			if err != nil {
+				e := MirDeserializationError{e: err}
+				return empty, e
+			}
+		} else {
+			dev := new(T)
+			err := json.Unmarshal([]byte(content), dev)
+			if err != nil {
+				e := MirDeserializationError{e: err}
+				return empty, e
+			}
+			devs = append(devs, dev)
+		}
+	} else {
+		if isYamlArray(content) {
+			err := yaml.Unmarshal([]byte(content), &devs)
+			if err != nil {
+				e := MirDeserializationError{e: err}
+				return empty, e
+			}
+		} else {
+			dev := new(T)
+			err := yaml.Unmarshal([]byte(content), dev)
+			if err != nil {
+				e := MirDeserializationError{e: err}
+				return empty, e
+			}
+			devs = append(devs, dev)
+		}
+	}
+
+	return devs, nil
+}
 
 func mapToSortedString(m map[string]string) string {
 	if len(m) == 0 {
@@ -31,6 +83,14 @@ func mapToSortedString(m map[string]string) string {
 		sb.WriteString(m[k])
 	}
 	return sb.String()
+}
+
+func isPipedStdIn() bool {
+	fi, e := os.Stdin.Stat()
+	if e != nil {
+		return false
+	}
+	return fi.Mode()&os.ModeNamedPipe != 0
 }
 
 func ReadFromPipedStdIn() (string, bool) {
@@ -66,4 +126,12 @@ func isJsonArray(s string) bool {
 func isYamlArray(s string) bool {
 	trimmed := strings.TrimSpace(s)
 	return strings.HasPrefix(trimmed, "-")
+}
+
+func labelToPointerLabel(lbl map[string]string) map[string]*string {
+	res := make(map[string]*string)
+	for k, v := range lbl {
+		res[k] = &v
+	}
+	return res
 }

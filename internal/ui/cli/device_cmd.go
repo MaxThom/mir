@@ -36,14 +36,16 @@ type DeviceListCmd struct {
 type DeviceCreateCmd struct {
 	Output string `short:"o" help:"output format for response [pretty|json|yaml]" default:"pretty"`
 
-	RandomId  bool              `short:"r" help:"Set a random device id"`
-	Id        string            `help:"Set device id"`
-	Name      string            `help:"Set device name"`
-	Namespace string            `help:"Set device namespace"`
-	Desc      string            `help:"Set device description"`
-	Disabled  bool              `help:"if disabled, communication is cut"`
-	Labels    map[string]string `help:"Set labels to uniquely tag the device"`
-	Anno      map[string]string `help:"Set annotations to add extra information to the device"`
+	ShowJsonTemplate bool              `short:"j" help:"Show json template for creating a device"`
+	Path             string            `short:"f" help:"Filepath to device definition. You can also pipe file content. Tips: use 'mir device create -j > device.yaml' to get initial content"`
+	RandomId         bool              `short:"r" help:"Set a random device id"`
+	Id               string            `help:"Set device id"`
+	Name             string            `help:"Set device name"`
+	Namespace        string            `help:"Set device namespace"`
+	Desc             string            `help:"Set device description"`
+	Disabled         bool              `help:"If disabled, communication is cut"`
+	Labels           map[string]string `help:"Set labels to uniquely tag the device"`
+	Anno             map[string]string `help:"Set annotations to add extra information to the device"`
 }
 
 type DeviceUpdateCmd struct {
@@ -54,7 +56,7 @@ type DeviceUpdateCmd struct {
 	Namespace *string           `help:"Set device namespace"`
 	Desc      *string           `help:"Set device description"`
 	Disabled  *bool             `help:"If not enabled, communication is cut"`
-	Labels    map[string]string `help:"Set labels to uniquely tag the device (set to null to remove)"`
+	Labels    map[string]string `help:"Set labels to uniquely tag the device (set to null, none or nil to remove)"`
 	Anno      map[string]string `help:"Set annotations to add extra information to the devie (set to null to remove)"`
 }
 
@@ -138,12 +140,14 @@ func (d *DeviceCreateCmd) Validate() error {
 	err := MirInvalidInputError{
 		Details: []string{},
 	}
-	if d.Id == "" && !d.RandomId {
-		err.Details = append(err.Details, "The device ID is mandatory")
-	}
 	if strings.ToLower(d.Output) != "pretty" && strings.ToLower(d.Output) != "yaml" && strings.ToLower(d.Output) != "json" {
 		d.Output = "pretty"
 	}
+
+	if !d.ShowJsonTemplate && !isPipedStdIn() && d.Path == "" && d.Id == "" && !d.RandomId {
+		err.Details = append(err.Details, "A device id must be provided, or a file path to a device definition.")
+	}
+
 	if len(err.Details) > 0 {
 		return err
 	}
@@ -160,31 +164,53 @@ func (d *DeviceCreateCmd) Run(c CLI) error {
 	}
 	defer msgBus.Close()
 
-	if d.Anno == nil {
-		d.Anno = make(map[string]string)
-	}
-	if d.Labels == nil {
-		d.Labels = make(map[string]string)
+	if d.ShowJsonTemplate {
+		if d.Output == "pretty" {
+			d.Output = "yaml"
+		}
+		if out, e := MarshalResponse(d.Output, mir_models.NewDevice()); e != nil {
+			return e
+		} else {
+			fmt.Println(out)
+		}
+		return nil
 	}
 
-	if d.RandomId {
-		t, err := uuid.NewRandom()
-		if err != nil {
-			e := MirProcessError{Msg: "error generating random device id}", e: err}
-			fmt.Println(e)
-			return e
+	devs := []*mir_models.Device{}
+	if isPipedStdIn() || d.Path != "" {
+		devs, err = unmarshalTypeFromStdInOrFile[mir_models.Device](d.Path)
+	} else {
+		if d.Anno == nil {
+			d.Anno = make(map[string]string)
 		}
-		d.Id = t.String()
+		if d.Labels == nil {
+			d.Labels = make(map[string]string)
+		}
+		if d.RandomId {
+			t, err := uuid.NewRandom()
+			if err != nil {
+				e := MirProcessError{Msg: "error generating random device id}", e: err}
+				fmt.Println(e)
+				return e
+			}
+
+			d.Id = t.String()[:8]
+		}
+		if d.Desc != "" {
+			d.Anno["mir/device/description"] = d.Desc
+		}
+
+		dev := mir_models.NewDevice()
+		dev.Meta.Name = d.Name
+		dev.Meta.Namespace = d.Namespace
+		dev.Meta.Labels = d.Labels
+		dev.Meta.Annotations = d.Anno
+		dev.Spec.DeviceId = d.Id
+		dev.Spec.Disabled = d.Disabled
+		devs = append(devs, &dev)
 	}
-	d.Anno["mir/device/description"] = d.Desc
-	resp, err := core_client.PublishDeviceCreateRequest(msgBus, &core_apiv1.CreateDeviceRequest{
-		DeviceId:    d.Id,
-		Name:        d.Name,
-		Namespace:   d.Namespace,
-		Disabled:    d.Disabled,
-		Labels:      d.Labels,
-		Annotations: d.Anno,
-	})
+
+	resp, err := core_client.PublishDeviceCreateRequest(msgBus, mir_models.NewCreateDeviceReqFromDevices(devs))
 
 	if err != nil {
 		e := MirRequestError{Route: "device.create", e: err}
@@ -249,7 +275,7 @@ func (d *DeviceUpdateCmd) Run(c CLI) error {
 
 	labels := map[string]*common_apiv1.OptString{}
 	for k, v := range d.Labels {
-		if strings.ToLower(v) == "null" {
+		if strings.ToLower(v) == "null" || strings.ToLower(v) == "nil" || strings.ToLower(v) == "none" {
 			labels[k] = &common_apiv1.OptString{
 				Value: nil,
 			}
@@ -261,7 +287,7 @@ func (d *DeviceUpdateCmd) Run(c CLI) error {
 	}
 	anno := map[string]*common_apiv1.OptString{}
 	for k, v := range d.Anno {
-		if strings.ToLower(v) == "null" {
+		if strings.ToLower(v) == "null" || strings.ToLower(v) == "nil" || strings.ToLower(v) == "none" {
 			anno[k] = &common_apiv1.OptString{
 				Value: nil,
 			}
@@ -471,7 +497,7 @@ func prettyStringDevices(devs []*core_apiv1.Device) string {
 	return sb.String()
 }
 
-func formatLabels(m map[string]*string) string {
+func formatLabels(m map[string]string) string {
 	keys := make([]string, 0, len(m))
 	for k := range m {
 		keys = append(keys, k)
@@ -480,7 +506,7 @@ func formatLabels(m map[string]*string) string {
 
 	pairs := make([]string, 0, len(m))
 	for _, k := range keys {
-		pairs = append(pairs, fmt.Sprintf("%s=%s", k, *m[k]))
+		pairs = append(pairs, fmt.Sprintf("%s=%s", k, m[k]))
 	}
 	return strings.Join(pairs, ",")
 }

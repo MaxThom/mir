@@ -8,12 +8,13 @@ import "v1/common_api/common.proto";
   Send a request to create a new device in the system
 */
 message CreateDeviceRequest {
-  string device_id = 1; // the device_id must be unique
-  string name = 2; // Name of the device
-  string namespace = 3; // Name of the device
-  bool disabled = 4; // If disabled, device will be cut off from communication
-  map<string, string> labels = 5; // labels are used to uniquely identify the device
-  map<string, string> annotations = 6; // annotations are used to add additional information
+    repeated DeviceEdit devices = 1; // List of devices to create
+
+    message DeviceEdit {
+      Meta meta = 1; // Represent the specifications that can be updated
+      Spec spec = 2; // Represent device twin specific config from Mir
+      Properties properties = 3; // Represent set of device defined properties
+  }
 }
 
 /*
