@@ -90,8 +90,12 @@ func SendDeviceCrud(m *mir.Mir) {
 	var respCreate core_apiv1.CreateDeviceResponse
 	err := m.SendRequest(mir.Resquest().V1Alpha().CreateDevice(
 		core_apiv1.CreateDeviceRequest{
-			DeviceId: id,
-			Name:     "VRMMOU",
+			Meta: &core_apiv1.Meta{
+				Name: "VRMMOU",
+			},
+			Spec: &core_apiv1.Spec{
+				DeviceId: id,
+			},
 		},
 		&respCreate,
 	))

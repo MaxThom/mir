@@ -8,13 +8,9 @@ import "v1/common_api/common.proto";
   Send a request to create a new device in the system
 */
 message CreateDeviceRequest {
-    repeated DeviceEdit devices = 1; // List of devices to create
-
-    message DeviceEdit {
-      Meta meta = 1; // Represent the specifications that can be updated
-      Spec spec = 2; // Represent device twin specific config from Mir
-      Properties properties = 3; // Represent set of device defined properties
-  }
+    Meta meta = 1; // Represent the specifications that can be updated
+    Spec spec = 2; // Represent device twin specific config from Mir
+    Properties properties = 3; // Represent set of device defined properties
 }
 
 /*
@@ -22,10 +18,10 @@ message CreateDeviceRequest {
   Only the error or the response data will be set
 */
 message CreateDeviceResponse {
-  oneof response {
-    DeviceList ok = 1; // list of device that were created
-    common_api.v1.Error error = 2;  // HTTP like error if something went wrong
-  }
+    oneof response {
+        Device ok = 1; // device that was created
+        common_api.v1.Error error = 2;  // HTTP like error if something went wrong
+    }
 }
 
 /*

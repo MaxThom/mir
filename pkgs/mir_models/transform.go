@@ -10,7 +10,8 @@ import (
 func NewDeviceListFromProtoDevices(d []*core_apiv1.Device) []*Device {
 	p := []*Device{}
 	for _, v := range d {
-		p = append(p, NewDeviceFromProtoDevice(v))
+		dev := NewDeviceFromProtoDevice(v)
+		p = append(p, &dev)
 	}
 	return p
 }
@@ -50,24 +51,20 @@ func NewUpdateDeviceReqFromDevice(d Device) *core_apiv1.UpdateDeviceRequest {
 	}
 }
 
-func NewCreateDeviceReqFromDevices(devices []*Device) *core_apiv1.CreateDeviceRequest {
-	devReq := []*core_apiv1.CreateDeviceRequest_DeviceEdit{}
-	for _, d := range devices {
-		devReq = append(devReq, &core_apiv1.CreateDeviceRequest_DeviceEdit{
-			Meta: &core_apiv1.Meta{
-				Name:        d.Meta.Name,
-				Namespace:   d.Meta.Namespace,
-				Labels:      d.Meta.Labels,
-				Annotations: d.Meta.Annotations,
-			},
-			Spec: &core_apiv1.Spec{
-				DeviceId: d.Spec.DeviceId,
-				Disabled: d.Spec.Disabled,
-			},
-			Properties: &core_apiv1.Properties{},
-		})
+func NewCreateDeviceReqFromDevice(d Device) *core_apiv1.CreateDeviceRequest {
+	return &core_apiv1.CreateDeviceRequest{
+		Meta: &core_apiv1.Meta{
+			Name:        d.Meta.Name,
+			Namespace:   d.Meta.Namespace,
+			Labels:      d.Meta.Labels,
+			Annotations: d.Meta.Annotations,
+		},
+		Spec: &core_apiv1.Spec{
+			DeviceId: d.Spec.DeviceId,
+			Disabled: d.Spec.Disabled,
+		},
+		Properties: &core_apiv1.Properties{},
 	}
-	return &core_apiv1.CreateDeviceRequest{Devices: devReq}
 }
 
 func NewProtoDeviceListFromDevices(d []Device) []*core_apiv1.Device {
@@ -105,7 +102,7 @@ func NewProtoDeviceFromDevice(d Device) *core_apiv1.Device {
 	}
 }
 
-func NewDeviceFromProtoDevice(d *core_apiv1.Device) *Device {
+func NewDeviceFromProtoDevice(d *core_apiv1.Device) Device {
 	var lastHeartbeatTime time.Time
 	if d.Status.LastHearthbeat != nil {
 		lastHeartbeatTime = AsGoTime(d.Status.LastHearthbeat)
@@ -115,7 +112,7 @@ func NewDeviceFromProtoDevice(d *core_apiv1.Device) *Device {
 		lastSchemaFetch = AsGoTime(d.Status.Schema.LastSchemaFetch)
 	}
 
-	return &Device{
+	return Device{
 		ApiVersion: d.ApiVersion,
 		ApiName:    d.ApiName,
 		Meta: Meta{
@@ -141,26 +138,22 @@ func NewDeviceFromProtoDevice(d *core_apiv1.Device) *Device {
 	}
 }
 
-func NewDevicesFromCreateDeviceReq(c *core_apiv1.CreateDeviceRequest) []Device {
-	devs := []Device{}
-	for _, d := range c.Devices {
-		devs = append(devs, Device{
-			ApiVersion: "v1alpha",
-			ApiName:    "device",
-			Meta: Meta{
-				Name:        d.Meta.Name,
-				Namespace:   d.Meta.Namespace,
-				Labels:      d.Meta.Labels,
-				Annotations: d.Meta.Annotations,
-			},
-			Spec: Spec{
-				DeviceId: d.Spec.DeviceId,
-				Disabled: d.Spec.Disabled,
-			},
-			Status: Status{},
-		})
+func NewDeviceFromCreateDeviceReq(d *core_apiv1.CreateDeviceRequest) Device {
+	return Device{
+		ApiVersion: "v1alpha",
+		ApiName:    "device",
+		Meta: Meta{
+			Name:        d.Meta.Name,
+			Namespace:   d.Meta.Namespace,
+			Labels:      d.Meta.Labels,
+			Annotations: d.Meta.Annotations,
+		},
+		Spec: Spec{
+			DeviceId: d.Spec.DeviceId,
+			Disabled: d.Spec.Disabled,
+		},
+		Status: Status{},
 	}
-	return devs
 }
 
 func AsProtoTimestamp(t time.Time) *common_apiv1.Timestamp {

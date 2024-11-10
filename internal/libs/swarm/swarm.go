@@ -98,7 +98,7 @@ func (b *devicesBuilder) WithCommandHandler(t protoreflect.ProtoMessage, handler
 func (b *devicesBuilder) Incubate() ([]*core_apiv1.CreateDeviceResponse, error) {
 	var errs error
 	for _, d := range b.devicesReq {
-		dev, err := mirDevice.Builder().DeviceId(d.DeviceId).Target(b.s.bus.ConnectedUrl()).
+		dev, err := mirDevice.Builder().DeviceId(d.Spec.DeviceId).Target(b.s.bus.ConnectedUrl()).
 			TelemetrySchema(b.sch...).Build()
 		if err != nil {
 			errs = errors.Join(err)
@@ -137,7 +137,7 @@ func (b *deviceBuilder) WithCommandHandler(t protoreflect.ProtoMessage, handler 
 }
 
 func (b *deviceBuilder) Incubate() (*core_apiv1.CreateDeviceResponse, error) {
-	dev, err := mirDevice.Builder().DeviceId(b.deviceReq.DeviceId).Target(b.s.bus.ConnectedUrl()).
+	dev, err := mirDevice.Builder().DeviceId(b.deviceReq.Spec.DeviceId).Target(b.s.bus.ConnectedUrl()).
 		TelemetrySchema(b.sch...).Build()
 	if err != nil {
 		return nil, err

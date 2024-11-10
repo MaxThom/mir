@@ -123,7 +123,7 @@ func (c *MirProtoCache) reconcileDeviceSchema(deviceId string, forceDeviceFetch 
 				sch, err := proto_mir.DecompressSchema(devs[0].Status.Schema.CompressedSchema)
 				if err == nil {
 					l.Info().Str("device_id", deviceId).Msgf("reconciled schema for %s from db", deviceId)
-					return *mir_models.NewDeviceFromProtoDevice(devs[0]), sch, nil
+					return mir_models.NewDeviceFromProtoDevice(devs[0]), sch, nil
 				}
 				// If error, we fetch from device
 			}
@@ -162,7 +162,7 @@ func (c *MirProtoCache) reconcileDeviceSchema(deviceId string, forceDeviceFetch 
 	}
 
 	l.Info().Str("device_id", deviceId).Msgf("reconciled schema for %s from device", deviceId)
-	return *mir_models.NewDeviceFromProtoDevice(devs[0]), sch, err
+	return mir_models.NewDeviceFromProtoDevice(devs[0]), sch, err
 }
 
 func (c *MirProtoCache) getProtoSchemaFromDevice(deviceId string) (*proto_mir.MirProtoSchema, error) {
@@ -191,7 +191,7 @@ func (c *MirProtoCache) deviceUpdateSub(msg *nats.Msg, deviceId string, device *
 		l.Error().Str("device_id", deviceId).Err(err).Msg("error decompressing schema")
 		return
 	}
-	dev := *mir_models.NewDeviceFromProtoDevice(device)
+	dev := mir_models.NewDeviceFromProtoDevice(device)
 	l.Info().Str("device_id", deviceId).Msg("cache updated")
 	c.cacheLock.Lock()
 	c.cache[deviceId] = cacheEntry{

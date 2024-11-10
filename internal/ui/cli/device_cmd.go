@@ -2,6 +2,7 @@ package cli
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
 	"sort"
@@ -193,7 +194,6 @@ func (d *DeviceCreateCmd) Run(c CLI) error {
 				fmt.Println(e)
 				return e
 			}
-
 			d.Id = t.String()[:8]
 		}
 		if d.Desc != "" {
@@ -210,35 +210,34 @@ func (d *DeviceCreateCmd) Run(c CLI) error {
 		devs = append(devs, &dev)
 	}
 
-	resp, err := core_client.PublishDeviceCreateRequest(msgBus, mir_models.NewCreateDeviceReqFromDevices(devs))
-
-	if err != nil {
-		e := MirRequestError{Route: "device.create", e: err}
-		fmt.Println(e)
-		return e
+	respDevs := []*core_apiv1.Device{}
+	var errs error
+	for _, d := range devs {
+		resp, err := core_client.PublishDeviceCreateRequest(msgBus, mir_models.NewCreateDeviceReqFromDevice(*d))
+		if err != nil {
+			e := MirRequestError{Route: "device.create", e: err}
+			fmt.Println(e)
+			return e
+		}
+		if resp.GetError() != nil {
+			errs = errors.Join(errs, errors.New(resp.GetError().Message))
+		} else if resp.GetOk() != nil {
+			respDevs = append(respDevs, resp.GetOk())
+		}
 	}
 
-	if resp.GetError() != nil {
-		e := MirResponseError{
-			Route: "device.create",
-			e: MirHttpError{
-				Code:    resp.GetError().GetCode(),
-				Message: resp.GetError().GetMessage(),
-				Details: resp.GetError().GetDetails(),
-			}}
-		return e
-	} else {
+	if len(respDevs) > 0 {
 		if d.Output == "pretty" {
-			fmt.Println(prettyStringDevices(resp.GetOk().Devices))
+			fmt.Println(prettyStringDevices(respDevs))
 		} else {
-			if out, e := MarshalResponse(d.Output, mir_models.NewDeviceListFromProtoDevices(resp.GetOk().Devices)); e != nil {
+			if out, e := MarshalResponse(d.Output, mir_models.NewDeviceListFromProtoDevices(respDevs)); e != nil {
 				return e
 			} else {
 				fmt.Println(out)
 			}
 		}
 	}
-	return nil
+	return errs
 }
 
 func (d *DeviceUpdateCmd) Validate() error {

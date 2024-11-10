@@ -76,16 +76,21 @@ func TestPublishDeviceCreate(t *testing.T) {
 	id := "device_create_raw"
 	publishStream := "device." + id + ".core.v1alpha.create"
 	reqCreate := &core_apiv1.CreateDeviceRequest{
-		DeviceId:  id,
-		Namespace: "testing_core",
-		Labels: map[string]string{
-			"testing": "core",
-			"factory": "B",
-			"model":   "xx021",
+		Meta: &core_apiv1.Meta{
+			Name:      id,
+			Namespace: "testing_core",
+			Labels: map[string]string{
+				"testing": "core",
+				"factory": "B",
+				"model":   "xx021",
+			},
+			Annotations: map[string]string{
+				"utility":                "air_quality",
+				"mir/device/description": "hello world of devices !",
+			},
 		},
-		Annotations: map[string]string{
-			"utility":                "air_quality",
-			"mir/device/description": "hello world of devices !",
+		Spec: &core_apiv1.Spec{
+			DeviceId: id,
 		},
 	}
 
@@ -112,23 +117,28 @@ func TestPublishDeviceCreate(t *testing.T) {
 	}
 
 	// Assert
-	assert.Equal(t, reqCreate.DeviceId, respList.GetOk().Devices[0].Spec.DeviceId)
+	assert.Equal(t, reqCreate.Spec.DeviceId, respList.GetOk().Devices[0].Spec.DeviceId)
 }
 
 func TestPublishDeviceCreateClient(t *testing.T) {
 	// Arrange
 	id := "device_create"
 	reqCreate := &core_apiv1.CreateDeviceRequest{
-		DeviceId:  id,
-		Namespace: "testing_core",
-		Labels: map[string]string{
-			"testing": "core",
-			"factory": "A",
-			"model":   "xx021",
+		Meta: &core_apiv1.Meta{
+			Name:      id,
+			Namespace: "testing_core",
+			Labels: map[string]string{
+				"testing": "core",
+				"factory": "A",
+				"model":   "xx021",
+			},
+			Annotations: map[string]string{
+				"utility":                "air_quality",
+				"mir/device/description": "hello world of devices !",
+			},
 		},
-		Annotations: map[string]string{
-			"utility":                "air_quality",
-			"mir/device/description": "hello world of devices !",
+		Spec: &core_apiv1.Spec{
+			DeviceId: id,
 		},
 	}
 
@@ -160,8 +170,8 @@ func TestPublishDeviceCreateClient(t *testing.T) {
 	}
 
 	// Assert
-	assert.Equal(t, reqCreate.DeviceId, respList.GetOk().Devices[0].Spec.DeviceId)
-	assert.Equal(t, respCreate.GetOk().Devices[0].Spec.DeviceId, respList.GetOk().Devices[0].Spec.DeviceId)
+	assert.Equal(t, reqCreate.Spec.DeviceId, respList.GetOk().Devices[0].Spec.DeviceId)
+	assert.Equal(t, respCreate.GetOk().Spec.DeviceId, respList.GetOk().Devices[0].Spec.DeviceId)
 	assert.Equal(t, 1, count)
 	s.Unsubscribe()
 }
@@ -170,16 +180,21 @@ func TestPublishDeviceCreateClientNoID(t *testing.T) {
 	// Arrange
 	id := ""
 	reqCreate := &core_apiv1.CreateDeviceRequest{
-		DeviceId:  id,
-		Namespace: "testing_core",
-		Labels: map[string]string{
-			"testing": "core",
-			"factory": "A",
-			"model":   "xx021",
+		Meta: &core_apiv1.Meta{
+			Name:      id,
+			Namespace: "testing_core",
+			Labels: map[string]string{
+				"testing": "core",
+				"factory": "A",
+				"model":   "xx021",
+			},
+			Annotations: map[string]string{
+				"utility":                "air_quality",
+				"mir/device/description": "hello world of devices !",
+			},
 		},
-		Annotations: map[string]string{
-			"utility":                "air_quality",
-			"mir/device/description": "hello world of devices !",
+		Spec: &core_apiv1.Spec{
+			DeviceId: id,
 		},
 	}
 
@@ -191,25 +206,30 @@ func TestPublishDeviceCreateClientNoID(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, respCreate.GetError() != nil, true)
-	assert.Equal(t, respCreate.GetError().Message, "Invalid device ID")
+	assert.Equal(t, respCreate.GetError().Message, "error while creating device: device name and id are missing")
 }
 
 func TestPublishDeviceUpdateTargetIds(t *testing.T) {
 	// Arrange
 	id := "device_update_target_ids"
 	reqCreate := &core_apiv1.CreateDeviceRequest{
-		DeviceId:  id,
-		Namespace: "testing_core",
-		Labels: map[string]string{
-			"testing": "core",
-			"factory": "A",
-			"land":    "sheep",
-			"owner":   "bob_morrisson",
-			"fix":     "cant_be_touch",
+		Meta: &core_apiv1.Meta{
+			Name:      id,
+			Namespace: "testing_core",
+			Labels: map[string]string{
+				"testing": "core",
+				"factory": "A",
+				"land":    "sheep",
+				"owner":   "bob_morrisson",
+				"fix":     "cant_be_touch",
+			},
+			Annotations: map[string]string{
+				"utility":                "air_quality",
+				"mir/device/description": "hello world of devices !",
+			},
 		},
-		Annotations: map[string]string{
-			"utility":                "air_quality",
-			"mir/device/description": "hello world of devices !",
+		Spec: &core_apiv1.Spec{
+			DeviceId: id,
 		},
 	}
 
@@ -281,19 +301,23 @@ func TestPublishDeviceUpdateTargetNames(t *testing.T) {
 	// Arrange
 	id := "device_update_target_names"
 	reqCreate := &core_apiv1.CreateDeviceRequest{
-		DeviceId:  id,
-		Name:      id,
-		Namespace: "testing_core",
-		Labels: map[string]string{
-			"testing": "core",
-			"factory": "A",
-			"land":    "sheep",
-			"owner":   "bob_morrisson",
-			"fix":     "cant_be_touch",
+		Meta: &core_apiv1.Meta{
+			Name:      id,
+			Namespace: "testing_core",
+			Labels: map[string]string{
+				"testing": "core",
+				"factory": "A",
+				"land":    "sheep",
+				"owner":   "bob_morrisson",
+				"fix":     "cant_be_touch",
+			},
+			Annotations: map[string]string{
+				"utility":                "air_quality",
+				"mir/device/description": "hello world of devices !",
+			},
 		},
-		Annotations: map[string]string{
-			"utility":                "air_quality",
-			"mir/device/description": "hello world of devices !",
+		Spec: &core_apiv1.Spec{
+			DeviceId: id,
 		},
 	}
 
@@ -355,18 +379,23 @@ func TestPublishDeviceUpdateTargetNamespace(t *testing.T) {
 	id := "device_update_target_namespace"
 	ns := "testing_" + id
 	reqCreate := &core_apiv1.CreateDeviceRequest{
-		DeviceId:  id,
-		Namespace: ns,
-		Labels: map[string]string{
-			"testing": "core",
-			"factory": "A",
-			"land":    "sheep",
-			"owner":   "bob_morrisson",
-			"fix":     "cant_be_touch",
+		Meta: &core_apiv1.Meta{
+			Name:      id,
+			Namespace: ns,
+			Labels: map[string]string{
+				"testing": "core",
+				"factory": "A",
+				"land":    "sheep",
+				"owner":   "bob_morrisson",
+				"fix":     "cant_be_touch",
+			},
+			Annotations: map[string]string{
+				"utility":                "air_quality",
+				"mir/device/description": "hello world of devices !",
+			},
 		},
-		Annotations: map[string]string{
-			"utility":                "air_quality",
-			"mir/device/description": "hello world of devices !",
+		Spec: &core_apiv1.Spec{
+			DeviceId: id,
 		},
 	}
 
@@ -458,48 +487,63 @@ func TestPublishDeviceUpdateTargetLabels(t *testing.T) {
 	}
 	reqCreate := []*core_apiv1.CreateDeviceRequest{
 		{
-			DeviceId:  deviceIds[0],
-			Namespace: "testing_core",
-			Labels: map[string]string{
-				"testing": "core",
-				"factory": "D",
-				"land":    "sheep",
-				"owner":   "bob_morrisson",
-				"fix":     "cant_be_touch",
+			Meta: &core_apiv1.Meta{
+				Name:      deviceIds[0],
+				Namespace: "testing_core",
+				Labels: map[string]string{
+					"testing": "core",
+					"factory": "D",
+					"land":    "sheep",
+					"owner":   "bob_morrisson",
+					"fix":     "cant_be_touch",
+				},
+				Annotations: map[string]string{
+					"utility":                "air_quality",
+					"mir/device/description": "hello world of devices !",
+				},
 			},
-			Annotations: map[string]string{
-				"utility":                "air_quality",
-				"mir/device/description": "hello world of devices !",
-			},
-		},
-		{
-			DeviceId:  deviceIds[1],
-			Namespace: "testing_core",
-			Labels: map[string]string{
-				"testing": "core",
-				"factory": "D",
-				"land":    "sheep",
-				"owner":   "bob_morrisson",
-				"fix":     "cant_be_touch",
-			},
-			Annotations: map[string]string{
-				"utility":                "air_quality",
-				"mir/device/description": "hello world of devices !",
+			Spec: &core_apiv1.Spec{
+				DeviceId: deviceIds[0],
 			},
 		},
 		{
-			DeviceId:  deviceIds[2],
-			Namespace: "testing_core",
-			Labels: map[string]string{
-				"testing": "core",
-				"factory": "D",
-				"land":    "cow",
-				"owner":   "bob_morrisson",
-				"fix":     "cant_be_touch",
+			Meta: &core_apiv1.Meta{
+				Name:      deviceIds[1],
+				Namespace: "testing_core",
+				Labels: map[string]string{
+					"testing": "core",
+					"factory": "D",
+					"land":    "sheep",
+					"owner":   "bob_morrisson",
+					"fix":     "cant_be_touch",
+				},
+				Annotations: map[string]string{
+					"utility":                "air_quality",
+					"mir/device/description": "hello world of devices !",
+				},
 			},
-			Annotations: map[string]string{
-				"utility":                "air_quality",
-				"mir/device/description": "hello world of devices !",
+			Spec: &core_apiv1.Spec{
+				DeviceId: deviceIds[1],
+			},
+		},
+		{
+			Meta: &core_apiv1.Meta{
+				Name:      deviceIds[2],
+				Namespace: "testing_core",
+				Labels: map[string]string{
+					"testing": "core",
+					"factory": "D",
+					"land":    "cow",
+					"owner":   "bob_morrisson",
+					"fix":     "cant_be_touch",
+				},
+				Annotations: map[string]string{
+					"utility":                "air_quality",
+					"mir/device/description": "hello world of devices !",
+				},
+			},
+			Spec: &core_apiv1.Spec{
+				DeviceId: deviceIds[2],
 			},
 		},
 	}
@@ -528,17 +572,17 @@ func TestPublishDeviceUpdateTargetLabels(t *testing.T) {
 	for _, dev := range respDb {
 		switch dev.Spec.DeviceId {
 		case deviceIds[0]:
-			assert.Equal(t, *dev.Meta.Labels["factory"], "D")
-			assert.Equal(t, *dev.Meta.Labels["land"], "sheep")
-			assert.Equal(t, *dev.Meta.Labels["fix"], "mazda3sport")
+			assert.Equal(t, dev.Meta.Labels["factory"], "D")
+			assert.Equal(t, dev.Meta.Labels["land"], "sheep")
+			assert.Equal(t, dev.Meta.Labels["fix"], "mazda3sport")
 		case deviceIds[1]:
-			assert.Equal(t, *dev.Meta.Labels["factory"], "D")
-			assert.Equal(t, *dev.Meta.Labels["land"], "sheep")
-			assert.Equal(t, *dev.Meta.Labels["fix"], "mazda3sport")
+			assert.Equal(t, dev.Meta.Labels["factory"], "D")
+			assert.Equal(t, dev.Meta.Labels["land"], "sheep")
+			assert.Equal(t, dev.Meta.Labels["fix"], "mazda3sport")
 		case deviceIds[2]:
-			assert.Equal(t, *dev.Meta.Labels["factory"], "D")
-			assert.Equal(t, *dev.Meta.Labels["land"], "cow")
-			assert.Equal(t, *dev.Meta.Labels["fix"], "cant_be_touch")
+			assert.Equal(t, dev.Meta.Labels["factory"], "D")
+			assert.Equal(t, dev.Meta.Labels["land"], "cow")
+			assert.Equal(t, dev.Meta.Labels["fix"], "cant_be_touch")
 		}
 	}
 }
@@ -576,45 +620,63 @@ func TestPublishDeviceUpdateTargetMixs(t *testing.T) {
 	}
 	reqCreate := []*core_apiv1.CreateDeviceRequest{
 		{
-			DeviceId:  deviceIds[0],
-			Namespace: "testing_core",
-			Labels: map[string]string{
-				"testing": "core",
-				"factory": "D",
-				"land":    "sheep",
-				"owner":   "bob_morrisson",
-				"fix":     "cant_be_touch",
+			Meta: &core_apiv1.Meta{
+				Name:      deviceIds[0],
+				Namespace: "testing_core",
+				Labels: map[string]string{
+					"testing": "core",
+					"factory": "D",
+					"land":    "sheep",
+					"owner":   "bob_morrisson",
+					"fix":     "cant_be_touch",
+				},
+				Annotations: map[string]string{
+					"utility":                "air_quality",
+					"mir/device/description": "hello world of devices !",
+				},
 			},
-			Annotations: map[string]string{
-				"utility": "air_quality",
-			},
-		},
-		{
-			DeviceId:  deviceIds[1],
-			Namespace: "testing_core",
-			Labels: map[string]string{
-				"testing": "core",
-				"factory": "D",
-				"land":    "sheep",
-				"owner":   "bob_morrisson",
-				"fix":     "cant_be_touch",
-			},
-			Annotations: map[string]string{
-				"utility": "air_quality",
+			Spec: &core_apiv1.Spec{
+				DeviceId: deviceIds[0],
 			},
 		},
 		{
-			DeviceId:  deviceIds[2],
-			Namespace: "testing_core",
-			Labels: map[string]string{
-				"testing": "core",
-				"factory": "D",
-				"land":    "cow",
-				"owner":   "bob_morrisson",
-				"fix":     "cant_be_touch",
+			Meta: &core_apiv1.Meta{
+				Name:      deviceIds[1],
+				Namespace: "testing_core",
+				Labels: map[string]string{
+					"testing": "core",
+					"factory": "D",
+					"land":    "sheep",
+					"owner":   "bob_morrisson",
+					"fix":     "cant_be_touch",
+				},
+				Annotations: map[string]string{
+					"utility":                "air_quality",
+					"mir/device/description": "hello world of devices !",
+				},
 			},
-			Annotations: map[string]string{
-				"utility": "air_quality",
+			Spec: &core_apiv1.Spec{
+				DeviceId: deviceIds[1],
+			},
+		},
+		{
+			Meta: &core_apiv1.Meta{
+				Name:      deviceIds[2],
+				Namespace: "testing_core",
+				Labels: map[string]string{
+					"testing": "core",
+					"factory": "D",
+					"land":    "sheep",
+					"owner":   "bob_morrisson",
+					"fix":     "cant_be_touch",
+				},
+				Annotations: map[string]string{
+					"utility":                "air_quality",
+					"mir/device/description": "hello world of devices !",
+				},
+			},
+			Spec: &core_apiv1.Spec{
+				DeviceId: deviceIds[2],
 			},
 		},
 	}
@@ -670,45 +732,63 @@ func TestPublishDeviceDeleteTargetIds(t *testing.T) {
 	}
 	reqCreate := []*core_apiv1.CreateDeviceRequest{
 		{
-			DeviceId:  deviceIds[0],
-			Namespace: "testing_core",
-			Labels: map[string]string{
-				"testing": "core",
-				"factory": "D",
-				"land":    "sheep",
-				"owner":   "bob_morrisson",
-				"fix":     "cant_be_touch",
+			Meta: &core_apiv1.Meta{
+				Name:      deviceIds[0],
+				Namespace: "testing_core",
+				Labels: map[string]string{
+					"testing": "core",
+					"factory": "D",
+					"land":    "sheep",
+					"owner":   "bob_morrisson",
+					"fix":     "cant_be_touch",
+				},
+				Annotations: map[string]string{
+					"utility":                "air_quality",
+					"mir/device/description": "hello world of devices !",
+				},
 			},
-			Annotations: map[string]string{
-				"utility": "air_quality",
-			},
-		},
-		{
-			DeviceId:  deviceIds[1],
-			Namespace: "testing_core",
-			Labels: map[string]string{
-				"testing": "core",
-				"factory": "D",
-				"land":    "sheep",
-				"owner":   "bob_morrisson",
-				"fix":     "cant_be_touch",
-			},
-			Annotations: map[string]string{
-				"utility": "air_quality",
+			Spec: &core_apiv1.Spec{
+				DeviceId: deviceIds[0],
 			},
 		},
 		{
-			DeviceId:  deviceIds[2],
-			Namespace: "testing_core",
-			Labels: map[string]string{
-				"testing": "core",
-				"factory": "D",
-				"land":    "cow",
-				"owner":   "bob_morrisson",
-				"fix":     "cant_be_touch",
+			Meta: &core_apiv1.Meta{
+				Name:      deviceIds[1],
+				Namespace: "testing_core",
+				Labels: map[string]string{
+					"testing": "core",
+					"factory": "D",
+					"land":    "sheep",
+					"owner":   "bob_morrisson",
+					"fix":     "cant_be_touch",
+				},
+				Annotations: map[string]string{
+					"utility":                "air_quality",
+					"mir/device/description": "hello world of devices !",
+				},
 			},
-			Annotations: map[string]string{
-				"utility": "air_quality",
+			Spec: &core_apiv1.Spec{
+				DeviceId: deviceIds[1],
+			},
+		},
+		{
+			Meta: &core_apiv1.Meta{
+				Name:      deviceIds[2],
+				Namespace: "testing_core",
+				Labels: map[string]string{
+					"testing": "core",
+					"factory": "D",
+					"land":    "sheep",
+					"owner":   "bob_morrisson",
+					"fix":     "cant_be_touch",
+				},
+				Annotations: map[string]string{
+					"utility":                "air_quality",
+					"mir/device/description": "hello world of devices !",
+				},
+			},
+			Spec: &core_apiv1.Spec{
+				DeviceId: deviceIds[2],
 			},
 		},
 	}
@@ -762,48 +842,63 @@ func TestPublishDeviceDeleteTargetNames(t *testing.T) {
 	}
 	reqCreate := []*core_apiv1.CreateDeviceRequest{
 		{
-			DeviceId:  deviceIds[0],
-			Name:      deviceIds[0],
-			Namespace: "testing_core",
-			Labels: map[string]string{
-				"testing": "core",
-				"factory": "D",
-				"land":    "sheep",
-				"owner":   "bob_morrisson",
-				"fix":     "cant_be_touch",
+			Meta: &core_apiv1.Meta{
+				Name:      deviceIds[0],
+				Namespace: "testing_core",
+				Labels: map[string]string{
+					"testing": "core",
+					"factory": "D",
+					"land":    "sheep",
+					"owner":   "bob_morrisson",
+					"fix":     "cant_be_touch",
+				},
+				Annotations: map[string]string{
+					"utility":                "air_quality",
+					"mir/device/description": "hello world of devices !",
+				},
 			},
-			Annotations: map[string]string{
-				"utility": "air_quality",
-			},
-		},
-		{
-			DeviceId:  deviceIds[1],
-			Name:      deviceIds[1],
-			Namespace: "testing_core",
-			Labels: map[string]string{
-				"testing": "core",
-				"factory": "D",
-				"land":    "sheep",
-				"owner":   "bob_morrisson",
-				"fix":     "cant_be_touch",
-			},
-			Annotations: map[string]string{
-				"utility": "air_quality",
+			Spec: &core_apiv1.Spec{
+				DeviceId: deviceIds[0],
 			},
 		},
 		{
-			DeviceId:  deviceIds[2],
-			Name:      deviceIds[2],
-			Namespace: "testing_core",
-			Labels: map[string]string{
-				"testing": "core",
-				"factory": "D",
-				"land":    "cow",
-				"owner":   "bob_morrisson",
-				"fix":     "cant_be_touch",
+			Meta: &core_apiv1.Meta{
+				Name:      deviceIds[1],
+				Namespace: "testing_core",
+				Labels: map[string]string{
+					"testing": "core",
+					"factory": "D",
+					"land":    "sheep",
+					"owner":   "bob_morrisson",
+					"fix":     "cant_be_touch",
+				},
+				Annotations: map[string]string{
+					"utility":                "air_quality",
+					"mir/device/description": "hello world of devices !",
+				},
 			},
-			Annotations: map[string]string{
-				"utility": "air_quality",
+			Spec: &core_apiv1.Spec{
+				DeviceId: deviceIds[1],
+			},
+		},
+		{
+			Meta: &core_apiv1.Meta{
+				Name:      deviceIds[2],
+				Namespace: "testing_core",
+				Labels: map[string]string{
+					"testing": "core",
+					"factory": "D",
+					"land":    "sheep",
+					"owner":   "bob_morrisson",
+					"fix":     "cant_be_touch",
+				},
+				Annotations: map[string]string{
+					"utility":                "air_quality",
+					"mir/device/description": "hello world of devices !",
+				},
+			},
+			Spec: &core_apiv1.Spec{
+				DeviceId: deviceIds[2],
 			},
 		},
 	}
@@ -849,45 +944,60 @@ func TestPublishDeviceDeleteTargetNamespace(t *testing.T) {
 	}
 	reqCreate := []*core_apiv1.CreateDeviceRequest{
 		{
-			DeviceId:  deviceIds[0],
-			Namespace: ns,
-			Labels: map[string]string{
-				"testing": "core",
-				"factory": "D",
-				"land":    "sheep",
-				"owner":   "bob_morrisson",
-				"fix":     "cant_be_touch",
+			Meta: &core_apiv1.Meta{
+				Name:      deviceIds[0],
+				Namespace: ns,
+				Labels: map[string]string{
+					"testing": "core",
+					"factory": "D",
+					"land":    "sheep",
+					"owner":   "bob_morrisson",
+					"fix":     "cant_be_touch",
+				},
+				Annotations: map[string]string{
+					"utility": "air_quality",
+				},
 			},
-			Annotations: map[string]string{
-				"utility": "air_quality",
-			},
-		},
-		{
-			DeviceId:  deviceIds[1],
-			Namespace: ns,
-			Labels: map[string]string{
-				"testing": "core",
-				"factory": "D",
-				"land":    "sheep",
-				"owner":   "bob_morrisson",
-				"fix":     "cant_be_touch",
-			},
-			Annotations: map[string]string{
-				"utility": "air_quality",
+			Spec: &core_apiv1.Spec{
+				DeviceId: deviceIds[0],
 			},
 		},
 		{
-			DeviceId:  deviceIds[2],
-			Namespace: ns,
-			Labels: map[string]string{
-				"testing": "core",
-				"factory": "D",
-				"land":    "cow",
-				"owner":   "bob_morrisson",
-				"fix":     "cant_be_touch",
+			Meta: &core_apiv1.Meta{
+				Name:      deviceIds[1],
+				Namespace: ns,
+				Labels: map[string]string{
+					"testing": "core",
+					"factory": "D",
+					"land":    "sheep",
+					"owner":   "bob_morrisson",
+					"fix":     "cant_be_touch",
+				},
+				Annotations: map[string]string{
+					"utility": "air_quality",
+				},
 			},
-			Annotations: map[string]string{
-				"utility": "air_quality",
+			Spec: &core_apiv1.Spec{
+				DeviceId: deviceIds[1],
+			},
+		},
+		{
+			Meta: &core_apiv1.Meta{
+				Name:      deviceIds[2],
+				Namespace: ns,
+				Labels: map[string]string{
+					"testing": "core",
+					"factory": "D",
+					"land":    "sheep",
+					"owner":   "bob_morrisson",
+					"fix":     "cant_be_touch",
+				},
+				Annotations: map[string]string{
+					"utility": "air_quality",
+				},
+			},
+			Spec: &core_apiv1.Spec{
+				DeviceId: deviceIds[2],
 			},
 		},
 	}
@@ -936,45 +1046,60 @@ func TestPublishDeviceDeleteTargetLabels(t *testing.T) {
 	deviceIds := []string{"device_delete_target_lbls_1", "device_delete_target_lbls_2", "device_delete_target_lbls_3"}
 	reqCreate := []*core_apiv1.CreateDeviceRequest{
 		{
-			DeviceId:  deviceIds[0],
-			Namespace: "testing_core",
-			Labels: map[string]string{
-				"testing": "core",
-				"factory": "D",
-				"land":    "plane",
-				"owner":   "bob_morrisson",
-				"fix":     "cant_be_touch",
+			Meta: &core_apiv1.Meta{
+				Name:      deviceIds[0],
+				Namespace: "testing_core",
+				Labels: map[string]string{
+					"testing": "core",
+					"factory": "D",
+					"land":    "plane",
+					"owner":   "bob_morrisson",
+					"fix":     "cant_be_touch",
+				},
+				Annotations: map[string]string{
+					"utility": "air_quality",
+				},
 			},
-			Annotations: map[string]string{
-				"utility": "air_quality",
-			},
-		},
-		{
-			DeviceId:  deviceIds[1],
-			Namespace: "testing_core",
-			Labels: map[string]string{
-				"testing": "core",
-				"factory": "D",
-				"land":    "plane",
-				"owner":   "bob_morrisson",
-				"fix":     "cant_be_touch",
-			},
-			Annotations: map[string]string{
-				"utility": "air_quality",
+			Spec: &core_apiv1.Spec{
+				DeviceId: deviceIds[0],
 			},
 		},
 		{
-			DeviceId:  deviceIds[2],
-			Namespace: "testing_core",
-			Labels: map[string]string{
-				"testing": "core",
-				"factory": "D",
-				"land":    "cow",
-				"owner":   "bob_morrisson",
-				"fix":     "cant_be_touch",
+			Meta: &core_apiv1.Meta{
+				Name:      deviceIds[1],
+				Namespace: "testing_core",
+				Labels: map[string]string{
+					"testing": "core",
+					"factory": "D",
+					"land":    "plane",
+					"owner":   "bob_morrisson",
+					"fix":     "cant_be_touch",
+				},
+				Annotations: map[string]string{
+					"utility": "air_quality",
+				},
 			},
-			Annotations: map[string]string{
-				"utility": "air_quality",
+			Spec: &core_apiv1.Spec{
+				DeviceId: deviceIds[1],
+			},
+		},
+		{
+			Meta: &core_apiv1.Meta{
+				Name:      deviceIds[2],
+				Namespace: "testing_core",
+				Labels: map[string]string{
+					"testing": "core",
+					"factory": "D",
+					"land":    "sheep",
+					"owner":   "bob_morrisson",
+					"fix":     "cant_be_touch",
+				},
+				Annotations: map[string]string{
+					"utility": "air_quality",
+				},
+			},
+			Spec: &core_apiv1.Spec{
+				DeviceId: deviceIds[2],
 			},
 		},
 	}
@@ -1018,45 +1143,63 @@ func TestPublishDeviceListTargetIds(t *testing.T) {
 
 	reqCreate := []*core_apiv1.CreateDeviceRequest{
 		{
-			DeviceId:  deviceIds[0],
-			Namespace: "testing_core",
-			Labels: map[string]string{
-				"testing": "core",
-				"factory": "D",
-				"land":    "sheep",
-				"owner":   "bob_morrisson",
-				"fix":     "cant_be_touch",
+			Meta: &core_apiv1.Meta{
+				Name:      deviceIds[0],
+				Namespace: "testing_core",
+				Labels: map[string]string{
+					"testing": "core",
+					"factory": "D",
+					"land":    "sheep",
+					"owner":   "bob_morrisson",
+					"fix":     "cant_be_touch",
+				},
+				Annotations: map[string]string{
+					"utility":                "air_quality",
+					"mir/device/description": "hello world of devices !",
+				},
 			},
-			Annotations: map[string]string{
-				"utility": "air_quality",
-			},
-		},
-		{
-			DeviceId:  deviceIds[1],
-			Namespace: "testing_core",
-			Labels: map[string]string{
-				"testing": "core",
-				"factory": "D",
-				"land":    "sheep",
-				"owner":   "bob_morrisson",
-				"fix":     "cant_be_touch",
-			},
-			Annotations: map[string]string{
-				"utility": "air_quality",
+			Spec: &core_apiv1.Spec{
+				DeviceId: deviceIds[0],
 			},
 		},
 		{
-			DeviceId:  deviceIds[2],
-			Namespace: "testing_core",
-			Labels: map[string]string{
-				"testing": "core",
-				"factory": "D",
-				"land":    "cow",
-				"owner":   "bob_morrisson",
-				"fix":     "cant_be_touch",
+			Meta: &core_apiv1.Meta{
+				Name:      deviceIds[1],
+				Namespace: "testing_core",
+				Labels: map[string]string{
+					"testing": "core",
+					"factory": "D",
+					"land":    "sheep",
+					"owner":   "bob_morrisson",
+					"fix":     "cant_be_touch",
+				},
+				Annotations: map[string]string{
+					"utility":                "air_quality",
+					"mir/device/description": "hello world of devices !",
+				},
 			},
-			Annotations: map[string]string{
-				"utility": "air_quality",
+			Spec: &core_apiv1.Spec{
+				DeviceId: deviceIds[1],
+			},
+		},
+		{
+			Meta: &core_apiv1.Meta{
+				Name:      deviceIds[2],
+				Namespace: "testing_core",
+				Labels: map[string]string{
+					"testing": "core",
+					"factory": "D",
+					"land":    "sheep",
+					"owner":   "bob_morrisson",
+					"fix":     "cant_be_touch",
+				},
+				Annotations: map[string]string{
+					"utility":                "air_quality",
+					"mir/device/description": "hello world of devices !",
+				},
+			},
+			Spec: &core_apiv1.Spec{
+				DeviceId: deviceIds[2],
 			},
 		},
 	}
@@ -1100,48 +1243,63 @@ func TestPublishDeviceListTargetNames(t *testing.T) {
 
 	reqCreate := []*core_apiv1.CreateDeviceRequest{
 		{
-			DeviceId:  deviceIds[0],
-			Name:      deviceIds[0],
-			Namespace: "testing_core",
-			Labels: map[string]string{
-				"testing": "core",
-				"factory": "D",
-				"land":    "sheep",
-				"owner":   "bob_morrisson",
-				"fix":     "cant_be_touch",
+			Meta: &core_apiv1.Meta{
+				Name:      deviceIds[0],
+				Namespace: "testing_core",
+				Labels: map[string]string{
+					"testing": "core",
+					"factory": "D",
+					"land":    "sheep",
+					"owner":   "bob_morrisson",
+					"fix":     "cant_be_touch",
+				},
+				Annotations: map[string]string{
+					"utility":                "air_quality",
+					"mir/device/description": "hello world of devices !",
+				},
 			},
-			Annotations: map[string]string{
-				"utility": "air_quality",
-			},
-		},
-		{
-			DeviceId:  deviceIds[1],
-			Name:      deviceIds[1],
-			Namespace: "testing_core",
-			Labels: map[string]string{
-				"testing": "core",
-				"factory": "D",
-				"land":    "sheep",
-				"owner":   "bob_morrisson",
-				"fix":     "cant_be_touch",
-			},
-			Annotations: map[string]string{
-				"utility": "air_quality",
+			Spec: &core_apiv1.Spec{
+				DeviceId: deviceIds[0],
 			},
 		},
 		{
-			DeviceId:  deviceIds[2],
-			Name:      deviceIds[2],
-			Namespace: "testing_core",
-			Labels: map[string]string{
-				"testing": "core",
-				"factory": "D",
-				"land":    "cow",
-				"owner":   "bob_morrisson",
-				"fix":     "cant_be_touch",
+			Meta: &core_apiv1.Meta{
+				Name:      deviceIds[1],
+				Namespace: "testing_core",
+				Labels: map[string]string{
+					"testing": "core",
+					"factory": "D",
+					"land":    "sheep",
+					"owner":   "bob_morrisson",
+					"fix":     "cant_be_touch",
+				},
+				Annotations: map[string]string{
+					"utility":                "air_quality",
+					"mir/device/description": "hello world of devices !",
+				},
 			},
-			Annotations: map[string]string{
-				"utility": "air_quality",
+			Spec: &core_apiv1.Spec{
+				DeviceId: deviceIds[1],
+			},
+		},
+		{
+			Meta: &core_apiv1.Meta{
+				Name:      deviceIds[2],
+				Namespace: "testing_core",
+				Labels: map[string]string{
+					"testing": "core",
+					"factory": "D",
+					"land":    "sheep",
+					"owner":   "bob_morrisson",
+					"fix":     "cant_be_touch",
+				},
+				Annotations: map[string]string{
+					"utility":                "air_quality",
+					"mir/device/description": "hello world of devices !",
+				},
+			},
+			Spec: &core_apiv1.Spec{
+				DeviceId: deviceIds[2],
 			},
 		},
 	}
@@ -1186,45 +1344,63 @@ func TestPublishDeviceListTargetNamespace(t *testing.T) {
 
 	reqCreate := []*core_apiv1.CreateDeviceRequest{
 		{
-			DeviceId:  deviceIds[0],
-			Namespace: ns,
-			Labels: map[string]string{
-				"testing": "core",
-				"factory": "D",
-				"land":    "sheep",
-				"owner":   "bob_morrisson",
-				"fix":     "cant_be_touch",
+			Meta: &core_apiv1.Meta{
+				Name:      deviceIds[0],
+				Namespace: ns,
+				Labels: map[string]string{
+					"testing": "core",
+					"factory": "D",
+					"land":    "sheep",
+					"owner":   "bob_morrisson",
+					"fix":     "cant_be_touch",
+				},
+				Annotations: map[string]string{
+					"utility":                "air_quality",
+					"mir/device/description": "hello world of devices !",
+				},
 			},
-			Annotations: map[string]string{
-				"utility": "air_quality",
-			},
-		},
-		{
-			DeviceId:  deviceIds[1],
-			Namespace: ns,
-			Labels: map[string]string{
-				"testing": "core",
-				"factory": "D",
-				"land":    "sheep",
-				"owner":   "bob_morrisson",
-				"fix":     "cant_be_touch",
-			},
-			Annotations: map[string]string{
-				"utility": "air_quality",
+			Spec: &core_apiv1.Spec{
+				DeviceId: deviceIds[0],
 			},
 		},
 		{
-			DeviceId:  deviceIds[2],
-			Namespace: ns + "cacaouette",
-			Labels: map[string]string{
-				"testing": "core",
-				"factory": "D",
-				"land":    "cow",
-				"owner":   "bob_morrisson",
-				"fix":     "cant_be_touch",
+			Meta: &core_apiv1.Meta{
+				Name:      deviceIds[1],
+				Namespace: ns,
+				Labels: map[string]string{
+					"testing": "core",
+					"factory": "D",
+					"land":    "sheep",
+					"owner":   "bob_morrisson",
+					"fix":     "cant_be_touch",
+				},
+				Annotations: map[string]string{
+					"utility":                "air_quality",
+					"mir/device/description": "hello world of devices !",
+				},
 			},
-			Annotations: map[string]string{
-				"utility": "air_quality",
+			Spec: &core_apiv1.Spec{
+				DeviceId: deviceIds[1],
+			},
+		},
+		{
+			Meta: &core_apiv1.Meta{
+				Name:      deviceIds[2],
+				Namespace: "testing_core",
+				Labels: map[string]string{
+					"testing": "core",
+					"factory": "D",
+					"land":    "sheep",
+					"owner":   "bob_morrisson",
+					"fix":     "cant_be_touch",
+				},
+				Annotations: map[string]string{
+					"utility":                "air_quality",
+					"mir/device/description": "hello world of devices !",
+				},
+			},
+			Spec: &core_apiv1.Spec{
+				DeviceId: deviceIds[2],
 			},
 		},
 	}
@@ -1271,45 +1447,63 @@ func TestPublishDeviceListTargetLabels(t *testing.T) {
 	deviceIds := []string{"device_list_target_lbls_1", "device_list_target_lbls_2", "device_list_target_lbls_3"}
 	reqCreate := []*core_apiv1.CreateDeviceRequest{
 		{
-			DeviceId:  deviceIds[0],
-			Namespace: "testing_core",
-			Labels: map[string]string{
-				"testing": "core",
-				"factory": "D",
-				"land":    "lamb",
-				"owner":   "bob_morrisson",
-				"fix":     "cant_be_touch",
+			Meta: &core_apiv1.Meta{
+				Name:      deviceIds[0],
+				Namespace: "testing_core",
+				Labels: map[string]string{
+					"testing": "core",
+					"factory": "D",
+					"land":    "lamb",
+					"owner":   "bob_morrisson",
+					"fix":     "cant_be_touch",
+				},
+				Annotations: map[string]string{
+					"utility":                "air_quality",
+					"mir/device/description": "hello world of devices !",
+				},
 			},
-			Annotations: map[string]string{
-				"utility": "air_quality",
-			},
-		},
-		{
-			DeviceId:  deviceIds[1],
-			Namespace: "testing_core",
-			Labels: map[string]string{
-				"testing": "core",
-				"factory": "D",
-				"land":    "lamb",
-				"owner":   "bob_morrisson",
-				"fix":     "cant_be_touch",
-			},
-			Annotations: map[string]string{
-				"utility": "air_quality",
+			Spec: &core_apiv1.Spec{
+				DeviceId: deviceIds[0],
 			},
 		},
 		{
-			DeviceId:  deviceIds[2],
-			Namespace: "testing_core",
-			Labels: map[string]string{
-				"testing": "core",
-				"factory": "D",
-				"land":    "cow",
-				"owner":   "bob_morrisson",
-				"fix":     "cant_be_touch",
+			Meta: &core_apiv1.Meta{
+				Name:      deviceIds[1],
+				Namespace: "testing_core",
+				Labels: map[string]string{
+					"testing": "core",
+					"factory": "D",
+					"land":    "lamb",
+					"owner":   "bob_morrisson",
+					"fix":     "cant_be_touch",
+				},
+				Annotations: map[string]string{
+					"utility":                "air_quality",
+					"mir/device/description": "hello world of devices !",
+				},
 			},
-			Annotations: map[string]string{
-				"utility": "air_quality",
+			Spec: &core_apiv1.Spec{
+				DeviceId: deviceIds[1],
+			},
+		},
+		{
+			Meta: &core_apiv1.Meta{
+				Name:      deviceIds[2],
+				Namespace: "testing_core",
+				Labels: map[string]string{
+					"testing": "core",
+					"factory": "D",
+					"land":    "sheep",
+					"owner":   "bob_morrisson",
+					"fix":     "cant_be_touch",
+				},
+				Annotations: map[string]string{
+					"utility":                "air_quality",
+					"mir/device/description": "hello world of devices !",
+				},
+			},
+			Spec: &core_apiv1.Spec{
+				DeviceId: deviceIds[2],
 			},
 		},
 	}
@@ -1351,45 +1545,63 @@ func TestPublishDeviceListNoTarget(t *testing.T) {
 	deviceIds := []string{"device_list_target_no_1", "device_list_target_no_2", "device_list_target_no_3"}
 	reqCreate := []*core_apiv1.CreateDeviceRequest{
 		{
-			DeviceId:  deviceIds[0],
-			Namespace: "testing_core",
-			Labels: map[string]string{
-				"testing": "core",
-				"factory": "D",
-				"land":    "sheep",
-				"owner":   "bob_morrisson",
-				"fix":     "cant_be_touch",
+			Meta: &core_apiv1.Meta{
+				Name:      deviceIds[0],
+				Namespace: "testing_core",
+				Labels: map[string]string{
+					"testing": "core",
+					"factory": "D",
+					"land":    "sheep",
+					"owner":   "bob_morrisson",
+					"fix":     "cant_be_touch",
+				},
+				Annotations: map[string]string{
+					"utility":                "air_quality",
+					"mir/device/description": "hello world of devices !",
+				},
 			},
-			Annotations: map[string]string{
-				"utility": "air_quality",
-			},
-		},
-		{
-			DeviceId:  deviceIds[1],
-			Namespace: "testing_core",
-			Labels: map[string]string{
-				"testing": "core",
-				"factory": "D",
-				"land":    "sheep",
-				"owner":   "bob_morrisson",
-				"fix":     "cant_be_touch",
-			},
-			Annotations: map[string]string{
-				"utility": "humidity",
+			Spec: &core_apiv1.Spec{
+				DeviceId: deviceIds[0],
 			},
 		},
 		{
-			DeviceId:  deviceIds[2],
-			Namespace: "testing_core",
-			Labels: map[string]string{
-				"testing": "core",
-				"factory": "D",
-				"land":    "cow",
-				"owner":   "bob_morrisson",
-				"fix":     "cant_be_touch",
+			Meta: &core_apiv1.Meta{
+				Name:      deviceIds[1],
+				Namespace: "testing_core",
+				Labels: map[string]string{
+					"testing": "core",
+					"factory": "D",
+					"land":    "sheep",
+					"owner":   "bob_morrisson",
+					"fix":     "cant_be_touch",
+				},
+				Annotations: map[string]string{
+					"utility":                "air_quality",
+					"mir/device/description": "hello world of devices !",
+				},
 			},
-			Annotations: map[string]string{
-				"utility": "humidity",
+			Spec: &core_apiv1.Spec{
+				DeviceId: deviceIds[1],
+			},
+		},
+		{
+			Meta: &core_apiv1.Meta{
+				Name:      deviceIds[2],
+				Namespace: "testing_core",
+				Labels: map[string]string{
+					"testing": "core",
+					"factory": "D",
+					"land":    "sheep",
+					"owner":   "bob_morrisson",
+					"fix":     "cant_be_touch",
+				},
+				Annotations: map[string]string{
+					"utility":                "air_quality",
+					"mir/device/description": "hello world of devices !",
+				},
+			},
+			Spec: &core_apiv1.Spec{
+				DeviceId: deviceIds[2],
 			},
 		},
 	}
@@ -1415,31 +1627,43 @@ func TestCreatedDeviceAlreadyExist(t *testing.T) {
 	deviceIds := []string{"device_already_exist_1", "device_already_exist_1"}
 	reqCreate := []*core_apiv1.CreateDeviceRequest{
 		{
-			DeviceId:  deviceIds[0],
-			Namespace: "testing_core",
-			Labels: map[string]string{
-				"testing": "core",
-				"factory": "D",
-				"land":    "sheep",
-				"owner":   "bob_morrisson",
-				"fix":     "cant_be_touch",
+			Meta: &core_apiv1.Meta{
+				Name:      deviceIds[0],
+				Namespace: "testing_core",
+				Labels: map[string]string{
+					"testing": "core",
+					"factory": "D",
+					"land":    "sheep",
+					"owner":   "bob_morrisson",
+					"fix":     "cant_be_touch",
+				},
+				Annotations: map[string]string{
+					"utility":                "air_quality",
+					"mir/device/description": "hello world of devices !",
+				},
 			},
-			Annotations: map[string]string{
-				"utility": "air_quality",
+			Spec: &core_apiv1.Spec{
+				DeviceId: deviceIds[0],
 			},
 		},
 		{
-			DeviceId:  deviceIds[1],
-			Namespace: "testing_core",
-			Labels: map[string]string{
-				"testing": "core",
-				"factory": "D",
-				"land":    "sheep",
-				"owner":   "bob_morrisson",
-				"fix":     "cant_be_touch",
+			Meta: &core_apiv1.Meta{
+				Name:      deviceIds[1],
+				Namespace: "testing_core",
+				Labels: map[string]string{
+					"testing": "core",
+					"factory": "D",
+					"land":    "sheep",
+					"owner":   "bob_morrisson",
+					"fix":     "cant_be_touch",
+				},
+				Annotations: map[string]string{
+					"utility":                "air_quality",
+					"mir/device/description": "hello world of devices !",
+				},
 			},
-			Annotations: map[string]string{
-				"utility": "humidity",
+			Spec: &core_apiv1.Spec{
+				DeviceId: deviceIds[1],
 			},
 		},
 	}
@@ -1462,7 +1686,7 @@ func TestCreatedDeviceAlreadyExist(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, len(respCreate), 2)
-	assert.Equal(t, respCreate[1].GetError().Message, "Device with the same ID already exist")
+	assert.Equal(t, respCreate[1].GetError().Message, "error while creating device: device device_already_exist_1/testing_core already exist")
 
 	assert.Equal(t, 1, count) // We create two devices, so only second one is not working
 	s.Unsubscribe()
@@ -1508,17 +1732,22 @@ func TestDeviceGoesOnline(t *testing.T) {
 	}
 	reqCreate := []*core_apiv1.CreateDeviceRequest{
 		{
-			DeviceId:  deviceIds[0],
-			Namespace: "testing_core",
-			Labels: map[string]string{
-				"testing": "core",
-				"factory": "D",
-				"land":    "sheep",
-				"owner":   "bob_morrisson",
-				"fix":     "cant_be_touch",
+			Meta: &core_apiv1.Meta{
+				Name:      deviceIds[0],
+				Namespace: "testing_core",
+				Labels: map[string]string{
+					"testing": "core",
+					"factory": "D",
+					"land":    "sheep",
+					"owner":   "bob_morrisson",
+					"fix":     "cant_be_touch",
+				},
+				Annotations: map[string]string{
+					"utility": "hvac",
+				},
 			},
-			Annotations: map[string]string{
-				"utility": "hvac",
+			Spec: &core_apiv1.Spec{
+				DeviceId: deviceIds[0],
 			},
 		},
 	}
@@ -1572,17 +1801,22 @@ func TestDeviceGoesOffline(t *testing.T) {
 	}
 	reqCreate := []*core_apiv1.CreateDeviceRequest{
 		{
-			DeviceId:  deviceIds[0],
-			Namespace: "testing_core",
-			Labels: map[string]string{
-				"testing": "core",
-				"factory": "D",
-				"land":    "sheep",
-				"owner":   "bob_morrisson",
-				"fix":     "cant_be_touch",
+			Meta: &core_apiv1.Meta{
+				Name:      deviceIds[0],
+				Namespace: "testing_core",
+				Labels: map[string]string{
+					"testing": "core",
+					"factory": "D",
+					"land":    "sheep",
+					"owner":   "bob_morrisson",
+					"fix":     "cant_be_touch",
+				},
+				Annotations: map[string]string{
+					"utility": "hvac",
+				},
 			},
-			Annotations: map[string]string{
-				"utility": "hvac",
+			Spec: &core_apiv1.Spec{
+				DeviceId: deviceIds[0],
 			},
 		},
 	}
