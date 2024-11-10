@@ -112,14 +112,15 @@ func TestPublishCmdRequest(t *testing.T) {
 	})
 
 	reqCreate := &core_apiv1.CreateDeviceRequest{
-		DeviceId:  id,
-		Name:      id,
-		Namespace: "testing_cmd",
-		Labels: map[string]string{
-			"testing": "proto_cache",
+		Meta: &core_apiv1.Meta{
+			Name:      id,
+			Namespace: "testing_cmd",
+			Labels: map[string]string{
+				"testing": "proto_cache",
+			},
 		},
-		Annotations: map[string]string{
-			"mir/device/description": "hello world of devices !",
+		Spec: &core_apiv1.Spec{
+			DeviceId: id,
 		},
 	}
 
@@ -170,7 +171,7 @@ func TestPublishCmdRequest(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, true, proto_mir.AreSchemaEqual(ogSch, sch))
-	assert.Equal(t, *devPostUpd.Meta.Labels["test"], str)
+	assert.Equal(t, devPostUpd.Meta.Labels["test"], str)
 	assert.Equal(t, 1, count)
 	cancel()
 	wg.Wait()

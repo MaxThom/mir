@@ -73,7 +73,8 @@ func createMirDeviceCmd(bus *bus.BusConn, noToast bool, req *core_apiv1.CreateDe
 		if resp.GetError() != nil {
 			return ErrMsg{Err: fmt.Errorf(resp.GetError().GetMessage())}
 		}
-		return DeviceCreatedMsg{Devices: resp.GetOk().Devices, NoToast: noToast}
+		devs := []*core_apiv1.Device{resp.GetOk()}
+		return DeviceCreatedMsg{Devices: devs, NoToast: noToast}
 	}
 }
 

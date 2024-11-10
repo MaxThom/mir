@@ -236,11 +236,15 @@ func TestRequestCreateDevice(t *testing.T) {
 	}
 	id := "create_device_test"
 	reqCreate := core_apiv1.CreateDeviceRequest{
-		DeviceId:  id,
-		Name:      id,
-		Namespace: "testing_module",
-		Labels: map[string]string{
-			"testing": "module",
+		Meta: &core_apiv1.Meta{
+			Name:      id,
+			Namespace: "testing_module",
+			Labels: map[string]string{
+				"testing": "module",
+			},
+		},
+		Spec: &core_apiv1.Spec{
+			DeviceId: id,
 		},
 	}
 
@@ -267,7 +271,7 @@ func TestRequestCreateDevice(t *testing.T) {
 
 	// Assert
 	time.Sleep(1 * time.Second)
-	assert.Equal(t, respCreate.GetOk().GetDevices()[0].Spec.DeviceId, id)
+	assert.Equal(t, respCreate.GetOk().Spec.DeviceId, id)
 	assert.Equal(t, fmt.Sprintf("%v", respCreate.GetError()), "<nil>")
 	assert.Equal(t, 1, count)
 
@@ -284,11 +288,15 @@ func TestRequestUpdateDevice(t *testing.T) {
 	}
 	id := "update_device_test"
 	reqCreate := core_apiv1.CreateDeviceRequest{
-		DeviceId:  id,
-		Name:      id,
-		Namespace: "testing_module",
-		Labels: map[string]string{
-			"testing": "module",
+		Meta: &core_apiv1.Meta{
+			Name:      id,
+			Namespace: "testing_module",
+			Labels: map[string]string{
+				"testing": "module",
+			},
+		},
+		Spec: &core_apiv1.Spec{
+			DeviceId: id,
 		},
 	}
 	newName := "update_device_test_renamed"
@@ -329,8 +337,7 @@ func TestRequestUpdateDevice(t *testing.T) {
 
 	// Assert
 	time.Sleep(1 * time.Second)
-	assert.Equal(t, respCreate.GetOk().GetDevices()[0].Meta.Name, id)
-	assert.Equal(t, respUpd.GetOk().GetDevices()[0].Meta.Name, newName)
+	assert.Equal(t, respCreate.GetOk().Meta.Name, id)
 	assert.Equal(t, fmt.Sprintf("%v", respCreate.GetError()), "<nil>")
 	assert.Equal(t, fmt.Sprintf("%v", respUpd.GetError()), "<nil>")
 	assert.Equal(t, 1, count)
@@ -348,11 +355,15 @@ func TestRequestDeleteDevice(t *testing.T) {
 	}
 	id := "delete_device_test"
 	reqCreate := core_apiv1.CreateDeviceRequest{
-		DeviceId:  id,
-		Name:      id,
-		Namespace: "testing_module",
-		Labels: map[string]string{
-			"testing": "module",
+		Meta: &core_apiv1.Meta{
+			Name:      id,
+			Namespace: "testing_module",
+			Labels: map[string]string{
+				"testing": "module",
+			},
+		},
+		Spec: &core_apiv1.Spec{
+			DeviceId: id,
 		},
 	}
 	reqDel := core_apiv1.DeleteDeviceRequest{
@@ -389,8 +400,7 @@ func TestRequestDeleteDevice(t *testing.T) {
 
 	// Assert
 	time.Sleep(1 * time.Second)
-	assert.Equal(t, respCreate.GetOk().GetDevices()[0].Meta.Name, id)
-	assert.Equal(t, len(respDel.GetOk().GetDevices()), 1)
+	assert.Equal(t, respCreate.GetOk().Meta.Name, id)
 	assert.Equal(t, fmt.Sprintf("%v", respCreate.GetError()), "<nil>")
 	assert.Equal(t, fmt.Sprintf("%v", respDel.GetError()), "<nil>")
 	assert.Equal(t, 1, count)
@@ -408,11 +418,15 @@ func TestRequestListDevice(t *testing.T) {
 	}
 	id := "list_device_test"
 	reqCreate := core_apiv1.CreateDeviceRequest{
-		DeviceId:  id,
-		Name:      id,
-		Namespace: "testing_module",
-		Labels: map[string]string{
-			"testing": "module",
+		Meta: &core_apiv1.Meta{
+			Name:      id,
+			Namespace: "testing_module",
+			Labels: map[string]string{
+				"testing": "module",
+			},
+		},
+		Spec: &core_apiv1.Spec{
+			DeviceId: id,
 		},
 	}
 	reqList := core_apiv1.ListDeviceRequest{
@@ -439,8 +453,7 @@ func TestRequestListDevice(t *testing.T) {
 	}
 
 	// Assert
-	assert.Equal(t, respCreate.GetOk().GetDevices()[0].Meta.Name, id)
-	assert.Equal(t, len(respList.GetOk().GetDevices()), 1)
+	assert.Equal(t, respCreate.GetOk().Meta.Name, id)
 	assert.Equal(t, fmt.Sprintf("%v", respCreate.GetError()), "<nil>")
 	assert.Equal(t, fmt.Sprintf("%v", respList.GetError()), "<nil>")
 

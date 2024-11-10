@@ -60,15 +60,19 @@ func TestMain(m *testing.M) {
 
 	// Prepare test data
 	devReq := &core_apiv1.CreateDeviceRequest{
-		DeviceId: "TestLaunchHearthbeat",
-		Labels: map[string]string{
-			"factory": "B",
-			"model":   "xx021",
-			"test":    "mir_device",
+		Meta: &core_apiv1.Meta{
+			Labels: map[string]string{
+				"factory": "B",
+				"model":   "xx021",
+				"test":    "mir_device",
+			},
+			Annotations: map[string]string{
+				"utility":                "air_quality",
+				"mir/device/description": "hello world of devices !",
+			},
 		},
-		Annotations: map[string]string{
-			"utility":                "air_quality",
-			"mir/device/description": "hello world of devices !",
+		Spec: &core_apiv1.Spec{
+			DeviceId: "TestLaunchHearthbeat",
 		},
 	}
 

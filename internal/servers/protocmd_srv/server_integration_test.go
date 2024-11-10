@@ -121,14 +121,18 @@ func TestPublishCmdListRequest(t *testing.T) {
 	id := "device_list_cmd"
 	s := swarm.NewSwarm(b)
 	if _, err := s.AddDevice(&core_apiv1.CreateDeviceRequest{
-		DeviceId:  id,
-		Name:      id,
-		Namespace: "testing_cmd",
-		Labels: map[string]string{
-			"testing": "cmd",
+		Meta: &core_apiv1.Meta{
+			Name:      id,
+			Namespace: "testing_cmd",
+			Labels: map[string]string{
+				"testing": "cmd",
+			},
+			Annotations: map[string]string{
+				"mir/device/description": "hello world of devices !",
+			},
 		},
-		Annotations: map[string]string{
-			"mir/device/description": "hello world of devices !",
+		Spec: &core_apiv1.Spec{
+			DeviceId: id,
 		},
 	}).WithSchema(protocmd_testv1.File_protocmd_test_v1_command_proto).Incubate(); err != nil {
 		t.Error(err)
@@ -178,14 +182,18 @@ func TestPublishCmdListFiltersRequest(t *testing.T) {
 	id := "device_list_cmd_filters"
 	s := swarm.NewSwarm(b)
 	if _, err := s.AddDevice(&core_apiv1.CreateDeviceRequest{
-		DeviceId:  id,
-		Name:      id,
-		Namespace: "testing_cmd",
-		Labels: map[string]string{
-			"testing": "cmd",
+		Meta: &core_apiv1.Meta{
+			Name:      id,
+			Namespace: "testing_cmd",
+			Labels: map[string]string{
+				"testing": "cmd",
+			},
+			Annotations: map[string]string{
+				"mir/device/description": "hello world of devices !",
+			},
 		},
-		Annotations: map[string]string{
-			"mir/device/description": "hello world of devices !",
+		Spec: &core_apiv1.Spec{
+			DeviceId: id,
 		},
 	}).WithSchema(protocmd_testv1.File_protocmd_test_v1_command_proto).Incubate(); err != nil {
 		t.Error(err)
@@ -230,14 +238,18 @@ func TestPublishCmdRequest(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_send_cmd"
 	reqCreate := &core_apiv1.CreateDeviceRequest{
-		DeviceId:  id,
-		Name:      id,
-		Namespace: "testing_cmd",
-		Labels: map[string]string{
-			"testing": "cmd",
+		Meta: &core_apiv1.Meta{
+			Name:      id,
+			Namespace: "testing_cmd",
+			Labels: map[string]string{
+				"testing": "cmd",
+			},
+			Annotations: map[string]string{
+				"mir/device/description": "hello world of devices !",
+			},
 		},
-		Annotations: map[string]string{
-			"mir/device/description": "hello world of devices !",
+		Spec: &core_apiv1.Spec{
+			DeviceId: id,
 		},
 	}
 
@@ -346,14 +358,18 @@ func TestPublishCmdJsonRequest(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_send_cmd_json"
 	reqCreate := &core_apiv1.CreateDeviceRequest{
-		DeviceId:  id,
-		Name:      id,
-		Namespace: "testing_cmd",
-		Labels: map[string]string{
-			"testing": "cmd",
+		Meta: &core_apiv1.Meta{
+			Name:      id,
+			Namespace: "testing_cmd",
+			Labels: map[string]string{
+				"testing": "cmd",
+			},
+			Annotations: map[string]string{
+				"mir/device/description": "hello world of devices !",
+			},
 		},
-		Annotations: map[string]string{
-			"mir/device/description": "hello world of devices !",
+		Spec: &core_apiv1.Spec{
+			DeviceId: id,
 		},
 	}
 
@@ -465,14 +481,18 @@ func TestPublishCmdProtoNoValidationDryRun(t *testing.T) {
 	// Arrange
 	id := "proto_novalidation_dryrun"
 	reqCreate := &core_apiv1.CreateDeviceRequest{
-		DeviceId:  id,
-		Name:      id,
-		Namespace: "testing_cmd",
-		Labels: map[string]string{
-			"testing": "cmd",
+		Meta: &core_apiv1.Meta{
+			Name:      id,
+			Namespace: "testing_cmd",
+			Labels: map[string]string{
+				"testing": "cmd",
+			},
+			Annotations: map[string]string{
+				"mir/device/description": "hello world of devices !",
+			},
 		},
-		Annotations: map[string]string{
-			"mir/device/description": "hello world of devices !",
+		Spec: &core_apiv1.Spec{
+			DeviceId: id,
 		},
 	}
 
@@ -524,14 +544,18 @@ func TestPublishCmdProtoInvalidPayloadNoValidation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_send_cmd_no_validation"
 	reqCreate := &core_apiv1.CreateDeviceRequest{
-		DeviceId:  id,
-		Name:      id,
-		Namespace: "testing_cmd",
-		Labels: map[string]string{
-			"testing": "cmd",
+		Meta: &core_apiv1.Meta{
+			Name:      id,
+			Namespace: "testing_cmd",
+			Labels: map[string]string{
+				"testing": "cmd",
+			},
+			Annotations: map[string]string{
+				"mir/device/description": "hello world of devices !",
+			},
 		},
-		Annotations: map[string]string{
-			"mir/device/description": "hello world of devices !",
+		Spec: &core_apiv1.Spec{
+			DeviceId: id,
 		},
 	}
 
@@ -610,16 +634,32 @@ func TestPublishCmdRequestMultipleDevices(t *testing.T) {
 	swarm := swarm.NewSwarm(b)
 	handlerCount := 0
 	_, err := swarm.AddDevices(&core_apiv1.CreateDeviceRequest{
-		DeviceId:  "device_send_cmd_multiple_devices",
-		Namespace: "testing_cmd",
-		Labels: map[string]string{
-			"testing": "cmd",
+		Meta: &core_apiv1.Meta{
+			Name:      "device_send_cmd_1",
+			Namespace: "testing_cmd",
+			Labels: map[string]string{
+				"testing": "cmd",
+			},
+			Annotations: map[string]string{
+				"mir/device/description": "hello world of devices !",
+			},
+		},
+		Spec: &core_apiv1.Spec{
+			DeviceId: "device_send_cmd_1",
 		},
 	}, &core_apiv1.CreateDeviceRequest{
-		DeviceId:  "device_send_cmd_2",
-		Namespace: "testing_cmd",
-		Labels: map[string]string{
-			"testing": "cmd",
+		Meta: &core_apiv1.Meta{
+			Name:      "device_send_cmd_2",
+			Namespace: "testing_cmd",
+			Labels: map[string]string{
+				"testing": "cmd",
+			},
+			Annotations: map[string]string{
+				"mir/device/description": "hello world of devices !",
+			},
+		},
+		Spec: &core_apiv1.Spec{
+			DeviceId: "device_send_cmd_2",
 		},
 	}).
 		WithSchema(protocmd_testv1.File_protocmd_test_v1_command_proto).
@@ -687,16 +727,32 @@ func TestPublishCmdRequestMultipleDevicesOneNoHandler(t *testing.T) {
 	swarm := swarm.NewSwarm(b)
 	handlerCount := 0
 	_, err := swarm.AddDevices(&core_apiv1.CreateDeviceRequest{
-		DeviceId:  "device_send_cmd_1",
-		Namespace: "testing_cmd",
-		Labels: map[string]string{
-			"testing": "cmd",
+		Meta: &core_apiv1.Meta{
+			Name:      "device_send_cmd_1_no_handler",
+			Namespace: "testing_cmd",
+			Labels: map[string]string{
+				"testing": "cmd",
+			},
+			Annotations: map[string]string{
+				"mir/device/description": "hello world of devices !",
+			},
+		},
+		Spec: &core_apiv1.Spec{
+			DeviceId: "device_send_cmd_1_no_handler",
 		},
 	}, &core_apiv1.CreateDeviceRequest{
-		DeviceId:  "device_send_cmd_2",
-		Namespace: "testing_cmd",
-		Labels: map[string]string{
-			"testing": "cmd",
+		Meta: &core_apiv1.Meta{
+			Name:      "device_send_cmd_2_no_handler",
+			Namespace: "testing_cmd",
+			Labels: map[string]string{
+				"testing": "cmd",
+			},
+			Annotations: map[string]string{
+				"mir/device/description": "hello world of devices !",
+			},
+		},
+		Spec: &core_apiv1.Spec{
+			DeviceId: "device_send_cmd_2_no_handler",
 		},
 	}).
 		WithSchema(protocmd_testv1.File_protocmd_test_v1_command_proto).
@@ -709,10 +765,18 @@ func TestPublishCmdRequestMultipleDevicesOneNoHandler(t *testing.T) {
 			},
 		).Incubate()
 	swarm.AddDevice(&core_apiv1.CreateDeviceRequest{
-		DeviceId:  "device_send_cmd_3",
-		Namespace: "testing_cmd",
-		Labels: map[string]string{
-			"testing": "cmd",
+		Meta: &core_apiv1.Meta{
+			Name:      "device_send_cmd_3_no_handler",
+			Namespace: "testing_cmd",
+			Labels: map[string]string{
+				"testing": "cmd",
+			},
+			Annotations: map[string]string{
+				"mir/device/description": "hello world of devices !",
+			},
+		},
+		Spec: &core_apiv1.Spec{
+			DeviceId: "device_send_cmd_3_no_handler",
 		},
 	}).WithSchema(protocmd_testv1.File_protocmd_test_v1_command_proto).Incubate()
 	wg, err := swarm.Deploy(ctx)
@@ -775,14 +839,18 @@ func TestPublishCmdRequestMultipleDevicesOneTimeout(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_send_cmd_multi_timeout"
 	reqCreate := &core_apiv1.CreateDeviceRequest{
-		DeviceId:  id,
-		Name:      id,
-		Namespace: "testing_cmd",
-		Labels: map[string]string{
-			"testing": "cmd",
+		Meta: &core_apiv1.Meta{
+			Name:      id,
+			Namespace: "testing_cmd",
+			Labels: map[string]string{
+				"testing": "cmd",
+			},
+			Annotations: map[string]string{
+				"mir/device/description": "hello world of devices !",
+			},
 		},
-		Annotations: map[string]string{
-			"mir/device/description": "hello world of devices !",
+		Spec: &core_apiv1.Spec{
+			DeviceId: id,
 		},
 	}
 
@@ -793,16 +861,20 @@ func TestPublishCmdRequestMultipleDevicesOneTimeout(t *testing.T) {
 		t.Error(err)
 	}
 
-	id2 := "device_send_cmd_2"
+	id2 := "device_send_cmd_multi_timeout_2"
 	reqCreate2 := &core_apiv1.CreateDeviceRequest{
-		DeviceId:  id2,
-		Name:      id2,
-		Namespace: "testing_cmd",
-		Labels: map[string]string{
-			"testing": "cmd",
+		Meta: &core_apiv1.Meta{
+			Name:      id2,
+			Namespace: "testing_cmd",
+			Labels: map[string]string{
+				"testing": "cmd",
+			},
+			Annotations: map[string]string{
+				"mir/device/description": "hello world of devices !",
+			},
 		},
-		Annotations: map[string]string{
-			"mir/device/description": "hello world of devices !",
+		Spec: &core_apiv1.Spec{
+			DeviceId: id2,
 		},
 	}
 
@@ -859,7 +931,7 @@ func TestPublishCmdRequestMultipleDevicesOneTimeout(t *testing.T) {
 	// Assert
 	msgResp := &protocmd_testv1.ChangePowerResp{}
 	for k, v := range respCmd.GetOk().DeviceResponses {
-		if k == "device_send_cmd_2/testing_cmd" {
+		if k == id2+"/testing_cmd" {
 			assert.Equal(t, cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_ERROR, v.Status)
 			assert.Equal(t, true, strings.Contains(v.Error, "no responders available for request"))
 		} else {
@@ -889,16 +961,24 @@ func TestPublishCmdRequestMultipleDevicesJson(t *testing.T) {
 	handlerCount := 0
 	_, err := swarm.AddDevices(
 		&core_apiv1.CreateDeviceRequest{
-			DeviceId:  "device_send_cmd_multi_json",
-			Namespace: "testing_cmd",
-			Labels: map[string]string{
-				"testing": "cmd",
+			Meta: &core_apiv1.Meta{
+				Namespace: "testing_cmd",
+				Labels: map[string]string{
+					"testing": "cmd",
+				},
+			},
+			Spec: &core_apiv1.Spec{
+				DeviceId: "device_send_cmd_multi_json_1",
 			},
 		}, &core_apiv1.CreateDeviceRequest{
-			DeviceId:  "device_send_cmd_2",
-			Namespace: "testing_cmd",
-			Labels: map[string]string{
-				"testing": "cmd",
+			Meta: &core_apiv1.Meta{
+				Namespace: "testing_cmd",
+				Labels: map[string]string{
+					"testing": "cmd",
+				},
+			},
+			Spec: &core_apiv1.Spec{
+				DeviceId: "device_send_cmd_multi_json_2",
 			},
 		}).
 		WithSchema(protocmd_testv1.File_protocmd_test_v1_command_proto).
@@ -967,16 +1047,24 @@ func TestPublishCmdRequestMultipleDevicesDescriptorNotFound(t *testing.T) {
 	handlerCount := 0
 	_, err := swarm.AddDevices(
 		&core_apiv1.CreateDeviceRequest{
-			DeviceId:  "device_send_notfound_1",
-			Namespace: "testing_cmd",
-			Labels: map[string]string{
-				"testing": "cmd",
+			Meta: &core_apiv1.Meta{
+				Namespace: "testing_cmd",
+				Labels: map[string]string{
+					"testing": "cmd",
+				},
+			},
+			Spec: &core_apiv1.Spec{
+				DeviceId: "device_send_notfound_1",
 			},
 		}, &core_apiv1.CreateDeviceRequest{
-			DeviceId:  "device_send_notfound_2",
-			Namespace: "testing_cmd",
-			Labels: map[string]string{
-				"testing": "cmd",
+			Meta: &core_apiv1.Meta{
+				Namespace: "testing_cmd",
+				Labels: map[string]string{
+					"testing": "cmd",
+				},
+			},
+			Spec: &core_apiv1.Spec{
+				DeviceId: "device_send_notfound_2",
 			},
 		}).
 		WithSchema(protocmd_testv1.File_protocmd_test_v1_command_proto).
@@ -1043,10 +1131,14 @@ func TestPublishCmdRequestMultipleDevicesSingleDescriptorNotFoundForcePush(t *te
 	handlerCount := 0
 	_, err := swarm.AddDevice(
 		&core_apiv1.CreateDeviceRequest{
-			DeviceId:  "device_valid",
-			Namespace: "testing_cmd",
-			Labels: map[string]string{
-				"testing": "cmd",
+			Meta: &core_apiv1.Meta{
+				Namespace: "testing_cmd",
+				Labels: map[string]string{
+					"testing": "cmd",
+				},
+			},
+			Spec: &core_apiv1.Spec{
+				DeviceId: "device_valid",
 			},
 		}).
 		WithSchema(protocmd_testv1.File_protocmd_test_v1_command_proto).
@@ -1060,10 +1152,14 @@ func TestPublishCmdRequestMultipleDevicesSingleDescriptorNotFoundForcePush(t *te
 		).Incubate()
 	_, err = swarm.AddDevice(
 		&core_apiv1.CreateDeviceRequest{
-			DeviceId:  "device_invalid",
-			Namespace: "testing_cmd",
-			Labels: map[string]string{
-				"testing": "cmd",
+			Meta: &core_apiv1.Meta{
+				Namespace: "testing_cmd",
+				Labels: map[string]string{
+					"testing": "cmd",
+				},
+			},
+			Spec: &core_apiv1.Spec{
+				DeviceId: "device_invalid",
 			},
 		}).
 		WithCommandHandler(
@@ -1131,16 +1227,32 @@ func TestPublishCmdRequestMultipleDevicesJsonTemplate(t *testing.T) {
 	swarm := swarm.NewSwarm(b)
 	_, err := swarm.AddDevices(
 		&core_apiv1.CreateDeviceRequest{
-			DeviceId:  "device_send_cmd_multi_json_tlm_1",
-			Namespace: "testing_cmd",
-			Labels: map[string]string{
-				"testing": "cmd",
+			Meta: &core_apiv1.Meta{
+				Name:      "device_send_cmd_multi_json_tlm_1",
+				Namespace: "testing_cmd",
+				Labels: map[string]string{
+					"testing": "cmd",
+				},
+				Annotations: map[string]string{
+					"mir/device/description": "hello world of devices !",
+				},
+			},
+			Spec: &core_apiv1.Spec{
+				DeviceId: "device_send_cmd_multi_json_tlm_1",
 			},
 		}, &core_apiv1.CreateDeviceRequest{
-			DeviceId:  "device_send_cmd_multi_json_tlm_2",
-			Namespace: "testing_cmd",
-			Labels: map[string]string{
-				"testing": "cmd",
+			Meta: &core_apiv1.Meta{
+				Name:      "device_send_cmd_multi_json_tlm_2",
+				Namespace: "testing_cmd",
+				Labels: map[string]string{
+					"testing": "cmd",
+				},
+				Annotations: map[string]string{
+					"mir/device/description": "hello world of devices !",
+				},
+			},
+			Spec: &core_apiv1.Spec{
+				DeviceId: "device_send_cmd_multi_json_tlm_2",
 			},
 		}).
 		WithSchema(protocmd_testv1.File_protocmd_test_v1_command_proto).
@@ -1189,14 +1301,18 @@ func TestPublishCmdRequestMultipleDevicesOneTimeoutJsonTemplate(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_send_cmd_multi_timeout_json_template_1"
 	reqCreate := &core_apiv1.CreateDeviceRequest{
-		DeviceId:  id,
-		Name:      id,
-		Namespace: "testing_cmd",
-		Labels: map[string]string{
-			"testing": "cmd",
+		Meta: &core_apiv1.Meta{
+			Name:      id,
+			Namespace: "testing_cmd",
+			Labels: map[string]string{
+				"testing": "cmd",
+			},
+			Annotations: map[string]string{
+				"mir/device/description": "hello world of devices !",
+			},
 		},
-		Annotations: map[string]string{
-			"mir/device/description": "hello world of devices !",
+		Spec: &core_apiv1.Spec{
+			DeviceId: id,
 		},
 	}
 
@@ -1209,14 +1325,18 @@ func TestPublishCmdRequestMultipleDevicesOneTimeoutJsonTemplate(t *testing.T) {
 
 	id2 := "device_send_cmd_multi_timeout_json_template_2"
 	reqCreate2 := &core_apiv1.CreateDeviceRequest{
-		DeviceId:  id2,
-		Name:      id2,
-		Namespace: "testing_cmd",
-		Labels: map[string]string{
-			"testing": "cmd",
+		Meta: &core_apiv1.Meta{
+			Name:      id2,
+			Namespace: "testing_cmd",
+			Labels: map[string]string{
+				"testing": "cmd",
+			},
+			Annotations: map[string]string{
+				"mir/device/description": "hello world of devices !",
+			},
 		},
-		Annotations: map[string]string{
-			"mir/device/description": "hello world of devices !",
+		Spec: &core_apiv1.Spec{
+			DeviceId: id2,
 		},
 	}
 
@@ -1274,14 +1394,18 @@ func TestPublishCmdJsonNameWithCurlyRequest(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_send_cmd_json_curly"
 	reqCreate := &core_apiv1.CreateDeviceRequest{
-		DeviceId:  id,
-		Name:      id,
-		Namespace: "testing_cmd",
-		Labels: map[string]string{
-			"testing": "cmd",
+		Meta: &core_apiv1.Meta{
+			Name:      id,
+			Namespace: "testing_cmd",
+			Labels: map[string]string{
+				"testing": "cmd",
+			},
+			Annotations: map[string]string{
+				"mir/device/description": "hello world of devices !",
+			},
 		},
-		Annotations: map[string]string{
-			"mir/device/description": "hello world of devices !",
+		Spec: &core_apiv1.Spec{
+			DeviceId: id,
 		},
 	}
 

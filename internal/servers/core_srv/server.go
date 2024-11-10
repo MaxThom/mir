@@ -198,75 +198,29 @@ func (s *CoreServer) createDeviceRequestHandler(ch chan nats.Msg) {
 
 		newDev, err := s.store.CreateDevice(req)
 		if err != nil {
-			if errors.Is(err, mir_models.ErrorInvalidDeviceID) {
-				sendReplyOrAck(s.bus, msg, &core_apiv1.CreateDeviceResponse{
-					Response: &core_apiv1.CreateDeviceResponse_Error{
-						Error: &common_apiv1.Error{
-							Code:    400,
-							Message: err.Error(),
-							Details: []string{"400 Bad Request"},
-						},
+			l.Error().Err(err).Msg("error occure while creating device")
+			sendReplyOrAck(s.bus, msg, &core_apiv1.CreateDeviceResponse{
+				Response: &core_apiv1.CreateDeviceResponse_Error{
+					Error: &common_apiv1.Error{
+						Code:    500,
+						Message: fmt.Errorf("error while creating device: %w", err).Error(),
+						Details: []string{err.Error()},
 					},
-				})
-			} else if errors.Is(err, mir_models.ErrorDeviceIdAlreadyExist) {
-				sendReplyOrAck(s.bus, msg, &core_apiv1.CreateDeviceResponse{
-					Response: &core_apiv1.CreateDeviceResponse_Error{
-						Error: &common_apiv1.Error{
-							Code:    409,
-							Message: err.Error(),
-							Details: []string{"409 Conflict"},
-						},
-					},
-				})
-			} else if errors.Is(err, mir_models.ErrorDbExecutingQuery) {
-				sendReplyOrAck(s.bus, msg, &core_apiv1.CreateDeviceResponse{
-					Response: &core_apiv1.CreateDeviceResponse_Error{
-						Error: &common_apiv1.Error{
-							Code:    500,
-							Message: err.Error(),
-							Details: []string{"500 Internal Server Error", err.Error()},
-						},
-					},
-				})
-			} else if errors.Is(err, mir_models.ErrorDbDeserializingResponse) {
-				sendReplyOrAck(s.bus, msg, &core_apiv1.CreateDeviceResponse{
-					Response: &core_apiv1.CreateDeviceResponse_Error{
-						Error: &common_apiv1.Error{
-							Code:    500,
-							Message: err.Error(),
-							Details: []string{"500 Internal Server Error", err.Error()},
-						},
-					},
-				})
-			} else {
-				sendReplyOrAck(s.bus, msg, &core_apiv1.CreateDeviceResponse{
-					Response: &core_apiv1.CreateDeviceResponse_Error{
-						Error: &common_apiv1.Error{
-							Code:    500,
-							Message: err.Error(),
-							Details: []string{"500 Internal Server Error", err.Error()},
-						},
-					},
-				})
-			}
-			l.Error().Err(err).Msg("error occure while executing create device request")
+				},
+			})
 			continue
 		}
 
 		// Publish created events
-		for _, d := range newDev {
-			err := core_client.PublishDeviceCreatedEvent(s.bus, msg.Header.Get("instance"), d.Spec.DeviceId, d)
-			if err != nil {
-				l.Warn().Err(err).Str("deviceId", d.Spec.DeviceId).Msg("error occure while publishing device created event")
-			}
+		err = core_client.PublishDeviceCreatedEvent(s.bus, msg.Header.Get("instance"), newDev.Spec.DeviceId, newDev)
+		if err != nil {
+			l.Warn().Err(err).Str("deviceId", newDev.Spec.DeviceId).Msg("error occure while publishing device created event")
 		}
-
 		sendReplyOrAck(s.bus, msg, &core_apiv1.CreateDeviceResponse{
 			Response: &core_apiv1.CreateDeviceResponse_Ok{
-				Ok: &core_apiv1.DeviceList{
-					Devices: mir_models.NewProtoDeviceListFromDevices(newDev),
-				},
-			}})
+				Ok: mir_models.NewProtoDeviceFromDevice(newDev),
+			},
+		})
 	}
 }
 

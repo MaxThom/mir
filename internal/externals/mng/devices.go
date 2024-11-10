@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	errrs "errors"
-
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/pkg/errors"
@@ -19,7 +17,7 @@ var (
 
 type DeviceStore interface {
 	ListDevice(req *core_apiv1.ListDeviceRequest) ([]mir_models.Device, error)
-	CreateDevice(req *core_apiv1.CreateDeviceRequest) ([]mir_models.Device, error)
+	CreateDevice(req *core_apiv1.CreateDeviceRequest) (mir_models.Device, error)
 	UpdateDevice(req *core_apiv1.UpdateDeviceRequest) ([]mir_models.Device, error)
 	DeleteDevice(req *core_apiv1.DeleteDeviceRequest) ([]mir_models.Device, error)
 }
@@ -48,47 +46,39 @@ func (s *surrealDeviceStore) ListDevice(req *core_apiv1.ListDeviceRequest) ([]mi
 	return devs, nil
 }
 
-func (s *surrealDeviceStore) CreateDevice(req *core_apiv1.CreateDeviceRequest) ([]mir_models.Device, error) {
+func (s *surrealDeviceStore) CreateDevice(cdr *core_apiv1.CreateDeviceRequest) (mir_models.Device, error) {
 	// Validate
-	var errs error
-	devs := []mir_models.Device{}
-	for _, cdr := range mir_models.NewDevicesFromCreateDeviceReq(req) {
-		if cdr.Meta.Name == "" && cdr.Spec.DeviceId == "" {
-			errs = errrs.Join(errs, fmt.Errorf("device with namens %s/%s and id %s is missing", cdr.Meta.Name, cdr.Meta.Namespace, cdr.Spec.DeviceId))
-			continue
-		}
-		if cdr.Meta.Name == "" {
-			cdr.Meta.Name = cdr.Spec.DeviceId
-		}
-		if cdr.Meta.Namespace == "" {
-			cdr.Meta.Namespace = "default"
-		}
-		q, v := createIsDeviceUniqueQuery(cdr.Meta.Name, cdr.Meta.Namespace, cdr.Spec.DeviceId)
-		respCheck, err := executeQueryForType[[]mir_models.Device](s.db, q, v)
-		if err != nil {
-			errs = errrs.Join(errs, errors.Wrap(err, mir_models.ErrorDbExecutingQuery.Error()))
-			continue
-		}
-		if len(respCheck) > 0 {
-			errs = errrs.Join(errs, fmt.Errorf("device with namens %s/%s or id %s already exist", cdr.Meta.Name, cdr.Meta.Namespace, cdr.Spec.DeviceId))
-			continue
-		}
-
-		// Create
-		respDb, err := s.db.Create("devices", cdr)
-		if err != nil {
-			errs = errrs.Join(errs, errors.Wrap(err, mir_models.ErrorDbExecutingQuery.Error()))
-			continue
-		}
-		newDev := []mir_models.Device{}
-		err = surrealdb.Unmarshal(respDb, &newDev)
-		if err != nil {
-			errs = errrs.Join(errs, errors.Wrap(err, mir_models.ErrorDbDeserializingResponse.Error()))
-			continue
-		}
-		devs = append(devs, newDev...)
+	if cdr.Meta.Name == "" && cdr.Spec.DeviceId == "" {
+		return mir_models.Device{}, fmt.Errorf("device name and id are missing")
 	}
-	return devs, errs
+	if cdr.Meta.Name == "" {
+		cdr.Meta.Name = cdr.Spec.DeviceId
+	}
+	if cdr.Meta.Namespace == "" {
+		cdr.Meta.Namespace = "default"
+	}
+	q, v := createIsDeviceUniqueQuery(cdr.Meta.Name, cdr.Meta.Namespace, cdr.Spec.DeviceId)
+	respCheck, err := executeQueryForType[[]mir_models.Device](s.db, q, v)
+	if err != nil {
+		return mir_models.Device{}, fmt.Errorf("%w for device %s/%s: %w", mir_models.ErrorDbExecutingQuery, cdr.Meta.Name, cdr.Meta.Namespace, err)
+	}
+	if len(respCheck) > 0 {
+		return mir_models.Device{}, fmt.Errorf("device %s/%s already exist", cdr.Meta.Name, cdr.Meta.Namespace)
+	}
+
+	// Create
+	fmt.Println(cdr)
+	respDb, err := s.db.Create("devices", mir_models.NewDeviceFromCreateDeviceReq(cdr))
+	if err != nil {
+		return mir_models.Device{}, fmt.Errorf("%w: %w", mir_models.ErrorDbExecutingQuery, err)
+	}
+	newDev := []mir_models.Device{}
+	err = surrealdb.Unmarshal(respDb, &newDev)
+	if err != nil {
+		return mir_models.Device{}, fmt.Errorf("%w for device %s/%s: %w", mir_models.ErrorDbDeserializingResponse, cdr.Meta.Name, cdr.Meta.Namespace, err)
+	}
+	fmt.Println(newDev[0])
+	return newDev[0], nil
 }
 
 func (s *surrealDeviceStore) UpdateDevice(req *core_apiv1.UpdateDeviceRequest) ([]mir_models.Device, error) {

@@ -157,20 +157,18 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			if !formInError {
 				req := &core_apiv1.CreateDeviceRequest{
-					Devices: []*core_apiv1.CreateDeviceRequest_DeviceEdit{{
-						Meta: &core_apiv1.Meta{
-							Name:        m.inputs[name].GetValue(),
-							Namespace:   m.inputs[namespace].GetValue(),
-							Labels:      keyValueStringToMap(m.inputs[labels].GetValue()),
-							Annotations: keyValueStringToMap(m.inputs[annotations].GetValue()),
-						},
-						Spec: &core_apiv1.Spec{
-							DeviceId: m.inputs[deviceId].GetValue(),
-							Disabled: !boolStringToBool(m.inputs[disabled].GetValue()),
-						},
-					}},
+					Meta: &core_apiv1.Meta{
+						Name:        m.inputs[name].GetValue(),
+						Namespace:   m.inputs[namespace].GetValue(),
+						Labels:      keyValueStringToMap(m.inputs[labels].GetValue()),
+						Annotations: keyValueStringToMap(m.inputs[annotations].GetValue()),
+					},
+					Spec: &core_apiv1.Spec{
+						DeviceId: m.inputs[deviceId].GetValue(),
+						Disabled: !boolStringToBool(m.inputs[disabled].GetValue()),
+					},
 				}
-				req.Devices[0].Meta.Annotations["mir/device/description"] = m.inputs[description].GetValue()
+				req.Meta.Annotations["mir/device/description"] = m.inputs[description].GetValue()
 				return m, tea.Batch(msgs.ReqMsgCmd("creating device..."), msgs.CreateMirDevice(store.Bus, req))
 			}
 		} else if msg.Label == "Create with random uuid" {
