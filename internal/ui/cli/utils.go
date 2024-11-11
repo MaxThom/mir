@@ -135,3 +135,22 @@ func labelToPointerLabel(lbl map[string]string) map[string]*string {
 	}
 	return res
 }
+
+func getTargetFromNameNs(n string) Target {
+	nameNs := strings.Split(n, "/")
+	if nameNs[0] == "" || nameNs[0] == "*" {
+		return Target{
+			Namespaces: []string{nameNs[1]},
+		}
+	} else if len(nameNs) == 1 || (len(nameNs) > 1 && nameNs[1] == "") {
+		return Target{
+			Names: []string{nameNs[0]},
+		}
+	} else if len(nameNs) > 1 {
+		return Target{
+			Names:      []string{nameNs[0]},
+			Namespaces: []string{nameNs[1]},
+		}
+	}
+	return Target{}
+}

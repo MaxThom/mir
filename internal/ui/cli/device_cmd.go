@@ -17,25 +17,25 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// TODO find how to move output here instead of per command
 // TODO set yaml indent to two spaces
-// TODO check if json to remove key value pair should be NONE or NULL. check json doc
 type DeviceCmd struct {
 	List   DeviceListCmd   `cmd:"" help:"List devices"`
 	Create DeviceCreateCmd `cmd:"" help:"Create a new device"`
 	Update DeviceUpdateCmd `cmd:"" help:"Update a device"`
-	Edit   DeviceEditCmd   `cmd:"" help:"Interactive editing of a device"`
+	Edit   DeviceEditCmd   `cmd:"" help:"Interactive editing of devices"`
 	Apply  DeviceApplyCmd  `cmd:"" help:"Update a device using a declarative format"`
 	Delete DeviceDeleteCmd `cmd:"" help:"Delete a device"`
 }
 
 type DeviceListCmd struct {
 	Output string `short:"o" help:"output format for response [pretty|json|yaml]" default:"pretty"`
+	NameNs string `name:"name/namespace" arg:"" optional:"" help:"list single device."`
 	Target `embed:"" prefix:"target."`
 }
 
 type DeviceCreateCmd struct {
 	Output string `short:"o" help:"output format for response [pretty|json|yaml]" default:"pretty"`
+	NameNs string `name:"name/namespace" arg:"" optional:"" help:"shortcut to set name and namespace"`
 
 	ShowJsonTemplate bool              `short:"j" help:"Show json template for creating a device"`
 	Path             string            `short:"f" help:"Filepath to device definition. You can also pipe file content. Tips: use 'mir device create -j > device.yaml' to get initial content"`
@@ -63,6 +63,7 @@ type DeviceUpdateCmd struct {
 
 type DeviceDeleteCmd struct {
 	Output string `short:"o" help:"output format for response [pretty|json|yaml]" default:"pretty"`
+	NameNs string `name:"name/namespace" arg:"" optional:"" help:"delete single device."`
 	Target `embed:"" prefix:"target."`
 }
 
@@ -84,6 +85,11 @@ func (d *DeviceListCmd) Validate() error {
 	if strings.ToLower(d.Output) != "pretty" && strings.ToLower(d.Output) != "yaml" && strings.ToLower(d.Output) != "json" {
 		d.Output = "pretty"
 	}
+
+	if d.NameNs != "" {
+		d.Target = getTargetFromNameNs(d.NameNs)
+	}
+
 	if len(err.Details) > 0 {
 		return err
 	}
@@ -143,6 +149,16 @@ func (d *DeviceCreateCmd) Validate() error {
 	}
 	if strings.ToLower(d.Output) != "pretty" && strings.ToLower(d.Output) != "yaml" && strings.ToLower(d.Output) != "json" {
 		d.Output = "pretty"
+	}
+
+	if d.NameNs != "" {
+		target := getTargetFromNameNs(d.NameNs)
+		if len(target.Names) == 1 {
+			d.Name = target.Names[0]
+		}
+		if len(target.Namespaces) == 1 {
+			d.Namespace = target.Namespaces[0]
+		}
 	}
 
 	if !d.ShowJsonTemplate && !isPipedStdIn() && d.Path == "" && d.Id == "" && !d.RandomId {
@@ -365,8 +381,13 @@ func (d *DeviceDeleteCmd) Validate() error {
 	if len(d.Target.Ids) == 0 &&
 		len(d.Target.Names) == 0 &&
 		len(d.Target.Namespaces) == 0 &&
-		len(d.Target.Labels) == 0 {
+		len(d.Target.Labels) == 0 &&
+		d.NameNs == "" {
 		err.Details = append(err.Details, "Must specify targets")
+	}
+
+	if d.NameNs != "" {
+		d.Target = getTargetFromNameNs(d.NameNs)
 	}
 
 	if strings.ToLower(d.Output) != "pretty" && strings.ToLower(d.Output) != "yaml" && strings.ToLower(d.Output) != "json" {

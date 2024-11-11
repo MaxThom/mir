@@ -38,18 +38,19 @@ message UpdateDeviceRequest {
   Status status = 4;
 
   message Meta {
-    optional string name = 3; // Name of the device
-    optional string namespace = 4; // Name of the device
-    map<string, common_api.v1.OptString> labels = 5; // set key to nil to remove it
-    map<string, common_api.v1.OptString> annotations = 6; // set key to nil to remove it
+    optional string name = 1; // Name of the device
+    optional string namespace = 2; // Name of the device
+    map<string, common_api.v1.OptString> labels = 3; // set key to nil to remove it
+    map<string, common_api.v1.OptString> annotations = 4; // set key to nil to remove it
   }
   message Spec {
-    optional bool disabled = 3; // If disabled, device will be cut off from communication
+    optional string device_id = 1; // Change device id, caution can break device link
+    optional bool disabled = 2; // If disabled, device will be cut off from communication
   }
   message Status {
-    optional bool online = 3; // Is device online ?
-    optional common_api.v1.Timestamp last_hearthbeat = 4; // Last pulse received
-    Schema schema = 5; // Schema for telemetry and telecommands
+    optional bool online = 1; // Is device online ?
+    optional common_api.v1.Timestamp last_hearthbeat = 2; // Last pulse received
+    Schema schema = 3; // Schema for telemetry and telecommands
   }
   message Schema {
 	optional bytes compressed_schema = 1; // Schema in bytes

@@ -18,6 +18,7 @@ import (
 type DeviceEditCmd struct {
 	// TODO put back to yaml when ill figure it out
 	Output string `short:"o" help:"output format for response [json|yaml]" default:"json"`
+	NameNs string `name:"name/namespace" arg:"" optional:"" help:"edit single device"`
 	Target `embed:"" prefix:"target."`
 }
 
@@ -33,8 +34,13 @@ func (d *DeviceEditCmd) Validate() error {
 	if len(d.Target.Ids) == 0 &&
 		len(d.Target.Names) == 0 &&
 		len(d.Target.Namespaces) == 0 &&
-		len(d.Target.Labels) == 0 {
+		len(d.Target.Labels) == 0 &&
+		d.NameNs == "" {
 		err.Details = append(err.Details, "Must specify targets")
+	}
+
+	if d.NameNs != "" {
+		d.Target = getTargetFromNameNs(d.NameNs)
 	}
 
 	if len(err.Details) > 0 {
@@ -70,11 +76,22 @@ func (d *DeviceEditCmd) Run(c CLI) error {
 		return e
 	}
 
+	if len(respList.GetOk().Devices) == 0 {
+		e := MirRequestError{Route: "device.list", e: errors.New("No devices found for the given targets")}
+		return e
+
+	}
+
 	devs := mir_models.NewDeviceListFromProtoDevices(respList.GetOk().Devices)
 	header := []string{
 		"Edit the device below",
 		"To remove a field, you must explicitly set it to null",
 		"Only fields under meta, spec and properties.desired are editable",
+	}
+
+	targetNameNs := []mir_models.NameNs{}
+	for _, d := range devs {
+		targetNameNs = append(targetNameNs, d.GetNameNs())
 	}
 	if d.Output == "yaml" {
 		if len(devs) == 1 {
@@ -101,8 +118,8 @@ func (d *DeviceEditCmd) Run(c CLI) error {
 
 	var errs error
 	respDevs := []*core_apiv1.Device{}
-	for _, d := range devs {
-		req := mir_models.NewUpdateDeviceReqFromDevice(*d)
+	for i, d := range devs {
+		req := mir_models.NewUpdateDeviceReqFromDeviceWithNameNs(targetNameNs[i], *d)
 		resp, err := core_client.PublishDeviceUpdateRequest(msgBus, req)
 		if err != nil {
 			e := MirRequestError{Route: "device.update", e: err}
@@ -120,9 +137,6 @@ func (d *DeviceEditCmd) Run(c CLI) error {
 		}
 		respDevs = append(respDevs, resp.GetOk().Devices...)
 	}
-	if errs != nil {
-		return errs
-	}
 
 	if d.Output == "pretty" {
 		fmt.Println(prettyStringDevices(respDevs))
@@ -132,6 +146,10 @@ func (d *DeviceEditCmd) Run(c CLI) error {
 		} else {
 			fmt.Println(out)
 		}
+	}
+
+	if errs != nil {
+		return errs
 	}
 
 	return nil
@@ -230,14 +248,15 @@ func (d *DeviceApplyCmd) Run(c CLI) error {
 		}
 		respDevs = append(respDevs, resp.GetOk().Devices...)
 	}
-	if errs != nil {
-		return errs
-	}
 
 	if out, e := MarshalResponse(output, respDevs); e != nil {
 		return e
 	} else {
 		fmt.Println(out)
+	}
+
+	if errs != nil {
+		return errs
 	}
 
 	return nil

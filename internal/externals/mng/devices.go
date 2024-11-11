@@ -63,7 +63,7 @@ func (s *surrealDeviceStore) CreateDevice(cdr *core_apiv1.CreateDeviceRequest) (
 		return mir_models.Device{}, fmt.Errorf("%w for device %s/%s: %w", mir_models.ErrorDbExecutingQuery, cdr.Meta.Name, cdr.Meta.Namespace, err)
 	}
 	if len(respCheck) > 0 {
-		return mir_models.Device{}, fmt.Errorf("device %s/%s already exist", cdr.Meta.Name, cdr.Meta.Namespace)
+		return mir_models.Device{}, fmt.Errorf("device %s/%s with deviceId %s already exist", cdr.Meta.Name, cdr.Meta.Namespace, cdr.Spec.DeviceId)
 	}
 
 	// Create
@@ -81,6 +81,8 @@ func (s *surrealDeviceStore) CreateDevice(cdr *core_apiv1.CreateDeviceRequest) (
 	return newDev[0], nil
 }
 
+// TODO device create if not exist on flag
+// TODO verify name, ns and id are unique
 func (s *surrealDeviceStore) UpdateDevice(req *core_apiv1.UpdateDeviceRequest) ([]mir_models.Device, error) {
 	if req.Targets == nil ||
 		len(req.Targets.Ids) == 0 &&
@@ -220,6 +222,10 @@ func createUpdateQueryForDevice(t *core_apiv1.Targets, upd *core_apiv1.UpdateDev
 	}
 	if upd.Spec != nil {
 		var sb strings.Builder
+		if upd.Spec.DeviceId != nil {
+			sb.WriteString("deviceId: $ID,")
+			vars["ID"] = *upd.Spec.DeviceId
+		}
 		if upd.Spec.Disabled != nil {
 			sb.WriteString("disabled: $DIS,")
 			vars["DIS"] = *upd.Spec.Disabled

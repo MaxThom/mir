@@ -1,0 +1,12 @@
+apiVersion: v1alpha
+apiName: device
+meta:
+    name: "pizza"
+    namespace: "dev"
+    labels: {}
+    annotations: {}
+spec:
+    deviceId: "0xf86cmd"
+    disabled: false
+properties: {}
+

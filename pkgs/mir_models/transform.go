@@ -16,6 +16,15 @@ func NewDeviceListFromProtoDevices(d []*core_apiv1.Device) []*Device {
 	return p
 }
 
+func NewUpdateDeviceReqFromDeviceWithNameNs(n NameNs, d Device) *core_apiv1.UpdateDeviceRequest {
+	dev := NewUpdateDeviceReqFromDevice(d)
+	dev.Targets = &core_apiv1.Targets{
+		Names:      []string{n.Name},
+		Namespaces: []string{n.Namespace},
+	}
+	return dev
+}
+
 func NewUpdateDeviceReqFromDevice(d Device) *core_apiv1.UpdateDeviceRequest {
 	toUpdateMap := func(m map[string]string) map[string]*common_apiv1.OptString {
 		opt := map[string]*common_apiv1.OptString{}
@@ -33,7 +42,6 @@ func NewUpdateDeviceReqFromDevice(d Device) *core_apiv1.UpdateDeviceRequest {
 		return opt
 	}
 
-	// IDEA maybe add the possibility to update device id
 	return &core_apiv1.UpdateDeviceRequest{
 		Meta: &core_apiv1.UpdateDeviceRequest_Meta{
 			Name:        &d.Meta.Name,
@@ -42,6 +50,7 @@ func NewUpdateDeviceReqFromDevice(d Device) *core_apiv1.UpdateDeviceRequest {
 			Annotations: toUpdateMap(d.Meta.Annotations),
 		},
 		Spec: &core_apiv1.UpdateDeviceRequest_Spec{
+			DeviceId: &d.Spec.DeviceId,
 			Disabled: &d.Spec.Disabled,
 		},
 		Targets: &core_apiv1.Targets{
