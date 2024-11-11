@@ -1,6 +1,7 @@
 package mir_models
 
 import (
+	"strings"
 	"time"
 
 	"github.com/maxthom/mir/internal/libs/compression/zstd"
@@ -29,6 +30,39 @@ func NewDevice() Device {
 
 func (d Device) GetNameNamespace() string {
 	return d.Meta.Name + "/" + d.Meta.Namespace
+}
+
+func (d Device) GetNameNs() NameNs {
+	return NewNameNs(d.Meta.Name, d.Meta.Namespace)
+}
+
+type NameNs struct {
+	Name      string
+	Namespace string
+}
+
+func NewNameNs(name, namespace string) NameNs {
+	return NameNs{
+		Name:      name,
+		Namespace: namespace,
+	}
+}
+
+func FromNameNsString(nameNs string) NameNs {
+	s := strings.Split(nameNs, "/")
+	if len(s) == 1 {
+		return NameNs{
+			Name:      s[0],
+			Namespace: "default",
+		}
+	}
+	return NameNs{
+		Name:      s[0],
+		Namespace: s[1],
+	}
+}
+func (d NameNs) GetNameNamespace() string {
+	return d.Name + "/" + d.Namespace
 }
 
 type Meta struct {
