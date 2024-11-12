@@ -76,6 +76,43 @@ func NewCreateDeviceReqFromDevice(d Device) *core_apiv1.CreateDeviceRequest {
 	}
 }
 
+func NewCreateDeviceReqFromDeviceUpdateRequest(d *core_apiv1.UpdateDeviceRequest) *core_apiv1.CreateDeviceRequest {
+	toMap := func(m map[string]*common_apiv1.OptString) map[string]string {
+		opt := map[string]string{}
+		for k, v := range m {
+			if v != nil && v.Value != nil {
+				opt[k] = *v.Value
+			}
+		}
+		return opt
+	}
+	dev := &core_apiv1.CreateDeviceRequest{
+		Meta: &core_apiv1.Meta{
+			Labels:      toMap(d.Meta.Labels),
+			Annotations: toMap(d.Meta.Annotations),
+		},
+		Spec:       &core_apiv1.Spec{},
+		Properties: &core_apiv1.Properties{},
+	}
+	if d.Meta != nil {
+		if d.Meta.Name != nil {
+			dev.Meta.Name = *d.Meta.Name
+		}
+		if d.Meta.Namespace != nil {
+			dev.Meta.Namespace = *d.Meta.Namespace
+		}
+	}
+	if d.Spec != nil {
+		if d.Spec.DeviceId != nil {
+			dev.Spec.DeviceId = *d.Spec.DeviceId
+		}
+		if d.Spec.Disabled != nil {
+			dev.Spec.Disabled = *d.Spec.Disabled
+		}
+	}
+	return dev
+}
+
 func NewProtoDeviceListFromDevices(d []Device) []*core_apiv1.Device {
 	p := []*core_apiv1.Device{}
 	for _, v := range d {

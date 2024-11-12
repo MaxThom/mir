@@ -17,7 +17,7 @@ import (
 
 type DeviceEditCmd struct {
 	// TODO put back to yaml when ill figure it out
-	Output string `short:"o" help:"output format for response [json|yaml]" default:"json"`
+	Output string `short:"o" help:"output format for response [pretty|json|yaml]" default:"pretty"`
 	NameNs string `name:"name/namespace" arg:"" optional:"" help:"edit single device"`
 	Target `embed:"" prefix:"target."`
 }
@@ -27,8 +27,8 @@ func (d *DeviceEditCmd) Validate() error {
 		Details: []string{},
 	}
 
-	if strings.ToLower(d.Output) != "yaml" && strings.ToLower(d.Output) != "json" {
-		d.Output = "json"
+	if strings.ToLower(d.Output) != "pretty" && strings.ToLower(d.Output) != "yaml" && strings.ToLower(d.Output) != "json" {
+		d.Output = "pretty"
 	}
 
 	if len(d.Target.Ids) == 0 &&
@@ -93,22 +93,22 @@ func (d *DeviceEditCmd) Run(c CLI) error {
 	for _, d := range devs {
 		targetNameNs = append(targetNameNs, d.GetNameNs())
 	}
-	if d.Output == "yaml" {
+	if d.Output == "json" {
 		if len(devs) == 1 {
-			err = editor.EditYamlDocument(devs[0], header)
+			err = editor.EditJsonDocument(devs[0], header)
 		} else {
-			err = editor.EditYamlDocument(&devs, header)
+			err = editor.EditJsonDocument(&devs, header)
 		}
 		if err != nil {
 			e := MirEditError{e: err}
 			return e
 		}
-	} else if d.Output == "json" {
+	} else {
 		var err error
 		if len(devs) == 1 {
-			err = editor.EditJsonDocument(devs[0], header)
+			err = editor.EditYamlDocument(devs[0], header)
 		} else {
-			err = editor.EditJsonDocument(&devs, header)
+			err = editor.EditYamlDocument(&devs, header)
 		}
 		if err != nil {
 			e := MirEditError{e: err}
@@ -135,16 +135,21 @@ func (d *DeviceEditCmd) Run(c CLI) error {
 				}}
 			errs = errors.Join(errs, e)
 		}
-		respDevs = append(respDevs, resp.GetOk().Devices...)
+		if resp.GetOk() != nil {
+			respDevs = append(respDevs, resp.GetOk().Devices...)
+		}
 	}
 
-	if d.Output == "pretty" {
-		fmt.Println(prettyStringDevices(respDevs))
-	} else {
-		if out, e := MarshalResponse(d.Output, respDevs); e != nil {
-			return e
+	if len(respDevs) > 0 {
+		list := mir_models.NewDeviceListFromProtoDevices(respDevs)
+		if d.Output == "pretty" {
+			fmt.Println(prettyStringDevices(list))
 		} else {
-			fmt.Println(out)
+			if out, e := MarshalResponse(d.Output, list); e != nil {
+				return e
+			} else {
+				fmt.Println(out)
+			}
 		}
 	}
 
@@ -246,13 +251,18 @@ func (d *DeviceApplyCmd) Run(c CLI) error {
 				}}
 			errs = errors.Join(errs, e)
 		}
-		respDevs = append(respDevs, resp.GetOk().Devices...)
+		if resp.GetOk() != nil {
+			respDevs = append(respDevs, resp.GetOk().Devices...)
+		}
 	}
 
-	if out, e := MarshalResponse(output, respDevs); e != nil {
-		return e
-	} else {
-		fmt.Println(out)
+	if len(respDevs) > 0 {
+		list := mir_models.NewDeviceListFromProtoDevices(respDevs)
+		if out, e := MarshalResponse(output, list); e != nil {
+			return e
+		} else {
+			fmt.Println(out)
+		}
 	}
 
 	if errs != nil {

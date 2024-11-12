@@ -249,6 +249,28 @@ func (s *CoreServer) updateDeviceRequestHandler(ch chan nats.Msg) {
 
 		respDb, err := s.store.UpdateDevice(req)
 		if err != nil {
+			if errors.Is(err, mng.ErrorDeviceShouldBeCreated) {
+				resp, err := core_client.PublishDeviceCreateRequest(s.bus, mir_models.NewCreateDeviceReqFromDeviceUpdateRequest(req))
+				if err != nil {
+					sendReplyOrAck(s.bus, msg, &core_apiv1.UpdateDeviceResponse{
+						Response: &core_apiv1.UpdateDeviceResponse_Error{
+							Error: &common_apiv1.Error{
+								Code:    500,
+								Message: err.Error(),
+								Details: []string{"500 Internal Server Error", err.Error()},
+							},
+						},
+					})
+				} else if resp.GetOk() != nil {
+					sendReplyOrAck(s.bus, msg, &core_apiv1.UpdateDeviceResponse{
+						Response: &core_apiv1.UpdateDeviceResponse_Ok{
+							Ok: &core_apiv1.DeviceList{
+								Devices: []*core_apiv1.Device{resp.GetOk()},
+							},
+						}})
+					continue
+				}
+			}
 			if errors.Is(err, mir_models.ErrorNoDeviceTargetProvided) {
 				sendReplyOrAck(s.bus, msg, &core_apiv1.UpdateDeviceResponse{
 					Response: &core_apiv1.UpdateDeviceResponse_Error{
