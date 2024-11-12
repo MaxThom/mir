@@ -11,6 +11,7 @@ import (
 	"github.com/maxthom/mir/internal/clients/core_client"
 	"github.com/maxthom/mir/internal/externals/mng"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
+	"github.com/maxthom/mir/internal/libs/swarm"
 	"github.com/maxthom/mir/internal/libs/test_utils"
 	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
@@ -207,6 +208,35 @@ func TestPublishDeviceCreateClientNoID(t *testing.T) {
 	// Assert
 	assert.Equal(t, respCreate.GetError() != nil, true)
 	assert.Equal(t, respCreate.GetError().Message, "error while creating device: device name and id are missing")
+}
+
+func TestPublishDeviceCreateClientNoNamespace(t *testing.T) {
+	// Arrange
+	id := "create_dev_no_namespace"
+	reqCreate := &core_apiv1.CreateDeviceRequest{
+		Meta: &core_apiv1.Meta{
+			Name:      id,
+			Namespace: "",
+			Labels: map[string]string{
+				"testing": "core",
+				"factory": "A",
+				"model":   "xx021",
+			},
+		},
+		Spec: &core_apiv1.Spec{
+			DeviceId: id,
+		},
+	}
+
+	// Act
+	respCreate, err := core_client.PublishDeviceCreateRequest(b, reqCreate)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, reqCreate.Spec.DeviceId, respCreate.GetOk().Spec.DeviceId)
+	assert.Equal(t, respCreate.GetOk().Meta.Namespace, "default")
 }
 
 func TestPublishDeviceUpdateTargetIds(t *testing.T) {
@@ -1670,7 +1700,7 @@ func TestCreatedDeviceAlreadyExist(t *testing.T) {
 
 	// Subscribe to device created event
 	count := 0
-	s, err := b.Subscribe(
+	s, _ := b.Subscribe(
 		core_client.DeviceCreatedEvent.WithId(deviceIds[0]),
 		func(msg *nats.Msg) {
 			count += 1
@@ -1686,7 +1716,7 @@ func TestCreatedDeviceAlreadyExist(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, len(respCreate), 2)
-	assert.Equal(t, respCreate[1].GetError().Message, "error while creating device: device device_already_exist_1/testing_core already exist")
+	assert.Equal(t, respCreate[1].GetError().Message, "error while creating device: device device_already_exist_1/testing_core with deviceId device_already_exist_1 already exist")
 
 	assert.Equal(t, 1, count) // We create two devices, so only second one is not working
 	s.Unsubscribe()
@@ -1788,6 +1818,500 @@ func TestDeviceGoesOnline(t *testing.T) {
 	}
 	assert.Equal(t, 1, onlineEventCount)
 	s.Unsubscribe()
+}
+
+func TestDeviceCreateDeviceIdAlreadyExist(t *testing.T) {
+	// Arrange
+	s := swarm.NewSwarm(b)
+	b := s.AddDevices(&core_apiv1.CreateDeviceRequest{
+		Meta: &core_apiv1.Meta{
+			Name:      "create_dev_same_id_1",
+			Namespace: "testing_core",
+			Labels: map[string]string{
+				"testing": "core",
+				"factory": "D",
+			},
+		},
+		Spec: &core_apiv1.Spec{
+			DeviceId: "0xf86cmd",
+		},
+	}, &core_apiv1.CreateDeviceRequest{
+		Meta: &core_apiv1.Meta{
+			Name:      "create_dev_same_id_2",
+			Namespace: "testing_core",
+			Labels: map[string]string{
+				"testing": "core",
+				"factory": "D",
+			},
+		},
+		Spec: &core_apiv1.Spec{
+			DeviceId: "0xf86cmd",
+		},
+	})
+
+	// Act
+	resp, err := b.Incubate()
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, resp[1].GetError().Message, "error while creating device: device create_dev_same_id_2/testing_core with deviceId 0xf86cmd already exist")
+}
+
+func TestDeviceCreateDeviceNameNsAlreadyExist(t *testing.T) {
+	// Arrange
+	s := swarm.NewSwarm(b)
+	b := s.AddDevices(&core_apiv1.CreateDeviceRequest{
+		Meta: &core_apiv1.Meta{
+			Name:      "create_dev_same_id_3",
+			Namespace: "testing_core",
+			Labels: map[string]string{
+				"testing": "core",
+				"factory": "D",
+			},
+		},
+		Spec: &core_apiv1.Spec{
+			DeviceId: "0xf86tlm",
+		},
+	}, &core_apiv1.CreateDeviceRequest{
+		Meta: &core_apiv1.Meta{
+			Name:      "create_dev_same_id_3",
+			Namespace: "testing_core",
+			Labels: map[string]string{
+				"testing": "core",
+				"factory": "D",
+			},
+		},
+		Spec: &core_apiv1.Spec{
+			DeviceId: "0xf86xyz",
+		},
+	})
+
+	// Act
+	resp, err := b.Incubate()
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, resp[1].GetError().Message, "error while creating device: device create_dev_same_id_3/testing_core with deviceId 0xf86xyz already exist")
+}
+
+func TestDeviceUpsertDevice(t *testing.T) {
+	// Arrange
+	id := "0x2312"
+	req := &core_apiv1.UpdateDeviceRequest{
+		Meta: &core_apiv1.UpdateDeviceRequest_Meta{
+			Name:      strRef("upsert_device"),
+			Namespace: strRef("testing_core"),
+			Labels: map[string]*common_apiv1.OptString{
+				"testing": {
+					Value: strRef("core"),
+				},
+				"factory": {
+					Value: strRef("A"),
+				},
+			},
+		},
+		Spec: &core_apiv1.UpdateDeviceRequest_Spec{
+			DeviceId: strRef(id),
+		},
+		Targets: &core_apiv1.Targets{
+			Ids: []string{id},
+		},
+	}
+
+	count := 0
+	_, err := b.Subscribe(
+		core_client.DeviceCreatedEvent.WithId(id),
+		func(msg *nats.Msg) {
+			count += 1
+			msg.Ack()
+		})
+
+	// Act
+	resp, err := core_client.PublishDeviceUpdateRequest(b, req)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, 1, count)
+	assert.Equal(t, id, resp.GetOk().Devices[0].Spec.DeviceId)
+}
+
+func TestDeviceUpdateManyTargetSameDeviceId(t *testing.T) {
+	// Arrange
+	s := swarm.NewSwarm(b)
+	sb := s.AddDevices(&core_apiv1.CreateDeviceRequest{
+		Meta: &core_apiv1.Meta{
+			Name:      "update_dev_sameid_1",
+			Namespace: "testing_core",
+			Labels: map[string]string{
+				"testing": "core",
+				"swarm":   "a",
+			},
+		},
+		Spec: &core_apiv1.Spec{
+			DeviceId: "0xf86tlm24",
+		},
+	}, &core_apiv1.CreateDeviceRequest{
+		Meta: &core_apiv1.Meta{
+			Name:      "update_dev_sameid_2",
+			Namespace: "testing_core",
+			Labels: map[string]string{
+				"testing": "core",
+				"swarm":   "a",
+			},
+		},
+		Spec: &core_apiv1.Spec{
+			DeviceId: "0xf86xyz24",
+		},
+	})
+	updReq := &core_apiv1.UpdateDeviceRequest{
+		Spec: &core_apiv1.UpdateDeviceRequest_Spec{
+			DeviceId: strRef("sameid"),
+		},
+		Targets: &core_apiv1.Targets{
+			Labels: map[string]string{
+				"swarm": "a",
+			},
+		},
+	}
+
+	// Act
+	_, err := sb.Incubate()
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(2 * time.Second)
+	updResp, err := core_client.PublishDeviceUpdateRequest(b, updReq)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, updResp.GetError().Message, "cannot update multiple devices as deviceId must be unique")
+}
+
+func TestDeviceUpdateManyTargetSameNameNoExist(t *testing.T) {
+	// Arrange
+	s := swarm.NewSwarm(b)
+	sb := s.AddDevices(&core_apiv1.CreateDeviceRequest{
+		Meta: &core_apiv1.Meta{
+			Name:      "update_dev_samename_noexist_1",
+			Namespace: "testing_core",
+			Labels: map[string]string{
+				"testing": "core",
+				"swarm":   "b",
+			},
+		},
+		Spec: &core_apiv1.Spec{
+			DeviceId: "0xf86tlm21",
+		},
+	}, &core_apiv1.CreateDeviceRequest{
+		Meta: &core_apiv1.Meta{
+			Name:      "update_dev_samename_noexist_2",
+			Namespace: "testing_core",
+			Labels: map[string]string{
+				"testing": "core",
+				"swarm":   "b",
+			},
+		},
+		Spec: &core_apiv1.Spec{
+			DeviceId: "0xf86xyz21",
+		},
+	})
+	updReq := &core_apiv1.UpdateDeviceRequest{
+		Meta: &core_apiv1.UpdateDeviceRequest_Meta{
+			Name: strRef("samebloodyname"),
+		},
+		Targets: &core_apiv1.Targets{
+			Labels: map[string]string{
+				"swarm": "b",
+			},
+		},
+	}
+
+	// Act
+	_, err := sb.Incubate()
+	if err != nil {
+		t.Error(err)
+	}
+	updResp, err := core_client.PublishDeviceUpdateRequest(b, updReq)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, updResp.GetError().Message, "cannot update device as multiple device will have the same name 'samebloodyname' in namespace 'testing_core'")
+}
+
+func TestDeviceUpdateManyTargetSameNameOneExist(t *testing.T) {
+	// Arrange
+	s := swarm.NewSwarm(b)
+	sb := s.AddDevices(&core_apiv1.CreateDeviceRequest{
+		Meta: &core_apiv1.Meta{
+			Name:      "update_dev_samename_oneexist",
+			Namespace: "testing_core",
+			Labels: map[string]string{
+				"testing": "core",
+				"swarm":   "c",
+			},
+		},
+		Spec: &core_apiv1.Spec{
+			DeviceId: "0xf86tlm17",
+		},
+	}, &core_apiv1.CreateDeviceRequest{
+		Meta: &core_apiv1.Meta{
+			Name:      "samebloodyname",
+			Namespace: "testing_core",
+			Labels: map[string]string{
+				"testing": "core",
+				"swarm":   "c",
+			},
+		},
+		Spec: &core_apiv1.Spec{
+			DeviceId: "0xf86xyz17",
+		},
+	})
+	updReq := &core_apiv1.UpdateDeviceRequest{
+		Meta: &core_apiv1.UpdateDeviceRequest_Meta{
+			Name: strRef("samebloodyname"),
+		},
+		Targets: &core_apiv1.Targets{
+			Labels: map[string]string{
+				"swarm": "c",
+			},
+		},
+	}
+
+	// Act
+	_, err := sb.Incubate()
+	if err != nil {
+		t.Error(err)
+	}
+	updResp, err := core_client.PublishDeviceUpdateRequest(b, updReq)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, updResp.GetError().Message, "cannot update device as multiple device will have the same name 'samebloodyname' in namespace 'testing_core'")
+}
+
+func TestDeviceUpdateManyTargetSameNamespaceNoExist(t *testing.T) {
+	// Arrange
+	s := swarm.NewSwarm(b)
+	sb := s.AddDevices(&core_apiv1.CreateDeviceRequest{
+		Meta: &core_apiv1.Meta{
+			Name:      "update_dev_ns_no_exist",
+			Namespace: "testing_core",
+			Labels: map[string]string{
+				"testing": "core",
+				"swarm":   "d",
+			},
+		},
+		Spec: &core_apiv1.Spec{
+			DeviceId: "0xf86tlm12",
+		},
+	}, &core_apiv1.CreateDeviceRequest{
+		Meta: &core_apiv1.Meta{
+			Name:      "update_dev_ns_no_exist",
+			Namespace: "testing_core_2",
+			Labels: map[string]string{
+				"testing": "core",
+				"swarm":   "d",
+			},
+		},
+		Spec: &core_apiv1.Spec{
+			DeviceId: "0xf86xyz12",
+		},
+	})
+	updReq := &core_apiv1.UpdateDeviceRequest{
+		Meta: &core_apiv1.UpdateDeviceRequest_Meta{
+			Namespace: strRef("samebloodynamespace"),
+		},
+		Targets: &core_apiv1.Targets{
+			Labels: map[string]string{
+				"swarm": "d",
+			},
+		},
+	}
+
+	// Act
+	_, err := sb.Incubate()
+	if err != nil {
+		t.Error(err)
+	}
+	updResp, err := core_client.PublishDeviceUpdateRequest(b, updReq)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, updResp.GetError().Message, "cannot update device as multiple device will have the same name 'update_dev_ns_no_exist' in namespace 'samebloodynamespace'")
+}
+
+func TestDeviceUpdateManyTargetSameNamespaceOneExist(t *testing.T) {
+	// Arrange
+	s := swarm.NewSwarm(b)
+	sb := s.AddDevices(&core_apiv1.CreateDeviceRequest{
+		Meta: &core_apiv1.Meta{
+			Name:      "update_dev_ns_one_exist",
+			Namespace: "samebloodynamespace",
+			Labels: map[string]string{
+				"testing": "core",
+			},
+		},
+		Spec: &core_apiv1.Spec{
+			DeviceId: "0xf86tlm7",
+		},
+	}, &core_apiv1.CreateDeviceRequest{
+		Meta: &core_apiv1.Meta{
+			Name:      "update_dev_ns_one_exist",
+			Namespace: "testing_core_2",
+			Labels: map[string]string{
+				"testing": "core",
+				"swarm":   "e",
+			},
+		},
+		Spec: &core_apiv1.Spec{
+			DeviceId: "0xf86xyz7",
+		},
+	})
+	updReq := &core_apiv1.UpdateDeviceRequest{
+		Meta: &core_apiv1.UpdateDeviceRequest_Meta{
+			Namespace: strRef("samebloodynamespace"),
+		},
+		Targets: &core_apiv1.Targets{
+			Labels: map[string]string{
+				"swarm": "e",
+			},
+		},
+	}
+
+	// Act
+	_, err := sb.Incubate()
+	if err != nil {
+		t.Error(err)
+	}
+	updResp, err := core_client.PublishDeviceUpdateRequest(b, updReq)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, updResp.GetError().Message, "cannot update device as name 'update_dev_ns_one_exist' is already in use in namespace 'samebloodynamespace'")
+}
+
+func TestDeviceUpdateManyTargetSameNameNamespaceNoExist(t *testing.T) {
+	// Arrange
+	s := swarm.NewSwarm(b)
+	sb := s.AddDevices(&core_apiv1.CreateDeviceRequest{
+		Meta: &core_apiv1.Meta{
+			Name:      "samebloodyname",
+			Namespace: "samebloodynamespace",
+			Labels: map[string]string{
+				"testing": "core",
+				"swarm":   "f",
+			},
+		},
+		Spec: &core_apiv1.Spec{
+			DeviceId: "0xf86tlm14",
+		},
+	}, &core_apiv1.CreateDeviceRequest{
+		Meta: &core_apiv1.Meta{
+			Name:      "update_dev_same_namens_2",
+			Namespace: "testing_core_2",
+			Labels: map[string]string{
+				"testing": "core",
+				"swarm":   "f",
+			},
+		},
+		Spec: &core_apiv1.Spec{
+			DeviceId: "0xf86xyz14",
+		},
+	})
+	updReq := &core_apiv1.UpdateDeviceRequest{
+		Meta: &core_apiv1.UpdateDeviceRequest_Meta{
+			Name:      strRef("samebloodyname"),
+			Namespace: strRef("samebloodynamespace"),
+		},
+		Targets: &core_apiv1.Targets{
+			Labels: map[string]string{
+				"swarm": "f",
+			},
+		},
+	}
+
+	// Act
+	_, err := sb.Incubate()
+	if err != nil {
+		t.Error(err)
+	}
+	updResp, err := core_client.PublishDeviceUpdateRequest(b, updReq)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, updResp.GetError().Message, "cannot update multiple devices as name/namespace 'samebloodyname/samebloodynamespace' must be unique")
+}
+
+func TestDeviceUpdateManyTargetSameNameNamespaceOneExist(t *testing.T) {
+	// Arrange
+	s := swarm.NewSwarm(b)
+	sb := s.AddDevices(&core_apiv1.CreateDeviceRequest{
+		Meta: &core_apiv1.Meta{
+			Name:      "update_dev_same_namens_1",
+			Namespace: "testing_core",
+			Labels: map[string]string{
+				"testing": "core",
+				"swarm":   "f",
+			},
+		},
+		Spec: &core_apiv1.Spec{
+			DeviceId: "0xf86tlm15",
+		},
+	}, &core_apiv1.CreateDeviceRequest{
+		Meta: &core_apiv1.Meta{
+			Name:      "update_dev_same_namens_2",
+			Namespace: "testing_core_2",
+			Labels: map[string]string{
+				"testing": "core",
+				"swarm":   "f",
+			},
+		},
+		Spec: &core_apiv1.Spec{
+			DeviceId: "0xf86xyz15",
+		},
+	})
+	updReq := &core_apiv1.UpdateDeviceRequest{
+		Meta: &core_apiv1.UpdateDeviceRequest_Meta{
+			Name:      strRef("samebloodyname"),
+			Namespace: strRef("samebloodynamespace"),
+		},
+		Targets: &core_apiv1.Targets{
+			Labels: map[string]string{
+				"swarm": "f",
+			},
+		},
+	}
+
+	// Act
+	_, err := sb.Incubate()
+	if err != nil {
+		t.Error(err)
+	}
+	updResp, err := core_client.PublishDeviceUpdateRequest(b, updReq)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, updResp.GetError().Message, "cannot update multiple devices as name/namespace 'samebloodyname/samebloodynamespace' must be unique")
 }
 
 // go test -v -timeout 90s -run ^TestDeviceGoesOffline\$ github.com/maxthom/mir/services/core

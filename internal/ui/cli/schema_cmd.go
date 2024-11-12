@@ -129,13 +129,16 @@ func (d *SchemaUploadCmd) Run(c CLI) error {
 		return e
 	}
 
-	if d.Output == "pretty" {
-		fmt.Println(prettyStringDevices(resp.GetOk().Devices))
-	} else {
-		if out, e := MarshalResponse(d.Output, mir_models.NewDeviceListFromProtoDevices(resp.GetOk().Devices)); e != nil {
-			return e
+	if resp.GetOk() != nil {
+		list := mir_models.NewDeviceListFromProtoDevices(resp.GetOk().Devices)
+		if d.Output == "pretty" {
+			fmt.Println(prettyStringDevices(list))
 		} else {
-			fmt.Println(out)
+			if out, e := MarshalResponse(d.Output, list); e != nil {
+				return e
+			} else {
+				fmt.Println(out)
+			}
 		}
 	}
 	return nil

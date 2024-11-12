@@ -56,6 +56,7 @@ type DeviceUpdateCmd struct {
 	Name      *string           `help:"Set device name"`
 	Namespace *string           `help:"Set device namespace"`
 	Desc      *string           `help:"Set device description"`
+	Id        *string           `help:"Set device id"`
 	Disabled  *bool             `help:"If not enabled, communication is cut"`
 	Labels    map[string]string `help:"Set labels to uniquely tag the device (set to null, none or nil to remove)"`
 	Anno      map[string]string `help:"Set annotations to add extra information to the devie (set to null to remove)"`
@@ -129,10 +130,11 @@ func (d *DeviceListCmd) Run(c CLI) error {
 			}}
 		return e
 	} else {
+		list := mir_models.NewDeviceListFromProtoDevices(resp.GetOk().Devices)
 		if d.Output == "pretty" {
-			fmt.Println(prettyStringDevices(resp.GetOk().Devices))
+			fmt.Println(prettyStringDevices(list))
 		} else {
-			if out, e := MarshalResponse(d.Output, mir_models.NewDeviceListFromProtoDevices(resp.GetOk().Devices)); e != nil {
+			if out, e := MarshalResponse(d.Output, list); e != nil {
 				return e
 			} else {
 				fmt.Println(out)
@@ -243,10 +245,11 @@ func (d *DeviceCreateCmd) Run(c CLI) error {
 	}
 
 	if len(respDevs) > 0 {
+		list := mir_models.NewDeviceListFromProtoDevices(respDevs)
 		if d.Output == "pretty" {
-			fmt.Println(prettyStringDevices(respDevs))
+			fmt.Println(prettyStringDevices(list))
 		} else {
-			if out, e := MarshalResponse(d.Output, mir_models.NewDeviceListFromProtoDevices(respDevs)); e != nil {
+			if out, e := MarshalResponse(d.Output, list); e != nil {
 				return e
 			} else {
 				fmt.Println(out)
@@ -283,7 +286,6 @@ func (d *DeviceUpdateCmd) Run(c CLI) error {
 	msgBus, err := bus.New(c.Target)
 	if err != nil {
 		e := MirConnectionError{Target: c.Target, e: err}
-		fmt.Println(e)
 		return e
 	}
 	defer msgBus.Close()
@@ -340,11 +342,13 @@ func (d *DeviceUpdateCmd) Run(c CLI) error {
 	if d.Disabled != nil {
 		req.Spec.Disabled = d.Disabled
 	}
+	if d.Id != nil {
+		req.Spec.DeviceId = d.Id
+	}
 
 	resp, err := core_client.PublishDeviceUpdateRequest(msgBus, req)
 	if err != nil {
 		e := MirRequestError{Route: "device.update", e: err}
-		fmt.Println(e)
 		return e
 	}
 
@@ -356,13 +360,13 @@ func (d *DeviceUpdateCmd) Run(c CLI) error {
 				Message: resp.GetError().GetMessage(),
 				Details: resp.GetError().GetDetails(),
 			}}
-		fmt.Println(e)
 		return e
 	} else {
+		list := mir_models.NewDeviceListFromProtoDevices(resp.GetOk().Devices)
 		if d.Output == "pretty" {
-			fmt.Println(prettyStringDevices(resp.GetOk().Devices))
+			fmt.Println(prettyStringDevices(list))
 		} else {
-			if out, e := MarshalResponse(d.Output, mir_models.NewDeviceListFromProtoDevices(resp.GetOk().Devices)); e != nil {
+			if out, e := MarshalResponse(d.Output, list); e != nil {
 				return e
 			} else {
 				fmt.Println(out)
@@ -432,13 +436,13 @@ func (d *DeviceDeleteCmd) Run(c CLI) error {
 				Message: resp.GetError().GetMessage(),
 				Details: resp.GetError().GetDetails(),
 			}}
-		fmt.Println(e)
 		return e
 	} else {
+		list := mir_models.NewDeviceListFromProtoDevices(resp.GetOk().Devices)
 		if d.Output == "pretty" {
-			fmt.Println(prettyStringDevices(resp.GetOk().Devices))
+			fmt.Println(prettyStringDevices(list))
 		} else {
-			if out, e := MarshalResponse(d.Output, mir_models.NewDeviceListFromProtoDevices(resp.GetOk().Devices)); e != nil {
+			if out, e := MarshalResponse(d.Output, list); e != nil {
 				return e
 			} else {
 				fmt.Println(out)
@@ -481,19 +485,17 @@ func MarshalResponse(format string, v any) (string, error) {
 	return string(out), e
 }
 
-func prettyStringDevices(devs []*core_apiv1.Device) string {
-	list := mir_models.NewDeviceListFromProtoDevices(devs)
-
-	format := "%-45s %-10s %-20s %-20s %-60s\n"
+func prettyStringDevices(devs []*mir_models.Device) string {
+	format := "%-45s %-16s %-10s %-20s %-20s %-60s\n"
 	timeFormat := "2006-01-02 15:04:05"
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf(format, "NAME/NAMESPACE", "STATUS", "LAST_HEARTHBEAT", "LAST_SCHEMA_FETCH", "LABELS"))
+	sb.WriteString(fmt.Sprintf(format, "NAME/NAMESPACE", "DEVICE_ID", "STATUS", "LAST_HEARTHBEAT", "LAST_SCHEMA_FETCH", "LABELS"))
 
-	sort.Slice(list, func(i, j int) bool {
-		return list[i].Meta.Namespace < list[j].Meta.Namespace
+	sort.Slice(devs, func(i, j int) bool {
+		return devs[i].Meta.Namespace < devs[j].Meta.Namespace
 	})
 
-	for _, d := range list {
+	for _, d := range devs {
 		st := ""
 		if d.Spec.Disabled {
 			st = "disabled"
@@ -512,7 +514,7 @@ func prettyStringDevices(devs []*core_apiv1.Device) string {
 			sf = d.Status.Schema.LastSchemaFetch.Format(timeFormat)
 		}
 
-		sb.WriteString(fmt.Sprintf(format, d.Meta.Name+"/"+d.Meta.Namespace, st, hb, sf, formatLabels(d.Meta.Labels)))
+		sb.WriteString(fmt.Sprintf(format, d.Meta.Name+"/"+d.Meta.Namespace, d.Spec.DeviceId, st, hb, sf, formatLabels(d.Meta.Labels)))
 	}
 	return sb.String()
 }

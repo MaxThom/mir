@@ -2,6 +2,7 @@ package mng
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
@@ -11,8 +12,9 @@ import (
 )
 
 var (
-	ErrorListingDevices = errors.New("error listing devices from database")
-	ErrorNoDeviceFound  = errors.New("no device found with current targets criteria")
+	ErrorListingDevices        = errors.New("error listing devices from database")
+	ErrorNoDeviceFound         = errors.New("no device found with current targets criteria")
+	ErrorDeviceShouldBeCreated = errors.New("device should be created")
 )
 
 type DeviceStore interface {
@@ -67,7 +69,6 @@ func (s *surrealDeviceStore) CreateDevice(cdr *core_apiv1.CreateDeviceRequest) (
 	}
 
 	// Create
-	fmt.Println(cdr)
 	respDb, err := s.db.Create("devices", mir_models.NewDeviceFromCreateDeviceReq(cdr))
 	if err != nil {
 		return mir_models.Device{}, fmt.Errorf("%w: %w", mir_models.ErrorDbExecutingQuery, err)
@@ -77,12 +78,13 @@ func (s *surrealDeviceStore) CreateDevice(cdr *core_apiv1.CreateDeviceRequest) (
 	if err != nil {
 		return mir_models.Device{}, fmt.Errorf("%w for device %s/%s: %w", mir_models.ErrorDbDeserializingResponse, cdr.Meta.Name, cdr.Meta.Namespace, err)
 	}
-	fmt.Println(newDev[0])
 	return newDev[0], nil
 }
 
-// TODO device create if not exist on flag
-// TODO verify name, ns and id are unique
+// This method is too OP
+// Maybe it need to be divided into Upsert and Patch
+// Upsert is for apply and edit
+// Patch is for patch
 func (s *surrealDeviceStore) UpdateDevice(req *core_apiv1.UpdateDeviceRequest) ([]mir_models.Device, error) {
 	if req.Targets == nil ||
 		len(req.Targets.Ids) == 0 &&
@@ -92,10 +94,112 @@ func (s *surrealDeviceStore) UpdateDevice(req *core_apiv1.UpdateDeviceRequest) (
 		return nil, mir_models.ErrorNoDeviceTargetProvided
 	}
 
+	// If unique fields are provided, check if they are still unique
+	// - name/namespace composable unique key
+	// - deviceid unique key
+	// If deviceid or name/ns, only one device can be updated
+	// If name/ns, and no change, mean new device (upsert)
+	// If name only, multiple devices can be updated if no collision
+	// If namespace only, multiple devices can be updated if no collision
+	if (req.Meta != nil && (req.Meta.Name != nil || req.Meta.Namespace != nil)) || (req.Spec != nil && req.Spec.DeviceId != nil) {
+		changingDevs, err := s.ListDevice(&core_apiv1.ListDeviceRequest{
+			Targets: req.Targets,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("%w: %w", mir_models.ErrorDbExecutingQuery, err)
+		}
+
+		if req.Spec != nil && req.Spec.DeviceId != nil {
+			if len(changingDevs) > 1 {
+				return nil, fmt.Errorf("cannot update multiple devices as deviceId must be unique")
+			} else if len(changingDevs) == 1 {
+				// Check if deviceId is unique
+				q, v := createIsDeviceUniqueQuery("", "", *req.Spec.DeviceId)
+				respCheck, err := executeQueryForType[[]mir_models.Device](s.db, q, v)
+				if err != nil {
+					return nil, fmt.Errorf("%w: %w", mir_models.ErrorDbExecutingQuery, err)
+				}
+				if len(respCheck) > 0 && (respCheck[0].Meta.Name != changingDevs[0].Meta.Name || respCheck[0].Meta.Namespace != changingDevs[0].Meta.Namespace) {
+					return nil, fmt.Errorf("cannot update device has deviceId '%s' is already in use", *req.Spec.DeviceId)
+				}
+			}
+		}
+		if req.Meta != nil {
+			if req.Meta.Name != nil && req.Meta.Namespace != nil {
+				if len(changingDevs) > 1 {
+					return nil, fmt.Errorf("cannot update multiple devices as name/namespace '%s/%s' must be unique", *req.Meta.Name, *req.Meta.Namespace)
+				} else if len(changingDevs) == 1 {
+					// Check if name/ns is unique
+					q, v := createIsDeviceUniqueQuery(*req.Meta.Name, *req.Meta.Namespace, "")
+					respCheck, err := executeQueryForType[[]mir_models.Device](s.db, q, v)
+					if err != nil {
+						return nil, fmt.Errorf("%w: %w", mir_models.ErrorDbExecutingQuery, err)
+					}
+					if len(respCheck) > 0 && (respCheck[0].Meta.Name != changingDevs[0].Meta.Name || respCheck[0].Meta.Namespace != changingDevs[0].Meta.Namespace) {
+						return nil, fmt.Errorf("cannot update device has '%s/%s' is already in use", *req.Meta.Name, *req.Meta.Namespace)
+					}
+				} else if len(changingDevs) == 0 {
+					// Create device
+					// We can't create it here since we wont get the device create event.
+					return []mir_models.Device{}, ErrorDeviceShouldBeCreated
+				}
+			} else if req.Meta.Namespace != nil {
+				currentDevs, err := s.ListDevice(&core_apiv1.ListDeviceRequest{
+					Targets: &core_apiv1.Targets{
+						Namespaces: []string{*req.Meta.Namespace},
+					},
+				})
+				if err != nil {
+					return nil, fmt.Errorf("%w: %w", mir_models.ErrorDbExecutingQuery, err)
+				}
+
+				names := []string{}
+				for _, d := range changingDevs {
+					if slices.Contains(names, d.Meta.Name) {
+						return nil, fmt.Errorf("cannot update device as multiple device will have the same name '%s' in namespace '%s'", d.Meta.Name, *req.Meta.Namespace)
+					}
+					names = append(names, d.Meta.Name)
+				}
+				names = []string{}
+				for _, d := range currentDevs {
+					names = append(names, d.Meta.Name)
+				}
+				for _, d := range changingDevs {
+					if slices.Contains(names, d.Meta.Name) {
+						return nil, fmt.Errorf("cannot update device as name '%s' is already in use in namespace '%s'", d.Meta.Name, *req.Meta.Namespace)
+					}
+				}
+			} else if req.Meta.Name != nil {
+				currentDevs, err := s.ListDevice(&core_apiv1.ListDeviceRequest{
+					Targets: &core_apiv1.Targets{
+						Names: []string{*req.Meta.Name},
+					},
+				})
+				if err != nil {
+					return nil, fmt.Errorf("%w: %w", mir_models.ErrorDbExecutingQuery, err)
+				}
+
+				namespaces := []string{}
+				for _, d := range changingDevs {
+					if slices.Contains(namespaces, d.Meta.Namespace) {
+						return nil, fmt.Errorf("cannot update device as multiple device will have the same name '%s' in namespace '%s'", *req.Meta.Name, d.Meta.Namespace)
+					}
+					namespaces = append(namespaces, d.Meta.Namespace)
+				}
+				for _, newD := range changingDevs {
+					for _, oldD := range currentDevs {
+						if newD.Meta.Namespace == oldD.Meta.Namespace {
+							return nil, fmt.Errorf("cannot update device as name '%s' is already in use in namespace '%s'", oldD.Meta.Name, oldD.Meta.Namespace)
+						}
+					}
+				}
+			}
+		}
+	}
+
 	// Update is full document
 	// Change is a merge
 	// Modify is a patch
-
 	q := ""
 	v := map[string]any{}
 	q, v = createUpdateQueryForDevice(req.Targets, req)
@@ -143,11 +247,15 @@ func createIsDeviceUniqueQuery(name, ns, id string) (sql string, vars map[string
 	q.WriteString("SELECT * FROM devices WHERE ")
 	if id != "" {
 		q.WriteString(fmt.Sprintf("spec.deviceId = \"%s\"", id))
-		q.WriteString(" OR ")
 	}
-	q.WriteString(fmt.Sprintf("(meta.name = \"%s\"", name))
-	q.WriteString(" AND ")
-	q.WriteString(fmt.Sprintf("meta.namespace = \"%s\")", ns))
+	if name != "" && ns != "" {
+		if id != "" {
+			q.WriteString(" OR ")
+		}
+		q.WriteString(fmt.Sprintf("(meta.name = \"%s\"", name))
+		q.WriteString(" AND ")
+		q.WriteString(fmt.Sprintf("meta.namespace = \"%s\")", ns))
+	}
 	q.WriteString(";")
 	sql = q.String()
 	return
