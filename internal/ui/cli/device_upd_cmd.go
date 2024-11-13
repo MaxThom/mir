@@ -54,7 +54,6 @@ func (d *DeviceEditCmd) Run(c CLI) error {
 	msgBus, err := bus.New(c.Target)
 	if err != nil {
 		e := MirConnectionError{Target: c.Target, e: err}
-		fmt.Println(e)
 		return e
 	}
 	defer msgBus.Close()
@@ -79,7 +78,6 @@ func (d *DeviceEditCmd) Run(c CLI) error {
 	if len(respList.GetOk().Devices) == 0 {
 		e := MirRequestError{Route: "device.list", e: errors.New("No devices found for the given targets")}
 		return e
-
 	}
 
 	devs := mir_models.NewDeviceListFromProtoDevices(respList.GetOk().Devices)
@@ -215,6 +213,123 @@ func (d *DeviceApplyCmd) Run(c CLI) error {
 		}
 	} else {
 		output = "yaml"
+		fmt.Println(content)
+		if isYamlArray(content) {
+			err = yaml.Unmarshal([]byte(content), &devs)
+			if err != nil {
+				e := MirDeserializationError{e: err}
+				return e
+			}
+		} else {
+			dev := &mir_models.Device{}
+			err = yaml.Unmarshal([]byte(content), dev)
+			if err != nil {
+				e := MirDeserializationError{e: err}
+				return e
+			}
+			devs = append(devs, dev)
+		}
+	}
+
+	var errs error
+	respDevs := []*core_apiv1.Device{}
+	for _, d := range devs {
+		req := mir_models.NewUpdateDeviceReqFromDevice(*d)
+		resp, err := core_client.PublishDeviceUpdateRequest(msgBus, req)
+		if err != nil {
+			e := MirRequestError{Route: "device.update", e: err}
+			errs = errors.Join(errs, e)
+		}
+		if resp.GetError() != nil {
+			e := MirResponseError{
+				Route: "device.update",
+				e: MirHttpError{
+					Code:    resp.GetError().GetCode(),
+					Message: resp.GetError().GetMessage(),
+					Details: resp.GetError().GetDetails(),
+				}}
+			errs = errors.Join(errs, e)
+		}
+		if resp.GetOk() != nil {
+			respDevs = append(respDevs, resp.GetOk().Devices...)
+		}
+	}
+
+	if len(respDevs) > 0 {
+		list := mir_models.NewDeviceListFromProtoDevices(respDevs)
+		if out, e := MarshalResponse(output, list); e != nil {
+			return e
+		} else {
+			fmt.Println(out)
+		}
+	}
+
+	if errs != nil {
+		return errs
+	}
+
+	return nil
+}
+
+type DevicePatchCmd struct {
+	Output string `short:"o" help:"output format for response [pretty|json|yaml]" default:"pretty"`
+	NameNs string `name:"name/namespace" arg:"" optional:"" help:"edit single device"`
+	Target `embed:"" prefix:"target."`
+	Path   string `short:"f" help:"filepath to device patch. You can also pipe file content. Tips: use 'mir device list --targets... -o yaml > name.yaml' to get initial content"`
+}
+
+func (d *DevicePatchCmd) Validate() error {
+	err := MirInvalidInputError{
+		Details: []string{},
+	}
+
+	if len(err.Details) > 0 {
+		return err
+	}
+	return nil
+}
+
+func (d *DevicePatchCmd) Run(c CLI) error {
+	var err error
+	msgBus, err := bus.New(c.Target)
+	if err != nil {
+		e := MirConnectionError{Target: c.Target, e: err}
+		return e
+	}
+	defer msgBus.Close()
+
+	content, ok := ReadFromPipedStdIn()
+	if !ok {
+		contentB, err := os.ReadFile(d.Path)
+		content = string(contentB)
+		if err != nil {
+			e := MirDeserializationError{e: err}
+			return e
+		}
+	}
+
+	var devs []*mir_models.Device
+	var output string
+	if isJsonString(content) {
+		output = "json"
+		if isJsonArray(content) {
+			err = json.Unmarshal([]byte(content), &devs)
+			if err != nil {
+				e := MirDeserializationError{e: err}
+				return e
+			}
+		} else {
+			dev := &mir_models.Device{}
+			err = json.Unmarshal([]byte(content), dev)
+			if err != nil {
+				e := MirDeserializationError{e: err}
+				return e
+			}
+			devs = append(devs, dev)
+		}
+	} else {
+		output = "yaml"
+		fmt.Println(content)
 		if isYamlArray(content) {
 			err = yaml.Unmarshal([]byte(content), &devs)
 			if err != nil {

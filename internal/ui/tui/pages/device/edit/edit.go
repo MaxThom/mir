@@ -2,7 +2,6 @@ package device_edit
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -16,6 +15,7 @@ import (
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"gopkg.in/yaml.v3"
 )
 
 // IDEA wide option that show more fields
@@ -39,7 +39,7 @@ func NewModel(ctx context.Context) *Model {
 }
 
 func (m *Model) InitWithData(d any) tea.Cmd {
-	rj, e := json.MarshalIndent(d, "", "  ")
+	rj, e := yaml.Marshal(d)
 	if e != nil {
 		l.Error().Err(e).Msg("")
 		return tea.Batch(msgs.ErrCmd(e, 2*time.Second), msgs.RouteChangeWithDataCmd("/devices", device_list.InputData{SilentFetch: true}))
@@ -51,17 +51,17 @@ func (m *Model) InitWithData(d any) tea.Cmd {
 		"To remove a field, you must explicitly set it to null",
 		"Only fields under meta and properties.desired are editable",
 	}
-	return msgs.OpenEditorCmd(rj, headerComments)
+	return msgs.OpenEditorCmd(msgs.FileTypeYAML, rj, headerComments)
 }
 
 func (m *Model) Init() tea.Cmd {
-	var rj json.RawMessage
+	var rj []byte
 	headerComments := []string{
 		"Edit the device below",
 		"To remove a field, you must explicitly set it to null",
 		"Only fields under meta and properties.desired are editable",
 	}
-	return msgs.OpenEditorCmd(rj, headerComments)
+	return msgs.OpenEditorCmd(msgs.FileTypeYAML, rj, headerComments)
 }
 
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -82,7 +82,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else {
 			l.Debug().Str("edit", "after").Msg(fmt.Sprintf("%v", string(msg.Content)))
 			dev := mir_models.Device{}
-			if err := json.Unmarshal(msg.Content, &dev); err != nil {
+			if err := yaml.Unmarshal(msg.Content, &dev); err != nil {
 				l.Error().Err(err).Msg("can't unmarshal edited device")
 				cmds = append(cmds, msgs.ErrCmd(err, 2*time.Second))
 				cmds = append(cmds, msgs.RouteChangeWithDataCmd("/devices", device_list.InputData{SilentFetch: true}))
