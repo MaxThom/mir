@@ -2,7 +2,6 @@ package msgs
 
 import (
 	"bufio"
-	"encoding/json"
 	"os"
 	"os/exec"
 	"runtime"
@@ -12,14 +11,21 @@ import (
 	"github.com/pkg/errors"
 )
 
+type FileType string
+
+const (
+	FileTypeJSON FileType = "json"
+	FileTypeYAML FileType = "yaml"
+)
+
 type (
 	EditorFinishedMsg struct {
-		Content json.RawMessage
+		Content []byte
 		Err     error
 	}
 )
 
-func EditorFinishedCmd(content json.RawMessage, err error) tea.Cmd {
+func EditorFinishedCmd(content []byte, err error) tea.Cmd {
 	return func() tea.Msg {
 		return EditorFinishedMsg{Content: content, Err: err}
 	}
@@ -27,7 +33,7 @@ func EditorFinishedCmd(content json.RawMessage, err error) tea.Cmd {
 
 // headerComments are comments that will be added to the top of the file
 // with // or # for comments. Can be used to include instruction to the file
-func OpenEditorCmd(data json.RawMessage, headerComments []string) tea.Cmd {
+func OpenEditorCmd(fileType FileType, data []byte, headerComments []string) tea.Cmd {
 	editor := os.Getenv("EDITOR")
 	if editor == "" {
 		switch runtime.GOOS {
@@ -41,17 +47,26 @@ func OpenEditorCmd(data json.RawMessage, headerComments []string) tea.Cmd {
 			editor = "nano"
 		}
 	}
+	ext := ""
+	comment := ""
+	if fileType == FileTypeJSON {
+		ext = "json"
+		comment = "//"
+	} else if fileType == FileTypeYAML {
+		ext = "yaml"
+		comment = "#"
+	}
 
 	// Create a temporary file
 	// TODO option for user to switch between json and yaml
-	tmpfile, err := os.CreateTemp("", "twin_*.json")
+	tmpfile, err := os.CreateTemp("", "twin_*."+ext)
 	if err != nil {
 		return EditorFinishedCmd([]byte{}, errors.Wrap(err, "can't create temporary file for editing twin"))
 	}
 
 	// Write initial device to the temp file
 	for i := range headerComments {
-		headerComments[i] = "// " + headerComments[i] + "\n"
+		headerComments[i] = comment + " " + headerComments[i] + "\n"
 	}
 
 	_, err = tmpfile.Write([]byte(strings.Join(headerComments, "")))
@@ -83,8 +98,8 @@ func OpenEditorCmd(data json.RawMessage, headerComments []string) tea.Cmd {
 		scanner := bufio.NewScanner(file)
 		for scanner.Scan() {
 			line := scanner.Text()
-			if !strings.HasPrefix(strings.TrimSpace(line), "//") {
-				sb.WriteString(line)
+			if !strings.HasPrefix(strings.TrimSpace(line), comment) {
+				sb.WriteString(line + "\n")
 			}
 		}
 		content := []byte(sb.String())

@@ -88,7 +88,7 @@ type Status struct {
 
 type Schema struct {
 	// Compressed with ZSTD
-	CompressedSchema []byte    `json:"compressedSchema" yaml:"compressedSchema"`
+	CompressedSchema []byte    `json:"compressedSchema" yaml:"-"`
 	PackageNames     []string  `json:"packageNames" yaml:"packageNames"`
 	LastSchemaFetch  time.Time `json:"lastSchemaFetch" yaml:"lastSchemaFetch"`
 }

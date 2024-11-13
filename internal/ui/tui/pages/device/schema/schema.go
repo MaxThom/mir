@@ -2,7 +2,6 @@ package device_schema
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -15,6 +14,7 @@ import (
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"gopkg.in/yaml.v3"
 )
 
 var (
@@ -50,7 +50,7 @@ func (m *Model) InitWithData(d any) tea.Cmd {
 			msgs.RouteChangeWithDataCmd("/devices", device_list.InputData{SilentFetch: true}),
 		)
 	}
-	rj, e := json.MarshalIndent(pbSet, "", "  ")
+	rj, e := yaml.Marshal(pbSet)
 	if e != nil {
 		l.Error().Err(e).Msg("")
 		return tea.Batch(
@@ -63,15 +63,15 @@ func (m *Model) InitWithData(d any) tea.Cmd {
 		"Explore the protbuf schema of the device below",
 		"DeviceId: " + dev.Spec.DeviceId,
 	}
-	return msgs.OpenEditorCmd(rj, headerComments)
+	return msgs.OpenEditorCmd(msgs.FileTypeYAML, rj, headerComments)
 }
 
 func (m *Model) Init() tea.Cmd {
-	var rj json.RawMessage
+	var rj []byte
 	headerComments := []string{
 		"Explore the protbuf schema of the device below",
 	}
-	return msgs.OpenEditorCmd(rj, headerComments)
+	return msgs.OpenEditorCmd(msgs.FileTypeYAML, rj, headerComments)
 }
 
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {

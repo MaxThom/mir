@@ -37,7 +37,7 @@ func EditJsonDocument[T any](data T, headers []string) error {
 	return nil
 }
 
-func EditYamlDocument(data any, headers []string) error {
+func EditYamlDocument[T any](data T, headers []string) error {
 	ext := "yaml"
 	comment := "# "
 	bData, err := yaml.Marshal(data)
@@ -106,7 +106,7 @@ func interactiveDocumentEdit(data []byte, fileName string) ([]byte, error) {
 	for scanner.Scan() {
 		line := scanner.Text()
 		if !strings.HasPrefix(strings.TrimSpace(line), "//") && !strings.HasPrefix(strings.TrimSpace(line), "#") {
-			sb.WriteString(line)
+			sb.WriteString(line + "\n")
 		}
 	}
 	content := []byte(sb.String())

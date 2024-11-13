@@ -51,7 +51,6 @@ func (d *TelemetryListCmd) Run(c CLI) error {
 	msgBus, err := bus.New(c.Target)
 	if err != nil {
 		e := MirConnectionError{Target: c.Target, e: err}
-		fmt.Println(e)
 		return e
 	}
 	defer msgBus.Close()

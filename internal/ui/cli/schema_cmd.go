@@ -68,7 +68,6 @@ func (d *SchemaUploadCmd) Run(c CLI) error {
 	msgBus, err := bus.New(c.Target)
 	if err != nil {
 		e := MirConnectionError{Target: c.Target, e: err}
-		fmt.Println(e)
 		return e
 	}
 	defer msgBus.Close()
@@ -76,26 +75,22 @@ func (d *SchemaUploadCmd) Run(c CLI) error {
 	schemaData, err := os.ReadFile(d.Path)
 	if err != nil {
 		e := MirProcessError{e: err}
-		fmt.Println(e)
 		return e
 	}
 
 	pbSet := new(descriptorpb.FileDescriptorSet)
 	if err := proto.Unmarshal(schemaData, pbSet); err != nil {
 		e := MirProcessError{e: err}
-		fmt.Println(e)
 		return e
 	}
 	compSch, err := mir_models.CompressFileDescriptorSet(pbSet)
 	if err != nil {
 		e := MirProcessError{e: err}
-		fmt.Println(e)
 		return e
 	}
 	reg, err := protodesc.NewFiles(pbSet)
 	if err != nil {
 		e := MirProcessError{e: err}
-		fmt.Println(e)
 		return e
 	}
 
@@ -122,7 +117,6 @@ func (d *SchemaUploadCmd) Run(c CLI) error {
 	resp, err := core_client.PublishDeviceUpdateRequest(msgBus, req)
 	if err != nil {
 		e := MirRequestError{Route: "device.update", e: err}
-		fmt.Println(e)
 		return e
 	}
 	if resp.GetError() != nil {
@@ -133,7 +127,6 @@ func (d *SchemaUploadCmd) Run(c CLI) error {
 				Message: resp.GetError().GetMessage(),
 				Details: resp.GetError().GetDetails(),
 			}}
-		fmt.Println(e)
 		return e
 	}
 
@@ -185,7 +178,6 @@ func (d *SchemaExploreCmd) Run(c CLI) error {
 	msgBus, err := bus.New(c.Target)
 	if err != nil {
 		e := MirConnectionError{Target: c.Target, e: err}
-		fmt.Println(e)
 		return e
 	}
 	defer msgBus.Close()

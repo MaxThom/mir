@@ -52,6 +52,7 @@ type DeviceCreateCmd struct {
 type DeviceUpdateCmd struct {
 	Output string `short:"o" help:"output format for response [pretty|json|yaml]" default:"pretty"`
 	Target `embed:"" prefix:"target."`
+	NameNs string `name:"name/namespace" arg:"" optional:"" help:"shortcut to set name and namespace"`
 
 	Name      *string           `help:"Set device name"`
 	Namespace *string           `help:"Set device namespace"`
@@ -102,7 +103,6 @@ func (d *DeviceListCmd) Run(c CLI) error {
 	msgBus, err := bus.New(c.Target)
 	if err != nil {
 		e := MirConnectionError{Target: c.Target, e: err}
-		fmt.Println(e)
 		return e
 	}
 	defer msgBus.Close()
@@ -178,7 +178,6 @@ func (d *DeviceCreateCmd) Run(c CLI) error {
 	msgBus, err := bus.New(c.Target)
 	if err != nil {
 		e := MirConnectionError{Target: c.Target, e: err}
-		fmt.Println(e)
 		return e
 	}
 	defer msgBus.Close()
@@ -234,7 +233,6 @@ func (d *DeviceCreateCmd) Run(c CLI) error {
 		resp, err := core_client.PublishDeviceCreateRequest(msgBus, mir_models.NewCreateDeviceReqFromDevice(*d))
 		if err != nil {
 			e := MirRequestError{Route: "device.create", e: err}
-			fmt.Println(e)
 			return e
 		}
 		if resp.GetError() != nil {
@@ -271,8 +269,13 @@ func (d *DeviceUpdateCmd) Validate() error {
 	if len(d.Target.Ids) == 0 &&
 		len(d.Target.Names) == 0 &&
 		len(d.Target.Namespaces) == 0 &&
-		len(d.Target.Labels) == 0 {
+		len(d.Target.Labels) == 0 &&
+		d.NameNs == "" {
 		err.Details = append(err.Details, "Must specify targets")
+	}
+
+	if d.NameNs != "" {
+		d.Target = getTargetFromNameNs(d.NameNs)
 	}
 
 	if len(err.Details) > 0 {
@@ -409,7 +412,6 @@ func (d *DeviceDeleteCmd) Run(c CLI) error {
 	msgBus, err := bus.New(c.Target)
 	if err != nil {
 		e := MirConnectionError{Target: c.Target, e: err}
-		fmt.Println(e)
 		return e
 	}
 	defer msgBus.Close()
@@ -424,7 +426,6 @@ func (d *DeviceDeleteCmd) Run(c CLI) error {
 	})
 	if err != nil {
 		e := MirRequestError{Route: "device.delete", e: err}
-		fmt.Println(e)
 		return e
 	}
 
