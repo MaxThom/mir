@@ -15,6 +15,7 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
+// TODO maybe add a schema refresh command
 type SchemaCmd struct {
 	Upload  SchemaUploadCmd  `cmd:"" help:"Upload schema of a set of devices. To generate: 'protoc <proto_files...> --descriptor_set_out=./<file_name>.bproto --include_imports'"`
 	Explore SchemaExploreCmd `cmd:"" help:"Explore a device schema"`
@@ -23,14 +24,16 @@ type SchemaCmd struct {
 type SchemaUploadCmd struct {
 	Output string `short:"o" help:"output format for response" default:"json"`
 	Target `embed:"" prefix:"target."`
+	NameNs string `name:"name/namespace" arg:"" optional:"" help:"edit single device"`
 	// TODO could be an array, I think there is a path type
 	Path string `type:"path" help:"Path to protobuf schema"`
 }
 
 type SchemaExploreCmd struct {
-	Output            string `short:"o" help:"output format for response [pretty|json|yaml]" default:"pretty"`
+	Output            string `short:"o" help:"output format for response [json|yaml]" default:"yaml"`
 	IncludeMirImports bool   `short:"i" help:"includes Mir proto dependencies" default:"false"`
 	Target            `embed:"" prefix:"target."`
+	NameNs            string `name:"name/namespace" arg:"" optional:"" help:"edit single device"`
 }
 
 func (d *SchemaUploadCmd) Validate() error {
@@ -41,8 +44,13 @@ func (d *SchemaUploadCmd) Validate() error {
 	if len(d.Target.Ids) == 0 &&
 		len(d.Target.Names) == 0 &&
 		len(d.Target.Namespaces) == 0 &&
-		len(d.Target.Labels) == 0 {
+		len(d.Target.Labels) == 0 &&
+		d.NameNs == "" {
 		err.Details = append(err.Details, "Must specify targets")
+	}
+
+	if d.NameNs != "" {
+		d.Target = getTargetFromNameNs(d.NameNs)
 	}
 
 	if d.Path == "" {
@@ -152,8 +160,13 @@ func (d *SchemaExploreCmd) Validate() error {
 	if len(d.Target.Ids) == 0 &&
 		len(d.Target.Names) == 0 &&
 		len(d.Target.Namespaces) == 0 &&
-		len(d.Target.Labels) == 0 {
+		len(d.Target.Labels) == 0 &&
+		d.NameNs == "" {
 		err.Details = append(err.Details, "Must specify targets")
+	}
+
+	if d.NameNs != "" {
+		d.Target = getTargetFromNameNs(d.NameNs)
 	}
 
 	if len(err.Details) > 0 {
@@ -188,7 +201,6 @@ func (d *SchemaExploreCmd) Run(c CLI) error {
 	resp, err := core_client.PublishDeviceListRequest(msgBus, req)
 	if err != nil {
 		e := MirRequestError{Route: "device.list", e: err}
-		fmt.Println(e)
 		return e
 	}
 	if resp.GetError() != nil {
@@ -199,7 +211,6 @@ func (d *SchemaExploreCmd) Run(c CLI) error {
 				Message: resp.GetError().GetMessage(),
 				Details: resp.GetError().GetDetails(),
 			}}
-		fmt.Println(e)
 		return e
 	}
 
@@ -213,7 +224,6 @@ func (d *SchemaExploreCmd) Run(c CLI) error {
 				Labels:     d.Target.Labels,
 			},
 		}
-		fmt.Println(e)
 		return e
 	}
 
@@ -270,7 +280,6 @@ func (d *SchemaExploreCmd) Run(c CLI) error {
 	}
 
 	if out, e := MarshalResponse(d.Output, devSchemasArray); e != nil {
-		fmt.Println(e)
 		return e
 	} else {
 		fmt.Println(out)

@@ -20,12 +20,11 @@ type TelemetryCmd struct {
 
 type TelemetryListCmd struct {
 	Target        `embed:"" prefix:"target."`
+	NameNs        string            `name:"name/namespace" arg:"" optional:"" help:"filter on name and/or namespace"`
 	Measuremeants []string          `short:"m" help:"list of measurements to drill down. correspond to proto messages of type telemetry"`
 	Filters       map[string]string `short:"f" help:"all available filters to drill down the query"`
 	RefreshSchema bool              `short:"r" help:"Refresh schema from device even if in store" default:"false"`
 	GrafanaUrl    string            `short:"g" help:"grafana instance url to point the generated link to" default:"localhost:3000"`
-	Explore       bool              `short:"e" help:"generate the telemetry explore panel and link"`
-	Query         bool              `short:"q" help:"show the telemetry query"`
 }
 
 func (d *TelemetryCmd) Run() error {
@@ -35,6 +34,10 @@ func (d *TelemetryCmd) Run() error {
 func (d *TelemetryListCmd) Validate() error {
 	err := MirInvalidInputError{
 		Details: []string{},
+	}
+
+	if d.NameNs != "" {
+		d.Target = getTargetFromNameNs(d.NameNs)
 	}
 
 	if len(err.Details) > 0 {
