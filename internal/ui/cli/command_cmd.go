@@ -21,6 +21,7 @@ type CommandCmd struct {
 
 type CommandListCmd struct {
 	Target           `embed:"" prefix:"target."`
+	NameNs           string            `name:"name/namespace" arg:"" optional:"" help:"edit single device"`
 	FilterLabels     map[string]string `help:"Set of labels to filter commands"`
 	RefreshSchema    bool              `short:"r" help:"Refresh schema from device even if in store" default:"false"`
 	ShowJsonTemplate bool              `short:"j" help:"show json template for command"`
@@ -28,6 +29,7 @@ type CommandListCmd struct {
 
 type CommandSendCmd struct {
 	Target           `embed:"" prefix:"target."`
+	NameNs           string `name:"name/namespace" arg:"" optional:"" help:"edit single device"`
 	Command          string `short:"n" help:"command name to send"`
 	ShowJsonTemplate bool   `short:"j" help:"show json template for command"`
 	Payload          string `short:"p" help:"payload to send in json. use single quote for easier writing. e.g. '{\"key\":\"value\"}'"`
@@ -43,6 +45,10 @@ func (d *CommandListCmd) Validate() error {
 		Details: []string{},
 	}
 
+	if d.NameNs != "" {
+		d.Target = getTargetFromNameNs(d.NameNs)
+	}
+
 	if len(err.Details) > 0 {
 		return err
 	}
@@ -54,7 +60,6 @@ func (d *CommandListCmd) Run(c CLI) error {
 	msgBus, err := bus.New(c.Target)
 	if err != nil {
 		e := MirConnectionError{Target: c.Target, e: err}
-		fmt.Println(e)
 		return e
 	}
 	defer msgBus.Close()
@@ -133,8 +138,13 @@ func (d *CommandSendCmd) Validate() error {
 	if len(d.Target.Ids) == 0 &&
 		len(d.Target.Names) == 0 &&
 		len(d.Target.Namespaces) == 0 &&
-		len(d.Target.Labels) == 0 {
+		len(d.Target.Labels) == 0 &&
+		d.NameNs == "" {
 		err.Details = append(err.Details, "Must specify targets")
+	}
+
+	if d.NameNs != "" {
+		d.Target = getTargetFromNameNs(d.NameNs)
 	}
 
 	if d.Command == "" {
