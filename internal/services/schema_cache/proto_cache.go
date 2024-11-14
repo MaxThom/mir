@@ -116,6 +116,9 @@ func (c *MirProtoCache) reconcileDeviceSchema(deviceId string, forceDeviceFetch 
 		return mir_models.Device{}, nil, fmt.Errorf("error listing devices: %s", respList.GetError().GetMessage())
 	}
 	devs := respList.GetOk().Devices
+	if len(devs) == 0 {
+		return mir_models.Device{}, nil, fmt.Errorf("device %s not found", deviceId)
+	}
 	if !forceDeviceFetch {
 		if len(devs) > 0 {
 			if devs[0].Status.Schema.CompressedSchema != nil &&

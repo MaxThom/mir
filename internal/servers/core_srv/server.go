@@ -504,7 +504,7 @@ func (s *CoreServer) hearthbeatRequestHandler(ch chan nats.Msg) {
 			return &b
 		}
 		// Since this update is only for hearthbeat and often, we dont want to have a device update event
-		_, err := s.store.UpdateDevice(&core_apiv1.UpdateDeviceRequest{
+		updReq := &core_apiv1.UpdateDeviceRequest{
 			Targets: &core_apiv1.Targets{
 				Ids: []string{deviceId},
 			},
@@ -512,11 +512,35 @@ func (s *CoreServer) hearthbeatRequestHandler(ch chan nats.Msg) {
 				Online:         toBoolRef(true),
 				LastHearthbeat: mir_models.AsProtoTimestamp(s.hearthbeats[deviceId]),
 			},
-		})
+		}
+		dev, err := s.store.UpdateDevice(updReq)
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while executing hearthbeat db query")
 			msg.Ack()
 			continue
+		}
+		// Means device is not in db, we provision it
+		if len(dev) == 0 {
+			req, err := core_client.PublishDeviceCreateRequest(s.bus, &core_apiv1.CreateDeviceRequest{
+				Spec: &core_apiv1.Spec{
+					DeviceId: deviceId,
+				},
+			})
+			if err != nil {
+				l.Error().Err(err).Str("deviceId", deviceId).Msg("could not automaticly provision new device")
+				msg.Ack()
+				continue
+			} else if req.GetError() != nil {
+				l.Error().Str("deviceId", deviceId).Str("error", req.GetError().Message).Msg("could not automaticly provision new device")
+				msg.Ack()
+				continue
+			}
+			_, err = s.store.UpdateDevice(updReq)
+			if err != nil {
+				l.Error().Err(err).Msg("error occure while executing hearthbeat db query")
+				msg.Ack()
+				continue
+			}
 		}
 		msg.Ack()
 	}

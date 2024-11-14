@@ -21,8 +21,9 @@ type TelemetryCmd struct {
 type TelemetryListCmd struct {
 	Target        `embed:"" prefix:"target."`
 	NameNs        string            `name:"name/namespace" arg:"" optional:"" help:"filter on name and/or namespace"`
-	Measuremeants []string          `short:"m" help:"list of measurements to drill down. correspond to proto messages of type telemetry"`
-	Filters       map[string]string `short:"f" help:"all available filters to drill down the query"`
+	Measuremeants []string          `short:"m" help:"list of measurements to display. correspond to proto messages of type telemetry"`
+	Filters       map[string]string `short:"f" help:"labels to filter measurements"`
+	ShowFields    bool              `short:"s" help:"show fields of the measurements" default:"false"`
 	RefreshSchema bool              `short:"r" help:"Refresh schema from device even if in store" default:"false"`
 	GrafanaUrl    string            `short:"g" help:"grafana instance url to point the generated link to" default:"localhost:3000"`
 }
@@ -98,7 +99,7 @@ func (d *TelemetryListCmd) Run(c CLI) error {
 				if tlm.Error != "" {
 					sb.WriteString(tlm.Error)
 					sb.WriteString("\n")
-				} else if len(tlm.Fields) > 0 {
+				} else if len(tlm.Fields) > 0 && d.ShowFields {
 					for _, f := range tlm.Fields {
 						sb.WriteString("    ")
 						sb.WriteString(f)

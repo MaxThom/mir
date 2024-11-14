@@ -119,6 +119,9 @@ func (m *Mir) Launch(ctx context.Context) (*sync.WaitGroup, error) {
 // Send hearthbeat to Mir on a based interval
 // Run in a routine for non blocking
 func (m *Mir) hearthbeat(ctx context.Context, interval time.Duration) {
+	if err := core_client.PublishHearthbeatStream(m.b, m.cfg.DeviceId); err != nil {
+		m.l.Error().Err(err).Msg("error sending hearthbeat to Mir")
+	}
 	for {
 		select {
 		case <-ctx.Done():
