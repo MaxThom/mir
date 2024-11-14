@@ -478,10 +478,10 @@ func TestRequestRetrieveSchema(t *testing.T) {
 		DeviceId(id).
 		Target(busUrl).
 		LogLevel(mir_device.LogLevelInfo).
-		TelemetrySchema(
+		Schema(
 			mir_module_testv1.File_mir_module_test_v1_command_proto,
 		).
-		TelemetrySchemaProto(
+		SchemaProto(
 			protodesc.ToFileDescriptorProto(mir_module_testv1.File_mir_module_test_v1_telemetry_proto),
 		).
 		Build()

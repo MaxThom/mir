@@ -35,6 +35,7 @@ type (
 	CLI struct {
 		Client Client       `cmd:"" embed:"" help:"Test Mir ecosystem of servers and services"`
 		Serve  cli.ServeCmd `cmd:"" help:"Serve Mir ecosystem of servers and services"`
+		Swarm  cli.SwarmCmd `cmd:"" help:"Create virtual devices to mimic workload for test or demo purposes"`
 	}
 	Client struct {
 		Globals

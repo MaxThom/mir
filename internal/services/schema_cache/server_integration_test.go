@@ -124,7 +124,7 @@ func TestPublishCmdRequest(t *testing.T) {
 		},
 	}
 
-	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).TelemetrySchema(
+	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).Schema(
 		schemacache_testv1.File_schemacache_test_v1_cache_proto,
 	).Build()
 	if err != nil {

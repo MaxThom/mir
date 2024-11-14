@@ -170,10 +170,10 @@ func TestRequestTelemetrySchema(t *testing.T) {
 		DeviceId("TestTelemetrySchema").
 		Target("nats://127.0.0.1:4222").
 		LogLevel(LogLevelInfo).
-		TelemetrySchema(
+		Schema(
 			mir_device_testv1.File_mir_device_test_v1_command_proto,
 		).
-		TelemetrySchemaProto(
+		SchemaProto(
 			protodesc.ToFileDescriptorProto(mir_device_testv1.File_mir_device_test_v1_telemetry_proto),
 		).
 		Build()

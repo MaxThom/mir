@@ -253,7 +253,7 @@ func TestPublishCmdRequest(t *testing.T) {
 		},
 	}
 
-	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).TelemetrySchema(
+	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).Schema(
 		protocmd_testv1.File_protocmd_test_v1_command_proto,
 	).Build()
 	if err != nil {
@@ -373,7 +373,7 @@ func TestPublishCmdJsonRequest(t *testing.T) {
 		},
 	}
 
-	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).TelemetrySchema(
+	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).Schema(
 		protocmd_testv1.File_protocmd_test_v1_command_proto,
 	).Build()
 	if err != nil {
@@ -559,7 +559,7 @@ func TestPublishCmdProtoInvalidPayloadNoValidation(t *testing.T) {
 		},
 	}
 
-	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).TelemetrySchema(
+	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).Schema(
 		protocmd_testv1.File_protocmd_test_v1_command_proto,
 	).Build()
 	if err != nil {
@@ -854,7 +854,7 @@ func TestPublishCmdRequestMultipleDevicesOneTimeout(t *testing.T) {
 		},
 	}
 
-	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).TelemetrySchema(
+	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).Schema(
 		protocmd_testv1.File_protocmd_test_v1_command_proto,
 	).Build()
 	if err != nil {
@@ -1316,7 +1316,7 @@ func TestPublishCmdRequestMultipleDevicesOneTimeoutJsonTemplate(t *testing.T) {
 		},
 	}
 
-	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).TelemetrySchema(
+	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).Schema(
 		protocmd_testv1.File_protocmd_test_v1_command_proto,
 	).Build()
 	if err != nil {
@@ -1409,7 +1409,7 @@ func TestPublishCmdJsonNameWithCurlyRequest(t *testing.T) {
 		},
 	}
 
-	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).TelemetrySchema(
+	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).Schema(
 		protocmd_testv1.File_protocmd_test_v1_command_proto,
 	).Build()
 	if err != nil {

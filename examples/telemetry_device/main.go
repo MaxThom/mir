@@ -30,10 +30,10 @@ func main() {
 		LogLevel(mir.LogLevelDebug).
 		LogWriters([]io.Writer{os.Stdout}).
 		DefaultConfigFile(mir.Yaml).
-		TelemetrySchema(
+		Schema(
 			telemetry_devicev1.File_telemetry_device_v1_telemetry_proto,
 		).
-		TelemetrySchemaProto(
+		SchemaProto(
 			protodesc.ToFileDescriptorProto(telemetry_devicev1.File_telemetry_device_v1_utils_proto),
 		).
 		Build()
