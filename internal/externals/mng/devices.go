@@ -50,8 +50,11 @@ func (s *surrealDeviceStore) ListDevice(req *core_apiv1.ListDeviceRequest) ([]mi
 
 func (s *surrealDeviceStore) CreateDevice(cdr *core_apiv1.CreateDeviceRequest) (mir_models.Device, error) {
 	// Validate
-	if cdr.Meta.Name == "" && cdr.Spec.DeviceId == "" {
+	if cdr.Meta != nil && cdr.Meta.Name == "" && cdr.Spec.DeviceId == "" {
 		return mir_models.Device{}, fmt.Errorf("device name and id are missing")
+	}
+	if cdr.Meta == nil {
+		cdr.Meta = &core_apiv1.Meta{}
 	}
 	if cdr.Meta.Name == "" {
 		cdr.Meta.Name = cdr.Spec.DeviceId

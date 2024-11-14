@@ -58,6 +58,11 @@ func TestMain(m *testing.M) {
 	test_utils.DeleteDevicesWithLabelsPanic(b, map[string]string{
 		"testing": "core",
 	})
+	core_client.PublishDeviceDeleteRequest(b, &core_apiv1.DeleteDeviceRequest{
+		Targets: &core_apiv1.Targets{
+			Ids: []string{"device_auto_provision"},
+		},
+	})
 	fmt.Println(" -> cleaned up")
 	time.Sleep(1 * time.Second)
 	b.Drain()
@@ -1752,74 +1757,6 @@ func TestDeleteNoTargetMetafield(t *testing.T) {
 	assert.Equal(t, respDel.GetError().Message, "No device target provided")
 }
 
-func TestDeviceGoesOnline(t *testing.T) {
-	// Arrange
-	deviceIds := []string{"device_goes_online"}
-	reqList := &core_apiv1.ListDeviceRequest{
-		Targets: &core_apiv1.Targets{
-			Ids: deviceIds,
-		},
-	}
-	reqCreate := []*core_apiv1.CreateDeviceRequest{
-		{
-			Meta: &core_apiv1.Meta{
-				Name:      deviceIds[0],
-				Namespace: "testing_core",
-				Labels: map[string]string{
-					"testing": "core",
-					"factory": "D",
-					"land":    "sheep",
-					"owner":   "bob_morrisson",
-					"fix":     "cant_be_touch",
-				},
-				Annotations: map[string]string{
-					"utility": "hvac",
-				},
-			},
-			Spec: &core_apiv1.Spec{
-				DeviceId: deviceIds[0],
-			},
-		},
-	}
-
-	// Subscribe to device online event
-	onlineEventCount := 0
-	s, err := b.Subscribe(
-		core_client.DeviceOnlineEvent.WithId(deviceIds[0]),
-		func(msg *nats.Msg) {
-			onlineEventCount += 1
-			msg.Ack()
-		})
-
-	// Act
-	if _, err := test_utils.CreateDevices(b, reqCreate); err != nil {
-		t.Error(err)
-	}
-	time.Sleep(1 * time.Second)
-
-	if err := core_client.PublishHearthbeatStream(b, deviceIds[0]); err != nil {
-		t.Error(err)
-	}
-	time.Sleep(1 * time.Second)
-
-	respList, err := core_client.PublishDeviceListRequest(b, reqList)
-	if err != nil {
-		t.Error(err)
-	}
-
-	// Assert
-	for _, dev := range respList.GetOk().Devices {
-		switch dev.Spec.DeviceId {
-		case deviceIds[0]:
-			assert.Equal(t, dev.Status.Online, true)
-			devTs := mir_models.AsGoTime(dev.Status.LastHearthbeat)
-			assert.Equal(t, time.Now().UTC().Sub(devTs).Abs().Seconds() < 10, true)
-		}
-	}
-	assert.Equal(t, 1, onlineEventCount)
-	s.Unsubscribe()
-}
-
 func TestDeviceCreateDeviceIdAlreadyExist(t *testing.T) {
 	// Arrange
 	s := swarm.NewSwarm(b)
@@ -2314,6 +2251,74 @@ func TestDeviceUpdateManyTargetSameNameNamespaceOneExist(t *testing.T) {
 	assert.Equal(t, updResp.GetError().Message, "cannot update multiple devices as name/namespace 'samebloodyname/samebloodynamespace' must be unique")
 }
 
+func TestDeviceGoesOnline(t *testing.T) {
+	// Arrange
+	deviceIds := []string{"device_goes_online"}
+	reqList := &core_apiv1.ListDeviceRequest{
+		Targets: &core_apiv1.Targets{
+			Ids: deviceIds,
+		},
+	}
+	reqCreate := []*core_apiv1.CreateDeviceRequest{
+		{
+			Meta: &core_apiv1.Meta{
+				Name:      deviceIds[0],
+				Namespace: "testing_core",
+				Labels: map[string]string{
+					"testing": "core",
+					"factory": "D",
+					"land":    "sheep",
+					"owner":   "bob_morrisson",
+					"fix":     "cant_be_touch",
+				},
+				Annotations: map[string]string{
+					"utility": "hvac",
+				},
+			},
+			Spec: &core_apiv1.Spec{
+				DeviceId: deviceIds[0],
+			},
+		},
+	}
+
+	// Subscribe to device online event
+	onlineEventCount := 0
+	s, err := b.Subscribe(
+		core_client.DeviceOnlineEvent.WithId(deviceIds[0]),
+		func(msg *nats.Msg) {
+			onlineEventCount += 1
+			msg.Ack()
+		})
+
+	// Act
+	if _, err := test_utils.CreateDevices(b, reqCreate); err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	if err := core_client.PublishHearthbeatStream(b, deviceIds[0]); err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	respList, err := core_client.PublishDeviceListRequest(b, reqList)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	for _, dev := range respList.GetOk().Devices {
+		switch dev.Spec.DeviceId {
+		case deviceIds[0]:
+			assert.Equal(t, dev.Status.Online, true)
+			devTs := mir_models.AsGoTime(dev.Status.LastHearthbeat)
+			assert.Equal(t, time.Now().UTC().Sub(devTs).Abs().Seconds() < 10, true)
+		}
+	}
+	assert.Equal(t, 1, onlineEventCount)
+	s.Unsubscribe()
+}
+
 // go test -v -timeout 90s -run ^TestDeviceGoesOffline\$ github.com/maxthom/mir/services/core
 func TestDeviceGoesOffline(t *testing.T) {
 	// Arrange
@@ -2397,6 +2402,58 @@ func TestDeviceGoesOffline(t *testing.T) {
 
 	assert.Equal(t, true, offlineEventCount > 0)
 	s.Unsubscribe()
+}
+
+func TestDeviceAutoProvision(t *testing.T) {
+	// Arrange
+	deviceIds := []string{"device_auto_provision"}
+	reqList := &core_apiv1.ListDeviceRequest{
+		Targets: &core_apiv1.Targets{
+			Ids: deviceIds,
+		},
+	}
+
+	// Subscribe to device online event
+	onlineEventCount := 0
+	s, err := b.Subscribe(
+		core_client.DeviceOnlineEvent.WithId(deviceIds[0]),
+		func(msg *nats.Msg) {
+			onlineEventCount += 1
+			msg.Ack()
+		})
+	createEventCount := 0
+	c, err := b.Subscribe(
+		core_client.DeviceCreatedEvent.WithId(deviceIds[0]),
+		func(msg *nats.Msg) {
+			createEventCount += 1
+			msg.Ack()
+		})
+
+	// Act
+	if err := core_client.PublishHearthbeatStream(b, deviceIds[0]); err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	respList, err := core_client.PublishDeviceListRequest(b, reqList)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, len(respList.GetOk().Devices), 1)
+	for _, dev := range respList.GetOk().Devices {
+		switch dev.Spec.DeviceId {
+		case deviceIds[0]:
+			assert.Equal(t, dev.Status.Online, true)
+			devTs := mir_models.AsGoTime(dev.Status.LastHearthbeat)
+			assert.Equal(t, time.Now().UTC().Sub(devTs).Abs().Seconds() < 10, true)
+		}
+	}
+	assert.Equal(t, 1, onlineEventCount)
+	assert.Equal(t, 1, createEventCount)
+	s.Unsubscribe()
+	c.Unsubscribe()
 }
 
 func strRef(s string) *string {
