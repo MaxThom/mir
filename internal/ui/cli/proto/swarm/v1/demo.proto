@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+package swarm.v1;
+option go_package = "github.com/maxthom/mir/internal/ui/cli/gen/swarm/v1";
+
+import "mir/device/v1/mir.proto";
+
+message EnvironmentTlm {
+	option (mir.device.v1.message_type) = MESSAGE_TYPE_TELEMETRY;
+	option (mir.device.v1.meta) = {
+		tags: [{
+			key: "building",
+			value: "A"
+		}, {
+			key: "floor",
+			value: "1"
+		}]
+	};
+
+	mir.device.v1.Timestamp ts = 1 [(mir.device.v1.timestamp) = TIMESTAMP_TYPE_FRACTION];
+	int32 temperature = 2;
+	int32 pressure = 3;
+	int32 humidity = 4;
+	int32 wind_speed = 5;
+}
+
+message PowerConsuption {
+	option (mir.device.v1.message_type) = MESSAGE_TYPE_TELEMETRY;
+	option (mir.device.v1.meta) = {
+		tags: [{
+			key: "building",
+			value: "A"
+		}, {
+			key: "floor",
+			value: "2"
+		}]
+	};
+
+	int64 ts = 1 [(mir.device.v1.timestamp) = TIMESTAMP_TYPE_NANO];
+	double voltage = 2;
+	double amp = 3;
+	double power = 4;
+}
+
+
+message ChangeDataRateRequest {
+	option (mir.device.v1.message_type) = MESSAGE_TYPE_TELECOMMAND;
+
+	int32 sec = 1;
+}
+
+message ChangeDataRateResponse {
+    string result = 1;
+}
+
+message ChangePowerRequest {
+	option (mir.device.v1.message_type) = MESSAGE_TYPE_TELECOMMAND;
+
+	int32 power = 1;
+}
+
+message ChangePowerResponse {
+    bool success = 1;
+}

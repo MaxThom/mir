@@ -178,9 +178,9 @@ func (m *Mir) shutdown(ctx context.Context) {
 // eg.
 // l := m.Logger()
 // l.Info().Msg("Mir is ready for launch")
-func (m Mir) Logger() zerolog.Logger {
+func (m Mir) Logger() *zerolog.Logger {
 	l := m.l.With().Logger()
-	return l
+	return &l
 }
 
 // Marshal the FileDescriptorSet to bytes

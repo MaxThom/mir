@@ -17,28 +17,28 @@ type builder struct {
 	fileOpts            []func(*mir_config.MirConfig)
 	deviceId            *string
 	target              *string
-	logLevel            *logLevel
+	logLevel            *LogLevel
 	logWriters          []io.Writer
 	schema              *descriptorpb.FileDescriptorSet
 	telemetryModuleFlag bool
 }
 
 type configFormat string
-type logLevel string
+type LogLevel string
 
-func (l logLevel) String() string {
+func (l LogLevel) String() string {
 	return string(l)
 }
 
 const (
 	Yaml            configFormat = "yaml"
 	Json            configFormat = "json"
-	LogLevelTrace   logLevel     = "trace"
-	LogLevelDebug   logLevel     = "debug"
-	LogLevelInfo    logLevel     = "info"
-	LogLevelWarning logLevel     = "warn"
-	LogLevelError   logLevel     = "error"
-	LogLevelFatal   logLevel     = "fatal"
+	LogLevelTrace   LogLevel     = "trace"
+	LogLevelDebug   LogLevel     = "debug"
+	LogLevelInfo    LogLevel     = "info"
+	LogLevelWarning LogLevel     = "warn"
+	LogLevelError   LogLevel     = "error"
+	LogLevelFatal   LogLevel     = "fatal"
 )
 
 // Builder pattern to get your Mir
@@ -112,7 +112,7 @@ func (b builder) EnvVars() builder {
 }
 
 // Set loglevel of the logger. Default to info
-func (b builder) LogLevel(l logLevel) builder {
+func (b builder) LogLevel(l LogLevel) builder {
 	b.logLevel = &l
 	return b
 }
@@ -135,7 +135,7 @@ func (b builder) LogWriters(writers []io.Writer) builder {
 	return b
 }
 
-func (b builder) TelemetrySchema(s ...protoreflect.FileDescriptor) builder {
+func (b builder) Schema(s ...protoreflect.FileDescriptor) builder {
 	if len(s) > 0 {
 		b.telemetryModuleFlag = true
 	}
@@ -145,7 +145,7 @@ func (b builder) TelemetrySchema(s ...protoreflect.FileDescriptor) builder {
 	}
 	return b
 }
-func (b builder) TelemetrySchemaProto(s ...*descriptorpb.FileDescriptorProto) builder {
+func (b builder) SchemaProto(s ...*descriptorpb.FileDescriptorProto) builder {
 	if len(s) > 0 {
 		b.telemetryModuleFlag = true
 	}
@@ -186,6 +186,7 @@ func (b builder) Build() (*Mir, error) {
 		mir_log.WithAppName("mir"),
 		mir_log.WithCustomWriters(b.logWriters),
 	)
+	l = l.With().Str("deviceId", c.DeviceId).Logger()
 
 	if errs != nil {
 		l.Error().Err(errs).Msg("Error while loading configuration")
