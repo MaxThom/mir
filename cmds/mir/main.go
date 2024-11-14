@@ -29,17 +29,21 @@ type (
 		Target     string      `help:"Mir connection target. default:nats://127.0.0.1:4222"`
 		Debug      bool        `short:"D" help:"Enable debug mode"`
 		LogLevel   string      `short:"l" help:"Set the logging level (debug|info|warn|error|fatal). default:info"`
-		ConfigFile configFlag  `short:"c" help:"Set path for config path. default:~/.config/mir/mir.yaml"`
+		ConfigFile configFlag  `short:"c" help:"Set path for config path. default:~/.config/mir/cli.yaml"`
 		Version    VersionFlag `name:"version" help:"Print version information and quit"`
 	}
 	CLI struct {
+		Client Client       `cmd:"" embed:"" help:"Test Mir ecosystem of servers and services"`
+		Serve  cli.ServeCmd `cmd:"" help:"Serve Mir ecosystem of servers and services"`
+	}
+	Client struct {
 		Globals
 
 		Tui       tui.Cmd          `cmd:"" help:"Open Mir in TUI mode" default:"withargs" hidden:""`
-		Device    cli.DeviceCmd    `cmd:"" help:"Manage fleet of Mir devices"`
-		Telemetry cli.TelemetryCmd `cmd:"" help:"Explore Mir devices telemetry"`
-		Schema    cli.SchemaCmd    `cmd:"" help:"Upload and explore device proto schema"`
-		Command   cli.CommandCmd   `cmd:"" help:"Send and explore commands to devices"`
+		Device    cli.DeviceCmd    `cmd:"" aliases:"dev" help:"Manage fleet of Mir devices"`
+		Telemetry cli.TelemetryCmd `cmd:"" aliases:"tlm" help:"Explore Mir devices telemetry"`
+		Command   cli.CommandCmd   `cmd:"" aliases:"cmd" help:"Send and explore commands to devices"`
+		Schema    cli.SchemaCmd    `cmd:"" aliases:"sch" help:"Upload and explore device proto schema"`
 	}
 	VersionFlag string
 )
@@ -76,7 +80,9 @@ func main() {
 		kong.Description("A command line and terminal user interface to operate the Mir ecosystem 🛰️"),
 		kong.UsageOnError(),
 		kong.ConfigureHelp(kong.HelpOptions{
-			Compact: true,
+			Compact:             true,
+			Tree:                false,
+			NoExpandSubcommands: true,
 		}),
 		kong.Vars{
 			"version": string(Version),
@@ -85,17 +91,17 @@ func main() {
 	// Config
 	cfg := defaultCfg
 	errCfg, lookupFiles, foundFiles := mir_config.New(AppName,
-		mir_config.WithEtcFilePath("mir.yaml", mir_config.Yaml, false),
-		mir_config.WithXdgConfigHomeFilePath("mir.yaml", mir_config.Yaml, false),
-		mir_config.WithFilePath(string(c.ConfigFile), mir_config.Yaml, false),
+		mir_config.WithEtcFilePath("mir/cli.yaml", mir_config.Yaml, false),
+		mir_config.WithXdgConfigHomeFilePath("mir/cli.yaml", mir_config.Yaml, false),
+		mir_config.WithFilePath(string(c.Client.ConfigFile), mir_config.Yaml, false),
 		mir_config.WithEnvVars("MIR"),
 	).LoadAndUnmarshal(&cfg)
 
 	var file *os.File
 	log := mir_log.Setup(
-		mir_log.WithFlagAndFileLogLevel(c.Debug, c.LogLevel, &cfg.LogLevel),
+		mir_log.WithFlagAndFileLogLevel(c.Client.Debug, c.Client.LogLevel, &cfg.LogLevel),
 		mir_log.WithTimeFormatUnix(),
-		mir_log.WithXdgConfigHomeLogFile("mir/mir.log", file),
+		mir_log.WithXdgConfigHomeLogFile("mir/cli.log", file),
 		mir_log.WithAppName(AppName),
 	)
 	defer file.Close()
@@ -105,11 +111,11 @@ func main() {
 		log.Err(errCfg).Msg("error loading config")
 		os.Exit(1)
 	}
-	if c.LogLevel != "" {
-		cfg.LogLevel = c.LogLevel
+	if c.Client.LogLevel != "" {
+		cfg.LogLevel = c.Client.LogLevel
 	}
-	if c.Target != "" {
-		cfg.Target = c.Target
+	if c.Client.Target != "" {
+		cfg.Target = c.Client.Target
 	}
 
 	prettyCfg, err := mir_config.JsonMarshalWithoutSecrets(cfg)
