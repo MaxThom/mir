@@ -42,6 +42,10 @@ func New(url string, options ...func(*BusConn)) (*BusConn, error) {
 	return bus, err
 }
 
+func NewWithBus(b *nats.Conn) *BusConn {
+	return &BusConn{Conn: b}
+}
+
 func WithReconnect() func(*BusConn) {
 	return func(bus *BusConn) {
 		bus.opts = append(bus.opts, []nats.Option{
