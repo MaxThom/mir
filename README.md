@@ -11,125 +11,125 @@
 
 <br/>
 <p align="center">
-  <a href="https://github.com/maxthom/mir/blob/main/LICENSE">
-    <img src="https://img.shields.io/github/license/maxthom/mir">
-  </a>
-  <img src="https://img.shields.io/github/repo-size/maxthom/mir">
+  <img src="https://img.shields.io/badge/Go-00ADD8?style=for-the-badge&logo=go&logoColor=white">
+  <img src="https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black">
+  <br/>
+  <img src="https://img.shields.io/badge/Ask%20me-anything-1abc9c.svg">
+  <img src="https://img.shields.io/badge/Maintained%3F-yes-green.svg">
 </p>
 
 # What is Mir Iot Hub?
 
-Enable highly secure and reliable communication between your Internet of Things (IoT) application and the devices it manages. Mur IoT Hub provides a cloud-hosted solution back end to connect virtually any device. Extend your solution from the cloud to the edge with per-device authentication, built-in device management, device observability, device data, and scaled provisioning.
+Enable highly secure and reliable communication between your Internet of Things (IoT) application and your devices. Mir IoT Hub provides a cloud-hosted solution back end to connect virtually any device. Extend your solution from the cloud to the edge with per-device authentication, built-in device management, device telemetry and control, and scaled provisioning.
 
 Mir IoT Hub, act as your command center:
 
 - processes telemetry and commands with two ways communication
-- automatically generate dashboards to monitor data
-- uses device twin for configuration management
-- over the air update
+- automatically generate dashboards to view data and monitor devices and system
+- digital twin for configuration management of individual devices
 - lightweight and infinitely scalable
 
-# Content
+See the [documentation](https://book.mirhub.io/) for more information.
 
-- [Features](#features)
-- [Documentation](#documentation)
-- [Installation](#installation)
-- [Getting started](#getting-started)
-  - [Device side apps](#device-side-apps)
-  - [Server side apps](#server-side-apps)
-- [Modules](#modules)
-  - [Device Twin module](#device-twin-module)
-  - [Telemetry module](#telemetry-module)
-  - [Command module](#command-module)
-  - [Observability module](#observability-module)
-  - [User defined module](#user-defined-module)
-- [Road map](#roadmap)
-- [License](#license)
+# Local Development & Testing
 
-# Features
+## Pre-requisites
 
-# Documentation
+To run Mir locally, you need to have the following installed:
 
-# Installation
+- [Docker](https://docs.docker.com/get-docker/)
+- [Docker Compose](https://docs.docker.com/compose/install/)
+- [Go](https://golang.org/doc/install)
+- [Rust](https://www.rust-lang.org/tools/install)  (To run Mir Book)
+- [Make](https://www.gnu.org/software/make/) (Optional, for common tasks)
 
-# Getting started
 
-## Device side apps
+Once you have the above installed, you can run the following commands to complete installation:
 
-## Server side apps
+```bash
+# Linux
+./scripts/tooling.sh
 
-# Modules
+# Windows
+go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+go install github.com/air-verse/air@latest
+go install github.com/bufbuild/buf/cmd/buf@latest
+cargo install mdbook
+```
 
-## Device Twin module
+## Running
 
-## Telemetry module
+Mir relies on a number of services to run:
 
-## Command Module
+- InfluxDB: A time-series database for storing telemetry data
+- SurrealDB: A key-value store for storing device data
+- Prometheus: A monitoring and alerting toolkit
+- Grafana: A visualization tool for monitoring data
+- NatsIO: A message broker for communication between device and services
 
-## Observability module
+These services are defined in the [docker compose](./infra/dev/compose.yaml) file. To start the services, run the following command:
 
-## User defined module
+```bash
+make docker-infra
+# or
+docker compose -f infra/dev/compose.yaml up --force-recreate
+```
 
-# Roadmap
+To build Mir binary, run the following command:
 
-- [x] Mir Boilerplate
-  - [x] project layout
-  - [x] config management
-  - [x] basic cli
-  - [x] log setup
-  - [x] os signal handled
-  - [x] prometheus metrics
-  - [x] api structure defined
-  - [x] health endpoints
-  - [x] api unit tests
-- [x] MirCli
-  - [x] one cli to rule them all
-- [ ] MirTui, the terminal ui
-  - [x] main layout
-  - [x] device create window
-  - [x] device list and edit window
-  - [ ] telemetry windows
-  - [ ] command windows
-  - [ ] manifest windows
-- [x] Server side sdk to interact with the hub
-  - [ ] api that receive the bytes and must be deserialize using protoc code gen
-  - [x] offers utils such as api routes, disk or cli ways to upload a bpb
-  - [x] go-sdk
-  - [ ] rust-sdk
-  - [ ] python-sdk
-- [x] Core
-  - [x] create new devices
-  - [x] list, edit and delete devices
-  - [x] hearthbeat for devices
-- [ ] ProtoProxy, the templated data engine
-  - [x] proto library from protobuff to influx line protocol at runtime
-  - [ ] proto schema to grafana dashboard
-  - [ ] proto data to timeseries db
-- [ ] ProtoStore, to store proto schema
-  - [ ] can run standalone
-  - [ ] can run embeded
-  - [ ] protoproxy can have an internal and external store
-- [ ] Twin, the Digital Twin module
-  - [ ] desired properties
-  - [ ] reported properties
-- [ ] Client side sdk to interact with Mir
-  - [x] go-sdk
-  - [ ] rust-sdk
-  - [ ] python-sdk
-- [ ] MirUI, the web ui
-- [ ] The obersavility module
-- [ ] Swarm, the device simulator sdk
-- [ ] MirOperator, Kubernetes operator that manage the deployments and scaling
-- [ ] Installation methods
-  - [ ] docker & compose
-  - [ ] helm chart
-  - [ ] helm chart with MirOperator
+```bash
+make build
+# or
+go build -o bin/mir cmds/mir/main.go
+```
+
+Mir binary come with a powerful CLI and TUI. It act as both the client and the server.
+Once started as the server, open another terminal and you can use the CLI to interact with the system..
+Use the `swarm` command to simulate a device connecting to the server to explore Mir ecosystem.
+
+```bash
+# Server
+mir serve
+# TUI
+mir
+# CLI
+mir -h
+# to interact with devices
+mir device
+# to visualize the telemetry
+mir telemetry
+# to send command to devices
+mir command
+# to explore and upload schemas
+mir schema
+# to simulate a device connecting to the server
+mir swarm
+```
+
+Tips (Linux), you can run `make mir-install` to install the binary to your system.
+
+To integrate your own device to the system, visit the [device tutorial](https://book.mirhub.io/using_mir/device_sdk.html).
+
+### Development
+
+Mir is built with a module architecture. Each module is a standalone service that can be run independently or combined with the CLI.
+The modules are:
+
+- Core:  handles the management of devices
+- Telemetry: handles the telemetry ingestion
+- Command: handles the command delivery
+- Configuration: handles the configuration of devices
+
+The repository comes with a set of vscode or zed task to run each module independently.
+Each module is run through [Air](https://github.com/air-verse/air) for hot reloading.
+Run the task `Mir local dev` to start developing. For Zed, each task must be started individually as many tasks is not yet supported.
+A set of tmux layouts can be found in the [tmux](./tmux) directory to run the modules if using tmux and tmuxifier.
+
+Visit the `Makefile` to see the available commands and scripts to help develop locally.
+
+Visit the [examples directory](./examples/) to see how to integrate your own device to the system [device example](./examples/telemetry_device/main.go) or build new modules.
+
 
 # License
 
-Source code for MirHub is licensed under a MIT license
-
-# References
-
-- [table](https://github.com/chronosphereio/calyptia-go-bubble-table/tree/main)
-- [lipgloss](https://github.com/charmbracelet/lipgloss)
+Source code for MirHub is licensed under a Apache license 2.0
