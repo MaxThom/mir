@@ -1,0 +1,49 @@
+// Static tasks configuration.
+//
+[
+  {
+    "label": "Mir core run",
+    "command": "sleep 5 && air -c .air/core.toml",
+    "use_new_terminal": true,
+    "allow_concurrent_runs": false,
+    "reveal": "always",
+    "hide": "never",
+    "shell": "system"
+  },
+  {
+    "label": "Mir tlm run",
+    "command": "sleep 5 && air -c .air/prototlm.toml",
+    "use_new_terminal": true,
+    "allow_concurrent_runs": false,
+    "reveal": "always",
+    "hide": "never",
+    "shell": "system"
+  },
+  {
+    "label": "Mir cmd run",
+    "command": "sleep 5 && air -c .air/protocmd.toml",
+    "use_new_terminal": true,
+    "allow_concurrent_runs": false,
+    "reveal": "always",
+    "hide": "never",
+    "shell": "system"
+  },
+  {
+    "label": "Mir infra run",
+    "command": "docker compose -f infra/dev/compose.yaml up --force-recreate",
+    "use_new_terminal": true,
+    "allow_concurrent_runs": false,
+    "reveal": "always",
+    "hide": "never",
+    "shell": "system"
+  },
+  {
+    "label": "Mir book run",
+    "command": "cd book && mdbook serve -p 50051",
+    "use_new_terminal": true,
+    "allow_concurrent_runs": false,
+    "reveal": "always",
+    "hide": "never",
+    "shell": "system"
+  }
+]

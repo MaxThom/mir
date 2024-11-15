@@ -15,7 +15,6 @@ protogen:
 
 # builds
 build:
-	go build -o bin/tui cmds/tui/main.go
 	go build -o bin/mir cmds/mir/main.go
 	go build -o bin/core cmds/core/main.go
 	go build -o bin/prototlm cmds/prototlm/main.go
@@ -46,7 +45,7 @@ mir-book:
 	cd book && mdbook serve -p 5001
 
 # install
-install-mir: build-mir
+mir-install: build-mir
 	sudo cp bin/mir /usr/local/bin/mir
 
 # utils

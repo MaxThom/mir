@@ -6,8 +6,8 @@
             "type": "shell",
             "dependsOn": [
                 "Mir core run", 
-                "Mir prototlm run",
-                "Mir protocmd run",
+                "Mir tlm run",
+                "Mir cmd run",
                 "Mir infra run",
                 "Mir book run"
             ],
@@ -16,7 +16,7 @@
         {
             "label": "Mir core run",
             "type": "shell",
-            "command": "sleep 5 && make air-core",
+            "command": "sleep 5 && air -c .air/core.toml",
             "problemMatcher": [],
             "group": {
                 "kind": "none",
@@ -33,9 +33,9 @@
             },
         },
         {
-            "label": "Mir prototlm run",
+            "label": "Mir tlm run",
             "type": "shell",
-            "command": "sleep 5 && make air-prototlm",
+            "command": "sleep 5 && air -c .air/prototlm.toml",
             "problemMatcher": [],
             "group": {
                 "kind": "none",
@@ -52,9 +52,9 @@
             },
         },
         {
-            "label": "Mir protocmd run",
+            "label": "Mir cmd run",
             "type": "shell",
-            "command": "sleep 5 && make air-protocmd",
+            "command": "sleep 5 && air -c .air/protocmd.toml",
             "problemMatcher": [],
             "group": {
                 "kind": "none",
@@ -73,7 +73,7 @@
         {
             "label": "Mir infra run",
             "type": "shell",
-            "command": "make docker-infra",
+            "command": "docker compose -f infra/dev/compose.yaml up --force-recreate",
             "problemMatcher": [],
             "group": {
                 "kind": "none",
@@ -92,7 +92,7 @@
         {
             "label": "Mir book run",
             "type": "shell",
-            "command": "make mir-book",
+            "command": "cd book && mdbook serve -p 5001",
             "problemMatcher": [],
             "group": {
                 "kind": "none",
