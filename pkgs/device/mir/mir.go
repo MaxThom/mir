@@ -15,7 +15,6 @@ import (
 	"github.com/nats-io/nats.go"
 	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
@@ -48,7 +47,7 @@ type Cfg struct {
 
 type cmdHandlerValue struct {
 	t reflect.Type
-	h func(protoreflect.ProtoMessage) (protoreflect.ProtoMessage, error)
+	h func(proto.Message) (proto.Message, error)
 }
 
 const ()
@@ -194,11 +193,11 @@ func (m Mir) marshalTelemetrySchema() ([]byte, error) {
 }
 
 // Send proto telemetry to Mir Server
-func (m Mir) SendTelemetry(t protoreflect.ProtoMessage) error {
+func (m Mir) SendTelemetry(t proto.Message) error {
 	return tlm_client.PublishTelemetryStream(m.b, m.cfg.DeviceId, t)
 }
 
-func (m Mir) HandleCommand(t protoreflect.ProtoMessage, handler func(protoreflect.ProtoMessage) (protoreflect.ProtoMessage, error)) {
+func (m Mir) HandleCommand(t proto.Message, handler func(proto.Message) (proto.Message, error)) {
 	m.cmdHandlers[string(t.ProtoReflect().Descriptor().FullName())] = cmdHandlerValue{
 		t: reflect.TypeOf(t).Elem(),
 		h: handler,

@@ -45,8 +45,10 @@ const (
 // device built and launched !
 // Configure logging, device authentication and config loading.
 func Builder() builder {
+	tar := "nats://127.0.0.1:4222"
 	return builder{
 		schema: new(descriptorpb.FileDescriptorSet),
+		target: &tar,
 	}
 }
 
