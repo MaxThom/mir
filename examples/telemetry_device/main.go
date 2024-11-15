@@ -13,8 +13,8 @@ import (
 	"github.com/maxthom/mir/internal/libs/boiler/mir_signals"
 	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
 	"github.com/maxthom/mir/pkgs/device/mir"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
-	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 func main() {
@@ -42,8 +42,11 @@ func main() {
 	}
 	l := m.Logger()
 
-	m.HandleCommand(&telemetry_devicev1.ChangePower{},
-		func(protoreflect.ProtoMessage) (protoreflect.ProtoMessage, error) {
+	m.HandleCommand(
+		&telemetry_devicev1.ChangePower{},
+		func(p proto.Message) (proto.Message, error) {
+			cmd := p.(*telemetry_devicev1.ChangePower)
+			m.Logger().Info().Int32("power", cmd.Power).Msg("Change power command received")
 			return &telemetry_devicev1.ChangePowerResponse{Success: true}, nil
 		},
 	)
@@ -125,7 +128,6 @@ func main() {
 				},
 			}
 			m.SendTelemetry(&data)
-			//	l.Debug().Str("module", "telemetry").Any("data", data).Msg("send tlm")
 		}
 	}()
 

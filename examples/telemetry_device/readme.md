@@ -1,17 +1,12 @@
-https://github.com/protocolbuffers/protobuf-go
 
-protoc --go_out=. --go_opt=paths=source_relative --descriptor_set_out=example.pb example.proto
+# Device Telemetry Example
 
-// reflect/protoreflect: Package protoreflect provides interfaces to dynamically manipulate protobuf messages.
-// reflect/protoregistry: Package protoregistry provides data structures to register and lookup protobuf descriptor types.
-// reflect/protodesc: Package protodesc provides functionality for converting descriptorpb.FileDescriptorProto messages to/from the reflective protoreflect.FileDescriptor.
-// reflect/protopath: Package protopath provides a representation of a sequence of protobuf reflection operations on a message.
-// reflect/protorange: Package protorange provides functionality to traverse a protobuf message.
-//types/descriptorpb: Package descriptorpb is the generated package for google/protobuf/descriptor.proto.
+This example demonstrate how to use the Mir SDK:
 
+- Connect to the system
+- Send telemetry data
+- Receive commands
 
-descriptorpb: Best for schema inspection and working with the serialized form of descriptors.
-reflect: Ideal for runtime manipulation and introspection of protobuf messages.
-protodesc: Converts between descriptorpb.FileDescriptorProto messages and the reflective protoreflect.FileDescriptor.
+To edit the schema, update `./proto/telemetry_device/v1` and run `make protogen` or `buf generate --clean --template examples/telemetry_device/buf.gen.yaml` from root directory.
 
-protoc command.proto telemetry.proto utils.proto --descriptor_set_out=./gen/schema.bproto --include_imports
+Start the Mir server using the cli or tasks. Start this example using `go run main.go`.
