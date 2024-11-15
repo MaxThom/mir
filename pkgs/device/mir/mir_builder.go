@@ -21,6 +21,7 @@ type builder struct {
 	logWriters          []io.Writer
 	schema              *descriptorpb.FileDescriptorSet
 	telemetryModuleFlag bool
+	excludeMirProtoFlag bool
 }
 
 type configFormat string
@@ -155,6 +156,11 @@ func (b builder) SchemaProto(s ...*descriptorpb.FileDescriptorProto) builder {
 	return b
 }
 
+func (b builder) ExcludeMirSchema() builder {
+	b.excludeMirProtoFlag = true
+	return b
+}
+
 // Return the Mir device object to
 // be used to interact with the system
 // TODO returns errors instead of logs, use error.wrap and error.join
@@ -221,11 +227,13 @@ func (b builder) Build() (*Mir, error) {
 			descriptorpb.File_google_protobuf_descriptor_proto,
 		),
 	)
-	b.schema.File = append(b.schema.File,
-		protodesc.ToFileDescriptorProto(
-			devicev1.File_mir_device_v1_mir_proto,
-		),
-	)
+	if !b.excludeMirProtoFlag {
+		b.schema.File = append(b.schema.File,
+			protodesc.ToFileDescriptorProto(
+				devicev1.File_mir_device_v1_mir_proto,
+			),
+		)
+	}
 
 	reg, err := protodesc.NewFiles(b.schema)
 	if err != nil {
