@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -153,4 +155,44 @@ func getTargetFromNameNs(n string) Target {
 		}
 	}
 	return Target{}
+}
+
+func RecreateFS(embedFS fs.FS, targetDir string) error {
+	if err := os.MkdirAll(targetDir, 0755); err != nil {
+		return fmt.Errorf("failed to create target directory: %w", err)
+	}
+
+	return fs.WalkDir(embedFS, ".", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		targetPath := filepath.Join(targetDir, path)
+
+		if d.IsDir() {
+			return os.MkdirAll(targetPath, 0755)
+		}
+
+		if err := os.MkdirAll(filepath.Dir(targetPath), 0755); err != nil {
+			return fmt.Errorf("failed to create parent directories for %s: %w", targetPath, err)
+		}
+
+		src, err := embedFS.Open(path)
+		if err != nil {
+			return fmt.Errorf("failed to open embedded file %s: %w", path, err)
+		}
+		defer src.Close()
+
+		dst, err := os.Create(targetPath)
+		if err != nil {
+			return fmt.Errorf("failed to create file %s: %w", targetPath, err)
+		}
+		defer dst.Close()
+
+		if _, err := io.Copy(dst, src); err != nil {
+			return fmt.Errorf("failed to copy contents to %s: %w", targetPath, err)
+		}
+
+		return nil
+	})
 }
