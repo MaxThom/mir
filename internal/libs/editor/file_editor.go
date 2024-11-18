@@ -12,6 +12,24 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+func EditRawDocument(data *[]byte, headers []string) error {
+	ext := "json"
+	comment := "// "
+
+	for i := range headers {
+		headers[i] = comment + headers[i] + "\n"
+	}
+	bData := append([]byte(strings.Join(headers, "")), *data...)
+
+	content, err := interactiveDocumentEdit(bData, "mir_*."+ext)
+	if err != nil {
+		return fmt.Errorf("can't create or edit temporary file to edit resources: %w", err)
+	}
+	*data = content
+
+	return nil
+}
+
 func EditJsonDocument[T any](data T, headers []string) error {
 	ext := "json"
 	comment := "// "
