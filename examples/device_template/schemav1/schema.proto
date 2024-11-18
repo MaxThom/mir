@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package schemav1;
+option go_package = "<project_path>/schemav1";
+
+import "mir/device/v1/mir.proto";
+
+message Telemetry {
+	option (mir.device.v1.message_type) = MESSAGE_TYPE_TELEMETRY;
+
+	int64 ts = 1 [(mir.device.v1.timestamp) = TIMESTAMP_TYPE_NANO];
+	int32 temperature = 2;
+	int32 pressure = 3;
+	int32 humidity = 4;
+}
+
+message Command {
+	option (mir.device.v1.message_type) = MESSAGE_TYPE_TELECOMMAND;
+
+	int64 sec = 1;
+}
+
+message CommandResponse {
+  bool success = 1;
+}

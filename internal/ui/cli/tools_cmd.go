@@ -124,5 +124,17 @@ func (d *DeviceTemplateCmd) Run() error {
 	if err != nil {
 		return fmt.Errorf("failed to create sub filesystem: %w", err)
 	}
-	return RecreateFS(subFS, d.ContextPath)
+	if err = RecreateFS(subFS, d.ContextPath); err != nil {
+		return fmt.Errorf("failed to create device template project: %w", err)
+	}
+
+	cmd = exec.Command("go", "mod", "tidy")
+	cmd.Dir = d.ContextPath
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to tidy up dependencies: %v", err)
+	}
+
+	return nil
 }
