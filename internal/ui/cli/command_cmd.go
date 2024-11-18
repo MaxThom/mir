@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/maxthom/mir/internal/clients/cmd_client"
+	"github.com/maxthom/mir/internal/libs/editor"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	cmd_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cmd_api"
 	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
@@ -33,6 +34,7 @@ type CommandSendCmd struct {
 	Command          string `short:"n" help:"command name to send"`
 	ShowJsonTemplate bool   `short:"j" help:"show json template for command"`
 	Payload          string `short:"p" help:"payload to send in json. use single quote for easier writing. e.g. '{\"key\":\"value\"}'"`
+	Edit             bool   `short:"e" help:"Interactive edit of command payload" default:"false"`
 	RefreshSchema    bool   `short:"r" help:"Refresh schema from device even if in store" default:"false"`
 	DryRun           bool   `help:"dry run command" default:"false"`
 	NoValidation     bool   `help:"do not validate command with device's schema. Only for protobuf encoding" default:"false"`
@@ -147,14 +149,11 @@ func (d *CommandSendCmd) Validate() error {
 		d.Target = getTargetFromNameNs(d.NameNs)
 	}
 
-	if d.Command == "" {
-		err.Details = append(err.Details, "Must specify command name")
-	}
 	if piped, ok := ReadFromPipedStdIn(); ok {
 		d.Payload = piped
 	}
-	if d.Payload == "" && !d.ShowJsonTemplate {
-		err.Details = append(err.Details, "Must set payload. Use -j to see json template")
+	if d.Command != "" && d.Payload == "" && !d.ShowJsonTemplate && !d.Edit {
+		err.Details = append(err.Details, "Must set payload. Use -j to see json template or -e for interactive edit.")
 	}
 
 	if len(err.Details) > 0 {
@@ -171,6 +170,20 @@ func (d *CommandSendCmd) Run(c CLI) error {
 		return e
 	}
 	defer msgBus.Close()
+
+	if d.Command == "" {
+		listCmd := CommandListCmd{
+			Target:           d.Target,
+			NameNs:           d.NameNs,
+			RefreshSchema:    d.RefreshSchema,
+			ShowJsonTemplate: d.ShowJsonTemplate,
+		}
+		return listCmd.Run(c)
+	}
+
+	if d.Edit {
+		d.ShowJsonTemplate = true
+	}
 
 	req := &cmd_apiv1.SendCommandRequest{
 		Targets: &core_apiv1.Targets{
@@ -210,6 +223,9 @@ func (d *CommandSendCmd) Run(c CLI) error {
 		for k, v := range resp.GetOk().DeviceResponses {
 			if v.Error != "" {
 				tpls[string(v.Error)] = append(tpls[string(v.Error)], k)
+				if d.Edit {
+					return fmt.Errorf("Cannot edit json template with error response: %s", v.Error)
+				}
 			} else {
 				var prettyJSON bytes.Buffer
 				if err = json.Indent(&prettyJSON, v.Payload, "", "  "); err != nil {
@@ -226,6 +242,9 @@ func (d *CommandSendCmd) Run(c CLI) error {
 				sb.WriteString(k)
 			}
 		} else {
+			if d.Edit {
+				return errors.New("Cannot edit multiple json templates. Refine targets to get single json or use -j to see.")
+			}
 			i := 1
 			for k, v := range tpls {
 				sb.WriteString(fmt.Sprintf("%d. ", i))
@@ -237,8 +256,34 @@ func (d *CommandSendCmd) Run(c CLI) error {
 			}
 		}
 
-		fmt.Println(sb.String())
-		return nil
+		if d.Edit {
+			header := []string{
+				"Edit the command payload below",
+				"On exit, the payload will be sent to the selected targets",
+			}
+			payload := []byte(sb.String())
+			err = editor.EditRawDocument(&payload, header)
+			req.ShowTemplate = false
+			req.Payload = payload
+			resp, err = cmd_client.PublishSendCommandRequest(msgBus, req)
+			if err != nil {
+				e := MirRequestError{Route: "command.send", e: err}
+				return e
+			}
+			if resp.GetError() != nil {
+				e := MirResponseError{
+					Route: "command.send",
+					e: MirHttpError{
+						Code:    resp.GetError().GetCode(),
+						Message: resp.GetError().GetMessage(),
+						Details: resp.GetError().GetDetails(),
+					}}
+				return e
+			}
+		} else {
+			fmt.Println(sb.String())
+			return nil
+		}
 	}
 
 	var sb strings.Builder

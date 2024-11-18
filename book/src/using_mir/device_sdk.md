@@ -13,7 +13,7 @@ go mod init github.com/<user/org>/<project>
 ## Access Mir Device SDK
 
 Go packages are managed in GitHub repository.
-Since the repository is private, you need to adjust your git configuration before we can execute this line.
+Since the repository is private, you need to adjust your git configuration before you can execute this line.
 
 ```bash
 go get github.com/maxthom/mir/
@@ -27,8 +27,8 @@ First of, we need to tell git to use the SSH protocol to access the GitHub repos
   insteadOf = https://github.com
 ```
 
-Even though packages are stored in Git repository, they get downloaded through Go mirror.
-Therefor, we must tell Go to download it directly from the Git repository.
+Even though packages are stored in Git repositories, they get downloaded through Go mirror.
+Therefore, we must tell Go to download it directly from the Git repository.
 
 ```bash
 go env -w GOPRIVATE=github.com/maxthom/mir
@@ -67,8 +67,9 @@ go install github.com/bufbuild/buf/cmd/buf@latest
 At the core of the devices, it is the device unique identifier or `deviceId`.
 
 It is the responsibility of the dev/user to manage those ids. In a near future, the system will provide different generation methods and helpers such as UUID, MAC address, load from files, etc.
-In this example, the deviceId will be `weather_dev`.
+In the mean time, it is yours to implement. We can have many deployments of the same device code as long as each device have a unique id.
 
+In this example, the deviceId will be hardcoded to `weather_dev`.
 The SDK use a builder pattern to get started:
 
 ```go
@@ -154,7 +155,9 @@ status:
 
 *! Note: When creating a device by the SDK, the device is automatically set in the `default` namespace and use deviceId for name.*
 
-You can use `mir device edit weather_dev/default` to interactively edit the device twin. Rename it, change its namespace, add labels, etc. The CLI offers many commands to interact with devices. Yours to explore 🛰️.
+You can use `mir device edit weather_dev/default` to interactively edit the device twin.
+Rename it, change its namespace, add labels, etc. Only the Meta, Spec and Properties can be edited. Status is reserved for the system or extensions.
+The CLI offers many commands to interact with devices. Yours to explore 🛰️.
 
 
 ### Device Communication
@@ -175,8 +178,11 @@ On top of Protobuf, Mir provide a predefined schema to annotate Protobuf message
 
 For this next part, we will define a Mir protobuf schema to define communication between your device and the server.
 
-First of, install Protobuf compiler:
+First of, install Protobuf compiler if not done earlier:
 ```bash
+# Mir CLI
+mir tools install
+# or
 go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 ```
 
@@ -213,7 +219,7 @@ You will now have this file structure:
     └── schema.proto
 ```
 
-- `mir.proto`: contains Mir metadata. This file should be copy pasted from the [Mir Repository](https://github.com/MaxThom/mir/blob/main/pkgs/device/proto/mir/device/v1/mir.proto) or generated from the CLI. It is important to respect the file structure for this one
+- `mir.proto`: contains Mir metadata. This file should be copy pasted from the [Mir Repository](https://github.com/MaxThom/mir/blob/main/pkgs/device/proto/mir/device/v1/mir.proto) or generated from the CLI. It is important to respect the file structure for this one.
 - `schema.proto`: contains your device schema. This file and more should be created by you.
 
 schema.proto
@@ -263,6 +269,7 @@ func main() {
 		panic(err)
 	}
 
+  // Returns a WaitGroup for proper shutdown on context cancellation
 	wg, err := m.Launch(ctx)
 	if err != nil {
 		panic(err)
@@ -271,11 +278,14 @@ func main() {
 	osSignal := make(chan os.Signal, 1)
 	signal.Notify(osSignal, syscall.SIGINT, syscall.SIGTERM)
 	<-osSignal
+
+  cancel()
+	wg.Wait()
 ```
 
-Protobuf needs a bit of getting used to, but it is a powerful tool. The generated code will help you to interact with the server in a type safe way as well, give high performance and provides a great developper experience.
+Protobuf needs a bit of getting used to, but it is a powerful tool. The generated code will help you interact with the server in a type safe way, give high performance and provides a great developper experience.
 
-You will used the code generation command often so it is a good idea to add it to a Makefile, task or a script.
+You will use the code generation command often so it is a good idea to add it to a Makefile, task or a script.
 
 From this point on, everything is setup to start building!
 
@@ -399,7 +409,7 @@ schemav1.EnvTlm{} localhost:3000/explore
 Click on the link to open Grafana and visualize the data.
 
 Voila! You have successfully sent telemetry data to the server. Add more message to the schema and send more data!
-Use the CLI to quickly get link to the telemetry data in Grafana and use the generated query to create powerful dashboard in Grafana.
+Use the CLI to quickly get link to the telemetry data in Grafana and use the generated query to create powerful dashboard.
 
 *! Note: All [protobuf definition](https://protobuf.dev/programming-guides/proto3/) are supported except OneOf*
 
@@ -438,7 +448,7 @@ Each command takes a callback function that will be called when the server sends
 ```go
 m.HandleCommand(
  	&schemav1.ChangeDataRate{}, // Empty struct of the command type
- 	func(c proto.Message) (proto.Message, error) { // Handler function
+ 	func(c proto.Message) (proto.Message, error) {
  		cmd := c.(*schemav1.ChangeDataRate) // Cast the command to the correct type
 
 		/* Command processing...*/
@@ -535,8 +545,8 @@ Our device is now sending periodic telemetry and can receive one command to chan
 mir command list weather_dev
   schemav1.ChangeDataRate{}
 
-# If you don't see the change in your schema, add the force refresh flag.
-# Available on all commands
+# If you don't see the change in your schema, add the refresh flag.
+# Available on most CLI commands
 mir command list weather_dev -r
   schemav1.ChangeDataRate{}
 
