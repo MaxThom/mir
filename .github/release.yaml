@@ -1,6 +1,9 @@
 changelog:
   categories:
-    - title: "🚀 Features"
+    - title: "🛰️ Overview"
+      labels:
+        - "-"
+    - title: "🚀 Features/Enhancements"
       labels:
         - "feature"
         - "enhancement"
@@ -9,19 +12,15 @@ changelog:
         - "fix"
         - "bugfix"
         - "bug"
+    - title: "🖥️ Ergonomics"
+      labels:
+        - "ergonomics"
     - title: "🏗️ Breaking Changes"
       labels:
         - "breaking-change"
-    - title: "📦 Dependencies"
-      labels:
-        - "dependencies"
     - title: "📚 Documentation"
       labels:
         - "documentation"
-    - title: "🧰 Maintenance"
-      labels:
-        - "maintenance"
-        - "chore"
     - title: "⚡ Performance"
       labels:
         - "performance"
