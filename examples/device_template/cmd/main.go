@@ -14,7 +14,7 @@ func main() {
 	m, err := mir.Builder().
 		DeviceId("weather_dev").
 		Target("nats://127.0.0.1:4222").
-		Schema(schemav1.File_schema_proto).
+		// Schema(schemav1.File_schema_proto).
 		Build()
 	if err != nil {
 		panic(err)

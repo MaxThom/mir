@@ -38,12 +38,12 @@ Mir relies on a number of services to run:
 - Grafana: A visualization tool for monitoring data
 - NatsIO: A message broker for communication between device and services
 
-These services are defined in the [docker compose](./infra/dev/compose.yaml) file. To start the services, run the following command:
+These services are defined in the [docker compose](./infra/local/compose.yaml) file. To start the services, run the following command:
 
 ```bash
 make docker-infra
 # or
-docker compose -f infra/dev/compose.yaml up --force-recreate
+docker compose -f infra/local/compose.yaml up --force-recreate
 # or VsCode/Zed task
 Mir infra dev
 ```
