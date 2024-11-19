@@ -5,3 +5,4 @@ tmp/
 !.air/*.toml
 .tmp/
 book/book/
+.release/

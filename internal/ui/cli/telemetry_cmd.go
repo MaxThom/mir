@@ -15,7 +15,7 @@ import (
 // TODO set yaml indent to two spaces
 // TODO check if json to remove key value pair should be NONE or NULL. check json doc
 type TelemetryCmd struct {
-	List TelemetryListCmd `cmd:"" help:"Explore device telemetry"`
+	List TelemetryListCmd `cmd:"" aliases:"ls" help:"Explore device telemetry"`
 }
 
 type TelemetryListCmd struct {
