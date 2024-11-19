@@ -58,7 +58,7 @@ dev-tx:
 
 # docker
 docker-infra:
-	docker compose -f infra/dev/compose.yaml up --force-recreate
+	docker compose -f infra/local/compose.yaml up --force-recreate
 
 # air
 air-core:
