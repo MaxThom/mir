@@ -19,7 +19,7 @@ import (
 
 // TODO set yaml indent to two spaces
 type DeviceCmd struct {
-	List   DeviceListCmd   `cmd:"" help:"List devices"`
+	List   DeviceListCmd   `cmd:"" aliases:"ls" help:"List devices"`
 	Create DeviceCreateCmd `cmd:"" help:"Create a new device"`
 	Update DeviceUpdateCmd `cmd:"" help:"Update a device"`
 	Edit   DeviceEditCmd   `cmd:"" help:"Interactive editing of devices"`
