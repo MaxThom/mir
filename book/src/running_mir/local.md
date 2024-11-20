@@ -48,6 +48,19 @@ docker compose -f infra/local/compose.yaml up --force-recreate
 Mir infra dev
 ```
 
+```bash
+# Grafana       <user>///<password>
+localhost:3000 # admin///mir-operator
+# InfluxDB
+localhost:8086 # admin///mir-operator
+# SurrealDB
+localhost:8000 # root///root
+# Prometheus
+localhost:9090
+# NatsIO
+localhost:8222
+```
+
 To build Mir binary, run the following command:
 
 ```bash
