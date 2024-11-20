@@ -15,7 +15,7 @@ type InfraCmd struct {
 	Down  DownCmd  `cmd:"" passthrough:"" help:"Run infra docker compose down"`
 	Ps    PsCmd    `cmd:"" passthrough:"" help:"Run infra docker compose ps"`
 	Rm    RmCmd    `cmd:"" passthrough:"" help:"Run infra docker compose rm"`
-	Write WriteCmd `cmd:"" help:"Write to disk Mir set of docker compose"`
+	Print PrintCmd `cmd:"" help:"Write to disk Mir set of docker compose"`
 }
 
 type UpCmd struct {
@@ -34,7 +34,7 @@ type RmCmd struct {
 	Args []string `arg:"" optional:"" help:"Docker compose rm arguments. Will be passed on."`
 }
 
-type WriteCmd struct {
+type PrintCmd struct {
 	Path string `short:"p" help:"Write path for compose files" default:"."`
 }
 
@@ -114,7 +114,7 @@ func (d *DownCmd) Run() error {
 	return errs
 }
 
-func (d *WriteCmd) Validate() error {
+func (d *PrintCmd) Validate() error {
 	err := MirInvalidInputError{
 		Details: []string{},
 	}
@@ -125,7 +125,7 @@ func (d *WriteCmd) Validate() error {
 	return nil
 }
 
-func (d *WriteCmd) Run() error {
+func (d *PrintCmd) Run() error {
 	if err := RecreateFS(infra.LocalInfraFS, path.Join(d.Path, "infra")); err != nil {
 		return fmt.Errorf("unable to write Mir compose files to %s: %w", d.Path, err)
 	}
