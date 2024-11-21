@@ -1,9 +1,12 @@
 # Running Mir
 
-Mir can be ran and distributed in the following ways:
+Choose the deployment method that best fits your environment and needs:
 
-- Local development
+- Local development of Mir by cloning the repository
+  - To work on the Mir codebase
 - Binary from Github releases
+  - simple installation
+  - for device development and testing
 - Docker *(Coming 2025)*
 - Kubernetes via Helm *(Coming 2025)*
 

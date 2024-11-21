@@ -128,8 +128,6 @@ swarm.v1.ChangePowerResponse
 }
 ```
 
-edit the command payload and send it.
-
 Congratulations! You have a running Mir setup with a virtual device, telemetry, and commands.
 
 ## Next Steps

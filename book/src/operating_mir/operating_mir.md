@@ -1,9 +1,14 @@
 # Operating Mir
 
-To  operate Mir, various tools are offered:
+Mir provides a comprehensive suite of tools to manage and operate your Mir infrastructure, each designed for specific use cases and user preferences:
 
-- **Mir CLI**: low-level and powerful tool to operate and develop the system. This can be use for script automation and development assist.
-- **Mir Web**: web application that offers higher level abstraction and user-friendly way to operate the system and devices.
-- **Grafana**: Used to visualize telemetry, monitor the system, create and manage alerts and create powerful dashboards.
+### Mir CLI
+Power user tool for development, automation and system operations. Ideal for scripting and detailed control.
 
-Each tool has is targeted audience and offers different level of interaction and automation.
+### Mir Web Console
+User-friendly web interface for day-to-day device and system management.
+
+### Grafana Integration
+Rich visualization platform for telemetry data, system monitoring, and custom dashboards.
+
+Choose the tool that matches your needs - from low-level CLI control to high-level web management. 🛠️
