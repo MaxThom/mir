@@ -1,11 +1,34 @@
-# Device SDK Tutorial
+# Getting Started with the Device SDK
 
-This walkthrough will guide you through the process of creating a new device using the Mir Device SDK.
+Welcome to the Device SDK tutorial! This guide will walk you through building and connecting your first device to the Mir IoT Hub.
 
-You will learn the anatomy of a device, how to communicate with the Mir IotHub, send telemetry and receive commands.
+## What You'll Learn
 
-Moreover, you will be taught the basic of the Mir CLI to interact and operate your fleet of devices.
+- Core concepts and structure of a Mir device
+- How to establish secure device communication
+- Implementing telemetry data streaming
+- Handling remote commands
+- Using the Mir CLI to manage your devices
 
-To work properly, you need to have the Mir Server up & running and the Mir CLI ready to be used. Follow the [Running Mir Setup](../../running_mir/binary.md).
+By the end of this tutorial, you'll have a fully functional device connected to Mir and understand the fundamental patterns for device integration.
 
-The SDK is offered in Go and will be offered in Python, C and more in the future.
+## Prerequisites
+
+Before starting:
+1. A running instance of the Mir Server
+2. The Mir CLI tool installed
+3. Basic familiarity with Go programming
+
+Follow the [Running Mir Setup](../../running_mir/binary.md) guide to prepare your environment.
+
+## SDK Language Support
+
+Currently, the SDK is available for:
+- Go
+
+Coming soon:
+- Python
+- C/C++
+- Additional languages based on community needs
+
+Let's begin building your first Mir device! 🚀

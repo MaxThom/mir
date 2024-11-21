@@ -20,7 +20,7 @@ Once you have the above installed, you can run the following commands to complet
 go install github.com/air-verse/air@latest
 go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 go install github.com/bufbuild/buf/cmd/buf@latest
-cargo install mdbook
+cargo install mdbook@0.4.40
 ```
 
 To finish:
