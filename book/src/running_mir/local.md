@@ -94,7 +94,7 @@ mir swarm
 
 Tips (Linux), you can run `make mir-install` to install the binary to your system path.
 
-To integrate your own device to the system, visit the [device tutorial](https://book.mirhub.io/using_mir/device_sdk.html).
+To integrate your own device to the system, visit the [device tutorial](../integrating_mir/device/device_sdk.html).
 
 ### Development
 
@@ -112,5 +112,3 @@ Run the task `Mir local dev` to start developing. For Zed, each task must be sta
 A set of tmux layouts can be found in the [tmux](./tmux) directory to run the modules if using tmux and tmuxifier.
 
 Visit the `Makefile` to see the available commands and scripts to help develop locally.
-
-Visit the [examples directory](./examples/) to see how to integrate your own device to the system [device example](./examples/telemetry_device/main.go) or build new modules.
