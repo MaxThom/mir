@@ -39,7 +39,7 @@
   },
   {
     "label": "Mir book run",
-    "command": "cd book && mdbook serve -p 50051",
+    "command": "cd book && mdbook serve -p 5001",
     "use_new_terminal": true,
     "allow_concurrent_runs": false,
     "reveal": "always",

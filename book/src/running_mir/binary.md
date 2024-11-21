@@ -95,6 +95,6 @@ mir schema
 mir swarm
 ```
 
-Visit [DeviceSDK](./integrating_mir/device/device_sdk.md) documentation to integrate device.
+Visit [DeviceSDK](../integrating_mir/device/device_sdk.md) documentation to integrate device.
 
-Visit [Mir CLI](./operating_mir/mir_cli_tui.md) documentation for more information.
+Visit [Mir CLI](../operating_mir/mir_cli_tui.md) documentation for more information.
