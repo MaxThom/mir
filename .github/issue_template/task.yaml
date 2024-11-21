@@ -1,0 +1,34 @@
+name: ✅ Task
+description: Create a new task
+labels: ["feature", "enhancement"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: What needs to be done?
+      description: Describe the task
+      placeholder: |
+        Description:
+
+        Checklist:
+        - [ ] Task 1
+        - [ ] Task 2
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options:
+        - High
+        - Medium
+        - Low
+    validations:
+      required: true
+
+  - type: input
+    id: due-date
+    attributes:
+      label: Due Date (optional)
+      placeholder: "YYYY-MM-DD"
