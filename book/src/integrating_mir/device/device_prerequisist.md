@@ -2,6 +2,8 @@
 
 In this section, we will intialize the project and access the Mir Device SDK.
 
+Make sure you have the Mir Server up & running and the Mir CLI ready to be used. Follow the [Running Mir Setup](../../running_mir/binary.md).
+
 ## Initialize Go project
 
 ```bash
