@@ -8,7 +8,7 @@ To run Mir locally, you need to have the following installed:
 - [Docker Compose](https://docs.docker.com/compose/install/)
 - [Go](https://golang.org/doc/install)
 - [Rust](https://www.rust-lang.org/tools/install)  (To run Mir Book)
-- [Make](https://www.gnu.org/software/make/) (Optional, for common tasks)
+- [Just](https://github.com/casey/just) (Optional, for common tasks)
 
 Once you have the above installed, you can run the following commands to complete installation:
 
@@ -21,6 +21,7 @@ go install github.com/air-verse/air@latest
 go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 go install github.com/bufbuild/buf/cmd/buf@latest
 cargo install mdbook@0.4.40
+cargo install just
 ```
 
 To finish:
@@ -41,7 +42,7 @@ Mir relies on a number of services to run:
 These services are defined in the [docker compose](./infra/local/compose.yaml) file. To start the services, run the following command:
 
 ```bash
-make docker-infra
+just infra
 # or
 docker compose -f infra/local/compose.yaml up --force-recreate
 # or VsCode/Zed task
@@ -64,7 +65,7 @@ localhost:8222
 To build Mir binary, run the following command:
 
 ```bash
-make build
+just build
 # or
 go build -o bin/mir cmds/mir/main.go
 ```
@@ -92,7 +93,7 @@ mir schema
 mir swarm
 ```
 
-Tips (Linux), you can run `make mir-install` to install the binary to your system path.
+Tips (Linux), you can run `just install` to install the binary to your system path.
 
 To integrate your own device to the system, visit the [device tutorial](../integrating_mir/device/device_sdk.html).
 
@@ -111,4 +112,4 @@ Each module is run through [Air](https://github.com/air-verse/air) for hot reloa
 Run the task `Mir local dev` to start developing. For Zed, each task must be started individually as many tasks is not yet supported.
 A set of tmux layouts can be found in the [tmux](./tmux) directory to run the modules if using tmux and tmuxifier.
 
-Visit the `Makefile` to see the available commands and scripts to help develop locally.
+Visit the `Justfile` to see the available commands and scripts to help develop locally.
