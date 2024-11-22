@@ -11,7 +11,7 @@ mir tools generate <module-path>
 This will generate the basic structure of a device project with the necessary files and folders. You will find:
 
 - schema setup in schemav1 folder
-- makefile with basic helper commands
+- justfile with basic helper commands
 - basic main.go file under cmd folder
 
 ## Ecosystem

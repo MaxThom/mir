@@ -32,6 +32,8 @@ echo "- buf"
 go install github.com/bufbuild/buf/cmd/buf@latest
 echo "- mdbook"
 cargo install mdbook@0.4.40
+echo "- just"
+cargo install just
 echo -e '\n-- Post Install --'
 echo '  ? Don''t forget to append go binaries path to path if not set (export PATH=$PATH:$(go env GOPATH)/bin)'
 echo '  ? Don''t forget to append rust binaries path to path if not set (export PATH=$PATH:$HOME/.cargo/bin)'
