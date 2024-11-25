@@ -173,9 +173,9 @@ func (c *MirProtoCache) getProtoSchemaFromDevice(deviceId string) (*proto_mir.Mi
 	err := c.m.SendRequest(mir.Command().V1Alpha().RequestSchema(deviceId, schemaResp))
 	if err != nil {
 		return nil, err
-	} else if schemaResp.GetError() != nil {
+	} else if schemaResp.GetError() != "" {
 		e := schemaResp.GetError()
-		return nil, errors.New(fmt.Sprintf("%d - %s\n%s", e.Code, e.Message, e.Details))
+		return nil, errors.New(e)
 	}
 
 	// Decompress already from using the sdk

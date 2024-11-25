@@ -7,7 +7,6 @@ import (
 	"github.com/maxthom/mir/internal/clients/device_client"
 	"github.com/maxthom/mir/internal/libs/compression/zstd"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
-	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
 	device_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/device_api"
 	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
 	"github.com/nats-io/nats.go"
@@ -26,15 +25,15 @@ func init() {
 }
 
 func SchemaRetrieveHandler(msg *nats.Msg, m *Mir) error {
+	shouldZstd := false
+	if msg.Header.Get("request-encoding") == "zstd" {
+		shouldZstd = true
+	}
 	bytes, err := proto.Marshal(m.schema)
 	if err != nil {
 		return sendReplyOrAck(m.b, msg, &device_apiv1.SchemaRetrieveResponse{
 			Response: &device_apiv1.SchemaRetrieveResponse_Error{
-				Error: &common_apiv1.Error{
-					Code:    500,
-					Message: "error occure while marshalling schema",
-					Details: []string{"500 Internal Server Error", err.Error()},
-				},
+				Error: fmt.Sprintf("error occure while marshaiing schema: %s", err.Error()),
 			},
 		}, nil, false)
 	}
@@ -43,10 +42,14 @@ func SchemaRetrieveHandler(msg *nats.Msg, m *Mir) error {
 		Response: &device_apiv1.SchemaRetrieveResponse_Schema{
 			Schema: bytes,
 		},
-	}, nil, true)
+	}, nil, shouldZstd)
 }
 
 func DefinedCommandHandler(msg *nats.Msg, m *Mir) error {
+	shouldZstd := false
+	if msg.Header.Get("request-encoding") == "zstd" {
+		shouldZstd = true
+	}
 	descName := msg.Header.Get("__msg")
 	_, err := m.schemaReg.FindDescriptorByName(protoreflect.FullName(descName))
 	if err != nil {
@@ -81,7 +84,7 @@ func DefinedCommandHandler(msg *nats.Msg, m *Mir) error {
 	if cmdResp == nil {
 		return sendReplyOrAck(m.b, msg, &devicev1.Void{}, nil, false)
 	}
-	return sendReplyOrAck(m.b, msg, cmdResp, nil, true)
+	return sendReplyOrAck(m.b, msg, cmdResp, nil, shouldZstd)
 }
 
 func sendReplyOrAck(bus *bus.BusConn, msg *nats.Msg, m protoreflect.ProtoMessage, h nats.Header, shouldZstdCompress bool) error {
@@ -100,7 +103,7 @@ func sendReplyOrAck(bus *bus.BusConn, msg *nats.Msg, m protoreflect.ProtoMessage
 			compressedBytes, err := zstd.CompressData(bResp)
 			if err == nil {
 				data = compressedBytes
-				h.Add("Content-Encoding", "zstd")
+				h.Add("content-encoding", "zstd")
 			}
 		}
 

@@ -160,7 +160,7 @@ func (s *CoreServer) Listen(ctx context.Context) {
 				continue
 			}
 
-			route := clients.Subject(msg.Subject).GetFunction()
+			route := clients.ServerSubject(msg.Subject).GetFunction()
 			l.Info().Str("route", route).Msg("core request")
 			if _, exists := channelFns[route]; !exists {
 				l.Trace().Str("route", route).Msg("route handler does not exist")
@@ -483,7 +483,7 @@ func (s *CoreServer) hearthbeatRequestHandler(ch chan nats.Msg) {
 			return
 		}
 		l.Trace().Str("route", "hearthbeat").Msg("hearthbeat device request")
-		deviceId := clients.Subject(msg.Subject).GetId()
+		deviceId := clients.ServerSubject(msg.Subject).GetId()
 		// If not in map, mean is newly online device
 		s.hearthbeatsMutex.Lock()
 		if _, ok := s.hearthbeats[deviceId]; !ok {

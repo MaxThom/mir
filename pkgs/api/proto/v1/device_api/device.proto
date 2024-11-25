@@ -16,6 +16,6 @@ message SchemaRetrieveRequest {
 message SchemaRetrieveResponse {
   oneof response {
   	bytes schema = 1; // Schema in bytes
-    common_api.v1.Error error = 2;  // HTTP like error if something went wrong
+    string error = 2; // Error in string value
   }
 }

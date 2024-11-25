@@ -193,7 +193,7 @@ func TestRequestTelemetrySchema(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if resp.GetError() != nil {
+	if resp.GetError() != "" {
 		t.Error(resp.GetError())
 	}
 

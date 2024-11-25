@@ -44,7 +44,7 @@ func (s deviceOnlineEvent) subject() string {
 
 func (s deviceOnlineEvent) handler() nats.MsgHandler {
 	return func(msg *nats.Msg) {
-		s.fn(msg, clients.Subject(msg.Subject).GetId())
+		s.fn(msg, clients.ServerSubject(msg.Subject).GetId())
 	}
 }
 
@@ -68,7 +68,7 @@ func (s deviceOfflineEvent) subject() string {
 
 func (s deviceOfflineEvent) handler() nats.MsgHandler {
 	return func(msg *nats.Msg) {
-		s.fn(msg, clients.Subject(msg.Subject).GetId())
+		s.fn(msg, clients.ServerSubject(msg.Subject).GetId())
 	}
 }
 
@@ -93,7 +93,7 @@ func (s deviceDeletedEvent) handler() nats.MsgHandler {
 	return func(msg *nats.Msg) {
 		d := &core_apiv1.Device{}
 		_ = proto.Unmarshal(msg.Data, d)
-		s.fn(msg, clients.Subject(msg.Subject).GetId(), d)
+		s.fn(msg, clients.ServerSubject(msg.Subject).GetId(), d)
 	}
 }
 
@@ -118,7 +118,7 @@ func (s deviceCreatedEvent) handler() nats.MsgHandler {
 	return func(msg *nats.Msg) {
 		d := &core_apiv1.Device{}
 		_ = proto.Unmarshal(msg.Data, d)
-		s.fn(msg, clients.Subject(msg.Subject).GetId(), d)
+		s.fn(msg, clients.ServerSubject(msg.Subject).GetId(), d)
 	}
 }
 
@@ -143,7 +143,7 @@ func (s deviceUpdatedEvent) handler() nats.MsgHandler {
 	return func(msg *nats.Msg) {
 		d := &core_apiv1.Device{}
 		_ = proto.Unmarshal(msg.Data, d)
-		s.fn(msg, clients.Subject(msg.Subject).GetId(), d)
+		s.fn(msg, clients.ServerSubject(msg.Subject).GetId(), d)
 	}
 }
 
@@ -167,6 +167,6 @@ func (s deviceCommandEvent) handler() nats.MsgHandler {
 	return func(msg *nats.Msg) {
 		d := &cmd_apiv1.SendCommandResponse_CommandResponse{}
 		_ = proto.Unmarshal(msg.Data, d)
-		s.fn(msg, clients.Subject(msg.Subject).GetId(), d)
+		s.fn(msg, clients.ServerSubject(msg.Subject).GetId(), d)
 	}
 }

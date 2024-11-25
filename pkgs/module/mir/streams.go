@@ -42,7 +42,7 @@ func (s hearthbeatStream) subject() string {
 
 func (s hearthbeatStream) handler() nats.MsgHandler {
 	return func(msg *nats.Msg) {
-		s.fn(msg, clients.Subject(msg.Subject).GetId())
+		s.fn(msg, clients.ServerSubject(msg.Subject).GetId())
 	}
 }
 
@@ -67,6 +67,6 @@ func (s telemetryStream) subject() string {
 
 func (s telemetryStream) handler() nats.MsgHandler {
 	return func(msg *nats.Msg) {
-		s.fn(msg, clients.Subject(msg.Subject).GetId(), msg.Header.Get("__msg"))
+		s.fn(msg, clients.ServerSubject(msg.Subject).GetId(), msg.Header.Get("__msg"))
 	}
 }
