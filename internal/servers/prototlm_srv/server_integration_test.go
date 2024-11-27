@@ -16,7 +16,7 @@ import (
 	"github.com/maxthom/mir/internal/externals/mng"
 	"github.com/maxthom/mir/internal/externals/ts"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
-	"github.com/maxthom/mir/internal/libs/proto/proto_mir"
+	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
 	"github.com/maxthom/mir/internal/libs/swarm"
 	"github.com/maxthom/mir/internal/libs/test_utils"
 	"github.com/maxthom/mir/internal/servers/core_srv"
@@ -195,7 +195,7 @@ func TestPublishDevicePushTelemetry(t *testing.T) {
 		t.Error(respList.GetError())
 	}
 	devDb := respList.GetOk().Devices[0]
-	originalSchema, err := proto_mir.NewMirProtoSchema(
+	originalSchema, err := mir_proto.NewMirProtoSchema(
 		prototlm_testv1.File_prototlm_test_v1_telemetry_proto,
 		descriptorpb.File_google_protobuf_descriptor_proto,
 		devicev1.File_mir_device_v1_mir_proto,
@@ -203,7 +203,7 @@ func TestPublishDevicePushTelemetry(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	storedSchema, err := proto_mir.DecompressSchema(devDb.Status.Schema.CompressedSchema)
+	storedSchema, err := mir_proto.DecompressSchema(devDb.Status.Schema.CompressedSchema)
 	if err != nil {
 		t.Error(err)
 	}
@@ -222,7 +222,7 @@ func TestPublishDevicePushTelemetry(t *testing.T) {
 	}
 
 	assert.Equal(t, reqCreate.Spec.DeviceId, devDb.Spec.DeviceId)
-	assert.Equal(t, true, proto_mir.AreSchemaEqual(originalSchema, storedSchema))
+	assert.Equal(t, true, mir_proto.AreSchemaEqual(originalSchema, storedSchema))
 	lastFetch := mir_models.AsGoTime(devDb.Status.Schema.LastSchemaFetch)
 	tspan := time.Now().UTC().Sub(lastFetch)
 	assert.Equal(t, true, tspan.Seconds() < 10)
@@ -339,11 +339,11 @@ func TestPublishDeviceSchemaAlreadyPresent(t *testing.T) {
 		t.Error(respList.GetError())
 	}
 	devDb := respList.GetOk().Devices[0]
-	decompSch, err := proto_mir.DecompressSchema(compSch)
+	decompSch, err := mir_proto.DecompressSchema(compSch)
 	if err != nil {
 		t.Error(err)
 	}
-	decompStoredSchema, err := proto_mir.DecompressSchema(devDb.Status.Schema.CompressedSchema)
+	decompStoredSchema, err := mir_proto.DecompressSchema(devDb.Status.Schema.CompressedSchema)
 	if err != nil {
 		t.Error(err)
 	}
@@ -360,7 +360,7 @@ func TestPublishDeviceSchemaAlreadyPresent(t *testing.T) {
 	}
 
 	assert.Equal(t, reqCreate.Spec.DeviceId, devDb.Spec.DeviceId)
-	assert.Equal(t, true, proto_mir.AreSchemaEqual(decompSch, decompStoredSchema))
+	assert.Equal(t, true, mir_proto.AreSchemaEqual(decompSch, decompStoredSchema))
 	assert.Equal(t, timeFetch, mir_models.AsGoTime(devDb.Status.Schema.LastSchemaFetch))
 	assert.Equal(t, 24, dpCount)
 
@@ -478,12 +478,12 @@ func TestPublishDeviceSchemaInvalid(t *testing.T) {
 		t.Error(respList.GetError())
 	}
 	devDb := respList.GetOk().Devices[0]
-	decompGoodSch, err := proto_mir.DecompressSchema(goodSch)
+	decompGoodSch, err := mir_proto.DecompressSchema(goodSch)
 	if err != nil {
 		t.Error(err)
 	}
 
-	decompStoredSchema, err := proto_mir.DecompressSchema(devDb.Status.Schema.CompressedSchema)
+	decompStoredSchema, err := mir_proto.DecompressSchema(devDb.Status.Schema.CompressedSchema)
 	if err != nil {
 		t.Error(err)
 	}
@@ -501,7 +501,7 @@ func TestPublishDeviceSchemaInvalid(t *testing.T) {
 	}
 
 	assert.Equal(t, reqCreate.Spec.DeviceId, devDb.Spec.DeviceId)
-	assert.Equal(t, true, proto_mir.AreSchemaEqual(decompGoodSch, decompStoredSchema))
+	assert.Equal(t, true, mir_proto.AreSchemaEqual(decompGoodSch, decompStoredSchema))
 	lastFetch := mir_models.AsGoTime(devDb.Status.Schema.LastSchemaFetch)
 	tspan := time.Now().UTC().Sub(lastFetch)
 	assert.Equal(t, true, tspan.Seconds() < 10)

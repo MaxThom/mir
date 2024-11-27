@@ -10,7 +10,7 @@ import (
 	"github.com/maxthom/mir/internal/clients/core_client"
 	"github.com/maxthom/mir/internal/externals/mng"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
-	"github.com/maxthom/mir/internal/libs/proto/proto_mir"
+	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
 	"github.com/maxthom/mir/internal/libs/test_utils"
 	"github.com/maxthom/mir/internal/servers/core_srv"
 	schemacache_testv1 "github.com/maxthom/mir/internal/services/schema_cache/proto_test/gen/schemacache_test/v1"
@@ -104,7 +104,7 @@ func TestPublishCmdRequest(t *testing.T) {
 	cache := NewMirProtoCache(l, mSdk)
 	id := "device_proto_cache"
 	count := 0
-	cache.AddDeviceUpdateSub(func(deviceId string, device mir_models.Device, schema proto_mir.MirProtoSchema) {
+	cache.AddDeviceUpdateSub(func(deviceId string, device mir_models.Device, schema mir_proto.MirProtoSchema) {
 		if deviceId == id {
 			count++
 
@@ -144,7 +144,7 @@ func TestPublishCmdRequest(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 	sch, _, err := cache.GetDeviceSchema(id, false)
-	ogSch, _ := proto_mir.NewMirProtoSchema(
+	ogSch, _ := mir_proto.NewMirProtoSchema(
 		schemacache_testv1.File_schemacache_test_v1_cache_proto,
 		descriptorpb.File_google_protobuf_descriptor_proto,
 		devicev1.File_mir_device_v1_mir_proto,
@@ -170,7 +170,7 @@ func TestPublishCmdRequest(t *testing.T) {
 	_, devPostUpd, err := cache.GetDeviceSchema(id, false)
 
 	// Assert
-	assert.Equal(t, true, proto_mir.AreSchemaEqual(ogSch, sch))
+	assert.Equal(t, true, mir_proto.AreSchemaEqual(ogSch, sch))
 	assert.Equal(t, devPostUpd.Meta.Labels["test"], str)
 	assert.Equal(t, 1, count)
 	cancel()

@@ -1,4 +1,4 @@
-package proto_mir
+package mir_proto
 
 import (
 	"slices"

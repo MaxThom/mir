@@ -9,7 +9,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/api/metrics"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	proto_lineprotocol "github.com/maxthom/mir/internal/libs/proto/line_protocol"
-	"github.com/maxthom/mir/internal/libs/proto/proto_mir"
+	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
 	"github.com/maxthom/mir/internal/services/schema_cache"
 	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
@@ -159,7 +159,7 @@ func (s *ProtoTlmServer) handleTelemetryStream(msg *nats.Msg, deviceId string, p
 	s.tlmStore.WriteDatapoint(lp)
 }
 
-func (s *ProtoTlmServer) handleDeviceUpdate(deviceId string, device mir_models.Device, schema proto_mir.MirProtoSchema) {
+func (s *ProtoTlmServer) handleDeviceUpdate(deviceId string, device mir_models.Device, schema mir_proto.MirProtoSchema) {
 	l.Debug().Str("device_id", deviceId).Msg("device updated, invalidating device ingesters")
 	s.devWritersLock.Lock()
 	delete(s.devWriters, deviceId)
@@ -167,7 +167,7 @@ func (s *ProtoTlmServer) handleDeviceUpdate(deviceId string, device mir_models.D
 }
 
 type schemaPerDevices struct {
-	sch        *proto_mir.MirProtoSchema
+	sch        *mir_proto.MirProtoSchema
 	err        error
 	devsId     []string
 	devsNameNs []string
@@ -224,7 +224,7 @@ func (s *ProtoTlmServer) handleTelemetryListRequest(msg *nats.Msg, req *tlm_apiv
 		}
 		found := false
 		for _, sch := range devSchemas {
-			if proto_mir.AreSchemaEqual(sch.sch, reg) {
+			if mir_proto.AreSchemaEqual(sch.sch, reg) {
 				sch.devsId = append(sch.devsId, dev.Spec.DeviceId)
 				sch.devsNameNs = append(sch.devsNameNs, dev.GetNameNamespace())
 				found = true

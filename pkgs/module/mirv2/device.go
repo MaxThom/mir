@@ -8,12 +8,13 @@ import (
 	"github.com/maxthom/mir/internal/clients/core_client"
 	"github.com/maxthom/mir/internal/clients/device_client"
 	"github.com/maxthom/mir/internal/clients/tlm_client"
-	"github.com/maxthom/mir/internal/libs/proto/proto_mir"
+	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
 	device_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/device_api"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
 )
 
+type deviceSubject string
 type deviceRoutes struct {
 	m *Mir
 }
@@ -24,9 +25,9 @@ func (m *Mir) Device() *deviceRoutes {
 }
 
 // Create a Device Route subject to liscen data from a device stream
-func (r deviceRoutes) NewSubject(module, version, function string, extra ...string) subject {
+func (r deviceRoutes) NewSubject(module, version, function string, extra ...string) deviceSubject {
 	extra = append([]string{"device", "*", module, version, function}, extra...)
-	return subject(strings.Join(extra, "."))
+	return deviceSubject(strings.Join(extra, "."))
 }
 
 // Listen to a custom stream from devices
@@ -35,7 +36,7 @@ func (r deviceRoutes) NewSubject(module, version, function string, extra ...stri
 // <version>: version of the data in the stream (v1alpha, v1, etc)
 // <function>: refer to the exact function of the stream
 // <extra>: any extra token you want to add
-func (r *deviceRoutes) Subscribe(sbj subject, h func(msg *nats.Msg, deviceId string)) error {
+func (r *deviceRoutes) Subscribe(sbj deviceSubject, h func(msg *nats.Msg, deviceId string)) error {
 	f := func(msg *nats.Msg) {
 		h(msg, clients.ServerSubject(msg.Subject).GetId())
 	}
@@ -44,12 +45,12 @@ func (r *deviceRoutes) Subscribe(sbj subject, h func(msg *nats.Msg, deviceId str
 
 // Listen to a custom stream from devices
 // Worker queue behavior means only one worker will process the message
-// User mir.NewSubject to create the subject
+// User m.Device().NewSubject() to create the subject
 // <module>: refer to the module/app your building
 // <version>: version of the data in the stream (v1alpha, v1, etc)
 // <function>: refer to the exact function of the stream
 // <extra>: any extra token you want to add
-func (r *deviceRoutes) QueueSubscribe(queue string, sbj subject, h func(msg *nats.Msg, deviceId string)) error {
+func (r *deviceRoutes) QueueSubscribe(queue string, sbj deviceSubject, h func(msg *nats.Msg, deviceId string)) error {
 	f := func(msg *nats.Msg) {
 		h(msg, clients.ServerSubject(msg.Subject).GetId())
 	}
@@ -110,7 +111,7 @@ func (r *deviceRoutes) Schema() *schemaRoute {
 }
 
 // Request device schema
-func (r *schemaRoute) Request(deviceId string) (*proto_mir.MirProtoSchema, error) {
+func (r *schemaRoute) Request(deviceId string) (*mir_proto.MirProtoSchema, error) {
 	sbj := device_client.SchemaRequest.WithId(deviceId)
 	resp, err := r.m.requestWithCompression(sbj, []byte{}, nil)
 	if err != nil {
@@ -125,7 +126,7 @@ func (r *schemaRoute) Request(deviceId string) (*proto_mir.MirProtoSchema, error
 		return nil, fmt.Errorf("error in device response: %s", sch.GetError())
 	}
 
-	return proto_mir.UnmarshalSchema(sch.GetSchema())
+	return mir_proto.UnmarshalSchema(sch.GetSchema())
 }
 
 /// Command

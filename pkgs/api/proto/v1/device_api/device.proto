@@ -2,8 +2,6 @@ syntax = "proto3";
 
 package device_api.v1;
 
-import "v1/common_api/common.proto";
-
 /*
   Send a request to retreive the schema of the device
 */

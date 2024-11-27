@@ -9,7 +9,7 @@ import (
 
 	"github.com/maxthom/mir/internal/externals/mng"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
-	"github.com/maxthom/mir/internal/libs/proto/proto_mir"
+	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
 	"github.com/maxthom/mir/internal/libs/test_utils"
 	"github.com/maxthom/mir/internal/servers/core_srv"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
@@ -465,7 +465,7 @@ func TestRequestListDevice(t *testing.T) {
 func TestRequestRetrieveSchema(t *testing.T) {
 	// Arrange
 	id := "device_retrieve_schema"
-	schema, err := proto_mir.NewMirProtoSchema(
+	schema, err := mir_proto.NewMirProtoSchema(
 		mir_module_testv1.File_mir_module_test_v1_command_proto,
 		mir_module_testv1.File_mir_module_test_v1_telemetry_proto,
 		descriptorpb.File_google_protobuf_descriptor_proto,
@@ -509,13 +509,13 @@ func TestRequestRetrieveSchema(t *testing.T) {
 	)); err != nil {
 		t.Error(err)
 	}
-	respSch, err := proto_mir.UnmarshalSchema(respSchema.GetSchema())
+	respSch, err := mir_proto.UnmarshalSchema(respSchema.GetSchema())
 	if err != nil {
 		t.Error(err)
 	}
 
 	// Assert
-	assert.Equal(t, true, proto_mir.AreSchemaEqual(respSch, schema))
+	assert.Equal(t, true, mir_proto.AreSchemaEqual(respSch, schema))
 
 	if err = m.Disconnect(); err != nil {
 		t.Error(err)

@@ -2,7 +2,6 @@ syntax = "proto3";
 
 package tlm_api.v1;
 
-import "v1/common_api/common.proto";
 import "v1/core_api/core.proto";
 
 
@@ -16,7 +15,7 @@ message SendListTelemetryRequest {
 message SendListTelemetryResponse {
   oneof response {
   	TelemetryResponse ok = 1; // all telemetry per devices
-    common_api.v1.Error error = 2;  // HTTP like error if something went wrong
+    string error = 2;  // error if something went wrong
   }
 }
 

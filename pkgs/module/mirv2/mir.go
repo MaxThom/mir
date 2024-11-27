@@ -9,6 +9,7 @@ import (
 	"github.com/maxthom/mir/internal/externals/distributed_lock"
 	"github.com/maxthom/mir/internal/libs/compression/zstd"
 	"github.com/nats-io/nats.go"
+	"google.golang.org/protobuf/proto"
 )
 
 // Expose Mir specific functions and domain
@@ -22,6 +23,13 @@ type Mir struct {
 	instanceName string
 	LockStore    distributed_lock.DistributedLockStore
 }
+
+const (
+	HeaderRequestEnconding = "request-encoding"
+	HeaderContentEncoding  = "content-encoding"
+	HeaderOriginalTrigger  = "original-trigger"
+	HeaderZstdEncoding     = "zstd"
+)
 
 // Establish connection to the Mir server
 // This will enable communication to and from the device
@@ -77,8 +85,6 @@ func (m Mir) GetInstanceName() string {
 	return fmt.Sprint(m.name, "-", m.instanceName)
 }
 
-type subject string
-
 func (m *Mir) listenForStream(sub *nats.Subscription, handler nats.MsgHandler) {
 	m.wg.Add(1)
 	go func() {
@@ -121,7 +127,6 @@ func (m *Mir) request(subject string, data []byte, headers nats.Header) (*nats.M
 	if headers == nil {
 		headers = nats.Header{}
 	}
-	headers.Add("origin-instance", m.GetInstanceName())
 	msg := &nats.Msg{
 		Subject: subject,
 		Header:  headers,
@@ -135,17 +140,34 @@ func (m *Mir) requestWithCompression(subject string, data []byte, headers nats.H
 	if headers == nil {
 		headers = nats.Header{}
 	}
-	headers.Add("request-encoding", "zstd")
+	headers.Add(HeaderRequestEnconding, HeaderZstdEncoding)
 
 	resp, err := m.request(subject, data, headers)
 	if err != nil {
 		return nil, fmt.Errorf("error publishing request message: %w", err)
 	}
-	if resp.Header.Get("content-encoding") == "zstd" {
+	if resp.Header.Get(HeaderContentEncoding) == HeaderZstdEncoding {
 		resp.Data, err = zstd.DecompressData(resp.Data)
 		if err != nil {
 			return nil, fmt.Errorf("error decompressing request data: %w", err)
 		}
 	}
 	return resp, nil
+}
+
+func (m *Mir) sendReplyOrAck(msg *nats.Msg, resp proto.Message) error {
+	if msg.Reply != "" {
+		bResp, err := proto.Marshal(resp)
+		if err != nil {
+			msg.Ack()
+			return fmt.Errorf("error marshalling response: %w", err)
+		}
+		err = m.Bus.Publish(msg.Reply, bResp)
+		if err != nil {
+			msg.Ack()
+			return fmt.Errorf("error publishing response: %w", err)
+		}
+	}
+	msg.Ack()
+	return nil
 }

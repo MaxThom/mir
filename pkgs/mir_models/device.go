@@ -4,12 +4,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/maxthom/mir/internal/libs/compression/zstd"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/reflect/protodesc"
-	"google.golang.org/protobuf/reflect/protoreflect"
-	"google.golang.org/protobuf/reflect/protoregistry"
-	"google.golang.org/protobuf/types/descriptorpb"
+	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
 )
 
 type Device struct {
@@ -93,69 +88,16 @@ type Schema struct {
 	LastSchemaFetch  time.Time `json:"lastSchemaFetch" yaml:"lastSchemaFetch"`
 }
 
-func (s Schema) GetProtoFiles() (*protoregistry.Files, error) {
-	_, reg, err := DecompressFileDescriptorSet(s.CompressedSchema)
-	return reg, err
+func (s Schema) GetProtoFiles() (*mir_proto.MirProtoSchema, error) {
+	return mir_proto.DecompressSchema(s.CompressedSchema)
 }
 
-func (s *Schema) SetProtoSchema(desc *descriptorpb.FileDescriptorSet) error {
-	b, err := CompressFileDescriptorSet(desc)
+func (s *Schema) SetProtoSchema(m *mir_proto.MirProtoSchema) error {
+	b, err := m.CompressSchema()
 	if err != nil {
 		return err
 	}
 	s.CompressedSchema = b
+	s.PackageNames = m.GetPackageList()
 	return nil
-}
-
-func MarshalProtoFiles(s ...protoreflect.FileDescriptor) ([]byte, error) {
-	pbSet := &descriptorpb.FileDescriptorSet{}
-	for _, f := range s {
-		pbSet.File = append(pbSet.File,
-			protodesc.ToFileDescriptorProto(f))
-	}
-
-	bytes, err := proto.Marshal(pbSet)
-	if err != nil {
-		return []byte{}, err
-	}
-	return bytes, nil
-}
-
-func CompressProtoFiles(s ...protoreflect.FileDescriptor) ([]byte, error) {
-	pbSet := new(descriptorpb.FileDescriptorSet)
-	for _, f := range s {
-		pbSet.File = append(pbSet.File,
-			protodesc.ToFileDescriptorProto(f))
-	}
-	return CompressFileDescriptorSet(pbSet)
-}
-
-func CompressFileDescriptorSet(desc *descriptorpb.FileDescriptorSet) ([]byte, error) {
-	bytes, err := proto.Marshal(desc)
-	if err != nil {
-		return []byte{}, err
-	}
-	b, err := zstd.CompressData(bytes)
-	if err != nil {
-		return []byte{}, err
-	}
-	return b, nil
-}
-
-func DecompressFileDescriptorSet(b []byte) (*descriptorpb.FileDescriptorSet, *protoregistry.Files, error) {
-	bDecomp, err := zstd.DecompressData(b)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	pbSet := new(descriptorpb.FileDescriptorSet)
-	if err := proto.Unmarshal(bDecomp, pbSet); err != nil {
-		return nil, nil, err
-	}
-
-	reg, err := protodesc.NewFiles(pbSet)
-	if err != nil {
-		return nil, nil, err
-	}
-	return pbSet, reg, nil
 }
