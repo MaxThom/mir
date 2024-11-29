@@ -1,90 +1,44 @@
 package mirv2
 
 import (
-	"fmt"
-	"strings"
-	"time"
-
 	"github.com/maxthom/mir/internal/clients"
-	"github.com/maxthom/mir/internal/clients/core_client"
-	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
-	"github.com/maxthom/mir/pkgs/mir_models"
+	"github.com/maxthom/mir/internal/clients/cmd_client"
+	"github.com/maxthom/mir/internal/clients/tlm_client"
+	cmd_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cmd_api"
+	tlm_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/tlm_api"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
 )
 
-type serverSubject string
-type serverRoutes struct {
+/// ListTelemetry
+
+type listTelemetryRoute struct {
 	m *Mir
 }
 
-// Access all server routes
-func (m *Mir) Server() *serverRoutes {
-	return &serverRoutes{m: m}
+// List device telemetry
+func (r *serverRoutes) ListTelemetry() *listTelemetryRoute {
+	return &listTelemetryRoute{m: r.m}
 }
 
-// Create a Server Route subject to liscen data from a device stream
-func (r serverSubject) NewSubject(module, version, function string, extra ...string) serverSubject {
-	extra = append([]string{"client", "*", module, version, function}, extra...)
-	return serverSubject(strings.Join(extra, "."))
-}
-
-// Listen to a custom stream from server
-// User m.Server().NewSubject() to create the subject
-// <module>: refer to the module/app your building
-// <version>: version of the data in the stream (v1alpha, v1, etc)
-// <function>: refer to the exact function of the stream
-// <extra>: any extra token you want to add
-func (r *serverRoutes) Subscribe(sbj serverSubject, h func(msg *nats.Msg, clientId string)) error {
-	f := func(msg *nats.Msg) {
-		h(msg, clients.ServerSubject(msg.Subject).GetId())
-	}
-	return r.m.subscribe(string(sbj), f)
-}
-
-// Listen to a custom stream from server1
-// Worker queue behavior means only one worker will process the message
-// User m.Server().NewSubject() to create the subject
-// <module>: refer to the module/app your building
-// <version>: version of the data in the stream (v1alpha, v1, etc)
-// <function>: refer to the exact function of the stream
-// <extra>: any extra token you want to add
-func (r *serverRoutes) QueueSubscribe(queue string, sbj serverSubject, h func(msg *nats.Msg, clientId string)) error {
-	f := func(msg *nats.Msg) {
-		h(msg, clients.ServerSubject(msg.Subject).GetId())
-	}
-	return r.m.queueSubscribe(queue, string(sbj), f)
-}
-
-/// CreateDevice
-
-type createDeviceRoute struct {
-	m *Mir
-}
-
-// CreateDevice to integrate a new device in the system
-func (r *serverRoutes) CreateDevice() *createDeviceRoute {
-	return &createDeviceRoute{m: r.m}
-}
-
-// Subscribe to createDevice routes
-func (r *createDeviceRoute) Subscribe(f func(msg *nats.Msg, clientId string, req *core_apiv1.CreateDeviceRequest) (*core_apiv1.Device, error)) error {
-	sbj := core_client.CreateDeviceRequest.WithId("*")
+// Subscribe to list telemetry request
+func (r *listTelemetryRoute) Subscribe(f func(msg *nats.Msg, clientId string, req *tlm_apiv1.SendListTelemetryRequest) ([]*tlm_apiv1.DevicesTelemetry, error)) error {
+	sbj := tlm_client.TelemetryListRequest.WithId("*")
 	return r.m.subscribe(sbj, r.handlerWrapper(f))
 }
 
-// Queue subscribe to createDevice routes
-func (r *createDeviceRoute) QueueSubscribe(queue string, f func(msg *nats.Msg, clientId string, req *core_apiv1.CreateDeviceRequest) (*core_apiv1.Device, error)) error {
-	sbj := core_client.CreateDeviceRequest.WithId("*")
+// Queue subscribe to list telemetry request
+func (r *listTelemetryRoute) QueueSubscribe(queue string, f func(msg *nats.Msg, clientId string, req *tlm_apiv1.SendListTelemetryRequest) ([]*tlm_apiv1.DevicesTelemetry, error)) error {
+	sbj := tlm_client.TelemetryListRequest.WithId("*")
 	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
 }
 
-func (r *createDeviceRoute) handlerWrapper(f func(msg *nats.Msg, clientId string, req *core_apiv1.CreateDeviceRequest) (*core_apiv1.Device, error)) nats.MsgHandler {
+func (r *listTelemetryRoute) handlerWrapper(f func(msg *nats.Msg, clientId string, req *tlm_apiv1.SendListTelemetryRequest) ([]*tlm_apiv1.DevicesTelemetry, error)) nats.MsgHandler {
 	return func(msg *nats.Msg) {
-		req := &core_apiv1.CreateDeviceRequest{}
+		req := &tlm_apiv1.SendListTelemetryRequest{}
 		if err := proto.Unmarshal(msg.Data, req); err != nil {
 			// TODO log error here
-			_ = r.m.sendReplyOrAck(msg, &core_apiv1.CreateDeviceResponse{Response: &core_apiv1.CreateDeviceResponse_Error{
+			_ = r.m.sendReplyOrAck(msg, &tlm_apiv1.SendListTelemetryResponse{Response: &tlm_apiv1.SendListTelemetryResponse_Error{
 				Error: err.Error(),
 			}})
 			return
@@ -92,74 +46,76 @@ func (r *createDeviceRoute) handlerWrapper(f func(msg *nats.Msg, clientId string
 
 		resp, err := f(msg, clients.ServerSubject(msg.Subject).GetId(), req)
 		if err != nil {
-			err = r.m.sendReplyOrAck(msg, &core_apiv1.CreateDeviceResponse{Response: &core_apiv1.CreateDeviceResponse_Error{
+			err = r.m.sendReplyOrAck(msg, &tlm_apiv1.SendListTelemetryResponse{Response: &tlm_apiv1.SendListTelemetryResponse_Error{
 				Error: err.Error(),
 			}})
 			return
 		}
 		// TODO log error here
-		err = r.m.sendReplyOrAck(msg, &core_apiv1.CreateDeviceResponse{
-			Response: &core_apiv1.CreateDeviceResponse_Ok{
-				Ok: resp,
+		err = r.m.sendReplyOrAck(msg, &tlm_apiv1.SendListTelemetryResponse{
+			Response: &tlm_apiv1.SendListTelemetryResponse_Ok{
+				Ok: &tlm_apiv1.TelemetryResponse{
+					DevicesTelemetry: resp,
+				},
 			},
 		})
 	}
 }
 
-// Request creation of a new device
-func (r *createDeviceRoute) Request(req *core_apiv1.CreateDeviceRequest) (mir_models.Device, error) {
-	sbj := core_client.CreateDeviceRequest.WithId(r.m.GetInstanceName())
+// Request listing of telemetry per device
+func (r *listTelemetryRoute) Request(req *tlm_apiv1.SendListTelemetryRequest) ([]*tlm_apiv1.DevicesTelemetry, error) {
+	sbj := tlm_client.TelemetryListRequest.WithId(r.m.GetInstanceName())
 	bReq, err := proto.Marshal(req)
 	if err != nil {
-		return mir_models.Device{}, err
+		return []*tlm_apiv1.DevicesTelemetry{}, err
 	}
 
-	resMsg, err := r.m.Bus.Request(sbj, bReq, 7*time.Second)
+	resMsg, err := r.m.request(sbj, bReq, nil)
 	if err != nil {
-		return mir_models.Device{}, err
+		return []*tlm_apiv1.DevicesTelemetry{}, err
 	}
 
-	resp := &core_apiv1.CreateDeviceResponse{}
+	resp := &tlm_apiv1.SendListTelemetryResponse{}
 	err = proto.Unmarshal(resMsg.Data, resp)
 	if err != nil {
-		return mir_models.Device{}, err
+		return []*tlm_apiv1.DevicesTelemetry{}, err
 	}
 	if resp.GetError() != "" {
-		return mir_models.Device{}, fmt.Errorf(resp.GetError())
+		return []*tlm_apiv1.DevicesTelemetry{}, err
 	}
 
-	return mir_models.NewDeviceFromProtoDevice(resp.GetOk()), nil
+	return resp.GetOk().DevicesTelemetry, nil
 }
 
-/// UpdateDevice
+/// ListCommand
 
-type updateDeviceRoute struct {
+type listCommandRoute struct {
 	m *Mir
 }
 
-// Update a device in the system
-func (r *serverRoutes) UpdateDevice() *updateDeviceRoute {
-	return &updateDeviceRoute{m: r.m}
+// List device command
+func (r *serverRoutes) ListCommands() *listCommandRoute {
+	return &listCommandRoute{m: r.m}
 }
 
-// Subscribe to update device routes
-func (r *updateDeviceRoute) Subscribe(f func(msg *nats.Msg, clientId string, req *core_apiv1.UpdateDeviceRequest) ([]*core_apiv1.Device, error)) error {
-	sbj := core_client.UpdateDeviceRequest.WithId("*")
+// Subscribe to list command request
+func (r *listCommandRoute) Subscribe(f func(msg *nats.Msg, clientId string, req *cmd_apiv1.SendListCommandsRequest) (map[string]*cmd_apiv1.Commands, error)) error {
+	sbj := cmd_client.ListCommandsRequest.WithId("*")
 	return r.m.subscribe(sbj, r.handlerWrapper(f))
 }
 
-// Queue subscribe to update device routes
-func (r *updateDeviceRoute) QueueSubscribe(queue string, f func(msg *nats.Msg, clientId string, req *core_apiv1.UpdateDeviceRequest) ([]*core_apiv1.Device, error)) error {
-	sbj := core_client.UpdateDeviceRequest.WithId("*")
+// Queue subscribe to list command request
+func (r *listCommandRoute) QueueSubscribe(queue string, f func(msg *nats.Msg, clientId string, req *cmd_apiv1.SendListCommandsRequest) (map[string]*cmd_apiv1.Commands, error)) error {
+	sbj := cmd_client.ListCommandsRequest.WithId("*")
 	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
 }
 
-func (r *updateDeviceRoute) handlerWrapper(f func(msg *nats.Msg, clientId string, req *core_apiv1.UpdateDeviceRequest) ([]*core_apiv1.Device, error)) nats.MsgHandler {
+func (r *listCommandRoute) handlerWrapper(f func(msg *nats.Msg, clientId string, req *cmd_apiv1.SendListCommandsRequest) (map[string]*cmd_apiv1.Commands, error)) nats.MsgHandler {
 	return func(msg *nats.Msg) {
-		req := &core_apiv1.UpdateDeviceRequest{}
+		req := &cmd_apiv1.SendListCommandsRequest{}
 		if err := proto.Unmarshal(msg.Data, req); err != nil {
 			// TODO log error here
-			_ = r.m.sendReplyOrAck(msg, &core_apiv1.UpdateDeviceResponse{Response: &core_apiv1.UpdateDeviceResponse_Error{
+			_ = r.m.sendReplyOrAck(msg, &cmd_apiv1.SendListCommandsResponse{Response: &cmd_apiv1.SendListCommandsResponse_Error{
 				Error: err.Error(),
 			}})
 			return
@@ -167,74 +123,77 @@ func (r *updateDeviceRoute) handlerWrapper(f func(msg *nats.Msg, clientId string
 
 		resp, err := f(msg, clients.ServerSubject(msg.Subject).GetId(), req)
 		if err != nil {
-			err = r.m.sendReplyOrAck(msg, &core_apiv1.UpdateDeviceResponse{Response: &core_apiv1.UpdateDeviceResponse_Error{
+			// TODO log error here
+			_ = r.m.sendReplyOrAck(msg, &cmd_apiv1.SendListCommandsResponse{Response: &cmd_apiv1.SendListCommandsResponse_Error{
 				Error: err.Error(),
 			}})
 			return
 		}
 		// TODO log error here
-		err = r.m.sendReplyOrAck(msg, &core_apiv1.UpdateDeviceResponse{
-			Response: &core_apiv1.UpdateDeviceResponse_Ok{
-				Ok: &core_apiv1.DeviceList{Devices: resp},
+		err = r.m.sendReplyOrAck(msg, &cmd_apiv1.SendListCommandsResponse{
+			Response: &cmd_apiv1.SendListCommandsResponse_Ok{
+				Ok: &cmd_apiv1.DevicesCommands{
+					DeviceCommands: resp,
+				},
 			},
 		})
 	}
 }
 
-// Request update of a device
-func (r *updateDeviceRoute) Request(req *core_apiv1.UpdateDeviceRequest) ([]mir_models.Device, error) {
-	sbj := core_client.UpdateDeviceRequest.WithId(r.m.GetInstanceName())
+// Request listing of command per device
+func (r *listCommandRoute) Request(req *cmd_apiv1.SendListCommandsRequest) (map[string]*cmd_apiv1.Commands, error) {
+	sbj := cmd_client.ListCommandsRequest.WithId(r.m.GetInstanceName())
 	bReq, err := proto.Marshal(req)
 	if err != nil {
-		return []mir_models.Device{}, err
+		return map[string]*cmd_apiv1.Commands{}, err
 	}
 
-	resMsg, err := r.m.Bus.Request(sbj, bReq, 7*time.Second)
+	resMsg, err := r.m.request(sbj, bReq, nil)
 	if err != nil {
-		return []mir_models.Device{}, err
+		return map[string]*cmd_apiv1.Commands{}, err
 	}
 
-	resp := &core_apiv1.UpdateDeviceResponse{}
+	resp := &cmd_apiv1.SendListCommandsResponse{}
 	err = proto.Unmarshal(resMsg.Data, resp)
 	if err != nil {
-		return []mir_models.Device{}, err
+		return map[string]*cmd_apiv1.Commands{}, err
 	}
 	if resp.GetError() != "" {
-		return []mir_models.Device{}, fmt.Errorf(resp.GetError())
+		return map[string]*cmd_apiv1.Commands{}, err
 	}
 
-	return mir_models.NewDeviceListFromProtoDevices(resp.GetOk().Devices), nil
+	return resp.GetOk().DeviceCommands, nil
 }
 
-/// DeleteDevice
+/// SendCommand
 
-type deleteDeviceRoute struct {
+type sendCommandRoute struct {
 	m *Mir
 }
 
-// Delete a device in the system
-func (r *serverRoutes) DeleteDevice() *deleteDeviceRoute {
-	return &deleteDeviceRoute{m: r.m}
+// Send command to device
+func (r *serverRoutes) SendCommand() *sendCommandRoute {
+	return &sendCommandRoute{m: r.m}
 }
 
-// Subscribe to delete device routes
-func (r *deleteDeviceRoute) Subscribe(f func(msg *nats.Msg, clientId string, req *core_apiv1.DeleteDeviceRequest) ([]*core_apiv1.Device, error)) error {
-	sbj := core_client.DeleteDeviceRequest.WithId("*")
+// Subscribe to send command request
+func (r *sendCommandRoute) Subscribe(f func(msg *nats.Msg, clientId string, req *cmd_apiv1.SendCommandRequest) (map[string]*cmd_apiv1.SendCommandResponse_CommandResponse, error)) error {
+	sbj := cmd_client.SendCommandRequest.WithId("*")
 	return r.m.subscribe(sbj, r.handlerWrapper(f))
 }
 
-// Queue subscribe to delete device routes
-func (r *deleteDeviceRoute) QueueSubscribe(queue string, f func(msg *nats.Msg, clientId string, req *core_apiv1.DeleteDeviceRequest) ([]*core_apiv1.Device, error)) error {
-	sbj := core_client.DeleteDeviceRequest.WithId("*")
+// Queue subscribe to send command request
+func (r *sendCommandRoute) QueueSubscribe(queue string, f func(msg *nats.Msg, clientId string, req *cmd_apiv1.SendCommandRequest) (map[string]*cmd_apiv1.SendCommandResponse_CommandResponse, error)) error {
+	sbj := cmd_client.SendCommandRequest.WithId("*")
 	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
 }
 
-func (r *deleteDeviceRoute) handlerWrapper(f func(msg *nats.Msg, clientId string, req *core_apiv1.DeleteDeviceRequest) ([]*core_apiv1.Device, error)) nats.MsgHandler {
+func (r *sendCommandRoute) handlerWrapper(f func(msg *nats.Msg, clientId string, req *cmd_apiv1.SendCommandRequest) (map[string]*cmd_apiv1.SendCommandResponse_CommandResponse, error)) nats.MsgHandler {
 	return func(msg *nats.Msg) {
-		req := &core_apiv1.DeleteDeviceRequest{}
+		req := &cmd_apiv1.SendCommandRequest{}
 		if err := proto.Unmarshal(msg.Data, req); err != nil {
 			// TODO log error here
-			_ = r.m.sendReplyOrAck(msg, &core_apiv1.DeleteDeviceResponse{Response: &core_apiv1.DeleteDeviceResponse_Error{
+			_ = r.m.sendReplyOrAck(msg, &cmd_apiv1.SendCommandResponse{Response: &cmd_apiv1.SendCommandResponse_Error{
 				Error: err.Error(),
 			}})
 			return
@@ -242,116 +201,44 @@ func (r *deleteDeviceRoute) handlerWrapper(f func(msg *nats.Msg, clientId string
 
 		resp, err := f(msg, clients.ServerSubject(msg.Subject).GetId(), req)
 		if err != nil {
-			err = r.m.sendReplyOrAck(msg, &core_apiv1.DeleteDeviceResponse{Response: &core_apiv1.DeleteDeviceResponse_Error{
-				Error: err.Error(),
-			}})
-			return
-		}
-		// TODO log error here
-		err = r.m.sendReplyOrAck(msg, &core_apiv1.DeleteDeviceResponse{
-			Response: &core_apiv1.DeleteDeviceResponse_Ok{
-				Ok: &core_apiv1.DeviceList{Devices: resp},
-			},
-		})
-	}
-}
-
-// Request delete of a device
-func (r *deleteDeviceRoute) Request(req *core_apiv1.DeleteDeviceRequest) ([]mir_models.Device, error) {
-	sbj := core_client.DeleteDeviceRequest.WithId(r.m.GetInstanceName())
-	bReq, err := proto.Marshal(req)
-	if err != nil {
-		return []mir_models.Device{}, err
-	}
-
-	resMsg, err := r.m.Bus.Request(sbj, bReq, 7*time.Second)
-	if err != nil {
-		return []mir_models.Device{}, err
-	}
-
-	resp := &core_apiv1.UpdateDeviceResponse{}
-	err = proto.Unmarshal(resMsg.Data, resp)
-	if err != nil {
-		return []mir_models.Device{}, err
-	}
-	if resp.GetError() != "" {
-		return []mir_models.Device{}, fmt.Errorf(resp.GetError())
-	}
-
-	return mir_models.NewDeviceListFromProtoDevices(resp.GetOk().Devices), nil
-}
-
-/// ListDevice
-
-type listDeviceRoute struct {
-	m *Mir
-}
-
-// Delete a device in the system
-func (r *serverRoutes) ListDevice() *listDeviceRoute {
-	return &listDeviceRoute{m: r.m}
-}
-
-// Subscribe to list device routes
-func (r *listDeviceRoute) Subscribe(f func(msg *nats.Msg, clientId string, req *core_apiv1.ListDeviceRequest) ([]*core_apiv1.Device, error)) error {
-	sbj := core_client.ListDeviceRequest.WithId("*")
-	return r.m.subscribe(sbj, r.handlerWrapper(f))
-}
-
-// Queue subscribe to list device routes
-func (r *listDeviceRoute) QueueSubscribe(queue string, f func(msg *nats.Msg, clientId string, req *core_apiv1.ListDeviceRequest) ([]*core_apiv1.Device, error)) error {
-	sbj := core_client.ListDeviceRequest.WithId("*")
-	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
-}
-
-func (r *listDeviceRoute) handlerWrapper(f func(msg *nats.Msg, clientId string, req *core_apiv1.ListDeviceRequest) ([]*core_apiv1.Device, error)) nats.MsgHandler {
-	return func(msg *nats.Msg) {
-		req := &core_apiv1.ListDeviceRequest{}
-		if err := proto.Unmarshal(msg.Data, req); err != nil {
 			// TODO log error here
-			_ = r.m.sendReplyOrAck(msg, &core_apiv1.ListDeviceResponse{Response: &core_apiv1.ListDeviceResponse_Error{
-				Error: err.Error(),
-			}})
-			return
-		}
-
-		resp, err := f(msg, clients.ServerSubject(msg.Subject).GetId(), req)
-		if err != nil {
-			err = r.m.sendReplyOrAck(msg, &core_apiv1.ListDeviceResponse{Response: &core_apiv1.ListDeviceResponse_Error{
+			_ = r.m.sendReplyOrAck(msg, &cmd_apiv1.SendCommandResponse{Response: &cmd_apiv1.SendCommandResponse_Error{
 				Error: err.Error(),
 			}})
 			return
 		}
 		// TODO log error here
-		err = r.m.sendReplyOrAck(msg, &core_apiv1.ListDeviceResponse{
-			Response: &core_apiv1.ListDeviceResponse_Ok{
-				Ok: &core_apiv1.DeviceList{Devices: resp},
+		err = r.m.sendReplyOrAck(msg, &cmd_apiv1.SendCommandResponse{
+			Response: &cmd_apiv1.SendCommandResponse_Ok{
+				Ok: &cmd_apiv1.SendCommandResponse_CommandResponses{
+					DeviceResponses: resp,
+				},
 			},
 		})
 	}
 }
 
-// Request list of device
-func (r *listDeviceRoute) Request(req *core_apiv1.ListDeviceRequest) ([]mir_models.Device, error) {
-	sbj := core_client.ListDeviceRequest.WithId(r.m.GetInstanceName())
+// Request send a command to device
+func (r *sendCommandRoute) Request(req *cmd_apiv1.SendCommandRequest) (map[string]*cmd_apiv1.SendCommandResponse_CommandResponse, error) {
+	sbj := cmd_client.SendCommandRequest.WithId(r.m.GetInstanceName())
 	bReq, err := proto.Marshal(req)
 	if err != nil {
-		return []mir_models.Device{}, err
+		return map[string]*cmd_apiv1.SendCommandResponse_CommandResponse{}, err
 	}
 
-	resMsg, err := r.m.Bus.Request(sbj, bReq, 7*time.Second)
+	resMsg, err := r.m.request(sbj, bReq, nil)
 	if err != nil {
-		return []mir_models.Device{}, err
+		return map[string]*cmd_apiv1.SendCommandResponse_CommandResponse{}, err
 	}
 
-	resp := &core_apiv1.ListDeviceResponse{}
+	resp := &cmd_apiv1.SendCommandResponse{}
 	err = proto.Unmarshal(resMsg.Data, resp)
 	if err != nil {
-		return []mir_models.Device{}, err
+		return map[string]*cmd_apiv1.SendCommandResponse_CommandResponse{}, err
 	}
 	if resp.GetError() != "" {
-		return []mir_models.Device{}, fmt.Errorf(resp.GetError())
+		return map[string]*cmd_apiv1.SendCommandResponse_CommandResponse{}, err
 	}
 
-	return mir_models.NewDeviceListFromProtoDevices(resp.GetOk().Devices), nil
+	return resp.GetOk().DeviceResponses, nil
 }

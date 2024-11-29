@@ -14,7 +14,12 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type deviceSubject string
+type deviceSubject []string
+
+func (e deviceSubject) String() string {
+	return strings.Join(e, ".")
+}
+
 type deviceRoutes struct {
 	m *Mir
 }
@@ -26,8 +31,7 @@ func (m *Mir) Device() *deviceRoutes {
 
 // Create a Device Route subject to liscen data from a device stream
 func (r deviceRoutes) NewSubject(module, version, function string, extra ...string) deviceSubject {
-	extra = append([]string{"device", "*", module, version, function}, extra...)
-	return deviceSubject(strings.Join(extra, "."))
+	return append([]string{"device", "*", module, version, function}, extra...)
 }
 
 // Listen to a custom stream from devices
@@ -40,7 +44,7 @@ func (r *deviceRoutes) Subscribe(sbj deviceSubject, h func(msg *nats.Msg, device
 	f := func(msg *nats.Msg) {
 		h(msg, clients.ServerSubject(msg.Subject).GetId())
 	}
-	return r.m.subscribe(string(sbj), f)
+	return r.m.subscribe(sbj.String(), f)
 }
 
 // Listen to a custom stream from devices
@@ -54,7 +58,7 @@ func (r *deviceRoutes) QueueSubscribe(queue string, sbj deviceSubject, h func(ms
 	f := func(msg *nats.Msg) {
 		h(msg, clients.ServerSubject(msg.Subject).GetId())
 	}
-	return r.m.queueSubscribe(queue, string(sbj), f)
+	return r.m.queueSubscribe(queue, sbj.String(), f)
 }
 
 /// Hearthbeat

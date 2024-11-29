@@ -8,6 +8,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/boiler/mir_signals"
 
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
+	"github.com/maxthom/mir/pkgs/mir_models"
 	mir "github.com/maxthom/mir/pkgs/module/mirv2"
 	"github.com/nats-io/nats.go"
 )
@@ -79,6 +80,23 @@ func main() {
 	})
 	fmt.Println(err)
 	fmt.Println(dev)
+
+	err = m.Event().DeviceOnline().Subscribe(
+		func(msg *nats.Msg, deviceId string, device mir_models.Device) {
+			fmt.Println(deviceId)
+			fmt.Println(device)
+		},
+	)
+	if err != nil {
+		fmt.Println(err)
+	}
+	err = m.Event().DeviceOnline().Publish("0xf23",
+		mir_models.Device{
+			ApiName: "TEST",
+		})
+	if err != nil {
+		fmt.Println(err)
+	}
 
 	mir_signals.WaitForOsSignals(func() {
 		cancel()

@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/maxthom/mir/internal/externals/distributed_lock"
 	"github.com/maxthom/mir/internal/libs/compression/zstd"
 	"github.com/nats-io/nats.go"
@@ -24,6 +25,14 @@ type Mir struct {
 	LockStore    distributed_lock.DistributedLockStore
 }
 
+type Msg struct {
+	*nats.Msg
+}
+
+func (m Msg) GetOriginalTriggerId() string {
+	return m.Header.Get(HeaderOriginalTrigger)
+}
+
 const (
 	HeaderRequestEnconding = "request-encoding"
 	HeaderContentEncoding  = "content-encoding"
@@ -38,7 +47,7 @@ func Connect(name string, target string) (*Mir, error) {
 	m := &Mir{
 		wg:           &sync.WaitGroup{},
 		name:         name,
-		instanceName: nats.NewInbox()[7:],
+		instanceName: nats.NewInbox()[7:14],
 	}
 	m.ctx, m.cancelFn = context.WithCancel(context.Background())
 
@@ -85,42 +94,50 @@ func (m Mir) GetInstanceName() string {
 	return fmt.Sprint(m.name, "-", m.instanceName)
 }
 
-func (m *Mir) listenForStream(sub *nats.Subscription, handler nats.MsgHandler) {
-	m.wg.Add(1)
-	go func() {
-		defer m.wg.Done()
-		for {
-			select {
-			case <-m.ctx.Done():
-				return
-			default:
-				msg, _ := sub.NextMsgWithContext(m.ctx)
-				if msg != nil {
-					handler(msg)
-				}
-			}
-		}
-	}()
-}
-
 func (m *Mir) subscribe(subject string, h nats.MsgHandler) error {
-	sub, err := m.Bus.SubscribeSync(subject)
+	sub, err := m.Bus.Subscribe(subject, h)
 	if err != nil {
 		return err
 	}
+	m.wg.Add(1)
+	go func() {
+		defer m.wg.Done()
+		<-m.ctx.Done()
+		sub.Drain()
+		sub.Unsubscribe()
+	}()
 
-	m.listenForStream(sub, h)
 	return nil
 }
 
 func (m *Mir) queueSubscribe(name, subject string, h nats.MsgHandler) error {
-	sub, err := m.Bus.QueueSubscribeSync(subject, name)
+	sub, err := m.Bus.QueueSubscribe(subject, name, h)
 	if err != nil {
 		return err
 	}
 
-	m.listenForStream(sub, h)
+	m.wg.Add(1)
+	go func() {
+		defer m.wg.Done()
+		<-m.ctx.Done()
+		sub.Drain()
+		sub.Unsubscribe()
+	}()
+
 	return nil
+}
+
+func (m *Mir) publish(subject string, data []byte, headers nats.Header) error {
+	if headers == nil {
+		headers = nats.Header{}
+	}
+	msg := &nats.Msg{
+		Subject: subject,
+		Header:  headers,
+		Data:    data,
+	}
+
+	return m.Bus.PublishMsg(msg)
 }
 
 func (m *Mir) request(subject string, data []byte, headers nats.Header) (*nats.Msg, error) {
@@ -170,4 +187,12 @@ func (m *Mir) sendReplyOrAck(msg *nats.Msg, resp proto.Message) error {
 	}
 	msg.Ack()
 	return nil
+}
+
+func (m Mir) newEventId() (string, error) {
+	u, err := uuid.NewV7()
+	if err != nil {
+		return "", fmt.Errorf("error creating event id: %w", err)
+	}
+	return u.String(), nil
 }
