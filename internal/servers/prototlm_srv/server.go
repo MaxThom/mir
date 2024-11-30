@@ -2,6 +2,7 @@ package prototlm_srv
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/maxthom/mir/internal/externals/mng"
@@ -11,7 +12,6 @@ import (
 	proto_lineprotocol "github.com/maxthom/mir/internal/libs/proto/line_protocol"
 	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
 	"github.com/maxthom/mir/internal/services/schema_cache"
-	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	tlm_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/tlm_api"
 	"github.com/maxthom/mir/pkgs/mir_models"
@@ -179,11 +179,7 @@ func (s *ProtoTlmServer) handleTelemetryListRequest(msg *nats.Msg, req *tlm_apiv
 		l.Error().Err(e).Msg("error occure while receiving request")
 		bus.SendProtoReplyOrAck(s.m.Bus, msg, &tlm_apiv1.SendListTelemetryResponse{
 			Response: &tlm_apiv1.SendListTelemetryResponse_Error{
-				Error: &common_apiv1.Error{
-					Code:    400,
-					Message: mir_models.ErrorApiDeserializingRequest.Error(),
-					Details: []string{"400 Bad Request", e.Error()},
-				},
+				Error: fmt.Errorf("%w: %w", mir_models.ErrorApiDeserializingRequest, e).Error(),
 			},
 		})
 	}
@@ -193,11 +189,7 @@ func (s *ProtoTlmServer) handleTelemetryListRequest(msg *nats.Msg, req *tlm_apiv
 		l.Error().Err(e).Msg("error occure while listing devices")
 		bus.SendProtoReplyOrAck(s.m.Bus, msg, &tlm_apiv1.SendListTelemetryResponse{
 			Response: &tlm_apiv1.SendListTelemetryResponse_Error{
-				Error: &common_apiv1.Error{
-					Code:    500,
-					Message: mir_models.ErrorDbExecutingQuery.Error(),
-					Details: []string{"500 Bad Request", e.Error()},
-				},
+				Error: fmt.Errorf("error listing device from db: %w", e).Error(),
 			},
 		})
 	}

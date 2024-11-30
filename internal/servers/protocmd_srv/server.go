@@ -85,11 +85,7 @@ func (s *ProtoCmdServer) sendCommandSub() func(msg *nats.Msg, req *cmd_apiv1.Sen
 			l.Error().Err(e).Msg("error occure while receiving request")
 			bus.SendProtoReplyOrAck(s.m.Bus, msg, &cmd_apiv1.SendCommandResponse{
 				Response: &cmd_apiv1.SendCommandResponse_Error{
-					Error: &common_apiv1.Error{
-						Code:    400,
-						Message: mir_models.ErrorApiDeserializingRequest.Error(),
-						Details: []string{"400 Bad Request", e.Error()},
-					},
+					Error: fmt.Errorf("%w: %w", mir_models.ErrorApiDeserializingRequest, e).Error(),
 				},
 			})
 		}
@@ -116,11 +112,7 @@ func (s *ProtoCmdServer) sendCommandSub() func(msg *nats.Msg, req *cmd_apiv1.Sen
 			l.Error().Err(fmt.Errorf("%w: %s", mir_models.ErrorBadRequest, strings.Join(errs, ", "))).Msg("")
 			bus.SendProtoReplyOrAck(s.m.Bus, msg, &cmd_apiv1.SendCommandResponse{
 				Response: &cmd_apiv1.SendCommandResponse_Error{
-					Error: &common_apiv1.Error{
-						Code:    400,
-						Message: mir_models.ErrorBadRequest.Error(),
-						Details: errs,
-					},
+					Error: fmt.Errorf("%w: %w", mir_models.ErrorBadRequest, errs).Error(),
 				},
 			})
 		}
@@ -134,11 +126,7 @@ func (s *ProtoCmdServer) sendCommandSub() func(msg *nats.Msg, req *cmd_apiv1.Sen
 			l.Error().Err(e).Msg("error occure while processing send command request")
 			bus.SendProtoReplyOrAck(s.m.Bus, msg, &cmd_apiv1.SendCommandResponse{
 				Response: &cmd_apiv1.SendCommandResponse_Error{
-					Error: &common_apiv1.Error{
-						Code:    500,
-						Message: err.Error(),
-						Details: []string{"500 Internal Server Error", err.Error()},
-					},
+					Error: fmt.Errorf("error sending command to devices: %w", err).Error(),
 				},
 			})
 		}
@@ -369,11 +357,7 @@ func (s *ProtoCmdServer) listCommandsSub() func(msg *nats.Msg, req *cmd_apiv1.Se
 			l.Error().Err(e).Msg("error occure while receiving request")
 			bus.SendProtoReplyOrAck(s.m.Bus, msg, &cmd_apiv1.SendListCommandsResponse{
 				Response: &cmd_apiv1.SendListCommandsResponse_Error{
-					Error: &common_apiv1.Error{
-						Code:    400,
-						Message: mir_models.ErrorApiDeserializingRequest.Error(),
-						Details: []string{"400 Bad Request", e.Error()},
-					},
+					Error: fmt.Errorf("%w: %w", mir_models.ErrorApiDeserializingRequest, e).Error(),
 				},
 			})
 		}
@@ -387,11 +371,7 @@ func (s *ProtoCmdServer) listCommandsSub() func(msg *nats.Msg, req *cmd_apiv1.Se
 			l.Error().Err(e).Msg("error occure while listing devices")
 			bus.SendProtoReplyOrAck(s.m.Bus, msg, &cmd_apiv1.SendListCommandsResponse{
 				Response: &cmd_apiv1.SendListCommandsResponse_Error{
-					Error: &common_apiv1.Error{
-						Code:    500,
-						Message: mir_models.ErrorDbExecutingQuery.Error(),
-						Details: []string{"500 Bad Request", e.Error()},
-					},
+					Error: fmt.Errorf("error listing devices from db: %w", err).Error(),
 				},
 			})
 		}

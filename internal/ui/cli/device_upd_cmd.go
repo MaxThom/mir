@@ -1,10 +1,8 @@
 package cli
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/maxthom/mir/internal/clients/core_client"
@@ -12,7 +10,6 @@ import (
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	"github.com/maxthom/mir/pkgs/mir_models"
-	"gopkg.in/yaml.v3"
 )
 
 type DeviceEditCmd struct {
@@ -67,17 +64,14 @@ func (d *DeviceEditCmd) Run(c CLI) error {
 		},
 	})
 	if err != nil {
-		e := MirRequestError{Route: "device.list", e: err}
-		return e
+		return fmt.Errorf("error publising device list request: %w", err)
 	}
-	if respList.GetError() != nil {
-		e := MirRequestError{Route: "device.list", e: errors.New(respList.GetError().Message)}
-		return e
+	if respList.GetError() != "" {
+		return errors.New(respList.GetError())
 	}
 
 	if len(respList.GetOk().Devices) == 0 {
-		e := MirRequestError{Route: "device.list", e: errors.New("No devices found for the given targets")}
-		return e
+		return errors.New("No devices found for the given targets")
 	}
 
 	devs := mir_models.NewDeviceListFromProtoDevices(respList.GetOk().Devices)
@@ -117,21 +111,13 @@ func (d *DeviceEditCmd) Run(c CLI) error {
 	var errs error
 	respDevs := []*core_apiv1.Device{}
 	for i, d := range devs {
-		req := mir_models.NewUpdateDeviceReqFromDeviceWithNameNs(targetNameNs[i], *d)
+		req := mir_models.NewUpdateDeviceReqFromDeviceWithNameNs(targetNameNs[i], d)
 		resp, err := core_client.PublishDeviceUpdateRequest(msgBus, req)
 		if err != nil {
-			e := MirRequestError{Route: "device.update", e: err}
-			errs = errors.Join(errs, e)
+			errs = errors.Join(errs, errors.New("error sending update device request"))
 		}
-		if resp.GetError() != nil {
-			e := MirResponseError{
-				Route: "device.update",
-				e: MirHttpError{
-					Code:    resp.GetError().GetCode(),
-					Message: resp.GetError().GetMessage(),
-					Details: resp.GetError().GetDetails(),
-				}}
-			errs = errors.Join(errs, e)
+		if resp.GetError() != "" {
+			errs = errors.Join(errs, errors.New(resp.GetError()))
 		}
 		if resp.GetOk() != nil {
 			respDevs = append(respDevs, resp.GetOk().Devices...)
@@ -144,7 +130,7 @@ func (d *DeviceEditCmd) Run(c CLI) error {
 			fmt.Println(prettyStringDevices(list))
 		} else {
 			if out, e := MarshalResponse(d.Output, list); e != nil {
-				return e
+				return fmt.Errorf("error marshalling response: %w", e)
 			} else {
 				fmt.Println(out)
 			}
@@ -182,52 +168,11 @@ func (d *DeviceApplyCmd) Run(c CLI) error {
 	}
 	defer msgBus.Close()
 
-	content, ok := ReadFromPipedStdIn()
-	if !ok {
-		contentB, err := os.ReadFile(d.Path)
-		content = string(contentB)
+	devs := []*mir_models.Device{}
+	if isPipedStdIn() || d.Path != "" {
+		devs, err = unmarshalTypeFromStdInOrFile[mir_models.Device](d.Path)
 		if err != nil {
-			e := MirDeserializationError{e: err}
-			return e
-		}
-	}
-
-	var devs []*mir_models.Device
-	var output string
-	if isJsonString(content) {
-		output = "json"
-		if isJsonArray(content) {
-			err = json.Unmarshal([]byte(content), &devs)
-			if err != nil {
-				e := MirDeserializationError{e: err}
-				return e
-			}
-		} else {
-			dev := &mir_models.Device{}
-			err = json.Unmarshal([]byte(content), dev)
-			if err != nil {
-				e := MirDeserializationError{e: err}
-				return e
-			}
-			devs = append(devs, dev)
-		}
-	} else {
-		output = "yaml"
-		fmt.Println(content)
-		if isYamlArray(content) {
-			err = yaml.Unmarshal([]byte(content), &devs)
-			if err != nil {
-				e := MirDeserializationError{e: err}
-				return e
-			}
-		} else {
-			dev := &mir_models.Device{}
-			err = yaml.Unmarshal([]byte(content), dev)
-			if err != nil {
-				e := MirDeserializationError{e: err}
-				return e
-			}
-			devs = append(devs, dev)
+			return fmt.Errorf("error reading devices from file: %w", err)
 		}
 	}
 
@@ -237,18 +182,10 @@ func (d *DeviceApplyCmd) Run(c CLI) error {
 		req := mir_models.NewUpdateDeviceReqFromDevice(*d)
 		resp, err := core_client.PublishDeviceUpdateRequest(msgBus, req)
 		if err != nil {
-			e := MirRequestError{Route: "device.update", e: err}
-			errs = errors.Join(errs, e)
+			errs = errors.Join(errs, errors.New("error sending update device request"))
 		}
-		if resp.GetError() != nil {
-			e := MirResponseError{
-				Route: "device.update",
-				e: MirHttpError{
-					Code:    resp.GetError().GetCode(),
-					Message: resp.GetError().GetMessage(),
-					Details: resp.GetError().GetDetails(),
-				}}
-			errs = errors.Join(errs, e)
+		if resp.GetError() != "" {
+			return errors.New(resp.GetError())
 		}
 		if resp.GetOk() != nil {
 			respDevs = append(respDevs, resp.GetOk().Devices...)
@@ -257,7 +194,7 @@ func (d *DeviceApplyCmd) Run(c CLI) error {
 
 	if len(respDevs) > 0 {
 		list := mir_models.NewDeviceListFromProtoDevices(respDevs)
-		if out, e := MarshalResponse(output, list); e != nil {
+		if out, e := MarshalResponse("yaml", list); e != nil {
 			return e
 		} else {
 			fmt.Println(out)
@@ -298,52 +235,11 @@ func (d *DevicePatchCmd) Run(c CLI) error {
 	}
 	defer msgBus.Close()
 
-	content, ok := ReadFromPipedStdIn()
-	if !ok {
-		contentB, err := os.ReadFile(d.Path)
-		content = string(contentB)
+	devs := []*mir_models.Device{}
+	if isPipedStdIn() || d.Path != "" {
+		devs, err = unmarshalTypeFromStdInOrFile[mir_models.Device](d.Path)
 		if err != nil {
-			e := MirDeserializationError{e: err}
-			return e
-		}
-	}
-
-	var devs []*mir_models.Device
-	var output string
-	if isJsonString(content) {
-		output = "json"
-		if isJsonArray(content) {
-			err = json.Unmarshal([]byte(content), &devs)
-			if err != nil {
-				e := MirDeserializationError{e: err}
-				return e
-			}
-		} else {
-			dev := &mir_models.Device{}
-			err = json.Unmarshal([]byte(content), dev)
-			if err != nil {
-				e := MirDeserializationError{e: err}
-				return e
-			}
-			devs = append(devs, dev)
-		}
-	} else {
-		output = "yaml"
-		fmt.Println(content)
-		if isYamlArray(content) {
-			err = yaml.Unmarshal([]byte(content), &devs)
-			if err != nil {
-				e := MirDeserializationError{e: err}
-				return e
-			}
-		} else {
-			dev := &mir_models.Device{}
-			err = yaml.Unmarshal([]byte(content), dev)
-			if err != nil {
-				e := MirDeserializationError{e: err}
-				return e
-			}
-			devs = append(devs, dev)
+			return fmt.Errorf("error reading devices from file: %w", err)
 		}
 	}
 
@@ -353,18 +249,10 @@ func (d *DevicePatchCmd) Run(c CLI) error {
 		req := mir_models.NewUpdateDeviceReqFromDevice(*d)
 		resp, err := core_client.PublishDeviceUpdateRequest(msgBus, req)
 		if err != nil {
-			e := MirRequestError{Route: "device.update", e: err}
-			errs = errors.Join(errs, e)
+			errs = errors.Join(errs, fmt.Errorf("error publishing device update request: %w", err))
 		}
-		if resp.GetError() != nil {
-			e := MirResponseError{
-				Route: "device.update",
-				e: MirHttpError{
-					Code:    resp.GetError().GetCode(),
-					Message: resp.GetError().GetMessage(),
-					Details: resp.GetError().GetDetails(),
-				}}
-			errs = errors.Join(errs, e)
+		if resp.GetError() != "" {
+			errs = errors.Join(errs, errors.New(resp.GetError()))
 		}
 		if resp.GetOk() != nil {
 			respDevs = append(respDevs, resp.GetOk().Devices...)
@@ -373,8 +261,8 @@ func (d *DevicePatchCmd) Run(c CLI) error {
 
 	if len(respDevs) > 0 {
 		list := mir_models.NewDeviceListFromProtoDevices(respDevs)
-		if out, e := MarshalResponse(output, list); e != nil {
-			return e
+		if out, e := MarshalResponse("yaml", list); e != nil {
+			return fmt.Errorf("error marshalling response: %w", e)
 		} else {
 			fmt.Println(out)
 		}

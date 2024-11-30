@@ -78,16 +78,10 @@ func (d *CommandListCmd) Run(c CLI) error {
 	}
 	resp, err := cmd_client.PublishListCommandsRequest(msgBus, req)
 	if err != nil {
-		return MirRequestError{Route: "command.list", e: err}
+		return fmt.Errorf("error publising list command request: %w", err)
 	}
-	if resp.GetError() != nil {
-		return MirResponseError{
-			Route: "command.list",
-			e: MirHttpError{
-				Code:    resp.GetError().GetCode(),
-				Message: resp.GetError().GetMessage(),
-				Details: resp.GetError().GetDetails(),
-			}}
+	if resp.GetError() != "" {
+		return errors.New(resp.GetError())
 	}
 
 	tpls := map[string][]string{}
@@ -204,18 +198,10 @@ func (d *CommandSendCmd) Run(c CLI) error {
 	}
 	resp, err := cmd_client.PublishSendCommandRequest(msgBus, req)
 	if err != nil {
-		e := MirRequestError{Route: "command.send", e: err}
-		return e
+		return fmt.Errorf("error publising send command request: %w", err)
 	}
-	if resp.GetError() != nil {
-		e := MirResponseError{
-			Route: "command.send",
-			e: MirHttpError{
-				Code:    resp.GetError().GetCode(),
-				Message: resp.GetError().GetMessage(),
-				Details: resp.GetError().GetDetails(),
-			}}
-		return e
+	if resp.GetError() != "" {
+		return errors.New(resp.GetError())
 	}
 
 	if req.ShowTemplate {
@@ -267,18 +253,10 @@ func (d *CommandSendCmd) Run(c CLI) error {
 			req.Payload = payload
 			resp, err = cmd_client.PublishSendCommandRequest(msgBus, req)
 			if err != nil {
-				e := MirRequestError{Route: "command.send", e: err}
-				return e
+				return fmt.Errorf("error publising send command request: %w", err)
 			}
-			if resp.GetError() != nil {
-				e := MirResponseError{
-					Route: "command.send",
-					e: MirHttpError{
-						Code:    resp.GetError().GetCode(),
-						Message: resp.GetError().GetMessage(),
-						Details: resp.GetError().GetDetails(),
-					}}
-				return e
+			if resp.GetError() != "" {
+				return errors.New(resp.GetError())
 			}
 		} else {
 			fmt.Println(sb.String())

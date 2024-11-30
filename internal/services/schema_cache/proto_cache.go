@@ -112,8 +112,8 @@ func (c *MirProtoCache) reconcileDeviceSchema(deviceId string, forceDeviceFetch 
 	)); err != nil {
 		return mir_models.Device{}, nil, err
 	}
-	if respList.GetError() != nil {
-		return mir_models.Device{}, nil, fmt.Errorf("error listing devices: %s", respList.GetError().GetMessage())
+	if respList.GetError() != "" {
+		return mir_models.Device{}, nil, fmt.Errorf("error listing devices: %s", respList.GetError())
 	}
 	devs := respList.GetOk().Devices
 	if len(devs) == 0 {
@@ -160,8 +160,8 @@ func (c *MirProtoCache) reconcileDeviceSchema(deviceId string, forceDeviceFetch 
 	if err != nil {
 		return mir_models.Device{}, nil, err
 	}
-	if updResp.GetError() != nil {
-		return mir_models.Device{}, nil, fmt.Errorf("%s", updResp.GetError().Message)
+	if updResp.GetError() != "" {
+		return mir_models.Device{}, nil, fmt.Errorf("%s", updResp.GetError())
 	}
 
 	l.Info().Str("device_id", deviceId).Msgf("reconciled schema for %s from device", deviceId)

@@ -281,8 +281,8 @@ func (s *sendDeviceCommandRequestProto) response(m *nats.Msg) error {
 	if err != nil {
 		return err
 	}
-	if s.resp.GetError() != nil {
-		return errors.New(s.resp.GetError().Message)
+	if s.resp.GetError() != "" {
+		return errors.New(s.resp.GetError())
 	}
 
 	for d, dev := range s.resp.GetOk().DeviceResponses {

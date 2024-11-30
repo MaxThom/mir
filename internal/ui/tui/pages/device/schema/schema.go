@@ -8,13 +8,13 @@ import (
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
 	mir_help "github.com/maxthom/mir/internal/ui/tui/components/help"
 	"github.com/maxthom/mir/internal/ui/tui/msgs"
 	device_list "github.com/maxthom/mir/internal/ui/tui/pages/device/list"
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"gopkg.in/yaml.v3"
 )
 
 var (
@@ -43,14 +43,14 @@ func (m *Model) InitWithData(d any) tea.Cmd {
 			msgs.RouteChangeWithDataCmd("/devices", device_list.InputData{SilentFetch: true}),
 		)
 	}
-	pbSet, _, err := mir_models.DecompressFileDescriptorSet(dev.Status.Schema.CompressedSchema)
+	sch, err := mir_proto.DecompressSchema(dev.Status.Schema.CompressedSchema)
 	if err != nil {
 		return tea.Batch(
 			msgs.ErrCmd(err, 2*time.Second),
 			msgs.RouteChangeWithDataCmd("/devices", device_list.InputData{SilentFetch: true}),
 		)
 	}
-	rj, e := yaml.Marshal(pbSet)
+	rj, e := sch.ToYaml()
 	if e != nil {
 		l.Error().Err(e).Msg("")
 		return tea.Batch(

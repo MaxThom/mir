@@ -158,6 +158,9 @@ func getTargetFromNameNs(n string) Target {
 }
 
 func RecreateFS(embedFS fs.FS, targetDir string) error {
+	if err := os.RemoveAll(targetDir); err != nil {
+		return fmt.Errorf("failed to remove target directory: %w", err)
+	}
 	if err := os.MkdirAll(targetDir, 0755); err != nil {
 		return fmt.Errorf("failed to create target directory: %w", err)
 	}

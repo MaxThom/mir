@@ -1,17 +1,17 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
 	"github.com/maxthom/mir/internal/clients/core_client"
 	"github.com/maxthom/mir/internal/libs/compression/zstd"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
+	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/reflect/protodesc"
-	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
@@ -74,31 +74,18 @@ func (d *SchemaUploadCmd) Run(c CLI) error {
 
 	schemaData, err := os.ReadFile(d.Path)
 	if err != nil {
-		e := MirProcessError{e: err}
-		return e
+		return fmt.Errorf("error reading file: %w", err)
 	}
 
-	pbSet := new(descriptorpb.FileDescriptorSet)
-	if err := proto.Unmarshal(schemaData, pbSet); err != nil {
-		e := MirProcessError{e: err}
-		return e
-	}
-	compSch, err := mir_models.CompressFileDescriptorSet(pbSet)
+	sch, err := mir_proto.UnmarshalSchema(schemaData)
 	if err != nil {
-		e := MirProcessError{e: err}
-		return e
+		return fmt.Errorf("error unmarshalling schema: %w", err)
 	}
-	reg, err := protodesc.NewFiles(pbSet)
+	compSch, err := sch.CompressSchema()
 	if err != nil {
-		e := MirProcessError{e: err}
-		return e
+		return fmt.Errorf("error compressing schema: %w", err)
 	}
-
-	packNames := []string{}
-	reg.RangeFiles(func(f protoreflect.FileDescriptor) bool {
-		packNames = append(packNames, string(f.FullName()))
-		return true
-	})
+	packNames := sch.GetPackageList()
 
 	req := &core_apiv1.UpdateDeviceRequest{
 		Targets: &core_apiv1.Targets{
@@ -116,18 +103,10 @@ func (d *SchemaUploadCmd) Run(c CLI) error {
 	}
 	resp, err := core_client.PublishDeviceUpdateRequest(msgBus, req)
 	if err != nil {
-		e := MirRequestError{Route: "device.update", e: err}
-		return e
+		return fmt.Errorf("error publishing device update request: %w", err)
 	}
-	if resp.GetError() != nil {
-		e := MirResponseError{
-			Route: "device.update",
-			e: MirHttpError{
-				Code:    resp.GetError().GetCode(),
-				Message: resp.GetError().GetMessage(),
-				Details: resp.GetError().GetDetails(),
-			}}
-		return e
+	if resp.GetError() != "" {
+		return errors.New(resp.GetError())
 	}
 
 	if resp.GetOk() != nil {
@@ -136,7 +115,7 @@ func (d *SchemaUploadCmd) Run(c CLI) error {
 			fmt.Println(prettyStringDevices(list))
 		} else {
 			if out, e := MarshalResponse(d.Output, list); e != nil {
-				return e
+				return fmt.Errorf("error marshalling response: %w", e)
 			} else {
 				fmt.Println(out)
 			}
@@ -192,18 +171,10 @@ func (d *SchemaExploreCmd) Run(c CLI) error {
 	}
 	resp, err := core_client.PublishDeviceListRequest(msgBus, req)
 	if err != nil {
-		e := MirRequestError{Route: "device.list", e: err}
-		return e
+		return fmt.Errorf("error publishing device list request: %w", err)
 	}
-	if resp.GetError() != nil {
-		e := MirResponseError{
-			Route: "device.list",
-			e: MirHttpError{
-				Code:    resp.GetError().GetCode(),
-				Message: resp.GetError().GetMessage(),
-				Details: resp.GetError().GetDetails(),
-			}}
-		return e
+	if resp.GetError() != "" {
+		return errors.New(resp.GetError())
 	}
 
 	devs := resp.GetOk().GetDevices()
@@ -272,7 +243,7 @@ func (d *SchemaExploreCmd) Run(c CLI) error {
 	}
 
 	if out, e := MarshalResponse(d.Output, devSchemasArray); e != nil {
-		return e
+		return fmt.Errorf("error marshalling response: %w", e)
 	} else {
 		fmt.Println(out)
 	}

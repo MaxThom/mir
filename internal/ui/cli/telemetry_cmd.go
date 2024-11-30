@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -69,12 +70,10 @@ func (d *TelemetryListCmd) Run(c CLI) error {
 	}
 	resp, err := tlm_client.PublishTelemetryListRequest(msgBus, req)
 	if err != nil {
-		e := MirRequestError{Route: "telemetry.list", e: err}
-		return e
+		return fmt.Errorf("error publishing telemtry list request: %w", err)
 	}
-	if resp.GetError() != nil {
-		e := MirResponseError{Route: "telemetry.list", e: fmt.Errorf(resp.GetError().Message)}
-		return e
+	if resp.GetError() != "" {
+		return errors.New(resp.GetError())
 	}
 
 	var sb strings.Builder

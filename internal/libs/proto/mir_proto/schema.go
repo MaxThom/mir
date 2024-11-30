@@ -7,6 +7,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/proto/json_template"
 	cmd_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cmd_api"
 	tlm_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/tlm_api"
+	"gopkg.in/yaml.v3"
 
 	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
 
@@ -109,6 +110,20 @@ func (m *MirProtoSchema) MarshalSchema() ([]byte, error) {
 	})
 
 	bytes, err := proto.Marshal(pbset)
+	if err != nil {
+		return []byte{}, err
+	}
+	return bytes, nil
+}
+
+func (m *MirProtoSchema) ToYaml() ([]byte, error) {
+	pbset := &descriptorpb.FileDescriptorSet{}
+	m.RangeFiles(func(fd protoreflect.FileDescriptor) bool {
+		pbset.File = append(pbset.File, protodesc.ToFileDescriptorProto(fd))
+		return true
+	})
+
+	bytes, err := yaml.Marshal(pbset)
 	if err != nil {
 		return []byte{}, err
 	}
