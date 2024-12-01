@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/maxthom/mir/internal/clients"
 	"github.com/maxthom/mir/internal/clients/core_client"
@@ -11,6 +12,10 @@ import (
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
+)
+
+const (
+	defaultTimeout = 7 * time.Second
 )
 
 type serverSubject []string
@@ -146,7 +151,7 @@ func (r *createDeviceRoute) Request(req *core_apiv1.CreateDeviceRequest) (mir_mo
 		return mir_models.Device{}, err
 	}
 
-	resMsg, err := r.m.request(sbj, bReq, nil)
+	resMsg, err := r.m.request(sbj, bReq, nil, defaultTimeout)
 	if err != nil {
 		return mir_models.Device{}, err
 	}
@@ -221,7 +226,7 @@ func (r *updateDeviceRoute) Request(req *core_apiv1.UpdateDeviceRequest) ([]mir_
 		return []mir_models.Device{}, err
 	}
 
-	resMsg, err := r.m.request(sbj, bReq, nil)
+	resMsg, err := r.m.request(sbj, bReq, nil, defaultTimeout)
 	if err != nil {
 		return []mir_models.Device{}, err
 	}
@@ -296,7 +301,7 @@ func (r *deleteDeviceRoute) Request(req *core_apiv1.DeleteDeviceRequest) ([]mir_
 		return []mir_models.Device{}, err
 	}
 
-	resMsg, err := r.m.request(sbj, bReq, nil)
+	resMsg, err := r.m.request(sbj, bReq, nil, defaultTimeout)
 	if err != nil {
 		return []mir_models.Device{}, err
 	}
@@ -371,7 +376,7 @@ func (r *listDeviceRoute) Request(req *core_apiv1.ListDeviceRequest) ([]mir_mode
 		return []mir_models.Device{}, err
 	}
 
-	resMsg, err := r.m.request(sbj, bReq, nil)
+	resMsg, err := r.m.request(sbj, bReq, nil, defaultTimeout)
 	if err != nil {
 		return []mir_models.Device{}, err
 	}

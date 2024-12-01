@@ -6,34 +6,34 @@ import (
 	"time"
 
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
-	device_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/device_api"
-	"github.com/nats-io/nats.go"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 
 	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
 	"github.com/maxthom/mir/pkgs/mir_models"
-	"github.com/maxthom/mir/pkgs/module/mir"
+	"github.com/maxthom/mir/pkgs/module/mirv2"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 var l zerolog.Logger
 
 type MirProtoCache struct {
-	m           *mir.Mir
+	m           *mirv2.Mir
 	cache       map[string]cacheEntry
 	cacheLock   sync.RWMutex
 	subscribers []func(deviceId string, device mir_models.Device, schema mir_proto.MirProtoSchema)
 }
 
-func NewMirProtoCache(logger zerolog.Logger, m *mir.Mir) *MirProtoCache {
+func NewMirProtoCache(logger zerolog.Logger, m *mirv2.Mir) (*MirProtoCache, error) {
 	l = logger.With().Str("sub", "proto_cache").Logger()
 	cache := &MirProtoCache{
 		m:     m,
 		cache: make(map[string]cacheEntry),
 	}
-	m.Subscribe(mir.Event().V1Alpha().DeviceUpdated(cache.deviceUpdateSub))
-	return cache
+	if err := m.Event().DeviceUpdate().Subscribe(cache.deviceUpdateSub); err != nil {
+		return nil, fmt.Errorf("error subscribing to device update event: %w", err)
+	}
+	return cache, nil
 }
 
 type cacheEntry struct {
@@ -102,20 +102,16 @@ func (c *MirProtoCache) reconcileDeviceSchema(deviceId string, forceDeviceFetch 
 	// IDEA refresh if last fetch is older then a timespan
 	l.Debug().Str("device_id", deviceId).Msg("device schema not in cache, reconciling...")
 	respList := &core_apiv1.ListDeviceResponse{}
-	if err := c.m.SendRequest(mir.Resquest().V1Alpha().ListDevice(
-		core_apiv1.ListDeviceRequest{
+	devs, err := c.m.Server().ListDevice().Request(
+		&core_apiv1.ListDeviceRequest{
 			Targets: &core_apiv1.Targets{
 				Ids: []string{deviceId},
 			},
 		},
-		respList,
-	)); err != nil {
-		return mir_models.Device{}, nil, err
-	}
-	if respList.GetError() != "" {
+	)
+	if err != nil {
 		return mir_models.Device{}, nil, fmt.Errorf("error listing devices: %s", respList.GetError())
 	}
-	devs := respList.GetOk().Devices
 	if len(devs) == 0 {
 		return mir_models.Device{}, nil, fmt.Errorf("device %s not found", deviceId)
 	}
@@ -126,7 +122,7 @@ func (c *MirProtoCache) reconcileDeviceSchema(deviceId string, forceDeviceFetch 
 				sch, err := mir_proto.DecompressSchema(devs[0].Status.Schema.CompressedSchema)
 				if err == nil {
 					l.Info().Str("device_id", deviceId).Msgf("reconciled schema for %s from db", deviceId)
-					return mir_models.NewDeviceFromProtoDevice(devs[0]), sch, nil
+					return devs[0], sch, nil
 				}
 				// If error, we fetch from device
 			}
@@ -143,48 +139,40 @@ func (c *MirProtoCache) reconcileDeviceSchema(deviceId string, forceDeviceFetch 
 		return mir_models.Device{}, nil, err
 	}
 
-	updResp := &core_apiv1.UpdateDeviceResponse{}
-	err = c.m.SendRequest(mir.Resquest().V1Alpha().UpdateDevice(
-		core_apiv1.UpdateDeviceRequest{
-			Targets: &core_apiv1.Targets{
-				Ids: []string{deviceId},
+	_, err = c.m.Server().UpdateDevice().Request(&core_apiv1.UpdateDeviceRequest{
+		Targets: &core_apiv1.Targets{
+			Ids: []string{deviceId},
+		},
+		Status: &core_apiv1.UpdateDeviceRequest_Status{
+			Schema: &core_apiv1.UpdateDeviceRequest_Schema{
+				CompressedSchema: compressSch,
+				PackageNames:     sch.GetPackageList(),
+				LastSchemaFetch:  mir_models.AsProtoTimestamp(time.Now().UTC()),
 			},
-			Status: &core_apiv1.UpdateDeviceRequest_Status{
-				Schema: &core_apiv1.UpdateDeviceRequest_Schema{
-					CompressedSchema: compressSch,
-					PackageNames:     sch.GetPackageList(),
-					LastSchemaFetch:  mir_models.AsProtoTimestamp(time.Now().UTC()),
-				},
-			},
-		}, updResp))
+		},
+	},
+	)
 	if err != nil {
-		return mir_models.Device{}, nil, err
-	}
-	if updResp.GetError() != "" {
-		return mir_models.Device{}, nil, fmt.Errorf("%s", updResp.GetError())
+		return mir_models.Device{}, nil, fmt.Errorf("error updating device: %w", err)
 	}
 
 	l.Info().Str("device_id", deviceId).Msgf("reconciled schema for %s from device", deviceId)
-	return mir_models.NewDeviceFromProtoDevice(devs[0]), sch, err
+	return devs[0], sch, err
 }
 
 func (c *MirProtoCache) getProtoSchemaFromDevice(deviceId string) (*mir_proto.MirProtoSchema, error) {
-	schemaResp := &device_apiv1.SchemaRetrieveResponse{}
-	err := c.m.SendRequest(mir.Command().V1Alpha().RequestSchema(deviceId, schemaResp))
+	sch, err := c.m.Device().Schema().Request(deviceId)
 	if err != nil {
 		return nil, err
-	} else if schemaResp.GetError() != "" {
-		e := schemaResp.GetError()
-		return nil, errors.New(e)
 	}
 
-	// Decompress already from using the sdk
-	return mir_proto.UnmarshalSchema(schemaResp.GetSchema())
+	return sch, nil
 }
 
-func (c *MirProtoCache) deviceUpdateSub(msg *nats.Msg, deviceId string, device *core_apiv1.Device) {
+func (c *MirProtoCache) deviceUpdateSub(msg *mirv2.Msg, serverid string, device mir_models.Device) {
 	// TODO this wont work if one instance of Mir with many cache from flux or cmd. If we have single binary
 	// need a subcomponent header or something
+	deviceId := device.Spec.DeviceId
 	if c.m.GetInstanceName() == msg.Header.Get("o-instance") {
 		msg.Ack()
 		return
@@ -194,16 +182,15 @@ func (c *MirProtoCache) deviceUpdateSub(msg *nats.Msg, deviceId string, device *
 		l.Error().Str("device_id", deviceId).Err(err).Msg("error decompressing schema")
 		return
 	}
-	dev := mir_models.NewDeviceFromProtoDevice(device)
 	l.Info().Str("device_id", deviceId).Msg("cache updated")
 	c.cacheLock.Lock()
 	c.cache[deviceId] = cacheEntry{
-		dev: dev,
+		dev: device,
 		sch: sch,
 	}
 	c.cacheLock.Unlock()
 	for _, fn := range c.subscribers {
-		fn(deviceId, dev, *sch)
+		fn(deviceId, device, *sch)
 	}
 	msg.Ack()
 }

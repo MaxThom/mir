@@ -22,7 +22,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/external/influx"
 	"github.com/maxthom/mir/internal/libs/external/surreal"
 	"github.com/maxthom/mir/internal/servers/prototlm_srv"
-	"github.com/maxthom/mir/pkgs/module/mir"
+	"github.com/maxthom/mir/pkgs/module/mirv2"
 	"github.com/rs/zerolog"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -184,14 +184,17 @@ func run(
 	log.Info().Str("url", cfg.TelemetryServer.Url).Msg("connected to puthost")
 
 	// Bus
-	m, err := mir.Connect("prototlm", cfg.DataBusServer.Url)
+	m, err := mirv2.Connect("prototlm", cfg.DataBusServer.Url)
 	if err != nil {
 		return err
 	}
 	log.Info().Str("url", cfg.DataBusServer.Url).Msg("connected to msg bus")
 
 	// Services
-	prototlmSrv := prototlm_srv.NewProtoTlmServer(log, m, mng.NewSurrealDeviceStore(db), ts.NewInfluxTelemetryStore(cfg.TelemetryServer.Org, cfg.TelemetryServer.Bucket, lpClient))
+	prototlmSrv, err := prototlm_srv.NewProtoTlmServer(log, m, mng.NewSurrealDeviceStore(db), ts.NewInfluxTelemetryStore(cfg.TelemetryServer.Org, cfg.TelemetryServer.Bucket, lpClient))
+	if err != nil {
+		return err
+	}
 	prototlm_srv.RegisterMetrics(metrics.Registry())
 
 	// Metrics & Health

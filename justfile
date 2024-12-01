@@ -35,6 +35,11 @@ test:
 install: build
     sudo cp bin/mir /usr/local/bin/mir
 
+# Compile Mir to ARM64 and SCP to host
+install-rpi host:
+    GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o bin/mir_arm64 cmds/mir/main.go
+    scp bin/mir_arm64 {{host}}/usr/local/bin/mir
+
 # Start tmux layouts for local dev
 tx:
 	tmuxifier s ./.tmux/mir.session.sh

@@ -3,6 +3,7 @@ package mirv2
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/maxthom/mir/internal/clients"
 	"github.com/maxthom/mir/internal/clients/core_client"
@@ -103,6 +104,16 @@ func (r *telemetryRoute) Subscribe(f func(msg *nats.Msg, deviceId string, protoM
 	return r.m.subscribe(sbj, h)
 }
 
+// Subscribe to telemetry messages as a worker queue
+// You are responsible of acknowledging the message
+func (r *telemetryRoute) QueueSubscribe(queue string, f func(msg *nats.Msg, deviceId string, protoMsgName string, data []byte)) error {
+	sbj := tlm_client.TelemetryDeviceStream.WithId("*")
+	h := func(msg *nats.Msg) {
+		f(msg, clients.ServerSubject(msg.Subject).GetId(), msg.Header.Get("__msg"), msg.Data)
+	}
+	return r.m.queueSubscribe(queue, sbj, h)
+}
+
 /// Schema
 
 type schemaRoute struct {
@@ -117,7 +128,7 @@ func (r *deviceRoutes) Schema() *schemaRoute {
 // Request device schema
 func (r *schemaRoute) Request(deviceId string) (*mir_proto.MirProtoSchema, error) {
 	sbj := device_client.SchemaRequest.WithId(deviceId)
-	resp, err := r.m.requestWithCompression(sbj, []byte{}, nil)
+	resp, err := r.m.requestWithCompression(sbj, []byte{}, nil, 7*time.Second)
 	if err != nil {
 		return nil, fmt.Errorf("error requesting device schema: %w", err)
 	}
@@ -156,7 +167,7 @@ type ProtoCmdDesc struct {
 // desc, err := sch.FindDescriptorByName(protoreflect.FullName(cmdDesc.Name))
 // msgResp := dynamicpb.NewMessage(desc.(protoreflect.MessageDescriptor))
 // err = proto.Unmarshal(cmdDesc.Payload, msgResp)
-func (r *commandRoute) Request(deviceId string, cmd proto.Message) (ProtoCmdDesc, error) {
+func (r *commandRoute) Request(deviceId string, cmd proto.Message, timeout time.Duration) (ProtoCmdDesc, error) {
 	b, err := proto.Marshal(cmd)
 	if err != nil {
 		return ProtoCmdDesc{}, fmt.Errorf("error serializing command payload: %w", err)
@@ -165,7 +176,7 @@ func (r *commandRoute) Request(deviceId string, cmd proto.Message) (ProtoCmdDesc
 	return r.RequestRaw(deviceId, ProtoCmdDesc{
 		Name:    string(cmd.ProtoReflect().Descriptor().FullName()),
 		Payload: b,
-	})
+	}, timeout)
 }
 
 // Send a command to a device with raw payload.
@@ -176,13 +187,13 @@ func (r *commandRoute) Request(deviceId string, cmd proto.Message) (ProtoCmdDesc
 // desc, err := sch.FindDescriptorByName(protoreflect.FullName(cmdDesc.Name))
 // msgResp := dynamicpb.NewMessage(desc.(protoreflect.MessageDescriptor))
 // err = proto.Unmarshal(cmdDesc.Payload, msgResp)
-func (r *commandRoute) RequestRaw(deviceId string, cmd ProtoCmdDesc) (ProtoCmdDesc, error) {
+func (r *commandRoute) RequestRaw(deviceId string, cmd ProtoCmdDesc, timeout time.Duration) (ProtoCmdDesc, error) {
 	sbj := device_client.CommandRequest.WithId(deviceId)
 	h := nats.Header{
 		"__msg": []string{cmd.Name},
 	}
 
-	resp, err := r.m.request(sbj, cmd.Payload, h)
+	resp, err := r.m.request(sbj, cmd.Payload, h, timeout)
 	if err != nil {
 		return ProtoCmdDesc{}, fmt.Errorf("error requesting device command: %w", err)
 	}

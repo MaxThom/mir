@@ -19,7 +19,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/boiler/mir_signals"
 	"github.com/maxthom/mir/internal/libs/external/surreal"
 	"github.com/maxthom/mir/internal/servers/protocmd_srv"
-	"github.com/maxthom/mir/pkgs/module/mir"
+	"github.com/maxthom/mir/pkgs/module/mirv2"
 	"github.com/rs/zerolog"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -156,14 +156,17 @@ func run(
 	log.Info().Str("url", cfg.DatabaseServer.Url).Str("namespace", "global").Str("database", "mir").Msg("connected to database")
 
 	// Bus
-	m, err := mir.Connect("protocmd", cfg.DataBusServer.Url)
+	m, err := mirv2.Connect("protocmd", cfg.DataBusServer.Url)
 	if err != nil {
 		return err
 	}
 	log.Info().Str("url", cfg.DataBusServer.Url).Msg("connected to msg bus")
 
 	// Services
-	protocmdSrv := protocmd_srv.NewProtoCmdServer(log, m, mng.NewSurrealDeviceStore(db))
+	protocmdSrv, err := protocmd_srv.NewProtoCmdServer(log, m, mng.NewSurrealDeviceStore(db))
+	if err != nil {
+		return err
+	}
 	protocmd_srv.RegisterMetrics(metrics.Registry())
 
 	// Metrics & Health

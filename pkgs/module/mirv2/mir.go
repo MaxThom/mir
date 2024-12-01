@@ -140,7 +140,7 @@ func (m *Mir) publish(subject string, data []byte, headers nats.Header) error {
 	return m.Bus.PublishMsg(msg)
 }
 
-func (m *Mir) request(subject string, data []byte, headers nats.Header) (*nats.Msg, error) {
+func (m *Mir) request(subject string, data []byte, headers nats.Header, timeout time.Duration) (*nats.Msg, error) {
 	if headers == nil {
 		headers = nats.Header{}
 	}
@@ -150,16 +150,16 @@ func (m *Mir) request(subject string, data []byte, headers nats.Header) (*nats.M
 		Data:    data,
 	}
 
-	return m.Bus.RequestMsg(msg, 7*time.Second)
+	return m.Bus.RequestMsg(msg, timeout)
 }
 
-func (m *Mir) requestWithCompression(subject string, data []byte, headers nats.Header) (*nats.Msg, error) {
+func (m *Mir) requestWithCompression(subject string, data []byte, headers nats.Header, timeout time.Duration) (*nats.Msg, error) {
 	if headers == nil {
 		headers = nats.Header{}
 	}
 	headers.Add(HeaderRequestEnconding, HeaderZstdEncoding)
 
-	resp, err := m.request(subject, data, headers)
+	resp, err := m.request(subject, data, headers, timeout)
 	if err != nil {
 		return nil, fmt.Errorf("error publishing request message: %w", err)
 	}

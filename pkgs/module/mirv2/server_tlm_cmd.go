@@ -70,7 +70,7 @@ func (r *listTelemetryRoute) Request(req *tlm_apiv1.SendListTelemetryRequest) ([
 		return []*tlm_apiv1.DevicesTelemetry{}, err
 	}
 
-	resMsg, err := r.m.request(sbj, bReq, nil)
+	resMsg, err := r.m.request(sbj, bReq, nil, defaultTimeout)
 	if err != nil {
 		return []*tlm_apiv1.DevicesTelemetry{}, err
 	}
@@ -148,7 +148,7 @@ func (r *listCommandRoute) Request(req *cmd_apiv1.SendListCommandsRequest) (map[
 		return map[string]*cmd_apiv1.Commands{}, err
 	}
 
-	resMsg, err := r.m.request(sbj, bReq, nil)
+	resMsg, err := r.m.request(sbj, bReq, nil, defaultTimeout)
 	if err != nil {
 		return map[string]*cmd_apiv1.Commands{}, err
 	}
@@ -177,18 +177,18 @@ func (r *serverRoutes) SendCommand() *sendCommandRoute {
 }
 
 // Subscribe to send command request
-func (r *sendCommandRoute) Subscribe(f func(msg *nats.Msg, clientId string, req *cmd_apiv1.SendCommandRequest) (map[string]*cmd_apiv1.SendCommandResponse_CommandResponse, error)) error {
+func (r *sendCommandRoute) Subscribe(f func(msg *nats.Msg, clientId string, req *cmd_apiv1.SendCommandRequest) (*cmd_apiv1.SendCommandResponse_CommandResponses, error)) error {
 	sbj := cmd_client.SendCommandRequest.WithId("*")
 	return r.m.subscribe(sbj, r.handlerWrapper(f))
 }
 
 // Queue subscribe to send command request
-func (r *sendCommandRoute) QueueSubscribe(queue string, f func(msg *nats.Msg, clientId string, req *cmd_apiv1.SendCommandRequest) (map[string]*cmd_apiv1.SendCommandResponse_CommandResponse, error)) error {
+func (r *sendCommandRoute) QueueSubscribe(queue string, f func(msg *nats.Msg, clientId string, req *cmd_apiv1.SendCommandRequest) (*cmd_apiv1.SendCommandResponse_CommandResponses, error)) error {
 	sbj := cmd_client.SendCommandRequest.WithId("*")
 	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
 }
 
-func (r *sendCommandRoute) handlerWrapper(f func(msg *nats.Msg, clientId string, req *cmd_apiv1.SendCommandRequest) (map[string]*cmd_apiv1.SendCommandResponse_CommandResponse, error)) nats.MsgHandler {
+func (r *sendCommandRoute) handlerWrapper(f func(msg *nats.Msg, clientId string, req *cmd_apiv1.SendCommandRequest) (*cmd_apiv1.SendCommandResponse_CommandResponses, error)) nats.MsgHandler {
 	return func(msg *nats.Msg) {
 		req := &cmd_apiv1.SendCommandRequest{}
 		if err := proto.Unmarshal(msg.Data, req); err != nil {
@@ -210,9 +210,7 @@ func (r *sendCommandRoute) handlerWrapper(f func(msg *nats.Msg, clientId string,
 		// TODO log error here
 		err = r.m.sendReplyOrAck(msg, &cmd_apiv1.SendCommandResponse{
 			Response: &cmd_apiv1.SendCommandResponse_Ok{
-				Ok: &cmd_apiv1.SendCommandResponse_CommandResponses{
-					DeviceResponses: resp,
-				},
+				Ok: resp,
 			},
 		})
 	}
@@ -226,7 +224,7 @@ func (r *sendCommandRoute) Request(req *cmd_apiv1.SendCommandRequest) (map[strin
 		return map[string]*cmd_apiv1.SendCommandResponse_CommandResponse{}, err
 	}
 
-	resMsg, err := r.m.request(sbj, bReq, nil)
+	resMsg, err := r.m.request(sbj, bReq, nil, defaultTimeout)
 	if err != nil {
 		return map[string]*cmd_apiv1.SendCommandResponse_CommandResponse{}, err
 	}

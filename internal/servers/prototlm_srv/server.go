@@ -8,14 +8,13 @@ import (
 	"github.com/maxthom/mir/internal/externals/mng"
 	"github.com/maxthom/mir/internal/externals/ts"
 	"github.com/maxthom/mir/internal/libs/api/metrics"
-	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	proto_lineprotocol "github.com/maxthom/mir/internal/libs/proto/line_protocol"
 	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
 	"github.com/maxthom/mir/internal/services/schema_cache"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	tlm_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/tlm_api"
 	"github.com/maxthom/mir/pkgs/mir_models"
-	"github.com/maxthom/mir/pkgs/module/mir"
+	"github.com/maxthom/mir/pkgs/module/mirv2"
 	"github.com/nats-io/nats.go"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
@@ -26,7 +25,7 @@ type ProtoTlmServer struct {
 	ctx            context.Context
 	tlmStore       ts.TelemetryStore
 	sub            *nats.Subscription
-	m              *mir.Mir
+	m              *mirv2.Mir
 	devStore       mng.DeviceStore
 	devWriters     map[string]map[string]proto_lineprotocol.ProtoBytesToLpFn
 	devWritersLock sync.RWMutex
@@ -76,17 +75,21 @@ func RegisterMetrics(reg prometheus.Registerer) {
 	reg.Register(datapointCount)
 }
 
-func NewProtoTlmServer(logger zerolog.Logger, m *mir.Mir, devStore mng.DeviceStore, tlmStore ts.TelemetryStore) *ProtoTlmServer {
+func NewProtoTlmServer(logger zerolog.Logger, m *mirv2.Mir, devStore mng.DeviceStore, tlmStore ts.TelemetryStore) (*ProtoTlmServer, error) {
 	l = logger.With().Str("srv", "prototlm_server").Logger()
+	cc, err := schema_cache.NewMirProtoCache(l, m)
+	if err != nil {
+		return nil, err
+	}
 	srv := &ProtoTlmServer{
 		tlmStore:   tlmStore,
 		m:          m,
 		devStore:   devStore,
 		devWriters: make(map[string]map[string]proto_lineprotocol.ProtoBytesToLpFn),
-		schStore:   schema_cache.NewMirProtoCache(l, m),
+		schStore:   cc,
 	}
 	srv.schStore.AddDeviceUpdateSub(srv.handleDeviceUpdate)
-	return srv
+	return srv, nil
 }
 
 func (s *ProtoTlmServer) handleInfluxErrorChannel() {
@@ -98,14 +101,19 @@ func (s *ProtoTlmServer) handleInfluxErrorChannel() {
 	}()
 }
 
-func (s *ProtoTlmServer) Listen(ctx context.Context) {
+func (s *ProtoTlmServer) Listen(ctx context.Context) error {
 	s.ctx = ctx
 	s.handleInfluxErrorChannel()
-	s.m.QueueSubscribe(ServiceName, mir.Stream().V1Alpha().Telemetry(s.handleTelemetryStream))
-	s.m.QueueSubscribe(ServiceName, mir.Client().V1Alpha().ListTelemetry(s.handleTelemetryListRequest))
+	if err := s.m.Device().Telemetry().QueueSubscribe(ServiceName, s.handleTelemetryStream); err != nil {
+		return fmt.Errorf("cannot listen to device telemetry stream: %w", err)
+	}
+	if err := s.m.Server().ListTelemetry().QueueSubscribe(ServiceName, s.handleTelemetryListRequest); err != nil {
+		return fmt.Errorf("cannot listen to device telemetry list request: %w", err)
+	}
+	return nil
 }
 
-func (s *ProtoTlmServer) handleTelemetryStream(msg *nats.Msg, deviceId string, protoMsgName string) {
+func (s *ProtoTlmServer) handleTelemetryStream(msg *nats.Msg, deviceId string, protoMsgName string, data []byte) {
 	// TODO prometheus
 	// TODO set maximum relidelivery in subscribe
 	// TODO handler error with schema if we can't have it.
@@ -154,7 +162,7 @@ func (s *ProtoTlmServer) handleTelemetryStream(msg *nats.Msg, deviceId string, p
 		s.devWritersLock.Unlock()
 	}
 	// TODO update function to return error
-	lp := devWriter(msg.Data, map[string]string{})
+	lp := devWriter(data, map[string]string{})
 	// fmt.Println(lp)
 	s.tlmStore.WriteDatapoint(lp)
 }
@@ -173,25 +181,13 @@ type schemaPerDevices struct {
 	devsNameNs []string
 }
 
-func (s *ProtoTlmServer) handleTelemetryListRequest(msg *nats.Msg, req *tlm_apiv1.SendListTelemetryRequest, e error) {
+func (s *ProtoTlmServer) handleTelemetryListRequest(msg *nats.Msg, clientId string, req *tlm_apiv1.SendListTelemetryRequest) ([]*tlm_apiv1.DevicesTelemetry, error) {
 	l.Info().Any("req", req).Msg("list telemetry request")
-	if e != nil {
-		l.Error().Err(e).Msg("error occure while receiving request")
-		bus.SendProtoReplyOrAck(s.m.Bus, msg, &tlm_apiv1.SendListTelemetryResponse{
-			Response: &tlm_apiv1.SendListTelemetryResponse_Error{
-				Error: fmt.Errorf("%w: %w", mir_models.ErrorApiDeserializingRequest, e).Error(),
-			},
-		})
-	}
 
 	devs, err := s.devStore.ListDevice(&core_apiv1.ListDeviceRequest{Targets: req.Targets})
 	if err != nil {
-		l.Error().Err(e).Msg("error occure while listing devices")
-		bus.SendProtoReplyOrAck(s.m.Bus, msg, &tlm_apiv1.SendListTelemetryResponse{
-			Response: &tlm_apiv1.SendListTelemetryResponse_Error{
-				Error: fmt.Errorf("error listing device from db: %w", e).Error(),
-			},
-		})
+		l.Error().Err(err).Msg("error occure while listing devices")
+		return nil, fmt.Errorf("error listing device from db: %w", err)
 	}
 
 	devsTlm := []*tlm_apiv1.DevicesTelemetry{}
@@ -257,13 +253,7 @@ func (s *ProtoTlmServer) handleTelemetryListRequest(msg *nats.Msg, req *tlm_apiv
 	}
 
 	l.Info().Msg("list command request processed successfully")
-	bus.SendProtoReplyOrAck(s.m.Bus, msg, &tlm_apiv1.SendListTelemetryResponse{
-		Response: &tlm_apiv1.SendListTelemetryResponse_Ok{
-			Ok: &tlm_apiv1.TelemetryResponse{
-				DevicesTelemetry: devsTlm,
-			},
-		},
-	})
+	return devsTlm, nil
 }
 
 // TODO have some device info
