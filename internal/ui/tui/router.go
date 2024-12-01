@@ -149,11 +149,11 @@ func (m *Model) connectToMir(url string) tea.Cmd {
 			bus.WithClosedHandler(func(nc *nats.Conn) {
 				l.Warn().Msg("connection to %v closed " + nc.ConnectedUrl())
 			}))
+		m.bus = b
+		store.Bus = b
 		if err != nil {
 			return msgs.ErrMsg{Err: err}
 		}
-		m.bus = b
-		store.Bus = b
 
 		return msgs.ResMsg("connected to Mir")
 	}

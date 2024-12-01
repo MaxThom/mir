@@ -93,7 +93,6 @@ func PublishDeviceListRequest(bus *bus.BusConn, req *core_apiv1.ListDeviceReques
 	if err != nil {
 		return &core_apiv1.ListDeviceResponse{}, err
 	}
-
 	resMsg, err := bus.Request(ListDeviceRequest.WithId("TODO"), bReq, 7*time.Second)
 	if err != nil {
 		return &core_apiv1.ListDeviceResponse{}, err
