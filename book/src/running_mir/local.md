@@ -9,6 +9,7 @@ To run Mir locally, you need to have the following installed:
 - [Go](https://golang.org/doc/install)
 - [Rust](https://www.rust-lang.org/tools/install)  (To run Mir Book)
 - [Just](https://github.com/casey/just) (Optional, for common tasks)
+- [Protoc](https://grpc.io/docs/protoc-installation/)
 
 Once you have the above installed, you can run the following commands to complete installation:
 

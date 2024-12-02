@@ -19,7 +19,9 @@ Since the repository is private, you need to adjust your git configuration befor
 go get github.com/maxthom/mir/
 ```
 
-First of, we need to tell git to use the SSH protocol to access the GitHub repository.
+Make sure you have access to the [repository](https://github.com/maxthom/mir) on GitHub and your local env. is setup with an SSH key for authentication.
+
+First, we need to tell git to use the SSH protocol to access the GitHub repository.
 
 ```bash
 # In ~/.gitconfig
@@ -48,10 +50,21 @@ Ready to roll!
 
 Mir requires a set of utility tools to properly create devices:
 
-- [buf](https://github.com/air-verse/air): A modern protobuf schema manager.
-- [protoc](https://github.com/bufbuild/buf/): The protobuf compiler.
+- [protoc](https://grpc.io/docs/protoc-installation/): Protocol buffer compiler.
 
-They can be installed via `go install` or using Mir CLI:
+It must be manually installed via your package manager:
+
+```bash
+# Debian, Ubuntu, Raspian
+sudo apt install protobuf-compiler
+# Arch based
+sudo pacman -S protobuf
+```
+
+The following can be installed via `go install` or using Mir CLI:
+
+- [buf](https://github.com/bufbuild/buf/): Go bindings for protobuf compiler.
+- [protoc-go-gen](https://github.com/bufbuild/buf/): Go bindings for protobuf compiler.
 
 ```bash
 # Mir CLI
