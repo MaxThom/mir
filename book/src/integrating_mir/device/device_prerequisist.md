@@ -24,7 +24,7 @@ First of, we need to tell git to use the SSH protocol to access the GitHub repos
 ```bash
 # In ~/.gitconfig
 [url "ssh://git@github.com/"]
-  insteadOf = https://github.com
+  insteadOf = https://github.com/
 ```
 
 Even though packages are stored in Git repositories, they get downloaded through Go mirror.
