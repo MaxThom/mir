@@ -1,4 +1,4 @@
-package mirv2
+package mir
 
 import (
 	"encoding/json"
@@ -44,9 +44,9 @@ func (r serverRoutes) NewSubject(module, version, function string, extra ...stri
 // <version>: version of the data in the stream (v1alpha, v1, etc)
 // <function>: refer to the exact function of the stream
 // <extra>: any extra token you want to add
-func (r *serverRoutes) Subscribe(sbj serverSubject, h func(msg *nats.Msg, clientId string)) error {
+func (r *serverRoutes) Subscribe(sbj serverSubject, h func(msg *Msg, clientId string)) error {
 	f := func(msg *nats.Msg) {
-		h(msg, clients.ServerSubject(msg.Subject).GetId())
+		h(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId())
 	}
 	return r.m.subscribe(sbj.String(), f)
 }
@@ -58,9 +58,9 @@ func (r *serverRoutes) Subscribe(sbj serverSubject, h func(msg *nats.Msg, client
 // <version>: version of the data in the stream (v1alpha, v1, etc)
 // <function>: refer to the exact function of the stream
 // <extra>: any extra token you want to add
-func (r *serverRoutes) QueueSubscribe(queue string, sbj serverSubject, h func(msg *nats.Msg, clientId string)) error {
+func (r *serverRoutes) QueueSubscribe(queue string, sbj serverSubject, h func(msg *Msg, clientId string)) error {
 	f := func(msg *nats.Msg) {
-		h(msg, clients.ServerSubject(msg.Subject).GetId())
+		h(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId())
 	}
 	return r.m.queueSubscribe(queue, sbj.String(), f)
 }
@@ -105,18 +105,18 @@ func (r *serverRoutes) CreateDevice() *createDeviceRoute {
 }
 
 // Subscribe to createDevice routes
-func (r *createDeviceRoute) Subscribe(f func(msg *nats.Msg, clientId string, req *core_apiv1.CreateDeviceRequest) (*core_apiv1.Device, error)) error {
+func (r *createDeviceRoute) Subscribe(f func(msg *Msg, clientId string, req *core_apiv1.CreateDeviceRequest) (*core_apiv1.Device, error)) error {
 	sbj := core_client.CreateDeviceRequest.WithId("*")
 	return r.m.subscribe(sbj, r.handlerWrapper(f))
 }
 
 // Queue subscribe to createDevice routes
-func (r *createDeviceRoute) QueueSubscribe(queue string, f func(msg *nats.Msg, clientId string, req *core_apiv1.CreateDeviceRequest) (*core_apiv1.Device, error)) error {
+func (r *createDeviceRoute) QueueSubscribe(queue string, f func(msg *Msg, clientId string, req *core_apiv1.CreateDeviceRequest) (*core_apiv1.Device, error)) error {
 	sbj := core_client.CreateDeviceRequest.WithId("*")
 	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
 }
 
-func (r *createDeviceRoute) handlerWrapper(f func(msg *nats.Msg, clientId string, req *core_apiv1.CreateDeviceRequest) (*core_apiv1.Device, error)) nats.MsgHandler {
+func (r *createDeviceRoute) handlerWrapper(f func(msg *Msg, clientId string, req *core_apiv1.CreateDeviceRequest) (*core_apiv1.Device, error)) nats.MsgHandler {
 	return func(msg *nats.Msg) {
 		req := &core_apiv1.CreateDeviceRequest{}
 		if err := proto.Unmarshal(msg.Data, req); err != nil {
@@ -127,7 +127,7 @@ func (r *createDeviceRoute) handlerWrapper(f func(msg *nats.Msg, clientId string
 			return
 		}
 
-		resp, err := f(msg, clients.ServerSubject(msg.Subject).GetId(), req)
+		resp, err := f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), req)
 		if err != nil {
 			err = r.m.sendReplyOrAck(msg, &core_apiv1.CreateDeviceResponse{Response: &core_apiv1.CreateDeviceResponse_Error{
 				Error: err.Error(),
@@ -180,18 +180,18 @@ func (r *serverRoutes) UpdateDevice() *updateDeviceRoute {
 }
 
 // Subscribe to update device routes
-func (r *updateDeviceRoute) Subscribe(f func(msg *nats.Msg, clientId string, req *core_apiv1.UpdateDeviceRequest) ([]*core_apiv1.Device, error)) error {
+func (r *updateDeviceRoute) Subscribe(f func(msg *Msg, clientId string, req *core_apiv1.UpdateDeviceRequest) ([]*core_apiv1.Device, error)) error {
 	sbj := core_client.UpdateDeviceRequest.WithId("*")
 	return r.m.subscribe(sbj, r.handlerWrapper(f))
 }
 
 // Queue subscribe to update device routes
-func (r *updateDeviceRoute) QueueSubscribe(queue string, f func(msg *nats.Msg, clientId string, req *core_apiv1.UpdateDeviceRequest) ([]*core_apiv1.Device, error)) error {
+func (r *updateDeviceRoute) QueueSubscribe(queue string, f func(msg *Msg, clientId string, req *core_apiv1.UpdateDeviceRequest) ([]*core_apiv1.Device, error)) error {
 	sbj := core_client.UpdateDeviceRequest.WithId("*")
 	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
 }
 
-func (r *updateDeviceRoute) handlerWrapper(f func(msg *nats.Msg, clientId string, req *core_apiv1.UpdateDeviceRequest) ([]*core_apiv1.Device, error)) nats.MsgHandler {
+func (r *updateDeviceRoute) handlerWrapper(f func(msg *Msg, clientId string, req *core_apiv1.UpdateDeviceRequest) ([]*core_apiv1.Device, error)) nats.MsgHandler {
 	return func(msg *nats.Msg) {
 		req := &core_apiv1.UpdateDeviceRequest{}
 		if err := proto.Unmarshal(msg.Data, req); err != nil {
@@ -202,7 +202,7 @@ func (r *updateDeviceRoute) handlerWrapper(f func(msg *nats.Msg, clientId string
 			return
 		}
 
-		resp, err := f(msg, clients.ServerSubject(msg.Subject).GetId(), req)
+		resp, err := f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), req)
 		if err != nil {
 			err = r.m.sendReplyOrAck(msg, &core_apiv1.UpdateDeviceResponse{Response: &core_apiv1.UpdateDeviceResponse_Error{
 				Error: err.Error(),
@@ -255,18 +255,18 @@ func (r *serverRoutes) DeleteDevice() *deleteDeviceRoute {
 }
 
 // Subscribe to delete device routes
-func (r *deleteDeviceRoute) Subscribe(f func(msg *nats.Msg, clientId string, req *core_apiv1.DeleteDeviceRequest) ([]*core_apiv1.Device, error)) error {
+func (r *deleteDeviceRoute) Subscribe(f func(msg *Msg, clientId string, req *core_apiv1.DeleteDeviceRequest) ([]*core_apiv1.Device, error)) error {
 	sbj := core_client.DeleteDeviceRequest.WithId("*")
 	return r.m.subscribe(sbj, r.handlerWrapper(f))
 }
 
 // Queue subscribe to delete device routes
-func (r *deleteDeviceRoute) QueueSubscribe(queue string, f func(msg *nats.Msg, clientId string, req *core_apiv1.DeleteDeviceRequest) ([]*core_apiv1.Device, error)) error {
+func (r *deleteDeviceRoute) QueueSubscribe(queue string, f func(msg *Msg, clientId string, req *core_apiv1.DeleteDeviceRequest) ([]*core_apiv1.Device, error)) error {
 	sbj := core_client.DeleteDeviceRequest.WithId("*")
 	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
 }
 
-func (r *deleteDeviceRoute) handlerWrapper(f func(msg *nats.Msg, clientId string, req *core_apiv1.DeleteDeviceRequest) ([]*core_apiv1.Device, error)) nats.MsgHandler {
+func (r *deleteDeviceRoute) handlerWrapper(f func(msg *Msg, clientId string, req *core_apiv1.DeleteDeviceRequest) ([]*core_apiv1.Device, error)) nats.MsgHandler {
 	return func(msg *nats.Msg) {
 		req := &core_apiv1.DeleteDeviceRequest{}
 		if err := proto.Unmarshal(msg.Data, req); err != nil {
@@ -277,7 +277,7 @@ func (r *deleteDeviceRoute) handlerWrapper(f func(msg *nats.Msg, clientId string
 			return
 		}
 
-		resp, err := f(msg, clients.ServerSubject(msg.Subject).GetId(), req)
+		resp, err := f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), req)
 		if err != nil {
 			err = r.m.sendReplyOrAck(msg, &core_apiv1.DeleteDeviceResponse{Response: &core_apiv1.DeleteDeviceResponse_Error{
 				Error: err.Error(),
@@ -330,18 +330,18 @@ func (r *serverRoutes) ListDevice() *listDeviceRoute {
 }
 
 // Subscribe to list device routes
-func (r *listDeviceRoute) Subscribe(f func(msg *nats.Msg, clientId string, req *core_apiv1.ListDeviceRequest) ([]*core_apiv1.Device, error)) error {
+func (r *listDeviceRoute) Subscribe(f func(msg *Msg, clientId string, req *core_apiv1.ListDeviceRequest) ([]*core_apiv1.Device, error)) error {
 	sbj := core_client.ListDeviceRequest.WithId("*")
 	return r.m.subscribe(sbj, r.handlerWrapper(f))
 }
 
 // Queue subscribe to list device routes
-func (r *listDeviceRoute) QueueSubscribe(queue string, f func(msg *nats.Msg, clientId string, req *core_apiv1.ListDeviceRequest) ([]*core_apiv1.Device, error)) error {
+func (r *listDeviceRoute) QueueSubscribe(queue string, f func(msg *Msg, clientId string, req *core_apiv1.ListDeviceRequest) ([]*core_apiv1.Device, error)) error {
 	sbj := core_client.ListDeviceRequest.WithId("*")
 	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
 }
 
-func (r *listDeviceRoute) handlerWrapper(f func(msg *nats.Msg, clientId string, req *core_apiv1.ListDeviceRequest) ([]*core_apiv1.Device, error)) nats.MsgHandler {
+func (r *listDeviceRoute) handlerWrapper(f func(msg *Msg, clientId string, req *core_apiv1.ListDeviceRequest) ([]*core_apiv1.Device, error)) nats.MsgHandler {
 	return func(msg *nats.Msg) {
 		req := &core_apiv1.ListDeviceRequest{}
 		if err := proto.Unmarshal(msg.Data, req); err != nil {
@@ -352,7 +352,7 @@ func (r *listDeviceRoute) handlerWrapper(f func(msg *nats.Msg, clientId string, 
 			return
 		}
 
-		resp, err := f(msg, clients.ServerSubject(msg.Subject).GetId(), req)
+		resp, err := f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), req)
 		if err != nil {
 			err = r.m.sendReplyOrAck(msg, &core_apiv1.ListDeviceResponse{Response: &core_apiv1.ListDeviceResponse_Error{
 				Error: err.Error(),

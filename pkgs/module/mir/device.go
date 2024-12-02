@@ -1,4 +1,4 @@
-package mirv2
+package mir
 
 import (
 	"fmt"
@@ -41,9 +41,9 @@ func (r deviceRoutes) NewSubject(module, version, function string, extra ...stri
 // <version>: version of the data in the stream (v1alpha, v1, etc)
 // <function>: refer to the exact function of the stream
 // <extra>: any extra token you want to add
-func (r *deviceRoutes) Subscribe(sbj deviceSubject, h func(msg *nats.Msg, deviceId string)) error {
+func (r *deviceRoutes) Subscribe(sbj deviceSubject, h func(msg *Msg, deviceId string)) error {
 	f := func(msg *nats.Msg) {
-		h(msg, clients.ServerSubject(msg.Subject).GetId())
+		h(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId())
 	}
 	return r.m.subscribe(sbj.String(), f)
 }
@@ -55,9 +55,9 @@ func (r *deviceRoutes) Subscribe(sbj deviceSubject, h func(msg *nats.Msg, device
 // <version>: version of the data in the stream (v1alpha, v1, etc)
 // <function>: refer to the exact function of the stream
 // <extra>: any extra token you want to add
-func (r *deviceRoutes) QueueSubscribe(queue string, sbj deviceSubject, h func(msg *nats.Msg, deviceId string)) error {
+func (r *deviceRoutes) QueueSubscribe(queue string, sbj deviceSubject, h func(msg *Msg, deviceId string)) error {
 	f := func(msg *nats.Msg) {
-		h(msg, clients.ServerSubject(msg.Subject).GetId())
+		h(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId())
 	}
 	return r.m.queueSubscribe(queue, sbj.String(), f)
 }
@@ -75,10 +75,10 @@ func (r *deviceRoutes) Hearthbeat() *hearthbeatRoute {
 
 // Subscribe to hearthbeat messages
 // You are responsible of acknowledging the message
-func (r *hearthbeatRoute) Subscribe(f func(msg *nats.Msg, deviceId string)) error {
+func (r *hearthbeatRoute) Subscribe(f func(msg *Msg, deviceId string)) error {
 	sbj := core_client.HearthbeatDeviceStream.WithId("*")
 	h := func(msg *nats.Msg) {
-		f(msg, clients.ServerSubject(msg.Subject).GetId())
+		f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId())
 	}
 	return r.m.subscribe(sbj, h)
 }
@@ -96,20 +96,20 @@ func (r *deviceRoutes) Telemetry() *telemetryRoute {
 
 // Subscribe to telemetry messages
 // You are responsible of acknowledging the message
-func (r *telemetryRoute) Subscribe(f func(msg *nats.Msg, deviceId string, protoMsgName string, data []byte)) error {
+func (r *telemetryRoute) Subscribe(f func(msg *Msg, deviceId string, protoMsgName string, data []byte)) error {
 	sbj := tlm_client.TelemetryDeviceStream.WithId("*")
 	h := func(msg *nats.Msg) {
-		f(msg, clients.ServerSubject(msg.Subject).GetId(), msg.Header.Get("__msg"), msg.Data)
+		f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), msg.Header.Get("__msg"), msg.Data)
 	}
 	return r.m.subscribe(sbj, h)
 }
 
 // Subscribe to telemetry messages as a worker queue
 // You are responsible of acknowledging the message
-func (r *telemetryRoute) QueueSubscribe(queue string, f func(msg *nats.Msg, deviceId string, protoMsgName string, data []byte)) error {
+func (r *telemetryRoute) QueueSubscribe(queue string, f func(msg *Msg, deviceId string, protoMsgName string, data []byte)) error {
 	sbj := tlm_client.TelemetryDeviceStream.WithId("*")
 	h := func(msg *nats.Msg) {
-		f(msg, clients.ServerSubject(msg.Subject).GetId(), msg.Header.Get("__msg"), msg.Data)
+		f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), msg.Header.Get("__msg"), msg.Data)
 	}
 	return r.m.queueSubscribe(queue, sbj, h)
 }

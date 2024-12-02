@@ -1,4 +1,4 @@
-package mirv2
+package mir
 
 import (
 	"github.com/maxthom/mir/internal/clients"
@@ -22,18 +22,18 @@ func (r *serverRoutes) ListTelemetry() *listTelemetryRoute {
 }
 
 // Subscribe to list telemetry request
-func (r *listTelemetryRoute) Subscribe(f func(msg *nats.Msg, clientId string, req *tlm_apiv1.SendListTelemetryRequest) ([]*tlm_apiv1.DevicesTelemetry, error)) error {
+func (r *listTelemetryRoute) Subscribe(f func(msg *Msg, clientId string, req *tlm_apiv1.SendListTelemetryRequest) ([]*tlm_apiv1.DevicesTelemetry, error)) error {
 	sbj := tlm_client.TelemetryListRequest.WithId("*")
 	return r.m.subscribe(sbj, r.handlerWrapper(f))
 }
 
 // Queue subscribe to list telemetry request
-func (r *listTelemetryRoute) QueueSubscribe(queue string, f func(msg *nats.Msg, clientId string, req *tlm_apiv1.SendListTelemetryRequest) ([]*tlm_apiv1.DevicesTelemetry, error)) error {
+func (r *listTelemetryRoute) QueueSubscribe(queue string, f func(msg *Msg, clientId string, req *tlm_apiv1.SendListTelemetryRequest) ([]*tlm_apiv1.DevicesTelemetry, error)) error {
 	sbj := tlm_client.TelemetryListRequest.WithId("*")
 	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
 }
 
-func (r *listTelemetryRoute) handlerWrapper(f func(msg *nats.Msg, clientId string, req *tlm_apiv1.SendListTelemetryRequest) ([]*tlm_apiv1.DevicesTelemetry, error)) nats.MsgHandler {
+func (r *listTelemetryRoute) handlerWrapper(f func(msg *Msg, clientId string, req *tlm_apiv1.SendListTelemetryRequest) ([]*tlm_apiv1.DevicesTelemetry, error)) nats.MsgHandler {
 	return func(msg *nats.Msg) {
 		req := &tlm_apiv1.SendListTelemetryRequest{}
 		if err := proto.Unmarshal(msg.Data, req); err != nil {
@@ -44,7 +44,7 @@ func (r *listTelemetryRoute) handlerWrapper(f func(msg *nats.Msg, clientId strin
 			return
 		}
 
-		resp, err := f(msg, clients.ServerSubject(msg.Subject).GetId(), req)
+		resp, err := f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), req)
 		if err != nil {
 			err = r.m.sendReplyOrAck(msg, &tlm_apiv1.SendListTelemetryResponse{Response: &tlm_apiv1.SendListTelemetryResponse_Error{
 				Error: err.Error(),
@@ -99,18 +99,18 @@ func (r *serverRoutes) ListCommands() *listCommandRoute {
 }
 
 // Subscribe to list command request
-func (r *listCommandRoute) Subscribe(f func(msg *nats.Msg, clientId string, req *cmd_apiv1.SendListCommandsRequest) (map[string]*cmd_apiv1.Commands, error)) error {
+func (r *listCommandRoute) Subscribe(f func(msg *Msg, clientId string, req *cmd_apiv1.SendListCommandsRequest) (map[string]*cmd_apiv1.Commands, error)) error {
 	sbj := cmd_client.ListCommandsRequest.WithId("*")
 	return r.m.subscribe(sbj, r.handlerWrapper(f))
 }
 
 // Queue subscribe to list command request
-func (r *listCommandRoute) QueueSubscribe(queue string, f func(msg *nats.Msg, clientId string, req *cmd_apiv1.SendListCommandsRequest) (map[string]*cmd_apiv1.Commands, error)) error {
+func (r *listCommandRoute) QueueSubscribe(queue string, f func(msg *Msg, clientId string, req *cmd_apiv1.SendListCommandsRequest) (map[string]*cmd_apiv1.Commands, error)) error {
 	sbj := cmd_client.ListCommandsRequest.WithId("*")
 	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
 }
 
-func (r *listCommandRoute) handlerWrapper(f func(msg *nats.Msg, clientId string, req *cmd_apiv1.SendListCommandsRequest) (map[string]*cmd_apiv1.Commands, error)) nats.MsgHandler {
+func (r *listCommandRoute) handlerWrapper(f func(msg *Msg, clientId string, req *cmd_apiv1.SendListCommandsRequest) (map[string]*cmd_apiv1.Commands, error)) nats.MsgHandler {
 	return func(msg *nats.Msg) {
 		req := &cmd_apiv1.SendListCommandsRequest{}
 		if err := proto.Unmarshal(msg.Data, req); err != nil {
@@ -121,7 +121,7 @@ func (r *listCommandRoute) handlerWrapper(f func(msg *nats.Msg, clientId string,
 			return
 		}
 
-		resp, err := f(msg, clients.ServerSubject(msg.Subject).GetId(), req)
+		resp, err := f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), req)
 		if err != nil {
 			// TODO log error here
 			_ = r.m.sendReplyOrAck(msg, &cmd_apiv1.SendListCommandsResponse{Response: &cmd_apiv1.SendListCommandsResponse_Error{
@@ -177,18 +177,18 @@ func (r *serverRoutes) SendCommand() *sendCommandRoute {
 }
 
 // Subscribe to send command request
-func (r *sendCommandRoute) Subscribe(f func(msg *nats.Msg, clientId string, req *cmd_apiv1.SendCommandRequest) (*cmd_apiv1.SendCommandResponse_CommandResponses, error)) error {
+func (r *sendCommandRoute) Subscribe(f func(msg *Msg, clientId string, req *cmd_apiv1.SendCommandRequest) (*cmd_apiv1.SendCommandResponse_CommandResponses, error)) error {
 	sbj := cmd_client.SendCommandRequest.WithId("*")
 	return r.m.subscribe(sbj, r.handlerWrapper(f))
 }
 
 // Queue subscribe to send command request
-func (r *sendCommandRoute) QueueSubscribe(queue string, f func(msg *nats.Msg, clientId string, req *cmd_apiv1.SendCommandRequest) (*cmd_apiv1.SendCommandResponse_CommandResponses, error)) error {
+func (r *sendCommandRoute) QueueSubscribe(queue string, f func(msg *Msg, clientId string, req *cmd_apiv1.SendCommandRequest) (*cmd_apiv1.SendCommandResponse_CommandResponses, error)) error {
 	sbj := cmd_client.SendCommandRequest.WithId("*")
 	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
 }
 
-func (r *sendCommandRoute) handlerWrapper(f func(msg *nats.Msg, clientId string, req *cmd_apiv1.SendCommandRequest) (*cmd_apiv1.SendCommandResponse_CommandResponses, error)) nats.MsgHandler {
+func (r *sendCommandRoute) handlerWrapper(f func(msg *Msg, clientId string, req *cmd_apiv1.SendCommandRequest) (*cmd_apiv1.SendCommandResponse_CommandResponses, error)) nats.MsgHandler {
 	return func(msg *nats.Msg) {
 		req := &cmd_apiv1.SendCommandRequest{}
 		if err := proto.Unmarshal(msg.Data, req); err != nil {
@@ -199,7 +199,7 @@ func (r *sendCommandRoute) handlerWrapper(f func(msg *nats.Msg, clientId string,
 			return
 		}
 
-		resp, err := f(msg, clients.ServerSubject(msg.Subject).GetId(), req)
+		resp, err := f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), req)
 		if err != nil {
 			// TODO log error here
 			_ = r.m.sendReplyOrAck(msg, &cmd_apiv1.SendCommandResponse{Response: &cmd_apiv1.SendCommandResponse_Error{

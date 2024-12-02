@@ -1,4 +1,4 @@
-package mirv2
+package mir
 
 import (
 	"testing"
@@ -54,7 +54,7 @@ func TestDeviceRoutes_Subscribe(t *testing.T) {
 	// Channel to synchronize test
 	received := make(chan bool)
 
-	err := m.Device().Subscribe(subject, func(msg *nats.Msg, id string) {
+	err := m.Device().Subscribe(subject, func(msg *Msg, id string) {
 		assert.Equal(t, deviceID, id)
 		assert.Equal(t, "test-data", string(msg.Data))
 		received <- true
@@ -82,13 +82,13 @@ func TestDeviceRoutes_QueueSubscribe(t *testing.T) {
 	receivedCount2 := 0
 
 	// Create two queue subscribers
-	err := m.Device().QueueSubscribe(queueName, subject, func(msg *nats.Msg, id string) {
+	err := m.Device().QueueSubscribe(queueName, subject, func(msg *Msg, id string) {
 		assert.Equal(t, deviceID, id)
 		receivedCount1++
 	})
 	assert.NilError(t, err)
 
-	err = m.Device().QueueSubscribe(queueName, subject, func(msg *nats.Msg, id string) {
+	err = m.Device().QueueSubscribe(queueName, subject, func(msg *Msg, id string) {
 		assert.Equal(t, deviceID, id)
 		receivedCount2++
 	})
@@ -111,7 +111,7 @@ func TestDeviceRoutes_Hearthbeat(t *testing.T) {
 	deviceID := "test-device-1"
 	received := make(chan bool)
 
-	err := m.Device().Hearthbeat().Subscribe(func(msg *nats.Msg, id string) {
+	err := m.Device().Hearthbeat().Subscribe(func(msg *Msg, id string) {
 		assert.Equal(t, deviceID, id)
 		received <- true
 	})
@@ -134,7 +134,7 @@ func TestDeviceRoutes_Telemetry(t *testing.T) {
 	testData := []byte("test-telemetry-data")
 	received := make(chan bool)
 
-	err := m.Device().Telemetry().Subscribe(func(msg *nats.Msg, id string, msgName string, data []byte) {
+	err := m.Device().Telemetry().Subscribe(func(msg *Msg, id string, msgName string, data []byte) {
 		assert.Equal(t, deviceID, id)
 		assert.Equal(t, protoMsgName, msgName)
 		assert.DeepEqual(t, testData, data)
@@ -217,7 +217,7 @@ func TestDeviceRoutes_Command(t *testing.T) {
 	resp, err := m.Device().Command().RequestRaw(deviceID, ProtoCmdDesc{
 		Name:    cmdName,
 		Payload: cmdPayload,
-	})
+	}, time.Second*7)
 	assert.NilError(t, err)
 	assert.Equal(t, "test.Response", resp.Name)
 	assert.DeepEqual(t, []byte("test-response-payload"), resp.Payload)

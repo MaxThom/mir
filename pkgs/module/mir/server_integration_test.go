@@ -1,4 +1,4 @@
-package mirv2
+package mir
 
 import (
 	"encoding/json"
@@ -9,7 +9,6 @@ import (
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	tlm_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/tlm_api"
 	"github.com/maxthom/mir/pkgs/mir_models"
-	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
 	"gotest.tools/assert"
 )
@@ -50,7 +49,7 @@ func TestServerRoutes_Subscribe(t *testing.T) {
 	subject := m.Server().NewSubject("test", "v1", "function")
 	received := make(chan bool)
 
-	err := m.Server().Subscribe(subject, func(msg *nats.Msg, id string) {
+	err := m.Server().Subscribe(subject, func(msg *Msg, id string) {
 		assert.Equal(t, "test-data", string(msg.Data))
 		received <- true
 	})
@@ -74,12 +73,12 @@ func TestServerRoutes_QueueSubscribe(t *testing.T) {
 	receivedCount1 := 0
 	receivedCount2 := 0
 
-	err := m.Server().QueueSubscribe(queueName, subject, func(msg *nats.Msg, id string) {
+	err := m.Server().QueueSubscribe(queueName, subject, func(msg *Msg, id string) {
 		receivedCount1++
 	})
 	assert.NilError(t, err)
 
-	err = m.Server().QueueSubscribe(queueName, subject, func(msg *nats.Msg, id string) {
+	err = m.Server().QueueSubscribe(queueName, subject, func(msg *Msg, id string) {
 		receivedCount2++
 	})
 	assert.NilError(t, err)
@@ -107,7 +106,7 @@ func TestServerRoutes_CreateDevice(t *testing.T) {
 	}
 
 	err := m.Server().CreateDevice().Subscribe(
-		func(msg *nats.Msg, clientId string, req *core_apiv1.CreateDeviceRequest) (*core_apiv1.Device, error) {
+		func(msg *Msg, clientId string, req *core_apiv1.CreateDeviceRequest) (*core_apiv1.Device, error) {
 			return &core_apiv1.Device{
 				Meta: &core_apiv1.Meta{
 					Name:      testDevice.Meta.Name,
@@ -150,7 +149,7 @@ func TestServerRoutes_UpdateDevice(t *testing.T) {
 	}
 
 	err := m.Server().UpdateDevice().Subscribe(
-		func(msg *nats.Msg, clientId string, req *core_apiv1.UpdateDeviceRequest) ([]*core_apiv1.Device, error) {
+		func(msg *Msg, clientId string, req *core_apiv1.UpdateDeviceRequest) ([]*core_apiv1.Device, error) {
 			return []*core_apiv1.Device{
 				{
 					Meta: &core_apiv1.Meta{
@@ -198,7 +197,7 @@ func TestServerRoutes_DeleteDevice(t *testing.T) {
 	}
 
 	err := m.Server().DeleteDevice().Subscribe(
-		func(msg *nats.Msg, clientId string, req *core_apiv1.DeleteDeviceRequest) ([]*core_apiv1.Device, error) {
+		func(msg *Msg, clientId string, req *core_apiv1.DeleteDeviceRequest) ([]*core_apiv1.Device, error) {
 			return []*core_apiv1.Device{
 				{
 					Meta: &core_apiv1.Meta{
@@ -239,7 +238,7 @@ func TestServerRoutes_ListDevice(t *testing.T) {
 	}
 
 	err := m.Server().ListDevice().Subscribe(
-		func(msg *nats.Msg, clientId string, req *core_apiv1.ListDeviceRequest) ([]*core_apiv1.Device, error) {
+		func(msg *Msg, clientId string, req *core_apiv1.ListDeviceRequest) ([]*core_apiv1.Device, error) {
 			return []*core_apiv1.Device{
 				{
 					Meta: &core_apiv1.Meta{
@@ -273,7 +272,7 @@ func TestServerRoutes_PublishSubscribe(t *testing.T) {
 	received := make(chan bool)
 
 	// Subscribe
-	err := m.Server().Subscribe(subject, func(msg *nats.Msg, clientId string) {
+	err := m.Server().Subscribe(subject, func(msg *Msg, clientId string) {
 		assert.Equal(t, "test-data", string(msg.Data))
 		received <- true
 	})
@@ -306,7 +305,7 @@ func TestServerRoutes_PublishProto(t *testing.T) {
 	}
 
 	// Subscribe
-	err := m.Server().Subscribe(subject, func(msg *nats.Msg, clientId string) {
+	err := m.Server().Subscribe(subject, func(msg *Msg, clientId string) {
 		device := &core_apiv1.Device{}
 		err := proto.Unmarshal(msg.Data, device)
 		assert.NilError(t, err)
@@ -343,7 +342,7 @@ func TestServerRoutes_PublishJson(t *testing.T) {
 	}
 
 	// Subscribe
-	err := m.Server().Subscribe(subject, func(msg *nats.Msg, clientId string) {
+	err := m.Server().Subscribe(subject, func(msg *Msg, clientId string) {
 		var device mir_models.Device
 		err := json.Unmarshal(msg.Data, &device)
 		assert.NilError(t, err)
@@ -379,7 +378,7 @@ func TestServerRoutes_ListTelemetry(t *testing.T) {
 	}
 
 	err := m.Server().ListTelemetry().Subscribe(
-		func(msg *nats.Msg, clientId string, req *tlm_apiv1.SendListTelemetryRequest) ([]*tlm_apiv1.DevicesTelemetry, error) {
+		func(msg *Msg, clientId string, req *tlm_apiv1.SendListTelemetryRequest) ([]*tlm_apiv1.DevicesTelemetry, error) {
 			return testTelemetry, nil
 		},
 	)
@@ -407,7 +406,7 @@ func TestServerRoutes_ListCommand(t *testing.T) {
 	}
 
 	err := m.Server().ListCommands().Subscribe(
-		func(msg *nats.Msg, clientId string, req *cmd_apiv1.SendListCommandsRequest) (map[string]*cmd_apiv1.Commands, error) {
+		func(msg *Msg, clientId string, req *cmd_apiv1.SendListCommandsRequest) (map[string]*cmd_apiv1.Commands, error) {
 			return testCommands, nil
 		},
 	)
@@ -424,14 +423,16 @@ func TestServerRoutes_ListCommand(t *testing.T) {
 
 func TestServerRoutes_SendCommand(t *testing.T) {
 	deviceID := "test-device-1"
-	testCommands := map[string]*cmd_apiv1.SendCommandResponse_CommandResponse{
-		"test-device-1": {
-			DeviceId: deviceID,
+	testCommands := &cmd_apiv1.SendCommandResponse_CommandResponses{
+		DeviceResponses: map[string]*cmd_apiv1.SendCommandResponse_CommandResponse{
+			"test-device-1": {
+				DeviceId: deviceID,
+			},
 		},
 	}
 
 	err := m.Server().SendCommand().Subscribe(
-		func(msg *nats.Msg, clientId string, req *cmd_apiv1.SendCommandRequest) (map[string]*cmd_apiv1.SendCommandResponse_CommandResponse, error) {
+		func(msg *Msg, clientId string, req *cmd_apiv1.SendCommandRequest) (*cmd_apiv1.SendCommandResponse_CommandResponses, error) {
 			return testCommands, nil
 		},
 	)
@@ -442,6 +443,6 @@ func TestServerRoutes_SendCommand(t *testing.T) {
 			Ids: []string{deviceID},
 		},
 	})
-	assert.Equal(t, resp[deviceID].DeviceId, testCommands[deviceID].DeviceId)
+	assert.Equal(t, resp[deviceID].DeviceId, testCommands.DeviceResponses[deviceID].DeviceId)
 	assert.NilError(t, err)
 }
