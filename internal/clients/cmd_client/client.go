@@ -69,6 +69,6 @@ func PublishDeviceCommandEvent(bus *nats.Conn, originalInstance string, deviceId
 		Data:    b,
 		Header:  nats.Header{},
 	}
-	msg.Header.Add("o-instance", originalInstance)
+	msg.Header.Add("original-trigger", originalInstance)
 	return bus.PublishMsg(msg)
 }

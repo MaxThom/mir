@@ -118,7 +118,7 @@ func PublishDeviceOnlineEvent(bus *bus.BusConn, originalInstance string, deviceI
 		Data:    []byte{},
 		Header:  nats.Header{},
 	}
-	msg.Header.Add("o-instance", originalInstance)
+	msg.Header.Add("original-trigger", originalInstance)
 	return bus.PublishMsg(msg)
 }
 
@@ -128,7 +128,7 @@ func PublishDeviceOfflineEvent(bus *bus.BusConn, originalInstance string, device
 		Data:    []byte{},
 		Header:  nats.Header{},
 	}
-	msg.Header.Add("o-instance", originalInstance)
+	msg.Header.Add("original-trigger", originalInstance)
 	return bus.PublishMsg(msg)
 }
 
@@ -142,7 +142,7 @@ func PublishDeviceDeletedEvent(bus *bus.BusConn, originalInstance string, device
 		Data:    b,
 		Header:  nats.Header{},
 	}
-	msg.Header.Add("o-instance", originalInstance)
+	msg.Header.Add("original-trigger", originalInstance)
 	return bus.PublishMsg(msg)
 }
 
@@ -156,7 +156,7 @@ func PublishDeviceCreatedEvent(bus *bus.BusConn, originalInstance string, device
 		Data:    b,
 		Header:  nats.Header{},
 	}
-	msg.Header.Add("o-instance", originalInstance)
+	msg.Header.Add("original-trigger", originalInstance)
 	return bus.PublishMsg(msg)
 }
 
@@ -170,6 +170,6 @@ func PublishDeviceUpdatedEvent(bus *bus.BusConn, originalInstance string, device
 		Data:    b,
 		Header:  nats.Header{},
 	}
-	msg.Header.Add("o-instance", originalInstance)
+	msg.Header.Add("original-trigger", originalInstance)
 	return bus.PublishMsg(msg)
 }

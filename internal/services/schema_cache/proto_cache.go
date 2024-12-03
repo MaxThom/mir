@@ -173,7 +173,7 @@ func (c *MirProtoCache) deviceUpdateSub(msg *mir.Msg, serverId string, device mi
 	// TODO this wont work if one instance of Mir with many cache from flux or cmd. If we have single binary
 	// need a subcomponent header or something
 	deviceId := device.Spec.DeviceId
-	if c.m.GetInstanceName() == msg.Header.Get("o-instance") {
+	if c.m.GetInstanceName() == msg.GetOriginalTriggerId() {
 		msg.Ack()
 		return
 	}
