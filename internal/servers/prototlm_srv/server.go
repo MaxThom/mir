@@ -14,7 +14,7 @@ import (
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	tlm_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/tlm_api"
 	"github.com/maxthom/mir/pkgs/mir_models"
-	"github.com/maxthom/mir/pkgs/module/mirv2"
+	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/nats-io/nats.go"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
@@ -25,7 +25,7 @@ type ProtoTlmServer struct {
 	ctx            context.Context
 	tlmStore       ts.TelemetryStore
 	sub            *nats.Subscription
-	m              *mirv2.Mir
+	m              *mir.Mir
 	devStore       mng.DeviceStore
 	devWriters     map[string]map[string]proto_lineprotocol.ProtoBytesToLpFn
 	devWritersLock sync.RWMutex
@@ -75,7 +75,7 @@ func RegisterMetrics(reg prometheus.Registerer) {
 	reg.Register(datapointCount)
 }
 
-func NewProtoTlmServer(logger zerolog.Logger, m *mirv2.Mir, devStore mng.DeviceStore, tlmStore ts.TelemetryStore) (*ProtoTlmServer, error) {
+func NewProtoTlmServer(logger zerolog.Logger, m *mir.Mir, devStore mng.DeviceStore, tlmStore ts.TelemetryStore) (*ProtoTlmServer, error) {
 	l = logger.With().Str("srv", "prototlm_server").Logger()
 	cc, err := schema_cache.NewMirProtoCache(l, m)
 	if err != nil {
@@ -104,7 +104,7 @@ func (s *ProtoTlmServer) handleInfluxErrorChannel() {
 func (s *ProtoTlmServer) Listen(ctx context.Context) error {
 	s.ctx = ctx
 	s.handleInfluxErrorChannel()
-	if err := s.m.Device().Telemetry().QueueSubscribe(ServiceName, s.handleTelemetryStream); err != nil {
+	if err := s.m.Device().Telemetry().QueueSubscribe(ServiceName, "", s.handleTelemetryStream); err != nil {
 		return fmt.Errorf("cannot listen to device telemetry stream: %w", err)
 	}
 	if err := s.m.Server().ListTelemetry().QueueSubscribe(ServiceName, s.handleTelemetryListRequest); err != nil {
@@ -113,7 +113,7 @@ func (s *ProtoTlmServer) Listen(ctx context.Context) error {
 	return nil
 }
 
-func (s *ProtoTlmServer) handleTelemetryStream(msg *nats.Msg, deviceId string, protoMsgName string, data []byte) {
+func (s *ProtoTlmServer) handleTelemetryStream(msg *mir.Msg, deviceId string, protoMsgName string, data []byte) {
 	// TODO prometheus
 	// TODO set maximum relidelivery in subscribe
 	// TODO handler error with schema if we can't have it.
@@ -181,7 +181,7 @@ type schemaPerDevices struct {
 	devsNameNs []string
 }
 
-func (s *ProtoTlmServer) handleTelemetryListRequest(msg *nats.Msg, clientId string, req *tlm_apiv1.SendListTelemetryRequest) ([]*tlm_apiv1.DevicesTelemetry, error) {
+func (s *ProtoTlmServer) handleTelemetryListRequest(msg *mir.Msg, clientId string, req *tlm_apiv1.SendListTelemetryRequest) ([]*tlm_apiv1.DevicesTelemetry, error) {
 	l.Info().Any("req", req).Msg("list telemetry request")
 
 	devs, err := s.devStore.ListDevice(&core_apiv1.ListDeviceRequest{Targets: req.Targets})
@@ -266,6 +266,7 @@ func generateIngesters(desc protoreflect.Descriptor, deviceId string, device mir
 	for k, v := range device.Meta.Labels {
 		tags["__label_"+k] = v
 	}
+	fmt.Println(tags)
 	fn, err := proto_lineprotocol.GenerateMarshalFn(tags, desc.(protoreflect.MessageDescriptor))
 	if err != nil {
 		return nil, err

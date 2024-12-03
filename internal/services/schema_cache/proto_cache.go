@@ -11,20 +11,20 @@ import (
 
 	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
 	"github.com/maxthom/mir/pkgs/mir_models"
-	"github.com/maxthom/mir/pkgs/module/mirv2"
+	"github.com/maxthom/mir/pkgs/module/mir"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 var l zerolog.Logger
 
 type MirProtoCache struct {
-	m           *mirv2.Mir
+	m           *mir.Mir
 	cache       map[string]cacheEntry
 	cacheLock   sync.RWMutex
 	subscribers []func(deviceId string, device mir_models.Device, schema mir_proto.MirProtoSchema)
 }
 
-func NewMirProtoCache(logger zerolog.Logger, m *mirv2.Mir) (*MirProtoCache, error) {
+func NewMirProtoCache(logger zerolog.Logger, m *mir.Mir) (*MirProtoCache, error) {
 	l = logger.With().Str("sub", "proto_cache").Logger()
 	cache := &MirProtoCache{
 		m:     m,
@@ -169,7 +169,7 @@ func (c *MirProtoCache) getProtoSchemaFromDevice(deviceId string) (*mir_proto.Mi
 	return sch, nil
 }
 
-func (c *MirProtoCache) deviceUpdateSub(msg *mirv2.Msg, serverid string, device mir_models.Device) {
+func (c *MirProtoCache) deviceUpdateSub(msg *mir.Msg, serverId string, device mir_models.Device) {
 	// TODO this wont work if one instance of Mir with many cache from flux or cmd. If we have single binary
 	// need a subcomponent header or something
 	deviceId := device.Spec.DeviceId

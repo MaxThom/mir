@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 	"syscall"
+	"time"
 
 	"github.com/maxthom/mir/internal/libs/boiler/mir_signals"
 
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	"github.com/maxthom/mir/pkgs/mir_models"
-	mir "github.com/maxthom/mir/pkgs/module/mirv2"
-	"github.com/nats-io/nats.go"
+	mir "github.com/maxthom/mir/pkgs/module/mir"
 )
 
 func main() {
@@ -22,8 +22,8 @@ func main() {
 		panic(err)
 	}
 
-	if err = m.Device().Hearthbeat().Subscribe(
-		func(msg *nats.Msg, deviceId string) {
+	if err = m.Device().Hearthbeat().Subscribe("",
+		func(msg *mir.Msg, deviceId string) {
 			fmt.Println("Hearthbeat ", deviceId)
 			msg.Ack()
 		}); err != nil {
@@ -42,11 +42,11 @@ func main() {
 		mir.ProtoCmdDesc{
 			Name:    "swarm.v1.ChangePowerRequest",
 			Payload: []byte{},
-		})
+		}, time.Second*7)
 	fmt.Println(cmdResp)
 
-	if err = m.Device().Telemetry().Subscribe(
-		func(msg *nats.Msg, deviceId string, protoMsgName string, data []byte) {
+	if err = m.Device().Telemetry().Subscribe("",
+		func(msg *mir.Msg, deviceId string, protoMsgName string, data []byte) {
 			fmt.Println("Telemetry ", deviceId, protoMsgName)
 			msg.Ack()
 		}); err != nil {
@@ -54,13 +54,13 @@ func main() {
 	}
 
 	m.Device().Subscribe(m.Device().NewSubject("report", "v1alpha", "stats"),
-		func(msg *nats.Msg, deviceId string) {
+		func(msg *mir.Msg, deviceId string) {
 			fmt.Println("Report ", deviceId, string(msg.Data))
 		},
 	)
 
 	m.Server().CreateDevice().Subscribe(
-		func(msg *nats.Msg, clientId string, req *core_apiv1.CreateDeviceRequest) (*core_apiv1.Device, error) {
+		func(msg *mir.Msg, clientId string, req *core_apiv1.CreateDeviceRequest) (*core_apiv1.Device, error) {
 			fmt.Println(clientId)
 			fmt.Println(req)
 
@@ -82,7 +82,7 @@ func main() {
 	fmt.Println(dev)
 
 	err = m.Event().DeviceOnline().Subscribe(
-		func(msg *nats.Msg, deviceId string, device mir_models.Device) {
+		func(msg *mir.Msg, deviceId string, device mir_models.Device) {
 			fmt.Println(deviceId)
 			fmt.Println(device)
 		},

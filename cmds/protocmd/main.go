@@ -19,7 +19,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/boiler/mir_signals"
 	"github.com/maxthom/mir/internal/libs/external/surreal"
 	"github.com/maxthom/mir/internal/servers/protocmd_srv"
-	"github.com/maxthom/mir/pkgs/module/mirv2"
+	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/rs/zerolog"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -156,7 +156,7 @@ func run(
 	log.Info().Str("url", cfg.DatabaseServer.Url).Str("namespace", "global").Str("database", "mir").Msg("connected to database")
 
 	// Bus
-	m, err := mirv2.Connect("protocmd", cfg.DataBusServer.Url)
+	m, err := mir.Connect("protocmd", cfg.DataBusServer.Url)
 	if err != nil {
 		return err
 	}

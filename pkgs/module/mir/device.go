@@ -74,9 +74,13 @@ func (r *deviceRoutes) Hearthbeat() *hearthbeatRoute {
 }
 
 // Subscribe to hearthbeat messages
+// To listen to all devices, use deviceId = "" or deviceId = "*"
 // You are responsible of acknowledging the message
-func (r *hearthbeatRoute) Subscribe(f func(msg *Msg, deviceId string)) error {
-	sbj := core_client.HearthbeatDeviceStream.WithId("*")
+func (r *hearthbeatRoute) Subscribe(deviceId string, f func(msg *Msg, deviceId string)) error {
+	if deviceId == "" {
+		deviceId = "*"
+	}
+	sbj := core_client.HearthbeatDeviceStream.WithId(deviceId)
 	h := func(msg *nats.Msg) {
 		f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId())
 	}
@@ -95,9 +99,13 @@ func (r *deviceRoutes) Telemetry() *telemetryRoute {
 }
 
 // Subscribe to telemetry messages
+// To listen to all devices, use deviceId = "" or deviceId = "*"
 // You are responsible of acknowledging the message
-func (r *telemetryRoute) Subscribe(f func(msg *Msg, deviceId string, protoMsgName string, data []byte)) error {
-	sbj := tlm_client.TelemetryDeviceStream.WithId("*")
+func (r *telemetryRoute) Subscribe(deviceId string, f func(msg *Msg, deviceId string, protoMsgName string, data []byte)) error {
+	if deviceId == "" {
+		deviceId = "*"
+	}
+	sbj := tlm_client.TelemetryDeviceStream.WithId(deviceId)
 	h := func(msg *nats.Msg) {
 		f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), msg.Header.Get("__msg"), msg.Data)
 	}
@@ -105,9 +113,13 @@ func (r *telemetryRoute) Subscribe(f func(msg *Msg, deviceId string, protoMsgNam
 }
 
 // Subscribe to telemetry messages as a worker queue
+// To listen to all devices, use deviceId = "" or deviceId = "*"
 // You are responsible of acknowledging the message
-func (r *telemetryRoute) QueueSubscribe(queue string, f func(msg *Msg, deviceId string, protoMsgName string, data []byte)) error {
-	sbj := tlm_client.TelemetryDeviceStream.WithId("*")
+func (r *telemetryRoute) QueueSubscribe(queue string, deviceId string, f func(msg *Msg, deviceId string, protoMsgName string, data []byte)) error {
+	if deviceId == "" {
+		deviceId = "*"
+	}
+	sbj := tlm_client.TelemetryDeviceStream.WithId(deviceId)
 	h := func(msg *nats.Msg) {
 		f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), msg.Header.Get("__msg"), msg.Data)
 	}

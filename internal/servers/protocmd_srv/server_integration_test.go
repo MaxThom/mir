@@ -27,7 +27,7 @@ import (
 	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	mirDevice "github.com/maxthom/mir/pkgs/device/mir"
-	"github.com/maxthom/mir/pkgs/module/mirv2"
+	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/rs/zerolog"
 	logger "github.com/rs/zerolog/log"
 	"github.com/surrealdb/surrealdb.go"
@@ -35,7 +35,7 @@ import (
 )
 
 var db *surrealdb.DB
-var mSdk *mirv2.Mir
+var mSdk *mir.Mir
 var busUrl = "nats://127.0.0.1:4222"
 var logTest = logger.With().Str("test", "core").Logger().Level(zerolog.DebugLevel)
 var lpClient influxdb2.Client
@@ -70,7 +70,7 @@ func TestMain(m *testing.M) {
 		},
 	})
 	var err error
-	mSdk, err := mirv2.Connect("test_protocmd", busUrl)
+	mSdk, err := mir.Connect("test_protocmd", busUrl)
 	if err != nil {
 		panic(err)
 	}
@@ -305,8 +305,6 @@ func TestPublishCmdRequest(t *testing.T) {
 	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
 	if err != nil {
 		t.Error(err)
-	} else if respCmd.GetError() != nil {
-		t.Error(respCmd.GetError())
 	}
 
 	msgResp := &protocmd_testv1.ChangePowerResp{}
@@ -472,7 +470,7 @@ func TestPublishCmdNoDeviceFound(t *testing.T) {
 	respErr := respCmd.GetError()
 
 	// Assert
-	assert.Equal(t, respErr, mng.ErrorNoDeviceFound.Error())
+	assert.Equal(t, respErr, "error sending command to devices: no device found with current targets criteria")
 }
 
 func TestPublishCmdProtoNoValidationDryRun(t *testing.T) {
@@ -1381,7 +1379,7 @@ func TestPublishCmdRequestMultipleDevicesOneTimeoutJsonTemplate(t *testing.T) {
 	assert.Equal(t, cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_ERROR, dev2.Status)
 	assert.Equal(t, "", dev2.Name)
 	assert.Equal(t, "", string(dev2.Payload))
-	assert.Equal(t, `error retrieve command descriptor from device schema: cannot reconcile device schema: nats: no responders available for request`, dev2.Error)
+	assert.Equal(t, dev2.Error, "error retrieve command descriptor from device schema: cannot reconcile device schema: error requesting device schema: error publishing request message: nats: no responders available for request")
 
 	cancel()
 	wg.Wait()

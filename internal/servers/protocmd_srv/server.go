@@ -17,7 +17,7 @@ import (
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
 	"github.com/maxthom/mir/pkgs/mir_models"
-	"github.com/maxthom/mir/pkgs/module/mirv2"
+	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/nats-io/nats.go"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
@@ -31,7 +31,7 @@ import (
 // IDEA possible perf improvement, cache of descriptor
 type ProtoCmdServer struct {
 	sub      *nats.Subscription
-	m        *mirv2.Mir
+	m        *mir.Mir
 	devStore mng.DeviceStore
 	schStore *schema_cache.MirProtoCache
 }
@@ -63,7 +63,7 @@ func RegisterMetrics(reg prometheus.Registerer) {
 	reg.Register(datapointCount)
 }
 
-func NewProtoCmdServer(logger zerolog.Logger, m *mirv2.Mir, devStore mng.DeviceStore) (*ProtoCmdServer, error) {
+func NewProtoCmdServer(logger zerolog.Logger, m *mir.Mir, devStore mng.DeviceStore) (*ProtoCmdServer, error) {
 	l = logger.With().Str("srv", "protocmd_server").Logger()
 	cc, err := schema_cache.NewMirProtoCache(l, m)
 	if err != nil {
@@ -81,7 +81,7 @@ func (s *ProtoCmdServer) Listen(ctx context.Context) {
 	s.m.Server().ListCommands().QueueSubscribe(ServiceName, s.listCommandsSub)
 }
 
-func (s *ProtoCmdServer) sendCommandSub(msg *nats.Msg, clientId string, req *cmd_apiv1.SendCommandRequest) (*cmd_apiv1.SendCommandResponse_CommandResponses, error) {
+func (s *ProtoCmdServer) sendCommandSub(msg *mir.Msg, clientId string, req *cmd_apiv1.SendCommandRequest) (*cmd_apiv1.SendCommandResponse_CommandResponses, error) {
 	l.Info().Any("req", req).Msg("send command request")
 
 	errs := []string{}
@@ -247,7 +247,7 @@ func (s *ProtoCmdServer) sendCommandToDevices(req *cmd_apiv1.SendCommandRequest)
 		go func() {
 			defer wg.Done()
 
-			cmdResp, err := s.m.Device().Command().RequestRaw(p.deviceId, mirv2.ProtoCmdDesc{
+			cmdResp, err := s.m.Device().Command().RequestRaw(p.deviceId, mir.ProtoCmdDesc{
 				Name:    req.Name,
 				Payload: p.payload,
 			}, timeout)
@@ -329,7 +329,7 @@ func (s *ProtoCmdServer) sendCommandToDevices(req *cmd_apiv1.SendCommandRequest)
 	return devResp, nil
 }
 
-func (s *ProtoCmdServer) listCommandsSub(msg *nats.Msg, clientId string, req *cmd_apiv1.SendListCommandsRequest) (map[string]*cmd_apiv1.Commands, error) {
+func (s *ProtoCmdServer) listCommandsSub(msg *mir.Msg, clientId string, req *cmd_apiv1.SendListCommandsRequest) (map[string]*cmd_apiv1.Commands, error) {
 	l.Info().Any("req", req).Msg("list command request")
 	// 1. get device list
 	// 2. for each device, get stored schema, if empty, fetch from device

@@ -97,17 +97,20 @@ func TestMain(m *testing.M) {
 	os.Exit(exitVal)
 }
 
-func TestPublishCmdRequest(t *testing.T) {
+func TestPublishDeviceUpdateCache(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 
-	cache := NewMirProtoCache(l, mSdk)
+	cache, err := NewMirProtoCache(l, mSdk)
+	if err != nil {
+		t.Error(err)
+	}
 	id := "device_proto_cache"
 	count := 0
 	cache.AddDeviceUpdateSub(func(deviceId string, device mir_models.Device, schema mir_proto.MirProtoSchema) {
 		if deviceId == id {
-			count++
 
+			count++
 		}
 	})
 
@@ -172,7 +175,7 @@ func TestPublishCmdRequest(t *testing.T) {
 	// Assert
 	assert.Equal(t, true, mir_proto.AreSchemaEqual(ogSch, sch))
 	assert.Equal(t, devPostUpd.Meta.Labels["test"], str)
-	assert.Equal(t, 1, count)
+	assert.Equal(t, 2, count)
 	cancel()
 	wg.Wait()
 }

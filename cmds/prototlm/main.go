@@ -22,7 +22,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/external/influx"
 	"github.com/maxthom/mir/internal/libs/external/surreal"
 	"github.com/maxthom/mir/internal/servers/prototlm_srv"
-	"github.com/maxthom/mir/pkgs/module/mirv2"
+	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/rs/zerolog"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -184,7 +184,7 @@ func run(
 	log.Info().Str("url", cfg.TelemetryServer.Url).Msg("connected to puthost")
 
 	// Bus
-	m, err := mirv2.Connect("prototlm", cfg.DataBusServer.Url)
+	m, err := mir.Connect("prototlm", cfg.DataBusServer.Url)
 	if err != nil {
 		return err
 	}

@@ -1,6 +1,7 @@
 package mir
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -111,7 +112,8 @@ func TestDeviceRoutes_Hearthbeat(t *testing.T) {
 	deviceID := "test-device-1"
 	received := make(chan bool)
 
-	err := m.Device().Hearthbeat().Subscribe(func(msg *Msg, id string) {
+	err := m.Device().Hearthbeat().Subscribe(deviceID, func(msg *Msg, id string) {
+		fmt.Println(deviceID, id)
 		assert.Equal(t, deviceID, id)
 		received <- true
 	})
@@ -134,7 +136,7 @@ func TestDeviceRoutes_Telemetry(t *testing.T) {
 	testData := []byte("test-telemetry-data")
 	received := make(chan bool)
 
-	err := m.Device().Telemetry().Subscribe(func(msg *Msg, id string, msgName string, data []byte) {
+	err := m.Device().Telemetry().Subscribe(deviceID, func(msg *Msg, id string, msgName string, data []byte) {
 		assert.Equal(t, deviceID, id)
 		assert.Equal(t, protoMsgName, msgName)
 		assert.DeepEqual(t, testData, data)

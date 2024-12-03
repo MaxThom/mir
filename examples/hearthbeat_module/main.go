@@ -8,22 +8,20 @@ import (
 	"github.com/maxthom/mir/internal/libs/boiler/mir_signals"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	"github.com/maxthom/mir/pkgs/mir_models"
-	"github.com/maxthom/mir/pkgs/module/mirv2"
-
-	"github.com/nats-io/nats.go"
+	"github.com/maxthom/mir/pkgs/module/mir"
 )
 
 func main() {
 	_, cancel := context.WithCancel(context.Background())
 	mir_signals.Notify(syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT)
 
-	m, err := mirv2.Connect("example_hearthbeat", "nats://127.0.0.1:4222")
+	m, err := mir.Connect("example_hearthbeat", "nats://127.0.0.1:4222")
 	if err != nil {
 		panic(err)
 	}
 
-	err = m.Device().Hearthbeat().Subscribe(
-		func(msg *nats.Msg, deviceId string) {
+	err = m.Device().Hearthbeat().Subscribe("",
+		func(msg *mir.Msg, deviceId string) {
 			fmt.Println("Hearthbeat ", deviceId)
 			msg.Ack()
 		})
@@ -32,7 +30,7 @@ func main() {
 	}
 
 	err = m.Event().DeviceOnline().Subscribe(
-		func(msg *mirv2.Msg, serverId string, device mir_models.Device) {
+		func(msg *mir.Msg, serverId string, device mir_models.Device) {
 			fmt.Println("Event device online ", device.Spec.DeviceId)
 			msg.Ack()
 		})
@@ -41,7 +39,7 @@ func main() {
 	}
 
 	err = m.Event().DeviceOffline().Subscribe(
-		func(msg *mirv2.Msg, serverId string, device mir_models.Device) {
+		func(msg *mir.Msg, serverId string, device mir_models.Device) {
 			fmt.Println("Event device offline ", device.Spec.DeviceId)
 			msg.Ack()
 		})
@@ -50,7 +48,7 @@ func main() {
 	}
 
 	err = m.Event().DeviceDelete().Subscribe(
-		func(msg *mirv2.Msg, serverId string, d mir_models.Device) {
+		func(msg *mir.Msg, serverId string, d mir_models.Device) {
 			fmt.Println("Event device deleted ", d.Spec.DeviceId)
 			msg.Ack()
 		})
@@ -59,7 +57,7 @@ func main() {
 	}
 
 	err = m.Event().DeviceCreate().Subscribe(
-		func(msg *mirv2.Msg, serverId string, d mir_models.Device) {
+		func(msg *mir.Msg, serverId string, d mir_models.Device) {
 			fmt.Println("Event device created ", d.Spec.DeviceId)
 			msg.Ack()
 		})
@@ -68,7 +66,7 @@ func main() {
 	}
 
 	err = m.Event().DeviceUpdate().Subscribe(
-		func(msg *mirv2.Msg, serverId string, d mir_models.Device) {
+		func(msg *mir.Msg, serverId string, d mir_models.Device) {
 			fmt.Println("Event device updated ", d.Spec.DeviceId)
 			msg.Ack()
 		})
@@ -84,7 +82,7 @@ func main() {
 	})
 }
 
-func SendDeviceCrud(m *mirv2.Mir) {
+func SendDeviceCrud(m *mir.Mir) {
 	id := "CACA2MOU"
 	// Request mean youre expecting a reply
 	// We only have client request in the sdk

@@ -5,6 +5,8 @@ import (
 	"github.com/maxthom/mir/internal/clients/cmd_client"
 	"github.com/maxthom/mir/internal/clients/tlm_client"
 	cmd_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cmd_api"
+	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
+	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	tlm_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/tlm_api"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
@@ -239,4 +241,30 @@ func (r *sendCommandRoute) Request(req *cmd_apiv1.SendCommandRequest) (map[strin
 	}
 
 	return resp.GetOk().DeviceResponses, nil
+}
+
+type SendDeviceCommandRequestProto struct {
+	Targets       *core_apiv1.Targets
+	Command       proto.Message
+	DryRun        bool
+	NoValidation  bool
+	RefreshSchema bool
+	ForcePush     bool
+	TimeoutSec    uint32
+}
+
+// Request send a command to device
+func (r *sendCommandRoute) RequestProto(req *SendDeviceCommandRequestProto) (map[string]*cmd_apiv1.SendCommandResponse_CommandResponse, error) {
+	b, _ := proto.Marshal(req.Command)
+	return r.Request(&cmd_apiv1.SendCommandRequest{
+		Targets:         req.Targets,
+		Name:            string(req.Command.ProtoReflect().Descriptor().FullName()),
+		PayloadEncoding: common_apiv1.Encoding_ENCODING_PROTOBUF,
+		Payload:         b,
+		DryRun:          req.DryRun,
+		NoValidation:    req.NoValidation,
+		RefreshSchema:   req.RefreshSchema,
+		ForcePush:       req.ForcePush,
+		TimeoutSec:      req.TimeoutSec,
+	})
 }

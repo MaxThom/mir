@@ -118,8 +118,6 @@ func TestPublishDeviceCreate(t *testing.T) {
 	})
 	if err != nil {
 		t.Error(err)
-	} else if respList.GetError() != nil {
-		t.Error(respList.GetError())
 	}
 
 	// Assert
@@ -171,8 +169,6 @@ func TestPublishDeviceCreateClient(t *testing.T) {
 	})
 	if err != nil {
 		t.Error(err)
-	} else if respList.GetError() != nil {
-		t.Error(respList.GetError())
 	}
 
 	// Assert
@@ -205,14 +201,11 @@ func TestPublishDeviceCreateClientNoID(t *testing.T) {
 	}
 
 	// Act
-	respCreate, err := core_client.PublishDeviceCreateRequest(b, reqCreate)
-	if err != nil {
-		t.Error(err)
-	}
+	resp, _ := core_client.PublishDeviceCreateRequest(b, reqCreate)
 
 	// Assert
-	assert.Equal(t, respCreate.GetError() != nil, true)
-	assert.Equal(t, respCreate.GetError().Message, "error while creating device: device name and id are missing")
+	assert.Equal(t, resp.GetError() != "", true)
+	assert.Equal(t, resp.GetError(), "error creating device: device name and id are missing")
 }
 
 func TestPublishDeviceCreateClientNoNamespace(t *testing.T) {
@@ -729,7 +722,7 @@ func TestPublishDeviceUpdateTargetMixs(t *testing.T) {
 	// Wait for written to db
 	time.Sleep(1 * time.Second)
 
-	respDb := test_utils.ExecuteTestQueryForType[[]core_apiv1.Device](t, db,
+	respDb := test_utils.ExecuteTestQueryForType[[]*core_apiv1.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE device_id = $id1 OR device_id = $id2 OR device_id = $id3;",
 		map[string]string{
 			"tb":  "devices",
@@ -1721,7 +1714,7 @@ func TestCreatedDeviceAlreadyExist(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, len(respCreate), 2)
-	assert.Equal(t, respCreate[1].GetError().Message, "error while creating device: device device_already_exist_1/testing_core with deviceId device_already_exist_1 already exist")
+	assert.Equal(t, respCreate[1].GetError(), "error creating device: device device_already_exist_1/testing_core with deviceId device_already_exist_1 already exist")
 
 	assert.Equal(t, 1, count) // We create two devices, so only second one is not working
 	s.Unsubscribe()
@@ -1739,7 +1732,7 @@ func TestUpdateNoTargetMetafield(t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	// Assert
-	assert.Equal(t, respUpd.GetError().Message, "No device target provided")
+	assert.Equal(t, respUpd.GetError(), "error no target found: No device target provided")
 }
 
 func TestDeleteNoTargetMetafield(t *testing.T) {
@@ -1754,7 +1747,7 @@ func TestDeleteNoTargetMetafield(t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	// Assert
-	assert.Equal(t, respDel.GetError().Message, "No device target provided")
+	assert.Equal(t, respDel.GetError(), "error no target found: No device target provided")
 }
 
 func TestDeviceCreateDeviceIdAlreadyExist(t *testing.T) {
@@ -1793,7 +1786,7 @@ func TestDeviceCreateDeviceIdAlreadyExist(t *testing.T) {
 	}
 
 	// Assert
-	assert.Equal(t, resp[1].GetError().Message, "error while creating device: device create_dev_same_id_2/testing_core with deviceId 0xf86cmd already exist")
+	assert.Equal(t, resp[1].GetError(), "error creating device: device create_dev_same_id_2/testing_core with deviceId 0xf86cmd already exist")
 }
 
 func TestDeviceCreateDeviceNameNsAlreadyExist(t *testing.T) {
@@ -1832,7 +1825,7 @@ func TestDeviceCreateDeviceNameNsAlreadyExist(t *testing.T) {
 	}
 
 	// Assert
-	assert.Equal(t, resp[1].GetError().Message, "error while creating device: device create_dev_same_id_3/testing_core with deviceId 0xf86xyz already exist")
+	assert.Equal(t, resp[1].GetError(), "error creating device: device create_dev_same_id_3/testing_core with deviceId 0xf86xyz already exist")
 }
 
 func TestDeviceUpsertDevice(t *testing.T) {
@@ -1929,7 +1922,7 @@ func TestDeviceUpdateManyTargetSameDeviceId(t *testing.T) {
 	}
 
 	// Assert
-	assert.Equal(t, updResp.GetError().Message, "cannot update multiple devices as deviceId must be unique")
+	assert.Equal(t, updResp.GetError(), "error updating device: cannot update multiple devices as deviceId must be unique")
 }
 
 func TestDeviceUpdateManyTargetSameNameNoExist(t *testing.T) {
@@ -1982,7 +1975,7 @@ func TestDeviceUpdateManyTargetSameNameNoExist(t *testing.T) {
 	}
 
 	// Assert
-	assert.Equal(t, updResp.GetError().Message, "cannot update device as multiple device will have the same name 'samebloodyname' in namespace 'testing_core'")
+	assert.Equal(t, updResp.GetError(), "error updating device: cannot update device as multiple device will have the same name 'samebloodyname' in namespace 'testing_core'")
 }
 
 func TestDeviceUpdateManyTargetSameNameOneExist(t *testing.T) {
@@ -2035,7 +2028,7 @@ func TestDeviceUpdateManyTargetSameNameOneExist(t *testing.T) {
 	}
 
 	// Assert
-	assert.Equal(t, updResp.GetError().Message, "cannot update device as multiple device will have the same name 'samebloodyname' in namespace 'testing_core'")
+	assert.Equal(t, updResp.GetError(), "error updating device: cannot update device as multiple device will have the same name 'samebloodyname' in namespace 'testing_core'")
 }
 
 func TestDeviceUpdateManyTargetSameNamespaceNoExist(t *testing.T) {
@@ -2088,7 +2081,7 @@ func TestDeviceUpdateManyTargetSameNamespaceNoExist(t *testing.T) {
 	}
 
 	// Assert
-	assert.Equal(t, updResp.GetError().Message, "cannot update device as multiple device will have the same name 'update_dev_ns_no_exist' in namespace 'samebloodynamespace'")
+	assert.Equal(t, updResp.GetError(), "error updating device: cannot update device as multiple device will have the same name 'update_dev_ns_no_exist' in namespace 'samebloodynamespace'")
 }
 
 func TestDeviceUpdateManyTargetSameNamespaceOneExist(t *testing.T) {
@@ -2140,7 +2133,7 @@ func TestDeviceUpdateManyTargetSameNamespaceOneExist(t *testing.T) {
 	}
 
 	// Assert
-	assert.Equal(t, updResp.GetError().Message, "cannot update device as name 'update_dev_ns_one_exist' is already in use in namespace 'samebloodynamespace'")
+	assert.Equal(t, updResp.GetError(), "error updating device: cannot update device as name 'update_dev_ns_one_exist' is already in use in namespace 'samebloodynamespace'")
 }
 
 func TestDeviceUpdateManyTargetSameNameNamespaceNoExist(t *testing.T) {
@@ -2194,7 +2187,7 @@ func TestDeviceUpdateManyTargetSameNameNamespaceNoExist(t *testing.T) {
 	}
 
 	// Assert
-	assert.Equal(t, updResp.GetError().Message, "cannot update multiple devices as name/namespace 'samebloodyname/samebloodynamespace' must be unique")
+	assert.Equal(t, updResp.GetError(), "error updating device: cannot update multiple devices as name/namespace 'samebloodyname/samebloodynamespace' must be unique")
 }
 
 func TestDeviceUpdateManyTargetSameNameNamespaceOneExist(t *testing.T) {
@@ -2248,7 +2241,7 @@ func TestDeviceUpdateManyTargetSameNameNamespaceOneExist(t *testing.T) {
 	}
 
 	// Assert
-	assert.Equal(t, updResp.GetError().Message, "cannot update multiple devices as name/namespace 'samebloodyname/samebloodynamespace' must be unique")
+	assert.Equal(t, updResp.GetError(), "error updating device: cannot update multiple devices as name/namespace 'samebloodyname/samebloodynamespace' must be unique")
 }
 
 func TestDeviceGoesOnline(t *testing.T) {
@@ -2377,6 +2370,7 @@ func TestDeviceGoesOffline(t *testing.T) {
 	}
 	time.Sleep(60 * time.Second)
 
+	fmt.Println("CACA")
 	respListOff, err := core_client.PublishDeviceListRequest(b, reqList)
 	if err != nil {
 		t.Error(err)
