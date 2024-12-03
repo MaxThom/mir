@@ -7,6 +7,11 @@ To get started with Mir, you need to have the following installed:
 while installing, you can download the latest release of Mir from the [releases page](https://github.com/MaxThom/mir/releases).
 From the download, extract the binary. Add it to your path for easier usage.
 
+You can also install the binary via Go (as it is a private repository, follow [this](integrating_mir/device/device_prerequisist.html#access-mir-device-sdk) to gain access):
+```bash
+go install github.com/maxthom/mir/cmds/mir@latest
+```
+
 To begin, lets run the system:
 
 ```bash
