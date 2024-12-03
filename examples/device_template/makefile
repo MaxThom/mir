@@ -1,4 +1,3 @@
-
 .PHONY: proto build run
 
 proto:
