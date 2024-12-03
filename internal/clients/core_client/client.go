@@ -12,18 +12,18 @@ import (
 )
 
 const (
-	CreateDeviceRequest clients.Subject = "client.%s.core.v1alpha.create"
-	UpdateDeviceRequest clients.Subject = "client.%s.core.v1alpha.update"
-	DeleteDeviceRequest clients.Subject = "client.%s.core.v1alpha.delete"
-	ListDeviceRequest   clients.Subject = "client.%s.core.v1alpha.list"
+	CreateDeviceRequest clients.ServerSubject = "client.%s.core.v1alpha.create"
+	UpdateDeviceRequest clients.ServerSubject = "client.%s.core.v1alpha.update"
+	DeleteDeviceRequest clients.ServerSubject = "client.%s.core.v1alpha.delete"
+	ListDeviceRequest   clients.ServerSubject = "client.%s.core.v1alpha.list"
 
-	DeviceOnlineEvent  clients.Subject = "event.%s.core.v1alpha.deviceonline"
-	DeviceOfflineEvent clients.Subject = "event.%s.core.v1alpha.deviceoffline"
-	DeviceCreatedEvent clients.Subject = "event.%s.core.v1alpha.devicecreated"
-	DeviceDeletedEvent clients.Subject = "event.%s.core.v1alpha.devicedeleted"
-	DeviceUpdatedEvent clients.Subject = "event.%s.core.v1alpha.deviceupdated"
+	DeviceOnlineEvent  clients.ServerSubject = "event.%s.core.v1alpha.deviceonline"
+	DeviceOfflineEvent clients.ServerSubject = "event.%s.core.v1alpha.deviceoffline"
+	DeviceCreatedEvent clients.ServerSubject = "event.%s.core.v1alpha.devicecreated"
+	DeviceDeletedEvent clients.ServerSubject = "event.%s.core.v1alpha.devicedeleted"
+	DeviceUpdatedEvent clients.ServerSubject = "event.%s.core.v1alpha.deviceupdated"
 
-	HearthbeatDeviceStream clients.Subject = "device.%s.core.v1alpha.hearthbeat"
+	HearthbeatDeviceStream clients.ServerSubject = "device.%s.core.v1alpha.hearthbeat"
 )
 
 // Core Builder
@@ -117,7 +117,7 @@ func PublishDeviceOnlineEvent(bus *bus.BusConn, originalInstance string, deviceI
 		Data:    []byte{},
 		Header:  nats.Header{},
 	}
-	msg.Header.Add("o-instance", originalInstance)
+	msg.Header.Add("original-trigger", originalInstance)
 	return bus.PublishMsg(msg)
 }
 
@@ -127,7 +127,7 @@ func PublishDeviceOfflineEvent(bus *bus.BusConn, originalInstance string, device
 		Data:    []byte{},
 		Header:  nats.Header{},
 	}
-	msg.Header.Add("o-instance", originalInstance)
+	msg.Header.Add("original-trigger", originalInstance)
 	return bus.PublishMsg(msg)
 }
 
@@ -141,7 +141,7 @@ func PublishDeviceDeletedEvent(bus *bus.BusConn, originalInstance string, device
 		Data:    b,
 		Header:  nats.Header{},
 	}
-	msg.Header.Add("o-instance", originalInstance)
+	msg.Header.Add("original-trigger", originalInstance)
 	return bus.PublishMsg(msg)
 }
 
@@ -155,7 +155,7 @@ func PublishDeviceCreatedEvent(bus *bus.BusConn, originalInstance string, device
 		Data:    b,
 		Header:  nats.Header{},
 	}
-	msg.Header.Add("o-instance", originalInstance)
+	msg.Header.Add("original-trigger", originalInstance)
 	return bus.PublishMsg(msg)
 }
 
@@ -169,6 +169,6 @@ func PublishDeviceUpdatedEvent(bus *bus.BusConn, originalInstance string, device
 		Data:    b,
 		Header:  nats.Header{},
 	}
-	msg.Header.Add("o-instance", originalInstance)
+	msg.Header.Add("original-trigger", originalInstance)
 	return bus.PublishMsg(msg)
 }

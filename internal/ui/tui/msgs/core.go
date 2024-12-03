@@ -47,8 +47,8 @@ func listMirDevicesCmd(bus *bus.BusConn, noToast bool) func() tea.Msg {
 			//l.Error().Err(err).Msg("")
 			return ErrMsg{Err: err}
 		}
-		if resp.GetError() != nil {
-			return ErrMsg{Err: fmt.Errorf(resp.GetError().GetMessage())}
+		if resp.GetError() != "" {
+			return ErrMsg{Err: fmt.Errorf(resp.GetError())}
 		}
 		return DeviceListedMsg{Devices: resp.GetOk().Devices, NoToast: noToast}
 	}
@@ -70,8 +70,8 @@ func createMirDeviceCmd(bus *bus.BusConn, noToast bool, req *core_apiv1.CreateDe
 			//l.Error().Err(err).Msg("")
 			return ErrMsg{Err: err}
 		}
-		if resp.GetError() != nil {
-			return ErrMsg{Err: fmt.Errorf(resp.GetError().GetMessage())}
+		if resp.GetError() != "" {
+			return ErrMsg{Err: fmt.Errorf(resp.GetError())}
 		}
 		devs := []*core_apiv1.Device{resp.GetOk()}
 		return DeviceCreatedMsg{Devices: devs, NoToast: noToast}
@@ -94,8 +94,8 @@ func deleteMirDeviceCmd(bus *bus.BusConn, noToast bool, req *core_apiv1.DeleteDe
 			//l.Error().Err(err).Msg("")
 			return ErrMsg{Err: err}
 		}
-		if resp.GetError() != nil {
-			return ErrMsg{Err: fmt.Errorf(resp.GetError().GetMessage())}
+		if resp.GetError() != "" {
+			return ErrMsg{Err: fmt.Errorf(resp.GetError())}
 		}
 		return DeviceDeleteMsg{Devices: resp.GetOk().Devices, NoToast: noToast}
 	}
@@ -117,8 +117,8 @@ func updateMirDeviceCmd(bus *bus.BusConn, noToast bool, req *core_apiv1.UpdateDe
 			//l.Error().Err(err).Msg("")
 			return ErrMsg{Err: err}
 		}
-		if resp.GetError() != nil {
-			return ErrMsg{Err: fmt.Errorf(resp.GetError().GetMessage())}
+		if resp.GetError() != "" {
+			return ErrMsg{Err: fmt.Errorf(resp.GetError())}
 		}
 		return DeviceUpdateMsg{Devices: resp.GetOk().Devices, NoToast: noToast}
 	}

@@ -11,7 +11,6 @@ import (
 	cmd_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cmd_api"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	"github.com/maxthom/mir/pkgs/module/mir"
-	"github.com/nats-io/nats.go"
 )
 
 func main() {
@@ -23,36 +22,37 @@ func main() {
 		panic(err)
 	}
 
-	err = m.Subscribe(mir.Event().V1Alpha().DeviceCommand(
-		func(msg *nats.Msg, deviceId string, cmd *cmd_apiv1.SendCommandResponse_CommandResponse) {
+	err = m.Event().Command().Subscribe(
+		func(msg *mir.Msg, serverId string, cmd *cmd_apiv1.SendCommandResponse_CommandResponse) {
 			fmt.Println("---EVENT---")
 			msg.Ack()
-		}))
+		})
 	if err != nil {
 		panic(err)
 	}
 
-	respList := &cmd_apiv1.SendListCommandsResponse{}
-	if e := m.SendRequest(mir.Resquest().V1Alpha().ListDeviceCommands(
+	respList, e := m.Server().ListCommands().Request(
 		&cmd_apiv1.SendListCommandsRequest{
 			Targets: &core_apiv1.Targets{
 				Ids: []string{"0xf86tlm", "0xf86cmd"},
 			},
-		}, respList)); e != nil {
+		})
+	if e != nil {
 		fmt.Println(e)
+	} else {
+		fmt.Println(respList)
+		fmt.Println("---------")
 	}
-	fmt.Println(respList)
-	fmt.Println("---------")
 
 	cmdPayload := &command_devicev1.ChangePower{}
-	respProto := map[string]mir.SendDeviceCommandResponseProto{}
-	if e := m.SendRequest(mir.Resquest().V1Alpha().SendDeviceCommandProto(
+	respProto, e := m.Server().SendCommand().RequestProto(
 		&mir.SendDeviceCommandRequestProto{
 			Targets: &core_apiv1.Targets{
 				Ids: []string{"0xf86tlm", "0xf86cmd"},
 			},
 			Command: cmdPayload,
-		}, respProto, &command_devicev1.ChangePowerResponse{})); e != nil {
+		})
+	if e != nil {
 		fmt.Println(e)
 	}
 	for nameNs, dev := range respProto {
@@ -61,7 +61,6 @@ func main() {
 			fmt.Println(dev.Error)
 			continue
 		}
-		fmt.Println(dev.Response.(*command_devicev1.ChangePowerResponse))
 	}
 
 	cancel()

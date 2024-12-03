@@ -16,7 +16,7 @@ import (
 	"github.com/maxthom/mir/internal/externals/mng"
 	"github.com/maxthom/mir/internal/externals/ts"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
-	"github.com/maxthom/mir/internal/libs/proto/proto_mir"
+	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
 	"github.com/maxthom/mir/internal/libs/swarm"
 	"github.com/maxthom/mir/internal/libs/test_utils"
 	"github.com/maxthom/mir/internal/servers/core_srv"
@@ -73,7 +73,10 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	protofluxSrv := NewProtoTlmServer(logTest, mSdk, mng.NewSurrealDeviceStore(db), ts.NewInfluxTelemetryStore("Mir", "mir_integration_test", lpClient))
+	protofluxSrv, err := NewProtoTlmServer(logTest, mSdk, mng.NewSurrealDeviceStore(db), ts.NewInfluxTelemetryStore("Mir", "mir_integration_test", lpClient))
+	if err != nil {
+		panic(err)
+	}
 	go func() {
 		protofluxSrv.Listen(ctx)
 	}()
@@ -191,11 +194,9 @@ func TestPublishDevicePushTelemetry(t *testing.T) {
 	})
 	if err != nil {
 		t.Error(err)
-	} else if respList.GetError() != nil {
-		t.Error(respList.GetError())
 	}
 	devDb := respList.GetOk().Devices[0]
-	originalSchema, err := proto_mir.NewMirProtoSchema(
+	originalSchema, err := mir_proto.NewMirProtoSchema(
 		prototlm_testv1.File_prototlm_test_v1_telemetry_proto,
 		descriptorpb.File_google_protobuf_descriptor_proto,
 		devicev1.File_mir_device_v1_mir_proto,
@@ -203,7 +204,7 @@ func TestPublishDevicePushTelemetry(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	storedSchema, err := proto_mir.DecompressSchema(devDb.Status.Schema.CompressedSchema)
+	storedSchema, err := mir_proto.DecompressSchema(devDb.Status.Schema.CompressedSchema)
 	if err != nil {
 		t.Error(err)
 	}
@@ -222,7 +223,7 @@ func TestPublishDevicePushTelemetry(t *testing.T) {
 	}
 
 	assert.Equal(t, reqCreate.Spec.DeviceId, devDb.Spec.DeviceId)
-	assert.Equal(t, true, proto_mir.AreSchemaEqual(originalSchema, storedSchema))
+	assert.Equal(t, true, mir_proto.AreSchemaEqual(originalSchema, storedSchema))
 	lastFetch := mir_models.AsGoTime(devDb.Status.Schema.LastSchemaFetch)
 	tspan := time.Now().UTC().Sub(lastFetch)
 	assert.Equal(t, true, tspan.Seconds() < 10)
@@ -248,11 +249,12 @@ func TestPublishDeviceSchemaAlreadyPresent(t *testing.T) {
 			DeviceId: id,
 		},
 	}
-	compSch, err := mir_models.CompressProtoFiles(
+	compSch, err := mir_proto.NewMirProtoSchema(
 		prototlm_testv1.File_prototlm_test_v1_telemetry_proto,
 		descriptorpb.File_google_protobuf_descriptor_proto,
 		devicev1.File_mir_device_v1_mir_proto,
 	)
+	compSchBytes, err := compSch.CompressSchema()
 	if err != nil {
 		t.Error(err)
 	}
@@ -263,7 +265,7 @@ func TestPublishDeviceSchemaAlreadyPresent(t *testing.T) {
 		},
 		Status: &core_apiv1.UpdateDeviceRequest_Status{
 			Schema: &core_apiv1.UpdateDeviceRequest_Schema{
-				CompressedSchema: compSch,
+				CompressedSchema: compSchBytes,
 				LastSchemaFetch:  mir_models.AsProtoTimestamp(timeFetch),
 			},
 		},
@@ -335,15 +337,13 @@ func TestPublishDeviceSchemaAlreadyPresent(t *testing.T) {
 	})
 	if err != nil {
 		t.Error(err)
-	} else if respList.GetError() != nil {
-		t.Error(respList.GetError())
 	}
 	devDb := respList.GetOk().Devices[0]
-	decompSch, err := proto_mir.DecompressSchema(compSch)
+	decompSch, err := mir_proto.DecompressSchema(compSchBytes)
 	if err != nil {
 		t.Error(err)
 	}
-	decompStoredSchema, err := proto_mir.DecompressSchema(devDb.Status.Schema.CompressedSchema)
+	decompStoredSchema, err := mir_proto.DecompressSchema(devDb.Status.Schema.CompressedSchema)
 	if err != nil {
 		t.Error(err)
 	}
@@ -360,7 +360,7 @@ func TestPublishDeviceSchemaAlreadyPresent(t *testing.T) {
 	}
 
 	assert.Equal(t, reqCreate.Spec.DeviceId, devDb.Spec.DeviceId)
-	assert.Equal(t, true, proto_mir.AreSchemaEqual(decompSch, decompStoredSchema))
+	assert.Equal(t, true, mir_proto.AreSchemaEqual(decompSch, decompStoredSchema))
 	assert.Equal(t, timeFetch, mir_models.AsGoTime(devDb.Status.Schema.LastSchemaFetch))
 	assert.Equal(t, 24, dpCount)
 
@@ -384,14 +384,16 @@ func TestPublishDeviceSchemaInvalid(t *testing.T) {
 			DeviceId: id,
 		},
 	}
-	badSch, err := mir_models.CompressProtoFiles(
+	badSch, err := mir_proto.NewMirProtoSchema(
 		prototlm_testv1.File_prototlm_test_v1_invalid_proto,
 	)
-	goodSch, err := mir_models.CompressProtoFiles(
+	badSchBytes, err := badSch.CompressSchema()
+	goodSch, err := mir_proto.NewMirProtoSchema(
 		prototlm_testv1.File_prototlm_test_v1_telemetry_proto,
 		descriptorpb.File_google_protobuf_descriptor_proto,
 		devicev1.File_mir_device_v1_mir_proto,
 	)
+	goodSchBytes, err := goodSch.CompressSchema()
 	if err != nil {
 		t.Error(err)
 	}
@@ -402,7 +404,7 @@ func TestPublishDeviceSchemaInvalid(t *testing.T) {
 		},
 		Status: &core_apiv1.UpdateDeviceRequest_Status{
 			Schema: &core_apiv1.UpdateDeviceRequest_Schema{
-				CompressedSchema: badSch,
+				CompressedSchema: badSchBytes,
 				LastSchemaFetch:  mir_models.AsProtoTimestamp(timeFetch),
 			},
 		},
@@ -474,16 +476,14 @@ func TestPublishDeviceSchemaInvalid(t *testing.T) {
 	})
 	if err != nil {
 		t.Error(err)
-	} else if respList.GetError() != nil {
-		t.Error(respList.GetError())
 	}
 	devDb := respList.GetOk().Devices[0]
-	decompGoodSch, err := proto_mir.DecompressSchema(goodSch)
+	decompGoodSch, err := mir_proto.DecompressSchema(goodSchBytes)
 	if err != nil {
 		t.Error(err)
 	}
 
-	decompStoredSchema, err := proto_mir.DecompressSchema(devDb.Status.Schema.CompressedSchema)
+	decompStoredSchema, err := mir_proto.DecompressSchema(devDb.Status.Schema.CompressedSchema)
 	if err != nil {
 		t.Error(err)
 	}
@@ -501,7 +501,7 @@ func TestPublishDeviceSchemaInvalid(t *testing.T) {
 	}
 
 	assert.Equal(t, reqCreate.Spec.DeviceId, devDb.Spec.DeviceId)
-	assert.Equal(t, true, proto_mir.AreSchemaEqual(decompGoodSch, decompStoredSchema))
+	assert.Equal(t, true, mir_proto.AreSchemaEqual(decompGoodSch, decompStoredSchema))
 	lastFetch := mir_models.AsGoTime(devDb.Status.Schema.LastSchemaFetch)
 	tspan := time.Now().UTC().Sub(lastFetch)
 	assert.Equal(t, true, tspan.Seconds() < 10)
@@ -722,9 +722,6 @@ func TestPublishTelemetryListPairs(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if resp.GetError() != nil {
-		t.Error(resp.GetError().Message)
-	}
 
 	// Assert
 	tlmResp := resp.GetOk()
@@ -788,9 +785,6 @@ func TestPublishTelemetryList(t *testing.T) {
 	})
 	if err != nil {
 		t.Error(err)
-	}
-	if resp.GetError() != nil {
-		t.Error(resp.GetError().Message)
 	}
 
 	// Assert
@@ -861,9 +855,6 @@ func TestPublishTelemetryListError(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if resp.GetError() != nil {
-		t.Error(resp.GetError().Message)
-	}
 
 	// Assert
 	dt := resp.GetOk().DevicesTelemetry[0]
@@ -871,5 +862,5 @@ func TestPublishTelemetryListError(t *testing.T) {
 	if slices.Contains(dt.DevicesNamens, "dev_tlm_list_offline") {
 		assert.Equal(t, true, true)
 	}
-	assert.Equal(t, dt.Error, "cannot reconcile device schema: nats: no responders available for request")
+	assert.Equal(t, dt.Error, "cannot reconcile device schema: error requesting device schema: error publishing request message: nats: no responders available for request")
 }

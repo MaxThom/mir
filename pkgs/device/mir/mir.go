@@ -203,3 +203,21 @@ func (m Mir) HandleCommand(t proto.Message, handler func(proto.Message) (proto.M
 		h: handler,
 	}
 }
+
+type subject string
+
+func (m Mir) NewSubject(module, version, function string, extra ...string) subject {
+	extra = append([]string{"device", m.cfg.DeviceId, module, version, function}, extra...)
+	return subject(strings.Join(extra, "."))
+}
+
+// Send custom data on a custom route for your own integration
+// use `m.NewSubject` to create a subject
+// Use the module sdk to subscribe to the subject and process the data
+func (m Mir) SendData(sbj subject, data []byte, h nats.Header) error {
+	return m.b.PublishMsg(&nats.Msg{
+		Subject: string(sbj),
+		Header:  h,
+		Data:    data,
+	})
+}

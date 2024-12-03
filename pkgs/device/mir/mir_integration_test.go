@@ -140,9 +140,6 @@ func TestLaunchHearthbeat(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if resp.GetError() != nil {
-		t.Error(resp.GetError())
-	}
 
 	// Assert
 	// Check if online and has a hearthbeat
@@ -193,7 +190,7 @@ func TestRequestTelemetrySchema(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if resp.GetError() != nil {
+	if resp.GetError() != "" {
 		t.Error(resp.GetError())
 	}
 

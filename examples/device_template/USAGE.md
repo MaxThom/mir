@@ -68,3 +68,35 @@ mir cmd ls
 ```
 
 Yours to explore ! 🛰️
+
+## Systemd (Linux only)
+
+To install binary so it run on startup:
+
+create file `/etc/systemd/system/mir-dev.service`:
+```bash
+[Unit]
+Description=Mir Device
+After=network.target
+
+[Service]
+ExecStart=/home/mir/code/demo/bin/device
+User=mir
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+```
+Edit user and path accordinly
+
+```bash
+# Start the server automaticly on boot
+sudo systemctl enable mir-dev.service
+sudo systemctl disable mir-dev.service
+# Start the service now
+sudo systemctl start mir-dev.service
+sudo systemctl stop mir-dev.service
+# Status/Logs
+sudo systemctl status mir-dev.service
+journalctl -u mir-dev.service # -f (follow) -b (since boot)
+```

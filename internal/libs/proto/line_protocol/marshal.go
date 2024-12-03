@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/maxthom/mir/internal/libs/proto/proto_mir"
+	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
 	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -68,7 +68,7 @@ func GenerateMarshalFn(pinnedTags map[string]string, desc protoreflect.MessageDe
 
 	// Pinned tags
 	// Get meta opts
-	lbl := proto_mir.RetrieveMessageTags(desc)
+	lbl := mir_proto.RetrieveMessageTags(desc)
 	for k, v := range lbl {
 		if v != "" {
 			pinnedTags[k] = v

@@ -67,7 +67,7 @@ func main() {
 		tlm := generateSinWavesPayload(elapsed, waves)
 		// fmt.Println(tlm)
 
-		serializedData, err := proto.Marshal(&tlm)
+		serializedData, err := proto.Marshal(tlm)
 		if err != nil {
 			log.Fatal("Failed to serialize data:", err)
 		}
@@ -90,7 +90,7 @@ func main() {
 	}
 }
 
-func generateSinWavesPayload(elapsed float64, waves map[string]SinWave) gen.Telemetry {
+func generateSinWavesPayload(elapsed float64, waves map[string]SinWave) *gen.Telemetry {
 	now := time.Now().UTC()
 	i := gen.Telemetry{
 		Time: &timestamppb.Timestamp{
@@ -108,5 +108,5 @@ func generateSinWavesPayload(elapsed float64, waves map[string]SinWave) gen.Tele
 		i.Sensors[k] = y
 	}
 
-	return i
+	return &i
 }

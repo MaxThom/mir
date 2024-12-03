@@ -1,4 +1,4 @@
-package proto_mir
+package mir_proto
 
 import (
 	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"

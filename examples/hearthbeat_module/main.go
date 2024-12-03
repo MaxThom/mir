@@ -6,10 +6,9 @@ import (
 	"syscall"
 
 	"github.com/maxthom/mir/internal/libs/boiler/mir_signals"
-
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
+	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/maxthom/mir/pkgs/module/mir"
-	"github.com/nats-io/nats.go"
 )
 
 func main() {
@@ -21,56 +20,56 @@ func main() {
 		panic(err)
 	}
 
-	err = m.Subscribe(mir.Stream().V1Alpha().Hearthbeat(
-		func(msg *nats.Msg, deviceId string) {
+	err = m.Device().Hearthbeat().Subscribe("",
+		func(msg *mir.Msg, deviceId string) {
 			fmt.Println("Hearthbeat ", deviceId)
 			msg.Ack()
-		}))
+		})
 	if err != nil {
 		panic(err)
 	}
 
-	err = m.Subscribe(mir.Event().V1Alpha().DeviceOnline(
-		func(msg *nats.Msg, deviceId string) {
-			fmt.Println("Event device online ", deviceId)
+	err = m.Event().DeviceOnline().Subscribe(
+		func(msg *mir.Msg, serverId string, device mir_models.Device) {
+			fmt.Println("Event device online ", device.Spec.DeviceId)
 			msg.Ack()
-		}))
+		})
 	if err != nil {
 		panic(err)
 	}
 
-	err = m.Subscribe(mir.Event().V1Alpha().DeviceOffline(
-		func(msg *nats.Msg, deviceId string) {
-			fmt.Println("Event device offline ", deviceId)
+	err = m.Event().DeviceOffline().Subscribe(
+		func(msg *mir.Msg, serverId string, device mir_models.Device) {
+			fmt.Println("Event device offline ", device.Spec.DeviceId)
 			msg.Ack()
-		}))
+		})
 	if err != nil {
 		panic(err)
 	}
 
-	err = m.Subscribe(mir.Event().V1Alpha().DeviceDeleted(
-		func(msg *nats.Msg, deviceId string, d *core_apiv1.Device) {
-			fmt.Println("Event device deleted ", deviceId)
+	err = m.Event().DeviceDelete().Subscribe(
+		func(msg *mir.Msg, serverId string, d mir_models.Device) {
+			fmt.Println("Event device deleted ", d.Spec.DeviceId)
 			msg.Ack()
-		}))
+		})
 	if err != nil {
 		panic(err)
 	}
 
-	err = m.Subscribe(mir.Event().V1Alpha().DeviceCreated(
-		func(msg *nats.Msg, deviceId string, d *core_apiv1.Device) {
-			fmt.Println("Event device created ", deviceId)
+	err = m.Event().DeviceCreate().Subscribe(
+		func(msg *mir.Msg, serverId string, d mir_models.Device) {
+			fmt.Println("Event device created ", d.Spec.DeviceId)
 			msg.Ack()
-		}))
+		})
 	if err != nil {
 		panic(err)
 	}
 
-	err = m.Subscribe(mir.Event().V1Alpha().DeviceUpdated(
-		func(msg *nats.Msg, deviceId string, d *core_apiv1.Device) {
-			fmt.Println("Event device updated ", deviceId)
+	err = m.Event().DeviceUpdate().Subscribe(
+		func(msg *mir.Msg, serverId string, d mir_models.Device) {
+			fmt.Println("Event device updated ", d.Spec.DeviceId)
 			msg.Ack()
-		}))
+		})
 	if err != nil {
 		panic(err)
 	}
@@ -87,9 +86,8 @@ func SendDeviceCrud(m *mir.Mir) {
 	id := "CACA2MOU"
 	// Request mean youre expecting a reply
 	// We only have client request in the sdk
-	var respCreate core_apiv1.CreateDeviceResponse
-	err := m.SendRequest(mir.Resquest().V1Alpha().CreateDevice(
-		core_apiv1.CreateDeviceRequest{
+	respCreate, err := m.Server().CreateDevice().Request(
+		&core_apiv1.CreateDeviceRequest{
 			Meta: &core_apiv1.Meta{
 				Name: "VRMMOU",
 			},
@@ -97,66 +95,40 @@ func SendDeviceCrud(m *mir.Mir) {
 				DeviceId: id,
 			},
 		},
-		&respCreate,
-	))
+	)
 	if err != nil {
 		panic(err)
 	}
-	if respCreate.GetError() != nil {
-		fmt.Println(respCreate.GetError())
-	} else {
-		fmt.Println("Created device ", id)
-	}
+	fmt.Println("Created device ", respCreate.Spec.DeviceId)
 
-	var respList core_apiv1.ListDeviceResponse
-	err = m.SendRequest(mir.Resquest().V1Alpha().ListDevice(
-		core_apiv1.ListDeviceRequest{},
-		&respList,
-	))
+	respList, err := m.Server().ListDevice().Request(
+		&core_apiv1.ListDeviceRequest{},
+	)
 	if err != nil {
 		panic(err)
 	}
-	if respList.GetError() != nil {
-		fmt.Println(respList.GetError())
-	} else {
-		fmt.Println("List device ", id)
-	}
+	fmt.Println("List device ", respList)
 
 	newName := "PIPI2MOU"
-	var respUpd core_apiv1.UpdateDeviceResponse
-	err = m.SendRequest(mir.Resquest().V1Alpha().UpdateDevice(
-		core_apiv1.UpdateDeviceRequest{
+	respUpd, err := m.Server().UpdateDevice().Request(
+		&core_apiv1.UpdateDeviceRequest{
 			Targets: &core_apiv1.Targets{
 				Ids: []string{id},
 			},
 			Meta: &core_apiv1.UpdateDeviceRequest_Meta{
 				Name: &newName,
 			}},
-		&respUpd,
-	))
+	)
 	if err != nil {
 		panic(err)
 	}
-	if respUpd.GetError() != nil {
-		fmt.Println(respUpd.GetError())
-	} else {
-		fmt.Println("Update device ", id)
-	}
+	fmt.Println("Update device ", respUpd)
 
-	var respDel core_apiv1.DeleteDeviceResponse
-	err = m.SendRequest(mir.Resquest().V1Alpha().DeleteDevice(
-		core_apiv1.DeleteDeviceRequest{
+	respDel, err := m.Server().DeleteDevice().Request(
+		&core_apiv1.DeleteDeviceRequest{
 			Targets: &core_apiv1.Targets{
 				Ids: []string{id},
 			}},
-		&respDel,
-	))
-	if err != nil {
-		panic(err)
-	}
-	if respDel.GetError() != nil {
-		fmt.Println(respDel.GetError())
-	} else {
-		fmt.Println("Delete device ", id)
-	}
+	)
+	fmt.Println("Delete device ", respDel)
 }

@@ -170,10 +170,16 @@ func run(
 	coreSrv := core_srv.NewCore(log, bus.NewWithBus(m.Bus), mng.NewSurrealDeviceStore(db))
 	core_srv.RegisterMetrics(metrics.Registry())
 
-	cmdSrv := protocmd_srv.NewProtoCmdServer(log, m, mng.NewSurrealDeviceStore(db))
+	cmdSrv, err := protocmd_srv.NewProtoCmdServer(log, m, mng.NewSurrealDeviceStore(db))
+	if err != nil {
+		return err
+	}
 	protocmd_srv.RegisterMetrics(metrics.Registry())
 
-	tlmSrv := prototlm_srv.NewProtoTlmServer(log, m, mng.NewSurrealDeviceStore(db), ts.NewInfluxTelemetryStore(cfg.Influx.Org, cfg.Influx.Bucket, lpClient))
+	tlmSrv, err := prototlm_srv.NewProtoTlmServer(log, m, mng.NewSurrealDeviceStore(db), ts.NewInfluxTelemetryStore(cfg.Influx.Org, cfg.Influx.Bucket, lpClient))
+	if err != nil {
+		return err
+	}
 	prototlm_srv.RegisterMetrics(metrics.Registry())
 
 	// Metrics & Health

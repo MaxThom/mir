@@ -20,7 +20,7 @@ message CreateDeviceRequest {
 message CreateDeviceResponse {
     oneof response {
         Device ok = 1; // device that was created
-        common_api.v1.Error error = 2;  // HTTP like error if something went wrong
+        string error = 2; // Error message if troubleshooting is needed
     }
 }
 
@@ -66,7 +66,7 @@ message UpdateDeviceRequest {
 message UpdateDeviceResponse {
   oneof response {
     DeviceList ok = 1; //  List of device that were updated
-    common_api.v1.Error error = 2; // HTTP like error if something went wrong
+    string error = 2; // Error message if troubleshooting is needed
   }
 }
 
@@ -84,7 +84,7 @@ message DeleteDeviceRequest {
 message DeleteDeviceResponse {
   oneof response {
     DeviceList ok = 1; // List of device that were deleted
-    common_api.v1.Error error = 2; // HTTP like error if something went wrong
+    string error = 2; // Error message if troubleshooting is needed
   }
 }
 
@@ -102,7 +102,7 @@ message ListDeviceRequest {
 message ListDeviceResponse {
   oneof response {
     DeviceList ok = 1; // Devices that were found from the search
-    common_api.v1.Error error = 2;  // HTTP like error if something went wrong
+    string error = 2; // Error message if troubleshooting is needed
   }
 }
 

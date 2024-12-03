@@ -12,7 +12,6 @@ import (
 	"github.com/maxthom/mir/internal/externals/mng"
 	"github.com/maxthom/mir/internal/libs/api/metrics"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
-	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/nats-io/nats.go"
@@ -160,7 +159,7 @@ func (s *CoreServer) Listen(ctx context.Context) {
 				continue
 			}
 
-			route := clients.Subject(msg.Subject).GetFunction()
+			route := clients.ServerSubject(msg.Subject).GetFunction()
 			l.Info().Str("route", route).Msg("core request")
 			if _, exists := channelFns[route]; !exists {
 				l.Trace().Str("route", route).Msg("route handler does not exist")
@@ -185,11 +184,7 @@ func (s *CoreServer) createDeviceRequestHandler(ch chan nats.Msg) {
 			l.Error().Err(err).Msg("error occure while unmarhsalling request payload")
 			sendReplyOrAck(s.bus, msg, &core_apiv1.CreateDeviceResponse{
 				Response: &core_apiv1.CreateDeviceResponse_Error{
-					Error: &common_apiv1.Error{
-						Code:    400,
-						Message: mir_models.ErrorApiDeserializingRequest.Error(),
-						Details: []string{"400 Bad Request", err.Error()},
-					},
+					Error: fmt.Errorf("%w: %w", mir_models.ErrorApiDeserializingRequest, err).Error(),
 				},
 			})
 			continue
@@ -201,11 +196,7 @@ func (s *CoreServer) createDeviceRequestHandler(ch chan nats.Msg) {
 			l.Error().Err(err).Msg("error occure while creating device")
 			sendReplyOrAck(s.bus, msg, &core_apiv1.CreateDeviceResponse{
 				Response: &core_apiv1.CreateDeviceResponse_Error{
-					Error: &common_apiv1.Error{
-						Code:    500,
-						Message: fmt.Errorf("error while creating device: %w", err).Error(),
-						Details: []string{err.Error()},
-					},
+					Error: fmt.Errorf("error creating device: %w", err).Error(),
 				},
 			})
 			continue
@@ -236,11 +227,7 @@ func (s *CoreServer) updateDeviceRequestHandler(ch chan nats.Msg) {
 			l.Error().Err(err).Msg("error occure while unmarhsalling request payload")
 			sendReplyOrAck(s.bus, msg, &core_apiv1.UpdateDeviceResponse{
 				Response: &core_apiv1.UpdateDeviceResponse_Error{
-					Error: &common_apiv1.Error{
-						Code:    400,
-						Message: mir_models.ErrorApiDeserializingRequest.Error(),
-						Details: []string{"400 Bad Request", err.Error()},
-					},
+					Error: fmt.Errorf("%w: %w", mir_models.ErrorApiDeserializingRequest, err).Error(),
 				},
 			})
 			continue
@@ -254,11 +241,7 @@ func (s *CoreServer) updateDeviceRequestHandler(ch chan nats.Msg) {
 				if err != nil {
 					sendReplyOrAck(s.bus, msg, &core_apiv1.UpdateDeviceResponse{
 						Response: &core_apiv1.UpdateDeviceResponse_Error{
-							Error: &common_apiv1.Error{
-								Code:    500,
-								Message: err.Error(),
-								Details: []string{"500 Internal Server Error", err.Error()},
-							},
+							Error: fmt.Errorf("error creating device: %w", err).Error(),
 						},
 					})
 				} else if resp.GetOk() != nil {
@@ -274,21 +257,13 @@ func (s *CoreServer) updateDeviceRequestHandler(ch chan nats.Msg) {
 			if errors.Is(err, mir_models.ErrorNoDeviceTargetProvided) {
 				sendReplyOrAck(s.bus, msg, &core_apiv1.UpdateDeviceResponse{
 					Response: &core_apiv1.UpdateDeviceResponse_Error{
-						Error: &common_apiv1.Error{
-							Code:    400,
-							Message: err.Error(),
-							Details: []string{"400 Bad Request"},
-						},
+						Error: fmt.Errorf("error no target found: %w", err).Error(),
 					},
 				})
 			} else {
 				sendReplyOrAck(s.bus, msg, &core_apiv1.UpdateDeviceResponse{
 					Response: &core_apiv1.UpdateDeviceResponse_Error{
-						Error: &common_apiv1.Error{
-							Code:    500,
-							Message: err.Error(),
-							Details: []string{"500 Internal Server Error", err.Error()},
-						},
+						Error: fmt.Errorf("error updating device: %w", err).Error(),
 					},
 				})
 			}
@@ -325,11 +300,7 @@ func (s *CoreServer) deleteDeviceRequestHandler(ch chan nats.Msg) {
 			l.Error().Err(err).Msg("error occure while unmarhsalling request payload")
 			sendReplyOrAck(s.bus, msg, &core_apiv1.DeleteDeviceResponse{
 				Response: &core_apiv1.DeleteDeviceResponse_Error{
-					Error: &common_apiv1.Error{
-						Code:    400,
-						Message: mir_models.ErrorApiDeserializingRequest.Error(),
-						Details: []string{"400 Bad Request", err.Error()},
-					},
+					Error: fmt.Errorf("%w: %w", mir_models.ErrorApiDeserializingRequest, err).Error(),
 				},
 			})
 			continue
@@ -341,21 +312,13 @@ func (s *CoreServer) deleteDeviceRequestHandler(ch chan nats.Msg) {
 			if errors.Is(err, mir_models.ErrorNoDeviceTargetProvided) {
 				sendReplyOrAck(s.bus, msg, &core_apiv1.DeleteDeviceResponse{
 					Response: &core_apiv1.DeleteDeviceResponse_Error{
-						Error: &common_apiv1.Error{
-							Code:    400,
-							Message: err.Error(),
-							Details: []string{"400 Bad Request"},
-						},
+						Error: fmt.Errorf("error no target found: %w", err).Error(),
 					},
 				})
 			} else if errors.Is(err, mir_models.ErrorDbExecutingQuery) {
 				sendReplyOrAck(s.bus, msg, &core_apiv1.DeleteDeviceResponse{
 					Response: &core_apiv1.DeleteDeviceResponse_Error{
-						Error: &common_apiv1.Error{
-							Code:    500,
-							Message: err.Error(),
-							Details: []string{"500 Internal Server Error", err.Error()},
-						},
+						Error: fmt.Errorf("error deleting device: %w", err).Error(),
 					},
 				})
 			}
@@ -392,11 +355,7 @@ func (s *CoreServer) listDeviceRequestHandler(ch chan nats.Msg) {
 			l.Error().Err(err).Msg("error occure while unmarhsalling request payload")
 			sendReplyOrAck(s.bus, msg, &core_apiv1.ListDeviceResponse{
 				Response: &core_apiv1.ListDeviceResponse_Error{
-					Error: &common_apiv1.Error{
-						Code:    400,
-						Message: mir_models.ErrorApiDeserializingRequest.Error(),
-						Details: []string{"400 Bad Request", err.Error()},
-					},
+					Error: fmt.Errorf("%w: %w", mir_models.ErrorApiDeserializingRequest, err).Error(),
 				},
 			})
 			continue
@@ -408,11 +367,7 @@ func (s *CoreServer) listDeviceRequestHandler(ch chan nats.Msg) {
 			l.Error().Err(err).Msg("error occure while executing a db query")
 			sendReplyOrAck(s.bus, msg, &core_apiv1.ListDeviceResponse{
 				Response: &core_apiv1.ListDeviceResponse_Error{
-					Error: &common_apiv1.Error{
-						Code:    500,
-						Message: mir_models.ErrorDbExecutingQuery.Error(),
-						Details: []string{"500 Internal Server Error", err.Error()},
-					},
+					Error: fmt.Errorf("%w: %w", mir_models.ErrorDbExecutingQuery, err).Error(),
 				},
 			})
 			continue
@@ -483,7 +438,7 @@ func (s *CoreServer) hearthbeatRequestHandler(ch chan nats.Msg) {
 			return
 		}
 		l.Trace().Str("route", "hearthbeat").Msg("hearthbeat device request")
-		deviceId := clients.Subject(msg.Subject).GetId()
+		deviceId := clients.ServerSubject(msg.Subject).GetId()
 		// If not in map, mean is newly online device
 		s.hearthbeatsMutex.Lock()
 		if _, ok := s.hearthbeats[deviceId]; !ok {
@@ -530,8 +485,8 @@ func (s *CoreServer) hearthbeatRequestHandler(ch chan nats.Msg) {
 				l.Error().Err(err).Str("deviceId", deviceId).Msg("could not automaticly provision new device")
 				msg.Ack()
 				continue
-			} else if req.GetError() != nil {
-				l.Error().Str("deviceId", deviceId).Str("error", req.GetError().Message).Msg("could not automaticly provision new device")
+			} else if req.GetError() != "" {
+				l.Error().Str("deviceId", deviceId).Str("error", req.GetError()).Msg("could not automaticly provision new device")
 				msg.Ack()
 				continue
 			}

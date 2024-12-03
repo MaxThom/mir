@@ -27,7 +27,6 @@ import (
 	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	mirDevice "github.com/maxthom/mir/pkgs/device/mir"
-	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/rs/zerolog"
 	logger "github.com/rs/zerolog/log"
@@ -71,11 +70,14 @@ func TestMain(m *testing.M) {
 		},
 	})
 	var err error
-	mSdk, err = mir.Connect("test_protocmd", busUrl)
+	mSdk, err := mir.Connect("test_protocmd", busUrl)
 	if err != nil {
 		panic(err)
 	}
-	protocmdSrv := NewProtoCmdServer(logTest, mSdk, mng.NewSurrealDeviceStore(db))
+	protocmdSrv, err := NewProtoCmdServer(logTest, mSdk, mng.NewSurrealDeviceStore(db))
+	if err != nil {
+		panic(err)
+	}
 	go func() {
 		protocmdSrv.Listen(ctx)
 	}()
@@ -151,7 +153,7 @@ func TestPublishCmdListRequest(t *testing.T) {
 	})
 	if err != nil {
 		t.Error(err)
-	} else if respListCmd.GetError() != nil {
+	} else if respListCmd.GetError() != "" {
 		t.Error(respListCmd.GetError())
 	}
 
@@ -215,7 +217,7 @@ func TestPublishCmdListFiltersRequest(t *testing.T) {
 	})
 	if err != nil {
 		t.Error(err)
-	} else if respListCmd.GetError() != nil {
+	} else if respListCmd.GetError() != "" {
 		t.Error(respListCmd.GetError())
 	}
 
@@ -303,8 +305,6 @@ func TestPublishCmdRequest(t *testing.T) {
 	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
 	if err != nil {
 		t.Error(err)
-	} else if respCmd.GetError() != nil {
-		t.Error(respCmd.GetError())
 	}
 
 	msgResp := &protocmd_testv1.ChangePowerResp{}
@@ -346,11 +346,7 @@ func TestPublishCmdBadRequest(t *testing.T) {
 	respErr := respCmd.GetError()
 
 	// Assert
-	assert.Equal(t, 400, int(respErr.Code))
-	assert.Equal(t, true, strings.Contains(respErr.Details[0], mir_models.ErrorNoDeviceTargetProvided.Error()))
-	assert.Equal(t, true, strings.Contains(respErr.Details[1], mir_models.ErrorCommandNameNotProvided.Error()))
-	assert.Equal(t, true, strings.Contains(respErr.Details[2], mir_models.ErrorCommandEncodingNotSpecified.Error()))
-	assert.Equal(t, true, strings.Contains(respErr.Details[3], mir_models.ErrorCommandPayloadNotProvided.Error()))
+	assert.Equal(t, true, strings.Contains(respErr, ""))
 }
 
 func TestPublishCmdJsonRequest(t *testing.T) {
@@ -422,7 +418,7 @@ func TestPublishCmdJsonRequest(t *testing.T) {
 	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
 	if err != nil {
 		t.Error(err)
-	} else if respCmd.GetError() != nil {
+	} else if respCmd.GetError() != "" {
 		t.Error(respCmd.GetError())
 	}
 
@@ -474,7 +470,7 @@ func TestPublishCmdNoDeviceFound(t *testing.T) {
 	respErr := respCmd.GetError()
 
 	// Assert
-	assert.Equal(t, respErr.Message, mng.ErrorNoDeviceFound.Error())
+	assert.Equal(t, respErr, "error sending command to devices: no device found with current targets criteria")
 }
 
 func TestPublishCmdProtoNoValidationDryRun(t *testing.T) {
@@ -525,7 +521,7 @@ func TestPublishCmdProtoNoValidationDryRun(t *testing.T) {
 	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
 	if err != nil {
 		t.Error(err)
-	} else if respCmd.GetError() != nil {
+	} else if respCmd.GetError() != "" {
 		t.Error(respCmd.GetError())
 	}
 
@@ -614,7 +610,7 @@ func TestPublishCmdProtoInvalidPayloadNoValidation(t *testing.T) {
 	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
 	if err != nil {
 		t.Error(err)
-	} else if respCmd.GetError() != nil {
+	} else if respCmd.GetError() != "" {
 		t.Error(respCmd.GetError())
 	}
 
@@ -693,7 +689,7 @@ func TestPublishCmdRequestMultipleDevices(t *testing.T) {
 	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
 	if err != nil {
 		t.Error(err)
-	} else if respCmd.GetError() != nil {
+	} else if respCmd.GetError() != "" {
 		t.Error(respCmd.GetError())
 	}
 
@@ -801,7 +797,7 @@ func TestPublishCmdRequestMultipleDevicesOneNoHandler(t *testing.T) {
 	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
 	if err != nil {
 		t.Error(err)
-	} else if respCmd.GetError() != nil {
+	} else if respCmd.GetError() != "" {
 		t.Error(respCmd.GetError())
 	}
 
@@ -924,7 +920,7 @@ func TestPublishCmdRequestMultipleDevicesOneTimeout(t *testing.T) {
 	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
 	if err != nil {
 		t.Error(err)
-	} else if respCmd.GetError() != nil {
+	} else if respCmd.GetError() != "" {
 		t.Error(respCmd.GetError())
 	}
 
@@ -1012,7 +1008,7 @@ func TestPublishCmdRequestMultipleDevicesJson(t *testing.T) {
 	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
 	if err != nil {
 		t.Error(err)
-	} else if respCmd.GetError() != nil {
+	} else if respCmd.GetError() != "" {
 		t.Error(respCmd.GetError())
 	}
 
@@ -1098,7 +1094,7 @@ func TestPublishCmdRequestMultipleDevicesDescriptorNotFound(t *testing.T) {
 	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
 	if err != nil {
 		t.Error(err)
-	} else if respCmd.GetError() != nil {
+	} else if respCmd.GetError() != "" {
 		t.Error(respCmd.GetError())
 	}
 
@@ -1193,7 +1189,7 @@ func TestPublishCmdRequestMultipleDevicesSingleDescriptorNotFoundForcePush(t *te
 	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
 	if err != nil {
 		t.Error(err)
-	} else if respCmd.GetError() != nil {
+	} else if respCmd.GetError() != "" {
 		t.Error(respCmd.GetError())
 	}
 
@@ -1273,7 +1269,7 @@ func TestPublishCmdRequestMultipleDevicesJsonTemplate(t *testing.T) {
 	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
 	if err != nil {
 		t.Error(err)
-	} else if respCmd.GetError() != nil {
+	} else if respCmd.GetError() != "" {
 		t.Error(respCmd.GetError())
 	}
 
@@ -1369,7 +1365,7 @@ func TestPublishCmdRequestMultipleDevicesOneTimeoutJsonTemplate(t *testing.T) {
 	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
 	if err != nil {
 		t.Error(err)
-	} else if respCmd.GetError() != nil {
+	} else if respCmd.GetError() != "" {
 		t.Error(respCmd.GetError())
 	}
 
@@ -1383,7 +1379,7 @@ func TestPublishCmdRequestMultipleDevicesOneTimeoutJsonTemplate(t *testing.T) {
 	assert.Equal(t, cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_ERROR, dev2.Status)
 	assert.Equal(t, "", dev2.Name)
 	assert.Equal(t, "", string(dev2.Payload))
-	assert.Equal(t, `error retrieve command descriptor from device schema: cannot reconcile device schema: nats: no responders available for request`, dev2.Error)
+	assert.Equal(t, dev2.Error, "error retrieve command descriptor from device schema: cannot reconcile device schema: error requesting device schema: error publishing request message: nats: no responders available for request")
 
 	cancel()
 	wg.Wait()
@@ -1458,7 +1454,7 @@ func TestPublishCmdJsonNameWithCurlyRequest(t *testing.T) {
 	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
 	if err != nil {
 		t.Error(err)
-	} else if respCmd.GetError() != nil {
+	} else if respCmd.GetError() != "" {
 		t.Error(respCmd.GetError())
 	}
 

@@ -191,7 +191,10 @@ func run(
 	log.Info().Str("url", cfg.DataBusServer.Url).Msg("connected to msg bus")
 
 	// Services
-	prototlmSrv := prototlm_srv.NewProtoTlmServer(log, m, mng.NewSurrealDeviceStore(db), ts.NewInfluxTelemetryStore(cfg.TelemetryServer.Org, cfg.TelemetryServer.Bucket, lpClient))
+	prototlmSrv, err := prototlm_srv.NewProtoTlmServer(log, m, mng.NewSurrealDeviceStore(db), ts.NewInfluxTelemetryStore(cfg.TelemetryServer.Org, cfg.TelemetryServer.Bucket, lpClient))
+	if err != nil {
+		return err
+	}
 	prototlm_srv.RegisterMetrics(metrics.Registry())
 
 	// Metrics & Health

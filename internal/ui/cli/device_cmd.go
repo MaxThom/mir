@@ -17,7 +17,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// TODO set yaml indent to two spaces
 type DeviceCmd struct {
 	List   DeviceListCmd   `cmd:"" aliases:"ls" help:"List devices"`
 	Create DeviceCreateCmd `cmd:"" help:"Create a new device"`
@@ -116,32 +115,22 @@ func (d *DeviceListCmd) Run(c CLI) error {
 		},
 	})
 	if err != nil {
-		e := MirRequestError{Route: "device.list", e: err}
-		return e
+		return fmt.Errorf("error publising list device request: %w", err)
+	} else if resp.GetError() != "" {
+		return errors.New(resp.GetError())
 	}
 
-	if resp.GetError() != nil {
-		e := MirResponseError{
-			Route: "device.list",
-			e: MirHttpError{
-				Code:    resp.GetError().GetCode(),
-				Message: resp.GetError().GetMessage(),
-				Details: resp.GetError().GetDetails(),
-			}}
-		return e
+	list := mir_models.NewDeviceListFromProtoDevices(resp.GetOk().Devices)
+	if d.Output == "pretty" {
+		fmt.Println(prettyStringDevices(list))
 	} else {
-		list := mir_models.NewDeviceListFromProtoDevices(resp.GetOk().Devices)
-		if d.Output == "pretty" {
-			fmt.Println(prettyStringDevices(list))
+		if out, e := MarshalResponse(d.Output, list); e != nil {
+			return fmt.Errorf("error marshalling response: %w", err)
 		} else {
-			if out, e := MarshalResponse(d.Output, list); e != nil {
-				return e
-			} else {
-				fmt.Println(out)
-			}
+			fmt.Println(out)
 		}
-
 	}
+
 	return nil
 }
 
@@ -187,7 +176,7 @@ func (d *DeviceCreateCmd) Run(c CLI) error {
 			d.Output = "yaml"
 		}
 		if out, e := MarshalResponse(d.Output, mir_models.NewDevice()); e != nil {
-			return e
+			return fmt.Errorf("error marshalling response: %w", e)
 		} else {
 			fmt.Println(out)
 		}
@@ -197,6 +186,9 @@ func (d *DeviceCreateCmd) Run(c CLI) error {
 	devs := []*mir_models.Device{}
 	if isPipedStdIn() || d.Path != "" {
 		devs, err = unmarshalTypeFromStdInOrFile[mir_models.Device](d.Path)
+		if err != nil {
+			return fmt.Errorf("error reading devices from file: %w", err)
+		}
 	} else {
 		if d.Anno == nil {
 			d.Anno = make(map[string]string)
@@ -207,9 +199,7 @@ func (d *DeviceCreateCmd) Run(c CLI) error {
 		if d.RandomId {
 			t, err := uuid.NewRandom()
 			if err != nil {
-				e := MirProcessError{Msg: "error generating random device id}", e: err}
-				fmt.Println(e)
-				return e
+				return fmt.Errorf("error generation new random uuid: %w", err)
 			}
 			d.Id = t.String()[:8]
 		}
@@ -232,11 +222,10 @@ func (d *DeviceCreateCmd) Run(c CLI) error {
 	for _, d := range devs {
 		resp, err := core_client.PublishDeviceCreateRequest(msgBus, mir_models.NewCreateDeviceReqFromDevice(*d))
 		if err != nil {
-			e := MirRequestError{Route: "device.create", e: err}
-			return e
+			return fmt.Errorf("error publising device create request: %w", err)
 		}
-		if resp.GetError() != nil {
-			errs = errors.Join(errs, errors.New(resp.GetError().Message))
+		if resp.GetError() != "" {
+			errs = errors.Join(errs, errors.New(resp.GetError()))
 		} else if resp.GetOk() != nil {
 			respDevs = append(respDevs, resp.GetOk())
 		}
@@ -248,7 +237,7 @@ func (d *DeviceCreateCmd) Run(c CLI) error {
 			fmt.Println(prettyStringDevices(list))
 		} else {
 			if out, e := MarshalResponse(d.Output, list); e != nil {
-				return e
+				return fmt.Errorf("error marshalling response: %w", e)
 			} else {
 				fmt.Println(out)
 			}
@@ -351,26 +340,18 @@ func (d *DeviceUpdateCmd) Run(c CLI) error {
 
 	resp, err := core_client.PublishDeviceUpdateRequest(msgBus, req)
 	if err != nil {
-		e := MirRequestError{Route: "device.update", e: err}
-		return e
+		return fmt.Errorf("error publising device update request: %w", err)
 	}
 
-	if resp.GetError() != nil {
-		e := MirResponseError{
-			Route: "device.update",
-			e: MirHttpError{
-				Code:    resp.GetError().GetCode(),
-				Message: resp.GetError().GetMessage(),
-				Details: resp.GetError().GetDetails(),
-			}}
-		return e
+	if resp.GetError() != "" {
+		return errors.New(resp.GetError())
 	} else {
 		list := mir_models.NewDeviceListFromProtoDevices(resp.GetOk().Devices)
 		if d.Output == "pretty" {
 			fmt.Println(prettyStringDevices(list))
 		} else {
 			if out, e := MarshalResponse(d.Output, list); e != nil {
-				return e
+				return fmt.Errorf("error marshalling response: %w", e)
 			} else {
 				fmt.Println(out)
 			}
@@ -425,26 +406,18 @@ func (d *DeviceDeleteCmd) Run(c CLI) error {
 		},
 	})
 	if err != nil {
-		e := MirRequestError{Route: "device.delete", e: err}
-		return e
+		return fmt.Errorf("error publising device delete request: %w", err)
 	}
 
-	if resp.GetError() != nil {
-		e := MirResponseError{
-			Route: "device.delete",
-			e: MirHttpError{
-				Code:    resp.GetError().GetCode(),
-				Message: resp.GetError().GetMessage(),
-				Details: resp.GetError().GetDetails(),
-			}}
-		return e
+	if resp.GetError() != "" {
+		return errors.New(resp.GetError())
 	} else {
 		list := mir_models.NewDeviceListFromProtoDevices(resp.GetOk().Devices)
 		if d.Output == "pretty" {
 			fmt.Println(prettyStringDevices(list))
 		} else {
 			if out, e := MarshalResponse(d.Output, list); e != nil {
-				return e
+				return fmt.Errorf("error marshalling response: %w", e)
 			} else {
 				fmt.Println(out)
 			}
@@ -486,7 +459,7 @@ func MarshalResponse(format string, v any) (string, error) {
 	return string(out), e
 }
 
-func prettyStringDevices(devs []*mir_models.Device) string {
+func prettyStringDevices(devs []mir_models.Device) string {
 	format := "%-45s %-16s %-10s %-20s %-20s %-60s\n"
 	timeFormat := "2006-01-02 15:04:05"
 	var sb strings.Builder

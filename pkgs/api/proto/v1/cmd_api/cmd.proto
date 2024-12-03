@@ -32,7 +32,7 @@ message SendCommandRequest {
 message SendCommandResponse {
     oneof response {
   	    CommandResponses ok = 1; // response of the command
-        common_api.v1.Error error = 2;  // HTTP like error if something went wrong
+        string error = 2;  // error if something went wrong
     }
 
     message CommandResponses {
@@ -66,7 +66,7 @@ message SendListCommandsRequest {
 message SendListCommandsResponse {
   oneof response {
   	DevicesCommands ok = 1; // all commands per devices
-    common_api.v1.Error error = 2;  // HTTP like error if something went wrong
+    string error = 2;  // error if something went wrong
   }
 }
 

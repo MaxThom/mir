@@ -34,6 +34,10 @@ func main() {
 	}
 	l.Info().Msg("Mir is at maxq and nominal")
 
+	if err := m.SendData(m.NewSubject("report", "v1alpha", "stats"), []byte("hello world"), nil); err != nil {
+		l.Error().Err(err).Msg("Error sending custom data")
+	}
+
 	mir_signals.WaitForOsSignals(func() {
 		cancel()
 		mirWg.Wait()

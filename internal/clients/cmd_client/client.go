@@ -11,10 +11,10 @@ import (
 )
 
 const (
-	SendCommandRequest  clients.Subject = "client.%s.cmd.v1alpha.send"
-	ListCommandsRequest clients.Subject = "client.%s.cmd.v1alpha.list"
+	SendCommandRequest  clients.ServerSubject = "client.%s.cmd.v1alpha.send"
+	ListCommandsRequest clients.ServerSubject = "client.%s.cmd.v1alpha.list"
 
-	DeviceCommandEvent clients.Subject = "event.%s.core.v1alpha.devicecommand"
+	DeviceCommandEvent clients.ServerSubject = "event.%s.core.v1alpha.devicecommand"
 )
 
 func PublishSendCommandRequest(bus *bus.BusConn, req *cmd_apiv1.SendCommandRequest) (*cmd_apiv1.SendCommandResponse, error) {
@@ -69,6 +69,6 @@ func PublishDeviceCommandEvent(bus *nats.Conn, originalInstance string, deviceId
 		Data:    b,
 		Header:  nats.Header{},
 	}
-	msg.Header.Add("o-instance", originalInstance)
+	msg.Header.Add("original-trigger", originalInstance)
 	return bus.PublishMsg(msg)
 }

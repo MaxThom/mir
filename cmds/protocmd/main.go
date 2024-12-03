@@ -163,7 +163,10 @@ func run(
 	log.Info().Str("url", cfg.DataBusServer.Url).Msg("connected to msg bus")
 
 	// Services
-	protocmdSrv := protocmd_srv.NewProtoCmdServer(log, m, mng.NewSurrealDeviceStore(db))
+	protocmdSrv, err := protocmd_srv.NewProtoCmdServer(log, m, mng.NewSurrealDeviceStore(db))
+	if err != nil {
+		return err
+	}
 	protocmd_srv.RegisterMetrics(metrics.Registry())
 
 	// Metrics & Health
