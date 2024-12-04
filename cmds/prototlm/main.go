@@ -128,6 +128,7 @@ func main() {
 
 	// Log
 	log := mir_log.Setup(
+		mir_log.WithDevOnlyPrettyLogger(),
 		mir_log.WithFlagAndFileLogLevel(flagDebug, flagLogLevel, &cfg.LogLevel),
 		mir_log.WithAppName(AppName),
 		mir_log.WithTimeFormatUnix(),

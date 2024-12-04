@@ -12,6 +12,8 @@ import (
 
 type LogLevel = string
 
+var isNotPidZero = os.Getpid() != 0
+
 func LowestLogLevel(a LogLevel, b LogLevel) bool {
 	logLevels := map[LogLevel]int{
 		LogLevelTrace:   0,
@@ -197,6 +199,34 @@ func WithCustomWriters(writers []io.Writer) func(*mirLog) {
 		w := io.MultiWriter(writers...)
 		log.Logger = log.Output(w)
 		l.Logger = l.Output(w)
+		l.hasWriter = true
+	}
+}
+
+// Will only set pretty logger if the process is not PID 0
+// aka not running in container
+func WithDevOnlyPrettyLogger() func(*mirLog) {
+	return func(l *mirLog) {
+		if isNotPidZero {
+			out := log.Output(zerolog.ConsoleWriter{
+				Out:     os.Stdout,
+				NoColor: false,
+			})
+			log.Logger = out
+			l.Logger = out
+			l.hasWriter = true
+		}
+	}
+}
+
+func WithPrettyLogger() func(*mirLog) {
+	return func(l *mirLog) {
+		out := log.Output(zerolog.ConsoleWriter{
+			Out:     os.Stdout,
+			NoColor: false,
+		})
+		log.Logger = out
+		l.Logger = out
 		l.hasWriter = true
 	}
 }
