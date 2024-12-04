@@ -115,6 +115,7 @@ func (d *ServeCmd) Run(c CLI) error {
 	}
 
 	log := mir_log.Setup(
+		mir_log.WithDevOnlyPrettyLogger(),
 		mir_log.WithFlagAndFileLogLevel(false, d.Mir.LogLevel, &d.Mir.LogLevel),
 		mir_log.WithAppName(AppName),
 		mir_log.WithTimeFormatUnix(),
