@@ -62,10 +62,13 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	coreSrv := core_srv.NewCore(logTest, b, mng.NewSurrealDeviceStore(db))
-	go func() {
-		coreSrv.Listen(ctx)
-	}()
+	coreSrv, err := core_srv.NewCore(logTest, mSdk, mng.NewSurrealDeviceStore(db))
+	if err != nil {
+		panic(err)
+	}
+	if err = coreSrv.Serve(); err != nil {
+		panic(err)
+	}
 	fmt.Println(" -> bus")
 	fmt.Println(" -> db")
 	fmt.Println(" -> core")
@@ -109,7 +112,6 @@ func TestPublishDeviceUpdateCache(t *testing.T) {
 	count := 0
 	cache.AddDeviceUpdateSub(func(deviceId string, device mir_models.Device, schema mir_proto.MirProtoSchema) {
 		if deviceId == id {
-
 			count++
 		}
 	})

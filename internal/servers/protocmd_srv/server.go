@@ -1,7 +1,6 @@
 package protocmd_srv
 
 import (
-	"context"
 	"fmt"
 	"strings"
 	"sync"
@@ -18,7 +17,6 @@ import (
 	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/maxthom/mir/pkgs/module/mir"
-	"github.com/nats-io/nats.go"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
@@ -30,7 +28,6 @@ import (
 
 // IDEA possible perf improvement, cache of descriptor
 type ProtoCmdServer struct {
-	sub      *nats.Subscription
 	m        *mir.Mir
 	devStore mng.DeviceStore
 	schStore *schema_cache.MirProtoCache
@@ -63,7 +60,7 @@ func RegisterMetrics(reg prometheus.Registerer) {
 	reg.Register(datapointCount)
 }
 
-func NewProtoCmdServer(logger zerolog.Logger, m *mir.Mir, devStore mng.DeviceStore) (*ProtoCmdServer, error) {
+func NewProtoCmd(logger zerolog.Logger, m *mir.Mir, devStore mng.DeviceStore) (*ProtoCmdServer, error) {
 	l = logger.With().Str("srv", "protocmd_server").Logger()
 	cc, err := schema_cache.NewMirProtoCache(l, m)
 	if err != nil {
@@ -76,9 +73,18 @@ func NewProtoCmdServer(logger zerolog.Logger, m *mir.Mir, devStore mng.DeviceSto
 	}, nil
 }
 
-func (s *ProtoCmdServer) Listen(ctx context.Context) {
-	s.m.Server().SendCommand().QueueSubscribe(ServiceName, s.sendCommandSub)
-	s.m.Server().ListCommands().QueueSubscribe(ServiceName, s.listCommandsSub)
+func (s *ProtoCmdServer) Serve() error {
+	if err := s.m.Server().SendCommand().QueueSubscribe(ServiceName, s.sendCommandSub); err != nil {
+		return err
+	}
+	if err := s.m.Server().ListCommands().QueueSubscribe(ServiceName, s.listCommandsSub); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *ProtoCmdServer) Shutdown() error {
+	return nil
 }
 
 func (s *ProtoCmdServer) sendCommandSub(msg *mir.Msg, clientId string, req *cmd_apiv1.SendCommandRequest) (*cmd_apiv1.SendCommandResponse_CommandResponses, error) {

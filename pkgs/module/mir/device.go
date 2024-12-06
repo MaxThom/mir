@@ -81,10 +81,24 @@ func (r *hearthbeatRoute) Subscribe(deviceId string, f func(msg *Msg, deviceId s
 		deviceId = "*"
 	}
 	sbj := core_client.HearthbeatDeviceStream.WithId(deviceId)
-	h := func(msg *nats.Msg) {
+	return r.m.subscribe(sbj, r.handlerWrapper(f))
+}
+
+// Subscribe to hearthbeat messages
+// To listen to all devices, use deviceId = "" or deviceId = "*"
+// You are responsible of acknowledging the message
+func (r *hearthbeatRoute) QueueSubscribe(queue string, deviceId string, f func(msg *Msg, deviceId string)) error {
+	if deviceId == "" {
+		deviceId = "*"
+	}
+	sbj := core_client.HearthbeatDeviceStream.WithId(deviceId)
+	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
+}
+
+func (r *hearthbeatRoute) handlerWrapper(f func(msg *Msg, deviceId string)) nats.MsgHandler {
+	return func(msg *nats.Msg) {
 		f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId())
 	}
-	return r.m.subscribe(sbj, h)
 }
 
 /// Telemetry

@@ -17,10 +17,10 @@ import (
 	"github.com/maxthom/mir/internal/libs/boiler/mir_config"
 	"github.com/maxthom/mir/internal/libs/boiler/mir_log"
 	"github.com/maxthom/mir/internal/libs/boiler/mir_signals"
-	bus "github.com/maxthom/mir/internal/libs/external/natsio"
+	"github.com/maxthom/mir/internal/libs/external/surreal"
 	"github.com/maxthom/mir/internal/servers/core_srv"
+	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/rs/zerolog"
-	"github.com/surrealdb/surrealdb.go"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 )
@@ -142,7 +142,7 @@ func main() {
 }
 
 func run(
-	ctx context.Context,
+	_ context.Context,
 	log zerolog.Logger,
 	cfg CoreConfig,
 ) error {
@@ -150,21 +150,24 @@ func run(
 
 	// Setup
 	// Database
-	db, err := connectToDb(cfg.DatabaseServer.Url, "global", "mir", cfg.DatabaseServer.User, cfg.DatabaseServer.Password)
+	db, err := surreal.ConnectToDb(cfg.DatabaseServer.Url, "global", "mir", cfg.DatabaseServer.User, cfg.DatabaseServer.Password)
 	if err != nil {
 		return err
 	}
 	log.Info().Str("url", cfg.DatabaseServer.Url).Str("namespace", "global").Str("database", "mir").Msg("connected to database")
 
 	// Bus
-	b, err := bus.New(cfg.DataBusServer.Url)
+	m, err := mir.Connect("protocmd", cfg.DataBusServer.Url)
 	if err != nil {
 		return err
 	}
 	log.Info().Str("url", cfg.DataBusServer.Url).Msg("connected to msg bus")
 
 	// Services
-	coreSrv := core_srv.NewCore(log, b, mng.NewSurrealDeviceStore(db))
+	coreSrv, err := core_srv.NewCore(log, m, mng.NewSurrealDeviceStore(db))
+	if err != nil {
+		return err
+	}
 	core_srv.RegisterMetrics(metrics.Registry())
 
 	// Metrics & Health
@@ -179,8 +182,8 @@ func run(
 	}
 
 	wg := &sync.WaitGroup{}
+	wg.Add(1)
 	go func() {
-		wg.Add(1)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Err(err).Msg("")
 			health.SetUneady()
@@ -190,12 +193,9 @@ func run(
 		wg.Done()
 	}()
 
-	ctx, cancel := context.WithCancel(ctx)
-	go func() {
-		wg.Add(1)
-		coreSrv.Listen(ctx)
-		wg.Done()
-	}()
+	if err := coreSrv.Serve(); err != nil {
+		return err
+	}
 
 	// Handle shutdown
 	log.Info().Msg(fmt.Sprintf("%s initialized", AppName))
@@ -203,38 +203,20 @@ func run(
 	mir_signals.WaitForOsSignals(func() {
 		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 1*time.Second)
 		if err := server.Shutdown(shutdownCtx); err != nil {
-			log.Fatal().Err(err).Msg("failed to gracefully shutdown server")
+			log.Error().Err(err).Msg("failed to gracefully shutdown server")
 		}
-
-		b.Drain()
-		cancel()
-		b.Close()
+		if err := coreSrv.Shutdown(); err != nil {
+			log.Error().Err(err).Msg("failed to gracefully shutdown core server")
+		}
+		if err := m.Disconnect(); err != nil {
+			log.Error().Err(err).Msg("failed to gracefully shutdown Mir")
+		}
 		db.Close()
-		log.Debug().Msg("db connection closed")
+		log.Debug().Msg("db conn shutdown")
 		shutdownCancel()
 		wg.Wait()
 		log.Info().Msg("all system have shutdown gracefully")
 	})
 
 	return nil
-}
-
-func connectToDb(url, namespace, database, user, password string) (*surrealdb.DB, error) {
-	db, err := surrealdb.New(url)
-	if err != nil {
-		return nil, err
-	}
-
-	if _, err = db.Signin(map[string]any{
-		"user": user,
-		"pass": password,
-	}); err != nil {
-		return nil, err
-	}
-
-	if _, err = db.Use(namespace, database); err != nil {
-		return nil, err
-	}
-
-	return db, nil
 }

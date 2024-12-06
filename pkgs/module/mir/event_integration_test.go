@@ -17,7 +17,7 @@ var m *Mir
 func TestMain(t *testing.M) {
 	// Setup
 	var err error
-	m, err = Connect("test-client", nats.DefaultURL)
+	m, err = Connect("test-client-modulesdk", nats.DefaultURL)
 	if err != nil {
 		panic(err)
 	}
@@ -67,7 +67,7 @@ func TestEventRoutes_NewSubject(t *testing.T) {
 }
 
 func TestDeviceOnlineEvent(t *testing.T) {
-	deviceID := "test-device-1"
+	deviceID := "test-event-online"
 	testDevice := mir_models.Device{
 		Meta: mir_models.Meta{
 			Name:      "Test_Device",
@@ -100,7 +100,7 @@ func TestDeviceOnlineEvent(t *testing.T) {
 }
 
 func TestDeviceOfflineEvent(t *testing.T) {
-	deviceID := "test-device-1"
+	deviceID := "test-event-offline"
 	testDevice := mir_models.Device{
 		Meta: mir_models.Meta{
 			Name:      "Test_Device",
@@ -133,7 +133,7 @@ func TestDeviceOfflineEvent(t *testing.T) {
 }
 
 func TestDeviceCreatedEvent(t *testing.T) {
-	deviceID := "test-device-1"
+	deviceID := "test-event-created"
 	testDevice := mir_models.Device{
 		Meta: mir_models.Meta{
 			Name:      "Test_Device",
@@ -166,7 +166,7 @@ func TestDeviceCreatedEvent(t *testing.T) {
 }
 
 func TestDeviceUpdateEvent(t *testing.T) {
-	deviceID := "test-device-1"
+	deviceID := "test-event-uodate"
 	testDevice := mir_models.Device{
 		Meta: mir_models.Meta{
 			Name:      "Test_Device",
@@ -199,7 +199,7 @@ func TestDeviceUpdateEvent(t *testing.T) {
 }
 
 func TestDeviceDeleteEvent(t *testing.T) {
-	deviceID := "test-device-1"
+	deviceID := "test-event=delete"
 	testDevice := mir_models.Device{
 		Meta: mir_models.Meta{
 			Name:      "Test_Device",

@@ -1,13 +1,14 @@
 package core_srv
 
 import (
-	"context"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/maxthom/mir/internal/clients"
 	"github.com/maxthom/mir/internal/clients/core_client"
 	"github.com/maxthom/mir/internal/externals/mng"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
@@ -16,30 +17,41 @@ import (
 	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	"github.com/maxthom/mir/pkgs/mir_models"
+	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/nats-io/nats.go"
+	"github.com/rs/zerolog"
 	logger "github.com/rs/zerolog/log"
 	"github.com/surrealdb/surrealdb.go"
 	"google.golang.org/protobuf/proto"
 	"gotest.tools/assert"
 )
 
-var log = logger.With().Str("test", "core").Logger()
+var log = logger.With().Str("test", "core").Logger().Output(zerolog.ConsoleWriter{
+	Out:     os.Stdout,
+	NoColor: false,
+})
+
 var db *surrealdb.DB
 var b *bus.BusConn
 var sub *nats.Subscription
+var mSdk *mir.Mir
 var busUrl = "nats://127.0.0.1:4222"
 
 func TestMain(m *testing.M) {
 	// Setup
-	ctx, cancel := context.WithCancel(context.Background())
 	fmt.Println("Test Setup")
+	var err error
 
 	db = test_utils.SetupSurrealDbConnsPanic("ws://127.0.0.1:8000/rpc", "root", "root", "global", "mir_testing")
 	b = test_utils.SetupNatsConPanic(busUrl)
-	coreSrv := NewCore(log, b, mng.NewSurrealDeviceStore(db))
-	go func() {
-		coreSrv.Listen(ctx)
-	}()
+	mSdk, err = mir.Connect("test_coresrv", busUrl)
+	if err != nil {
+		panic(err)
+	}
+	coreSrv, err := NewCore(log, mSdk, mng.NewSurrealDeviceStore(db))
+	if err := coreSrv.Serve(); err != nil {
+		panic(err)
+	}
 	fmt.Println(" -> bus")
 	fmt.Println(" -> db")
 	fmt.Println(" -> core")
@@ -66,7 +78,7 @@ func TestMain(m *testing.M) {
 	fmt.Println(" -> cleaned up")
 	time.Sleep(1 * time.Second)
 	b.Drain()
-	cancel()
+	coreSrv.Shutdown()
 	b.Close()
 	db.Close()
 	fmt.Println(" -> core")
@@ -80,7 +92,7 @@ func TestMain(m *testing.M) {
 func TestPublishDeviceCreate(t *testing.T) {
 	// Arrange
 	id := "device_create_raw"
-	publishStream := "device." + id + ".core.v1alpha.create"
+	publishStream := "client." + id + ".core.v1alpha.create"
 	reqCreate := &core_apiv1.CreateDeviceRequest{
 		Meta: &core_apiv1.Meta{
 			Name:      id,
@@ -118,6 +130,8 @@ func TestPublishDeviceCreate(t *testing.T) {
 	})
 	if err != nil {
 		t.Error(err)
+	} else if respList.GetError() != "" {
+		t.Error(respList.GetError())
 	}
 
 	// Assert
@@ -826,7 +840,9 @@ func TestPublishDeviceDeleteTargetIds(t *testing.T) {
 	s, err := b.Subscribe(
 		core_client.DeviceDeletedEvent.WithId("*"),
 		func(msg *nats.Msg) {
-			count += 1
+			if slices.Contains(deviceIds, clients.ServerSubject(msg.Subject).GetId()) {
+				count += 1
+			}
 			msg.Ack()
 		})
 
@@ -1699,9 +1715,11 @@ func TestCreatedDeviceAlreadyExist(t *testing.T) {
 	// Subscribe to device created event
 	count := 0
 	s, _ := b.Subscribe(
-		core_client.DeviceCreatedEvent.WithId(deviceIds[0]),
+		core_client.DeviceCreatedEvent.WithId("*"),
 		func(msg *nats.Msg) {
-			count += 1
+			if slices.Contains(deviceIds, clients.ServerSubject(msg.Subject).GetId()) {
+				count += 1
+			}
 			msg.Ack()
 		})
 
@@ -2346,7 +2364,7 @@ func TestDeviceGoesOffline(t *testing.T) {
 	// Subscribe to device offline event
 	offlineEventCount := 0
 	s, err := b.Subscribe(
-		core_client.DeviceOfflineEvent.WithId(deviceIds[0]),
+		core_client.DeviceOfflineEvent.WithId(mSdk.GetInstanceName()),
 		func(msg *nats.Msg) {
 			offlineEventCount += 1
 			msg.Ack()
@@ -2419,9 +2437,11 @@ func TestDeviceAutoProvision(t *testing.T) {
 		})
 	createEventCount := 0
 	c, err := b.Subscribe(
-		core_client.DeviceCreatedEvent.WithId(deviceIds[0]),
+		core_client.DeviceCreatedEvent.WithId("*"),
 		func(msg *nats.Msg) {
-			createEventCount += 1
+			if clients.ServerSubject(msg.Subject).GetId() == deviceIds[0] {
+				createEventCount += 1
+			}
 			msg.Ack()
 		})
 

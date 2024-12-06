@@ -23,6 +23,8 @@ import (
 
 type ProtoTlmServer struct {
 	ctx            context.Context
+	cancelCtx      context.CancelFunc
+	wg             *sync.WaitGroup
 	tlmStore       ts.TelemetryStore
 	sub            *nats.Subscription
 	m              *mir.Mir
@@ -75,13 +77,18 @@ func RegisterMetrics(reg prometheus.Registerer) {
 	reg.Register(datapointCount)
 }
 
-func NewProtoTlmServer(logger zerolog.Logger, m *mir.Mir, devStore mng.DeviceStore, tlmStore ts.TelemetryStore) (*ProtoTlmServer, error) {
+func NewProtoTlm(logger zerolog.Logger, m *mir.Mir, devStore mng.DeviceStore, tlmStore ts.TelemetryStore) (*ProtoTlmServer, error) {
+	ctx, cancel := context.WithCancel(context.Background())
 	l = logger.With().Str("srv", "prototlm_server").Logger()
 	cc, err := schema_cache.NewMirProtoCache(l, m)
 	if err != nil {
+		cancel()
 		return nil, err
 	}
 	srv := &ProtoTlmServer{
+		ctx:        ctx,
+		cancelCtx:  cancel,
+		wg:         &sync.WaitGroup{},
 		tlmStore:   tlmStore,
 		m:          m,
 		devStore:   devStore,
@@ -93,16 +100,25 @@ func NewProtoTlmServer(logger zerolog.Logger, m *mir.Mir, devStore mng.DeviceSto
 }
 
 func (s *ProtoTlmServer) handleInfluxErrorChannel() {
+	s.wg.Add(1)
 	errorsCh := s.tlmStore.Errors()
 	go func() {
-		for err := range errorsCh {
-			l.Error().Err(err).Msg("Error writing to InfluxDB")
+		defer s.wg.Done()
+		for {
+			select {
+			case err, ok := <-errorsCh:
+				if !ok {
+					return
+				}
+				l.Error().Err(err).Msg("Error writing to InfluxDB")
+			case <-s.ctx.Done():
+				return
+			}
 		}
 	}()
 }
 
-func (s *ProtoTlmServer) Listen(ctx context.Context) error {
-	s.ctx = ctx
+func (s *ProtoTlmServer) Serve() error {
 	s.handleInfluxErrorChannel()
 	if err := s.m.Device().Telemetry().QueueSubscribe(ServiceName, "", s.handleTelemetryStream); err != nil {
 		return fmt.Errorf("cannot listen to device telemetry stream: %w", err)
@@ -110,6 +126,12 @@ func (s *ProtoTlmServer) Listen(ctx context.Context) error {
 	if err := s.m.Server().ListTelemetry().QueueSubscribe(ServiceName, s.handleTelemetryListRequest); err != nil {
 		return fmt.Errorf("cannot listen to device telemetry list request: %w", err)
 	}
+	return nil
+}
+
+func (s *ProtoTlmServer) Shutdown() error {
+	s.cancelCtx()
+	s.wg.Wait()
 	return nil
 }
 
@@ -126,8 +148,6 @@ func (s *ProtoTlmServer) handleTelemetryStream(msg *mir.Msg, deviceId string, pr
 	devMsgs, ok := s.devWriters[deviceId]
 	if ok {
 		devWriter, ok = devMsgs[protoMsgName]
-	} else {
-		s.devWriters[deviceId] = make(map[string]proto_lineprotocol.ProtoBytesToLpFn)
 	}
 	s.devWritersLock.RUnlock()
 	// Mean no ingesters for proto msg, but we might have the schema
@@ -157,6 +177,9 @@ func (s *ProtoTlmServer) handleTelemetryStream(msg *mir.Msg, deviceId string, pr
 		}
 		l.Info().Str("deviceId", deviceId).Msg("Generated ingesters functions from proto schema")
 		s.devWritersLock.Lock()
+		if _, ok := s.devWriters[deviceId]; !ok {
+			s.devWriters[deviceId] = make(map[string]proto_lineprotocol.ProtoBytesToLpFn)
+		}
 		s.devWriters[deviceId][protoMsgName] = fn
 		devWriter = fn
 		s.devWritersLock.Unlock()
@@ -266,7 +289,6 @@ func generateIngesters(desc protoreflect.Descriptor, deviceId string, device mir
 	for k, v := range device.Meta.Labels {
 		tags["__label_"+k] = v
 	}
-	fmt.Println(tags)
 	fn, err := proto_lineprotocol.GenerateMarshalFn(tags, desc.(protoreflect.MessageDescriptor))
 	if err != nil {
 		return nil, err

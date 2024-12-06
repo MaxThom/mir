@@ -29,14 +29,22 @@ type Msg struct {
 	*nats.Msg
 }
 
+// Mainly present for Events
+// Represent the serverId that made the request trigger
 func (m Msg) GetOriginalTriggerId() string {
 	return m.Header.Get(HeaderOriginalTrigger)
+}
+
+// ServerId that triggered the event
+func (m Msg) GetOrigin() string {
+	return m.Header.Get(HeaderOrigin)
 }
 
 const (
 	HeaderRequestEnconding = "request-encoding"
 	HeaderContentEncoding  = "content-encoding"
 	HeaderOriginalTrigger  = "original-trigger"
+	HeaderOrigin           = "origin"
 	HeaderZstdEncoding     = "zstd"
 )
 
@@ -131,12 +139,13 @@ func (m *Mir) publish(subject string, data []byte, headers nats.Header) error {
 	if headers == nil {
 		headers = nats.Header{}
 	}
+	headers.Add(HeaderOrigin, m.GetInstanceName())
+
 	msg := &nats.Msg{
 		Subject: subject,
 		Header:  headers,
 		Data:    data,
 	}
-
 	return m.Bus.PublishMsg(msg)
 }
 
@@ -144,12 +153,13 @@ func (m *Mir) request(subject string, data []byte, headers nats.Header, timeout 
 	if headers == nil {
 		headers = nats.Header{}
 	}
+	headers.Add(HeaderOrigin, m.GetInstanceName())
+
 	msg := &nats.Msg{
 		Subject: subject,
 		Header:  headers,
 		Data:    data,
 	}
-
 	return m.Bus.RequestMsg(msg, timeout)
 }
 
@@ -179,7 +189,14 @@ func (m *Mir) sendReplyOrAck(msg *nats.Msg, resp proto.Message) error {
 			msg.Ack()
 			return fmt.Errorf("error marshalling response: %w", err)
 		}
-		err = m.Bus.Publish(msg.Reply, bResp)
+		headers := nats.Header{}
+		headers.Add(HeaderOrigin, m.GetInstanceName())
+		reply := &nats.Msg{
+			Subject: msg.Reply,
+			Header:  headers,
+			Data:    bResp,
+		}
+		err = m.Bus.PublishMsg(reply)
 		if err != nil {
 			msg.Ack()
 			return fmt.Errorf("error publishing response: %w", err)

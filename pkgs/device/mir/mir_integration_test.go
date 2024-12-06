@@ -18,6 +18,7 @@ import (
 	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
 	mir_device_testv1 "github.com/maxthom/mir/pkgs/device/mir/proto_test/gen/mir_device_test/v1"
 	"github.com/maxthom/mir/pkgs/mir_models"
+	"github.com/maxthom/mir/pkgs/module/mir"
 	logger "github.com/rs/zerolog/log"
 	"github.com/surrealdb/surrealdb.go"
 	"google.golang.org/protobuf/proto"
@@ -30,6 +31,7 @@ import (
 var log = logger.With().Str("test", "core").Logger()
 var db *surrealdb.DB
 var b *bus.BusConn
+var mSdk *mir.Mir
 
 // IDEA methods that returns a set of subscriber to Nats using a map
 // where the key is the stream subject
@@ -38,11 +40,10 @@ var b *bus.BusConn
 // IDEA functions for cleaning db and bus
 
 func TestMain(m *testing.M) {
-	ctx, cancel := context.WithCancel(context.Background())
 	// Setup
 	fmt.Println("Test Setup")
 	var err error
-	db, b, err = setupConns()
+	db, mSdk, b, err = setupConns()
 
 	if err != nil {
 		panic(err)
@@ -51,10 +52,13 @@ func TestMain(m *testing.M) {
 	fmt.Println(" -> db")
 	fmt.Println(" -> cleaning db")
 
-	coreSrv := core_srv.NewCore(log, b, mng.NewSurrealDeviceStore(db))
-	go func() {
-		coreSrv.Listen(ctx)
-	}()
+	coreSrv, err := core_srv.NewCore(log, mSdk, mng.NewSurrealDeviceStore(db))
+	if err != nil {
+		panic(err)
+	}
+	if err = coreSrv.Serve(); err != nil {
+		panic(err)
+	}
 	fmt.Println(" -> core")
 	time.Sleep(1 * time.Second)
 
@@ -102,7 +106,6 @@ func TestMain(m *testing.M) {
 	fmt.Println(" -> cleaned up")
 	time.Sleep(1 * time.Second)
 	b.Drain()
-	cancel()
 	b.Close()
 	db.Close()
 	fmt.Println(" -> core")
@@ -275,31 +278,35 @@ func marshalProtoFiles(files ...protoreflect.FileDescriptor) ([]byte, error) {
 	return bytes, nil
 }
 
-func setupConns() (*surrealdb.DB, *bus.BusConn, error) {
+func setupConns() (*surrealdb.DB, *mir.Mir, *bus.BusConn, error) {
 	// Database
 	db, err := surrealdb.New("ws://127.0.0.1:8000/rpc")
 	if err != nil {
-		return db, nil, err
+		return db, nil, nil, err
 	}
 
 	if _, err = db.Signin(map[string]any{
 		"user": "root",
 		"pass": "root",
 	}); err != nil {
-		return db, nil, err
+		return db, nil, nil, err
 	}
 
 	if _, err = db.Use("global", "mir_testing"); err != nil {
-		return db, nil, err
+		return db, nil, nil, err
 	}
 
 	// Bus
 	b, err := bus.New("nats://127.0.0.1:4222")
 	if err != nil {
-		return nil, nil, err
+		return db, nil, nil, err
+	}
+	m, err := mir.Connect("test_device_sdk", "nats://127.0.0.1:4222")
+	if err != nil {
+		return db, nil, b, err
 	}
 
-	return db, b, nil
+	return db, m, b, nil
 }
 
 func strRef(s string) *string {
