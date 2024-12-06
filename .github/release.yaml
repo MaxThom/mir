@@ -7,6 +7,9 @@ changelog:
       labels:
         - "feature"
         - "enhancement"
+    - title: "⚙️ Refactor"
+      labels:
+        - "refactor"
     - title: "🐛 Bug Fixes"
       labels:
         - "fix"
