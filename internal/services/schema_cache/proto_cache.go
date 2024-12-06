@@ -169,10 +169,9 @@ func (c *MirProtoCache) getProtoSchemaFromDevice(deviceId string) (*mir_proto.Mi
 	return sch, nil
 }
 
-func (c *MirProtoCache) deviceUpdateSub(msg *mir.Msg, serverId string, device mir_models.Device) {
+func (c *MirProtoCache) deviceUpdateSub(msg *mir.Msg, deviceId string, device mir_models.Device) {
 	// TODO this wont work if one instance of Mir with many cache from flux or cmd. If we have single binary
 	// need a subcomponent header or something
-	deviceId := device.Spec.DeviceId
 	if c.m.GetInstanceName() == msg.GetOriginalTriggerId() {
 		msg.Ack()
 		return

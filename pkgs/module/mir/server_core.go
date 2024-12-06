@@ -18,6 +18,9 @@ const (
 	defaultTimeout = 7 * time.Second
 )
 
+// TODO Eventually, the subject will be a userid when auth is in place
+// The serverid is a header
+
 type serverSubject []string
 
 func (e serverSubject) String() string {

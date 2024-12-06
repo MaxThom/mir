@@ -94,7 +94,7 @@ func TestServerRoutes_QueueSubscribe(t *testing.T) {
 }
 
 func TestServerRoutes_CreateDevice(t *testing.T) {
-	deviceID := "test-device-1"
+	deviceID := "test-server-create"
 	testDevice := &core_apiv1.Device{
 		Meta: &core_apiv1.Meta{
 			Name:      "Test Device",
@@ -137,7 +137,7 @@ func TestServerRoutes_CreateDevice(t *testing.T) {
 }
 
 func TestServerRoutes_UpdateDevice(t *testing.T) {
-	deviceID := "test-device-1"
+	deviceID := "test-server-update"
 	testDevice := &core_apiv1.Device{
 		Meta: &core_apiv1.Meta{
 			Name:      "Test Device",
@@ -185,7 +185,7 @@ func TestServerRoutes_UpdateDevice(t *testing.T) {
 }
 
 func TestServerRoutes_DeleteDevice(t *testing.T) {
-	deviceID := "test-device-1"
+	deviceID := "test-server-delete"
 	testDevice := &core_apiv1.Device{
 		Meta: &core_apiv1.Meta{
 			Name:      "Test Device",
@@ -226,7 +226,7 @@ func TestServerRoutes_DeleteDevice(t *testing.T) {
 }
 
 func TestServerRoutes_ListDevice(t *testing.T) {
-	deviceID := "test-device-1"
+	deviceID := "test-server-list"
 	testDevice := &core_apiv1.Device{
 		Meta: &core_apiv1.Meta{
 			Name:      "Test Device",
@@ -300,7 +300,7 @@ func TestServerRoutes_PublishProto(t *testing.T) {
 			Namespace: "default",
 		},
 		Spec: &core_apiv1.Spec{
-			DeviceId: "test-device-1",
+			DeviceId: "test-server-publishproto",
 		},
 	}
 
@@ -337,7 +337,7 @@ func TestServerRoutes_PublishJson(t *testing.T) {
 			Namespace: "default",
 		},
 		Spec: mir_models.Spec{
-			DeviceId: "test-device-1",
+			DeviceId: "test-server-publishjson",
 		},
 	}
 
@@ -365,7 +365,7 @@ func TestServerRoutes_PublishJson(t *testing.T) {
 }
 
 func TestServerRoutes_ListTelemetry(t *testing.T) {
-	deviceID := "test-device-1"
+	deviceID := "test-server-listtlm"
 	testTelemetry := []*tlm_apiv1.DevicesTelemetry{
 		{
 			DevicesNamens: []string{deviceID},
@@ -389,14 +389,14 @@ func TestServerRoutes_ListTelemetry(t *testing.T) {
 			Ids: []string{deviceID},
 		},
 	})
-	assert.Equal(t, resp[0].DevicesNamens[0], deviceID)
 	assert.NilError(t, err)
+	assert.Equal(t, resp[0].DevicesNamens[0], deviceID)
 }
 
 func TestServerRoutes_ListCommand(t *testing.T) {
-	deviceID := "test-device-1"
+	deviceID := "test-server-listcmd"
 	testCommands := map[string]*cmd_apiv1.Commands{
-		"test-device-1": {
+		"test-server-listcmd": {
 			Commands: []*cmd_apiv1.CommandDescriptor{
 				{
 					Name: "cmd_test",
@@ -417,15 +417,15 @@ func TestServerRoutes_ListCommand(t *testing.T) {
 			Ids: []string{deviceID},
 		},
 	})
-	assert.Equal(t, resp[deviceID].Commands[0].Name, testCommands[deviceID].Commands[0].Name)
 	assert.NilError(t, err)
+	assert.Equal(t, resp[deviceID].Commands[0].Name, testCommands[deviceID].Commands[0].Name)
 }
 
 func TestServerRoutes_SendCommand(t *testing.T) {
-	deviceID := "test-device-1"
+	deviceID := "test-server-sendcmd"
 	testCommands := &cmd_apiv1.SendCommandResponse_CommandResponses{
 		DeviceResponses: map[string]*cmd_apiv1.SendCommandResponse_CommandResponse{
-			"test-device-1": {
+			"test-server-sendcmd": {
 				DeviceId: deviceID,
 			},
 		},
@@ -443,6 +443,6 @@ func TestServerRoutes_SendCommand(t *testing.T) {
 			Ids: []string{deviceID},
 		},
 	})
-	assert.Equal(t, resp[deviceID].DeviceId, testCommands.DeviceResponses[deviceID].DeviceId)
 	assert.NilError(t, err)
+	assert.Equal(t, resp[deviceID].DeviceId, testCommands.DeviceResponses[deviceID].DeviceId)
 }

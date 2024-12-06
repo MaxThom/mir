@@ -192,7 +192,7 @@ func run(
 	log.Info().Str("url", cfg.DataBusServer.Url).Msg("connected to msg bus")
 
 	// Services
-	prototlmSrv, err := prototlm_srv.NewProtoTlmServer(log, m, mng.NewSurrealDeviceStore(db), ts.NewInfluxTelemetryStore(cfg.TelemetryServer.Org, cfg.TelemetryServer.Bucket, lpClient))
+	prototlmSrv, err := prototlm_srv.NewProtoTlm(log, m, mng.NewSurrealDeviceStore(db), ts.NewInfluxTelemetryStore(cfg.TelemetryServer.Org, cfg.TelemetryServer.Bucket, lpClient))
 	if err != nil {
 		return err
 	}
@@ -221,12 +221,9 @@ func run(
 		wg.Done()
 	}()
 
-	ctx, cancel := context.WithCancel(ctx)
-	wg.Add(1)
-	go func() {
-		prototlmSrv.Listen(ctx)
-		wg.Done()
-	}()
+	if err := prototlmSrv.Serve(); err != nil {
+		panic(err)
+	}
 
 	// Handle shutdown
 	log.Info().Msg(fmt.Sprintf("%s initialized", AppName))
@@ -234,11 +231,13 @@ func run(
 	mir_signals.WaitForOsSignals(func() {
 		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 1*time.Second)
 		if err := server.Shutdown(shutdownCtx); err != nil {
-			log.Fatal().Err(err).Msg("failed to gracefully shutdown server")
+			log.Error().Err(err).Msg("failed to gracefully shutdown server")
 		}
-		cancel()
 		m.Disconnect()
 		db.Close()
+		if err := prototlmSrv.Shutdown(); err != nil {
+			log.Error().Err(err).Msg("failed to gracefully shutdown prototlm server")
+		}
 		log.Debug().Msg("db connection closed")
 		shutdownCancel()
 		wg.Wait()

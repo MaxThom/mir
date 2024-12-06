@@ -20,6 +20,10 @@ type eventSubject []string
 func (e eventSubject) String() string {
 	return strings.Join(e, ".")
 }
+func (e eventSubject) WithId(id string) eventSubject {
+	e[1] = id
+	return e
+}
 
 type eventRoutes struct {
 	m *Mir
@@ -37,7 +41,6 @@ func (r eventRoutes) NewSubject(module, version, function string, extra ...strin
 
 // Publish proto data to a custom event stream from serve
 func (r *eventRoutes) PublishProto(sbj eventSubject, originalId string, data proto.Message) error {
-	sbj[1] = r.m.GetInstanceName()
 	b, err := proto.Marshal(data)
 	if err != nil {
 		return fmt.Errorf("error serializing data: %w", err)
@@ -48,7 +51,6 @@ func (r *eventRoutes) PublishProto(sbj eventSubject, originalId string, data pro
 
 // Publish json data to a custom event stream from serve
 func (r *eventRoutes) PublishJson(sbj eventSubject, originalId string, data any) error {
-	sbj[1] = r.m.GetInstanceName()
 	b, err := json.Marshal(data)
 	if err != nil {
 		return fmt.Errorf("error serializing data: %w", err)
@@ -59,7 +61,6 @@ func (r *eventRoutes) PublishJson(sbj eventSubject, originalId string, data any)
 
 // Publish data to a custom event stream from serve
 func (r *eventRoutes) Publish(sbj eventSubject, originalId string, data []byte) error {
-	sbj[1] = r.m.GetInstanceName()
 	return r.m.publish(sbj.String(), data, nats.Header{HeaderOriginalTrigger: []string{originalId}})
 }
 
@@ -69,7 +70,7 @@ func (r *eventRoutes) Publish(sbj eventSubject, originalId string, data []byte) 
 // <version>: version of the data in the stream (v1alpha, v1, etc)
 // <function>: refer to the exact function of the stream
 // <extra>: any extra token you want to add
-func (r *eventRoutes) Subscribe(sbj eventSubject, h func(msg *Msg, serverId string)) error {
+func (r *eventRoutes) Subscribe(sbj eventSubject, h func(msg *Msg, id string)) error {
 	f := func(msg *nats.Msg) {
 		h(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId())
 	}
@@ -83,7 +84,7 @@ func (r *eventRoutes) Subscribe(sbj eventSubject, h func(msg *Msg, serverId stri
 // <version>: version of the data in the stream (v1alpha, v1, etc)
 // <function>: refer to the exact function of the stream
 // <extra>: any extra token you want to add
-func (r *eventRoutes) QueueSubscribe(queue string, sbj eventSubject, h func(msg *Msg, serverId string)) error {
+func (r *eventRoutes) QueueSubscribe(queue string, sbj eventSubject, h func(msg *Msg, id string)) error {
 	f := func(msg *nats.Msg) {
 		h(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId())
 	}
@@ -102,18 +103,18 @@ func (r *eventRoutes) DeviceOnline() *deviceOnlineEventRoute {
 }
 
 // Subscribe to device online event routes
-func (r *deviceOnlineEventRoute) Subscribe(f func(msg *Msg, serverId string, device mir_models.Device)) error {
+func (r *deviceOnlineEventRoute) Subscribe(f func(msg *Msg, deviceId string, device mir_models.Device)) error {
 	sbj := core_client.DeviceOnlineEvent.WithId("*")
 	return r.m.subscribe(sbj, r.handlerWrapper(f))
 }
 
 // Queue subscribe to device online event routes
-func (r *deviceOnlineEventRoute) QueueSubscribe(queue string, f func(msg *Msg, serverId string, device mir_models.Device)) error {
+func (r *deviceOnlineEventRoute) QueueSubscribe(queue string, f func(msg *Msg, deviceId string, device mir_models.Device)) error {
 	sbj := core_client.DeviceOnlineEvent.WithId("*")
 	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
 }
 
-func (r *deviceOnlineEventRoute) handlerWrapper(f func(msg *Msg, serverId string, device mir_models.Device)) nats.MsgHandler {
+func (r *deviceOnlineEventRoute) handlerWrapper(f func(msg *Msg, deviceId string, device mir_models.Device)) nats.MsgHandler {
 	return func(msg *nats.Msg) {
 		req := &core_apiv1.Device{}
 		if err := proto.Unmarshal(msg.Data, req); err != nil {
@@ -126,7 +127,7 @@ func (r *deviceOnlineEventRoute) handlerWrapper(f func(msg *Msg, serverId string
 
 // Publish a device online event
 func (r *deviceOnlineEventRoute) Publish(originalId string, device mir_models.Device) error {
-	sbj := core_client.DeviceOnlineEvent.WithId(r.m.GetInstanceName())
+	sbj := core_client.DeviceOnlineEvent.WithId(device.Spec.DeviceId)
 	b, err := proto.Marshal(mir_models.NewProtoDeviceFromDevice(device))
 	if err != nil {
 		return err
@@ -152,18 +153,18 @@ func (r *eventRoutes) DeviceOffline() *deviceOfflineEventRoute {
 }
 
 // Subscribe to device online event routes
-func (r *deviceOfflineEventRoute) Subscribe(f func(msg *Msg, serverId string, device mir_models.Device)) error {
+func (r *deviceOfflineEventRoute) Subscribe(f func(msg *Msg, deviceId string, device mir_models.Device)) error {
 	sbj := core_client.DeviceOfflineEvent.WithId("*")
 	return r.m.subscribe(sbj, r.handlerWrapper(f))
 }
 
 // Queue subscribe to device online event routes
-func (r *deviceOfflineEventRoute) QueueSubscribe(queue string, f func(msg *Msg, serverId string, device mir_models.Device)) error {
+func (r *deviceOfflineEventRoute) QueueSubscribe(queue string, f func(msg *Msg, deviceId string, device mir_models.Device)) error {
 	sbj := core_client.DeviceOfflineEvent.WithId("*")
 	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
 }
 
-func (r *deviceOfflineEventRoute) handlerWrapper(f func(msg *Msg, serverId string, device mir_models.Device)) nats.MsgHandler {
+func (r *deviceOfflineEventRoute) handlerWrapper(f func(msg *Msg, deviceId string, device mir_models.Device)) nats.MsgHandler {
 	return func(msg *nats.Msg) {
 		req := &core_apiv1.Device{}
 		if err := proto.Unmarshal(msg.Data, req); err != nil {
@@ -176,7 +177,7 @@ func (r *deviceOfflineEventRoute) handlerWrapper(f func(msg *Msg, serverId strin
 
 // Publish a device online event
 func (r *deviceOfflineEventRoute) Publish(originalId string, device mir_models.Device) error {
-	sbj := core_client.DeviceOfflineEvent.WithId(r.m.GetInstanceName())
+	sbj := core_client.DeviceOfflineEvent.WithId(device.Spec.DeviceId)
 	b, err := proto.Marshal(mir_models.NewProtoDeviceFromDevice(device))
 	if err != nil {
 		return err
@@ -202,18 +203,18 @@ func (r *eventRoutes) DeviceCreate() *deviceCreateEventRoute {
 }
 
 // Subscribe to device create event routes
-func (r *deviceCreateEventRoute) Subscribe(f func(msg *Msg, serverId string, device mir_models.Device)) error {
+func (r *deviceCreateEventRoute) Subscribe(f func(msg *Msg, deviceId string, device mir_models.Device)) error {
 	sbj := core_client.DeviceCreatedEvent.WithId("*")
 	return r.m.subscribe(sbj, r.handlerWrapper(f))
 }
 
 // Queue subscribe to device create event routes
-func (r *deviceCreateEventRoute) QueueSubscribe(queue string, f func(msg *Msg, serverId string, device mir_models.Device)) error {
+func (r *deviceCreateEventRoute) QueueSubscribe(queue string, f func(msg *Msg, deviceId string, device mir_models.Device)) error {
 	sbj := core_client.DeviceCreatedEvent.WithId("*")
 	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
 }
 
-func (r *deviceCreateEventRoute) handlerWrapper(f func(msg *Msg, serverId string, device mir_models.Device)) nats.MsgHandler {
+func (r *deviceCreateEventRoute) handlerWrapper(f func(msg *Msg, deviceId string, device mir_models.Device)) nats.MsgHandler {
 	return func(msg *nats.Msg) {
 		req := &core_apiv1.Device{}
 		if err := proto.Unmarshal(msg.Data, req); err != nil {
@@ -226,7 +227,7 @@ func (r *deviceCreateEventRoute) handlerWrapper(f func(msg *Msg, serverId string
 
 // Publish a device create event
 func (r *deviceCreateEventRoute) Publish(originalId string, device mir_models.Device) error {
-	sbj := core_client.DeviceCreatedEvent.WithId(r.m.GetInstanceName())
+	sbj := core_client.DeviceCreatedEvent.WithId(device.Spec.DeviceId)
 	b, err := proto.Marshal(mir_models.NewProtoDeviceFromDevice(device))
 	if err != nil {
 		return err
@@ -252,18 +253,18 @@ func (r *eventRoutes) DeviceUpdate() *deviceUpdateEventRoute {
 }
 
 // Subscribe to device update event routes
-func (r *deviceUpdateEventRoute) Subscribe(f func(msg *Msg, serverId string, device mir_models.Device)) error {
+func (r *deviceUpdateEventRoute) Subscribe(f func(msg *Msg, deviceId string, device mir_models.Device)) error {
 	sbj := core_client.DeviceUpdatedEvent.WithId("*")
 	return r.m.subscribe(sbj, r.handlerWrapper(f))
 }
 
 // Queue subscribe to device update event routes
-func (r *deviceUpdateEventRoute) QueueSubscribe(queue string, f func(msg *Msg, serverId string, device mir_models.Device)) error {
+func (r *deviceUpdateEventRoute) QueueSubscribe(queue string, f func(msg *Msg, deviceId string, device mir_models.Device)) error {
 	sbj := core_client.DeviceUpdatedEvent.WithId("*")
 	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
 }
 
-func (r *deviceUpdateEventRoute) handlerWrapper(f func(msg *Msg, serverId string, device mir_models.Device)) nats.MsgHandler {
+func (r *deviceUpdateEventRoute) handlerWrapper(f func(msg *Msg, deviceId string, device mir_models.Device)) nats.MsgHandler {
 	return func(msg *nats.Msg) {
 		req := &core_apiv1.Device{}
 		if err := proto.Unmarshal(msg.Data, req); err != nil {
@@ -276,7 +277,7 @@ func (r *deviceUpdateEventRoute) handlerWrapper(f func(msg *Msg, serverId string
 
 // Publish a device update event
 func (r *deviceUpdateEventRoute) Publish(originalId string, device mir_models.Device) error {
-	sbj := core_client.DeviceUpdatedEvent.WithId(r.m.GetInstanceName())
+	sbj := core_client.DeviceUpdatedEvent.WithId(device.Spec.DeviceId)
 	b, err := proto.Marshal(mir_models.NewProtoDeviceFromDevice(device))
 	if err != nil {
 		return err
@@ -308,12 +309,12 @@ func (r *deviceDeleteEventRoute) Subscribe(f func(msg *Msg, serverId string, dev
 }
 
 // Queue subscribe to device delete event routes
-func (r *deviceDeleteEventRoute) QueueSubscribe(queue string, f func(msg *Msg, serverId string, device mir_models.Device)) error {
+func (r *deviceDeleteEventRoute) QueueSubscribe(queue string, f func(msg *Msg, deviceId string, device mir_models.Device)) error {
 	sbj := core_client.DeviceDeletedEvent.WithId("*")
 	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
 }
 
-func (r *deviceDeleteEventRoute) handlerWrapper(f func(msg *Msg, serverId string, device mir_models.Device)) nats.MsgHandler {
+func (r *deviceDeleteEventRoute) handlerWrapper(f func(msg *Msg, serverId string, deviceId mir_models.Device)) nats.MsgHandler {
 	return func(msg *nats.Msg) {
 		req := &core_apiv1.Device{}
 		if err := proto.Unmarshal(msg.Data, req); err != nil {
@@ -326,7 +327,7 @@ func (r *deviceDeleteEventRoute) handlerWrapper(f func(msg *Msg, serverId string
 
 // Publish a device delete event
 func (r *deviceDeleteEventRoute) Publish(originalId string, device mir_models.Device) error {
-	sbj := core_client.DeviceDeletedEvent.WithId(r.m.GetInstanceName())
+	sbj := core_client.DeviceDeletedEvent.WithId(device.Spec.DeviceId)
 	b, err := proto.Marshal(mir_models.NewProtoDeviceFromDevice(device))
 	if err != nil {
 		return err
@@ -352,18 +353,18 @@ func (r *eventRoutes) Command() *commandEventRoute {
 }
 
 // Subscribe to device update event routes
-func (r *commandEventRoute) Subscribe(f func(msg *Msg, serverId string, cmd *cmd_apiv1.SendCommandResponse_CommandResponse)) error {
+func (r *commandEventRoute) Subscribe(f func(msg *Msg, deviceId string, cmd *cmd_apiv1.SendCommandResponse_CommandResponse)) error {
 	sbj := cmd_client.DeviceCommandEvent.WithId("*")
 	return r.m.subscribe(sbj, r.handlerWrapper(f))
 }
 
 // Queue subscribe to device update event routes
-func (r *commandEventRoute) QueueSubscribe(queue string, f func(msg *Msg, serverId string, cmd *cmd_apiv1.SendCommandResponse_CommandResponse)) error {
+func (r *commandEventRoute) QueueSubscribe(queue string, f func(msg *Msg, deviceId string, cmd *cmd_apiv1.SendCommandResponse_CommandResponse)) error {
 	sbj := cmd_client.DeviceCommandEvent.WithId("*")
 	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
 }
 
-func (r *commandEventRoute) handlerWrapper(f func(msg *Msg, serverId string, cmd *cmd_apiv1.SendCommandResponse_CommandResponse)) nats.MsgHandler {
+func (r *commandEventRoute) handlerWrapper(f func(msg *Msg, deviceId string, cmd *cmd_apiv1.SendCommandResponse_CommandResponse)) nats.MsgHandler {
 	return func(msg *nats.Msg) {
 		req := &cmd_apiv1.SendCommandResponse_CommandResponse{}
 		if err := proto.Unmarshal(msg.Data, req); err != nil {
@@ -376,7 +377,7 @@ func (r *commandEventRoute) handlerWrapper(f func(msg *Msg, serverId string, cmd
 
 // Publish a device update event
 func (r *commandEventRoute) Publish(originalId string, cmd *cmd_apiv1.SendCommandResponse_CommandResponse) error {
-	sbj := cmd_client.DeviceCommandEvent.WithId(r.m.GetInstanceName())
+	sbj := cmd_client.DeviceCommandEvent.WithId(cmd.DeviceId)
 	b, err := proto.Marshal(cmd)
 	if err != nil {
 		return err

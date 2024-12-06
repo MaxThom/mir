@@ -18,7 +18,6 @@ import (
 	"github.com/maxthom/mir/internal/libs/boiler/mir_log"
 	"github.com/maxthom/mir/internal/libs/boiler/mir_signals"
 	"github.com/maxthom/mir/internal/libs/external/influx"
-	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	"github.com/maxthom/mir/internal/libs/external/surreal"
 	"github.com/maxthom/mir/internal/servers/core_srv"
 	"github.com/maxthom/mir/internal/servers/protocmd_srv"
@@ -168,16 +167,19 @@ func run(
 	log.Info().Str("url", cfg.Mir.Url).Msg("connected to msg bus")
 
 	// Services
-	coreSrv := core_srv.NewCore(log, bus.NewWithBus(m.Bus), mng.NewSurrealDeviceStore(db))
+	coreSrv, err := core_srv.NewCore(log, m, mng.NewSurrealDeviceStore(db))
+	if err != nil {
+		return err
+	}
 	core_srv.RegisterMetrics(metrics.Registry())
 
-	cmdSrv, err := protocmd_srv.NewProtoCmdServer(log, m, mng.NewSurrealDeviceStore(db))
+	cmdSrv, err := protocmd_srv.NewProtoCmd(log, m, mng.NewSurrealDeviceStore(db))
 	if err != nil {
 		return err
 	}
 	protocmd_srv.RegisterMetrics(metrics.Registry())
 
-	tlmSrv, err := prototlm_srv.NewProtoTlmServer(log, m, mng.NewSurrealDeviceStore(db), ts.NewInfluxTelemetryStore(cfg.Influx.Org, cfg.Influx.Bucket, lpClient))
+	tlmSrv, err := prototlm_srv.NewProtoTlm(log, m, mng.NewSurrealDeviceStore(db), ts.NewInfluxTelemetryStore(cfg.Influx.Org, cfg.Influx.Bucket, lpClient))
 	if err != nil {
 		return err
 	}
@@ -207,22 +209,15 @@ func run(
 		wg.Done()
 	}()
 
-	ctx, cancel := context.WithCancel(ctx)
-	wg.Add(1)
-	go func() {
-		coreSrv.Listen(ctx)
-		wg.Done()
-	}()
-	wg.Add(1)
-	go func() {
-		cmdSrv.Listen(ctx)
-		wg.Done()
-	}()
-	wg.Add(1)
-	go func() {
-		tlmSrv.Listen(ctx)
-		wg.Done()
-	}()
+	if err := coreSrv.Serve(); err != nil {
+		return err
+	}
+	if err := cmdSrv.Serve(); err != nil {
+		return err
+	}
+	if err := tlmSrv.Serve(); err != nil {
+		return err
+	}
 
 	// Handle shutdown
 	log.Info().Msg(fmt.Sprintf("%s initialized", AppName))
@@ -232,7 +227,15 @@ func run(
 		if err := server.Shutdown(shutdownCtx); err != nil {
 			log.Fatal().Err(err).Msg("failed to gracefully shutdown server")
 		}
-		cancel()
+		if err := coreSrv.Shutdown(); err != nil {
+			log.Error().Err(err).Msg("failed to gracefully shutdown core server")
+		}
+		if err := cmdSrv.Shutdown(); err != nil {
+			log.Error().Err(err).Msg("failed to gracefully shutdown cmd server")
+		}
+		if err := tlmSrv.Shutdown(); err != nil {
+			log.Error().Err(err).Msg("failed to gracefully shutdown tlm server")
+		}
 		m.Disconnect()
 		db.Close()
 		lpClient.Close()

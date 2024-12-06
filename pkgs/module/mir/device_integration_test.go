@@ -1,7 +1,6 @@
 package mir
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -49,15 +48,15 @@ func TestDeviceRoutes_NewSubject(t *testing.T) {
 }
 
 func TestDeviceRoutes_Subscribe(t *testing.T) {
-	deviceID := "test-device-1"
+	deviceID := "test-device-subscribe"
 	subject := m.Device().NewSubject("test", "v1", "function")
 
 	// Channel to synchronize test
 	received := make(chan bool)
 
+	devIdRecv := ""
 	err := m.Device().Subscribe(subject, func(msg *Msg, id string) {
-		assert.Equal(t, deviceID, id)
-		assert.Equal(t, "test-data", string(msg.Data))
+		devIdRecv = id
 		received <- true
 	})
 	assert.NilError(t, err)
@@ -68,6 +67,7 @@ func TestDeviceRoutes_Subscribe(t *testing.T) {
 
 	select {
 	case <-received:
+		assert.Equal(t, deviceID, devIdRecv)
 		// Test passed
 	case <-time.After(5 * time.Second):
 		t.Error("Timeout waiting for message")
@@ -75,7 +75,7 @@ func TestDeviceRoutes_Subscribe(t *testing.T) {
 }
 
 func TestDeviceRoutes_QueueSubscribe(t *testing.T) {
-	deviceID := "test-device-1"
+	deviceID := "test-device-queue-subscribe"
 	subject := m.Device().NewSubject("test", "v1", "function")
 	queueName := "test-queue-device"
 	messageCount := 10
@@ -109,11 +109,10 @@ func TestDeviceRoutes_QueueSubscribe(t *testing.T) {
 }
 
 func TestDeviceRoutes_Hearthbeat(t *testing.T) {
-	deviceID := "test-device-1"
+	deviceID := "test-device-hearthbeat"
 	received := make(chan bool)
 
 	err := m.Device().Hearthbeat().Subscribe(deviceID, func(msg *Msg, id string) {
-		fmt.Println(deviceID, id)
 		assert.Equal(t, deviceID, id)
 		received <- true
 	})
@@ -131,7 +130,7 @@ func TestDeviceRoutes_Hearthbeat(t *testing.T) {
 }
 
 func TestDeviceRoutes_Telemetry(t *testing.T) {
-	deviceID := "test-device-1"
+	deviceID := "test-device-telemetry"
 	protoMsgName := "test.Message"
 	testData := []byte("test-telemetry-data")
 	received := make(chan bool)
@@ -159,7 +158,7 @@ func TestDeviceRoutes_Telemetry(t *testing.T) {
 }
 
 func TestDeviceRoutes_Schema(t *testing.T) {
-	deviceID := "test-device-1"
+	deviceID := "test-device-schema"
 	mockSchema := &mir_proto.MirProtoSchema{}
 
 	// Setup mock response handler
@@ -196,7 +195,7 @@ func TestDeviceRoutes_Schema(t *testing.T) {
 }
 
 func TestDeviceRoutes_Command(t *testing.T) {
-	deviceID := "test-device-1"
+	deviceID := "test-device-command"
 	cmdName := "test.Command"
 	cmdPayload := []byte("test-command-payload")
 

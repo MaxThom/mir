@@ -44,9 +44,6 @@ var lpQuery api.QueryAPI
 
 var b *bus.BusConn
 
-// TODO fix token, maybe no auth
-// TODO fix bug if device not started
-
 func TestMain(m *testing.M) {
 	// Setup
 	ctx, cancel := context.WithCancel(context.Background())
@@ -74,17 +71,21 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	protocmdSrv, err := NewProtoCmdServer(logTest, mSdk, mng.NewSurrealDeviceStore(db))
+	protocmdSrv, err := NewProtoCmd(logTest, mSdk, mng.NewSurrealDeviceStore(db))
 	if err != nil {
 		panic(err)
 	}
-	go func() {
-		protocmdSrv.Listen(ctx)
-	}()
-	coreSrv := core_srv.NewCore(logTest, b, mng.NewSurrealDeviceStore(db))
-	go func() {
-		coreSrv.Listen(ctx)
-	}()
+	if err = protocmdSrv.Serve(); err != nil {
+		panic(err)
+	}
+
+	coreSrv, err := core_srv.NewCore(logTest, mSdk, mng.NewSurrealDeviceStore(db))
+	if err != nil {
+		panic(err)
+	}
+	if err = coreSrv.Serve(); err != nil {
+		panic(err)
+	}
 	fmt.Println(" -> bus")
 	fmt.Println(" -> db")
 	fmt.Println(" -> core")
@@ -109,6 +110,8 @@ func TestMain(m *testing.M) {
 	time.Sleep(1 * time.Second)
 	b.Drain()
 	cancel()
+	coreSrv.Shutdown()
+	protocmdSrv.Shutdown()
 	b.Close()
 	mSdk.Disconnect()
 	db.Close()
@@ -1277,8 +1280,6 @@ func TestPublishCmdRequestMultipleDevicesJsonTemplate(t *testing.T) {
 	resp := respCmd.GetOk()
 	dev1 := resp.DeviceResponses["device_send_cmd_multi_json_tlm_1/testing_cmd"]
 	dev2 := resp.DeviceResponses["device_send_cmd_multi_json_tlm_2/testing_cmd"]
-	fmt.Println(dev1)
-	fmt.Println(dev2)
 	assert.Equal(t, cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_SUCCESS, dev1.Status)
 	assert.Equal(t, cmdName, dev1.Name)
 	assert.Equal(t, `{"power":0}`, string(dev1.Payload))

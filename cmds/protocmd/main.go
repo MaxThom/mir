@@ -142,7 +142,7 @@ func main() {
 }
 
 func run(
-	ctx context.Context,
+	_ context.Context,
 	log zerolog.Logger,
 	cfg CoreConfig,
 ) error {
@@ -164,7 +164,7 @@ func run(
 	log.Info().Str("url", cfg.DataBusServer.Url).Msg("connected to msg bus")
 
 	// Services
-	protocmdSrv, err := protocmd_srv.NewProtoCmdServer(log, m, mng.NewSurrealDeviceStore(db))
+	protocmdSrv, err := protocmd_srv.NewProtoCmd(log, m, mng.NewSurrealDeviceStore(db))
 	if err != nil {
 		return err
 	}
@@ -193,12 +193,9 @@ func run(
 		wg.Done()
 	}()
 
-	ctx, cancel := context.WithCancel(ctx)
-	wg.Add(1)
-	go func() {
-		protocmdSrv.Listen(ctx)
-		wg.Done()
-	}()
+	if err := protocmdSrv.Serve(); err != nil {
+		return err
+	}
 
 	// Handle shutdown
 	log.Info().Msg(fmt.Sprintf("%s initialized", AppName))
@@ -206,9 +203,11 @@ func run(
 	mir_signals.WaitForOsSignals(func() {
 		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 1*time.Second)
 		if err := server.Shutdown(shutdownCtx); err != nil {
-			log.Fatal().Err(err).Msg("failed to gracefully shutdown server")
+			log.Error().Err(err).Msg("failed to gracefully shutdown server")
 		}
-		cancel()
+		if err := protocmdSrv.Shutdown(); err != nil {
+			log.Error().Err(err).Msg("failed to gracefully shutdown cmd server")
+		}
 		m.Disconnect()
 		db.Close()
 		log.Debug().Msg("db connection closed")

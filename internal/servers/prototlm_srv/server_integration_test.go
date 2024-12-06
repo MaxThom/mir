@@ -73,17 +73,21 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	protofluxSrv, err := NewProtoTlmServer(logTest, mSdk, mng.NewSurrealDeviceStore(db), ts.NewInfluxTelemetryStore("Mir", "mir_integration_test", lpClient))
+	protoTlmSrv, err := NewProtoTlm(logTest, mSdk, mng.NewSurrealDeviceStore(db), ts.NewInfluxTelemetryStore("Mir", "mir_integration_test", lpClient))
 	if err != nil {
 		panic(err)
 	}
-	go func() {
-		protofluxSrv.Listen(ctx)
-	}()
-	coreSrv := core_srv.NewCore(logTest, b, mng.NewSurrealDeviceStore(db))
-	go func() {
-		coreSrv.Listen(ctx)
-	}()
+	if err := protoTlmSrv.Serve(); err != nil {
+		panic(err)
+	}
+
+	coreSrv, err := core_srv.NewCore(logTest, mSdk, mng.NewSurrealDeviceStore(db))
+	if err != nil {
+		panic(err)
+	}
+	if err = coreSrv.Serve(); err != nil {
+		panic(err)
+	}
 	fmt.Println(" -> bus")
 	fmt.Println(" -> db")
 	fmt.Println(" -> ts")
@@ -109,6 +113,8 @@ func TestMain(m *testing.M) {
 	time.Sleep(1 * time.Second)
 	b.Drain()
 	cancel()
+	coreSrv.Shutdown()
+	protoTlmSrv.Shutdown()
 	b.Close()
 	mSdk.Disconnect()
 	db.Close()
