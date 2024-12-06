@@ -28,7 +28,6 @@ import (
 	mirDevice "github.com/maxthom/mir/pkgs/device/mir"
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/maxthom/mir/pkgs/module/mir"
-	logger "github.com/rs/zerolog/log"
 	"github.com/surrealdb/surrealdb.go"
 	"google.golang.org/protobuf/types/descriptorpb"
 	"gotest.tools/assert"
@@ -37,7 +36,7 @@ import (
 var db *surrealdb.DB
 var mSdk *mir.Mir
 var busUrl = "nats://127.0.0.1:4222"
-var logTest = logger.With().Str("test", "core").Logger()
+var log = test_utils.TestLogger("prototlm")
 var lpClient influxdb2.Client
 var lpWriter api.WriteAPI
 var lpQuery api.QueryAPI
@@ -73,7 +72,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	protoTlmSrv, err := NewProtoTlm(logTest, mSdk, mng.NewSurrealDeviceStore(db), ts.NewInfluxTelemetryStore("Mir", "mir_integration_test", lpClient))
+	protoTlmSrv, err := NewProtoTlm(log, mSdk, mng.NewSurrealDeviceStore(db), ts.NewInfluxTelemetryStore("Mir", "mir_integration_test", lpClient))
 	if err != nil {
 		panic(err)
 	}
@@ -81,7 +80,7 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	coreSrv, err := core_srv.NewCore(logTest, mSdk, mng.NewSurrealDeviceStore(db))
+	coreSrv, err := core_srv.NewCore(log, mSdk, mng.NewSurrealDeviceStore(db))
 	if err != nil {
 		panic(err)
 	}

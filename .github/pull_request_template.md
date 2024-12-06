@@ -1,4 +1,3 @@
-## Description
 <!-- Brief description of the changes -->
 
 ## Type of Change

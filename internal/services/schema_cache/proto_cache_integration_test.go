@@ -23,15 +23,13 @@ import (
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	mirDevice "github.com/maxthom/mir/pkgs/device/mir"
 	"github.com/maxthom/mir/pkgs/module/mir"
-	"github.com/rs/zerolog"
-	logger "github.com/rs/zerolog/log"
 	"github.com/surrealdb/surrealdb.go"
 )
 
 var db *surrealdb.DB
 var mSdk *mir.Mir
 var busUrl = "nats://127.0.0.1:4222"
-var logTest = logger.With().Str("test", "schema_cache").Logger().Level(zerolog.DebugLevel)
+var log = test_utils.TestLogger("schema_cache")
 
 var b *bus.BusConn
 
@@ -62,7 +60,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	coreSrv, err := core_srv.NewCore(logTest, mSdk, mng.NewSurrealDeviceStore(db))
+	coreSrv, err := core_srv.NewCore(log, mSdk, mng.NewSurrealDeviceStore(db))
 	if err != nil {
 		panic(err)
 	}

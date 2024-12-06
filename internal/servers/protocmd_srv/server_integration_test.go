@@ -28,8 +28,6 @@ import (
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	mirDevice "github.com/maxthom/mir/pkgs/device/mir"
 	"github.com/maxthom/mir/pkgs/module/mir"
-	"github.com/rs/zerolog"
-	logger "github.com/rs/zerolog/log"
 	"github.com/surrealdb/surrealdb.go"
 	"gotest.tools/assert"
 )
@@ -37,7 +35,7 @@ import (
 var db *surrealdb.DB
 var mSdk *mir.Mir
 var busUrl = "nats://127.0.0.1:4222"
-var logTest = logger.With().Str("test", "core").Logger().Level(zerolog.DebugLevel)
+var log = test_utils.TestLogger("protocmd")
 var lpClient influxdb2.Client
 var lpWriter api.WriteAPI
 var lpQuery api.QueryAPI
@@ -71,7 +69,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	protocmdSrv, err := NewProtoCmd(logTest, mSdk, mng.NewSurrealDeviceStore(db))
+	protocmdSrv, err := NewProtoCmd(log, mSdk, mng.NewSurrealDeviceStore(db))
 	if err != nil {
 		panic(err)
 	}
@@ -79,7 +77,7 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	coreSrv, err := core_srv.NewCore(logTest, mSdk, mng.NewSurrealDeviceStore(db))
+	coreSrv, err := core_srv.NewCore(log, mSdk, mng.NewSurrealDeviceStore(db))
 	if err != nil {
 		panic(err)
 	}

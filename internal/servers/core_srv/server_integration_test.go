@@ -19,18 +19,12 @@ import (
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/nats-io/nats.go"
-	"github.com/rs/zerolog"
-	logger "github.com/rs/zerolog/log"
 	"github.com/surrealdb/surrealdb.go"
 	"google.golang.org/protobuf/proto"
 	"gotest.tools/assert"
 )
 
-var log = logger.With().Str("test", "core").Logger().Output(zerolog.ConsoleWriter{
-	Out:     os.Stdout,
-	NoColor: false,
-})
-
+var log = test_utils.TestLogger("core")
 var db *surrealdb.DB
 var b *bus.BusConn
 var sub *nats.Subscription

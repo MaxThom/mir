@@ -12,6 +12,8 @@ import (
 	"github.com/maxthom/mir/internal/libs/external/influx"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
+	"github.com/rs/zerolog"
+	logger "github.com/rs/zerolog/log"
 	"github.com/surrealdb/surrealdb.go"
 )
 
@@ -130,4 +132,12 @@ func IsIntegratedServices() bool {
 		return true
 	}
 	return false
+}
+
+func TestLogger(component string) zerolog.Logger {
+	// TODO add env var that switch level from info to debug
+	return logger.With().Str("test", component).Logger().Output(zerolog.ConsoleWriter{
+		Out:     os.Stdout,
+		NoColor: true,
+	}).Level(zerolog.DebugLevel)
 }
