@@ -5,7 +5,8 @@
             "label": "Mir local dev",
             "type": "shell",
             "dependsOn": [
-                "Mir core run", 
+                "Mir core run",
+                "Mir cfg run",
                 "Mir tlm run",
                 "Mir cmd run",
                 "Mir infra run",
@@ -17,6 +18,25 @@
             "label": "Mir core run",
             "type": "shell",
             "command": "sleep 5 && air -c .air/core.toml",
+            "problemMatcher": [],
+            "group": {
+                "kind": "none",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "new",
+                "focus": false,
+                "close": false
+            },
+            "runOptions": {
+                "instanceLimit": 1
+            },
+        },
+        {
+            "label": "Mir cfg run",
+            "type": "shell",
+            "command": "sleep 5 && air -c .air/protocfg.toml",
             "problemMatcher": [],
             "group": {
                 "kind": "none",

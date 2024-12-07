@@ -20,6 +20,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/external/influx"
 	"github.com/maxthom/mir/internal/libs/external/surreal"
 	"github.com/maxthom/mir/internal/servers/core_srv"
+	"github.com/maxthom/mir/internal/servers/protocfg_srv"
 	"github.com/maxthom/mir/internal/servers/protocmd_srv"
 	"github.com/maxthom/mir/internal/servers/prototlm_srv"
 	"github.com/maxthom/mir/pkgs/module/mir"
@@ -65,6 +66,7 @@ const (
 
 type ServeCmd struct {
 	Core              bool   `help:"Core module is for device mangement" default:"true"`
+	Configuration     bool   `help:"Configuration module is for device properties" default:"true"`
 	Telemetry         bool   `help:"Telemetry module is for data ingestion and visualization" default:"true"`
 	Command           bool   `help:"Command module if for command and control" default:"true"`
 	DisplayDefaultCfg bool   `name:"display-default-cfg" help:"Display default configuration. Can be piped to config file '> ~/.config/mir/mir.yaml'" default:"false"`
@@ -173,6 +175,13 @@ func run(
 	}
 	core_srv.RegisterMetrics(metrics.Registry())
 
+	// Services
+	cfgSrv, err := protocfg_srv.NewProtoCfg(log, m, mng.NewSurrealDeviceStore(db))
+	if err != nil {
+		return err
+	}
+	protocfg_srv.RegisterMetrics(metrics.Registry())
+
 	cmdSrv, err := protocmd_srv.NewProtoCmd(log, m, mng.NewSurrealDeviceStore(db))
 	if err != nil {
 		return err
@@ -212,6 +221,9 @@ func run(
 	if err := coreSrv.Serve(); err != nil {
 		return err
 	}
+	if err := cfgSrv.Serve(); err != nil {
+		return err
+	}
 	if err := cmdSrv.Serve(); err != nil {
 		return err
 	}
@@ -229,6 +241,9 @@ func run(
 		}
 		if err := coreSrv.Shutdown(); err != nil {
 			log.Error().Err(err).Msg("failed to gracefully shutdown core server")
+		}
+		if err := cfgSrv.Shutdown(); err != nil {
+			log.Error().Err(err).Msg("failed to gracefully shutdown cfg server")
 		}
 		if err := cmdSrv.Shutdown(); err != nil {
 			log.Error().Err(err).Msg("failed to gracefully shutdown cmd server")

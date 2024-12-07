@@ -11,6 +11,15 @@
     "shell": "system"
   },
   {
+    "label": "Mir cfg run",
+    "command": "sleep 5 && air -c .air/protocfg.toml",
+    "use_new_terminal": true,
+    "allow_concurrent_runs": false,
+    "reveal": "always",
+    "hide": "never",
+    "shell": "system"
+  },
+  {
     "label": "Mir tlm run",
     "command": "sleep 5 && air -c .air/prototlm.toml",
     "use_new_terminal": true,

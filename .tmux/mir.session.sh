@@ -11,16 +11,14 @@ if initialize_session "mir"; then
 
 	# Load a defined window layout.
 	load_window "./.tmux/mir.window.sh"
-	load_window "./.tmux/wiki.window.sh"
-	load_window "./.tmux/cfg.window.sh"
 	load_window "./.tmux/core.window.sh"
+	load_window "./.tmux/protocfg.window.sh"
 	load_window "./.tmux/prototlm.window.sh"
 	load_window "./.tmux/protocmd.window.sh"
-	load_window "./.tmux/nats.window.sh"
-	load_window "./.tmux/surreal.window.sh"
-	load_window "./.tmux/influxdb.window.sh"
-	load_window "./.tmux/promstack.window.sh"
+	load_window "./.tmux/infra.window.sh"
+	load_window "./.tmux/cfg.window.sh"
 	load_window "./.tmux/book.window.sh"
+	load_window "./.tmux/wiki.window.sh"
 
 	# Select the default active window on session creation.
 	select_window 1
