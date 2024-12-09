@@ -5,6 +5,7 @@ import (
 
 	"github.com/maxthom/mir/internal/libs/compression/zstd"
 	"github.com/maxthom/mir/internal/libs/proto/json_template"
+	cfg_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cfg_api"
 	cmd_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cmd_api"
 	tlm_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/tlm_api"
 	"gopkg.in/yaml.v3"
@@ -91,6 +92,38 @@ func (m *MirProtoSchema) GetCommandsList(filterLabels map[string]string) ([]*cmd
 		return true
 	})
 	return commands, nil
+}
+
+func (m *MirProtoSchema) GetConfigList(filterLabels map[string]string) ([]*cfg_apiv1.ConfigDescriptor, error) {
+	cfgs := []*cfg_apiv1.ConfigDescriptor{}
+	m.RangeFiles(func(fd protoreflect.FileDescriptor) bool {
+		for i := 0; i < fd.Messages().Len(); i++ {
+			msgDesc := fd.Messages().Get(i)
+			opts, ok := msgDesc.Options().(*descriptorpb.MessageOptions)
+			if !ok {
+				continue
+			}
+			msgType, ok := proto.GetExtension(opts, devicev1.E_MessageType).(devicev1.MessageType)
+			if ok && msgType == devicev1.MessageType_MESSAGE_TYPE_TELECONFIG {
+				lbls := RetrieveMessageTags(msgDesc)
+				if !isSubsetContainedInSet(filterLabels, lbls) {
+					continue
+				}
+				boiler, err := json_template.GenerateTemplate(msgDesc)
+				cfg := cfg_apiv1.ConfigDescriptor{
+					Name:     string(msgDesc.FullName()),
+					Labels:   lbls,
+					Template: string(boiler),
+				}
+				if err != nil {
+					cfg.Error = err.Error()
+				}
+				cfgs = append(cfgs, &cfg)
+			}
+		}
+		return true
+	})
+	return cfgs, nil
 }
 
 func (m *MirProtoSchema) GetPackageList() []string {
