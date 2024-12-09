@@ -14,7 +14,7 @@ const (
 	SendCommandRequest  clients.ServerSubject = "client.%s.cmd.v1alpha.send"
 	ListCommandsRequest clients.ServerSubject = "client.%s.cmd.v1alpha.list"
 
-	DeviceCommandEvent clients.ServerSubject = "event.%s.core.v1alpha.devicecommand"
+	DeviceCommandEvent clients.ServerSubject = "event.%s.cmd.v1alpha.devicecommand"
 )
 
 func PublishSendCommandRequest(bus *bus.BusConn, req *cmd_apiv1.SendCommandRequest) (*cmd_apiv1.SendCommandResponse, error) {

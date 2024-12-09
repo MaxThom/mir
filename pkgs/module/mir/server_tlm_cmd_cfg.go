@@ -2,8 +2,10 @@ package mir
 
 import (
 	"github.com/maxthom/mir/internal/clients"
+	"github.com/maxthom/mir/internal/clients/cfg_client"
 	"github.com/maxthom/mir/internal/clients/cmd_client"
 	"github.com/maxthom/mir/internal/clients/tlm_client"
+	cfg_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cfg_api"
 	cmd_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cmd_api"
 	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
@@ -267,4 +269,82 @@ func (r *sendCommandRoute) RequestProto(req *SendDeviceCommandRequestProto) (map
 		ForcePush:       req.ForcePush,
 		TimeoutSec:      req.TimeoutSec,
 	})
+}
+
+/// ListConfiguration
+
+type listConfigurationRoute struct {
+	m *Mir
+}
+
+// List device command
+func (r *serverRoutes) ListConfiguration() *listConfigurationRoute {
+	return &listConfigurationRoute{m: r.m}
+}
+
+// Subscribe to list command request
+func (r *listConfigurationRoute) Subscribe(f func(msg *Msg, clientId string, req *cfg_apiv1.SendListConfigRequest) (map[string]*cfg_apiv1.Configs, error)) error {
+	sbj := cfg_client.ListConfigRequest.WithId("*")
+	return r.m.subscribe(sbj, r.handlerWrapper(f))
+}
+
+// Queue subscribe to list command request
+func (r *listConfigurationRoute) QueueSubscribe(queue string, f func(msg *Msg, clientId string, req *cfg_apiv1.SendListConfigRequest) (map[string]*cfg_apiv1.Configs, error)) error {
+	sbj := cfg_client.ListConfigRequest.WithId("*")
+	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
+}
+
+func (r *listConfigurationRoute) handlerWrapper(f func(msg *Msg, clientId string, req *cfg_apiv1.SendListConfigRequest) (map[string]*cfg_apiv1.Configs, error)) nats.MsgHandler {
+	return func(msg *nats.Msg) {
+		req := &cfg_apiv1.SendListConfigRequest{}
+		if err := proto.Unmarshal(msg.Data, req); err != nil {
+			// TODO log error here
+			_ = r.m.sendReplyOrAck(msg, &cfg_apiv1.SendListConfigResponse{Response: &cfg_apiv1.SendListConfigResponse_Error{
+				Error: err.Error(),
+			}})
+			return
+		}
+
+		resp, err := f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), req)
+		if err != nil {
+			// TODO log error here
+			_ = r.m.sendReplyOrAck(msg, &cfg_apiv1.SendListConfigResponse{Response: &cfg_apiv1.SendListConfigResponse_Error{
+				Error: err.Error(),
+			}})
+			return
+		}
+		// TODO log error here
+		err = r.m.sendReplyOrAck(msg, &cfg_apiv1.SendListConfigResponse{
+			Response: &cfg_apiv1.SendListConfigResponse_Ok{
+				Ok: &cfg_apiv1.DevicesConfigs{
+					DeviceConfigs: resp,
+				},
+			},
+		})
+	}
+}
+
+// Request listing of command per device
+func (r *listConfigurationRoute) Request(req *cmd_apiv1.SendListCommandsRequest) (map[string]*cmd_apiv1.Commands, error) {
+	sbj := cmd_client.ListCommandsRequest.WithId(r.m.GetInstanceName())
+	bReq, err := proto.Marshal(req)
+	if err != nil {
+		return map[string]*cmd_apiv1.Commands{}, err
+	}
+
+	resMsg, err := r.m.request(sbj, bReq, nil, defaultTimeout)
+	if err != nil {
+		return map[string]*cmd_apiv1.Commands{}, err
+	}
+
+	resp := &cmd_apiv1.SendListCommandsResponse{}
+	err = proto.Unmarshal(resMsg.Data, resp)
+	if err != nil {
+		return map[string]*cmd_apiv1.Commands{}, err
+	}
+	if resp.GetError() != "" {
+		return map[string]*cmd_apiv1.Commands{}, err
+	}
+
+	return resp.GetOk().DeviceCommands, nil
 }
