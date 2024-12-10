@@ -16,7 +16,7 @@ split_v 20
 
 # Run commands.
 #run_cmd "top"     # runs in active pane
-run_cmd "cd ../../internal/services/protocmd_srv/ && clear"
+run_cmd "cd ../../internal/servers/protocmd_srv/ && clear"
 send_keys "go test -run TestPublishCmdRequest"
 
 # Paste text

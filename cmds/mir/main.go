@@ -44,6 +44,7 @@ type (
 
 		Tui       tui.Cmd          `cmd:"" help:"Open Mir in TUI mode" default:"withargs" hidden:""`
 		Device    cli.DeviceCmd    `cmd:"" aliases:"dev" help:"Manage fleet of Mir devices"`
+		Config    cli.ConfigCmd    `cmd:"" aliases:"cfg" help:"Explore Mir devices configuration"`
 		Telemetry cli.TelemetryCmd `cmd:"" aliases:"tlm" help:"Explore Mir devices telemetry"`
 		Command   cli.CommandCmd   `cmd:"" aliases:"cmd" help:"Send and explore commands to devices"`
 		Schema    cli.SchemaCmd    `cmd:"" aliases:"sch" help:"Upload and explore device proto schema"`

@@ -17,6 +17,7 @@ split_v 20
 # Run commands.
 #run_cmd "top"     # runs in active pane
 #run_cmd "date" 1  # runs in pane 1
+run_cmd "cd ../../internal/servers/prototlm_srv/ && clear"
 
 # Paste text
 #send_keys "top"    # paste into active pane

@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	SendConfiguRequest clients.ServerSubject = "client.%s.cfg.v1alpha.send"
-	ListConfigRequest  clients.ServerSubject = "client.%s.cfg.v1alpha.list"
+	SendConfigRequest clients.ServerSubject = "client.%s.cfg.v1alpha.send"
+	ListConfigRequest clients.ServerSubject = "client.%s.cfg.v1alpha.list"
 
 	DeviceConfigEvent clients.ServerSubject = "event.%s.cfg.v1alpha.deviceconfig"
 )
@@ -24,7 +24,7 @@ func PublishSendConfigRequest(bus *bus.BusConn, req *cfg_apiv1.SendConfigRequest
 	}
 
 	// TODO revist timeout
-	resMsg, err := bus.Request(SendConfiguRequest.WithId("todo"), b, 20*time.Second)
+	resMsg, err := bus.Request(SendConfigRequest.WithId("todo"), b, 20*time.Second)
 	if err != nil {
 		return &cfg_apiv1.SendConfigResponse{}, err
 	}

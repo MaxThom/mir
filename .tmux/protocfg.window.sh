@@ -16,7 +16,7 @@ split_v 20
 
 # Run commands.
 #run_cmd "top"     # runs in active pane
-run_cmd "cd ../../internal/services/protocfg_srv/ && clear"
+run_cmd "cd ../../internal/servers/protocfg_srv/ && clear"
 
 # Paste text
 #send_keys "top"    # paste into active pane

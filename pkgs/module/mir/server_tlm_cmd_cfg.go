@@ -278,7 +278,7 @@ type listConfigurationRoute struct {
 }
 
 // List device command
-func (r *serverRoutes) ListConfiguration() *listConfigurationRoute {
+func (r *serverRoutes) ListConfig() *listConfigurationRoute {
 	return &listConfigurationRoute{m: r.m}
 }
 
@@ -326,7 +326,7 @@ func (r *listConfigurationRoute) handlerWrapper(f func(msg *Msg, clientId string
 
 // Request listing of command per device
 func (r *listConfigurationRoute) Request(req *cmd_apiv1.SendListCommandsRequest) (map[string]*cmd_apiv1.Commands, error) {
-	sbj := cmd_client.ListCommandsRequest.WithId(r.m.GetInstanceName())
+	sbj := cfg_client.ListConfigRequest.WithId(r.m.GetInstanceName())
 	bReq, err := proto.Marshal(req)
 	if err != nil {
 		return map[string]*cmd_apiv1.Commands{}, err
@@ -347,4 +347,106 @@ func (r *listConfigurationRoute) Request(req *cmd_apiv1.SendListCommandsRequest)
 	}
 
 	return resp.GetOk().DeviceCommands, nil
+}
+
+/// SendConfig
+
+type sendConfigRoute struct {
+	m *Mir
+}
+
+// Send config to device
+func (r *serverRoutes) SendConfig() *sendConfigRoute {
+	return &sendConfigRoute{m: r.m}
+}
+
+// Subscribe to send command request
+func (r *sendConfigRoute) Subscribe(f func(msg *Msg, clientId string, req *cfg_apiv1.SendConfigRequest) (*cfg_apiv1.SendConfigResponse_ConfigResponses, error)) error {
+	sbj := cfg_client.SendConfigRequest.WithId("*")
+	return r.m.subscribe(sbj, r.handlerWrapper(f))
+}
+
+// Queue subscribe to send command request
+func (r *sendConfigRoute) QueueSubscribe(queue string, f func(msg *Msg, clientId string, req *cfg_apiv1.SendConfigRequest) (*cfg_apiv1.SendConfigResponse_ConfigResponses, error)) error {
+	sbj := cfg_client.SendConfigRequest.WithId("*")
+	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
+}
+
+func (r *sendConfigRoute) handlerWrapper(f func(msg *Msg, clientId string, req *cfg_apiv1.SendConfigRequest) (*cfg_apiv1.SendConfigResponse_ConfigResponses, error)) nats.MsgHandler {
+	return func(msg *nats.Msg) {
+		req := &cfg_apiv1.SendConfigRequest{}
+		if err := proto.Unmarshal(msg.Data, req); err != nil {
+			// TODO log error here
+			_ = r.m.sendReplyOrAck(msg, &cfg_apiv1.SendConfigResponse{Response: &cfg_apiv1.SendConfigResponse_Error{
+				Error: err.Error(),
+			}})
+			return
+		}
+
+		resp, err := f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), req)
+		if err != nil {
+			// TODO log error here
+			_ = r.m.sendReplyOrAck(msg, &cfg_apiv1.SendConfigResponse{Response: &cfg_apiv1.SendConfigResponse_Error{
+				Error: err.Error(),
+			}})
+			return
+		}
+		// TODO log error here
+		err = r.m.sendReplyOrAck(msg, &cfg_apiv1.SendConfigResponse{
+			Response: &cfg_apiv1.SendConfigResponse_Ok{
+				Ok: resp,
+			},
+		})
+	}
+}
+
+// Request send a command to device
+func (r *sendConfigRoute) Request(req *cfg_apiv1.SendConfigRequest) (map[string]*cfg_apiv1.SendConfigResponse_ConfigResponse, error) {
+	sbj := cfg_client.SendConfigRequest.WithId(r.m.GetInstanceName())
+	bReq, err := proto.Marshal(req)
+	if err != nil {
+		return map[string]*cfg_apiv1.SendConfigResponse_ConfigResponse{}, err
+	}
+
+	resMsg, err := r.m.request(sbj, bReq, nil, defaultTimeout)
+	if err != nil {
+		return map[string]*cfg_apiv1.SendConfigResponse_ConfigResponse{}, err
+	}
+
+	resp := &cfg_apiv1.SendConfigResponse{}
+	err = proto.Unmarshal(resMsg.Data, resp)
+	if err != nil {
+		return map[string]*cfg_apiv1.SendConfigResponse_ConfigResponse{}, err
+	}
+	if resp.GetError() != "" {
+		return map[string]*cfg_apiv1.SendConfigResponse_ConfigResponse{}, err
+	}
+
+	return resp.GetOk().DeviceResponses, nil
+}
+
+type SendDeviceConfigRequestProto struct {
+	Targets       *core_apiv1.Targets
+	Command       proto.Message
+	DryRun        bool
+	NoValidation  bool
+	RefreshSchema bool
+	ForcePush     bool
+	TimeoutSec    uint32
+}
+
+// Request send a command to device
+func (r *sendConfigRoute) RequestProto(req *SendDeviceConfigRequestProto) (map[string]*cfg_apiv1.SendConfigResponse_ConfigResponse, error) {
+	b, _ := proto.Marshal(req.Command)
+	return r.Request(&cfg_apiv1.SendConfigRequest{
+		Targets:         req.Targets,
+		Name:            string(req.Command.ProtoReflect().Descriptor().FullName()),
+		PayloadEncoding: common_apiv1.Encoding_ENCODING_PROTOBUF,
+		Payload:         b,
+		DryRun:          req.DryRun,
+		NoValidation:    req.NoValidation,
+		RefreshSchema:   req.RefreshSchema,
+		ForcePush:       req.ForcePush,
+		TimeoutSec:      req.TimeoutSec,
+	})
 }
