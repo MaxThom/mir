@@ -1,0 +1,4 @@
+syntax = "proto3";
+
+package config_device.v1;
+option go_package = "github.com/maxthom/mir/examples/config_device/gen/config_device/v1";
