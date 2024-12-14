@@ -21,12 +21,12 @@ go get github.com/maxthom/mir/
 
 Make sure you have access to the [repository](https://github.com/maxthom/mir) on GitHub and your local env. is setup with an SSH key for authentication.
 
-First, we need to tell git to use the SSH protocol to access the GitHub repository.
+First, we need to tell Go to use the SSH protocol instead of HTTP to access the GitHub repository.
 
 ```bash
 # In ~/.gitconfig
-[url "ssh://git@github.com/"]
-  insteadOf = https://github.com/
+[url "ssh://git@github.com/maxthom/mir"]
+  insteadOf = https://github.com/maxthom/mir
 ```
 
 Even though packages are stored in Git repositories, they get downloaded through Go mirror.
