@@ -229,3 +229,58 @@ func (r *commandRoute) RequestRaw(deviceId string, cmd ProtoCmdDesc, timeout tim
 		Payload: resp.Data,
 	}, nil
 }
+
+/// Config
+
+type configRoute struct {
+	m *Mir
+}
+
+// Send a config to a device
+func (r *deviceRoutes) Config() *configRoute {
+	return &configRoute{m: r.m}
+}
+
+// Send a config to a device
+// ProtoCmdDesc is the message name and the serialized payload
+// You need to find the message descriptor fron the schema
+// eg:
+// desc, err := sch.FindDescriptorByName(protoreflect.FullName(cmdDesc.Name))
+// msgResp := dynamicpb.NewMessage(desc.(protoreflect.MessageDescriptor))
+// err = proto.Unmarshal(cmdDesc.Payload, msgResp)
+func (r *configRoute) Request(deviceId string, cmd proto.Message, timeout time.Duration) (ProtoCmdDesc, error) {
+	b, err := proto.Marshal(cmd)
+	if err != nil {
+		return ProtoCmdDesc{}, fmt.Errorf("error serializing config payload: %w", err)
+	}
+
+	return r.RequestRaw(deviceId, ProtoCmdDesc{
+		Name:    string(cmd.ProtoReflect().Descriptor().FullName()),
+		Payload: b,
+	}, timeout)
+}
+
+// Send a config to a device with raw payload.
+// Useful if your data is already serialized as protobuf
+// ProtoCmdDesc is the message name and the serialized payload
+// You need to find the message descriptor fron the schema
+// eg:
+// desc, err := sch.FindDescriptorByName(protoreflect.FullName(cmdDesc.Name))
+// msgResp := dynamicpb.NewMessage(desc.(protoreflect.MessageDescriptor))
+// err = proto.Unmarshal(cmdDesc.Payload, msgResp)
+func (r *configRoute) RequestRaw(deviceId string, cmd ProtoCmdDesc, timeout time.Duration) (ProtoCmdDesc, error) {
+	sbj := device_client.ConfigRequest.WithId(deviceId)
+	h := nats.Header{
+		"__msg": []string{cmd.Name},
+	}
+
+	resp, err := r.m.request(sbj, cmd.Payload, h, timeout)
+	if err != nil {
+		return ProtoCmdDesc{}, fmt.Errorf("error requesting device command: %w", err)
+	}
+
+	return ProtoCmdDesc{
+		Name:    resp.Header.Get("__msg"),
+		Payload: resp.Data,
+	}, nil
+}

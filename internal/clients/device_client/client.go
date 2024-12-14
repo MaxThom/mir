@@ -13,6 +13,7 @@ import (
 const (
 	SchemaRequest  clients.DeviceSubject = "%s.v1alpha.schema"
 	CommandRequest clients.DeviceSubject = "%s.v1alpha.command"
+	ConfigRequest  clients.DeviceSubject = "%s.v1alpha.config"
 )
 
 func PublishSchemaRetrieveRequest(bus *bus.BusConn, deviceId string) (*device_apiv1.SchemaRetrieveResponse, error) {

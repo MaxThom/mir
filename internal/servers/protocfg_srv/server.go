@@ -281,6 +281,7 @@ func (s *ProtoCfgServer) sendConfigToDevices(req *cfg_apiv1.SendConfigRequest) (
 	if (devInError && !req.ForcePush) || req.DryRun {
 		l.Info().Bool("device_in_error", devInError).Bool("force_push", req.ForcePush).Bool("dry_run", req.DryRun).Msgf("config processed but not sent")
 		// Events
+		// TODO not sure this should be there. same in cmd
 		for _, cfgResp := range devResp {
 			if err := cfg_client.PublishDeviceConfigEvent(s.m.Bus, "protocfg", cfgResp.DeviceId, cfgResp); err != nil {
 				l.Error().Err(err).Msg("error while publishing device config event")
