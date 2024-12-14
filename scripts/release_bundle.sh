@@ -1,4 +1,5 @@
 #!/bin/bash
+# Must be executed from the root of the project
 
 if [ $# -eq 0 ]
 then
@@ -19,18 +20,26 @@ mkdir -p $TEMP_FOLDER/linux-amd64
 mkdir -p $TEMP_FOLDER/linux-arm64
 mkdir -p $TEMP_FOLDER/windows-amd64
 mkdir -p $TEMP_FOLDER/windows-arm64
+mkdir -p $TEMP_FOLDER/darwin-amd64
+mkdir -p $TEMP_FOLDER/darwin-arm64
 echo "${VERSION}" > $TEMP_FOLDER/linux-amd64/VERSION
 echo "${VERSION}" > $TEMP_FOLDER/linux-arm64/VERSION
 echo "${VERSION}" > $TEMP_FOLDER/windows-amd64/VERSION
 echo "${VERSION}" > $TEMP_FOLDER/windows-arm64/VERSION
+echo "${VERSION}" > $TEMP_FOLDER/darwin-amd64/VERSION
+echo "${VERSION}" > $TEMP_FOLDER/darwin-arm64/VERSION
 cat $LICENSE > $TEMP_FOLDER/linux-amd64/LICENSE
 cat $LICENSE > $TEMP_FOLDER/linux-arm64/LICENSE
 cat $LICENSE > $TEMP_FOLDER/windows-amd64/LICENSE
 cat $LICENSE > $TEMP_FOLDER/windows-arm64/LICENSE
+cat $LICENSE > $TEMP_FOLDER/darwin-amd64/LICENSE
+cat $LICENSE > $TEMP_FOLDER/darwin-arm64/LICENSE
 cat $README > $TEMP_FOLDER/linux-amd64/README.md
 cat $README > $TEMP_FOLDER/linux-arm64/README.md
 cat $README > $TEMP_FOLDER/windows-amd64/README.md
 cat $README > $TEMP_FOLDER/windows-arm64/README.md
+cat $README > $TEMP_FOLDER/darwin-amd64/README.md
+cat $README > $TEMP_FOLDER/darwin-arm64/README.md
 
 # Linux amd64
 echo "Building Linux amd64..."
@@ -48,6 +57,14 @@ GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o "./$TEMP_FOLDER/windows-a
 echo "Building Windows arm64..."
 GOOS=windows GOARCH=arm64 go build -ldflags="-s -w" -o "./$TEMP_FOLDER/windows-arm64/${OUTPUT_BINARY}.exe" cmds/mir/main.go
 
+# Darwin amd64
+echo "Building Darwin amd64..."
+GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o "./$TEMP_FOLDER/darwin-amd64/${OUTPUT_BINARY}" cmds/mir/main.go
+
+# Darwin arm64
+echo "Building Darwin arm64..."
+GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o "./$TEMP_FOLDER/darwin-arm64/${OUTPUT_BINARY}" cmds/mir/main.go
+
 # Create tar.gz for Linux amd64
 echo "Creating tar.gz for Linux amd64..."
 tar -czf $TEMP_FOLDER/linux-amd64.tar.gz -C $TEMP_FOLDER/linux-amd64 .
@@ -64,10 +81,20 @@ echo "Creating zip for Windows amd64..."
 echo "Creating zip for Windows arm64..."
 (cd $TEMP_FOLDER/windows-arm64 && zip -r ../windows-arm64.zip .)
 
+# Create zip for Darwin amd64
+echo "Creating zip for Darwin amd64..."
+(cd $TEMP_FOLDER/darwin-amd64 && zip -r ../darwin-amd64.zip .)
+
+# Create zip for Darwin arm64
+echo "Creating zip for Darwin arm64..."
+(cd $TEMP_FOLDER/darwin-arm64 && zip -r ../darwin-arm64.zip .)
+
 rm -rf $TEMP_FOLDER/linux-amd64
 rm -rf $TEMP_FOLDER/linux-arm64
 rm -rf $TEMP_FOLDER/windows-amd64
 rm -rf $TEMP_FOLDER/windows-arm64
+rm -rf $TEMP_FOLDER/darwin-amd64
+rm -rf $TEMP_FOLDER/darwin-arm64
 
 echo ""
 echo "Mir $VERSION bundle released 🚀!"
