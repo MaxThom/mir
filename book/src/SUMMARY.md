@@ -37,9 +37,10 @@
 		- [Deployment]()
 		- [Extending Mir]()
 	- [Service Infrastructure]()
-- [Reference]()
+- [Reference](./reference/reference.md)
   - [Roadmap]()
-	- [Contribution Guide]()
-	- [FAQ]()
+  - [Access Mir](./reference/access_mir.md)
+  - [Contribution Guide]()
+  - [FAQ]()
 
 ---

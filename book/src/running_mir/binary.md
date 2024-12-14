@@ -5,7 +5,7 @@ Head to [Github Releases](https://github.com/MaxThom/mir/releases) to download t
 You will find a bundle for Linux amd64/arm64 and Windows amd64/arm64. Once downloaded, extract the files to retrieve the binary.
 Add the binary to your path for easy usage.
 
-You can also install the binary via Go (as it is a private repository, follow [this](integrating_mir/device/device_prerequisist.html#access-mir-device-sdk) to gain access):
+You can also install the binary via Go (as it is a private repository, follow the [access guide](../reference/access_mir.md)):
 ```bash
 go install github.com/maxthom/mir/cmds/mir@latest
 ```
