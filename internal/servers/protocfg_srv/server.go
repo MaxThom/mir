@@ -97,7 +97,7 @@ func (s *ProtoCfgServer) listCfgSub(msg *mir.Msg, clientId string, req *cfg_apiv
 	l.Info().Any("req", req).Msg("list config request")
 	// 1. get device list
 	// 2. for each device, get stored schema, if empty, fetch from device
-	// 3. return list of commands
+	// 3. return list of config
 
 	devs, err := s.devStore.ListDevice(&core_apiv1.ListDeviceRequest{Targets: req.Targets})
 	if err != nil {
