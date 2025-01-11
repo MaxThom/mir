@@ -76,4 +76,4 @@ protogen:
 
 # Go code line count
 line-count:
-	find . -name '*.go' | xargs -I {} cat {} | wc -l
+	find . -name '*.go' ! -name '*.pb.go' | xargs -I {} cat {} | wc -l

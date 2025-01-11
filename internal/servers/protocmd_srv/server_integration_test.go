@@ -1135,7 +1135,7 @@ func TestPublishCmdRequestMultipleDevicesSingleDescriptorNotFoundForcePush(t *te
 				},
 			},
 			Spec: &core_apiv1.Spec{
-				DeviceId: "device_valid",
+				DeviceId: "device_valid_cmd",
 			},
 		}).
 		WithSchema(protocmd_testv1.File_protocmd_test_v1_command_proto).
@@ -1156,7 +1156,7 @@ func TestPublishCmdRequestMultipleDevicesSingleDescriptorNotFoundForcePush(t *te
 				},
 			},
 			Spec: &core_apiv1.Spec{
-				DeviceId: "device_invalid",
+				DeviceId: "device_invalid_cmd",
 			},
 		}).
 		WithCommandHandler(
@@ -1195,8 +1195,8 @@ func TestPublishCmdRequestMultipleDevicesSingleDescriptorNotFoundForcePush(t *te
 	}
 
 	// Assert
-	devValid := respCmd.GetOk().DeviceResponses["device_valid/testing_cmd"]
-	devInvalid := respCmd.GetOk().DeviceResponses["device_invalid/testing_cmd"]
+	devValid := respCmd.GetOk().DeviceResponses["device_valid_cmd/testing_cmd"]
+	devInvalid := respCmd.GetOk().DeviceResponses["device_invalid_cmd/testing_cmd"]
 
 	msgResp := &protocmd_testv1.ChangePowerResp{}
 	assert.Equal(t, cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_SUCCESS, devValid.Status)
@@ -1225,7 +1225,6 @@ func TestPublishCmdRequestMultipleDevicesJsonTemplate(t *testing.T) {
 	_, err := swarm.AddDevices(
 		&core_apiv1.CreateDeviceRequest{
 			Meta: &core_apiv1.Meta{
-				Name:      "device_send_cmd_multi_json_tlm_1",
 				Namespace: "testing_cmd",
 				Labels: map[string]string{
 					"testing": "cmd",
@@ -1239,7 +1238,6 @@ func TestPublishCmdRequestMultipleDevicesJsonTemplate(t *testing.T) {
 			},
 		}, &core_apiv1.CreateDeviceRequest{
 			Meta: &core_apiv1.Meta{
-				Name:      "device_send_cmd_multi_json_tlm_2",
 				Namespace: "testing_cmd",
 				Labels: map[string]string{
 					"testing": "cmd",

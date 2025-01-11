@@ -5,7 +5,7 @@ option go_package = "github.com/maxthom/mir/internal/servers/protocfg_srv/proto_
 
 import "mir/device/v1/mir.proto";
 
-message Config {
+message Conduit {
 	option (mir.device.v1.message_type) = MESSAGE_TYPE_TELECONFIG;
 	option (mir.device.v1.meta) = {
 		tags: [{
@@ -22,7 +22,7 @@ message Config {
 	int32 gaz_level = 3;
 }
 
-message ChangePower {
+message PowerLevel {
 	option (mir.device.v1.message_type) = MESSAGE_TYPE_TELECONFIG;
 	option (mir.device.v1.meta) = {
 		tags: [{
@@ -37,7 +37,11 @@ message ChangePower {
 	int32 power = 1;
 }
 
-message SetTargetVector {
+message PowerLevelReport {
+    bool success = 1;
+}
+
+message Coordinate {
 	option (mir.device.v1.message_type) = MESSAGE_TYPE_TELECONFIG;
 
 	int32 x = 1;
@@ -45,13 +49,9 @@ message SetTargetVector {
 	int32 z = 3;
 }
 
-message SetDestination {
+message Destination {
 	option (mir.device.v1.message_type) = MESSAGE_TYPE_TELECONFIG;
 
 	string name = 1;
-	SetTargetVector target = 2;
-}
-
-message ChangePowerResp {
-    bool success = 1;
+	Coordinate pos = 2;
 }
