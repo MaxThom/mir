@@ -184,6 +184,12 @@ type cmdDevicePayload struct {
 	payload  []byte
 }
 
+// TODO
+// - [ ] Always validate and cast to json since we need to write the payload in the db in JSON format
+// - [ ] Send to device in Proto, but can receive proto or json
+// - [ ] Write Json to db, send proto to device
+// - [ ] DeviceSDK for config (send and receive)
+
 func (s *ProtoCfgServer) sendConfigToDevices(req *cfg_apiv1.SendConfigRequest) (map[string]*cfg_apiv1.SendConfigResponse_ConfigResponse, error) {
 	devs, err := s.devStore.ListDevice(&core_apiv1.ListDeviceRequest{Targets: req.Targets})
 	if err != nil {

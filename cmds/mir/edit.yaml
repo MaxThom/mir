@@ -1,0 +1,26 @@
+apiVersion: v1alpha
+apiName: device
+meta:
+    name: vroom_vroom
+    namespace: car
+    labels:
+        fleet: mtrl
+        maker: mazda
+        source: seed
+    annotations:
+        ac: enabled
+        last_inspection: never
+        mir/device/description: Mazda3 Sport autocar
+spec:
+    deviceId: vroom_vroom
+    disabled: false
+properties:
+    desired: {}
+    reported: {}
+status:
+    online: true
+    lastHearthbeat: 0001-01-01T00:00:00Z
+    schema:
+        packageNames: []
+        lastSchemaFetch: 0001-01-01T00:00:00Z
+

@@ -58,6 +58,51 @@ func unmarshalTypeFromStdInOrFile[T any](path string) ([]*T, error) {
 			devs = append(devs, dev)
 		}
 	}
+	fmt.Println(devs)
+
+	return devs, nil
+}
+
+func unmarshalTypeFromStdInOrString[T any](str string) ([]*T, error) {
+	var empty []*T
+	content, ok := ReadFromPipedStdIn()
+	if !ok {
+		content = str
+	}
+	var devs []*T
+	if isJsonString(content) {
+		if isJsonArray(content) {
+			err := json.Unmarshal([]byte(content), &devs)
+			if err != nil {
+				e := MirDeserializationError{e: err}
+				return empty, e
+			}
+		} else {
+			dev := new(T)
+			err := json.Unmarshal([]byte(content), dev)
+			if err != nil {
+				e := MirDeserializationError{e: err}
+				return empty, e
+			}
+			devs = append(devs, dev)
+		}
+	} else {
+		if isYamlArray(content) {
+			err := yaml.Unmarshal([]byte(content), &devs)
+			if err != nil {
+				e := MirDeserializationError{e: err}
+				return empty, e
+			}
+		} else {
+			dev := new(T)
+			err := yaml.Unmarshal([]byte(content), dev)
+			if err != nil {
+				e := MirDeserializationError{e: err}
+				return empty, e
+			}
+			devs = append(devs, dev)
+		}
+	}
 
 	return devs, nil
 }

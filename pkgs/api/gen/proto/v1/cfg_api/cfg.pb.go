@@ -524,7 +524,7 @@ func (x *Configs) GetError() string {
 	return ""
 }
 
-// Descriptor of a command
+// Descriptor of a config
 type ConfigDescriptor struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

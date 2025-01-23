@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package core_api.v1;
 
+import "google/protobuf/struct.proto";
 import "v1/common_api/common.proto";
 
 /*
@@ -35,7 +36,8 @@ message UpdateDeviceRequest {
 
   Meta meta = 2;
   Spec spec = 3;
-  Status status = 4;
+  Properties props = 4;
+  Status status = 5;
 
   message Meta {
     optional string name = 1; // Name of the device
@@ -46,6 +48,9 @@ message UpdateDeviceRequest {
   message Spec {
     optional string device_id = 1; // Change device id, caution can break device link
     optional bool disabled = 2; // If disabled, device will be cut off from communication
+  }
+  message Properties {
+    google.protobuf.Struct desired = 1; // Desired properties from the users
   }
   message Status {
     optional bool online = 1; // Is device online ?
@@ -64,6 +69,19 @@ message UpdateDeviceRequest {
   Only the error or the response data will be set
 */
 message UpdateDeviceResponse {
+  oneof response {
+    DeviceList ok = 1; //  List of device that were updated
+    string error = 2; // Error message if troubleshooting is needed
+  }
+}
+
+message MergeDeviceRequest {
+    Targets targets = 1; // To target a set of devices, search using ids, labels and annotations
+
+    google.protobuf.Struct device = 2;
+}
+
+message MergeDeviceResponse {
   oneof response {
     DeviceList ok = 1; //  List of device that were updated
     string error = 2; // Error message if troubleshooting is needed
@@ -167,7 +185,8 @@ message Spec {
 * and reported properties from the devices
 */
 message Properties {
-
+    google.protobuf.Struct desired = 1;
+    google.protobuf.Struct reported = 2;
 }
 
 /*

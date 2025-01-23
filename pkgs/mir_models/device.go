@@ -8,11 +8,11 @@ import (
 )
 
 type Device struct {
-	ApiVersion string     `json:"apiVersion" yaml:"apiVersion"`
-	ApiName    string     `json:"apiName" yaml:"apiName"`
-	Meta       Meta       `json:"meta" yaml:"meta"`
-	Spec       Spec       `json:"spec" yaml:"spec"`
-	Properties Properties `json:"properties" yaml:"properties"`
+	ApiVersion string     `json:"apiVersion,omitempty" yaml:"apiVersion"`
+	ApiName    string     `json:"apiName,omitempty" yaml:"apiName"`
+	Meta       Meta       `json:"meta,omitempty" yaml:"meta"`
+	Spec       Spec       `json:"spec,omitempty" yaml:"spec"`
+	Properties Properties `json:"properties,omitempty" yaml:"properties"`
 	Status     Status     `json:"status,omitempty" yaml:"status,omitempty"`
 }
 
@@ -20,15 +20,19 @@ func NewDevice() Device {
 	return Device{
 		ApiVersion: "v1alpha",
 		ApiName:    "device",
+		// Properties: Properties{
+		// 	Desired:  make(map[string]interface{}),
+		// 	Reported: make(map[string]interface{}),
+		// },
 	}
 }
 
 func (d Device) GetNameNamespace() string {
-	return d.Meta.Name + "/" + d.Meta.Namespace
+	return *d.Meta.Name + "/" + *d.Meta.Namespace
 }
 
 func (d Device) GetNameNs() NameNs {
-	return NewNameNs(d.Meta.Name, d.Meta.Namespace)
+	return NewNameNs(*d.Meta.Name, *d.Meta.Namespace)
 }
 
 type NameNs struct {
@@ -61,35 +65,37 @@ func (d NameNs) GetNameNamespace() string {
 }
 
 type Meta struct {
-	Name        string            `json:"name" yaml:"name"`
-	Namespace   string            `json:"namespace" yaml:"namespace"`
-	Labels      map[string]string `json:"labels" yaml:"labels"`
-	Annotations map[string]string `json:"annotations" yaml:"annotations"`
+	Name        *string            `json:"name,omitempty" yaml:"name"`
+	Namespace   *string            `json:"namespace,omitempty" yaml:"namespace"`
+	Labels      map[string]*string `json:"labels,omitempty" yaml:"labels"`
+	Annotations map[string]*string `json:"annotations,omitempty" yaml:"annotations"`
 }
 
 type Spec struct {
-	DeviceId string `json:"deviceId" yaml:"deviceId"`
-	Disabled bool   `json:"disabled" yaml:"disabled"`
+	DeviceId *string `json:"deviceId,omitempty" yaml:"deviceId"`
+	Disabled *bool   `json:"disabled,omitempty" yaml:"disabled"`
 }
 
 type Properties struct {
+	Desired  map[string]interface{} `json:"desired,omitempty" yaml:"desired"`
+	Reported map[string]interface{} `json:"reported,omitempty" yaml:"reported"`
 }
 
 type Status struct {
-	Online         bool      `json:"online" yaml:"online"`
-	LastHearthbeat time.Time `json:"lastHearthbeat" yaml:"lastHearthbeat"`
-	Schema         Schema    `json:"schema" yaml:"schema"`
+	Online         *bool      `json:"online,omitempty" yaml:"online"`
+	LastHearthbeat *time.Time `json:"lastHearthbeat,omitempty" yaml:"lastHearthbeat"`
+	Schema         Schema     `json:"schema,omitempty" yaml:"schema"`
 }
 
 type Schema struct {
 	// Compressed with ZSTD
-	CompressedSchema []byte    `json:"compressedSchema" yaml:"-"`
-	PackageNames     []string  `json:"packageNames" yaml:"packageNames"`
-	LastSchemaFetch  time.Time `json:"lastSchemaFetch" yaml:"lastSchemaFetch"`
+	CompressedSchema *[]byte    `json:"compressedSchema,omitempty" yaml:"-"`
+	PackageNames     *[]string  `json:"packageNames,omitempty" yaml:"packageNames"`
+	LastSchemaFetch  *time.Time `json:"lastSchemaFetch,omitempty" yaml:"lastSchemaFetch"`
 }
 
 func (s Schema) GetProtoFiles() (*mir_proto.MirProtoSchema, error) {
-	return mir_proto.DecompressSchema(s.CompressedSchema)
+	return mir_proto.DecompressSchema(*s.CompressedSchema)
 }
 
 func (s *Schema) SetProtoSchema(m *mir_proto.MirProtoSchema) error {
@@ -97,7 +103,7 @@ func (s *Schema) SetProtoSchema(m *mir_proto.MirProtoSchema) error {
 	if err != nil {
 		return err
 	}
-	s.CompressedSchema = b
-	s.PackageNames = m.GetPackageList()
+	s.CompressedSchema = &b
+	*s.PackageNames = m.GetPackageList()
 	return nil
 }

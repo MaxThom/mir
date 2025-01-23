@@ -5,6 +5,7 @@ import (
 
 	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // Devices
@@ -38,9 +39,10 @@ func NewDeviceFromProtoDevice(d *core_apiv1.Device) Device {
 			Disabled: d.Spec.Disabled,
 		}
 	}
-	// if d.Properties != nil {
-	// 	dev.Properties = d.Properties
-	// }
+	if d.Properties != nil {
+		dev.Properties.Desired = d.Properties.Desired.AsMap()
+		dev.Properties.Reported = d.Properties.Reported.AsMap()
+	}
 	if d.Status != nil {
 		var lastHeartbeatTime time.Time
 		if d.Status.LastHearthbeat != nil {
@@ -75,6 +77,8 @@ func NewProtoDeviceListFromDevices(d []Device) []*core_apiv1.Device {
 }
 
 func NewProtoDeviceFromDevice(d Device) *core_apiv1.Device {
+	des, _ := structpb.NewStruct(d.Properties.Desired)
+	rep, _ := structpb.NewStruct(d.Properties.Reported)
 	return &core_apiv1.Device{
 		ApiVersion: d.ApiVersion,
 		ApiName:    d.ApiName,
@@ -88,7 +92,10 @@ func NewProtoDeviceFromDevice(d Device) *core_apiv1.Device {
 			DeviceId: d.Spec.DeviceId,
 			Disabled: d.Spec.Disabled,
 		},
-		Properties: &core_apiv1.Properties{},
+		Properties: &core_apiv1.Properties{
+			Desired:  des,
+			Reported: rep,
+		},
 		Status: &core_apiv1.Status{
 			Online:         d.Status.Online,
 			LastHearthbeat: AsProtoTimestamp(d.Status.LastHearthbeat),
@@ -126,8 +133,9 @@ func NewUpdateDeviceReqFromDevice(d Device) *core_apiv1.UpdateDeviceRequest {
 		}
 		return opt
 	}
+	des, _ := structpb.NewStruct(d.Properties.Desired)
 
-	return &core_apiv1.UpdateDeviceRequest{
+	devUpd := &core_apiv1.UpdateDeviceRequest{
 		Meta: &core_apiv1.UpdateDeviceRequest_Meta{
 			Name:        &d.Meta.Name,
 			Namespace:   &d.Meta.Namespace,
@@ -138,11 +146,74 @@ func NewUpdateDeviceReqFromDevice(d Device) *core_apiv1.UpdateDeviceRequest {
 			DeviceId: &d.Spec.DeviceId,
 			Disabled: &d.Spec.Disabled,
 		},
+		Props: &core_apiv1.UpdateDeviceRequest_Properties{
+			Desired: des,
+		},
 		Targets: &core_apiv1.Targets{
 			Names:      []string{d.Meta.Name},
 			Namespaces: []string{d.Meta.Namespace},
 		},
 	}
+
+	if d.Spec.DeviceId == "" {
+		devUpd.Spec.DeviceId = nil
+	}
+	if d.Properties.Desired == nil && d.Properties.Reported == nil {
+		devUpd.Props = nil
+	}
+
+	return devUpd
+}
+
+func NewUpdateDeviceReqFromProtoDevice(t *core_apiv1.Targets, d *core_apiv1.Device) *core_apiv1.UpdateDeviceRequest {
+	toUpdateMap := func(m map[string]string) map[string]*common_apiv1.OptString {
+		opt := map[string]*common_apiv1.OptString{}
+		for k, v := range m {
+			if v == "none" {
+				opt[k] = &common_apiv1.OptString{
+					Value: nil,
+				}
+			} else {
+				opt[k] = &common_apiv1.OptString{
+					Value: &v,
+				}
+			}
+		}
+		return opt
+	}
+	devUpd := &core_apiv1.UpdateDeviceRequest{
+		Targets: t,
+	}
+	if d.Meta != nil {
+		devUpd.Meta = &core_apiv1.UpdateDeviceRequest_Meta{
+			Name:        &d.Meta.Name,
+			Namespace:   &d.Meta.Namespace,
+			Labels:      toUpdateMap(d.Meta.Labels),
+			Annotations: toUpdateMap(d.Meta.Annotations),
+		}
+		if d.Meta.Name == "" {
+			devUpd.Meta.Name = nil
+		}
+		if d.Meta.Namespace == "" {
+			devUpd.Meta.Namespace = nil
+		}
+	}
+	if d.Spec != nil {
+		devUpd.Spec = &core_apiv1.UpdateDeviceRequest_Spec{
+			DeviceId: &d.Spec.DeviceId,
+			Disabled: &d.Spec.Disabled,
+		}
+		if d.Spec.DeviceId == "" {
+			devUpd.Spec.DeviceId = nil
+		}
+	}
+	if d.Properties != nil {
+		devUpd.Props = &core_apiv1.UpdateDeviceRequest_Properties{
+			Desired: d.Properties.Desired,
+		}
+	}
+
+	return devUpd
 }
 
 func NewCreateDeviceReqFromDevice(d Device) *core_apiv1.CreateDeviceRequest {

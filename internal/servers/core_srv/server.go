@@ -81,7 +81,7 @@ func NewCore(logger zerolog.Logger, m *mir.Mir, store mng.DeviceStore) (*CoreSer
 		// to the map.
 		// If a device becomes offline, it's removed from the map
 		if d.Status.Online {
-			hearbeats[d.Spec.DeviceId] = d.Status.LastHearthbeat
+			hearbeats[d.Spec.DeviceId] = *d.Status.LastHearthbeat
 		}
 	}
 
@@ -147,6 +147,13 @@ func (s *CoreServer) createDeviceSub(msg *mir.Msg, clientId string, req *core_ap
 
 func (s *CoreServer) updateDeviceSub(msg *mir.Msg, clientId string, req *core_apiv1.UpdateDeviceRequest) ([]*core_apiv1.Device, error) {
 	l.Debug().Str("route", "update").Str("payload", fmt.Sprintf("%v", req)).Msg("update device request")
+
+	// TODO
+	// Have config validator that can be check here before sent to store
+	// If valid sent to store, else failed
+	// If invalid
+	// if update to desired properties, set it to null
+	// publish device config update event
 
 	respDb, err := s.store.UpdateDevice(req)
 	if err != nil {
