@@ -81,7 +81,7 @@ message Configs {
 	string error = 2; // error if something went wrong
 }
 
-// Descriptor of a command
+// Descriptor of a config
 message ConfigDescriptor {
 	string name = 1; // Name of config
 	map<string, string> labels = 2; // Labels are used to tag a config

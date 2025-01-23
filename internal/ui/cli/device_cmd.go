@@ -17,12 +17,14 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// TODO get command which is ls but with -o yaml
 type DeviceCmd struct {
 	List   DeviceListCmd   `cmd:"" aliases:"ls" help:"List devices"`
 	Create DeviceCreateCmd `cmd:"" help:"Create a new device"`
 	Update DeviceUpdateCmd `cmd:"" help:"Update a device"`
 	Edit   DeviceEditCmd   `cmd:"" help:"Interactive editing of devices"`
 	Apply  DeviceApplyCmd  `cmd:"" help:"Update a device using a declarative format"`
+	Merge  DeviceMergeCmd  `cmd:"" help:"Update a device using a merge operation"`
 	Delete DeviceDeleteCmd `cmd:"" help:"Delete a device"`
 }
 
@@ -213,7 +215,7 @@ func (d *DeviceCreateCmd) Run(c CLI) error {
 		dev.Meta.Labels = d.Labels
 		dev.Meta.Annotations = d.Anno
 		dev.Spec.DeviceId = d.Id
-		dev.Spec.Disabled = d.Disabled
+		dev.Spec.Disabled = &d.Disabled
 		devs = append(devs, &dev)
 	}
 
@@ -471,7 +473,7 @@ func prettyStringDevices(devs []mir_models.Device) string {
 
 	for _, d := range devs {
 		st := ""
-		if d.Spec.Disabled {
+		if *d.Spec.Disabled {
 			st = "disabled"
 		} else if d.Status.Online {
 			st = "online"

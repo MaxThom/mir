@@ -87,7 +87,7 @@ func (d *DeviceEditCmd) Run(c CLI) error {
 	}
 	if d.Output == "json" {
 		if len(devs) == 1 {
-			err = editor.EditJsonDocument(devs[0], header)
+			err = editor.EditJsonDocument(&devs[0], header)
 		} else {
 			err = editor.EditJsonDocument(&devs, header)
 		}
@@ -98,7 +98,7 @@ func (d *DeviceEditCmd) Run(c CLI) error {
 	} else {
 		var err error
 		if len(devs) == 1 {
-			err = editor.EditYamlDocument(devs[0], header)
+			err = editor.EditYamlDocument(&devs[0], header)
 		} else {
 			err = editor.EditYamlDocument(&devs, header)
 		}
@@ -168,9 +168,9 @@ func (d *DeviceApplyCmd) Run(c CLI) error {
 	}
 	defer msgBus.Close()
 
-	devs := []*mir_models.Device{}
+	devs := []*core_apiv1.Device{}
 	if isPipedStdIn() || d.Path != "" {
-		devs, err = unmarshalTypeFromStdInOrFile[mir_models.Device](d.Path)
+		devs, err = unmarshalTypeFromStdInOrFile[core_apiv1.Device](d.Path)
 		if err != nil {
 			return fmt.Errorf("error reading devices from file: %w", err)
 		}
@@ -179,7 +179,12 @@ func (d *DeviceApplyCmd) Run(c CLI) error {
 	var errs error
 	respDevs := []*core_apiv1.Device{}
 	for _, d := range devs {
-		req := mir_models.NewUpdateDeviceReqFromDevice(*d)
+		req := mir_models.NewUpdateDeviceReqFromProtoDevice(&core_apiv1.Targets{
+			Names:      []string{d.GetMeta().GetName()},
+			Namespaces: []string{d.GetMeta().GetNamespace()},
+		}, d)
+		fmt.Println(d)
+		fmt.Println(req)
 		resp, err := core_client.PublishDeviceUpdateRequest(msgBus, req)
 		if err != nil {
 			errs = errors.Join(errs, errors.New("error sending update device request"))
@@ -208,14 +213,14 @@ func (d *DeviceApplyCmd) Run(c CLI) error {
 	return nil
 }
 
-type DevicePatchCmd struct {
+type DeviceMergeCmd struct {
 	Output string `short:"o" help:"output format for response [pretty|json|yaml]" default:"pretty"`
 	NameNs string `name:"name/namespace" arg:"" optional:"" help:"edit single device"`
 	Target `embed:"" prefix:"target."`
-	Path   string `short:"f" help:"filepath to device patch. You can also pipe file content. Tips: use 'mir device list --targets... -o yaml > name.yaml' to get initial content"`
+	Patch  string `short:"p" help:"json patch of device. You can also pipe file content. Tips: use 'mir device list --targets... -o yaml > name.yaml' to get initial content"`
 }
 
-func (d *DevicePatchCmd) Validate() error {
+func (d *DeviceMergeCmd) Validate() error {
 	err := MirInvalidInputError{
 		Details: []string{},
 	}
@@ -226,7 +231,7 @@ func (d *DevicePatchCmd) Validate() error {
 	return nil
 }
 
-func (d *DevicePatchCmd) Run(c CLI) error {
+func (d *DeviceMergeCmd) Run(c CLI) error {
 	var err error
 	msgBus, err := bus.New(c.Target)
 	if err != nil {
@@ -236,10 +241,10 @@ func (d *DevicePatchCmd) Run(c CLI) error {
 	defer msgBus.Close()
 
 	devs := []*mir_models.Device{}
-	if isPipedStdIn() || d.Path != "" {
-		devs, err = unmarshalTypeFromStdInOrFile[mir_models.Device](d.Path)
+	if isPipedStdIn() || d.Patch != "" {
+		devs, err = unmarshalTypeFromStdInOrString[mir_models.Device](d.Patch)
 		if err != nil {
-			return fmt.Errorf("error reading devices from file: %w", err)
+			return fmt.Errorf("error reading patch from stdin or string: %w", err)
 		}
 	}
 
