@@ -1,6 +1,7 @@
 package mir_models
 
 import (
+	"strings"
 	"time"
 
 	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
@@ -24,7 +25,6 @@ func NewDeviceFromProtoDevice(d *core_apiv1.Device) Device {
 	if d == nil {
 		return dev
 	}
-
 	if d.Meta != nil {
 		dev.Meta = Meta{
 			Name:        d.Meta.Name,
@@ -108,6 +108,16 @@ func NewProtoDeviceFromDevice(d Device) *core_apiv1.Device {
 	}
 }
 
+func NewUpdateDeviceReqFromDeviceWithTarget(t Targets, d Device) *core_apiv1.UpdateDeviceRequest {
+	dev := NewUpdateDeviceReqFromDevice(d)
+	dev.Targets = &core_apiv1.Targets{
+		Ids:        t.Ids,
+		Names:      t.Names,
+		Namespaces: t.Namespaces,
+		Labels:     t.Labels,
+	}
+	return dev
+}
 func NewUpdateDeviceReqFromDeviceWithNameNs(n NameNs, d Device) *core_apiv1.UpdateDeviceRequest {
 	dev := NewUpdateDeviceReqFromDevice(d)
 	dev.Targets = &core_apiv1.Targets{
@@ -121,7 +131,7 @@ func NewUpdateDeviceReqFromDevice(d Device) *core_apiv1.UpdateDeviceRequest {
 	toUpdateMap := func(m map[string]string) map[string]*common_apiv1.OptString {
 		opt := map[string]*common_apiv1.OptString{}
 		for k, v := range m {
-			if v == "none" {
+			if strings.ToLower(v) == "null" {
 				opt[k] = &common_apiv1.OptString{
 					Value: nil,
 				}
@@ -154,7 +164,6 @@ func NewUpdateDeviceReqFromDevice(d Device) *core_apiv1.UpdateDeviceRequest {
 			Namespaces: []string{d.Meta.Namespace},
 		},
 	}
-
 	if d.Spec.DeviceId == "" {
 		devUpd.Spec.DeviceId = nil
 	}

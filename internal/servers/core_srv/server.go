@@ -81,7 +81,7 @@ func NewCore(logger zerolog.Logger, m *mir.Mir, store mng.DeviceStore) (*CoreSer
 		// to the map.
 		// If a device becomes offline, it's removed from the map
 		if d.Status.Online {
-			hearbeats[d.Spec.DeviceId] = *d.Status.LastHearthbeat
+			hearbeats[d.Spec.DeviceId] = d.Status.LastHearthbeat
 		}
 	}
 
