@@ -13,7 +13,7 @@ type Device struct {
 	Meta       Meta       `json:"meta,omitempty" yaml:"meta"`
 	Spec       Spec       `json:"spec,omitempty" yaml:"spec"`
 	Properties Properties `json:"properties,omitempty" yaml:"properties"`
-	Status     Status     `json:"status,omitempty" yaml:"status,omitempty"`
+	Status     Status     `json:"status,omitempty" yaml:"status"`
 }
 
 func NewDevice() Device {
@@ -28,11 +28,18 @@ func NewDevice() Device {
 }
 
 func (d Device) GetNameNamespace() string {
-	return *d.Meta.Name + "/" + *d.Meta.Namespace
+	return d.Meta.Name + "/" + d.Meta.Namespace
 }
 
 func (d Device) GetNameNs() NameNs {
-	return NewNameNs(*d.Meta.Name, *d.Meta.Namespace)
+	return NewNameNs(d.Meta.Name, d.Meta.Namespace)
+}
+
+type Targets struct {
+	Ids        []string
+	Names      []string
+	Namespaces []string
+	Labels     map[string]string
 }
 
 type NameNs struct {
@@ -65,15 +72,15 @@ func (d NameNs) GetNameNamespace() string {
 }
 
 type Meta struct {
-	Name        *string            `json:"name,omitempty" yaml:"name"`
-	Namespace   *string            `json:"namespace,omitempty" yaml:"namespace"`
-	Labels      map[string]*string `json:"labels,omitempty" yaml:"labels"`
-	Annotations map[string]*string `json:"annotations,omitempty" yaml:"annotations"`
+	Name        string            `json:"name,omitempty" yaml:"name"`
+	Namespace   string            `json:"namespace,omitempty" yaml:"namespace"`
+	Labels      map[string]string `json:"labels,omitempty" yaml:"labels"`
+	Annotations map[string]string `json:"annotations,omitempty" yaml:"annotations"`
 }
 
 type Spec struct {
-	DeviceId *string `json:"deviceId,omitempty" yaml:"deviceId"`
-	Disabled *bool   `json:"disabled,omitempty" yaml:"disabled"`
+	DeviceId string `json:"deviceId,omitempty" yaml:"deviceId"`
+	Disabled bool   `json:"disabled,omitempty" yaml:"disabled"`
 }
 
 type Properties struct {
@@ -82,20 +89,20 @@ type Properties struct {
 }
 
 type Status struct {
-	Online         *bool      `json:"online,omitempty" yaml:"online"`
-	LastHearthbeat *time.Time `json:"lastHearthbeat,omitempty" yaml:"lastHearthbeat"`
-	Schema         Schema     `json:"schema,omitempty" yaml:"schema"`
+	Online         bool      `json:"online,omitempty" yaml:"online"`
+	LastHearthbeat time.Time `json:"lastHearthbeat,omitempty" yaml:"lastHearthbeat"`
+	Schema         Schema    `json:"schema,omitempty" yaml:"schema"`
 }
 
 type Schema struct {
 	// Compressed with ZSTD
-	CompressedSchema *[]byte    `json:"compressedSchema,omitempty" yaml:"-"`
-	PackageNames     *[]string  `json:"packageNames,omitempty" yaml:"packageNames"`
-	LastSchemaFetch  *time.Time `json:"lastSchemaFetch,omitempty" yaml:"lastSchemaFetch"`
+	CompressedSchema []byte    `json:"compressedSchema,omitempty" yaml:"-"`
+	PackageNames     []string  `json:"packageNames,omitempty" yaml:"packageNames"`
+	LastSchemaFetch  time.Time `json:"lastSchemaFetch,omitempty" yaml:"lastSchemaFetch"`
 }
 
 func (s Schema) GetProtoFiles() (*mir_proto.MirProtoSchema, error) {
-	return mir_proto.DecompressSchema(*s.CompressedSchema)
+	return mir_proto.DecompressSchema(s.CompressedSchema)
 }
 
 func (s *Schema) SetProtoSchema(m *mir_proto.MirProtoSchema) error {
@@ -103,7 +110,7 @@ func (s *Schema) SetProtoSchema(m *mir_proto.MirProtoSchema) error {
 	if err != nil {
 		return err
 	}
-	s.CompressedSchema = &b
-	*s.PackageNames = m.GetPackageList()
+	s.CompressedSchema = b
+	s.PackageNames = m.GetPackageList()
 	return nil
 }

@@ -9,8 +9,6 @@ import (
 	"github.com/maxthom/mir/internal/externals/mng"
 	"github.com/maxthom/mir/internal/libs/external/surreal"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
-	"github.com/maxthom/mir/pkgs/mir_models"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/yaml.v3"
 )
@@ -36,7 +34,6 @@ type Properties struct {
 }
 
 func main() {
-	main4()
 	db, err := surreal.ConnectToDb("ws://127.0.0.1:8000/rpc", "global", "mir", "root", "root")
 	if err != nil {
 		fmt.Println(err)
@@ -44,34 +41,38 @@ func main() {
 	}
 	store := mng.NewSurrealDeviceStore(db)
 
-	dev := mir_models.NewDevice()
-	dev.Meta = mir_models.Meta{
-		Name:      "device1",
-		Namespace: "namespace1",
-		Labels: map[string]string{
-			"test": "",
+	devJson := `{
+		"meta": {
+			"name": "laval_rep",
+			"namespace": "car",
+			"labels": {
+				"test": null,
+				"sec": "min"
+			},
+			"annotations": {
+				"key1": "null"
+			}
 		},
-	}
-
-	bytes, err := json.Marshal(dev)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-
-	structpb := structpb.Struct{}
-	err = protojson.Unmarshal(bytes, &structpb)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-
-	devs, err := store.UpdateDevice2(&core_apiv1.MergeDeviceRequest{
-		Targets: &core_apiv1.Targets{
-			Ids: []string{"upd2"},
+		"spec": {
 		},
-		Device: &structpb,
-	})
+		"properties": {
+			"desired": {
+				"key1": "value1",
+				"key2": [
+					"v1"
+				]
+			}
+		}
+	}
+	`
+
+	devs, err := store.MergeDevice(&core_apiv1.Targets{
+		Names:      []string{"laval_rep"},
+		Namespaces: []string{"car"},
+	},
+		[]byte(devJson),
+		mng.MergePatch,
+	)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)

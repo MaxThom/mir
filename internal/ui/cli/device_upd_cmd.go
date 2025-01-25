@@ -13,7 +13,6 @@ import (
 )
 
 type DeviceEditCmd struct {
-	// TODO put back to yaml when ill figure it out
 	Output string `short:"o" help:"output format for response [pretty|json|yaml]" default:"pretty"`
 	NameNs string `name:"name/namespace" arg:"" optional:"" help:"edit single device"`
 	Target `embed:"" prefix:"target."`
@@ -183,8 +182,6 @@ func (d *DeviceApplyCmd) Run(c CLI) error {
 			Names:      []string{d.GetMeta().GetName()},
 			Namespaces: []string{d.GetMeta().GetNamespace()},
 		}, d)
-		fmt.Println(d)
-		fmt.Println(req)
 		resp, err := core_client.PublishDeviceUpdateRequest(msgBus, req)
 		if err != nil {
 			errs = errors.Join(errs, errors.New("error sending update device request"))
@@ -217,12 +214,24 @@ type DeviceMergeCmd struct {
 	Output string `short:"o" help:"output format for response [pretty|json|yaml]" default:"pretty"`
 	NameNs string `name:"name/namespace" arg:"" optional:"" help:"edit single device"`
 	Target `embed:"" prefix:"target."`
-	Patch  string `short:"p" help:"json patch of device. You can also pipe file content. Tips: use 'mir device list --targets... -o yaml > name.yaml' to get initial content"`
+	Patch  string `short:"p" help:"Json patch of device. You can also pipe file content. Tips: use 'mir device list --targets... -o yaml > name.yaml' to get initial content"`
 }
 
 func (d *DeviceMergeCmd) Validate() error {
 	err := MirInvalidInputError{
 		Details: []string{},
+	}
+
+	if len(d.Target.Ids) == 0 &&
+		len(d.Target.Names) == 0 &&
+		len(d.Target.Namespaces) == 0 &&
+		len(d.Target.Labels) == 0 &&
+		d.NameNs == "" {
+		err.Details = append(err.Details, "Must specify targets")
+	}
+
+	if d.NameNs != "" {
+		d.Target = getTargetFromNameNs(d.NameNs)
 	}
 
 	if len(err.Details) > 0 {
@@ -250,8 +259,13 @@ func (d *DeviceMergeCmd) Run(c CLI) error {
 
 	var errs error
 	respDevs := []*core_apiv1.Device{}
-	for _, d := range devs {
-		req := mir_models.NewUpdateDeviceReqFromDevice(*d)
+	for _, de := range devs {
+		req := mir_models.NewUpdateDeviceReqFromDeviceWithTarget(mir_models.Targets{
+			Ids:        d.Ids,
+			Names:      d.Names,
+			Namespaces: d.Namespaces,
+			Labels:     d.Labels,
+		}, *de)
 		resp, err := core_client.PublishDeviceUpdateRequest(msgBus, req)
 		if err != nil {
 			errs = errors.Join(errs, fmt.Errorf("error publishing device update request: %w", err))
