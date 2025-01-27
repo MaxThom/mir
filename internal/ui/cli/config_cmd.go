@@ -37,9 +37,7 @@ type ConfigSendCmd struct {
 	Edit             bool   `short:"e" help:"Interactive edit of config payload" default:"false"`
 	RefreshSchema    bool   `short:"r" help:"Refresh schema from device even if in store" default:"false"`
 	DryRun           bool   `help:"dry run command" default:"false"`
-	NoValidation     bool   `help:"do not validate config with device's schema. Only for protobuf encoding" default:"false"`
 	ForcePush        bool   `short:"f" help:"force send commands even if some devices are in error" default:"false"`
-	Timeout          int    `short:"t" help:"timeout in second for command to reach device" default:"10"`
 }
 
 func (d *ConfigListCmd) Validate() error {
@@ -192,9 +190,7 @@ func (d *ConfigSendCmd) Run(c CLI) error {
 		RefreshSchema:   d.RefreshSchema,
 		ShowTemplate:    d.ShowJsonTemplate,
 		DryRun:          d.DryRun,
-		NoValidation:    d.NoValidation,
 		ForcePush:       d.ForcePush,
-		TimeoutSec:      uint32(d.Timeout),
 	}
 	resp, err := cfg_client.PublishSendConfigRequest(msgBus, req)
 	if err != nil {

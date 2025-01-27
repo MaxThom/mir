@@ -15,13 +15,14 @@ import (
 )
 
 var (
-	cmdHandlers map[string]func(msg *nats.Msg, m *Mir) error
+	msgHandlers map[string]func(msg *nats.Msg, m *Mir) error
 )
 
 func init() {
-	cmdHandlers = make(map[string]func(msg *nats.Msg, m *Mir) error)
-	cmdHandlers[device_client.SchemaRequest.GetVersionAndFunction()] = SchemaRetrieveHandler
-	cmdHandlers[device_client.CommandRequest.GetVersionAndFunction()] = DefinedCommandHandler
+	msgHandlers = make(map[string]func(msg *nats.Msg, m *Mir) error)
+	msgHandlers[device_client.SchemaRequest.GetVersionAndFunction()] = SchemaRetrieveHandler
+	msgHandlers[device_client.CommandRequest.GetVersionAndFunction()] = DefinedCommandHandler
+	msgHandlers[device_client.ConfigRequest.GetVersionAndFunction()] = DefinedConfigHandler
 }
 
 func SchemaRetrieveHandler(msg *nats.Msg, m *Mir) error {
@@ -85,6 +86,35 @@ func DefinedCommandHandler(msg *nats.Msg, m *Mir) error {
 		return sendReplyOrAck(m.b, msg, &devicev1.Void{}, nil, false)
 	}
 	return sendReplyOrAck(m.b, msg, cmdResp, nil, shouldZstd)
+}
+
+func DefinedConfigHandler(msg *nats.Msg, m *Mir) error {
+	// shouldZstd := false
+	// if msg.Header.Get("request-encoding") == "zstd" {
+	// 	shouldZstd = true
+	// }
+	descName := msg.Header.Get("__msg")
+	_, err := m.schemaReg.FindDescriptorByName(protoreflect.FullName(descName))
+	if err != nil {
+		return fmt.Errorf("device error while looking for config descriptor: %w", err)
+	}
+
+	h, ok := m.cfgHandlers[descName]
+	if !ok {
+		return fmt.Errorf("device error: no handler for config %s found", descName)
+	}
+
+	v := reflect.New(h.t).Interface()
+	cmdMsg := v.(protoreflect.ProtoMessage)
+
+	if err = proto.Unmarshal(msg.Data, cmdMsg); err != nil {
+		return fmt.Errorf("device error while unmarshalling config payload: %w", err)
+	}
+
+	h.h(cmdMsg)
+
+	// TODO maybe should return reported properties as dx
+	return nil // sendReplyOrAck(m.b, msg, cmdResp, nil, shouldZstd)
 }
 
 func sendReplyOrAck(bus *bus.BusConn, msg *nats.Msg, m protoreflect.ProtoMessage, h nats.Header, shouldZstdCompress bool) error {

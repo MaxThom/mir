@@ -429,10 +429,8 @@ type SendDeviceConfigRequestProto struct {
 	Targets       *core_apiv1.Targets
 	Command       proto.Message
 	DryRun        bool
-	NoValidation  bool
 	RefreshSchema bool
 	ForcePush     bool
-	TimeoutSec    uint32
 }
 
 // Request send a command to device
@@ -444,9 +442,7 @@ func (r *sendConfigRoute) RequestProto(req *SendDeviceConfigRequestProto) (map[s
 		PayloadEncoding: common_apiv1.Encoding_ENCODING_PROTOBUF,
 		Payload:         b,
 		DryRun:          req.DryRun,
-		NoValidation:    req.NoValidation,
 		RefreshSchema:   req.RefreshSchema,
 		ForcePush:       req.ForcePush,
-		TimeoutSec:      req.TimeoutSec,
 	})
 }

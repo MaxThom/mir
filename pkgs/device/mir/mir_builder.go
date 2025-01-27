@@ -246,5 +246,6 @@ func (b builder) Build() (*Mir, error) {
 		schema:      b.schema,
 		schemaReg:   reg,
 		cmdHandlers: make(map[string]cmdHandlerValue),
+		cfgHandlers: make(map[string]cfgHandlerValue),
 	}, nil
 }

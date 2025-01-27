@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"io"
 	"os"
 	"syscall"
@@ -10,6 +11,7 @@ import (
 	config_devicev1 "github.com/maxthom/mir/examples/config_device/gen/config_device/v1"
 	"github.com/maxthom/mir/internal/libs/boiler/mir_signals"
 	"github.com/maxthom/mir/pkgs/device/mir"
+	"google.golang.org/protobuf/proto"
 )
 
 func main() {
@@ -41,6 +43,11 @@ func main() {
 		os.Exit(1)
 	}
 	l.Info().Msg("Mir is at maxq and nominal")
+
+	m.HandleProperties(&config_devicev1.Config{}, func(m proto.Message) {
+		cfg := m.(*config_devicev1.Config)
+		fmt.Println(cfg)
+	})
 
 	mir_signals.WaitForOsSignals(func() {
 		cancel()

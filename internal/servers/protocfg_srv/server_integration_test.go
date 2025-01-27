@@ -19,10 +19,10 @@ import (
 	cfg_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cfg_api"
 	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
+	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
 	mirDevice "github.com/maxthom/mir/pkgs/device/mir"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/nats-io/nats.go"
-	"github.com/pkg/errors"
 	"github.com/surrealdb/surrealdb.go"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
@@ -234,12 +234,11 @@ func TestPublishCfgRequest(t *testing.T) {
 		t.Error(err)
 	}
 
-	cmdHandled := &protocfg_testv1.PowerLevel{}
-	dev.HandleCommand(
-		cmdHandled,
-		func(m protoreflect.ProtoMessage) (protoreflect.ProtoMessage, error) {
-			cmdHandled = m.(*protocfg_testv1.PowerLevel)
-			return &protocfg_testv1.PowerLevelReport{Success: true}, nil
+	props := &protocfg_testv1.PowerLevel{}
+	dev.HandleProperties(
+		props,
+		func(m protoreflect.ProtoMessage) {
+			props = m.(*protocfg_testv1.PowerLevel)
 		},
 	)
 
@@ -274,13 +273,13 @@ func TestPublishCfgRequest(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	respCmd, err := cfg_client.PublishSendConfigRequest(b, reqCmd)
+	respCfg, err := cfg_client.PublishSendConfigRequest(b, reqCmd)
 	if err != nil {
 		t.Error(err)
 	}
 
-	msgResp := &protocfg_testv1.PowerLevelReport{}
-	for _, v := range respCmd.GetOk().DeviceResponses {
+	msgResp := &devicev1.Void{}
+	for _, v := range respCfg.GetOk().DeviceResponses {
 		if v.Error != "" {
 			t.Error(v.Error)
 		}
@@ -292,9 +291,8 @@ func TestPublishCfgRequest(t *testing.T) {
 	}
 
 	// Assert
-	assert.Equal(t, true, msgResp.Success)
-	assert.Equal(t, int32(5), cmdHandled.Power)
-	assert.Equal(t, common_apiv1.Encoding_ENCODING_PROTOBUF, respCmd.GetOk().Encoding)
+	assert.Equal(t, int32(5), props.Power)
+	assert.Equal(t, common_apiv1.Encoding_ENCODING_PROTOBUF, respCfg.GetOk().Encoding)
 	cancel()
 	wg.Wait()
 }
@@ -348,12 +346,11 @@ func TestPublishCfgJsonRequest(t *testing.T) {
 		t.Error(err)
 	}
 
-	cmdHandled := &protocfg_testv1.PowerLevel{}
-	dev.HandleCommand(
-		cmdHandled,
-		func(m protoreflect.ProtoMessage) (protoreflect.ProtoMessage, error) {
-			cmdHandled = m.(*protocfg_testv1.PowerLevel)
-			return &protocfg_testv1.PowerLevelReport{Success: true}, nil
+	cfgHandled := &protocfg_testv1.PowerLevel{}
+	dev.HandleProperties(
+		cfgHandled,
+		func(m protoreflect.ProtoMessage) {
+			cfgHandled = m.(*protocfg_testv1.PowerLevel)
 		})
 
 	p := protocfg_testv1.PowerLevel{
@@ -394,7 +391,7 @@ func TestPublishCfgJsonRequest(t *testing.T) {
 		t.Error(respCmd.GetError())
 	}
 
-	msgResp := &protocfg_testv1.PowerLevelReport{}
+	msgResp := &devicev1.Void{}
 	for _, v := range respCmd.GetOk().DeviceResponses {
 		if v.Error != "" {
 			t.Error(v.Error)
@@ -407,8 +404,7 @@ func TestPublishCfgJsonRequest(t *testing.T) {
 	}
 
 	// Assert
-	assert.Equal(t, true, msgResp.Success)
-	assert.Equal(t, int32(5), cmdHandled.Power)
+	assert.Equal(t, int32(5), cfgHandled.Power)
 	assert.Equal(t, common_apiv1.Encoding_ENCODING_JSON, respCmd.GetOk().Encoding)
 	cancel()
 	wg.Wait()
@@ -445,72 +441,10 @@ func TestPublishCfgNoDeviceFound(t *testing.T) {
 	assert.Equal(t, respErr, "error sending config to devices: no device found with current targets criteria")
 }
 
-func TestPublishCfgProtoNoValidationDryRun(t *testing.T) {
-	// Arrange
-	id := "proto_novalidation_dryrun_cfg"
-	reqCreate := &core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
-			Name:      id,
-			Namespace: "testing_cfg",
-			Labels: map[string]string{
-				"testing": "cfg",
-			},
-			Annotations: map[string]string{
-				"mir/device/description": "hello world of devices !",
-			},
-		},
-		Spec: &core_apiv1.Spec{
-			DeviceId: id,
-		},
-	}
-
-	reqPayload := protocfg_testv1.PowerLevel{
-		Power: 5,
-	}
-	payloadBytes, err := proto.Marshal(&reqPayload)
-	if err != nil {
-		t.Error(err)
-	}
-
-	reqCmd := &cfg_apiv1.SendConfigRequest{
-		Targets: &core_apiv1.Targets{
-			Ids: []string{id},
-		},
-		Name:            string(reqPayload.ProtoReflect().Descriptor().FullName()),
-		PayloadEncoding: common_apiv1.Encoding_ENCODING_PROTOBUF,
-		Payload:         payloadBytes,
-		NoValidation:    true,
-		DryRun:          true,
-	}
-
-	// Act
-	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate)
-	if err != nil {
-		t.Error(err)
-	}
-	time.Sleep(1 * time.Second)
-
-	respCmd, err := cfg_client.PublishSendConfigRequest(b, reqCmd)
-	if err != nil {
-		t.Error(err)
-	} else if respCmd.GetError() != "" {
-		t.Error(respCmd.GetError())
-	}
-
-	// Assert
-	for _, v := range respCmd.GetOk().DeviceResponses {
-		if v.Error != "" {
-			t.Error(v.Error)
-		}
-		assert.Equal(t, cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_PENDING, v.Status)
-	}
-}
-
-// Turns out we cant break proto.Unmarshal
-func TestPublishCfgProtoInvalidPayloadNoValidation(t *testing.T) {
+func TestPublishCfgProtoDryRun(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
-	id := "device_send_cfg_no_validation"
+	id := "proto_dryrun_cfg"
 	reqCreate := &core_apiv1.CreateDeviceRequest{
 		Meta: &core_apiv1.Meta{
 			Name:      id,
@@ -534,17 +468,94 @@ func TestPublishCfgProtoInvalidPayloadNoValidation(t *testing.T) {
 		t.Error(err)
 	}
 
-	cmdHandled := &protocfg_testv1.PowerLevel{}
-	dev.HandleCommand(
-		cmdHandled,
-		func(m protoreflect.ProtoMessage) (protoreflect.ProtoMessage, error) {
-			cmdHandled = m.(*protocfg_testv1.PowerLevel)
-			return nil, errors.New("error on purpose")
+	time.Sleep(1 * time.Second)
+
+	wg, err := dev.Launch(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	reqPayload := protocfg_testv1.PowerLevel{
+		Power: 5,
+	}
+	payloadBytes, err := proto.Marshal(&reqPayload)
+	if err != nil {
+		t.Error(err)
+	}
+
+	reqCmd := &cfg_apiv1.SendConfigRequest{
+		Targets: &core_apiv1.Targets{
+			Ids: []string{id},
+		},
+		Name:            string(reqPayload.ProtoReflect().Descriptor().FullName()),
+		PayloadEncoding: common_apiv1.Encoding_ENCODING_PROTOBUF,
+		Payload:         payloadBytes,
+		DryRun:          true,
+	}
+
+	// Act
+	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate)
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	respCmd, err := cfg_client.PublishSendConfigRequest(b, reqCmd)
+	if err != nil {
+		t.Error(err)
+	} else if respCmd.GetError() != "" {
+		t.Error(respCmd.GetError())
+	}
+
+	// Assert
+	for _, v := range respCmd.GetOk().DeviceResponses {
+		if v.Error != "" {
+			t.Error(v.Error)
+		}
+		assert.Equal(t, cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_VALIDATED, v.Status)
+	}
+	cancel()
+	wg.Wait()
+}
+
+func TestPublishCfgProtoInvalidPayload(t *testing.T) {
+	// Arrange
+	ctx, cancel := context.WithCancel(context.Background())
+	id := "device_send_cfg_invalid_payload"
+	reqCreate := &core_apiv1.CreateDeviceRequest{
+		Meta: &core_apiv1.Meta{
+			Name:      id,
+			Namespace: "testing_cfg",
+			Labels: map[string]string{
+				"testing": "cfg",
+			},
+			Annotations: map[string]string{
+				"mir/device/description": "hello world of devices !",
+			},
+		},
+		Spec: &core_apiv1.Spec{
+			DeviceId: id,
+		},
+	}
+
+	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).Schema(
+		protocfg_testv1.File_protocfg_test_v1_cfg_proto,
+	).Build()
+	if err != nil {
+		t.Error(err)
+	}
+
+	cfgHandled := &protocfg_testv1.PowerLevel{}
+	dev.HandleProperties(
+		cfgHandled,
+		func(m protoreflect.ProtoMessage) {
+			cfgHandled = m.(*protocfg_testv1.PowerLevel)
 		},
 	)
 
 	reqPayload := protocfg_testv1.Destination{
-		Name: "bobby pendragon",
+		Name: "bobby_pendragon",
 		Pos: &protocfg_testv1.Coordinate{
 			X: 1,
 			Y: 2,
@@ -556,11 +567,11 @@ func TestPublishCfgProtoInvalidPayloadNoValidation(t *testing.T) {
 		t.Error(err)
 	}
 
-	reqCmd := &cfg_apiv1.SendConfigRequest{
+	reqCfg := &cfg_apiv1.SendConfigRequest{
 		Targets: &core_apiv1.Targets{
 			Ids: []string{id},
 		},
-		Name:            string(cmdHandled.ProtoReflect().Descriptor().FullName()),
+		Name:            "INVALID",
 		PayloadEncoding: common_apiv1.Encoding_ENCODING_PROTOBUF,
 		Payload:         payloadBytes,
 		RefreshSchema:   true,
@@ -579,17 +590,17 @@ func TestPublishCfgProtoInvalidPayloadNoValidation(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	respCmd, err := cfg_client.PublishSendConfigRequest(b, reqCmd)
+	respCfg, err := cfg_client.PublishSendConfigRequest(b, reqCfg)
 	if err != nil {
 		t.Error(err)
-	} else if respCmd.GetError() != "" {
-		t.Error(respCmd.GetError())
+	} else if respCfg.GetError() != "" {
+		t.Error(respCfg.GetError())
 	}
 
 	// Assert
-	for _, v := range respCmd.GetOk().DeviceResponses {
+	for _, v := range respCfg.GetOk().DeviceResponses {
 		assert.Equal(t, cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_ERROR, v.Status)
-		assert.Equal(t, "device error in command handler: error on purpose", v.Error)
+		assert.Equal(t, v.Error, "error retrieve config descriptor from device schema: proto: not found")
 	}
 	cancel()
 	wg.Wait()
@@ -598,7 +609,7 @@ func TestPublishCfgProtoInvalidPayloadNoValidation(t *testing.T) {
 func TestPublishCfgRequestMultipleDevices(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
-	cmdHandled := &protocfg_testv1.PowerLevel{}
+	cfgHandled := &protocfg_testv1.PowerLevel{}
 	swarm := swarm.NewSwarm(b)
 	handlerCount := 0
 	_, err := swarm.AddDevices(&core_apiv1.CreateDeviceRequest{
@@ -629,12 +640,11 @@ func TestPublishCfgRequestMultipleDevices(t *testing.T) {
 		},
 	}).
 		WithSchema(protocfg_testv1.File_protocfg_test_v1_cfg_proto).
-		WithCommandHandler(
-			cmdHandled,
-			func(m protoreflect.ProtoMessage) (protoreflect.ProtoMessage, error) {
-				cmdHandled = m.(*protocfg_testv1.PowerLevel)
+		WithConfigHandler(
+			cfgHandled,
+			func(m protoreflect.ProtoMessage) {
+				cfgHandled = m.(*protocfg_testv1.PowerLevel)
 				handlerCount++
-				return &protocfg_testv1.PowerLevelReport{Success: true}, nil
 			},
 		).Incubate()
 	wg, err := swarm.Deploy(ctx)
@@ -656,16 +666,16 @@ func TestPublishCfgRequestMultipleDevices(t *testing.T) {
 	// Act
 	time.Sleep(1 * time.Second)
 
-	respCmd, err := cfg_client.PublishSendConfigRequest(b, reqCmd)
+	respCfg, err := cfg_client.PublishSendConfigRequest(b, reqCmd)
 	if err != nil {
 		t.Error(err)
-	} else if respCmd.GetError() != "" {
-		t.Error(respCmd.GetError())
+	} else if respCfg.GetError() != "" {
+		t.Error(respCfg.GetError())
 	}
 
 	// Assert
-	msgResp := &protocfg_testv1.PowerLevelReport{}
-	for _, v := range respCmd.GetOk().DeviceResponses {
+	msgResp := &devicev1.Void{}
+	for _, v := range respCfg.GetOk().DeviceResponses {
 		if v.Error != "" {
 			t.Error(v.Error)
 		}
@@ -674,9 +684,8 @@ func TestPublishCfgRequestMultipleDevices(t *testing.T) {
 		if err = proto.Unmarshal(v.Payload, msgResp); err != nil {
 			t.Error(err)
 		}
-		assert.Equal(t, true, msgResp.Success)
-		assert.Equal(t, int32(5), cmdHandled.Power)
-		assert.Equal(t, common_apiv1.Encoding_ENCODING_PROTOBUF, respCmd.GetOk().Encoding)
+		assert.Equal(t, int32(5), cfgHandled.Power)
+		assert.Equal(t, common_apiv1.Encoding_ENCODING_PROTOBUF, respCfg.GetOk().Encoding)
 	}
 
 	assert.Equal(t, len(swarm.Devices), handlerCount)
@@ -689,7 +698,7 @@ func TestPublishCfgRequestMultipleDevices(t *testing.T) {
 func TestPublishCfgRequestMultipleDevicesOneNoHandler(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
-	cmdHandled := &protocfg_testv1.PowerLevel{}
+	cfgHandled := &protocfg_testv1.PowerLevel{}
 	swarm := swarm.NewSwarm(b)
 	handlerCount := 0
 	_, err := swarm.AddDevices(&core_apiv1.CreateDeviceRequest{
@@ -720,12 +729,11 @@ func TestPublishCfgRequestMultipleDevicesOneNoHandler(t *testing.T) {
 		},
 	}).
 		WithSchema(protocfg_testv1.File_protocfg_test_v1_cfg_proto).
-		WithCommandHandler(
-			cmdHandled,
-			func(m protoreflect.ProtoMessage) (protoreflect.ProtoMessage, error) {
-				cmdHandled = m.(*protocfg_testv1.PowerLevel)
+		WithConfigHandler(
+			cfgHandled,
+			func(m protoreflect.ProtoMessage) {
+				cfgHandled = m.(*protocfg_testv1.PowerLevel)
 				handlerCount++
-				return &protocfg_testv1.PowerLevelReport{Success: true}, nil
 			},
 		).Incubate()
 	swarm.AddDevice(&core_apiv1.CreateDeviceRequest{
@@ -761,17 +769,16 @@ func TestPublishCfgRequestMultipleDevicesOneNoHandler(t *testing.T) {
 	// Act
 	time.Sleep(1 * time.Second)
 
-	respCmd, err := cfg_client.PublishSendConfigRequest(b, reqCmd)
+	respCfg, err := cfg_client.PublishSendConfigRequest(b, reqCmd)
 	if err != nil {
 		t.Error(err)
-	} else if respCmd.GetError() != "" {
-		t.Error(respCmd.GetError())
+	} else if respCfg.GetError() != "" {
+		t.Error(respCfg.GetError())
 	}
 
 	// Assert
-	msgResp := &protocfg_testv1.PowerLevelReport{}
-
-	for k, v := range respCmd.GetOk().DeviceResponses {
+	msgResp := &devicev1.Void{}
+	for k, v := range respCfg.GetOk().DeviceResponses {
 		if k == "device_send_cfg_1/testing_cfg" || k == "device_send_cfg_2/testing_cfg" {
 			if v.Error != "" {
 				t.Error(v.Error)
@@ -781,9 +788,8 @@ func TestPublishCfgRequestMultipleDevicesOneNoHandler(t *testing.T) {
 			if err = proto.Unmarshal(v.Payload, msgResp); err != nil {
 				t.Error(err)
 			}
-			assert.Equal(t, true, msgResp.Success)
-			assert.Equal(t, int32(5), cmdHandled.Power)
-			assert.Equal(t, common_apiv1.Encoding_ENCODING_PROTOBUF, respCmd.GetOk().Encoding)
+			assert.Equal(t, int32(5), cfgHandled.Power)
+			assert.Equal(t, common_apiv1.Encoding_ENCODING_PROTOBUF, respCfg.GetOk().Encoding)
 		} else if k == "device_send_cmd_3/testing_cfg" {
 			assert.Equal(t, cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_ERROR, v.Status)
 			assert.Equal(t, "device error: no handler for command protocmd_test.v1.PowerLevel found", v.Error)
@@ -797,129 +803,10 @@ func TestPublishCfgRequestMultipleDevicesOneNoHandler(t *testing.T) {
 	}
 }
 
-func TestPublishCfgRequestMultipleDevicesOneTimeout(t *testing.T) {
-	// Arrange
-	ctx, cancel := context.WithCancel(context.Background())
-	id := "device_send_cfg_multi_timeout"
-	reqCreate := &core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
-			Name:      id,
-			Namespace: "testing_cfg",
-			Labels: map[string]string{
-				"testing": "cfg",
-			},
-			Annotations: map[string]string{
-				"mir/device/description": "hello world of devices !",
-			},
-		},
-		Spec: &core_apiv1.Spec{
-			DeviceId: id,
-		},
-	}
-
-	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).Schema(
-		protocfg_testv1.File_protocfg_test_v1_cfg_proto,
-	).Build()
-	if err != nil {
-		t.Error(err)
-	}
-
-	id2 := "device_send_cfg_multi_timeout_2"
-	reqCreate2 := &core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
-			Name:      id2,
-			Namespace: "testing_cfg",
-			Labels: map[string]string{
-				"testing": "cfg",
-			},
-			Annotations: map[string]string{
-				"mir/device/description": "hello world of devices !",
-			},
-		},
-		Spec: &core_apiv1.Spec{
-			DeviceId: id2,
-		},
-	}
-
-	cmdHandled := &protocfg_testv1.PowerLevel{}
-	dev.HandleCommand(
-		cmdHandled,
-		func(m protoreflect.ProtoMessage) (protoreflect.ProtoMessage, error) {
-			cmdHandled = m.(*protocfg_testv1.PowerLevel)
-			return &protocfg_testv1.PowerLevelReport{Success: true}, nil
-		},
-	)
-
-	reqPayload := protocfg_testv1.PowerLevel{
-		Power: 5,
-	}
-	payloadBytes, err := proto.Marshal(&reqPayload)
-	if err != nil {
-		t.Error(err)
-	}
-
-	reqCmd := &cfg_apiv1.SendConfigRequest{
-		Targets: &core_apiv1.Targets{
-			Ids: []string{id, id2},
-		},
-		Name:            string(reqPayload.ProtoReflect().Descriptor().FullName()),
-		PayloadEncoding: common_apiv1.Encoding_ENCODING_PROTOBUF,
-		Payload:         payloadBytes,
-		NoValidation:    true,
-	}
-
-	// Act
-	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate)
-	if err != nil {
-		t.Error(err)
-	}
-	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate2)
-	if err != nil {
-		t.Error(err)
-	}
-	time.Sleep(1 * time.Second)
-
-	wg, err := dev.Launch(ctx)
-	if err != nil {
-		t.Error(err)
-	}
-
-	respCmd, err := cfg_client.PublishSendConfigRequest(b, reqCmd)
-	if err != nil {
-		t.Error(err)
-	} else if respCmd.GetError() != "" {
-		t.Error(respCmd.GetError())
-	}
-
-	// Assert
-	msgResp := &protocfg_testv1.PowerLevelReport{}
-	for k, v := range respCmd.GetOk().DeviceResponses {
-		if k == id2+"/testing_cfg" {
-			assert.Equal(t, cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_ERROR, v.Status)
-			assert.Equal(t, true, strings.Contains(v.Error, "no responders available for request"))
-		} else {
-			if v.Error != "" {
-				t.Error(v.Error)
-			}
-			assert.Equal(t, string(msgResp.ProtoReflect().Descriptor().FullName()), v.Name)
-			assert.Equal(t, cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_SUCCESS, v.Status)
-			if err = proto.Unmarshal(v.Payload, msgResp); err != nil {
-				t.Error(err)
-			}
-			assert.Equal(t, true, msgResp.Success)
-			assert.Equal(t, int32(5), cmdHandled.Power)
-			assert.Equal(t, common_apiv1.Encoding_ENCODING_PROTOBUF, respCmd.GetOk().Encoding)
-		}
-	}
-
-	cancel()
-	wg.Wait()
-}
-
 func TestPublishCfgRequestMultipleDevicesJson(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
-	cmdHandled := &protocfg_testv1.PowerLevel{}
+	cfgHandled := &protocfg_testv1.PowerLevel{}
 	swarm := swarm.NewSwarm(b)
 	handlerCount := 0
 	_, err := swarm.AddDevices(
@@ -945,12 +832,11 @@ func TestPublishCfgRequestMultipleDevicesJson(t *testing.T) {
 			},
 		}).
 		WithSchema(protocfg_testv1.File_protocfg_test_v1_cfg_proto).
-		WithCommandHandler(
-			cmdHandled,
-			func(m protoreflect.ProtoMessage) (protoreflect.ProtoMessage, error) {
-				cmdHandled = m.(*protocfg_testv1.PowerLevel)
+		WithConfigHandler(
+			cfgHandled,
+			func(m protoreflect.ProtoMessage) {
+				cfgHandled = m.(*protocfg_testv1.PowerLevel)
 				handlerCount++
-				return &protocfg_testv1.PowerLevelReport{Success: true}, nil
 			},
 		).Incubate()
 	wg, err := swarm.Deploy(ctx)
@@ -962,7 +848,7 @@ func TestPublishCfgRequestMultipleDevicesJson(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	reqCmd := &cfg_apiv1.SendConfigRequest{
+	reqCfg := &cfg_apiv1.SendConfigRequest{
 		Targets:         swarm.ToTarget(),
 		Name:            payloadName,
 		PayloadEncoding: common_apiv1.Encoding_ENCODING_JSON,
@@ -972,16 +858,16 @@ func TestPublishCfgRequestMultipleDevicesJson(t *testing.T) {
 	// Act
 	time.Sleep(1 * time.Second)
 
-	respCmd, err := cfg_client.PublishSendConfigRequest(b, reqCmd)
+	respCfg, err := cfg_client.PublishSendConfigRequest(b, reqCfg)
 	if err != nil {
 		t.Error(err)
-	} else if respCmd.GetError() != "" {
-		t.Error(respCmd.GetError())
+	} else if respCfg.GetError() != "" {
+		t.Error(respCfg.GetError())
 	}
 
 	// Assert
-	msgResp := &protocfg_testv1.PowerLevelReport{}
-	for _, v := range respCmd.GetOk().DeviceResponses {
+	msgResp := &devicev1.Void{}
+	for _, v := range respCfg.GetOk().DeviceResponses {
 		if v.Error != "" {
 			t.Error(v.Error)
 		}
@@ -990,9 +876,8 @@ func TestPublishCfgRequestMultipleDevicesJson(t *testing.T) {
 		if err = protojson.Unmarshal(v.Payload, msgResp); err != nil {
 			t.Error(err)
 		}
-		assert.Equal(t, true, msgResp.Success)
-		assert.Equal(t, reqPayload.Power, cmdHandled.Power)
-		assert.Equal(t, common_apiv1.Encoding_ENCODING_JSON, respCmd.GetOk().Encoding)
+		assert.Equal(t, reqPayload.Power, cfgHandled.Power)
+		assert.Equal(t, common_apiv1.Encoding_ENCODING_JSON, respCfg.GetOk().Encoding)
 	}
 
 	assert.Equal(t, len(swarm.Devices), handlerCount)
@@ -1005,7 +890,7 @@ func TestPublishCfgRequestMultipleDevicesJson(t *testing.T) {
 func TestPublishCfgRequestMultipleDevicesDescriptorNotFound(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
-	cmdHandled := &protocfg_testv1.PowerLevel{}
+	cfgHandled := &protocfg_testv1.PowerLevel{}
 	swarm := swarm.NewSwarm(b)
 	handlerCount := 0
 	_, err := swarm.AddDevices(
@@ -1031,12 +916,11 @@ func TestPublishCfgRequestMultipleDevicesDescriptorNotFound(t *testing.T) {
 			},
 		}).
 		WithSchema(protocfg_testv1.File_protocfg_test_v1_cfg_proto).
-		WithCommandHandler(
-			cmdHandled,
-			func(m protoreflect.ProtoMessage) (protoreflect.ProtoMessage, error) {
-				cmdHandled = m.(*protocfg_testv1.PowerLevel)
+		WithConfigHandler(
+			cfgHandled,
+			func(m protoreflect.ProtoMessage) {
+				cfgHandled = m.(*protocfg_testv1.PowerLevel)
 				handlerCount++
-				return &protocfg_testv1.PowerLevelReport{Success: true}, nil
 			},
 		).Incubate()
 	wg, err := swarm.Deploy(ctx)
@@ -1048,7 +932,7 @@ func TestPublishCfgRequestMultipleDevicesDescriptorNotFound(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	reqCmd := &cfg_apiv1.SendConfigRequest{
+	reqCfg := &cfg_apiv1.SendConfigRequest{
 		Targets:         swarm.ToTarget(),
 		Name:            "nothing",
 		PayloadEncoding: common_apiv1.Encoding_ENCODING_JSON,
@@ -1058,27 +942,22 @@ func TestPublishCfgRequestMultipleDevicesDescriptorNotFound(t *testing.T) {
 	// Act
 	time.Sleep(1 * time.Second)
 
-	respCmd, err := cfg_client.PublishSendConfigRequest(b, reqCmd)
+	respCfg, err := cfg_client.PublishSendConfigRequest(b, reqCfg)
 	if err != nil {
 		t.Error(err)
-	} else if respCmd.GetError() != "" {
-		t.Error(respCmd.GetError())
+	} else if respCfg.GetError() != "" {
+		t.Error(respCfg.GetError())
 	}
 
 	// Assert
 	// msgResp := &protocfg_testv1.PowerLevelReport{}
-	for _, v := range respCmd.GetOk().DeviceResponses {
+	for _, v := range respCfg.GetOk().DeviceResponses {
 		// assert.Equal(t, string(msgResp.ProtoReflect().Descriptor().FullName()), v.Name)
 		assert.Equal(t, cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_ERROR, v.Status)
 		assert.Equal(t, true, v.Error != "")
-		// if err = protojson.Unmarshal(v.Payload, msgResp); err != nil {
-		// t.Error(err)
-		// }
-		// assert.Equal(t, true, msgResp.Success)
-		// assert.Equal(t, reqPayload.Power, cmdHandled.Power)
 	}
 
-	assert.Equal(t, common_apiv1.Encoding_ENCODING_JSON, respCmd.GetOk().Encoding)
+	assert.Equal(t, common_apiv1.Encoding_ENCODING_JSON, respCfg.GetOk().Encoding)
 	assert.Equal(t, 0, handlerCount)
 	cancel()
 	for _, v := range wg {
@@ -1089,7 +968,7 @@ func TestPublishCfgRequestMultipleDevicesDescriptorNotFound(t *testing.T) {
 func TestPublishCfgRequestMultipleDevicesSingleDescriptorNotFoundForcePush(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
-	cmdHandled := &protocfg_testv1.PowerLevel{}
+	cfgHandled := &protocfg_testv1.PowerLevel{}
 	swarm := swarm.NewSwarm(b)
 	handlerCount := 0
 	_, err := swarm.AddDevice(
@@ -1105,12 +984,11 @@ func TestPublishCfgRequestMultipleDevicesSingleDescriptorNotFoundForcePush(t *te
 			},
 		}).
 		WithSchema(protocfg_testv1.File_protocfg_test_v1_cfg_proto).
-		WithCommandHandler(
-			cmdHandled,
-			func(m protoreflect.ProtoMessage) (protoreflect.ProtoMessage, error) {
-				cmdHandled = m.(*protocfg_testv1.PowerLevel)
+		WithConfigHandler(
+			cfgHandled,
+			func(m protoreflect.ProtoMessage) {
+				cfgHandled = m.(*protocfg_testv1.PowerLevel)
 				handlerCount++
-				return &protocfg_testv1.PowerLevelReport{Success: true}, nil
 			},
 		).Incubate()
 	_, err = swarm.AddDevice(
@@ -1125,12 +1003,11 @@ func TestPublishCfgRequestMultipleDevicesSingleDescriptorNotFoundForcePush(t *te
 				DeviceId: "device_invalid_cfg",
 			},
 		}).
-		WithCommandHandler(
-			cmdHandled,
-			func(m protoreflect.ProtoMessage) (protoreflect.ProtoMessage, error) {
-				cmdHandled = m.(*protocfg_testv1.PowerLevel)
+		WithConfigHandler(
+			cfgHandled,
+			func(m protoreflect.ProtoMessage) {
+				cfgHandled = m.(*protocfg_testv1.PowerLevel)
 				handlerCount++
-				return &protocfg_testv1.PowerLevelReport{Success: true}, nil
 			},
 		).Incubate()
 	wg, err := swarm.Deploy(ctx)
@@ -1142,7 +1019,7 @@ func TestPublishCfgRequestMultipleDevicesSingleDescriptorNotFoundForcePush(t *te
 	if err != nil {
 		t.Error(err)
 	}
-	reqCmd := &cfg_apiv1.SendConfigRequest{
+	reqCfg := &cfg_apiv1.SendConfigRequest{
 		Targets:         swarm.ToTarget(),
 		Name:            payloadName,
 		PayloadEncoding: common_apiv1.Encoding_ENCODING_JSON,
@@ -1153,30 +1030,29 @@ func TestPublishCfgRequestMultipleDevicesSingleDescriptorNotFoundForcePush(t *te
 	// Act
 	time.Sleep(1 * time.Second)
 
-	respCmd, err := cfg_client.PublishSendConfigRequest(b, reqCmd)
+	respCfg, err := cfg_client.PublishSendConfigRequest(b, reqCfg)
 	if err != nil {
 		t.Error(err)
-	} else if respCmd.GetError() != "" {
-		t.Error(respCmd.GetError())
+	} else if respCfg.GetError() != "" {
+		t.Error(respCfg.GetError())
 	}
 
 	// Assert
-	devValid := respCmd.GetOk().DeviceResponses["device_valid_cfg/testing_cfg"]
-	devInvalid := respCmd.GetOk().DeviceResponses["device_invalid_cfg/testing_cfg"]
+	devValid := respCfg.GetOk().DeviceResponses["device_valid_cfg/testing_cfg"]
+	devInvalid := respCfg.GetOk().DeviceResponses["device_invalid_cfg/testing_cfg"]
 
-	msgResp := &protocfg_testv1.PowerLevelReport{}
+	msgResp := &devicev1.Void{}
 	assert.Equal(t, cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_SUCCESS, devValid.Status)
 	if err = protojson.Unmarshal(devValid.Payload, msgResp); err != nil {
 		t.Error(err)
 	}
 	assert.Equal(t, string(msgResp.ProtoReflect().Descriptor().FullName()), devValid.Name)
-	assert.Equal(t, true, msgResp.Success)
-	assert.Equal(t, reqPayload.Power, cmdHandled.Power)
+	assert.Equal(t, reqPayload.Power, cfgHandled.Power)
 
 	assert.Equal(t, cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_ERROR, devInvalid.Status)
 	assert.Equal(t, true, devInvalid.Error != "")
 
-	assert.Equal(t, common_apiv1.Encoding_ENCODING_JSON, respCmd.GetOk().Encoding)
+	assert.Equal(t, common_apiv1.Encoding_ENCODING_JSON, respCfg.GetOk().Encoding)
 	assert.Equal(t, 1, handlerCount)
 	cancel()
 	for _, v := range wg {
@@ -1222,7 +1098,7 @@ func TestPublishCfgRequestMultipleDevicesJsonTemplate(t *testing.T) {
 
 	reqPayload := protocfg_testv1.PowerLevel{}
 	cmdName := string(reqPayload.ProtoReflect().Descriptor().FullName())
-	reqCmd := &cfg_apiv1.SendConfigRequest{
+	reqCfg := &cfg_apiv1.SendConfigRequest{
 		Targets:      swarm.ToTarget(),
 		Name:         cmdName,
 		ShowTemplate: true,
@@ -1231,15 +1107,15 @@ func TestPublishCfgRequestMultipleDevicesJsonTemplate(t *testing.T) {
 	// Act
 	time.Sleep(1 * time.Second)
 
-	respCmd, err := cfg_client.PublishSendConfigRequest(b, reqCmd)
+	respCfg, err := cfg_client.PublishSendConfigRequest(b, reqCfg)
 	if err != nil {
 		t.Error(err)
-	} else if respCmd.GetError() != "" {
-		t.Error(respCmd.GetError())
+	} else if respCfg.GetError() != "" {
+		t.Error(respCfg.GetError())
 	}
 
 	// Assert
-	resp := respCmd.GetOk()
+	resp := respCfg.GetOk()
 	dev1 := resp.DeviceResponses["device_send_cfg_multi_json_tlm_1/testing_cfg"]
 	dev2 := resp.DeviceResponses["device_send_cfg_multi_json_tlm_2/testing_cfg"]
 	assert.Equal(t, cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_SUCCESS, dev1.Status)
@@ -1299,13 +1175,13 @@ func TestPublishCfgRequestMultipleDevicesOneTimeoutJsonTemplate(t *testing.T) {
 		},
 	}
 
-	reqCmdPayload := &protocfg_testv1.PowerLevel{}
-	reqCmdName := string(reqCmdPayload.ProtoReflect().Descriptor().FullName())
-	reqCmd := &cfg_apiv1.SendConfigRequest{
+	reqCfgPayload := &protocfg_testv1.PowerLevel{}
+	reqCfgName := string(reqCfgPayload.ProtoReflect().Descriptor().FullName())
+	reqCfg := &cfg_apiv1.SendConfigRequest{
 		Targets: &core_apiv1.Targets{
 			Ids: []string{id, id2},
 		},
-		Name:         reqCmdName,
+		Name:         reqCfgName,
 		ShowTemplate: true,
 	}
 
@@ -1325,7 +1201,7 @@ func TestPublishCfgRequestMultipleDevicesOneTimeoutJsonTemplate(t *testing.T) {
 		t.Error(err)
 	}
 
-	respCmd, err := cfg_client.PublishSendConfigRequest(b, reqCmd)
+	respCmd, err := cfg_client.PublishSendConfigRequest(b, reqCfg)
 	if err != nil {
 		t.Error(err)
 	} else if respCmd.GetError() != "" {
@@ -1337,7 +1213,7 @@ func TestPublishCfgRequestMultipleDevicesOneTimeoutJsonTemplate(t *testing.T) {
 	dev1 := resp.DeviceResponses[id+"/testing_cfg"]
 	dev2 := resp.DeviceResponses[id2+"/testing_cfg"]
 	assert.Equal(t, cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_SUCCESS, dev1.Status)
-	assert.Equal(t, reqCmdName, dev1.Name)
+	assert.Equal(t, reqCfgName, dev1.Name)
 	assert.Equal(t, `{"power":0}`, string(dev1.Payload))
 	assert.Equal(t, cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_ERROR, dev2.Status)
 	assert.Equal(t, "", dev2.Name)
@@ -1375,12 +1251,11 @@ func TestPublishCfgJsonNameWithCurlyRequest(t *testing.T) {
 		t.Error(err)
 	}
 
-	cmdHandled := &protocfg_testv1.PowerLevel{}
-	dev.HandleCommand(
-		cmdHandled,
-		func(m protoreflect.ProtoMessage) (protoreflect.ProtoMessage, error) {
-			cmdHandled = m.(*protocfg_testv1.PowerLevel)
-			return &protocfg_testv1.PowerLevelReport{Success: true}, nil
+	cfgHandled := &protocfg_testv1.PowerLevel{}
+	dev.HandleProperties(
+		cfgHandled,
+		func(m protoreflect.ProtoMessage) {
+			cfgHandled = m.(*protocfg_testv1.PowerLevel)
 		})
 
 	p := protocfg_testv1.PowerLevel{
@@ -1391,7 +1266,7 @@ func TestPublishCfgJsonNameWithCurlyRequest(t *testing.T) {
 		t.Error(err)
 	}
 
-	reqCmd := &cfg_apiv1.SendConfigRequest{
+	reqCfg := &cfg_apiv1.SendConfigRequest{
 		Targets: &core_apiv1.Targets{
 			Ids: []string{id},
 		},
@@ -1414,15 +1289,15 @@ func TestPublishCfgJsonNameWithCurlyRequest(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	respCmd, err := cfg_client.PublishSendConfigRequest(b, reqCmd)
+	respCfg, err := cfg_client.PublishSendConfigRequest(b, reqCfg)
 	if err != nil {
 		t.Error(err)
-	} else if respCmd.GetError() != "" {
-		t.Error(respCmd.GetError())
+	} else if respCfg.GetError() != "" {
+		t.Error(respCfg.GetError())
 	}
 
-	msgResp := &protocfg_testv1.PowerLevelReport{}
-	for _, v := range respCmd.GetOk().DeviceResponses {
+	msgResp := &devicev1.Void{}
+	for _, v := range respCfg.GetOk().DeviceResponses {
 		if v.Error != "" {
 			t.Error(v.Error)
 		}
@@ -1434,9 +1309,8 @@ func TestPublishCfgJsonNameWithCurlyRequest(t *testing.T) {
 	}
 
 	// Assert
-	assert.Equal(t, true, msgResp.Success)
-	assert.Equal(t, int32(5), cmdHandled.Power)
-	assert.Equal(t, common_apiv1.Encoding_ENCODING_JSON, respCmd.GetOk().Encoding)
+	assert.Equal(t, int32(5), cfgHandled.Power)
+	assert.Equal(t, common_apiv1.Encoding_ENCODING_JSON, respCfg.GetOk().Encoding)
 	cancel()
 	wg.Wait()
 }
