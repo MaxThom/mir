@@ -24,9 +24,7 @@ message SendConfigRequest {
 	bool refresh_schema = 5; // Force a schema refresh from the device, else will only try refresh if cant deserialize
 	bool show_template = 6; // Show the json template of the config
 	bool dry_run = 7; // Do not execute the command, just validate it
-	bool no_validation = 8; // Do not validate the command (only for encoding protobuf)
-	bool force_push = 9; // Send commands to validated devices even if some are in errors
-	uint32 timeout_sec = 10; // Time to wait for response in second, default to 10
+	bool force_push = 8; // Send commands to validated devices even if some are in errors
 }
 
 message SendConfigResponse {

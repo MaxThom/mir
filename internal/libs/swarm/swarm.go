@@ -57,6 +57,7 @@ type devicesBuilder struct {
 	deviceIds  []string
 	sch        []protoreflect.FileDescriptor
 	cmd        []commandHandler
+	cfg        []configHandler
 }
 
 type deviceBuilder struct {
@@ -65,11 +66,17 @@ type deviceBuilder struct {
 	deviceReq *core_apiv1.CreateDeviceRequest
 	sch       []protoreflect.FileDescriptor
 	cmd       []commandHandler
+	cfg       []configHandler
 }
 
 type commandHandler struct {
 	target  protoreflect.ProtoMessage
 	handler func(protoreflect.ProtoMessage) (protoreflect.ProtoMessage, error)
+}
+
+type configHandler struct {
+	target  protoreflect.ProtoMessage
+	handler func(protoreflect.ProtoMessage)
 }
 
 func (s *swarm) AddDeviceWithIds(ids []string) *devicesBuilder {
@@ -107,6 +114,14 @@ func (b *devicesBuilder) WithCommandHandler(t proto.Message, handler func(proto.
 	return b
 }
 
+func (b *devicesBuilder) WithConfigHandler(t proto.Message, handler func(proto.Message)) *devicesBuilder {
+	b.cfg = append(b.cfg, configHandler{
+		target:  t,
+		handler: handler,
+	})
+	return b
+}
+
 func (b *devicesBuilder) WithLogLevel(l mirDevice.LogLevel) *devicesBuilder {
 	b.logLevel = l
 	return b
@@ -127,6 +142,9 @@ func (b *devicesBuilder) Incubate() ([]*core_apiv1.CreateDeviceResponse, error) 
 		for _, cmd := range b.cmd {
 			dev.HandleCommand(cmd.target, cmd.handler)
 		}
+		for _, cfg := range b.cfg {
+			dev.HandleProperties(cfg.target, cfg.handler)
+		}
 
 		b.s.Devices = append(b.s.Devices, dev)
 	}
@@ -143,6 +161,9 @@ func (b *devicesBuilder) Incubate() ([]*core_apiv1.CreateDeviceResponse, error) 
 		}
 		for _, cmd := range b.cmd {
 			dev.HandleCommand(cmd.target, cmd.handler)
+		}
+		for _, cfg := range b.cfg {
+			dev.HandleProperties(cfg.target, cfg.handler)
 		}
 
 		b.s.Devices = append(b.s.Devices, dev)
@@ -173,6 +194,14 @@ func (b *deviceBuilder) WithCommandHandler(t protoreflect.ProtoMessage, handler 
 	return b
 }
 
+func (b *deviceBuilder) WithConfigHandler(t protoreflect.ProtoMessage, handler func(protoreflect.ProtoMessage)) *deviceBuilder {
+	b.cfg = append(b.cfg, configHandler{
+		target:  t,
+		handler: handler,
+	})
+	return b
+}
+
 func (b *deviceBuilder) WithLogLevel(l mirDevice.LogLevel) *deviceBuilder {
 	b.logLevel = l
 	return b
@@ -189,6 +218,9 @@ func (b *deviceBuilder) Incubate() (*core_apiv1.CreateDeviceResponse, error) {
 	}
 	for _, cmd := range b.cmd {
 		dev.HandleCommand(cmd.target, cmd.handler)
+	}
+	for _, cfg := range b.cfg {
+		dev.HandleProperties(cfg.target, cfg.handler)
 	}
 	b.s.Devices = append(b.s.Devices, dev)
 

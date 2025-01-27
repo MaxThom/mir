@@ -248,16 +248,16 @@ func (r *deviceRoutes) Config() *configRoute {
 // desc, err := sch.FindDescriptorByName(protoreflect.FullName(cmdDesc.Name))
 // msgResp := dynamicpb.NewMessage(desc.(protoreflect.MessageDescriptor))
 // err = proto.Unmarshal(cmdDesc.Payload, msgResp)
-func (r *configRoute) Request(deviceId string, cmd proto.Message, timeout time.Duration) (ProtoCmdDesc, error) {
+func (r *configRoute) Publish(deviceId string, cmd proto.Message, t time.Time) error {
 	b, err := proto.Marshal(cmd)
 	if err != nil {
-		return ProtoCmdDesc{}, fmt.Errorf("error serializing config payload: %w", err)
+		return fmt.Errorf("error serializing config payload: %w", err)
 	}
 
-	return r.RequestRaw(deviceId, ProtoCmdDesc{
+	return r.PublishRaw(deviceId, ProtoCmdDesc{
 		Name:    string(cmd.ProtoReflect().Descriptor().FullName()),
 		Payload: b,
-	}, timeout)
+	}, t)
 }
 
 // Send a config to a device with raw payload.
@@ -268,19 +268,17 @@ func (r *configRoute) Request(deviceId string, cmd proto.Message, timeout time.D
 // desc, err := sch.FindDescriptorByName(protoreflect.FullName(cmdDesc.Name))
 // msgResp := dynamicpb.NewMessage(desc.(protoreflect.MessageDescriptor))
 // err = proto.Unmarshal(cmdDesc.Payload, msgResp)
-func (r *configRoute) RequestRaw(deviceId string, cmd ProtoCmdDesc, timeout time.Duration) (ProtoCmdDesc, error) {
+func (r *configRoute) PublishRaw(deviceId string, cmd ProtoCmdDesc, t time.Time) error {
 	sbj := device_client.ConfigRequest.WithId(deviceId)
 	h := nats.Header{
-		"__msg": []string{cmd.Name},
+		"__msg":  []string{cmd.Name},
+		"__time": []string{t.Format(time.RFC3339Nano)},
 	}
 
-	resp, err := r.m.request(sbj, cmd.Payload, h, timeout)
+	err := r.m.publish(sbj, cmd.Payload, h)
 	if err != nil {
-		return ProtoCmdDesc{}, fmt.Errorf("error requesting device command: %w", err)
+		return fmt.Errorf("error requesting device command: %w", err)
 	}
 
-	return ProtoCmdDesc{
-		Name:    resp.Header.Get("__msg"),
-		Payload: resp.Data,
-	}, nil
+	return nil
 }

@@ -37,6 +37,7 @@ type Mir struct {
 	schema      *descriptorpb.FileDescriptorSet
 	schemaReg   *protoregistry.Files
 	cmdHandlers map[string]cmdHandlerValue
+	cfgHandlers map[string]cfgHandlerValue
 }
 
 type Cfg struct {
@@ -48,6 +49,11 @@ type Cfg struct {
 type cmdHandlerValue struct {
 	t reflect.Type
 	h func(proto.Message) (proto.Message, error)
+}
+
+type cfgHandlerValue struct {
+	t reflect.Type
+	h func(proto.Message)
 }
 
 const ()
@@ -150,7 +156,7 @@ func (m *Mir) commands(ctx context.Context, sub *nats.Subscription) {
 			}
 			if msg != nil {
 				m.l.Debug().Msg("handling command " + clients.DeviceSubject(msg.Subject).GetVersionAndFunction())
-				err = cmdHandlers[clients.DeviceSubject(msg.Subject).GetVersionAndFunction()](msg, m)
+				err = msgHandlers[clients.DeviceSubject(msg.Subject).GetVersionAndFunction()](msg, m)
 				if err != nil {
 					m.l.Error().Err(err).Msg("error handling command " + clients.DeviceSubject(msg.Subject).GetVersionAndFunction())
 				}
@@ -199,6 +205,13 @@ func (m Mir) SendTelemetry(t proto.Message) error {
 
 func (m Mir) HandleCommand(t proto.Message, handler func(proto.Message) (proto.Message, error)) {
 	m.cmdHandlers[string(t.ProtoReflect().Descriptor().FullName())] = cmdHandlerValue{
+		t: reflect.TypeOf(t).Elem(),
+		h: handler,
+	}
+}
+
+func (m Mir) HandleProperties(t proto.Message, handler func(proto.Message)) {
+	m.cfgHandlers[string(t.ProtoReflect().Descriptor().FullName())] = cfgHandlerValue{
 		t: reflect.TypeOf(t).Elem(),
 		h: handler,
 	}
