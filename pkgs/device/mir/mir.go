@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/maxthom/mir/internal/clients"
+	"github.com/maxthom/mir/internal/clients/cfg_client"
 	"github.com/maxthom/mir/internal/clients/core_client"
 	"github.com/maxthom/mir/internal/clients/tlm_client"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
@@ -203,6 +204,22 @@ func (m Mir) SendTelemetry(t proto.Message) error {
 	return tlm_client.PublishTelemetryStream(m.b, m.cfg.DeviceId, t)
 }
 
+// Send proto reported properties to Mir Server
+func (m Mir) SendReportedProperties(t proto.Message) error {
+	return cfg_client.PublishReportedPropertiesStream(m.b, m.cfg.DeviceId, t)
+}
+
+// Handle a command from Mir server
+// Specify which command with the proto msg from your schema
+// Return a proto message as response, nil if no response, or an error
+// eg:
+// m.HandleCommand(
+//
+//	&config_devicev1.SendConfigRequest{},
+//	func(m proto.Message) (proto.Message, error) {
+//	  cmd := m.(*config_devicev1.SendConfigRequest)
+//	  return &config_devicev1.SendConfigResponse{}, nil
+//	})
 func (m Mir) HandleCommand(t proto.Message, handler func(proto.Message) (proto.Message, error)) {
 	m.cmdHandlers[string(t.ProtoReflect().Descriptor().FullName())] = cmdHandlerValue{
 		t: reflect.TypeOf(t).Elem(),
@@ -210,6 +227,15 @@ func (m Mir) HandleCommand(t proto.Message, handler func(proto.Message) (proto.M
 	}
 }
 
+// Handle a properties update from Mir server
+// Specify which properties with the proto msg from your schema
+// eg:
+// m.HandleProperties(
+//
+//	&config_devicev1.SendConfigRequest{},
+//	func(m proto.Message) {
+//	  cmd := m.(*config_devicev1.SendConfigRequest)
+//	})
 func (m Mir) HandleProperties(t proto.Message, handler func(proto.Message)) {
 	m.cfgHandlers[string(t.ProtoReflect().Descriptor().FullName())] = cfgHandlerValue{
 		t: reflect.TypeOf(t).Elem(),
