@@ -14,7 +14,10 @@ const (
 	SendConfigRequest clients.ServerSubject = "client.%s.cfg.v1alpha.send"
 	ListConfigRequest clients.ServerSubject = "client.%s.cfg.v1alpha.list"
 
-	DeviceConfigEvent clients.ServerSubject = "event.%s.cfg.v1alpha.deviceconfig"
+	DesiredPropertiesEvent  clients.ServerSubject = "event.%s.cfg.v1alpha.desiredproperties"
+	ReportedPropertiesEvent clients.ServerSubject = "event.%s.cfg.v1alpha.reportedproperties"
+
+	ReportedPropertiesStream clients.ServerSubject = "device.%s.cfg.v1alpha.proto"
 )
 
 func PublishSendConfigRequest(bus *bus.BusConn, req *cfg_apiv1.SendConfigRequest) (*cfg_apiv1.SendConfigResponse, error) {
@@ -59,13 +62,42 @@ func PublishListConfigRequest(bus *bus.BusConn, req *cfg_apiv1.SendListConfigReq
 	return resp, nil
 }
 
-func PublishDeviceConfigEvent(bus *nats.Conn, originalInstance string, deviceId string, d *cfg_apiv1.SendConfigResponse_ConfigResponse) error {
+func PublishReportedPropertiesStream(bus *bus.BusConn, deviceId string, t proto.Message) error {
+	b, err := proto.Marshal(t)
+	if err != nil {
+		return err
+	}
+
+	return bus.PublishMsg(&nats.Msg{
+		Subject: ReportedPropertiesStream.WithId(deviceId),
+		Header: nats.Header{
+			"__msg": []string{string(t.ProtoReflect().Descriptor().FullName())},
+		},
+		Data: b,
+	})
+}
+
+func PublishDesiredPropertiesEvent(bus *nats.Conn, originalInstance string, deviceId string, d proto.Message) error {
 	b, err := proto.Marshal(d)
 	if err != nil {
 		return err
 	}
 	msg := &nats.Msg{
-		Subject: DeviceConfigEvent.WithId(deviceId),
+		Subject: DesiredPropertiesEvent.WithId(deviceId),
+		Data:    b,
+		Header:  nats.Header{},
+	}
+	msg.Header.Add("original-trigger", originalInstance)
+	return bus.PublishMsg(msg)
+}
+
+func PublishReportedPropertiesEvent(bus *nats.Conn, originalInstance string, deviceId string, d proto.Message) error {
+	b, err := proto.Marshal(d)
+	if err != nil {
+		return err
+	}
+	msg := &nats.Msg{
+		Subject: ReportedPropertiesEvent.WithId(deviceId),
 		Data:    b,
 		Header:  nats.Header{},
 	}

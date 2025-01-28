@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/maxthom/mir/internal/clients"
+	"github.com/maxthom/mir/internal/clients/cfg_client"
 	"github.com/maxthom/mir/internal/clients/cmd_client"
 	"github.com/maxthom/mir/internal/clients/core_client"
 	cmd_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cmd_api"
@@ -13,6 +14,7 @@ import (
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 type eventSubject []string
@@ -379,6 +381,106 @@ func (r *commandEventRoute) handlerWrapper(f func(msg *Msg, deviceId string, cmd
 func (r *commandEventRoute) Publish(originalId string, cmd *cmd_apiv1.SendCommandResponse_CommandResponse) error {
 	sbj := cmd_client.DeviceCommandEvent.WithId(cmd.DeviceId)
 	b, err := proto.Marshal(cmd)
+	if err != nil {
+		return err
+	}
+
+	err = r.m.publish(sbj, b, nats.Header{HeaderOriginalTrigger: []string{originalId}})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Desired Properties Event
+
+type desiredPropertiesEventRoute struct {
+	m *Mir
+}
+
+// Create a new device desired properties event
+func (r *eventRoutes) DesiredProperties() *desiredPropertiesEventRoute {
+	return &desiredPropertiesEventRoute{m: r.m}
+}
+
+// Subscribe to device desired properties event routes
+func (r *desiredPropertiesEventRoute) Subscribe(f func(msg *Msg, deviceId string, props *structpb.Struct)) error {
+	sbj := cfg_client.DesiredPropertiesEvent.WithId("*")
+	return r.m.subscribe(sbj, r.handlerWrapper(f))
+}
+
+// Queue subscribe to device desired properties event routes
+func (r *desiredPropertiesEventRoute) QueueSubscribe(queue string, f func(msg *Msg, deviceId string, props *structpb.Struct)) error {
+	sbj := cfg_client.DesiredPropertiesEvent.WithId("*")
+	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
+}
+
+func (r *desiredPropertiesEventRoute) handlerWrapper(f func(msg *Msg, deviceId string, props *structpb.Struct)) nats.MsgHandler {
+	return func(msg *nats.Msg) {
+		req := &structpb.Struct{}
+		if err := proto.Unmarshal(msg.Data, req); err != nil {
+			// TODO log error here
+			return
+		}
+		f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), req)
+	}
+}
+
+// Publish a device desired properties event
+func (r *desiredPropertiesEventRoute) Publish(originalId string, deviceId string, props *structpb.Struct) error {
+	sbj := cfg_client.DesiredPropertiesEvent.WithId(deviceId)
+	b, err := proto.Marshal(props)
+	if err != nil {
+		return err
+	}
+
+	err = r.m.publish(sbj, b, nats.Header{HeaderOriginalTrigger: []string{originalId}})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Reported Properties Event
+
+type reportedPropertiesEventRoute struct {
+	m *Mir
+}
+
+// Create a new device reported properties event
+func (r *eventRoutes) ReportedProperties() *reportedPropertiesEventRoute {
+	return &reportedPropertiesEventRoute{m: r.m}
+}
+
+// Subscribe to device reported properties event routes
+func (r *reportedPropertiesEventRoute) Subscribe(f func(msg *Msg, deviceId string, props *structpb.Struct)) error {
+	sbj := cfg_client.ReportedPropertiesEvent.WithId("*")
+	return r.m.subscribe(sbj, r.handlerWrapper(f))
+}
+
+// Queue subscribe to device reported properties event routes
+func (r *reportedPropertiesEventRoute) QueueSubscribe(queue string, f func(msg *Msg, deviceId string, props *structpb.Struct)) error {
+	sbj := cfg_client.ReportedPropertiesEvent.WithId("*")
+	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
+}
+
+func (r *reportedPropertiesEventRoute) handlerWrapper(f func(msg *Msg, deviceId string, props *structpb.Struct)) nats.MsgHandler {
+	return func(msg *nats.Msg) {
+		req := &structpb.Struct{}
+		if err := proto.Unmarshal(msg.Data, req); err != nil {
+			// TODO log error here
+			return
+		}
+		f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), req)
+	}
+}
+
+// Publish a device reported properties event
+func (r *reportedPropertiesEventRoute) Publish(originalId string, deviceId string, props *structpb.Struct) error {
+	sbj := cfg_client.ReportedPropertiesEvent.WithId(deviceId)
+	b, err := proto.Marshal(props)
 	if err != nil {
 		return err
 	}

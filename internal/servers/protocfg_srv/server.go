@@ -89,6 +89,9 @@ func (s *ProtoCfgServer) Serve() error {
 	if err := s.m.Server().ListConfig().QueueSubscribe(ServiceName, s.listCfgSub); err != nil {
 		return err
 	}
+	if err := s.m.Device().ReportedProperties().QueueSubscribe(ServiceName, "*", s.reportedPropsSub); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -329,12 +332,18 @@ func (s *ProtoCfgServer) sendConfigToDevices(req *cfg_apiv1.SendConfigRequest) (
 			// Write directly to store, not sdk
 			// Event for desired properties update
 			// Event for reported properties update
-			props, er := structpb.NewStruct(p.mapPayload)
-			fmt.Println(er)
-			fmt.Println(props)
-			// TODO return err to client
+			props, err := structpb.NewStruct(p.mapPayload)
+			if err != nil {
+				l.Error().Err(err).Str("device_id", p.deviceId).Msg("error marshalling properties to pbstruct")
+				devResp[nameNs] = &cfg_apiv1.SendConfigResponse_ConfigResponse{
+					DeviceId: p.deviceId,
+					Status:   cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_ERROR,
+					Error:    errors.Wrap(err, "error marshalling properties to pbstruct").Error(),
+				}
+				return
+			}
 			// TODO return updated device from store
-			s.devStore.UpdateDevice(&core_apiv1.UpdateDeviceRequest{
+			_, err = s.devStore.UpdateDevice(&core_apiv1.UpdateDeviceRequest{
 				Targets: &core_apiv1.Targets{
 					Ids: []string{p.deviceId},
 				},
@@ -342,8 +351,22 @@ func (s *ProtoCfgServer) sendConfigToDevices(req *cfg_apiv1.SendConfigRequest) (
 					Desired: props,
 				},
 			})
+			if err != nil {
+				l.Error().Err(err).Str("device_id", p.deviceId).Msg("error updating device properties in store")
+				devResp[nameNs] = &cfg_apiv1.SendConfigResponse_ConfigResponse{
+					DeviceId: p.deviceId,
+					Status:   cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_ERROR,
+					Error:    errors.Wrap(err, "error updating device properties in store").Error(),
+				}
+				return
+			}
 
-			err := s.m.Device().Config().PublishRaw(p.deviceId, mir.ProtoCmdDesc{
+			// Event
+			if err := cfg_client.PublishDesiredPropertiesEvent(s.m.Bus, "protocfg", p.deviceId, props); err != nil {
+				l.Error().Err(err).Msg("error while publishing device config event")
+			}
+
+			err = s.m.Device().Config().PublishRaw(p.deviceId, mir.ProtoCmdDesc{
 				Name:    req.Name,
 				Payload: p.payload,
 			}, p.time)
@@ -368,12 +391,9 @@ func (s *ProtoCfgServer) sendConfigToDevices(req *cfg_apiv1.SendConfigRequest) (
 	}
 	wg.Wait()
 
-	// Event
-	for _, cmdResp := range devResp {
-		if err := cfg_client.PublishDeviceConfigEvent(s.m.Bus, "protocmd", cmdResp.DeviceId, cmdResp); err != nil {
-			l.Error().Err(err).Msg("error while publishing device config event")
-		}
-	}
-
 	return devResp, nil
+}
+
+func (s *ProtoCfgServer) reportedPropsSub(msg *mir.Msg, deviceId string, protoMsgName string, data []byte) {
+	fmt.Println(protoMsgName)
 }

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/maxthom/mir/internal/clients"
+	"github.com/maxthom/mir/internal/clients/cfg_client"
 	"github.com/maxthom/mir/internal/clients/core_client"
 	"github.com/maxthom/mir/internal/clients/device_client"
 	"github.com/maxthom/mir/internal/clients/tlm_client"
@@ -281,4 +282,43 @@ func (r *configRoute) PublishRaw(deviceId string, cmd ProtoCmdDesc, t time.Time)
 	}
 
 	return nil
+}
+
+/// Reported Properties
+
+type reportedPropertiesRoute struct {
+	m *Mir
+}
+
+// Device reported properties
+func (r *deviceRoutes) ReportedProperties() *reportedPropertiesRoute {
+	return &reportedPropertiesRoute{m: r.m}
+}
+
+// Subscribe to device reported properties
+// To listen to all devices, use deviceId = "" or deviceId = "*"
+// You are responsible of acknowledging the message
+func (r *reportedPropertiesRoute) Subscribe(deviceId string, f func(msg *Msg, deviceId string, protoMsgName string, data []byte)) error {
+	if deviceId == "" {
+		deviceId = "*"
+	}
+	sbj := cfg_client.ReportedPropertiesStream.WithId(deviceId)
+	h := func(msg *nats.Msg) {
+		f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), msg.Header.Get("__msg"), msg.Data)
+	}
+	return r.m.subscribe(sbj, h)
+}
+
+// Subscribe to device reported properties as a worker queue
+// To listen to all devices, use deviceId = "" or deviceId = "*"
+// You are responsible of acknowledging the message
+func (r *reportedPropertiesRoute) QueueSubscribe(queue string, deviceId string, f func(msg *Msg, deviceId string, protoMsgName string, data []byte)) error {
+	if deviceId == "" {
+		deviceId = "*"
+	}
+	sbj := cfg_client.ReportedPropertiesStream.WithId(deviceId)
+	h := func(msg *nats.Msg) {
+		f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), msg.Header.Get("__msg"), msg.Data)
+	}
+	return r.m.queueSubscribe(queue, sbj, h)
 }

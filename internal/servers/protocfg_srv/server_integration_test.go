@@ -1314,3 +1314,46 @@ func TestPublishCfgJsonNameWithCurlyRequest(t *testing.T) {
 	cancel()
 	wg.Wait()
 }
+
+func TestPublishReportedProperties(t *testing.T) {
+	// Arrange
+	ctx, cancel := context.WithCancel(context.Background())
+	id := "device_send_reported_props"
+
+	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).Schema(
+		protocfg_testv1.File_protocfg_test_v1_cfg_proto,
+	).Build()
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Act
+	wg, err := dev.Launch(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	reqPayload := protocfg_testv1.PowerLevel{
+		Power: 5,
+	}
+	if err = dev.SendReportedProperties(&reqPayload); err != nil {
+		t.Error(err)
+	}
+
+	listResp, err := core_client.PublishDeviceListRequest(b, &core_apiv1.ListDeviceRequest{
+		Targets: &core_apiv1.Targets{Ids: []string{id}},
+	})
+	if err != nil {
+		t.Error(err)
+	} else if listResp.GetError() != "" {
+		t.Error(listResp.GetError())
+	}
+
+	fmt.Println(listResp.GetOk().Devices[0].Properties.Reported)
+
+	// Assert
+	//assert.Equal(t, int32(5), props.Power)
+	cancel()
+	wg.Wait()
+}
