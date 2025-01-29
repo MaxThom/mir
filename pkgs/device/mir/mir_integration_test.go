@@ -33,12 +33,6 @@ var db *surrealdb.DB
 var b *bus.BusConn
 var mSdk *mir.Mir
 
-// IDEA methods that returns a set of subscriber to Nats using a map
-// where the key is the stream subject
-// IDEA functions for each services to setup and teardown
-// IDEA Add unit test boilerplate
-// IDEA functions for cleaning db and bus
-
 func TestMain(m *testing.M) {
 	// Setup
 	fmt.Println("Test Setup")

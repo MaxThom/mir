@@ -47,7 +47,6 @@ func (c *MirProtoCache) AddDeviceUpdateSub(fn func(deviceId string, device mir_m
 
 // Get the device schema from cache. If missing or refresh schema is true,
 // the cache will be invalidated and schema will be fetch from database or device
-// If hard refresh is true, it will fetch from device skipping database
 func (c *MirProtoCache) GetDeviceSchema(deviceId string, refreshSchema bool) (*mir_proto.MirProtoSchema, mir_models.Device, error) {
 	c.cacheLock.RLock()
 	val, ok := c.cache[deviceId]
@@ -73,7 +72,6 @@ func (c *MirProtoCache) GetDeviceSchema(deviceId string, refreshSchema bool) (*m
 // If schema missing, get from db.
 // If db missing, fetch from device.
 // If refreshSchema is true, force refresh from db
-// If hardRefreshSchema is true, force refresh from device
 func (c *MirProtoCache) GetDeviceSchemaAndDescriptor(deviceId string, descName string, refreshSchema bool) (protoreflect.Descriptor, *mir_proto.MirProtoSchema, mir_models.Device, error) {
 	sch, dev, err := c.GetDeviceSchema(deviceId, refreshSchema)
 	if err != nil {

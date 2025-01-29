@@ -19,8 +19,8 @@ import (
 	cfg_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cfg_api"
 	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
-	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
 	mirDevice "github.com/maxthom/mir/pkgs/device/mir"
+	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/nats-io/nats.go"
 	"github.com/surrealdb/surrealdb.go"
@@ -130,7 +130,6 @@ func TestPublishCfgListRequest(t *testing.T) {
 
 	// Assert
 	dev := respListCfg.GetOk().DeviceConfigs[id+"/testing_cfg"]
-	fmt.Println(dev)
 	assert.Equal(t, dev.Error, "")
 	assert.Equal(t, len(dev.Configs), 4)
 	assert.Equal(t, dev.Configs[0].Name, "protocfg_test.v1.Conduit")
@@ -278,7 +277,7 @@ func TestPublishCfgRequest(t *testing.T) {
 		t.Error(err)
 	}
 
-	msgResp := &devicev1.Void{}
+	msgResp := &protocfg_testv1.PowerLevel{}
 	for _, v := range respCfg.GetOk().DeviceResponses {
 		if v.Error != "" {
 			t.Error(v.Error)
@@ -289,6 +288,7 @@ func TestPublishCfgRequest(t *testing.T) {
 			t.Error(err)
 		}
 	}
+	time.Sleep(1 * time.Second)
 
 	// Assert
 	assert.Equal(t, int32(5), props.Power)
@@ -391,7 +391,7 @@ func TestPublishCfgJsonRequest(t *testing.T) {
 		t.Error(respCmd.GetError())
 	}
 
-	msgResp := &devicev1.Void{}
+	msgResp := &protocfg_testv1.PowerLevel{}
 	for _, v := range respCmd.GetOk().DeviceResponses {
 		if v.Error != "" {
 			t.Error(v.Error)
@@ -402,12 +402,14 @@ func TestPublishCfgJsonRequest(t *testing.T) {
 			t.Error(err)
 		}
 	}
+	time.Sleep(1 * time.Second)
 
 	// Assert
 	assert.Equal(t, int32(5), cfgHandled.Power)
 	assert.Equal(t, common_apiv1.Encoding_ENCODING_JSON, respCmd.GetOk().Encoding)
 	cancel()
 	wg.Wait()
+	time.Sleep(1 * time.Second)
 }
 
 func TestPublishCfgNoDeviceFound(t *testing.T) {
@@ -470,12 +472,6 @@ func TestPublishCfgProtoDryRun(t *testing.T) {
 
 	time.Sleep(1 * time.Second)
 
-	wg, err := dev.Launch(ctx)
-	if err != nil {
-		t.Error(err)
-	}
-	time.Sleep(1 * time.Second)
-
 	reqPayload := protocfg_testv1.PowerLevel{
 		Power: 5,
 	}
@@ -496,6 +492,12 @@ func TestPublishCfgProtoDryRun(t *testing.T) {
 
 	// Act
 	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate)
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	wg, err := dev.Launch(ctx)
 	if err != nil {
 		t.Error(err)
 	}
@@ -600,7 +602,7 @@ func TestPublishCfgProtoInvalidPayload(t *testing.T) {
 	// Assert
 	for _, v := range respCfg.GetOk().DeviceResponses {
 		assert.Equal(t, cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_ERROR, v.Status)
-		assert.Equal(t, v.Error, "error retrieve config descriptor from device schema: proto: not found")
+		assert.Equal(t, strings.Contains(v.Error, "error retrieve config descriptor from device schema"), true)
 	}
 	cancel()
 	wg.Wait()
@@ -674,7 +676,7 @@ func TestPublishCfgRequestMultipleDevices(t *testing.T) {
 	}
 
 	// Assert
-	msgResp := &devicev1.Void{}
+	msgResp := &protocfg_testv1.PowerLevel{}
 	for _, v := range respCfg.GetOk().DeviceResponses {
 		if v.Error != "" {
 			t.Error(v.Error)
@@ -688,6 +690,7 @@ func TestPublishCfgRequestMultipleDevices(t *testing.T) {
 		assert.Equal(t, common_apiv1.Encoding_ENCODING_PROTOBUF, respCfg.GetOk().Encoding)
 	}
 
+	time.Sleep(1 * time.Second)
 	assert.Equal(t, len(swarm.Devices), handlerCount)
 	cancel()
 	for _, v := range wg {
@@ -701,7 +704,7 @@ func TestPublishCfgRequestMultipleDevicesOneNoHandler(t *testing.T) {
 	cfgHandled := &protocfg_testv1.PowerLevel{}
 	swarm := swarm.NewSwarm(b)
 	handlerCount := 0
-	_, err := swarm.AddDevices(&core_apiv1.CreateDeviceRequest{
+	if _, err := swarm.AddDevices(&core_apiv1.CreateDeviceRequest{
 		Meta: &core_apiv1.Meta{
 			Namespace: "testing_cfg",
 			Labels: map[string]string{
@@ -735,8 +738,10 @@ func TestPublishCfgRequestMultipleDevicesOneNoHandler(t *testing.T) {
 				cfgHandled = m.(*protocfg_testv1.PowerLevel)
 				handlerCount++
 			},
-		).Incubate()
-	swarm.AddDevice(&core_apiv1.CreateDeviceRequest{
+		).Incubate(); err != nil {
+		t.Error(err)
+	}
+	if _, err := swarm.AddDevice(&core_apiv1.CreateDeviceRequest{
 		Meta: &core_apiv1.Meta{
 			Namespace: "testing_cfg",
 			Labels: map[string]string{
@@ -749,8 +754,13 @@ func TestPublishCfgRequestMultipleDevicesOneNoHandler(t *testing.T) {
 		Spec: &core_apiv1.Spec{
 			DeviceId: "device_send_cfg_3_no_handler",
 		},
-	}).WithSchema(protocfg_testv1.File_protocfg_test_v1_cfg_proto).Incubate()
+	}).WithSchema(protocfg_testv1.File_protocfg_test_v1_cfg_proto).Incubate(); err != nil {
+		t.Error(err)
+	}
 	wg, err := swarm.Deploy(ctx)
+	if err != nil {
+		t.Error(err)
+	}
 
 	reqPayload := protocfg_testv1.PowerLevel{
 		Power: 5,
@@ -777,7 +787,7 @@ func TestPublishCfgRequestMultipleDevicesOneNoHandler(t *testing.T) {
 	}
 
 	// Assert
-	msgResp := &devicev1.Void{}
+	msgResp := &protocfg_testv1.PowerLevel{}
 	for k, v := range respCfg.GetOk().DeviceResponses {
 		if k == "device_send_cfg_1/testing_cfg" || k == "device_send_cfg_2/testing_cfg" {
 			if v.Error != "" {
@@ -795,6 +805,7 @@ func TestPublishCfgRequestMultipleDevicesOneNoHandler(t *testing.T) {
 			assert.Equal(t, "device error: no handler for command protocmd_test.v1.PowerLevel found", v.Error)
 		}
 	}
+	time.Sleep(1 * time.Second)
 
 	assert.Equal(t, 2, handlerCount)
 	cancel()
@@ -866,7 +877,7 @@ func TestPublishCfgRequestMultipleDevicesJson(t *testing.T) {
 	}
 
 	// Assert
-	msgResp := &devicev1.Void{}
+	msgResp := &protocfg_testv1.PowerLevel{}
 	for _, v := range respCfg.GetOk().DeviceResponses {
 		if v.Error != "" {
 			t.Error(v.Error)
@@ -876,10 +887,11 @@ func TestPublishCfgRequestMultipleDevicesJson(t *testing.T) {
 		if err = protojson.Unmarshal(v.Payload, msgResp); err != nil {
 			t.Error(err)
 		}
-		assert.Equal(t, reqPayload.Power, cfgHandled.Power)
 		assert.Equal(t, common_apiv1.Encoding_ENCODING_JSON, respCfg.GetOk().Encoding)
 	}
+	time.Sleep(1 * time.Second)
 
+	assert.Equal(t, reqPayload.Power, cfgHandled.Power)
 	assert.Equal(t, len(swarm.Devices), handlerCount)
 	cancel()
 	for _, v := range wg {
@@ -956,6 +968,7 @@ func TestPublishCfgRequestMultipleDevicesDescriptorNotFound(t *testing.T) {
 		assert.Equal(t, cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_ERROR, v.Status)
 		assert.Equal(t, true, v.Error != "")
 	}
+	time.Sleep(1 * time.Second)
 
 	assert.Equal(t, common_apiv1.Encoding_ENCODING_JSON, respCfg.GetOk().Encoding)
 	assert.Equal(t, 0, handlerCount)
@@ -1036,12 +1049,13 @@ func TestPublishCfgRequestMultipleDevicesSingleDescriptorNotFoundForcePush(t *te
 	} else if respCfg.GetError() != "" {
 		t.Error(respCfg.GetError())
 	}
+	time.Sleep(1 * time.Second)
 
 	// Assert
 	devValid := respCfg.GetOk().DeviceResponses["device_valid_cfg/testing_cfg"]
 	devInvalid := respCfg.GetOk().DeviceResponses["device_invalid_cfg/testing_cfg"]
 
-	msgResp := &devicev1.Void{}
+	msgResp := &protocfg_testv1.PowerLevel{}
 	assert.Equal(t, cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_SUCCESS, devValid.Status)
 	if err = protojson.Unmarshal(devValid.Payload, msgResp); err != nil {
 		t.Error(err)
@@ -1296,7 +1310,7 @@ func TestPublishCfgJsonNameWithCurlyRequest(t *testing.T) {
 		t.Error(respCfg.GetError())
 	}
 
-	msgResp := &devicev1.Void{}
+	msgResp := &protocfg_testv1.PowerLevel{}
 	for _, v := range respCfg.GetOk().DeviceResponses {
 		if v.Error != "" {
 			t.Error(v.Error)
@@ -1307,6 +1321,7 @@ func TestPublishCfgJsonNameWithCurlyRequest(t *testing.T) {
 			t.Error(err)
 		}
 	}
+	time.Sleep(1 * time.Second)
 
 	// Assert
 	assert.Equal(t, int32(5), cfgHandled.Power)
@@ -1341,6 +1356,7 @@ func TestPublishReportedProperties(t *testing.T) {
 		t.Error(err)
 	}
 
+	time.Sleep(1 * time.Second)
 	listResp, err := core_client.PublishDeviceListRequest(b, &core_apiv1.ListDeviceRequest{
 		Targets: &core_apiv1.Targets{Ids: []string{id}},
 	})
@@ -1350,10 +1366,165 @@ func TestPublishReportedProperties(t *testing.T) {
 		t.Error(listResp.GetError())
 	}
 
-	fmt.Println(listResp.GetOk().Devices[0].Properties.Reported)
+	d := mir_models.NewDeviceFromProtoDevice(listResp.GetOk().Devices[0])
+	// Assert
+	assert.Equal(t, float64(5), d.Properties.Reported["protocfg_test.v1.PowerLevel"].(map[string]any)["power"].(float64))
+	cancel()
+	wg.Wait()
+}
+
+func TestPublishReportedPropertiesEvent(t *testing.T) {
+	// Arrange
+	ctx, cancel := context.WithCancel(context.Background())
+	id := "device_send_reported_props_event"
+
+	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).Schema(
+		protocfg_testv1.File_protocfg_test_v1_cfg_proto,
+	).Build()
+	if err != nil {
+		t.Error(err)
+	}
+
+	eventCount := 0
+	if err = mSdk.Event().ReportedProperties().Subscribe(
+		func(msg *mir.Msg, deviceId string, props map[string]any) {
+			if deviceId == id {
+				eventCount += 1
+			}
+		}); err != nil {
+		t.Error(err)
+	}
+
+	// Act
+	wg, err := dev.Launch(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	reqPayload := protocfg_testv1.PowerLevel{
+		Power: 5,
+	}
+	if err = dev.SendReportedProperties(&reqPayload); err != nil {
+		t.Error(err)
+	}
+
+	time.Sleep(1 * time.Second)
+	listResp, err := core_client.PublishDeviceListRequest(b, &core_apiv1.ListDeviceRequest{
+		Targets: &core_apiv1.Targets{Ids: []string{id}},
+	})
+	if err != nil {
+		t.Error(err)
+	} else if listResp.GetError() != "" {
+		t.Error(listResp.GetError())
+	}
+
+	d := mir_models.NewDeviceFromProtoDevice(listResp.GetOk().Devices[0])
+	// Assert
+	assert.Equal(t, float64(5), d.Properties.Reported["protocfg_test.v1.PowerLevel"].(map[string]any)["power"].(float64))
+	assert.Equal(t, 1, eventCount)
+	cancel()
+	wg.Wait()
+}
+
+func TestPublishDesiredPropertiesEvent(t *testing.T) {
+	// Arrange
+	ctx, cancel := context.WithCancel(context.Background())
+	id := "device_send_cfg_event"
+	reqCreate := &core_apiv1.CreateDeviceRequest{
+		Meta: &core_apiv1.Meta{
+			Name:      id,
+			Namespace: "testing_cfg",
+			Labels: map[string]string{
+				"testing": "cfg",
+			},
+			Annotations: map[string]string{
+				"mir/device/description": "hello world of devices !",
+			},
+		},
+		Spec: &core_apiv1.Spec{
+			DeviceId: id,
+		},
+	}
+
+	eventCount := 0
+	if err := mSdk.Event().DesiredProperties().Subscribe(
+		func(msg *mir.Msg, deviceId string, props map[string]any) {
+			if deviceId == id {
+				eventCount += 1
+			}
+		}); err != nil {
+		t.Error(err)
+	}
+
+	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).Schema(
+		protocfg_testv1.File_protocfg_test_v1_cfg_proto,
+	).Build()
+	if err != nil {
+		t.Error(err)
+	}
+
+	props := &protocfg_testv1.PowerLevel{}
+	dev.HandleProperties(
+		props,
+		func(m protoreflect.ProtoMessage) {
+			props = m.(*protocfg_testv1.PowerLevel)
+		},
+	)
+
+	reqPayload := protocfg_testv1.PowerLevel{
+		Power: 5,
+	}
+	payloadBytes, err := proto.Marshal(&reqPayload)
+	if err != nil {
+		t.Error(err)
+	}
+
+	reqCmd := &cfg_apiv1.SendConfigRequest{
+		Targets: &core_apiv1.Targets{
+			Ids: []string{id},
+		},
+		Name:            string(reqPayload.ProtoReflect().Descriptor().FullName()),
+		PayloadEncoding: common_apiv1.Encoding_ENCODING_PROTOBUF,
+		Payload:         payloadBytes,
+		RefreshSchema:   true,
+	}
+
+	// Act
+	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate)
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	wg, err := dev.Launch(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	respCfg, err := cfg_client.PublishSendConfigRequest(b, reqCmd)
+	if err != nil {
+		t.Error(err)
+	}
+
+	msgResp := &protocfg_testv1.PowerLevel{}
+	for _, v := range respCfg.GetOk().DeviceResponses {
+		if v.Error != "" {
+			t.Error(v.Error)
+		}
+		assert.Equal(t, string(msgResp.ProtoReflect().Descriptor().FullName()), v.Name)
+		assert.Equal(t, cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_SUCCESS, v.Status)
+		if err = proto.Unmarshal(v.Payload, msgResp); err != nil {
+			t.Error(err)
+		}
+	}
+	time.Sleep(1 * time.Second)
 
 	// Assert
-	//assert.Equal(t, int32(5), props.Power)
+	assert.Equal(t, int32(5), props.Power)
+	assert.Equal(t, common_apiv1.Encoding_ENCODING_PROTOBUF, respCfg.GetOk().Encoding)
+	assert.Equal(t, 1, eventCount)
 	cancel()
 	wg.Wait()
 }

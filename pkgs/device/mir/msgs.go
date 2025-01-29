@@ -111,7 +111,9 @@ func DefinedConfigHandler(msg *nats.Msg, m *Mir) error {
 		return fmt.Errorf("device error while unmarshalling config payload: %w", err)
 	}
 
-	h.h(cmdMsg)
+	for _, handler := range h.h {
+		handler(cmdMsg)
+	}
 
 	// TODO maybe should return reported properties as dx
 	return nil // sendReplyOrAck(m.b, msg, cmdResp, nil, shouldZstd)
