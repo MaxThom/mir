@@ -43,11 +43,8 @@ const (
 )
 
 var (
-	devMirErrType  = devicev1.Error{}
-	devMirErrStr   = string(devMirErrType.ProtoReflect().Descriptor().FullName())
-	devMirVoidType = devicev1.Void{}
-	devMirVoidStr  = string(devMirVoidType.ProtoReflect().Descriptor().FullName())
-	devMirVoidJson = []byte("{}")
+	devMirErrType = devicev1.Error{}
+	devMirErrStr  = string(devMirErrType.ProtoReflect().Descriptor().FullName())
 )
 
 var requestCount = metrics.NewCounterVec(prometheus.CounterOpts{
@@ -192,16 +189,19 @@ type cmdDevicePayload struct {
 	payload    []byte
 	mapPayload map[string]any
 	time       time.Time
+	msgDesc    protoreflect.MessageDescriptor
 }
 
 // TODO
 // - [x] Always validate and cast to json since we need to write the payload in the db in JSON format
 // - [x] Send to device in Proto, but can receive proto or json
 // - [x] Write Json to db, send proto to device
-// - [ ] DeviceSDK for config (send and receive)
+// - [x] DeviceSDK for config (send and receive)
 // - [x] Have a timestamp for last updated desired properties. Used to compared if event is old on device on bootup
-// - [ ] Reported properties
+// - [x] Reported properties
 // - [ ] Update from core
+// - [x] Device desired properties multiple handler for same cfg
+// - [ ] More test
 
 func (s *ProtoCfgServer) sendConfigToDevices(req *cfg_apiv1.SendConfigRequest) (map[string]*cfg_apiv1.SendConfigResponse_ConfigResponse, error) {
 	devs, err := s.devStore.ListDevice(&core_apiv1.ListDeviceRequest{Targets: req.Targets})
@@ -300,7 +300,14 @@ func (s *ProtoCfgServer) sendConfigToDevices(req *cfg_apiv1.SendConfigRequest) (
 			DeviceId: dev.Spec.DeviceId,
 			Status:   cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_VALIDATED,
 		}
-		configToSend[dev.GetNameNamespace()] = &cmdDevicePayload{time: timeNow, payload: bytePayload, mapPayload: mapPayload, deviceId: dev.Spec.DeviceId}
+		configToSend[dev.GetNameNamespace()] = &cmdDevicePayload{
+			time:       timeNow,
+			payload:    bytePayload,
+			mapPayload: mapPayload,
+			deviceId:   dev.Spec.DeviceId,
+			msgDesc:    msgReqDesc.(protoreflect.MessageDescriptor),
+		}
+
 		l.Debug().Str("device_id", dev.Spec.DeviceId).Msgf("config %s validated for device %s", req.Name, dev.GetNameNamespace())
 	}
 
@@ -343,7 +350,7 @@ func (s *ProtoCfgServer) sendConfigToDevices(req *cfg_apiv1.SendConfigRequest) (
 				return
 			}
 			// TODO return updated device from store
-			_, err = s.devStore.UpdateDevice(&core_apiv1.UpdateDeviceRequest{
+			dev, err := s.devStore.UpdateDevice(&core_apiv1.UpdateDeviceRequest{
 				Targets: &core_apiv1.Targets{
 					Ids: []string{p.deviceId},
 				},
@@ -362,7 +369,7 @@ func (s *ProtoCfgServer) sendConfigToDevices(req *cfg_apiv1.SendConfigRequest) (
 			}
 
 			// Event
-			if err := cfg_client.PublishDesiredPropertiesEvent(s.m.Bus, "protocfg", p.deviceId, props); err != nil {
+			if err := cfg_client.PublishDesiredPropertiesEvent(s.m.Bus, "protocfg", p.deviceId, dev[0].Properties.Desired); err != nil {
 				l.Error().Err(err).Msg("error while publishing device config event")
 			}
 
@@ -380,12 +387,37 @@ func (s *ProtoCfgServer) sendConfigToDevices(req *cfg_apiv1.SendConfigRequest) (
 				return
 			}
 
-			// Empty encoding for PROTOBUF is nothing, for JSON it's {}
-			if req.PayloadEncoding == common_apiv1.Encoding_ENCODING_JSON {
-				devResp[nameNs].Payload = devMirVoidJson
+			dt := dev[0].Properties.Desired[req.Name].(map[string]interface{})
+			delete(dt, "__time")
+			byteResp, err := json.Marshal(dt)
+			if err != nil {
+				l.Error().Err(err).Str("device_id", p.deviceId).Msg("error marshalling properties to json")
+				devResp[nameNs] = &cfg_apiv1.SendConfigResponse_ConfigResponse{
+					DeviceId: p.deviceId,
+					Status:   cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_ERROR,
+					Error:    errors.Wrap(err, "error marshalling properties to json").Error(),
+				}
+				return
+			}
+			if req.PayloadEncoding == common_apiv1.Encoding_ENCODING_PROTOBUF {
+				protoResp := dynamicpb.NewMessage(p.msgDesc)
+				err = protojson.Unmarshal(byteResp, protoResp)
+				if err == nil {
+					byteResp, err = proto.Marshal(protoResp)
+				}
+				if err != nil {
+					l.Error().Err(err).Str("device_id", p.deviceId).Msg("error marshalling properties to protobuf")
+					devResp[nameNs] = &cfg_apiv1.SendConfigResponse_ConfigResponse{
+						DeviceId: p.deviceId,
+						Status:   cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_ERROR,
+						Error:    errors.Wrap(err, "error marshalling properties to protobuf").Error(),
+					}
+					return
+				}
 			}
 			devResp[nameNs].DeviceId = p.deviceId
-			devResp[nameNs].Name = devMirVoidStr
+			devResp[nameNs].Name = req.Name
+			devResp[nameNs].Payload = byteResp
 			devResp[nameNs].Status = cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_SUCCESS
 		}()
 	}
@@ -394,6 +426,59 @@ func (s *ProtoCfgServer) sendConfigToDevices(req *cfg_apiv1.SendConfigRequest) (
 	return devResp, nil
 }
 
-func (s *ProtoCfgServer) reportedPropsSub(msg *mir.Msg, deviceId string, protoMsgName string, data []byte) {
-	fmt.Println(protoMsgName)
+func (s *ProtoCfgServer) reportedPropsSub(msg *mir.Msg, deviceId string, msgName string, data []byte) {
+	msgDesc, _, _, err := s.schStore.GetDeviceSchemaAndDescriptor(deviceId, msgName, false)
+	if err != nil {
+		l.Error().Err(err).Str("device_id", deviceId).Msg("error retrieving config descriptor from device schema")
+		return
+	}
+
+	msgProto := dynamicpb.NewMessage(msgDesc.(protoreflect.MessageDescriptor))
+	if err = proto.Unmarshal(data, msgProto); err != nil {
+		l.Error().Err(err).Str("device_id", deviceId).Msg("error unmarshaling reported properties")
+		return
+	}
+
+	msgJson, err := protojson.Marshal(msgProto)
+	if err != nil {
+		l.Error().Err(err).Str("device_id", deviceId).Msg("error marshaling reported properties to JSON")
+		return
+	}
+	msgMap := make(map[string]interface{})
+	if err = json.Unmarshal(msgJson, &msgMap); err != nil {
+		l.Error().Err(err).Str("device_id", deviceId).Msg("error unmarshaling reported properties to map")
+		return
+	}
+	timeNow := time.Now().UTC()
+	msgMap["__time"] = timeNow.String()
+	msgMap = map[string]interface{}{
+		"properties": map[string]interface{}{
+			"reported": map[string]interface{}{
+				string(msgDesc.FullName()): msgMap,
+			},
+		},
+	}
+
+	jsonRaw, err := json.Marshal(msgMap)
+	if err != nil {
+		l.Error().Err(err).Str("device_id", deviceId).Msg("error marshaling reported properties to JSON")
+		return
+	}
+
+	dev, err := s.devStore.MergeDevice(
+		&core_apiv1.Targets{
+			Ids: []string{deviceId},
+		},
+		jsonRaw,
+		mng.MergePatch,
+	)
+	if err != nil {
+		l.Error().Err(err).Str("device_id", deviceId).Msg("error updating device properties in store")
+		return
+	}
+	if len(dev) > 0 {
+		if err = cfg_client.PublishReportedPropertiesEvent(s.m.Bus, "protocfg", deviceId, dev[0].Properties.Reported); err != nil {
+			l.Error().Err(err).Msg("error while publishing device reported properties event")
+		}
+	}
 }

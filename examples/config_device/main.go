@@ -44,10 +44,47 @@ func main() {
 	}
 	l.Info().Msg("Mir is at maxq and nominal")
 
-	m.HandleProperties(&config_devicev1.Config{}, func(m proto.Message) {
-		cfg := m.(*config_devicev1.Config)
+	if err = m.SendReportedProperties(&config_devicev1.Args{
+		PizzaCount: 23,
+		Names:      []string{"pep", "hawai"},
+		Ingredients: map[string]int32{
+			"pep":    3,
+			"tomato": 1,
+			"cheese": 5,
+		},
+	}); err != nil {
+		l.Error().Err(err).Msg("Error sending reported properties")
+	}
+
+	m.HandleProperties(&config_devicev1.Config{}, func(msg proto.Message) {
+		cfg := msg.(*config_devicev1.Config)
 		fmt.Println(cfg)
+		if err = m.SendReportedProperties(&config_devicev1.Args{
+			PizzaCount: 14,
+			Names:      []string{"marguerita"},
+			Ingredients: map[string]int32{
+				"basilic": 1,
+				"cheese":  5,
+			},
+		}); err != nil {
+			l.Error().Err(err).Msg("Error sending reported properties")
+		}
 	})
+
+	m.HandleProperties(&config_devicev1.Config{}, func(msg proto.Message) {
+		fmt.Println("------")
+	}, func(msg proto.Message) {
+		fmt.Println("++++++")
+	})
+
+	m.HandleProperties(&config_devicev1.Config{}, []func(msg proto.Message){
+		func(msg proto.Message) {
+			fmt.Println("First function")
+		},
+		func(msg proto.Message) {
+			fmt.Println("Second function")
+		},
+	}...)
 
 	mir_signals.WaitForOsSignals(func() {
 		cancel()

@@ -54,7 +54,7 @@ type cmdHandlerValue struct {
 
 type cfgHandlerValue struct {
 	t reflect.Type
-	h func(proto.Message)
+	h []func(proto.Message)
 }
 
 const ()
@@ -118,6 +118,10 @@ func (m *Mir) Launch(ctx context.Context) (*sync.WaitGroup, error) {
 		m.shutdown(m.ctx)
 		wg.Done()
 	}()
+
+	// Wait for the connection to be established
+	// and device created on the server if needed
+	time.Sleep(2 * time.Second)
 
 	return &wg, nil
 }
@@ -229,6 +233,7 @@ func (m Mir) HandleCommand(t proto.Message, handler func(proto.Message) (proto.M
 
 // Handle a properties update from Mir server
 // Specify which properties with the proto msg from your schema
+// Each properties can have many handlers and each will be called upon update
 // eg:
 // m.HandleProperties(
 //
@@ -236,11 +241,17 @@ func (m Mir) HandleCommand(t proto.Message, handler func(proto.Message) (proto.M
 //	func(m proto.Message) {
 //	  cmd := m.(*config_devicev1.SendConfigRequest)
 //	})
-func (m Mir) HandleProperties(t proto.Message, handler func(proto.Message)) {
-	m.cfgHandlers[string(t.ProtoReflect().Descriptor().FullName())] = cfgHandlerValue{
-		t: reflect.TypeOf(t).Elem(),
-		h: handler,
+func (m Mir) HandleProperties(t proto.Message, handler ...func(proto.Message)) {
+	key := string(t.ProtoReflect().Descriptor().FullName())
+	cfg, ok := m.cfgHandlers[key]
+	if !ok {
+		cfg = cfgHandlerValue{
+			t: reflect.TypeOf(t).Elem(),
+			h: []func(proto.Message){},
+		}
 	}
+	cfg.h = append(cfg.h, handler...)
+	m.cfgHandlers[key] = cfg
 }
 
 type subject string

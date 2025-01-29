@@ -8,6 +8,7 @@ import (
 	cfg_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cfg_api"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 const (
@@ -77,8 +78,12 @@ func PublishReportedPropertiesStream(bus *bus.BusConn, deviceId string, t proto.
 	})
 }
 
-func PublishDesiredPropertiesEvent(bus *nats.Conn, originalInstance string, deviceId string, d proto.Message) error {
-	b, err := proto.Marshal(d)
+func PublishDesiredPropertiesEvent(bus *nats.Conn, originalInstance string, deviceId string, props map[string]any) error {
+	s, err := structpb.NewStruct(props)
+	if err != nil {
+		return err
+	}
+	b, err := proto.Marshal(s)
 	if err != nil {
 		return err
 	}
@@ -91,8 +96,12 @@ func PublishDesiredPropertiesEvent(bus *nats.Conn, originalInstance string, devi
 	return bus.PublishMsg(msg)
 }
 
-func PublishReportedPropertiesEvent(bus *nats.Conn, originalInstance string, deviceId string, d proto.Message) error {
-	b, err := proto.Marshal(d)
+func PublishReportedPropertiesEvent(bus *nats.Conn, originalInstance string, deviceId string, props map[string]any) error {
+	s, err := structpb.NewStruct(props)
+	if err != nil {
+		return err
+	}
+	b, err := proto.Marshal(s)
 	if err != nil {
 		return err
 	}

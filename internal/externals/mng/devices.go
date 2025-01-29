@@ -33,6 +33,7 @@ type DeviceStore interface {
 	ListDevice(req *core_apiv1.ListDeviceRequest) ([]mir_models.Device, error)
 	CreateDevice(req *core_apiv1.CreateDeviceRequest) (mir_models.Device, error)
 	UpdateDevice(req *core_apiv1.UpdateDeviceRequest) ([]mir_models.Device, error)
+	MergeDevice(targets *core_apiv1.Targets, patch json.RawMessage, op UpdateType) ([]mir_models.Device, error)
 	DeleteDevice(req *core_apiv1.DeleteDeviceRequest) ([]mir_models.Device, error)
 }
 
@@ -160,7 +161,6 @@ func (s *surrealDeviceStore) MergeDevice(targets *core_apiv1.Targets, patch json
 		if err := d.Decode(&dev); err != nil {
 			return nil, fmt.Errorf("unknown fields in json patch: %w", err)
 		}
-		fmt.Println(dev)
 
 		if err := s.validateDeviceUniqueness(targets, dev.Meta.Name, dev.Meta.Namespace, dev.Spec.DeviceId); err != nil {
 			return nil, err
@@ -177,7 +177,6 @@ func (s *surrealDeviceStore) MergeDevice(targets *core_apiv1.Targets, patch json
 			qSb.WriteString(";")
 		}
 		sql := qSb.String()
-		fmt.Println(sql)
 
 		respDb, err := executeQueryForType[[]mir_models.Device](s.db, sql, map[string]any{})
 		if err != nil {
@@ -479,7 +478,6 @@ func createUpdateQueryForDevice(t *core_apiv1.Targets, upd *core_apiv1.UpdateDev
 		qSb.WriteString(";")
 	}
 	sql = qSb.String()
-	fmt.Println(sql)
 
 	return
 }

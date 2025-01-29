@@ -405,36 +405,40 @@ func (r *eventRoutes) DesiredProperties() *desiredPropertiesEventRoute {
 }
 
 // Subscribe to device desired properties event routes
-func (r *desiredPropertiesEventRoute) Subscribe(f func(msg *Msg, deviceId string, props *structpb.Struct)) error {
+func (r *desiredPropertiesEventRoute) Subscribe(f func(msg *Msg, deviceId string, props map[string]any)) error {
 	sbj := cfg_client.DesiredPropertiesEvent.WithId("*")
 	return r.m.subscribe(sbj, r.handlerWrapper(f))
 }
 
 // Queue subscribe to device desired properties event routes
-func (r *desiredPropertiesEventRoute) QueueSubscribe(queue string, f func(msg *Msg, deviceId string, props *structpb.Struct)) error {
+func (r *desiredPropertiesEventRoute) QueueSubscribe(queue string, f func(msg *Msg, deviceId string, props map[string]any)) error {
 	sbj := cfg_client.DesiredPropertiesEvent.WithId("*")
 	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
 }
 
-func (r *desiredPropertiesEventRoute) handlerWrapper(f func(msg *Msg, deviceId string, props *structpb.Struct)) nats.MsgHandler {
+func (r *desiredPropertiesEventRoute) handlerWrapper(f func(msg *Msg, deviceId string, props map[string]any)) nats.MsgHandler {
 	return func(msg *nats.Msg) {
 		req := &structpb.Struct{}
 		if err := proto.Unmarshal(msg.Data, req); err != nil {
 			// TODO log error here
 			return
 		}
-		f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), req)
+		f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), req.AsMap())
 	}
 }
 
 // Publish a device desired properties event
-func (r *desiredPropertiesEventRoute) Publish(originalId string, deviceId string, props *structpb.Struct) error {
-	sbj := cfg_client.DesiredPropertiesEvent.WithId(deviceId)
-	b, err := proto.Marshal(props)
+func (r *desiredPropertiesEventRoute) Publish(originalId string, deviceId string, props map[string]any) error {
+	s, err := structpb.NewStruct(props)
+	if err != nil {
+		return err
+	}
+	b, err := proto.Marshal(s)
 	if err != nil {
 		return err
 	}
 
+	sbj := cfg_client.DesiredPropertiesEvent.WithId(deviceId)
 	err = r.m.publish(sbj, b, nats.Header{HeaderOriginalTrigger: []string{originalId}})
 	if err != nil {
 		return err
@@ -455,36 +459,40 @@ func (r *eventRoutes) ReportedProperties() *reportedPropertiesEventRoute {
 }
 
 // Subscribe to device reported properties event routes
-func (r *reportedPropertiesEventRoute) Subscribe(f func(msg *Msg, deviceId string, props *structpb.Struct)) error {
+func (r *reportedPropertiesEventRoute) Subscribe(f func(msg *Msg, deviceId string, props map[string]any)) error {
 	sbj := cfg_client.ReportedPropertiesEvent.WithId("*")
 	return r.m.subscribe(sbj, r.handlerWrapper(f))
 }
 
 // Queue subscribe to device reported properties event routes
-func (r *reportedPropertiesEventRoute) QueueSubscribe(queue string, f func(msg *Msg, deviceId string, props *structpb.Struct)) error {
+func (r *reportedPropertiesEventRoute) QueueSubscribe(queue string, f func(msg *Msg, deviceId string, props map[string]any)) error {
 	sbj := cfg_client.ReportedPropertiesEvent.WithId("*")
 	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
 }
 
-func (r *reportedPropertiesEventRoute) handlerWrapper(f func(msg *Msg, deviceId string, props *structpb.Struct)) nats.MsgHandler {
+func (r *reportedPropertiesEventRoute) handlerWrapper(f func(msg *Msg, deviceId string, props map[string]any)) nats.MsgHandler {
 	return func(msg *nats.Msg) {
 		req := &structpb.Struct{}
 		if err := proto.Unmarshal(msg.Data, req); err != nil {
 			// TODO log error here
 			return
 		}
-		f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), req)
+		f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), req.AsMap())
 	}
 }
 
 // Publish a device reported properties event
-func (r *reportedPropertiesEventRoute) Publish(originalId string, deviceId string, props *structpb.Struct) error {
-	sbj := cfg_client.ReportedPropertiesEvent.WithId(deviceId)
-	b, err := proto.Marshal(props)
+func (r *reportedPropertiesEventRoute) Publish(originalId string, deviceId string, props map[string]any) error {
+	s, err := structpb.NewStruct(props)
+	if err != nil {
+		return err
+	}
+	b, err := proto.Marshal(s)
 	if err != nil {
 		return err
 	}
 
+	sbj := cfg_client.ReportedPropertiesEvent.WithId(deviceId)
 	err = r.m.publish(sbj, b, nats.Header{HeaderOriginalTrigger: []string{originalId}})
 	if err != nil {
 		return err

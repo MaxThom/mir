@@ -26,7 +26,7 @@ func NewSwarm(bus *bus.BusConn) swarm {
 }
 
 func (s *swarm) Deploy(ctx context.Context) ([]*sync.WaitGroup, error) {
-	time.Sleep(2 * time.Second)
+	// time.Sleep(2 * time.Second)
 	var errs error
 	var wgs []*sync.WaitGroup
 	for _, d := range s.Devices {
