@@ -1,7 +1,6 @@
 package mir
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -12,13 +11,14 @@ import (
 )
 
 type Store struct {
-	ctx   context.Context
 	props map[string]propsValue
 	db    *bolt.DB
+	opts  StoreOptions
 }
 
 type StoreOptions struct {
-	path string
+	Path     string
+	InMemory bool
 }
 
 type propsValue struct {
@@ -27,46 +27,44 @@ type propsValue struct {
 }
 
 func NewStore(opts StoreOptions) (*Store, error) {
-	if err := os.MkdirAll(filepath.Dir(opts.path), 0755); err != nil {
-		return nil, fmt.Errorf("error creating directory: %w", err)
-	}
-	db, err := bolt.Open(opts.path, 0600, &bolt.Options{Timeout: 3 * time.Second})
-	if err != nil {
-		return nil, err
-	}
 	return &Store{
 		props: make(map[string]propsValue),
-		db:    db,
+		db:    nil,
+		opts:  opts,
 	}, nil
 }
 
-func (s *Store) Load(ctx context.Context) error {
-	s.ctx = ctx
+func (s *Store) Load() error {
 
-	go func() {
-		<-ctx.Done()
-		s.Close()
-	}()
-
-	if err := s.db.Update(func(tx *bolt.Tx) error {
-		b, err := tx.CreateBucketIfNotExists([]byte("properties"))
-		if err != nil {
-			return fmt.Errorf("error creating properties bucket: %w", err)
+	if !s.opts.InMemory {
+		var err error
+		if err := os.MkdirAll(filepath.Dir(s.opts.Path), 0755); err != nil {
+			return fmt.Errorf("error creating directory: %w", err)
 		}
-		if err = b.ForEach(func(k, v []byte) error {
-			propsValue := propsValue{}
-			if err := json.Unmarshal(v, &propsValue); err != nil {
-				return fmt.Errorf("error unmarshalling props from store: %w", err)
+		s.db, err = bolt.Open(s.opts.Path, 0600, &bolt.Options{Timeout: 3 * time.Second})
+		if err != nil {
+			return err
+		}
+		if err := s.db.Update(func(tx *bolt.Tx) error {
+			b, err := tx.CreateBucketIfNotExists([]byte("properties"))
+			if err != nil {
+				return fmt.Errorf("error creating properties bucket: %w", err)
 			}
-			s.props[string(k)] = propsValue
+			if err = b.ForEach(func(k, v []byte) error {
+				propsValue := propsValue{}
+				if err := json.Unmarshal(v, &propsValue); err != nil {
+					return fmt.Errorf("error unmarshalling props from store: %w", err)
+				}
+				s.props[string(k)] = propsValue
+				return nil
+			}); err != nil {
+				return fmt.Errorf("error loading store: %w", err)
+			}
+
 			return nil
 		}); err != nil {
 			return fmt.Errorf("error loading store: %w", err)
 		}
-
-		return nil
-	}); err != nil {
-		return fmt.Errorf("error loading store: %w", err)
 	}
 	return nil
 }
@@ -96,26 +94,31 @@ func (s *Store) UpdatePropsIfNew(name string, prop propsValue) (bool, error) {
 		return false, nil
 	}
 
-	if err := s.db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("properties"))
+	if !s.opts.InMemory {
+		if err := s.db.Update(func(tx *bolt.Tx) error {
+			b := tx.Bucket([]byte("properties"))
 
-		val, err := json.Marshal(localProp)
-		if err != nil {
-			return fmt.Errorf("error marshalling props to store: %w", err)
+			val, err := json.Marshal(localProp)
+			if err != nil {
+				return fmt.Errorf("error marshalling props to store: %w", err)
+			}
+
+			if err = b.Put([]byte(name), val); err != nil {
+				return fmt.Errorf("error writing props to store: %w", err)
+			}
+
+			return nil
+		}); err != nil {
+			return true, err
 		}
-
-		if err = b.Put([]byte(name), val); err != nil {
-			return fmt.Errorf("error writing props to store: %w", err)
-		}
-
-		return nil
-	}); err != nil {
-		return true, err
 	}
 	return true, nil
 
 }
 
 func (s *Store) Close() error {
+	if s.opts.InMemory {
+		return nil
+	}
 	return s.db.Close()
 }

@@ -26,7 +26,6 @@ func NewSwarm(bus *bus.BusConn) swarm {
 }
 
 func (s *swarm) Deploy(ctx context.Context) ([]*sync.WaitGroup, error) {
-	// time.Sleep(2 * time.Second)
 	var errs error
 	var wgs []*sync.WaitGroup
 	for _, d := range s.Devices {
@@ -58,6 +57,7 @@ type devicesBuilder struct {
 	sch        []protoreflect.FileDescriptor
 	cmd        []commandHandler
 	cfg        []configHandler
+	storeOpts  mirDevice.StoreOptions
 }
 
 type deviceBuilder struct {
@@ -67,6 +67,7 @@ type deviceBuilder struct {
 	sch       []protoreflect.FileDescriptor
 	cmd       []commandHandler
 	cfg       []configHandler
+	storeOpts mirDevice.StoreOptions
 }
 
 type commandHandler struct {
@@ -83,6 +84,9 @@ func (s *swarm) AddDeviceWithIds(ids []string) *devicesBuilder {
 	return &devicesBuilder{
 		deviceIds: ids,
 		s:         s,
+		storeOpts: mirDevice.StoreOptions{
+			InMemory: true,
+		},
 	}
 }
 func (s *swarm) AddDevices(req ...*core_apiv1.CreateDeviceRequest) *devicesBuilder {
@@ -90,6 +94,9 @@ func (s *swarm) AddDevices(req ...*core_apiv1.CreateDeviceRequest) *devicesBuild
 		deviceReqs: req,
 		s:          s,
 		logLevel:   mirDevice.LogLevelInfo,
+		storeOpts: mirDevice.StoreOptions{
+			InMemory: true,
+		},
 	}
 }
 
@@ -98,6 +105,9 @@ func (s *swarm) AddDevice(req *core_apiv1.CreateDeviceRequest) *deviceBuilder {
 		deviceReq: req,
 		s:         s,
 		logLevel:  mirDevice.LogLevelInfo,
+		storeOpts: mirDevice.StoreOptions{
+			InMemory: true,
+		},
 	}
 }
 
@@ -127,12 +137,18 @@ func (b *devicesBuilder) WithLogLevel(l mirDevice.LogLevel) *devicesBuilder {
 	return b
 }
 
+func (b *devicesBuilder) WithStoreOptions(opts mirDevice.StoreOptions) *devicesBuilder {
+	b.storeOpts = opts
+	return b
+}
+
 func (b *devicesBuilder) Incubate() ([]*core_apiv1.CreateDeviceResponse, error) {
 	var errs error
 	for _, d := range b.deviceReqs {
 		dev, err := mirDevice.Builder().
 			DeviceId(d.Spec.DeviceId).
 			LogLevel(b.logLevel).
+			Store(b.storeOpts).
 			Target(b.s.bus.ConnectedUrl()).
 			Schema(b.sch...).Build()
 		if err != nil {
@@ -153,6 +169,7 @@ func (b *devicesBuilder) Incubate() ([]*core_apiv1.CreateDeviceResponse, error) 
 		dev, err := mirDevice.Builder().
 			DeviceId(d).
 			LogLevel(b.logLevel).
+			Store(b.storeOpts).
 			Target(b.s.bus.ConnectedUrl()).
 			Schema(b.sch...).Build()
 		if err != nil {
@@ -207,10 +224,16 @@ func (b *deviceBuilder) WithLogLevel(l mirDevice.LogLevel) *deviceBuilder {
 	return b
 }
 
+func (b *deviceBuilder) WithStoreOptions(opts mirDevice.StoreOptions) *deviceBuilder {
+	b.storeOpts = opts
+	return b
+}
+
 func (b *deviceBuilder) Incubate() (*core_apiv1.CreateDeviceResponse, error) {
 	dev, err := mirDevice.Builder().
 		DeviceId(b.deviceReq.Spec.DeviceId).
 		LogLevel(b.logLevel).
+		Store(b.storeOpts).
 		Target(b.s.bus.ConnectedUrl()).
 		Schema(b.sch...).Build()
 	if err != nil {

@@ -78,7 +78,7 @@ func (m *Mir) Launch(ctx context.Context) (*sync.WaitGroup, error) {
 	m.ctx, m.cancelFn = context.WithCancel(ctx)
 
 	// Setup persistence
-	if err := m.store.Load(m.ctx); err != nil {
+	if err := m.store.Load(); err != nil {
 		return &wg, fmt.Errorf("error loading local store: %w", err)
 	}
 
@@ -102,21 +102,29 @@ func (m *Mir) Launch(ctx context.Context) (*sync.WaitGroup, error) {
 	if err != nil {
 		return &wg, err
 	}
+
+	wg.Add(1)
 	go func() {
-		wg.Add(1)
 		m.commands(ctx, sub)
 		wg.Done()
 	}()
 
+	wg.Add(1)
 	go func() {
-		wg.Add(1)
 		m.hearthbeat(m.ctx, time.Second*10)
 		wg.Done()
 	}()
 
+	wg.Add(1)
 	go func() {
-		wg.Add(1)
 		m.shutdown(m.ctx)
+		wg.Done()
+	}()
+
+	wg.Add(1)
+	go func() {
+		<-ctx.Done()
+		m.store.Close()
 		wg.Done()
 	}()
 

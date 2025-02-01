@@ -57,6 +57,15 @@ func TestMain(m *testing.M) {
 	time.Sleep(1 * time.Second)
 
 	// Prepare test data
+	if _, err := deleteDevices(b, &core_apiv1.DeleteDeviceRequest{
+		Targets: &core_apiv1.Targets{
+			Labels: map[string]string{
+				"test": "mir_device",
+			},
+		},
+	}); err != nil {
+		panic(err)
+	}
 	devReq := &core_apiv1.CreateDeviceRequest{
 		Meta: &core_apiv1.Meta{
 			Labels: map[string]string{
@@ -113,6 +122,7 @@ func TestLaunchHearthbeat(t *testing.T) {
 	// Arrange
 	mir, err := Builder().
 		DeviceId("TestLaunchHearthbeat").
+		Store(StoreOptions{InMemory: true}).
 		Target("nats://127.0.0.1:4222").
 		LogLevel(LogLevelInfo).
 		Build()
@@ -162,6 +172,7 @@ func TestRequestTelemetrySchema(t *testing.T) {
 	}
 	mir, err := Builder().
 		DeviceId("TestTelemetrySchema").
+		Store(StoreOptions{InMemory: true}).
 		Target("nats://127.0.0.1:4222").
 		LogLevel(LogLevelInfo).
 		Schema(
@@ -197,6 +208,53 @@ func TestRequestTelemetrySchema(t *testing.T) {
 
 	cancel()
 	wg.Wait()
+}
+
+func TestStore(t *testing.T) {
+	id := "test_store"
+	path := "./" + id + ".db"
+
+	s, err := NewStore(StoreOptions{
+		Path: path,
+	})
+	if err != nil {
+		t.Error(err)
+	}
+	if err := s.Load(); err != nil {
+		t.Error(err)
+	}
+
+	new, err := s.UpdatePropsIfNew("test", propsValue{
+		LastUpdate: time.Now(),
+		Value:      []byte("hello_world!"),
+	})
+	notNew, err := s.UpdatePropsIfNew("test", propsValue{
+		LastUpdate: time.Now().Add(-5 * time.Minute),
+		Value:      []byte("hello_world!"),
+	})
+
+	if err := s.Close(); err != nil {
+		t.Error(err)
+	}
+	if err := s.Load(); err != nil {
+		t.Error(err)
+	}
+
+	val, ok := s.GetProps("test")
+	_, notOk := s.GetProps("test_notfound")
+
+	if err := s.Close(); err != nil {
+		t.Error(err)
+	}
+
+	assert.Equal(t, true, new)
+	assert.Equal(t, false, notNew)
+	assert.Equal(t, true, bytes.Equal([]byte("hello_world!"), val.Value))
+	assert.Equal(t, true, ok)
+	assert.Equal(t, false, notOk)
+	if err := os.Remove(path); err != nil {
+		t.Error(err)
+	}
 }
 
 func deleteTableOrRecord(db *surrealdb.DB, thing string) error {

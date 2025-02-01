@@ -11,6 +11,7 @@ import (
 func TestLoadCompileConfig(t *testing.T) {
 	mir, err := Builder().
 		DeviceId("0xf86ea").
+		Store(StoreOptions{InMemory: true}).
 		Target("nats://127.0.0.1:4222").
 		LogLevel(LogLevelInfo).
 		//LogWriters([]io.Writer{os.Stdout}).
@@ -37,6 +38,7 @@ func TestLoadFileConfigJson(t *testing.T) {
 
 	mir, err := Builder().
 		CustomConfigFile(fileName, Json).
+		Store(StoreOptions{InMemory: true}).
 		Build()
 	if err != nil {
 		panic(err)
@@ -60,6 +62,7 @@ logLevel: "info"
 
 	mir, err := Builder().
 		CustomConfigFile(fileName, Yaml).
+		Store(StoreOptions{InMemory: true}).
 		Build()
 	if err != nil {
 		panic(err)
@@ -82,6 +85,7 @@ deviceId: "0xf86ea"
 	mir, err := Builder().
 		LogLevel(LogLevelInfo).
 		Target("nats://127.0.0.1:4222").
+		Store(StoreOptions{InMemory: true}).
 		CustomConfigFile(fileName, Yaml).
 		Build()
 	if err != nil {
@@ -103,6 +107,7 @@ func TestLoadFileConfigMissingFields(t *testing.T) {
 	mir, err := Builder().
 		LogLevel(LogLevelInfo).
 		Target("nats://127.0.0.1:4222").
+		Store(StoreOptions{InMemory: true}).
 		CustomConfigFile(fileName, Yaml).
 		Build()
 
@@ -121,6 +126,7 @@ func TestLoadWithEnvVars(t *testing.T) {
 	defer os.Unsetenv("MIR__LOG_LEVEL")
 	mir, err := Builder().
 		EnvVars().
+		Store(StoreOptions{InMemory: true}).
 		Build()
 	if err != nil {
 		panic(err)
@@ -144,6 +150,7 @@ func TestLoadConfigMix(t *testing.T) {
 	mir, err := Builder().
 		LogLevel(LogLevelDebug).
 		EnvVars().
+		Store(StoreOptions{InMemory: true}).
 		CustomConfigFile(fileName, Json).
 		Build()
 	if err != nil {
