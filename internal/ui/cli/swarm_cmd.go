@@ -65,7 +65,7 @@ func (d *SwarmCmd) Run(c CLI) error {
 	s := swarm.NewSwarm(msgBus)
 	_, err = s.AddDeviceWithIds(d.DeviceIds).
 		WithSchema(swarmv1.File_swarm_v1_demo_proto).
-		WithCommandHandler(&swarmv1.ChangePowerRequest{}, handlePowerCmd).
+		WithCommandHandler(&swarmv1.OpenDoorRequest{}, handleOpenDoorRequest).
 		WithLogLevel(logLvl).
 		Incubate()
 	if err != nil {
@@ -82,16 +82,15 @@ func (d *SwarmCmd) Run(c CLI) error {
 	wg := &sync.WaitGroup{}
 	for _, d := range s.Devices {
 		intSec := time.Duration(5)
-		d.HandleCommand(&swarmv1.ChangeDataRateRequest{},
-			func(m proto.Message) (proto.Message, error) {
-				cmd := m.(*swarmv1.ChangeDataRateRequest)
-				intSec = time.Duration(cmd.Sec)
-				d.Logger().Info().Int("rate_sec", int(cmd.Sec)).Msg("handling change data request command")
-
-				resp := swarmv1.ChangeDataRateResponse{
-					Result: fmt.Sprintf("data collection rate was changed to once every %d seconds", cmd.Sec),
-				}
-				return &resp, nil
+		d.HandleCommand(&swarmv1.SendElevatorRequest{}, handleSendElevatorRequest(d))
+		d.HandleProperties(&swarmv1.ChangeDataRateProp{},
+			func(m proto.Message) {
+				cfg := m.(*swarmv1.ChangeDataRateProp)
+				intSec = time.Duration(cfg.Sec)
+				d.Logger().Info().Int("rate_sec", int(cfg.Sec)).Msg("handling change data request command")
+				d.SendReportedProperties(&swarmv1.ReportedProps{
+					DatarateSec: cfg.Sec,
+				})
 			},
 		)
 		wg.Add(1)
@@ -153,8 +152,20 @@ func sendTelemetry(d *mir.Mir) {
 		Msg("sending telemetry...")
 }
 
-func handlePowerCmd(m proto.Message) (proto.Message, error) {
-	return &swarmv1.ChangePowerResponse{
+func handleOpenDoorRequest(m proto.Message) (proto.Message, error) {
+	return &swarmv1.OpenDoorResponse{
 		Success: true,
 	}, nil
+}
+
+func handleSendElevatorRequest(d *mir.Mir) func(proto.Message) (proto.Message, error) {
+	return func(m proto.Message) (proto.Message, error) {
+		cmd := m.(*swarmv1.SendElevatorRequest)
+		err := d.SendReportedProperties(&swarmv1.ReportedProps{
+			ElevatorFloor: cmd.Floor,
+		})
+		return &swarmv1.SendElevatorResponse{
+			Floor: cmd.Floor,
+		}, err
+	}
 }
