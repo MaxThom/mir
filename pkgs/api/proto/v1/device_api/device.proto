@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package device_api.v1;
 
+import "v1/common_api/common.proto";
+
 /*
   Send a request to retreive the schema of the device
 */
@@ -16,4 +18,21 @@ message SchemaRetrieveResponse {
   	bytes schema = 1; // Schema in bytes
     string error = 2; // Error in string value
   }
+}
+
+message ReportedPropertiesResponse {
+oneof response {
+  ReportedProperties ok = 1; // reported properties map
+  string error = 2; // Error in string value
+}
+}
+
+message ReportedProperties {
+  common_api.v1.Encoding encoding = 1; // Encoding type of payload
+  map<string, Properties> properties = 2;
+}
+
+message Properties {
+   string time = 1; // Last update time of the reported properties
+   bytes property = 2; // Endoded property
 }

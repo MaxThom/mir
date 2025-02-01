@@ -3,6 +3,7 @@ package mir
 import (
 	"fmt"
 	"reflect"
+	"time"
 
 	"github.com/maxthom/mir/internal/clients/device_client"
 	"github.com/maxthom/mir/internal/libs/compression/zstd"
@@ -67,7 +68,7 @@ func DefinedCommandHandler(msg *nats.Msg, m *Mir) error {
 	}
 
 	v := reflect.New(h.t).Interface()
-	cmdMsg := v.(protoreflect.ProtoMessage)
+	cmdMsg := v.(proto.Message)
 
 	if err = proto.Unmarshal(msg.Data, cmdMsg); err != nil {
 		return sendReplyOrAck(m.b, msg, &devicev1.Error{
@@ -89,15 +90,26 @@ func DefinedCommandHandler(msg *nats.Msg, m *Mir) error {
 }
 
 func DefinedConfigHandler(msg *nats.Msg, m *Mir) error {
-	// shouldZstd := false
-	// if msg.Header.Get("request-encoding") == "zstd" {
-	// 	shouldZstd = true
-	// }
 	descName := msg.Header.Get("__msg")
-	_, err := m.schemaReg.FindDescriptorByName(protoreflect.FullName(descName))
+	timeStr := msg.Header.Get("__time")
+	// _, err := m.schemaReg.FindDescriptorByName(protoreflect.FullName(descName))
+	// if err != nil {
+	// 	return fmt.Errorf("device error while looking for config descriptor: %w", err)
+	// }
+	updTime, err := time.Parse(time.RFC3339, timeStr)
 	if err != nil {
-		return fmt.Errorf("device error while looking for config descriptor: %w", err)
+		return fmt.Errorf("device error while decoding time: %w", err)
 	}
+	if new, err := m.store.UpdatePropsIfNew(descName, propsValue{
+		LastUpdate: updTime,
+		Value:      msg.Data,
+	}); !new {
+		return nil
+	} else if err != nil {
+		return fmt.Errorf("device error while updating properties: %w", err)
+	}
+
+	// Props are newer
 
 	h, ok := m.cfgHandlers[descName]
 	if !ok {
@@ -105,8 +117,7 @@ func DefinedConfigHandler(msg *nats.Msg, m *Mir) error {
 	}
 
 	v := reflect.New(h.t).Interface()
-	cmdMsg := v.(protoreflect.ProtoMessage)
-
+	cmdMsg := v.(proto.Message)
 	if err = proto.Unmarshal(msg.Data, cmdMsg); err != nil {
 		return fmt.Errorf("device error while unmarshalling config payload: %w", err)
 	}

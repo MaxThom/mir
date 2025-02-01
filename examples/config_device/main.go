@@ -36,6 +36,11 @@ func main() {
 	}
 	l := m.Logger()
 
+	m.HandleProperties(&config_devicev1.PhoneConfig{}, func(msg proto.Message) {
+		cfg := msg.(*config_devicev1.PhoneConfig)
+		fmt.Println(cfg)
+	})
+
 	l.Info().Msg("Mir is ready for launch... Launching!")
 	mirWg, err := m.Launch(ctx)
 	if err != nil {

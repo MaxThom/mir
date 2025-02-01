@@ -28,3 +28,20 @@ message Args {
  repeated string names = 2;
  map<string, int32> ingredients = 3;
 }
+
+message PhoneConfig {
+	option (mir.device.v1.message_type) = MESSAGE_TYPE_TELECONFIG;
+	option (mir.device.v1.meta) = {
+		tags: [{
+			key: "building",
+			value: "A"
+		}, {
+			key: "floor",
+			value: "1"
+		}]
+	};
+
+	int32 country_code = 1;
+	string number = 2;
+	int32 extension = 3;
+}

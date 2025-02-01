@@ -322,3 +322,55 @@ func (r *reportedPropertiesRoute) QueueSubscribe(queue string, deviceId string, 
 	}
 	return r.m.queueSubscribe(queue, sbj, h)
 }
+
+/// Reported Properties
+
+type desiredPropertiesRoute struct {
+	m *Mir
+}
+
+// Retrieve device schema
+func (r *deviceRoutes) DesiredProperties() *desiredPropertiesRoute {
+	return &desiredPropertiesRoute{m: r.m}
+}
+
+// Subscribe to device reported properties
+// To listen to all devices, use deviceId = "" or deviceId = "*"
+// You are responsible of acknowledging the message
+func (r *desiredPropertiesRoute) Subscribe(deviceId string, h func(msg *Msg, deviceId string) (*device_apiv1.ReportedProperties, error)) error {
+	if deviceId == "" {
+		deviceId = "*"
+	}
+	sbj := cfg_client.RequestDesiredPropertiesStream.WithId(deviceId)
+	return r.m.subscribe(sbj, r.handlerWrapper(h))
+}
+
+// Subscribe to device reported properties as a worker queue
+// To listen to all devices, use deviceId = "" or deviceId = "*"
+// You are responsible of acknowledging the message
+func (r *desiredPropertiesRoute) QueueSubscribe(queue string, deviceId string, h func(msg *Msg, deviceId string) (*device_apiv1.ReportedProperties, error)) error {
+	if deviceId == "" {
+		deviceId = "*"
+	}
+	sbj := cfg_client.RequestDesiredPropertiesStream.WithId(deviceId)
+	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(h))
+}
+
+func (r *desiredPropertiesRoute) handlerWrapper(f func(msg *Msg, deviceId string) (*device_apiv1.ReportedProperties, error)) nats.MsgHandler {
+	return func(msg *nats.Msg) {
+		resp, err := f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId())
+		if err != nil {
+			err = r.m.sendReplyOrAck(msg, &device_apiv1.ReportedPropertiesResponse{
+				Response: &device_apiv1.ReportedPropertiesResponse_Error{
+					Error: err.Error(),
+				}})
+			return
+		}
+		// TODO log error here
+		err = r.m.sendReplyOrAck(msg, &device_apiv1.ReportedPropertiesResponse{
+			Response: &device_apiv1.ReportedPropertiesResponse_Ok{
+				Ok: resp,
+			},
+		})
+	}
+}
