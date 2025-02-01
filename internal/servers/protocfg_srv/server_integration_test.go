@@ -12,6 +12,7 @@ import (
 	"github.com/maxthom/mir/internal/clients/core_client"
 	"github.com/maxthom/mir/internal/externals/mng"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
+	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
 	"github.com/maxthom/mir/internal/libs/swarm"
 	"github.com/maxthom/mir/internal/libs/test_utils"
 	"github.com/maxthom/mir/internal/servers/core_srv"
@@ -19,6 +20,7 @@ import (
 	cfg_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cfg_api"
 	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
+	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
 	mirDevice "github.com/maxthom/mir/pkgs/device/mir"
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/maxthom/mir/pkgs/module/mir"
@@ -27,6 +29,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/descriptorpb"
 	"gotest.tools/assert"
 )
 
@@ -226,7 +229,7 @@ func TestPublishCfgRequest(t *testing.T) {
 		},
 	}
 
-	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).Schema(
+	dev, err := mirDevice.Builder().DeviceId(id).Store(mirDevice.StoreOptions{InMemory: true}).Target(busUrl).Schema(
 		protocfg_testv1.File_protocfg_test_v1_cfg_proto,
 	).Build()
 	if err != nil {
@@ -339,7 +342,7 @@ func TestPublishCfgJsonRequest(t *testing.T) {
 		},
 	}
 
-	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).Schema(
+	dev, err := mirDevice.Builder().DeviceId(id).Store(mirDevice.StoreOptions{InMemory: true}).Target(busUrl).Schema(
 		protocfg_testv1.File_protocfg_test_v1_cfg_proto,
 	).Build()
 	if err != nil {
@@ -463,7 +466,7 @@ func TestPublishCfgProtoDryRun(t *testing.T) {
 		},
 	}
 
-	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).Schema(
+	dev, err := mirDevice.Builder().DeviceId(id).Store(mirDevice.StoreOptions{InMemory: true}).Target(busUrl).Schema(
 		protocfg_testv1.File_protocfg_test_v1_cfg_proto,
 	).Build()
 	if err != nil {
@@ -541,7 +544,7 @@ func TestPublishCfgProtoInvalidPayload(t *testing.T) {
 		},
 	}
 
-	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).Schema(
+	dev, err := mirDevice.Builder().DeviceId(id).Store(mirDevice.StoreOptions{InMemory: true}).Target(busUrl).Schema(
 		protocfg_testv1.File_protocfg_test_v1_cfg_proto,
 	).Build()
 	if err != nil {
@@ -1165,7 +1168,7 @@ func TestPublishCfgRequestMultipleDevicesOneTimeoutJsonTemplate(t *testing.T) {
 		},
 	}
 
-	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).Schema(
+	dev, err := mirDevice.Builder().DeviceId(id).Store(mirDevice.StoreOptions{InMemory: true}).Target(busUrl).Schema(
 		protocfg_testv1.File_protocfg_test_v1_cfg_proto,
 	).Build()
 	if err != nil {
@@ -1258,7 +1261,7 @@ func TestPublishCfgJsonNameWithCurlyRequest(t *testing.T) {
 		},
 	}
 
-	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).Schema(
+	dev, err := mirDevice.Builder().DeviceId(id).Store(mirDevice.StoreOptions{InMemory: true}).Target(busUrl).Schema(
 		protocfg_testv1.File_protocfg_test_v1_cfg_proto,
 	).Build()
 	if err != nil {
@@ -1335,7 +1338,7 @@ func TestPublishReportedProperties(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_send_reported_props"
 
-	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).Schema(
+	dev, err := mirDevice.Builder().DeviceId(id).Store(mirDevice.StoreOptions{InMemory: true}).Target(busUrl).Schema(
 		protocfg_testv1.File_protocfg_test_v1_cfg_proto,
 	).Build()
 	if err != nil {
@@ -1378,7 +1381,7 @@ func TestPublishReportedPropertiesEvent(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_send_reported_props_event"
 
-	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).Schema(
+	dev, err := mirDevice.Builder().DeviceId(id).Store(mirDevice.StoreOptions{InMemory: true}).Target(busUrl).Schema(
 		protocfg_testv1.File_protocfg_test_v1_cfg_proto,
 	).Build()
 	if err != nil {
@@ -1457,7 +1460,7 @@ func TestPublishDesiredPropertiesEvent(t *testing.T) {
 		t.Error(err)
 	}
 
-	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).Schema(
+	dev, err := mirDevice.Builder().DeviceId(id).Store(mirDevice.StoreOptions{InMemory: true}).Target(busUrl).Schema(
 		protocfg_testv1.File_protocfg_test_v1_cfg_proto,
 	).Build()
 	if err != nil {
@@ -1525,6 +1528,153 @@ func TestPublishDesiredPropertiesEvent(t *testing.T) {
 	assert.Equal(t, int32(5), props.Power)
 	assert.Equal(t, common_apiv1.Encoding_ENCODING_PROTOBUF, respCfg.GetOk().Encoding)
 	assert.Equal(t, 1, eventCount)
+	cancel()
+	wg.Wait()
+}
+
+// The properties are written to db before the device is launched
+// We test if the device reconcile its properties and call the handlers
+func TestDesiredPropertiesRequestFromDeviceOnBoot(t *testing.T) {
+	// Arrange
+	ctx, cancel := context.WithCancel(context.Background())
+	id := "device_request_desired_props"
+	reqCreate := &core_apiv1.CreateDeviceRequest{
+		Meta: &core_apiv1.Meta{
+			Name:      id,
+			Namespace: "testing_cfg",
+			Labels: map[string]string{
+				"testing": "cfg",
+			},
+			Annotations: map[string]string{
+				"mir/device/description": "hello world of devices !",
+			},
+		},
+		Spec: &core_apiv1.Spec{
+			DeviceId: id,
+		},
+	}
+
+	sch, err := mir_proto.NewMirProtoSchema(
+		protocfg_testv1.File_protocfg_test_v1_cfg_proto,
+		descriptorpb.File_google_protobuf_descriptor_proto,
+		devicev1.File_mir_device_v1_mir_proto,
+	)
+	if err != nil {
+		t.Error(err)
+	}
+	compSch, err := sch.CompressSchema()
+	if err != nil {
+		t.Error(err)
+	}
+	packNames := sch.GetPackageList()
+
+	updateSchReq := &core_apiv1.UpdateDeviceRequest{
+		Targets: &core_apiv1.Targets{
+			Ids: []string{id},
+		},
+		Status: &core_apiv1.UpdateDeviceRequest_Status{
+			Schema: &core_apiv1.UpdateDeviceRequest_Schema{
+				CompressedSchema: compSch,
+				PackageNames:     packNames,
+			},
+		},
+	}
+
+	reqPayloadPowerLevel := protocfg_testv1.PowerLevel{
+		Power: 5,
+	}
+	payloadBytesPowerLevel, err := proto.Marshal(&reqPayloadPowerLevel)
+	if err != nil {
+		t.Error(err)
+	}
+
+	reqPowerLevel := &cfg_apiv1.SendConfigRequest{
+		Targets: &core_apiv1.Targets{
+			Ids: []string{id},
+		},
+		Name:            string(reqPayloadPowerLevel.ProtoReflect().Descriptor().FullName()),
+		PayloadEncoding: common_apiv1.Encoding_ENCODING_PROTOBUF,
+		Payload:         payloadBytesPowerLevel,
+	}
+
+	reqPayloadConduit := protocfg_testv1.Conduit{
+		Power:     5,
+		ValveOpen: true,
+	}
+	payloadBytesConduit, err := proto.Marshal(&reqPayloadConduit)
+	if err != nil {
+		t.Error(err)
+	}
+
+	reqConduit := &cfg_apiv1.SendConfigRequest{
+		Targets: &core_apiv1.Targets{
+			Ids: []string{id},
+		},
+		Name:            string(reqPayloadConduit.ProtoReflect().Descriptor().FullName()),
+		PayloadEncoding: common_apiv1.Encoding_ENCODING_PROTOBUF,
+		Payload:         payloadBytesConduit,
+	}
+
+	dev, err := mirDevice.Builder().DeviceId(id).Store(mirDevice.StoreOptions{InMemory: true}).Target(busUrl).Schema(
+		protocfg_testv1.File_protocfg_test_v1_cfg_proto,
+	).Build()
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Act
+	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate)
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	resp, err := core_client.PublishDeviceUpdateRequest(b, updateSchReq)
+	if err != nil {
+		t.Error(err)
+	}
+	if resp.GetError() != "" {
+		t.Error(resp.GetError())
+	}
+	time.Sleep(1 * time.Second)
+
+	_, err = cfg_client.PublishSendConfigRequest(b, reqPowerLevel)
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = cfg_client.PublishSendConfigRequest(b, reqConduit)
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	// This should be called instantly after launch
+	propsPowerLevel := &protocfg_testv1.PowerLevel{}
+	dev.HandleProperties(
+		propsPowerLevel,
+		func(m protoreflect.ProtoMessage) {
+			propsPowerLevel = m.(*protocfg_testv1.PowerLevel)
+		},
+	)
+
+	wg, err := dev.Launch(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// This should be called after launch with reconciled properties
+	propsConduit := &protocfg_testv1.Conduit{}
+	dev.HandleProperties(
+		propsConduit,
+		func(m protoreflect.ProtoMessage) {
+			propsConduit = m.(*protocfg_testv1.Conduit)
+		},
+	)
+	time.Sleep(10 * time.Second)
+
+	// Assert
+	assert.Equal(t, int32(5), propsPowerLevel.Power)
+	assert.Equal(t, true, propsConduit.ValveOpen)
 	cancel()
 	wg.Wait()
 }

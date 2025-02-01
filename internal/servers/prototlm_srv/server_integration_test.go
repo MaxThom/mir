@@ -139,7 +139,7 @@ func TestPublishDevicePushTelemetry(t *testing.T) {
 		},
 	}
 
-	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).Schema(
+	dev, err := mirDevice.Builder().DeviceId(id).Store(mirDevice.StoreOptions{InMemory: true}).Target(busUrl).Schema(
 		prototlm_testv1.File_prototlm_test_v1_telemetry_proto,
 	).Build()
 	if err != nil {
@@ -276,7 +276,7 @@ func TestPublishDeviceSchemaAlreadyPresent(t *testing.T) {
 		},
 	}
 
-	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).Schema(
+	dev, err := mirDevice.Builder().DeviceId(id).Store(mirDevice.StoreOptions{InMemory: true}).Target(busUrl).Schema(
 		prototlm_testv1.File_prototlm_test_v1_telemetry_proto,
 	).Build()
 	if err != nil {
@@ -415,7 +415,7 @@ func TestPublishDeviceSchemaInvalid(t *testing.T) {
 		},
 	}
 
-	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).Schema(
+	dev, err := mirDevice.Builder().DeviceId(id).Store(mirDevice.StoreOptions{InMemory: true}).Target(busUrl).Schema(
 		prototlm_testv1.File_prototlm_test_v1_telemetry_proto,
 	).Build()
 	if err != nil {
@@ -533,7 +533,7 @@ func TestPublishDevicePushTelemetryDeviceUpdate(t *testing.T) {
 		},
 	}
 
-	dev, err := mirDevice.Builder().DeviceId(id).Target(busUrl).Schema(
+	dev, err := mirDevice.Builder().DeviceId(id).Store(mirDevice.StoreOptions{InMemory: true}).Target(busUrl).Schema(
 		prototlm_testv1.File_prototlm_test_v1_telemetry_proto,
 	).Build()
 	if err != nil {

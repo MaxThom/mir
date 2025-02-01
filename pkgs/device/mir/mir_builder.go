@@ -168,7 +168,7 @@ func (b builder) ExcludeMirSchema() builder {
 // Path:
 // default to $XDG_DATA_HOME/mir/mir.db
 // On linux, that is $HOME/.local/share/mir/mir.db
-func (b builder) StoreOptions(opts StoreOptions) builder {
+func (b builder) Store(opts StoreOptions) builder {
 	b.storeOpts = opts
 	return b
 }
@@ -252,8 +252,8 @@ func (b builder) Build() (*Mir, error) {
 		return nil, fmt.Errorf("error creating schema registry: %w", err)
 	}
 
-	if b.storeOpts.path == "" {
-		b.storeOpts.path = filepath.Join(xdg.DataHome, "mir", "mir.db")
+	if b.storeOpts.Path == "" {
+		b.storeOpts.Path = filepath.Join(xdg.DataHome, "mir", "mir.db")
 	}
 	store, err := NewStore(b.storeOpts)
 	if err != nil {
