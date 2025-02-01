@@ -6,6 +6,7 @@ import (
 	"github.com/maxthom/mir/internal/clients"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	cfg_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cfg_api"
+	device_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/device_api"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -18,7 +19,8 @@ const (
 	DesiredPropertiesEvent  clients.ServerSubject = "event.%s.cfg.v1alpha.desiredproperties"
 	ReportedPropertiesEvent clients.ServerSubject = "event.%s.cfg.v1alpha.reportedproperties"
 
-	ReportedPropertiesStream clients.ServerSubject = "device.%s.cfg.v1alpha.proto"
+	ReportedPropertiesStream       clients.ServerSubject = "device.%s.cfg.v1alpha.proto"
+	RequestDesiredPropertiesStream clients.ServerSubject = "device.%s.cfg.v1alpha.desiredproperties"
 )
 
 func PublishSendConfigRequest(bus *bus.BusConn, req *cfg_apiv1.SendConfigRequest) (*cfg_apiv1.SendConfigResponse, error) {
@@ -76,6 +78,22 @@ func PublishReportedPropertiesStream(bus *bus.BusConn, deviceId string, t proto.
 		},
 		Data: b,
 	})
+}
+
+func PublishRequestDesiredPropertiesStream(bus *bus.BusConn, deviceId string) (*device_apiv1.ReportedPropertiesResponse, error) {
+	resMsg, err := bus.Request(RequestDesiredPropertiesStream.WithId(deviceId), []byte{}, 7*time.Second)
+	if err != nil {
+		return &device_apiv1.ReportedPropertiesResponse{}, err
+
+	}
+
+	resp := &device_apiv1.ReportedPropertiesResponse{}
+	err = proto.Unmarshal(resMsg.Data, resp)
+	if err != nil {
+		return &device_apiv1.ReportedPropertiesResponse{}, err
+	}
+
+	return resp, nil
 }
 
 func PublishDesiredPropertiesEvent(bus *nats.Conn, originalInstance string, deviceId string, props map[string]any) error {

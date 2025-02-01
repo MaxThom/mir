@@ -68,6 +68,22 @@ func (c *MirProtoCache) GetDeviceSchema(deviceId string, refreshSchema bool) (*m
 	return c.cache[deviceId].sch, c.cache[deviceId].dev, nil
 }
 
+func (c *MirProtoCache) FindMessageDescriptor(deviceId string, sch *mir_proto.MirProtoSchema, msgName string) (protoreflect.Descriptor, *mir_proto.MirProtoSchema, error) {
+	desc, err := sch.FindDescriptorByName(protoreflect.FullName(msgName))
+	if err != nil {
+		// If error finding descriptor, we force a hard refresh
+		sch, _, err = c.GetDeviceSchema(deviceId, true)
+		if err != nil {
+			return nil, nil, err
+		}
+		desc, err = sch.FindDescriptorByName(protoreflect.FullName(msgName))
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+	return desc, sch, nil
+}
+
 // Get device schema and descriptor from cache
 // If schema missing, get from db.
 // If db missing, fetch from device.

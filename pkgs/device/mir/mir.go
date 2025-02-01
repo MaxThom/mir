@@ -2,6 +2,7 @@ package mir
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -20,18 +21,10 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
-// IDEA on go language
-// have return variable at outside scope sugar syntax
-// bus, db if err := ConnectToSystems(bUrl string, dbUrl string); err != nil {
-// 	err is in scope here as well as bus and db
-// } else {
-//  same here
-// }
-// bus and db still exist here, but not err
-
 type Mir struct {
 	cfg         Cfg
 	b           *bus.BusConn
+	store       *Store
 	ctx         context.Context
 	cancelFn    context.CancelFunc
 	l           zerolog.Logger
@@ -39,6 +32,7 @@ type Mir struct {
 	schemaReg   *protoregistry.Files
 	cmdHandlers map[string]cmdHandlerValue
 	cfgHandlers map[string]cfgHandlerValue
+	initialized bool
 }
 
 type Cfg struct {
@@ -73,15 +67,22 @@ func (m Mir) GetDeviceId() string {
 // This will enable communication to and from the device
 // For a gracefull shutdown, simply wait the returning waitgroup after
 // cancelling the context
+// Upon Launch, the device will request its properties from the server
+// and call all the registered properties handlers
 func (m *Mir) Launch(ctx context.Context) (*sync.WaitGroup, error) {
+	var err error
 	var wg sync.WaitGroup
 	if ctx == nil {
 		ctx = context.Background()
 	}
 	m.ctx, m.cancelFn = context.WithCancel(ctx)
 
+	// Setup persistence
+	if err := m.store.Load(m.ctx); err != nil {
+		return &wg, fmt.Errorf("error loading local store: %w", err)
+	}
+
 	// Setup Mir bus
-	var err error
 	m.b, err = bus.New(m.cfg.Target,
 		bus.WithReconnHandler(func(nc *nats.Conn) {
 			m.l.Warn().Msg("reconnected to Mir Server ")
@@ -122,6 +123,13 @@ func (m *Mir) Launch(ctx context.Context) (*sync.WaitGroup, error) {
 	// Wait for the connection to be established
 	// and device created on the server if needed
 	time.Sleep(2 * time.Second)
+
+	// Call config handler
+	if err := m.requestDesiredProperties(); err != nil {
+		m.l.Error().Err(err).Msg("error requesting desired properties")
+	}
+	m.callAllCfgHandlers()
+	m.initialized = true
 
 	return &wg, nil
 }
@@ -213,6 +221,57 @@ func (m Mir) SendReportedProperties(t proto.Message) error {
 	return cfg_client.PublishReportedPropertiesStream(m.b, m.cfg.DeviceId, t)
 }
 
+// Fill the properties store with the latest properties from Mir server
+// Also write to the persistent store
+func (m Mir) requestDesiredProperties() error {
+	resp, err := cfg_client.PublishRequestDesiredPropertiesStream(m.b, m.cfg.DeviceId)
+	if err != nil {
+		return fmt.Errorf("error requesting desired properties: %v", err)
+	}
+	if resp.GetError() != "" {
+		return fmt.Errorf("error requesting desired properties: %v", resp.GetError())
+	}
+
+	props := resp.GetOk()
+
+	var errs error
+	for msgName, cfg := range props.Properties {
+		updTime, err := time.Parse(time.RFC3339, cfg.Time)
+		if err != nil {
+			errs = errors.Join(errs, err)
+			continue
+		}
+
+		if _, err := m.store.UpdatePropsIfNew(msgName, propsValue{LastUpdate: updTime, Value: cfg.Property}); err != nil {
+			errs = errors.Join(errs, err)
+			continue
+		}
+	}
+
+	// Write to store
+	return errs
+}
+
+func (m Mir) callAllCfgHandlers() {
+	for name, h := range m.cfgHandlers {
+		props, ok := m.store.GetProps(name)
+		if !ok {
+			continue
+		}
+
+		v := reflect.New(h.t).Interface()
+		msg := v.(proto.Message)
+		if err := proto.Unmarshal(props.Value, msg); err != nil {
+			m.l.Error().Err(err).Msg("error unmarshalling properties")
+			continue
+		}
+
+		for _, handler := range h.h {
+			handler(msg)
+		}
+	}
+}
+
 // Handle a command from Mir server
 // Specify which command with the proto msg from your schema
 // Return a proto message as response, nil if no response, or an error
@@ -234,6 +293,9 @@ func (m Mir) HandleCommand(t proto.Message, handler func(proto.Message) (proto.M
 // Handle a properties update from Mir server
 // Specify which properties with the proto msg from your schema
 // Each properties can have many handlers and each will be called upon update
+// If the handler is registered after the launch, it will be called if the properties
+// is already present in the store
+// If the handler is registered before the launch, it will be called on Launch
 // eg:
 // m.HandleProperties(
 //
@@ -252,6 +314,26 @@ func (m Mir) HandleProperties(t proto.Message, handler ...func(proto.Message)) {
 	}
 	cfg.h = append(cfg.h, handler...)
 	m.cfgHandlers[key] = cfg
+
+	// If we register cfg handler after launch, we need to call it
+	// if we already have the properties
+	if m.initialized {
+		props, ok := m.store.GetProps(key)
+		if !ok {
+			return
+		}
+
+		v := reflect.New(cfg.t).Interface()
+		msg := v.(proto.Message)
+		if err := proto.Unmarshal(props.Value, msg); err != nil {
+			m.l.Error().Err(err).Msg("error unmarshalling properties")
+			return
+		}
+
+		for _, handler := range handler {
+			handler(msg)
+		}
+	}
 }
 
 type subject string

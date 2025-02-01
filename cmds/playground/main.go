@@ -34,6 +34,10 @@ type Properties struct {
 }
 
 func main() {
+
+}
+
+func main2() {
 	db, err := surreal.ConnectToDb("ws://127.0.0.1:8000/rpc", "global", "mir", "root", "root")
 	if err != nil {
 		fmt.Println(err)

@@ -16,6 +16,7 @@ import (
 	cfg_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cfg_api"
 	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
+	device_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/device_api"
 	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/maxthom/mir/pkgs/module/mir"
@@ -87,6 +88,9 @@ func (s *ProtoCfgServer) Serve() error {
 		return err
 	}
 	if err := s.m.Device().ReportedProperties().QueueSubscribe(ServiceName, "*", s.reportedPropsSub); err != nil {
+		return err
+	}
+	if err := s.m.Device().DesiredProperties().QueueSubscribe(ServiceName, "*", s.desiredPropsSub); err != nil {
 		return err
 	}
 	return nil
@@ -201,7 +205,7 @@ type cmdDevicePayload struct {
 // - [x] Reported properties
 // - [ ] Update from core
 // - [x] Device desired properties multiple handler for same cfg
-// - [ ] More test
+// - [x] More test
 
 func (s *ProtoCfgServer) sendConfigToDevices(req *cfg_apiv1.SendConfigRequest) (map[string]*cfg_apiv1.SendConfigResponse_ConfigResponse, error) {
 	devs, err := s.devStore.ListDevice(&core_apiv1.ListDeviceRequest{Targets: req.Targets})
@@ -290,7 +294,7 @@ func (s *ProtoCfgServer) sendConfigToDevices(req *cfg_apiv1.SendConfigRequest) (
 
 		// Add to map with time and name
 		timeNow := time.Now().UTC()
-		mapPayload["__time"] = timeNow.String()
+		mapPayload["__time"] = timeNow.Format(time.RFC3339)
 		mapPayload = map[string]interface{}{
 			string(msgReqDesc.FullName()): mapPayload,
 		}
@@ -450,7 +454,7 @@ func (s *ProtoCfgServer) reportedPropsSub(msg *mir.Msg, deviceId string, msgName
 		return
 	}
 	timeNow := time.Now().UTC()
-	msgMap["__time"] = timeNow.String()
+	msgMap["__time"] = timeNow.Format(time.RFC3339)
 	msgMap = map[string]interface{}{
 		"properties": map[string]interface{}{
 			"reported": map[string]interface{}{
@@ -481,4 +485,66 @@ func (s *ProtoCfgServer) reportedPropsSub(msg *mir.Msg, deviceId string, msgName
 			l.Error().Err(err).Msg("error while publishing device reported properties event")
 		}
 	}
+}
+
+func (s *ProtoCfgServer) desiredPropsSub(msg *mir.Msg, deviceId string) (*device_apiv1.ReportedProperties, error) {
+	devs, err := s.devStore.ListDevice(&core_apiv1.ListDeviceRequest{
+		Targets: &core_apiv1.Targets{
+			Ids: []string{deviceId},
+		},
+	})
+	if err != nil {
+		l.Error().Err(err).Str("device_id", deviceId).Msg("error listing device from db")
+		return &device_apiv1.ReportedProperties{}, err
+	}
+	if len(devs) == 0 {
+		l.Error().Str("device_id", deviceId).Msg("device not found in store")
+		return &device_apiv1.ReportedProperties{}, mng.ErrorNoDeviceFound
+	}
+	dev := devs[0]
+
+	devSch, _, err := s.schStore.GetDeviceSchema(deviceId, false)
+	if err != nil {
+		l.Error().Err(err).Str("device_id", deviceId).Msg("error retrieving device schema")
+		return &device_apiv1.ReportedProperties{}, err
+	}
+
+	// Get the desired properties
+	desiredProps := &device_apiv1.ReportedProperties{
+		Encoding:   common_apiv1.Encoding_ENCODING_PROTOBUF,
+		Properties: make(map[string]*device_apiv1.Properties),
+	}
+	for msgName, p := range dev.Properties.Desired {
+		var desc protoreflect.Descriptor
+		desc, devSch, err = s.schStore.FindMessageDescriptor(deviceId, devSch, msgName)
+		if err != nil {
+			l.Error().Err(err).Str("device_id", deviceId).Str("msg_name", msgName).Msg("error finding descriptor in device schema")
+			continue
+		}
+		props := p.(map[string]interface{})
+		updTime := props["__time"].(string)
+		delete(props, "__time")
+
+		propsJsonByte, err := json.Marshal(props)
+		if err != nil {
+			l.Error().Err(err).Str("device_id", deviceId).Str("msg_name", msgName).Msg("error marshaling desired properties to JSON")
+			continue
+		}
+
+		msg := dynamicpb.NewMessage(desc.(protoreflect.MessageDescriptor))
+		if err = protojson.Unmarshal(propsJsonByte, msg); err != nil {
+			l.Error().Err(err).Str("device_id", deviceId).Str("msg_name", msgName).Msg("error unmarshaling desired properties")
+		}
+		msgBytes, err := proto.Marshal(msg)
+		if err != nil {
+			l.Error().Err(err).Str("device_id", deviceId).Str("msg_name", msgName).Msg("error marshaling desired properties to protobuf")
+			continue
+		}
+		desiredProps.Properties[msgName] = &device_apiv1.Properties{
+			Time:     updTime,
+			Property: msgBytes,
+		}
+
+	}
+	return desiredProps, nil
 }

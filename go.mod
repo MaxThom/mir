@@ -21,6 +21,7 @@ require (
 )
 
 require (
+	github.com/adrg/xdg v0.5.3 // indirect
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
@@ -48,6 +49,7 @@ require (
 	github.com/prometheus/common v0.45.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
+	go.etcd.io/bbolt v1.3.11 // indirect
 	golang.org/x/crypto v0.16.0 // indirect
 	golang.org/x/sync v0.8.0 // indirect
 	golang.org/x/term v0.15.0 // indirect
@@ -68,6 +70,6 @@ require (
 require (
 	github.com/google/uuid v1.5.0
 	github.com/prometheus/client_golang v1.18.0
-	golang.org/x/sys v0.15.0 // indirect
+	golang.org/x/sys v0.26.0 // indirect
 	gotest.tools v2.2.0+incompatible
 )

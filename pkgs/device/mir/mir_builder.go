@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
+	"github.com/adrg/xdg"
 	"github.com/maxthom/mir/internal/libs/boiler/mir_config"
 	"github.com/maxthom/mir/internal/libs/boiler/mir_log"
 	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
@@ -22,6 +24,7 @@ type builder struct {
 	schema              *descriptorpb.FileDescriptorSet
 	telemetryModuleFlag bool
 	excludeMirProtoFlag bool
+	storeOpts           StoreOptions
 }
 
 type configFormat string
@@ -161,6 +164,15 @@ func (b builder) ExcludeMirSchema() builder {
 	return b
 }
 
+// Set persistent device store options
+// Path:
+// default to $XDG_DATA_HOME/mir/mir.db
+// On linux, that is $HOME/.local/share/mir/mir.db
+func (b builder) StoreOptions(opts StoreOptions) builder {
+	b.storeOpts = opts
+	return b
+}
+
 // Return the Mir device object to
 // be used to interact with the system
 // TODO returns errors instead of logs, use error.wrap and error.join
@@ -240,9 +252,17 @@ func (b builder) Build() (*Mir, error) {
 		return nil, fmt.Errorf("error creating schema registry: %w", err)
 	}
 
+	if b.storeOpts.path == "" {
+		b.storeOpts.path = filepath.Join(xdg.DataHome, "mir", "mir.db")
+	}
+	store, err := NewStore(b.storeOpts)
+	if err != nil {
+		return nil, fmt.Errorf("error creating store: %w", err)
+	}
 	return &Mir{
 		cfg:         c,
 		l:           l,
+		store:       store,
 		schema:      b.schema,
 		schemaReg:   reg,
 		cmdHandlers: make(map[string]cmdHandlerValue),
