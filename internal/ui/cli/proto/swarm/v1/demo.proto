@@ -43,22 +43,32 @@ message PowerConsuption {
 }
 
 
-message ChangeDataRateRequest {
+message OpenDoorRequest {
 	option (mir.device.v1.message_type) = MESSAGE_TYPE_TELECOMMAND;
 
-	int32 sec = 1;
 }
 
-message ChangeDataRateResponse {
-    string result = 1;
-}
-
-message ChangePowerRequest {
-	option (mir.device.v1.message_type) = MESSAGE_TYPE_TELECOMMAND;
-
-	int32 power = 1;
-}
-
-message ChangePowerResponse {
+message OpenDoorResponse {
     bool success = 1;
+}
+
+message SendElevatorRequest {
+	option (mir.device.v1.message_type) = MESSAGE_TYPE_TELECOMMAND;
+
+	int32 floor = 1;
+}
+
+message SendElevatorResponse {
+    int32 floor = 1;
+}
+
+message ChangeDataRateProp {
+  option (mir.device.v1.message_type) = MESSAGE_TYPE_TELECONFIG;
+
+  int32 sec = 1;
+}
+
+message ReportedProps {
+    int32 datarate_sec = 1;
+    int32 elevator_floor = 2;
 }
