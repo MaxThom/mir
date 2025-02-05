@@ -278,7 +278,7 @@ func TestPublishDeviceSchemaAlreadyPresent(t *testing.T) {
 
 	dev, err := mirDevice.Builder().DeviceId(id).Store(mirDevice.StoreOptions{InMemory: true}).Target(busUrl).Schema(
 		prototlm_testv1.File_prototlm_test_v1_telemetry_proto,
-	).Build()
+	).ExcludeSchemaOnLaunch().Build()
 	if err != nil {
 		t.Error(err)
 	}

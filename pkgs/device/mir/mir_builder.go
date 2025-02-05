@@ -22,6 +22,7 @@ type builder struct {
 	logLevel            *LogLevel
 	logWriters          []io.Writer
 	schema              *descriptorpb.FileDescriptorSet
+	noSchemaOnBoot      *bool
 	telemetryModuleFlag bool
 	excludeMirProtoFlag bool
 	storeOpts           StoreOptions
@@ -164,6 +165,14 @@ func (b builder) ExcludeMirSchema() builder {
 	return b
 }
 
+// Send the device schema on device boot.
+// Default to true
+func (b builder) ExcludeSchemaOnLaunch() builder {
+	t := true
+	b.noSchemaOnBoot = &t
+	return b
+}
+
 // Set persistent device store options
 // Path:
 // default to $XDG_DATA_HOME/mir/mir.db
@@ -194,6 +203,9 @@ func (b builder) Build() (*Mir, error) {
 		c.LogLevel = b.logLevel.String()
 	} else {
 		c.LogLevel = "info"
+	}
+	if b.noSchemaOnBoot != nil {
+		c.NoSchemaOnBoot = *b.noSchemaOnBoot
 	}
 
 	if len(b.logWriters) == 0 {
@@ -261,7 +273,8 @@ func (b builder) Build() (*Mir, error) {
 	}
 	return &Mir{
 		cfg:         c,
-		l:           l,
+		l:           l.With().Str("source", "sdk").Logger(),
+		cleanLogger: l.With().Logger(),
 		store:       store,
 		schema:      b.schema,
 		schemaReg:   reg,

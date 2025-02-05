@@ -141,7 +141,7 @@ func (r *telemetryRoute) QueueSubscribe(queue string, deviceId string, f func(ms
 	return r.m.queueSubscribe(queue, sbj, h)
 }
 
-/// Schema
+/// Schema Request
 
 type schemaRoute struct {
 	m *Mir
@@ -169,6 +169,51 @@ func (r *schemaRoute) Request(deviceId string) (*mir_proto.MirProtoSchema, error
 	}
 
 	return mir_proto.UnmarshalSchema(sch.GetSchema())
+}
+
+// Subscribe to device schema stream
+// To listen to all devices, use deviceId = "" or deviceId = "*"
+// You are responsible of acknowledging the message
+func (r *schemaRoute) Subscribe(deviceId string, h func(msg *Msg, deviceId string, schema *mir_proto.MirProtoSchema, err error)) error {
+	if deviceId == "" {
+		deviceId = "*"
+	}
+	sbj := core_client.SchemaDeviceStream.WithId(deviceId)
+	return r.m.subscribe(sbj, r.handlerWrapper(h))
+}
+
+// Subscribe to device reported properties as a worker queue
+// To listen to all devices, use deviceId = "" or deviceId = "*"
+// You are responsible of acknowledging the message
+func (r *schemaRoute) QueueSubscribe(queue string, deviceId string, h func(msg *Msg, deviceId string, schema *mir_proto.MirProtoSchema, err error)) error {
+	if deviceId == "" {
+		deviceId = "*"
+	}
+	sbj := core_client.SchemaDeviceStream.WithId(deviceId)
+	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(h))
+}
+
+func (r *schemaRoute) handlerWrapper(f func(msg *Msg, deviceId string, schema *mir_proto.MirProtoSchema, err error)) nats.MsgHandler {
+	return func(msg *nats.Msg) {
+		msg, err := r.m.decompressMsg(msg)
+		if err != nil {
+			f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), nil, fmt.Errorf("error decompressing msg: %w", err))
+			return
+		}
+
+		sch := &device_apiv1.SchemaRetrieveResponse{}
+		if err = proto.Unmarshal(msg.Data, sch); err != nil {
+			f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), nil, fmt.Errorf("error deserializing schema: %w", err))
+			return
+		}
+		if sch.GetError() != "" {
+			f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), nil, fmt.Errorf("error in schema response: %s", sch.GetError()))
+			return
+		}
+
+		schema, err := mir_proto.UnmarshalSchema(sch.GetSchema())
+		f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), schema, err)
+	}
 }
 
 /// Command
@@ -323,7 +368,7 @@ func (r *reportedPropertiesRoute) QueueSubscribe(queue string, deviceId string, 
 	return r.m.queueSubscribe(queue, sbj, h)
 }
 
-/// Reported Properties
+/// Desired Properties
 
 type desiredPropertiesRoute struct {
 	m *Mir

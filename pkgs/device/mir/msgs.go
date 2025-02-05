@@ -163,3 +163,29 @@ func sendReplyOrAck(bus *bus.BusConn, msg *nats.Msg, m protoreflect.ProtoMessage
 	}
 	return nil
 }
+
+func sendMsg(bus *bus.BusConn, subject string, m protoreflect.ProtoMessage, h nats.Header, shouldZstdCompress bool) error {
+	if h == nil {
+		h = nats.Header{}
+	}
+	bResp, err := proto.Marshal(m)
+	if err != nil {
+		return err
+	}
+	h.Add("__msg", string(m.ProtoReflect().Descriptor().FullName()))
+
+	data := bResp
+	if shouldZstdCompress {
+		compressedBytes, err := zstd.CompressData(bResp)
+		if err == nil {
+			data = compressedBytes
+			h.Add("content-encoding", "zstd")
+		}
+	}
+
+	return bus.PublishMsg(&nats.Msg{
+		Subject: subject,
+		Header:  h,
+		Data:    data,
+	})
+}

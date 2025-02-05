@@ -14,6 +14,7 @@ import (
 	"github.com/maxthom/mir/internal/clients/core_client"
 	"github.com/maxthom/mir/internal/clients/tlm_client"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
+	device_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/device_api"
 	"github.com/nats-io/nats.go"
 	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/proto"
@@ -27,6 +28,7 @@ type Mir struct {
 	store       *Store
 	ctx         context.Context
 	cancelFn    context.CancelFunc
+	cleanLogger zerolog.Logger
 	l           zerolog.Logger
 	schema      *descriptorpb.FileDescriptorSet
 	schemaReg   *protoregistry.Files
@@ -36,9 +38,10 @@ type Mir struct {
 }
 
 type Cfg struct {
-	DeviceId string `json:"deviceId" yaml:"deviceId" cfg:""`
-	Target   string `json:"target" yaml:"target"`
-	LogLevel string `json:"logLevel" yaml:"logLevel"`
+	DeviceId       string `json:"deviceId" yaml:"deviceId" cfg:""`
+	Target         string `json:"target" yaml:"target"`
+	LogLevel       string `json:"logLevel" yaml:"logLevel"`
+	NoSchemaOnBoot bool   `json:"noSchemaOnBoot" yaml:"noSchemaOnBoot"`
 }
 
 type cmdHandlerValue struct {
@@ -81,6 +84,7 @@ func (m *Mir) Launch(ctx context.Context) (*sync.WaitGroup, error) {
 	if err := m.store.Load(); err != nil {
 		return &wg, fmt.Errorf("error loading local store: %w", err)
 	}
+	m.l.Debug().Msg("persistence loaded")
 
 	// Setup Mir bus
 	m.b, err = bus.New(m.cfg.Target,
@@ -102,6 +106,7 @@ func (m *Mir) Launch(ctx context.Context) (*sync.WaitGroup, error) {
 	if err != nil {
 		return &wg, err
 	}
+	m.l.Debug().Msg("connection establish")
 
 	wg.Add(1)
 	go func() {
@@ -132,12 +137,21 @@ func (m *Mir) Launch(ctx context.Context) (*sync.WaitGroup, error) {
 	// and device created on the server if needed
 	time.Sleep(2 * time.Second)
 
+	if !m.cfg.NoSchemaOnBoot {
+		if err := m.sendSchema(); err != nil {
+			m.l.Error().Err(err).Msg("error sending schema on boot")
+		}
+		m.l.Debug().Msg("schema updated")
+	}
+
 	// Call config handler
 	if err := m.requestDesiredProperties(); err != nil {
 		m.l.Error().Err(err).Msg("error requesting desired properties")
 	}
 	m.callAllCfgHandlers()
+	m.l.Debug().Msg("desired properties propagated")
 	m.initialized = true
+	m.l.Debug().Msg("device initialized")
 
 	return &wg, nil
 }
@@ -205,7 +219,7 @@ func (m *Mir) shutdown(ctx context.Context) {
 // l := m.Logger()
 // l.Info().Msg("Mir is ready for launch")
 func (m Mir) Logger() *zerolog.Logger {
-	l := m.l.With().Logger()
+	l := m.cleanLogger.With().Logger()
 	return &l
 }
 
@@ -227,6 +241,19 @@ func (m Mir) SendTelemetry(t proto.Message) error {
 // Send proto reported properties to Mir Server
 func (m Mir) SendReportedProperties(t proto.Message) error {
 	return cfg_client.PublishReportedPropertiesStream(m.b, m.cfg.DeviceId, t)
+}
+
+func (m Mir) sendSchema() error {
+	bytes, err := proto.Marshal(m.schema)
+	if err != nil {
+		return nil
+	}
+
+	return sendMsg(m.b, core_client.SchemaDeviceStream.WithId(m.GetDeviceId()), &device_apiv1.SchemaRetrieveResponse{
+		Response: &device_apiv1.SchemaRetrieveResponse_Schema{
+			Schema: bytes,
+		},
+	}, nil, true)
 }
 
 // Fill the properties store with the latest properties from Mir server
@@ -256,7 +283,6 @@ func (m Mir) requestDesiredProperties() error {
 		}
 	}
 
-	// Write to store
 	return errs
 }
 
