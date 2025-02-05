@@ -163,6 +163,17 @@ func (m *Mir) request(subject string, data []byte, headers nats.Header, timeout 
 	return m.Bus.RequestMsg(msg, timeout)
 }
 
+func (m *Mir) decompressMsg(msg *nats.Msg) (*nats.Msg, error) {
+	if msg.Header.Get(HeaderContentEncoding) == HeaderZstdEncoding {
+		var err error
+		msg.Data, err = zstd.DecompressData(msg.Data)
+		if err != nil {
+			return nil, fmt.Errorf("error decompressing request data: %w", err)
+		}
+	}
+	return msg, nil
+}
+
 func (m *Mir) requestWithCompression(subject string, data []byte, headers nats.Header, timeout time.Duration) (*nats.Msg, error) {
 	if headers == nil {
 		headers = nats.Header{}

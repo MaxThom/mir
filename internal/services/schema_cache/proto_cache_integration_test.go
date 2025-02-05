@@ -127,7 +127,7 @@ func TestPublishDeviceUpdateCache(t *testing.T) {
 		},
 	}
 
-	dev, err := mirDevice.Builder().DeviceId(id).Store(mirDevice.StoreOptions{InMemory: true}).Target(busUrl).Schema(
+	dev, err := mirDevice.Builder().ExcludeSchemaOnLaunch().DeviceId(id).Store(mirDevice.StoreOptions{InMemory: true}).Target(busUrl).Schema(
 		schemacache_testv1.File_schemacache_test_v1_cache_proto,
 	).Build()
 	if err != nil {

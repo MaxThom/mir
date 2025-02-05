@@ -13,6 +13,7 @@ import (
 	"github.com/maxthom/mir/internal/clients/device_client"
 	"github.com/maxthom/mir/internal/externals/mng"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
+	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
 	"github.com/maxthom/mir/internal/libs/test_utils"
 	"github.com/maxthom/mir/internal/servers/core_srv"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
@@ -205,6 +206,67 @@ func TestRequestTelemetrySchema(t *testing.T) {
 	// Assert
 	assert.Equal(t, len(schemaBytes), len(resp.GetSchema()))
 	assert.Equal(t, true, bytes.Equal(schemaBytes, resp.GetSchema()))
+
+	cancel()
+	wg.Wait()
+}
+
+func TestSendSchema(t *testing.T) {
+	// Arrange
+	devSch, err := mir_proto.NewMirProtoSchema(
+		mir_device_testv1.File_mir_device_test_v1_command_proto,
+		mir_device_testv1.File_mir_device_test_v1_telemetry_proto,
+		descriptorpb.File_google_protobuf_descriptor_proto,
+		devicev1.File_mir_device_v1_mir_proto,
+	)
+	if err != nil {
+		t.Error(err)
+	}
+	id := "dev_schema_send"
+	mir, err := Builder().
+		DeviceId(id).
+		Store(StoreOptions{InMemory: true}).
+		Target("nats://127.0.0.1:4222").
+		LogLevel(LogLevelInfo).
+		Schema(
+			mir_device_testv1.File_mir_device_test_v1_command_proto,
+		).
+		SchemaProto(
+			protodesc.ToFileDescriptorProto(mir_device_testv1.File_mir_device_test_v1_telemetry_proto),
+		).
+		Build()
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Act
+	ctx, cancel := context.WithCancel(context.Background())
+	wg, err := mir.Launch(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+
+	time.Sleep(1 * time.Second)
+
+	resp, err := core_client.PublishDeviceListRequest(b, &core_apiv1.ListDeviceRequest{
+		Targets: &core_apiv1.Targets{
+			Ids: []string{id},
+		},
+	})
+	if err != nil {
+		t.Error(err)
+	}
+	if resp.GetError() != "" {
+		t.Error(resp.GetError())
+	}
+	dev := resp.GetOk().Devices[0]
+	sch, err := mir_proto.DecompressSchema(dev.Status.GetSchema().CompressedSchema)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, true, mir_proto.AreSchemaEqual(sch, devSch))
 
 	cancel()
 	wg.Wait()

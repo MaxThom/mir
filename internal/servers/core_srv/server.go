@@ -10,6 +10,7 @@ import (
 	"github.com/maxthom/mir/internal/externals/mng"
 	"github.com/maxthom/mir/internal/libs/api/metrics"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
+	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/maxthom/mir/pkgs/module/mir"
@@ -111,6 +112,9 @@ func (s *CoreServer) Serve() error {
 		return err
 	}
 	if err := s.m.Device().Hearthbeat().QueueSubscribe(ServiceName, "*", s.hearthbeatSub); err != nil {
+		return err
+	}
+	if err := s.m.Device().Schema().QueueSubscribe(ServiceName, "*", s.schemaSub); err != nil {
 		return err
 	}
 
@@ -325,6 +329,42 @@ func (s *CoreServer) hearthbeatSub(msg *mir.Msg, deviceId string) {
 	s.hearthbeatsMutex.Lock()
 	s.hearthbeats[deviceId] = time.Now().UTC()
 	s.hearthbeatsMutex.Unlock()
+	msg.Ack()
+}
+
+func (s *CoreServer) schemaSub(msg *mir.Msg, deviceId string, sch *mir_proto.MirProtoSchema, err error) {
+	if err != nil {
+		l.Error().Err(err).Msg("upstream error in sdk")
+		msg.Ack()
+		return
+	}
+	l.Trace().Str("route", "schema").Msg("schema device request")
+
+	compressSch, err := sch.CompressSchema()
+	if err != nil {
+		l.Error().Err(err).Msg("error compressing schema for store")
+		msg.Ack()
+		return
+	}
+
+	_, err = s.m.Server().UpdateDevice().Request(&core_apiv1.UpdateDeviceRequest{
+		Targets: &core_apiv1.Targets{
+			Ids: []string{deviceId},
+		},
+		Status: &core_apiv1.UpdateDeviceRequest_Status{
+			Schema: &core_apiv1.UpdateDeviceRequest_Schema{
+				CompressedSchema: compressSch,
+				PackageNames:     sch.GetPackageList(),
+				LastSchemaFetch:  mir_models.AsProtoTimestamp(time.Now().UTC()),
+			},
+		},
+	},
+	)
+	if err != nil {
+		l.Error().Err(err).Msg("error compressing schema for store")
+		msg.Ack()
+	}
+
 	msg.Ack()
 }
 

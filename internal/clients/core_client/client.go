@@ -24,6 +24,7 @@ const (
 	DeviceUpdatedEvent clients.ServerSubject = "event.%s.core.v1alpha.deviceupdated"
 
 	HearthbeatDeviceStream clients.ServerSubject = "device.%s.core.v1alpha.hearthbeat"
+	SchemaDeviceStream     clients.ServerSubject = "device.%s.core.v1alpha.schema"
 )
 
 // Core Builder
