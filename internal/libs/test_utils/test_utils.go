@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/influxdata/influxdb-client-go/v2/api"
@@ -59,7 +60,7 @@ func SetupInfluxConnsPanic(ctx context.Context, url, token, org, bucket string) 
 }
 
 func SetupSurrealDbConnsPanic(url, user, pass, ns, db string) *surrealdb.DB {
-	d, err := surrealdb.New(url)
+	d, err := surrealdb.New(url, surrealdb.WithTimeout(3*time.Second))
 	if err != nil {
 		panic(err)
 	}
