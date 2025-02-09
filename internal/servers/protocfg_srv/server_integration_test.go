@@ -694,7 +694,7 @@ func TestPublishCfgRequestMultipleDevices(t *testing.T) {
 	}
 
 	time.Sleep(1 * time.Second)
-	assert.Equal(t, len(swarm.Devices), handlerCount)
+	assert.Equal(t, len(swarm.Devices)*2, handlerCount)
 	cancel()
 	for _, v := range wg {
 		v.Wait()
@@ -810,7 +810,7 @@ func TestPublishCfgRequestMultipleDevicesOneNoHandler(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	assert.Equal(t, 2, handlerCount)
+	assert.Equal(t, 4, handlerCount)
 	cancel()
 	for _, v := range wg {
 		v.Wait()
@@ -895,7 +895,7 @@ func TestPublishCfgRequestMultipleDevicesJson(t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	assert.Equal(t, reqPayload.Power, cfgHandled.Power)
-	assert.Equal(t, len(swarm.Devices), handlerCount)
+	assert.Equal(t, len(swarm.Devices)*2, handlerCount)
 	cancel()
 	for _, v := range wg {
 		v.Wait()
@@ -974,7 +974,7 @@ func TestPublishCfgRequestMultipleDevicesDescriptorNotFound(t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	assert.Equal(t, common_apiv1.Encoding_ENCODING_JSON, respCfg.GetOk().Encoding)
-	assert.Equal(t, 0, handlerCount)
+	assert.Equal(t, 2, handlerCount)
 	cancel()
 	for _, v := range wg {
 		v.Wait()
@@ -1070,7 +1070,7 @@ func TestPublishCfgRequestMultipleDevicesSingleDescriptorNotFoundForcePush(t *te
 	assert.Equal(t, true, devInvalid.Error != "")
 
 	assert.Equal(t, common_apiv1.Encoding_ENCODING_JSON, respCfg.GetOk().Encoding)
-	assert.Equal(t, 1, handlerCount)
+	assert.Equal(t, 2, handlerCount)
 	cancel()
 	for _, v := range wg {
 		v.Wait()
@@ -1528,6 +1528,100 @@ func TestPublishDesiredPropertiesEvent(t *testing.T) {
 	assert.Equal(t, int32(5), props.Power)
 	assert.Equal(t, common_apiv1.Encoding_ENCODING_PROTOBUF, respCfg.GetOk().Encoding)
 	assert.Equal(t, 1, eventCount)
+	cancel()
+	wg.Wait()
+}
+
+func TestDesiredPropertiesDefaultWritten(t *testing.T) {
+	// Arrange
+	ctx, cancel := context.WithCancel(context.Background())
+	id := "device_request_desired_props_default"
+	reqCreate := &core_apiv1.CreateDeviceRequest{
+		Meta: &core_apiv1.Meta{
+			Name:      id,
+			Namespace: "testing_cfg",
+			Labels: map[string]string{
+				"testing": "cfg",
+			},
+			Annotations: map[string]string{
+				"mir/device/description": "hello world of devices !",
+			},
+		},
+		Spec: &core_apiv1.Spec{
+			DeviceId: id,
+		},
+	}
+
+	reqGet := &core_apiv1.ListDeviceRequest{
+		Targets: &core_apiv1.Targets{
+			Ids: []string{id},
+		},
+	}
+
+	dev, err := mirDevice.Builder().DeviceId(id).Store(mirDevice.StoreOptions{InMemory: true}).Target(busUrl).Schema(
+		protocfg_testv1.File_protocfg_test_v1_cfg_proto,
+	).Build()
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Act
+	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate)
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	// This should be called instantly after launch
+	propsPowerLevel := &protocfg_testv1.PowerLevel{}
+	count := 0
+	dev.HandleProperties(
+		propsPowerLevel,
+		func(m protoreflect.ProtoMessage) {
+			propsPowerLevel = m.(*protocfg_testv1.PowerLevel)
+			count += 1
+		},
+	)
+
+	wg, err := dev.Launch(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// This should be called after launch with reconciled properties
+	propsConduit := &protocfg_testv1.Conduit{}
+	dev.HandleProperties(
+		propsConduit,
+		func(m protoreflect.ProtoMessage) {
+			propsConduit = m.(*protocfg_testv1.Conduit)
+			count += 1
+		},
+	)
+	time.Sleep(5 * time.Second)
+
+	devs, err := core_client.PublishDeviceListRequest(b, reqGet)
+	if err != nil {
+		t.Error(err)
+	}
+	if devs.GetError() != "" {
+		t.Error(devs.GetError())
+	}
+	d := devs.GetOk().Devices[0].GetProperties().GetDesired()
+	m := d.AsMap()
+
+	// Assert
+	_, ok := m["protocfg_test.v1.PowerLevel"]
+	assert.Equal(t, true, ok)
+	_, ok = m["protocfg_test.v1.Conduit"]
+	assert.Equal(t, true, ok)
+	_, ok = m["protocfg_test.v1.Coordinate"]
+	assert.Equal(t, true, ok)
+	_, ok = m["protocfg_test.v1.Destination"]
+	assert.Equal(t, true, ok)
+
+	assert.Equal(t, int32(0), propsPowerLevel.Power)
+	assert.Equal(t, false, propsConduit.ValveOpen)
+	assert.Equal(t, 2, count)
 	cancel()
 	wg.Wait()
 }

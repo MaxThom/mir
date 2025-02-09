@@ -77,7 +77,7 @@ func (m *MirProtoSchema) GetCommandsList(filterLabels map[string]string) ([]*cmd
 				if !isSubsetContainedInSet(filterLabels, lbls) {
 					continue
 				}
-				boiler, err := json_template.GenerateTemplate(msgDesc)
+				boiler, err := json_template.GenerateTemplate(msgDesc, json_template.Options{})
 				cmd := cmd_apiv1.CommandDescriptor{
 					Name:     string(msgDesc.FullName()),
 					Labels:   lbls,
@@ -109,7 +109,7 @@ func (m *MirProtoSchema) GetConfigList(filterLabels map[string]string) ([]*cfg_a
 				if !isSubsetContainedInSet(filterLabels, lbls) {
 					continue
 				}
-				boiler, err := json_template.GenerateTemplate(msgDesc)
+				boiler, err := json_template.GenerateTemplate(msgDesc, json_template.Options{})
 				cfg := cfg_apiv1.ConfigDescriptor{
 					Name:     string(msgDesc.FullName()),
 					Labels:   lbls,
@@ -200,6 +200,9 @@ func DecompressSchema(b []byte) (*MirProtoSchema, error) {
 }
 
 func isSubsetContainedInSet(subset, set map[string]string) bool {
+	if subset == nil {
+		return true
+	}
 	if len(subset) > len(set) {
 		return false
 	}

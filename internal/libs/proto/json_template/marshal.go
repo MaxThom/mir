@@ -10,20 +10,25 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-func GenerateTemplate(desc protoreflect.MessageDescriptor) (json.RawMessage, error) {
+type Options struct {
+	WithoutArrayExample bool
+	WithoutMapExample   bool
+}
+
+func GenerateTemplate(desc protoreflect.MessageDescriptor, opts Options) (json.RawMessage, error) {
 	var sb strings.Builder
-	err := formatMessageToJson(&sb, desc)
+	err := formatMessageToJson(&sb, desc, opts)
 	return json.RawMessage(sb.String()), err
 }
 
-func GeneratePrettyTemplate(desc protoreflect.MessageDescriptor) (json.RawMessage, error) {
-	tpl, errs := GenerateTemplate(desc)
+func GeneratePrettyTemplate(desc protoreflect.MessageDescriptor, opts Options) (json.RawMessage, error) {
+	tpl, errs := GenerateTemplate(desc, opts)
 	var prettyBuf bytes.Buffer
 	errs = errors.Join(json.Indent(&prettyBuf, []byte(tpl), "", "  "))
 	return json.RawMessage(prettyBuf.String()), errs
 }
 
-func formatMessageToJson(sb *strings.Builder, desc protoreflect.MessageDescriptor) error {
+func formatMessageToJson(sb *strings.Builder, desc protoreflect.MessageDescriptor, opts Options) error {
 	var errs error
 	sb.WriteString("{")
 
@@ -36,7 +41,7 @@ func formatMessageToJson(sb *strings.Builder, desc protoreflect.MessageDescripto
 			sb.WriteString(",")
 		}
 		sb.WriteString(fmt.Sprintf("%q:", fd.JSONName()))
-		err := getJsonTemplateValue(sb, fd)
+		err := getJsonTemplateValue(sb, fd, opts)
 		errs = errors.Join(err)
 	}
 
@@ -44,39 +49,43 @@ func formatMessageToJson(sb *strings.Builder, desc protoreflect.MessageDescripto
 	return errs
 }
 
-func getJsonTemplateValue(sb *strings.Builder, fd protoreflect.FieldDescriptor) error {
+func getJsonTemplateValue(sb *strings.Builder, fd protoreflect.FieldDescriptor, opts Options) error {
 	switch {
 	case fd.IsList():
 		// For array, we want to give one example of the type
 		// so like an array of one element
 		sb.WriteString("[")
-		err := getJsonTemplateValue_SingleField(sb, fd)
-		if err != nil {
-			return err
+		if !opts.WithoutArrayExample {
+			err := getJsonTemplateValue_SingleField(sb, fd, opts)
+			if err != nil {
+				return err
+			}
 		}
 		sb.WriteString("]")
 		return nil
 	case fd.IsMap():
 		keyType := "\"string\":"
-		// Map keys are integers and strings
+		// Map keys are integers or strings
 		if fd.MapKey().Kind() != protoreflect.StringKind {
 			keyType = "\"0\":"
 		}
 		sb.WriteString("{")
-		sb.WriteString(keyType)
-		err := getJsonTemplateValue_SingleField(sb, fd.MapValue())
-		if err != nil {
-			return err
+		if !opts.WithoutMapExample {
+			sb.WriteString(keyType)
+			err := getJsonTemplateValue_SingleField(sb, fd.MapValue(), opts)
+			if err != nil {
+				return err
+			}
 		}
 		sb.WriteString("}")
 		return nil
 
 	default:
-		return getJsonTemplateValue_SingleField(sb, fd)
+		return getJsonTemplateValue_SingleField(sb, fd, opts)
 	}
 }
 
-func getJsonTemplateValue_SingleField(sb *strings.Builder, fd protoreflect.FieldDescriptor) error {
+func getJsonTemplateValue_SingleField(sb *strings.Builder, fd protoreflect.FieldDescriptor, opts Options) error {
 	switch fd.Kind() {
 	case protoreflect.BoolKind:
 		sb.WriteString("false")
@@ -103,7 +112,7 @@ func getJsonTemplateValue_SingleField(sb *strings.Builder, fd protoreflect.Field
 			sb.WriteString("\"UNKNOWN\"")
 		}
 	case protoreflect.MessageKind:
-		return formatMessageToJson(sb, fd.Message())
+		return formatMessageToJson(sb, fd.Message(), opts)
 	case protoreflect.BytesKind:
 		sb.WriteString("[")
 		sb.WriteString("0, 255")

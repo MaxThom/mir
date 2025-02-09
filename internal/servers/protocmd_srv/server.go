@@ -166,7 +166,7 @@ func (s *ProtoCmdServer) sendCommandToDevices(req *cmd_apiv1.SendCommandRequest)
 			}
 
 			if req.ShowTemplate {
-				tpl, err := json_template.GenerateTemplate(msgReqDesc.(protoreflect.MessageDescriptor))
+				tpl, err := json_template.GenerateTemplate(msgReqDesc.(protoreflect.MessageDescriptor), json_template.Options{})
 				if err != nil {
 					l.Error().Err(err).Str("device_id", dev.Spec.DeviceId).Msg("error generating command template from device schema")
 					devResp[dev.GetNameNamespace()] = &cmd_apiv1.SendCommandResponse_CommandResponse{

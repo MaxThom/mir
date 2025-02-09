@@ -335,7 +335,7 @@ type reportedPropertiesRoute struct {
 	m *Mir
 }
 
-// Device reported properties
+// Device request to update reported properties
 func (r *deviceRoutes) ReportedProperties() *reportedPropertiesRoute {
 	return &reportedPropertiesRoute{m: r.m}
 }
@@ -374,7 +374,7 @@ type desiredPropertiesRoute struct {
 	m *Mir
 }
 
-// Retrieve device schema
+// Device request to retrieve desired properties
 func (r *deviceRoutes) DesiredProperties() *desiredPropertiesRoute {
 	return &desiredPropertiesRoute{m: r.m}
 }
