@@ -236,7 +236,7 @@ func (s *ProtoCfgServer) sendConfigToDevices(req *cfg_apiv1.SendConfigRequest) (
 		}
 
 		if req.ShowTemplate {
-			tpl, err := json_template.GenerateTemplate(msgReqDesc.(protoreflect.MessageDescriptor))
+			tpl, err := json_template.GenerateTemplate(msgReqDesc.(protoreflect.MessageDescriptor), json_template.Options{})
 			if err != nil {
 				l.Error().Err(err).Str("device_id", dev.Spec.DeviceId).Msg("error generating config template from device schema")
 				devResp[dev.GetNameNamespace()] = &cfg_apiv1.SendConfigResponse_ConfigResponse{
@@ -509,42 +509,105 @@ func (s *ProtoCfgServer) desiredPropsSub(msg *mir.Msg, deviceId string) (*device
 		return &device_apiv1.ReportedProperties{}, err
 	}
 
-	// Get the desired properties
 	desiredProps := &device_apiv1.ReportedProperties{
 		Encoding:   common_apiv1.Encoding_ENCODING_PROTOBUF,
 		Properties: make(map[string]*device_apiv1.Properties),
 	}
-	for msgName, p := range dev.Properties.Desired {
+
+	cfgDescs, err := devSch.GetConfigList(nil)
+	if err != nil {
+		l.Error().Str("device_id", deviceId).Err(err).Msg("error getting config list")
+		return &device_apiv1.ReportedProperties{}, err
+	}
+
+	// List all config in schema
+	// If not written in db, means we need to write empty config
+	// Then we return the config to the device
+	missingCfg := make(map[string]any)
+	for _, cfgDesc := range cfgDescs {
+		var jsonRaw []byte
+		var updTime string
 		var desc protoreflect.Descriptor
-		desc, devSch, err = s.schStore.FindMessageDescriptor(deviceId, devSch, msgName)
+		desc, devSch, err = s.schStore.FindMessageDescriptor(deviceId, devSch, cfgDesc.Name)
 		if err != nil {
-			l.Error().Err(err).Str("device_id", deviceId).Str("msg_name", msgName).Msg("error finding descriptor in device schema")
+			l.Error().Err(err).Str("device_id", deviceId).Str("msg_name", cfgDesc.Name).Msg("error finding descriptor in device schema")
 			continue
 		}
-		props := p.(map[string]interface{})
-		updTime := props["__time"].(string)
-		delete(props, "__time")
 
-		propsJsonByte, err := json.Marshal(props)
-		if err != nil {
-			l.Error().Err(err).Str("device_id", deviceId).Str("msg_name", msgName).Msg("error marshaling desired properties to JSON")
-			continue
+		if p, ok := dev.Properties.Desired[cfgDesc.Name]; ok {
+			// Mean we have a config already for this
+			props := p.(map[string]interface{})
+			updTime = props["__time"].(string)
+			delete(props, "__time")
+
+			jsonRaw, err = json.Marshal(props)
+			if err != nil {
+				l.Error().Err(err).Str("device_id", deviceId).Str("msg_name", cfgDesc.Name).Msg("error marshaling desired properties to JSON")
+				continue
+			}
+
+		} else {
+			jsonRaw, err = json_template.GenerateTemplate(
+				desc.(protoreflect.MessageDescriptor),
+				json_template.Options{
+					WithoutMapExample:   true,
+					WithoutArrayExample: true,
+				},
+			)
+			if err != nil {
+				l.Error().Err(err).Str("device_id", deviceId).Msg("error marshaling default reported properties to JSON")
+				continue
+			}
+
+			msgMap := make(map[string]interface{})
+			if err = json.Unmarshal(jsonRaw, &msgMap); err != nil {
+				l.Error().Err(err).Str("device_id", deviceId).Msg("error unmarshaling reported properties to map")
+				continue
+			}
+
+			timeNow := time.Now().UTC()
+			msgMap["__time"] = timeNow.Format(time.RFC3339)
+			updTime = timeNow.Format(time.RFC3339)
+			missingCfg[cfgDesc.Name] = msgMap
 		}
 
 		msg := dynamicpb.NewMessage(desc.(protoreflect.MessageDescriptor))
-		if err = protojson.Unmarshal(propsJsonByte, msg); err != nil {
-			l.Error().Err(err).Str("device_id", deviceId).Str("msg_name", msgName).Msg("error unmarshaling desired properties")
+		if err = protojson.Unmarshal(jsonRaw, msg); err != nil {
+			l.Error().Err(err).Str("device_id", deviceId).Str("msg_name", cfgDesc.Name).Msg("error unmarshaling desired properties")
 		}
-		msgBytes, err := proto.Marshal(msg)
+		protoRaw, err := proto.Marshal(msg)
 		if err != nil {
-			l.Error().Err(err).Str("device_id", deviceId).Str("msg_name", msgName).Msg("error marshaling desired properties to protobuf")
+			l.Error().Err(err).Str("device_id", deviceId).Str("msg_name", cfgDesc.Name).Msg("error marshaling desired properties to protobuf")
 			continue
 		}
-		desiredProps.Properties[msgName] = &device_apiv1.Properties{
+		desiredProps.Properties[cfgDesc.Name] = &device_apiv1.Properties{
 			Time:     updTime,
-			Property: msgBytes,
+			Property: protoRaw,
 		}
-
 	}
+
+	if len(missingCfg) > 0 {
+		props, err := structpb.NewStruct(missingCfg)
+		if err != nil {
+			l.Error().Err(err).Str("device_id", deviceId).Msg("error marshalling properties to pbstruct")
+		} else {
+			devs, err := s.devStore.UpdateDevice(&core_apiv1.UpdateDeviceRequest{
+				Targets: &core_apiv1.Targets{
+					Ids: []string{deviceId},
+				},
+				Props: &core_apiv1.UpdateDeviceRequest_Properties{
+					Desired: props,
+				},
+			})
+			if err != nil {
+				l.Error().Err(err).Str("device_id", deviceId).Msg("error updating device properties in store")
+			} else {
+				if len(devs) > 0 {
+					dev = devs[0]
+				}
+			}
+		}
+	}
+
 	return desiredProps, nil
 }

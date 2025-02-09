@@ -12,7 +12,7 @@ func TestPrimitives(t *testing.T) {
 	msg := json_template_testv1.Primitives{}
 	desc := msg.ProtoReflect().Descriptor()
 
-	tpl, err := GenerateTemplate(desc.(protoreflect.MessageDescriptor))
+	tpl, err := GenerateTemplate(desc.(protoreflect.MessageDescriptor), Options{})
 	if err != nil {
 		t.Error(err)
 	}
@@ -23,7 +23,7 @@ func TestEnumsSimple(t *testing.T) {
 	msg := json_template_testv1.EnumsSimple{}
 	desc := msg.ProtoReflect().Descriptor()
 
-	tpl, err := GenerateTemplate(desc.(protoreflect.MessageDescriptor))
+	tpl, err := GenerateTemplate(desc.(protoreflect.MessageDescriptor), Options{})
 	if err != nil {
 		t.Error(err)
 	}
@@ -34,7 +34,7 @@ func TestEnumsSimpleOptional(t *testing.T) {
 	msg := json_template_testv1.OptionalEnumsSimple{}
 	desc := msg.ProtoReflect().Descriptor()
 
-	tpl, err := GenerateTemplate(desc.(protoreflect.MessageDescriptor))
+	tpl, err := GenerateTemplate(desc.(protoreflect.MessageDescriptor), Options{})
 	if err != nil {
 		t.Error(err)
 	}
@@ -45,7 +45,7 @@ func TestRepeatedEnum(t *testing.T) {
 	msg := json_template_testv1.RepeatedEnum{}
 	desc := msg.ProtoReflect().Descriptor()
 
-	tpl, err := GenerateTemplate(desc.(protoreflect.MessageDescriptor))
+	tpl, err := GenerateTemplate(desc.(protoreflect.MessageDescriptor), Options{})
 	if err != nil {
 		t.Error(err)
 	}
@@ -56,7 +56,7 @@ func TestRepeatedPrimitives(t *testing.T) {
 	msg := json_template_testv1.RepeatedPrimitives{}
 	desc := msg.ProtoReflect().Descriptor()
 
-	tpl, err := GenerateTemplate(desc.(protoreflect.MessageDescriptor))
+	tpl, err := GenerateTemplate(desc.(protoreflect.MessageDescriptor), Options{})
 	if err != nil {
 		t.Error(err)
 	}
@@ -67,7 +67,7 @@ func TestOneLevelNesting(t *testing.T) {
 	msg := json_template_testv1.OneLevelNesting{}
 	desc := msg.ProtoReflect().Descriptor()
 
-	tpl, err := GenerateTemplate(desc.(protoreflect.MessageDescriptor))
+	tpl, err := GenerateTemplate(desc.(protoreflect.MessageDescriptor), Options{})
 	if err != nil {
 		t.Error(err)
 	}
@@ -78,7 +78,7 @@ func TestMixIndexOneLevelNesting(t *testing.T) {
 	msg := json_template_testv1.MixIndexOneLevelNesting{}
 	desc := msg.ProtoReflect().Descriptor()
 
-	tpl, err := GenerateTemplate(desc.(protoreflect.MessageDescriptor))
+	tpl, err := GenerateTemplate(desc.(protoreflect.MessageDescriptor), Options{})
 	if err != nil {
 		t.Error(err)
 	}
@@ -89,18 +89,29 @@ func TestRepeatedOneLevelNesting(t *testing.T) {
 	msg := json_template_testv1.RepeatedOneLevelNesting{}
 	desc := msg.ProtoReflect().Descriptor()
 
-	tpl, err := GenerateTemplate(desc.(protoreflect.MessageDescriptor))
+	tpl, err := GenerateTemplate(desc.(protoreflect.MessageDescriptor), Options{})
 	if err != nil {
 		t.Error(err)
 	}
 	assert.Equal(t, string(tpl), `{"a":[{"a":0.0,"b":0,"c":0,"d":""}]}`)
 }
 
+func TestRepeatedNoExample(t *testing.T) {
+	msg := json_template_testv1.RepeatedOneLevelNesting{}
+	desc := msg.ProtoReflect().Descriptor()
+
+	tpl, err := GenerateTemplate(desc.(protoreflect.MessageDescriptor), Options{WithoutArrayExample: true})
+	if err != nil {
+		t.Error(err)
+	}
+	assert.Equal(t, string(tpl), `{"a":[]}`)
+}
+
 func TestThreeLevelNesting(t *testing.T) {
 	msg := json_template_testv1.RepeatedThreeLevelNestingAndSomeChads{}
 	desc := msg.ProtoReflect().Descriptor()
 
-	tpl, err := GenerateTemplate(desc.(protoreflect.MessageDescriptor))
+	tpl, err := GenerateTemplate(desc.(protoreflect.MessageDescriptor), Options{})
 	if err != nil {
 		t.Error(err)
 	}
@@ -111,7 +122,7 @@ func TestRepeatedThreeLevelNesting(t *testing.T) {
 	msg := json_template_testv1.RepeatedThreeLevelNestingAndSomeChads{}
 	desc := msg.ProtoReflect().Descriptor()
 
-	tpl, err := GenerateTemplate(desc.(protoreflect.MessageDescriptor))
+	tpl, err := GenerateTemplate(desc.(protoreflect.MessageDescriptor), Options{})
 	if err != nil {
 		t.Error(err)
 	}
@@ -122,7 +133,7 @@ func TestMultipleThreeLevelNesting(t *testing.T) {
 	msg := json_template_testv1.MultipleThreeLevelNestingAndSomeChads{}
 	desc := msg.ProtoReflect().Descriptor()
 
-	tpl, err := GenerateTemplate(desc.(protoreflect.MessageDescriptor))
+	tpl, err := GenerateTemplate(desc.(protoreflect.MessageDescriptor), Options{})
 	if err != nil {
 		t.Error(err)
 	}
@@ -133,7 +144,7 @@ func TestRepeatedMultipleThreeLevelNesting(t *testing.T) {
 	msg := json_template_testv1.MultipleRepeatedThreeLevelNestingAndSomeChads{}
 	desc := msg.ProtoReflect().Descriptor()
 
-	tpl, err := GenerateTemplate(desc.(protoreflect.MessageDescriptor))
+	tpl, err := GenerateTemplate(desc.(protoreflect.MessageDescriptor), Options{})
 	if err != nil {
 		t.Error(err)
 	}
@@ -144,7 +155,7 @@ func TestOptionalRepeatedMultipleThreeLevelNesting(t *testing.T) {
 	msg := json_template_testv1.OptionalMultipleRepeatedThreeLevelNestingAndSomeChads{}
 	desc := msg.ProtoReflect().Descriptor()
 
-	tpl, err := GenerateTemplate(desc.(protoreflect.MessageDescriptor))
+	tpl, err := GenerateTemplate(desc.(protoreflect.MessageDescriptor), Options{})
 	if err != nil {
 		t.Error(err)
 	}
@@ -155,18 +166,29 @@ func TestMapString(t *testing.T) {
 	msg := json_template_testv1.MapString{}
 	desc := msg.ProtoReflect().Descriptor()
 
-	tpl, err := GenerateTemplate(desc.(protoreflect.MessageDescriptor))
+	tpl, err := GenerateTemplate(desc.(protoreflect.MessageDescriptor), Options{})
 	if err != nil {
 		t.Error(err)
 	}
 	assert.Equal(t, string(tpl), `{"a":{"string":""}}`)
 }
 
+func TestMapStringNoExample(t *testing.T) {
+	msg := json_template_testv1.MapString{}
+	desc := msg.ProtoReflect().Descriptor()
+
+	tpl, err := GenerateTemplate(desc.(protoreflect.MessageDescriptor), Options{WithoutMapExample: true})
+	if err != nil {
+		t.Error(err)
+	}
+	assert.Equal(t, string(tpl), `{"a":{}}`)
+}
+
 func TestMapMessage(t *testing.T) {
 	msg := json_template_testv1.MapMessage{}
 	desc := msg.ProtoReflect().Descriptor()
 
-	tpl, err := GenerateTemplate(desc.(protoreflect.MessageDescriptor))
+	tpl, err := GenerateTemplate(desc.(protoreflect.MessageDescriptor), Options{})
 	if err != nil {
 		t.Error(err)
 	}
@@ -177,7 +199,7 @@ func TestBasicBytes(t *testing.T) {
 	msg := json_template_testv1.BasicBytes{}
 	desc := msg.ProtoReflect().Descriptor()
 
-	tpl, err := GenerateTemplate(desc.(protoreflect.MessageDescriptor))
+	tpl, err := GenerateTemplate(desc.(protoreflect.MessageDescriptor), Options{})
 	if err != nil {
 		t.Error(err)
 	}

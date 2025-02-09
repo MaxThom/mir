@@ -1,6 +1,9 @@
 package mir
 
 import (
+	"encoding/json"
+	"fmt"
+
 	"github.com/maxthom/mir/internal/clients"
 	"github.com/maxthom/mir/internal/clients/cfg_client"
 	"github.com/maxthom/mir/internal/clients/cmd_client"
@@ -433,13 +436,42 @@ type SendDeviceConfigRequestProto struct {
 	ForcePush     bool
 }
 
-// Request send a command to device
+// Request send a config to device using proto data
 func (r *sendConfigRoute) RequestProto(req *SendDeviceConfigRequestProto) (map[string]*cfg_apiv1.SendConfigResponse_ConfigResponse, error) {
-	b, _ := proto.Marshal(req.Command)
+	b, err := proto.Marshal(req.Command)
+	if err != nil {
+		return map[string]*cfg_apiv1.SendConfigResponse_ConfigResponse{}, fmt.Errorf("error marshalling command to proto: %w", err)
+	}
 	return r.Request(&cfg_apiv1.SendConfigRequest{
 		Targets:         req.Targets,
 		Name:            string(req.Command.ProtoReflect().Descriptor().FullName()),
 		PayloadEncoding: common_apiv1.Encoding_ENCODING_PROTOBUF,
+		Payload:         b,
+		DryRun:          req.DryRun,
+		RefreshSchema:   req.RefreshSchema,
+		ForcePush:       req.ForcePush,
+	})
+}
+
+type SendDeviceConfigRequestJson struct {
+	Targets        *core_apiv1.Targets
+	CommandName    string
+	CommandPayload any
+	DryRun         bool
+	RefreshSchema  bool
+	ForcePush      bool
+}
+
+// Request send a config to device using json data
+func (r *sendConfigRoute) RequestJson(req *SendDeviceConfigRequestJson) (map[string]*cfg_apiv1.SendConfigResponse_ConfigResponse, error) {
+	b, err := json.Marshal(req.CommandPayload)
+	if err != nil {
+		return map[string]*cfg_apiv1.SendConfigResponse_ConfigResponse{}, fmt.Errorf("error marshalling command to json: %w", err)
+	}
+	return r.Request(&cfg_apiv1.SendConfigRequest{
+		Targets:         req.Targets,
+		Name:            req.CommandName,
+		PayloadEncoding: common_apiv1.Encoding_ENCODING_JSON,
 		Payload:         b,
 		DryRun:          req.DryRun,
 		RefreshSchema:   req.RefreshSchema,
