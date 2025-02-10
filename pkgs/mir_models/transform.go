@@ -63,6 +63,21 @@ func NewDeviceFromProtoDevice(d *core_apiv1.Device) Device {
 				LastSchemaFetch:  lastSchemaFetch,
 			}
 		}
+		if d.Status.Properties != nil {
+			dev.Status.Properties = PropertiesTime{}
+			if d.Status.Properties.Desired != nil {
+				dev.Status.Properties.Desired = map[string]time.Time{}
+				for k, v := range d.Status.Properties.Desired {
+					dev.Status.Properties.Desired[k] = AsGoTime(v)
+				}
+			}
+			if d.Status.Properties.Reported != nil {
+				dev.Status.Properties.Reported = map[string]time.Time{}
+				for k, v := range d.Status.Properties.Reported {
+					dev.Status.Properties.Reported[k] = AsGoTime(v)
+				}
+			}
+		}
 	}
 
 	return dev
@@ -103,6 +118,10 @@ func NewProtoDeviceFromDevice(d Device) *core_apiv1.Device {
 				CompressedSchema: d.Status.Schema.CompressedSchema,
 				PackageNames:     d.Status.Schema.PackageNames,
 				LastSchemaFetch:  AsProtoTimestamp(d.Status.Schema.LastSchemaFetch),
+			},
+			Properties: &core_apiv1.PropertiesTime{
+				Desired:  mapToProtoTs(d.Status.Properties.Desired),
+				Reported: mapToProtoTs(d.Status.Properties.Reported),
 			},
 		},
 	}
@@ -308,4 +327,12 @@ func AsProtoTimestamp(t time.Time) *common_apiv1.Timestamp {
 
 func AsGoTime(ts *common_apiv1.Timestamp) time.Time {
 	return time.Unix(int64(ts.GetSeconds()), int64(ts.GetNanos())).UTC()
+}
+
+func mapToProtoTs(m map[string]time.Time) map[string]*common_apiv1.Timestamp {
+	ts := map[string]*common_apiv1.Timestamp{}
+	for k, v := range m {
+		ts[k] = AsProtoTimestamp(v)
+	}
+	return ts
 }
