@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"time"
 
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	"github.com/maxthom/mir/pkgs/mir_models"
@@ -459,6 +460,46 @@ func createUpdateQueryForDevice(t *core_apiv1.Targets, upd *core_apiv1.UpdateDev
 			if upd.Status.Schema.LastSchemaFetch != nil && !mir_models.AsGoTime(upd.Status.Schema.LastSchemaFetch).IsZero() {
 				sb.WriteString("lastSchemaFetch: $LASTSCHFETCH,")
 				vars["LASTSCHFETCH"] = mir_models.AsGoTime(upd.Status.Schema.LastSchemaFetch)
+			}
+			sb.WriteString("},")
+		}
+		if upd.Status.Properties != nil {
+			sb.WriteString("properties: {")
+			if upd.Status.Properties.Desired != nil {
+				sb.WriteString("desired: {")
+				for k, v := range upd.Status.Properties.Desired {
+					sb.WriteString("\"")
+					sb.WriteString(k)
+					sb.WriteString("\"")
+					sb.WriteString(": ")
+					if v == nil {
+						sb.WriteString("NONE")
+					} else {
+						sb.WriteString("\"")
+						sb.WriteString(mir_models.AsGoTime(v).Format(time.RFC3339Nano))
+						sb.WriteString("\"")
+					}
+					sb.WriteString(",")
+				}
+				sb.WriteString("},")
+			}
+			if upd.Status.Properties.Reported != nil {
+				sb.WriteString("reported: {")
+				for k, v := range upd.Status.Properties.Reported {
+					sb.WriteString("\"")
+					sb.WriteString(k)
+					sb.WriteString("\"")
+					sb.WriteString(": ")
+					if v == nil {
+						sb.WriteString("NONE")
+					} else {
+						sb.WriteString("\"")
+						sb.WriteString(mir_models.AsGoTime(v).Format(time.RFC3339Nano))
+						sb.WriteString("\"")
+					}
+					sb.WriteString(",")
+				}
+				sb.WriteString("},")
 			}
 			sb.WriteString("},")
 		}

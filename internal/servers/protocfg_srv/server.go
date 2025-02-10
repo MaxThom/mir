@@ -291,10 +291,10 @@ func (s *ProtoCfgServer) sendConfigToDevices(req *cfg_apiv1.SendConfigRequest) (
 			devInError = true
 			continue
 		}
+		// TODO compare if the properties are the same as the last one
 
 		// Add to map with time and name
 		timeNow := time.Now().UTC()
-		mapPayload["__time"] = timeNow.Format(time.RFC3339)
 		mapPayload = map[string]interface{}{
 			string(msgReqDesc.FullName()): mapPayload,
 		}
@@ -339,10 +339,6 @@ func (s *ProtoCfgServer) sendConfigToDevices(req *cfg_apiv1.SendConfigRequest) (
 		go func() {
 			defer wg.Done()
 
-			// TODO write to db first
-			// Write directly to store, not sdk
-			// Event for desired properties update
-			// Event for reported properties update
 			props, err := structpb.NewStruct(p.mapPayload)
 			if err != nil {
 				l.Error().Err(err).Str("device_id", p.deviceId).Msg("error marshalling properties to pbstruct")
@@ -353,13 +349,22 @@ func (s *ProtoCfgServer) sendConfigToDevices(req *cfg_apiv1.SendConfigRequest) (
 				}
 				return
 			}
-			// TODO return updated device from store
+			time := mir_models.AsProtoTimestamp(p.time)
+			timeMap := map[string]*common_apiv1.Timestamp{}
+			for k := range p.mapPayload {
+				timeMap[k] = time
+			}
 			dev, err := s.devStore.UpdateDevice(&core_apiv1.UpdateDeviceRequest{
 				Targets: &core_apiv1.Targets{
 					Ids: []string{p.deviceId},
 				},
 				Props: &core_apiv1.UpdateDeviceRequest_Properties{
 					Desired: props,
+				},
+				Status: &core_apiv1.UpdateDeviceRequest_Status{
+					Properties: &core_apiv1.UpdateDeviceRequest_PropertiesTime{
+						Desired: timeMap,
+					},
 				},
 			})
 			if err != nil {
@@ -392,7 +397,6 @@ func (s *ProtoCfgServer) sendConfigToDevices(req *cfg_apiv1.SendConfigRequest) (
 			}
 
 			dt := dev[0].Properties.Desired[req.Name].(map[string]interface{})
-			delete(dt, "__time")
 			byteResp, err := json.Marshal(dt)
 			if err != nil {
 				l.Error().Err(err).Str("device_id", p.deviceId).Msg("error marshalling properties to json")
@@ -454,11 +458,17 @@ func (s *ProtoCfgServer) reportedPropsSub(msg *mir.Msg, deviceId string, msgName
 		return
 	}
 	timeNow := time.Now().UTC()
-	msgMap["__time"] = timeNow.Format(time.RFC3339)
 	msgMap = map[string]interface{}{
 		"properties": map[string]interface{}{
 			"reported": map[string]interface{}{
 				string(msgDesc.FullName()): msgMap,
+			},
+		},
+		"status": map[string]interface{}{
+			"properties": map[string]interface{}{
+				"reported": map[string]interface{}{
+					string(msgDesc.FullName()): timeNow.Format(time.RFC3339Nano),
+				},
 			},
 		},
 	}
@@ -524,6 +534,7 @@ func (s *ProtoCfgServer) desiredPropsSub(msg *mir.Msg, deviceId string) (*device
 	// If not written in db, means we need to write empty config
 	// Then we return the config to the device
 	missingCfg := make(map[string]any)
+	missingTime := make(map[string]*common_apiv1.Timestamp)
 	for _, cfgDesc := range cfgDescs {
 		var jsonRaw []byte
 		var updTime string
@@ -537,8 +548,7 @@ func (s *ProtoCfgServer) desiredPropsSub(msg *mir.Msg, deviceId string) (*device
 		if p, ok := dev.Properties.Desired[cfgDesc.Name]; ok {
 			// Mean we have a config already for this
 			props := p.(map[string]interface{})
-			updTime = props["__time"].(string)
-			delete(props, "__time")
+			updTime = dev.Status.Properties.Desired[cfgDesc.Name].Format(time.RFC3339Nano)
 
 			jsonRaw, err = json.Marshal(props)
 			if err != nil {
@@ -566,9 +576,9 @@ func (s *ProtoCfgServer) desiredPropsSub(msg *mir.Msg, deviceId string) (*device
 			}
 
 			timeNow := time.Now().UTC()
-			msgMap["__time"] = timeNow.Format(time.RFC3339)
-			updTime = timeNow.Format(time.RFC3339)
+			updTime = timeNow.Format(time.RFC3339Nano)
 			missingCfg[cfgDesc.Name] = msgMap
+			missingTime[cfgDesc.Name] = mir_models.AsProtoTimestamp(timeNow)
 		}
 
 		msg := dynamicpb.NewMessage(desc.(protoreflect.MessageDescriptor))
@@ -597,6 +607,11 @@ func (s *ProtoCfgServer) desiredPropsSub(msg *mir.Msg, deviceId string) (*device
 				},
 				Props: &core_apiv1.UpdateDeviceRequest_Properties{
 					Desired: props,
+				},
+				Status: &core_apiv1.UpdateDeviceRequest_Status{
+					Properties: &core_apiv1.UpdateDeviceRequest_PropertiesTime{
+						Desired: missingTime,
+					},
 				},
 			})
 			if err != nil {

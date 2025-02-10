@@ -88,10 +88,16 @@ type Properties struct {
 	Reported map[string]interface{} `json:"reported,omitempty" yaml:"reported"`
 }
 
+type PropertiesTime struct {
+	Desired  map[string]time.Time `json:"desired,omitempty" yaml:"desired"`
+	Reported map[string]time.Time `json:"reported,omitempty" yaml:"reported"`
+}
+
 type Status struct {
-	Online         bool      `json:"online,omitempty" yaml:"online"`
-	LastHearthbeat time.Time `json:"lastHearthbeat,omitempty" yaml:"lastHearthbeat"`
-	Schema         Schema    `json:"schema,omitempty" yaml:"schema"`
+	Online         bool           `json:"online,omitempty" yaml:"online"`
+	LastHearthbeat time.Time      `json:"lastHearthbeat,omitempty" yaml:"lastHearthbeat"`
+	Schema         Schema         `json:"schema,omitempty" yaml:"schema"`
+	Properties     PropertiesTime `json:"properties,omitempty" yaml:"properties"`
 }
 
 type Schema struct {

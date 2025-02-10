@@ -56,11 +56,16 @@ message UpdateDeviceRequest {
     optional bool online = 1; // Is device online ?
     optional common_api.v1.Timestamp last_hearthbeat = 2; // Last pulse received
     Schema schema = 3; // Schema for telemetry and telecommands
+    PropertiesTime properties = 4; // Time of last update for properties
   }
   message Schema {
 	optional bytes compressed_schema = 1; // Schema in bytes
 	repeated string package_names = 2; // Packages names in schema
 	optional common_api.v1.Timestamp last_schema_fetch = 3; // Last request for a schema update from device
+  }
+  message PropertiesTime {
+      map<string, common_api.v1.Timestamp> desired = 1; // Each desired properties time of last update
+      map<string, common_api.v1.Timestamp> reported = 2; // Each reported properties time of last update
   }
 }
 
@@ -196,6 +201,15 @@ message Status {
   common_api.v1.Timestamp last_hearthbeat = 1; // Represent the time when the last hearthbeat was received
   bool online = 2; // The device is online and sending heathbeath signal
   Schema schema = 3; // Telemetry and Commanding schema using protobuff
+  PropertiesTime properties = 4; // Time of last update for properties
+}
+
+/*
+* Devices properties time of last update
+*/
+message PropertiesTime {
+    map<string, common_api.v1.Timestamp> desired = 1; // Each desired properties time of last update
+    map<string, common_api.v1.Timestamp> reported = 2; // Each reported properties time of last update
 }
 
 message Schema {
