@@ -650,6 +650,365 @@ func TestPublishCfgRequestCheckTime(t *testing.T) {
 	time.Sleep(1 * time.Second)
 }
 
+func TestPublishCfgDoubleUpdateSendIfDifferent(t *testing.T) {
+	// Arrange
+	ctx, cancel := context.WithCancel(context.Background())
+	id := "device_send_cfg_json"
+	reqCreate := &core_apiv1.CreateDeviceRequest{
+		Meta: &core_apiv1.Meta{
+			Name:      id,
+			Namespace: "testing_cfg",
+			Labels: map[string]string{
+				"testing": "cfg",
+			},
+			Annotations: map[string]string{
+				"mir/device/description": "hello world of devices !",
+			},
+		},
+		Spec: &core_apiv1.Spec{
+			DeviceId: id,
+		},
+	}
+
+	dev, err := mirDevice.Builder().DeviceId(id).Store(mirDevice.StoreOptions{InMemory: true}).Target(busUrl).Schema(
+		protocfg_testv1.File_protocfg_test_v1_cfg_proto,
+	).Build()
+	if err != nil {
+		t.Error(err)
+	}
+
+	cfgHandled := &protocfg_testv1.PowerLevel{}
+	count := 0
+	dev.HandleProperties(
+		cfgHandled,
+		func(m protoreflect.ProtoMessage) {
+			cfgHandled = m.(*protocfg_testv1.PowerLevel)
+			count += 1
+		})
+
+	p := protocfg_testv1.PowerLevel{
+		Power: 5,
+	}
+	payloadBytes, err := protojson.Marshal(&p)
+	if err != nil {
+		t.Error(err)
+	}
+
+	reqCfg := &cfg_apiv1.SendConfigRequest{
+		Targets: &core_apiv1.Targets{
+			Ids: []string{id},
+		},
+		Name:              string(p.ProtoReflect().Descriptor().FullName()),
+		PayloadEncoding:   common_apiv1.Encoding_ENCODING_JSON,
+		Payload:           payloadBytes,
+		RefreshSchema:     true,
+		SendOnlyDifferent: false,
+	}
+
+	reqCfgSec := &cfg_apiv1.SendConfigRequest{
+		Targets: &core_apiv1.Targets{
+			Ids: []string{id},
+		},
+		Name:              string(p.ProtoReflect().Descriptor().FullName()),
+		PayloadEncoding:   common_apiv1.Encoding_ENCODING_JSON,
+		Payload:           payloadBytes,
+		SendOnlyDifferent: true,
+	}
+
+	// Act
+	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate)
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	wg, err := dev.Launch(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	respCfg, err := cfg_client.PublishSendConfigRequest(b, reqCfg)
+	if err != nil {
+		t.Error(err)
+	} else if respCfg.GetError() != "" {
+		t.Error(respCfg.GetError())
+	}
+
+	time.Sleep(1 * time.Second)
+	respCfgSec, err := cfg_client.PublishSendConfigRequest(b, reqCfgSec)
+	if err != nil {
+		t.Error(err)
+	} else if respCfg.GetError() != "" {
+		t.Error(respCfg.GetError())
+	}
+	time.Sleep(1 * time.Second)
+
+	// Assert
+	msgResp := &protocfg_testv1.PowerLevel{}
+	for _, v := range respCfg.GetOk().DeviceResponses {
+		if v.Error != "" {
+			t.Error(v.Error)
+		}
+		assert.Equal(t, string(msgResp.ProtoReflect().Descriptor().FullName()), v.Name)
+		assert.Equal(t, cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_SUCCESS, v.Status)
+		if err = protojson.Unmarshal(v.Payload, msgResp); err != nil {
+			t.Error(err)
+		}
+	}
+	time.Sleep(1 * time.Second)
+
+	assert.Equal(t, int32(5), cfgHandled.Power)
+	assert.Equal(t, common_apiv1.Encoding_ENCODING_JSON, respCfg.GetOk().Encoding)
+	assert.Equal(t, cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_NOCHANGE, respCfgSec.GetOk().DeviceResponses[id+"/testing_cfg"].Status)
+	assert.Equal(t, 2, count)
+	cancel()
+	wg.Wait()
+	time.Sleep(1 * time.Second)
+}
+
+func TestPublishCfgDoubleUpdateSendAlways(t *testing.T) {
+	// Arrange
+	ctx, cancel := context.WithCancel(context.Background())
+	id := "device_send_cfg_json"
+	reqCreate := &core_apiv1.CreateDeviceRequest{
+		Meta: &core_apiv1.Meta{
+			Name:      id,
+			Namespace: "testing_cfg",
+			Labels: map[string]string{
+				"testing": "cfg",
+			},
+			Annotations: map[string]string{
+				"mir/device/description": "hello world of devices !",
+			},
+		},
+		Spec: &core_apiv1.Spec{
+			DeviceId: id,
+		},
+	}
+
+	dev, err := mirDevice.Builder().DeviceId(id).Store(mirDevice.StoreOptions{InMemory: true}).Target(busUrl).Schema(
+		protocfg_testv1.File_protocfg_test_v1_cfg_proto,
+	).Build()
+	if err != nil {
+		t.Error(err)
+	}
+
+	cfgHandled := &protocfg_testv1.PowerLevel{}
+	count := 0
+	dev.HandleProperties(
+		cfgHandled,
+		func(m protoreflect.ProtoMessage) {
+			cfgHandled = m.(*protocfg_testv1.PowerLevel)
+			count += 1
+		})
+
+	p := protocfg_testv1.PowerLevel{
+		Power: 5,
+	}
+	payloadBytes, err := protojson.Marshal(&p)
+	if err != nil {
+		t.Error(err)
+	}
+
+	reqCfg := &cfg_apiv1.SendConfigRequest{
+		Targets: &core_apiv1.Targets{
+			Ids: []string{id},
+		},
+		Name:              string(p.ProtoReflect().Descriptor().FullName()),
+		PayloadEncoding:   common_apiv1.Encoding_ENCODING_JSON,
+		Payload:           payloadBytes,
+		RefreshSchema:     true,
+		SendOnlyDifferent: false,
+	}
+
+	reqCfgSec := &cfg_apiv1.SendConfigRequest{
+		Targets: &core_apiv1.Targets{
+			Ids: []string{id},
+		},
+		Name:              string(p.ProtoReflect().Descriptor().FullName()),
+		PayloadEncoding:   common_apiv1.Encoding_ENCODING_JSON,
+		Payload:           payloadBytes,
+		SendOnlyDifferent: false,
+	}
+
+	// Act
+	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate)
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	wg, err := dev.Launch(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	respCfg, err := cfg_client.PublishSendConfigRequest(b, reqCfg)
+	if err != nil {
+		t.Error(err)
+	} else if respCfg.GetError() != "" {
+		t.Error(respCfg.GetError())
+	}
+
+	time.Sleep(1 * time.Second)
+	respCfgSec, err := cfg_client.PublishSendConfigRequest(b, reqCfgSec)
+	if err != nil {
+		t.Error(err)
+	} else if respCfg.GetError() != "" {
+		t.Error(respCfg.GetError())
+	}
+	time.Sleep(1 * time.Second)
+
+	// Assert
+	msgResp := &protocfg_testv1.PowerLevel{}
+	for _, v := range respCfg.GetOk().DeviceResponses {
+		if v.Error != "" {
+			t.Error(v.Error)
+		}
+		assert.Equal(t, string(msgResp.ProtoReflect().Descriptor().FullName()), v.Name)
+		assert.Equal(t, cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_SUCCESS, v.Status)
+		if err = protojson.Unmarshal(v.Payload, msgResp); err != nil {
+			t.Error(err)
+		}
+	}
+	time.Sleep(1 * time.Second)
+
+	assert.Equal(t, int32(5), cfgHandled.Power)
+	assert.Equal(t, common_apiv1.Encoding_ENCODING_JSON, respCfg.GetOk().Encoding)
+	assert.Equal(t, cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_SUCCESS, respCfgSec.GetOk().DeviceResponses[id+"/testing_cfg"].Status)
+	assert.Equal(t, 3, count)
+	cancel()
+	wg.Wait()
+	time.Sleep(1 * time.Second)
+}
+
+func TestPublishCfgDoubleUpdateIsDifferent(t *testing.T) {
+	// Arrange
+	ctx, cancel := context.WithCancel(context.Background())
+	id := "device_send_cfg_json"
+	reqCreate := &core_apiv1.CreateDeviceRequest{
+		Meta: &core_apiv1.Meta{
+			Name:      id,
+			Namespace: "testing_cfg",
+			Labels: map[string]string{
+				"testing": "cfg",
+			},
+			Annotations: map[string]string{
+				"mir/device/description": "hello world of devices !",
+			},
+		},
+		Spec: &core_apiv1.Spec{
+			DeviceId: id,
+		},
+	}
+
+	dev, err := mirDevice.Builder().DeviceId(id).Store(mirDevice.StoreOptions{InMemory: true}).Target(busUrl).Schema(
+		protocfg_testv1.File_protocfg_test_v1_cfg_proto,
+	).Build()
+	if err != nil {
+		t.Error(err)
+	}
+
+	cfgHandled := &protocfg_testv1.PowerLevel{}
+	count := 0
+	dev.HandleProperties(
+		cfgHandled,
+		func(m protoreflect.ProtoMessage) {
+			cfgHandled = m.(*protocfg_testv1.PowerLevel)
+			count += 1
+		})
+
+	p := protocfg_testv1.PowerLevel{
+		Power: 5,
+	}
+	payloadBytes, err := protojson.Marshal(&p)
+	if err != nil {
+		t.Error(err)
+	}
+
+	reqCfg := &cfg_apiv1.SendConfigRequest{
+		Targets: &core_apiv1.Targets{
+			Ids: []string{id},
+		},
+		Name:              string(p.ProtoReflect().Descriptor().FullName()),
+		PayloadEncoding:   common_apiv1.Encoding_ENCODING_JSON,
+		Payload:           payloadBytes,
+		RefreshSchema:     true,
+		SendOnlyDifferent: false,
+	}
+
+	pSec := protocfg_testv1.PowerLevel{
+		Power: 10,
+	}
+	payloadBytesSec, err := protojson.Marshal(&pSec)
+	if err != nil {
+		t.Error(err)
+	}
+
+	reqCfgSec := &cfg_apiv1.SendConfigRequest{
+		Targets: &core_apiv1.Targets{
+			Ids: []string{id},
+		},
+		Name:              string(p.ProtoReflect().Descriptor().FullName()),
+		PayloadEncoding:   common_apiv1.Encoding_ENCODING_JSON,
+		Payload:           payloadBytesSec,
+		SendOnlyDifferent: true,
+	}
+
+	// Act
+	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate)
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	wg, err := dev.Launch(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	respCfg, err := cfg_client.PublishSendConfigRequest(b, reqCfg)
+	if err != nil {
+		t.Error(err)
+	} else if respCfg.GetError() != "" {
+		t.Error(respCfg.GetError())
+	}
+
+	time.Sleep(1 * time.Second)
+	respCfgSec, err := cfg_client.PublishSendConfigRequest(b, reqCfgSec)
+	if err != nil {
+		t.Error(err)
+	} else if respCfg.GetError() != "" {
+		t.Error(respCfg.GetError())
+	}
+	time.Sleep(1 * time.Second)
+
+	// Assert
+	msgResp := &protocfg_testv1.PowerLevel{}
+	for _, v := range respCfg.GetOk().DeviceResponses {
+		if v.Error != "" {
+			t.Error(v.Error)
+		}
+		assert.Equal(t, string(msgResp.ProtoReflect().Descriptor().FullName()), v.Name)
+		assert.Equal(t, cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_SUCCESS, v.Status)
+		if err = protojson.Unmarshal(v.Payload, msgResp); err != nil {
+			t.Error(err)
+		}
+	}
+	time.Sleep(1 * time.Second)
+
+	assert.Equal(t, int32(10), cfgHandled.Power)
+	assert.Equal(t, common_apiv1.Encoding_ENCODING_JSON, respCfg.GetOk().Encoding)
+	assert.Equal(t, cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_SUCCESS, respCfgSec.GetOk().DeviceResponses[id+"/testing_cfg"].Status)
+	assert.Equal(t, 3, count)
+	cancel()
+	wg.Wait()
+	time.Sleep(1 * time.Second)
+}
+
 func TestPublishCfgNoDeviceFound(t *testing.T) {
 	// Arrange
 	id := "no_device_found_cfg"
