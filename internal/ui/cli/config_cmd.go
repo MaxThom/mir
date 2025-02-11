@@ -21,23 +21,25 @@ type ConfigCmd struct {
 }
 
 type ConfigListCmd struct {
-	Target           `embed:"" prefix:"target."`
-	NameNs           string            `name:"name/namespace" arg:"" optional:"" help:"edit single device"`
-	FilterLabels     map[string]string `help:"Set of labels to filter config"`
-	RefreshSchema    bool              `short:"r" help:"Refresh schema from device even if in store" default:"false"`
-	ShowJsonTemplate bool              `short:"j" help:"show json template for config"`
+	Target            `embed:"" prefix:"target."`
+	NameNs            string            `name:"name/namespace" arg:"" optional:"" help:"edit single device"`
+	FilterLabels      map[string]string `help:"Set of labels to filter config"`
+	RefreshSchema     bool              `short:"r" help:"Refresh schema from device even if in store" default:"false"`
+	ShowJsonTemplate  bool              `short:"j" help:"show json template for config"`
+	ShowCurrentValues bool              `short:"c" help:"show current values for config"`
 }
 
 type ConfigSendCmd struct {
-	Target           `embed:"" prefix:"target."`
-	NameNs           string `name:"name/namespace" arg:"" optional:"" help:"edit single device"`
-	Command          string `short:"n" help:"config name to send"`
-	ShowJsonTemplate bool   `short:"j" help:"show json template for config"`
-	Payload          string `short:"p" help:"payload to send in json. use single quote for easier writing. e.g. '{\"key\":\"value\"}'"`
-	Edit             bool   `short:"e" help:"Interactive edit of config payload" default:"false"`
-	RefreshSchema    bool   `short:"r" help:"Refresh schema from device even if in store" default:"false"`
-	DryRun           bool   `help:"dry run command" default:"false"`
-	ForcePush        bool   `short:"f" help:"force send commands even if some devices are in error" default:"false"`
+	Target            `embed:"" prefix:"target."`
+	NameNs            string `name:"name/namespace" arg:"" optional:"" help:"edit single device"`
+	Command           string `short:"n" help:"config name to send"`
+	ShowJsonTemplate  bool   `short:"j" help:"show json template for config"`
+	ShowCurrentValues bool   `short:"c" help:"show current values for config"`
+	Payload           string `short:"p" help:"payload to send in json. use single quote for easier writing. e.g. '{\"key\":\"value\"}'"`
+	Edit              bool   `short:"e" help:"Interactive edit of config payload" default:"false"`
+	RefreshSchema     bool   `short:"r" help:"Refresh schema from device even if in store" default:"false"`
+	DryRun            bool   `help:"dry run command" default:"false"`
+	ForcePush         bool   `short:"f" help:"force send commands even if some devices are in error" default:"false"`
 }
 
 func (d *ConfigListCmd) Validate() error {
@@ -96,9 +98,13 @@ func (d *ConfigListCmd) Run(c CLI) error {
 				if cmd.Error != "" {
 					sb.WriteString(cmd.Error)
 					sb.WriteString("\n")
-				} else if d.ShowJsonTemplate {
+				} else if d.ShowJsonTemplate || d.ShowCurrentValues {
+					js := cmd.Template
+					if d.ShowCurrentValues {
+						js = cmd.Values
+					}
 					var prettyJSON bytes.Buffer
-					if err = json.Indent(&prettyJSON, []byte(cmd.Template), "", "  "); err != nil {
+					if err = json.Indent(&prettyJSON, []byte(js), "", "  "); err != nil {
 						sb.WriteString(err.Error())
 					} else {
 						sb.WriteString(prettyJSON.String())
@@ -144,8 +150,8 @@ func (d *ConfigSendCmd) Validate() error {
 	if piped, ok := ReadFromPipedStdIn(); ok {
 		d.Payload = piped
 	}
-	if d.Command != "" && d.Payload == "" && !d.ShowJsonTemplate && !d.Edit {
-		err.Details = append(err.Details, "Must set payload. Use -j to see json template or -e for interactive edit.")
+	if d.Command != "" && d.Payload == "" && !d.ShowJsonTemplate && !d.ShowCurrentValues && !d.Edit {
+		err.Details = append(err.Details, "Must set payload. Use -j to see json template, -c for current values or -e for interactive edit.")
 	}
 
 	if len(err.Details) > 0 {
@@ -165,16 +171,17 @@ func (d *ConfigSendCmd) Run(c CLI) error {
 
 	if d.Command == "" {
 		listCfg := ConfigListCmd{
-			Target:           d.Target,
-			NameNs:           d.NameNs,
-			RefreshSchema:    d.RefreshSchema,
-			ShowJsonTemplate: d.ShowJsonTemplate,
+			Target:            d.Target,
+			NameNs:            d.NameNs,
+			RefreshSchema:     d.RefreshSchema,
+			ShowJsonTemplate:  d.ShowJsonTemplate,
+			ShowCurrentValues: d.ShowCurrentValues,
 		}
 		return listCfg.Run(c)
 	}
 
 	if d.Edit {
-		d.ShowJsonTemplate = true
+		d.ShowCurrentValues = true
 	}
 
 	req := &cfg_apiv1.SendConfigRequest{
@@ -189,6 +196,7 @@ func (d *ConfigSendCmd) Run(c CLI) error {
 		PayloadEncoding: common_apiv1.Encoding_ENCODING_JSON,
 		RefreshSchema:   d.RefreshSchema,
 		ShowTemplate:    d.ShowJsonTemplate,
+		ShowValues:      d.ShowCurrentValues,
 		DryRun:          d.DryRun,
 		ForcePush:       d.ForcePush,
 	}
@@ -200,7 +208,7 @@ func (d *ConfigSendCmd) Run(c CLI) error {
 		return errors.New(resp.GetError())
 	}
 
-	if req.ShowTemplate {
+	if d.ShowJsonTemplate || d.ShowCurrentValues {
 		tpls := map[string][]string{}
 		for k, v := range resp.GetOk().DeviceResponses {
 			if v.Error != "" {
@@ -225,7 +233,7 @@ func (d *ConfigSendCmd) Run(c CLI) error {
 			}
 		} else {
 			if d.Edit {
-				return errors.New("Cannot edit multiple json templates. Refine targets to get single json or use -j to see.")
+				return errors.New("Cannot edit multiple json. Refine targets to get single json or use -j to see.")
 			}
 			i := 1
 			for k, v := range tpls {
@@ -246,6 +254,7 @@ func (d *ConfigSendCmd) Run(c CLI) error {
 			payload := []byte(sb.String())
 			err = editor.EditRawDocument(&payload, header)
 			req.ShowTemplate = false
+			req.ShowValues = false
 			req.Payload = payload
 			resp, err = cfg_client.PublishSendConfigRequest(msgBus, req)
 			if err != nil {

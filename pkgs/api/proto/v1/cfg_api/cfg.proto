@@ -23,8 +23,10 @@ message SendConfigRequest {
 	common_api.v1.Encoding payload_encoding = 4; // Encoding type of payload
 	bool refresh_schema = 5; // Force a schema refresh from the device, else will only try refresh if cant deserialize
 	bool show_template = 6; // Show the json template of the config
-	bool dry_run = 7; // Do not execute the command, just validate it
-	bool force_push = 8; // Send commands to validated devices even if some are in errors
+	bool show_values = 7; // Show the json current values of the config
+	bool dry_run = 8; // Do not execute theconfig, just validate it
+	bool force_push = 9; // Send config to validated devices even if some are in errors
+	bool send_only_different = 10; // Send config to the devices only if it's different from the current config
 }
 
 message SendConfigResponse {
@@ -84,5 +86,6 @@ message ConfigDescriptor {
 	string name = 1; // Name of config
 	map<string, string> labels = 2; // Labels are used to tag a config
 	string template = 3; // JSON payload boilerplate for an example
-	string error = 4; // error if something went wrong
+	string values = 4; // JSON payload of values
+	string error = 5; // error if something went wrong
 }

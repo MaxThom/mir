@@ -1,6 +1,7 @@
 package protocfg_srv
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -133,8 +134,16 @@ func (s *ProtoCfgServer) listCfgSub(msg *mir.Msg, clientId string, req *cfg_apiv
 		}
 
 		cfgList := []*cfg_apiv1.ConfigDescriptor{}
-		for _, cmd := range cfgs {
-			cfgList = append(cfgList, cmd)
+		for _, cfg := range cfgs {
+			if v, ok := dev.Properties.Desired[cfg.Name]; ok {
+				b, err := json.Marshal(v)
+				if err != nil {
+					cfg.Error = err.Error()
+					continue
+				}
+				cfg.Values = string(b)
+			}
+			cfgList = append(cfgList, cfg)
 		}
 		devsCmds[dev.GetNameNamespace()] = &cfg_apiv1.Configs{
 			Configs: cfgList,
@@ -162,7 +171,7 @@ func (s *ProtoCfgServer) sendConfigSub(msg *mir.Msg, clientId string, req *cfg_a
 	if req.PayloadEncoding == common_apiv1.Encoding_ENCODING_UNSPECIFIED && !req.ShowTemplate {
 		errs = append(errs, mir_models.ErrorCommandEncodingNotSpecified.Error())
 	}
-	if (req.Payload == nil || len(req.Payload) == 0) && !req.ShowTemplate && req.PayloadEncoding != common_apiv1.Encoding_ENCODING_PROTOBUF {
+	if (req.Payload == nil || len(req.Payload) == 0) && !req.ShowTemplate && !req.ShowValues && req.PayloadEncoding != common_apiv1.Encoding_ENCODING_PROTOBUF {
 		// Proto encoding can be empty if struct is empty, not json
 		errs = append(errs, mir_models.ErrorCommandPayloadNotProvided.Error())
 	}
@@ -244,11 +253,44 @@ func (s *ProtoCfgServer) sendConfigToDevices(req *cfg_apiv1.SendConfigRequest) (
 					Status:   cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_ERROR,
 					Error:    errors.Wrap(err, "error generating config template from device schema").Error(),
 				}
+				continue
 			}
 			devResp[dev.GetNameNamespace()] = &cfg_apiv1.SendConfigResponse_ConfigResponse{
 				DeviceId: dev.Spec.DeviceId,
 				Name:     req.Name,
 				Payload:  tpl,
+				Status:   cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_SUCCESS,
+			}
+			continue
+		} else if req.ShowValues {
+			b := []byte{}
+			if v, ok := dev.Properties.Desired[req.Name]; ok {
+				b, err = json.Marshal(v)
+				if err != nil {
+					devResp[dev.GetNameNamespace()] = &cfg_apiv1.SendConfigResponse_ConfigResponse{
+						DeviceId: dev.Spec.DeviceId,
+						Status:   cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_ERROR,
+						Error:    errors.Wrap(err, "error marshalling config from device").Error(),
+					}
+					continue
+				}
+			} else {
+				// Send template in case config is not there yet
+				b, err = json_template.GenerateTemplate(msgReqDesc.(protoreflect.MessageDescriptor), json_template.Options{})
+				if err != nil {
+					l.Error().Err(err).Str("device_id", dev.Spec.DeviceId).Msg("error generating config template from device schema")
+					devResp[dev.GetNameNamespace()] = &cfg_apiv1.SendConfigResponse_ConfigResponse{
+						DeviceId: dev.Spec.DeviceId,
+						Status:   cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_ERROR,
+						Error:    errors.Wrap(err, "error generating config template from device schema").Error(),
+					}
+					continue
+				}
+			}
+			devResp[dev.GetNameNamespace()] = &cfg_apiv1.SendConfigResponse_ConfigResponse{
+				DeviceId: dev.Spec.DeviceId,
+				Name:     req.Name,
+				Payload:  b,
 				Status:   cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_SUCCESS,
 			}
 			continue
@@ -258,7 +300,7 @@ func (s *ProtoCfgServer) sendConfigToDevices(req *cfg_apiv1.SendConfigRequest) (
 
 		// Encoding and validation
 		err = nil
-		bytePayload := req.Payload
+		protoPayload := req.Payload
 		jsonPayload := req.Payload
 		mapPayload := make(map[string]interface{})
 		if req.PayloadEncoding == common_apiv1.Encoding_ENCODING_JSON {
@@ -266,7 +308,7 @@ func (s *ProtoCfgServer) sendConfigToDevices(req *cfg_apiv1.SendConfigRequest) (
 			// Encoding to proto and then serialize
 			err = protojson.Unmarshal(req.Payload, payloadReq)
 			if err == nil {
-				bytePayload, err = proto.Marshal(payloadReq)
+				protoPayload, err = proto.Marshal(payloadReq)
 				if err == nil {
 					err = json.Unmarshal(jsonPayload, &mapPayload)
 				}
@@ -292,6 +334,13 @@ func (s *ProtoCfgServer) sendConfigToDevices(req *cfg_apiv1.SendConfigRequest) (
 			continue
 		}
 		// TODO compare if the properties are the same as the last one
+		// jsonPayloadMin, err := minifyJSON(jsonPayload)
+		// fmt.Println("req", string(jsonPayloadMin))
+		// j, err := json.Marshal(dev.Properties.Desired[string(msgReqDesc.FullName())])
+		// if err != nil {
+		// 	fmt.Println(err)
+		// }
+		// fmt.Println("dev", string(j))
 
 		// Add to map with time and name
 		timeNow := time.Now().UTC()
@@ -306,7 +355,7 @@ func (s *ProtoCfgServer) sendConfigToDevices(req *cfg_apiv1.SendConfigRequest) (
 		}
 		configToSend[dev.GetNameNamespace()] = &cmdDevicePayload{
 			time:       timeNow,
-			payload:    bytePayload,
+			payload:    protoPayload,
 			mapPayload: mapPayload,
 			deviceId:   dev.Spec.DeviceId,
 			msgDesc:    msgReqDesc.(protoreflect.MessageDescriptor),
@@ -625,4 +674,12 @@ func (s *ProtoCfgServer) desiredPropsSub(msg *mir.Msg, deviceId string) (*device
 	}
 
 	return desiredProps, nil
+}
+
+func minifyJSON(input []byte) ([]byte, error) {
+	var buffer bytes.Buffer
+	if err := json.Compact(&buffer, input); err != nil {
+		return []byte{}, err
+	}
+	return buffer.Bytes(), nil
 }
