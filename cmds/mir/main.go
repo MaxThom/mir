@@ -26,11 +26,11 @@ type (
 		Target   string
 	}
 	Globals struct {
-		Target     string      `help:"Mir connection target. default:nats://127.0.0.1:4222"`
+		Target     string      `short:"T" help:"Mir connection target. default:nats://127.0.0.1:4222"`
 		Debug      bool        `short:"D" help:"Enable debug mode"`
-		LogLevel   string      `short:"l" help:"Set the logging level (debug|info|warn|error|fatal). default:info"`
-		ConfigFile configFlag  `short:"c" help:"Set path for config path. default:~/.config/mir/cli.yaml"`
-		Version    VersionFlag `name:"version" help:"Print version information and quit"`
+		LogLevel   string      `short:"L" help:"Set the logging level (debug|info|warn|error|fatal). default:info"`
+		ConfigFile configFlag  `short:"C" help:"Set path for config path. default:~/.config/mir/cli.yaml"`
+		Version    VersionFlag `short:"V" name:"version" help:"Print version information and quit"`
 	}
 	CLI struct {
 		Client Client       `cmd:"" embed:"" help:"Test Mir ecosystem of servers and services"`

@@ -159,6 +159,19 @@ func (s *CoreServer) updateDeviceSub(msg *mir.Msg, clientId string, req *core_ap
 	// if update to desired properties, set it to null
 	// publish device config update event
 
+	// 1. Send cfg to cfg mod
+	//		1. Check if props are different then current
+	// 2. If return is error, return error
+	// 2a. If return is success, set props to null in req and update device with rest
+
+	if req.GetProps() != nil && req.GetProps().GetDesired() != nil && req.GetProps().GetDesired().Fields != nil && len(req.GetProps().GetDesired().Fields) > 0 {
+		props := req.GetProps().GetDesired().Fields
+		for k := range props {
+			fmt.Println(k)
+		}
+	}
+	// s.m.Server().SendConfig().RequestJson(&mir.SendDeviceConfigRequestJson{})
+
 	respDb, err := s.store.UpdateDevice(req)
 	if err != nil {
 		if errors.Is(err, mng.ErrorDeviceShouldBeCreated) {
