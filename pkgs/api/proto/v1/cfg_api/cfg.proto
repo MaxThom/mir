@@ -52,9 +52,10 @@ message SendConfigResponse {
 enum ConfigResponseStatus {
     CONFIG_RESPONSE_STATUS_UNSPECIFIED = 0; // Default, unspecified response status
     CONFIG_RESPONSE_STATUS_PENDING = 1; // Waiting to be sent and no validation required
-    CONFIG_RESPONSE_STATUS_VALIDATED = 2; // Command was validated
-    CONFIG_RESPONSE_STATUS_ERROR = 3; // Command execution failed
-    CONFIG_RESPONSE_STATUS_SUCCESS = 4; // Command execution was successfull
+    CONFIG_RESPONSE_STATUS_VALIDATED = 2; // Config was validated
+    CONFIG_RESPONSE_STATUS_NOCHANGE = 3; // Config was same as current config
+    CONFIG_RESPONSE_STATUS_ERROR = 4; // Config execution failed
+    CONFIG_RESPONSE_STATUS_SUCCESS = 5; // Config execution was successfull
 }
 
 message SendListConfigRequest {

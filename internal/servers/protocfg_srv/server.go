@@ -333,14 +333,40 @@ func (s *ProtoCfgServer) sendConfigToDevices(req *cfg_apiv1.SendConfigRequest) (
 			devInError = true
 			continue
 		}
-		// TODO compare if the properties are the same as the last one
-		// jsonPayloadMin, err := minifyJSON(jsonPayload)
-		// fmt.Println("req", string(jsonPayloadMin))
-		// j, err := json.Marshal(dev.Properties.Desired[string(msgReqDesc.FullName())])
-		// if err != nil {
-		// 	fmt.Println(err)
-		// }
-		// fmt.Println("dev", string(j))
+		// Compare if the properties are the same as the last one
+		// This might not always work using JSON, check for alternative
+		if req.SendOnlyDifferent {
+			new, err := minifyJSON(jsonPayload)
+			if err != nil {
+				l.Error().Err(err).Str("device_id", dev.Spec.DeviceId).Msg("error minifying json")
+				devResp[dev.GetNameNamespace()] = &cfg_apiv1.SendConfigResponse_ConfigResponse{
+					DeviceId: dev.Spec.DeviceId,
+					Status:   cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_ERROR,
+					Error:    errors.Wrap(err, "error unmarshaling payload").Error(),
+				}
+				devInError = true
+				continue
+			}
+			old, err := json.Marshal(dev.Properties.Desired[string(msgReqDesc.FullName())])
+			if err != nil {
+				l.Error().Err(err).Str("device_id", dev.Spec.DeviceId).Msg("error unmarshaling device current config")
+				devResp[dev.GetNameNamespace()] = &cfg_apiv1.SendConfigResponse_ConfigResponse{
+					DeviceId: dev.Spec.DeviceId,
+					Status:   cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_ERROR,
+					Error:    errors.Wrap(err, "error unmarshaling payload").Error(),
+				}
+				devInError = true
+				continue
+			}
+			if bytes.EqualFold(new, old) {
+				devResp[dev.GetNameNamespace()] = &cfg_apiv1.SendConfigResponse_ConfigResponse{
+					DeviceId: dev.Spec.DeviceId,
+					Name:     req.Name,
+					Status:   cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_NOCHANGE,
+				}
+				continue
+			}
+		}
 
 		// Add to map with time and name
 		timeNow := time.Now().UTC()
