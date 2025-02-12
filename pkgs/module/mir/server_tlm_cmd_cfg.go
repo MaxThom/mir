@@ -429,11 +429,12 @@ func (r *sendConfigRoute) Request(req *cfg_apiv1.SendConfigRequest) (map[string]
 }
 
 type SendDeviceConfigRequestProto struct {
-	Targets       *core_apiv1.Targets
-	Command       proto.Message
-	DryRun        bool
-	RefreshSchema bool
-	ForcePush     bool
+	Targets           *core_apiv1.Targets
+	Command           proto.Message
+	DryRun            bool
+	RefreshSchema     bool
+	ForcePush         bool
+	SendOnlyDifferent bool
 }
 
 // Request send a config to device using proto data
@@ -443,23 +444,25 @@ func (r *sendConfigRoute) RequestProto(req *SendDeviceConfigRequestProto) (map[s
 		return map[string]*cfg_apiv1.SendConfigResponse_ConfigResponse{}, fmt.Errorf("error marshalling command to proto: %w", err)
 	}
 	return r.Request(&cfg_apiv1.SendConfigRequest{
-		Targets:         req.Targets,
-		Name:            string(req.Command.ProtoReflect().Descriptor().FullName()),
-		PayloadEncoding: common_apiv1.Encoding_ENCODING_PROTOBUF,
-		Payload:         b,
-		DryRun:          req.DryRun,
-		RefreshSchema:   req.RefreshSchema,
-		ForcePush:       req.ForcePush,
+		Targets:           req.Targets,
+		Name:              string(req.Command.ProtoReflect().Descriptor().FullName()),
+		PayloadEncoding:   common_apiv1.Encoding_ENCODING_PROTOBUF,
+		Payload:           b,
+		DryRun:            req.DryRun,
+		RefreshSchema:     req.RefreshSchema,
+		ForcePush:         req.ForcePush,
+		SendOnlyDifferent: req.SendOnlyDifferent,
 	})
 }
 
 type SendDeviceConfigRequestJson struct {
-	Targets        *core_apiv1.Targets
-	CommandName    string
-	CommandPayload any
-	DryRun         bool
-	RefreshSchema  bool
-	ForcePush      bool
+	Targets           *core_apiv1.Targets
+	CommandName       string
+	CommandPayload    any
+	DryRun            bool
+	RefreshSchema     bool
+	ForcePush         bool
+	SendOnlyDifferent bool
 }
 
 // Request send a config to device using json data
@@ -469,12 +472,13 @@ func (r *sendConfigRoute) RequestJson(req *SendDeviceConfigRequestJson) (map[str
 		return map[string]*cfg_apiv1.SendConfigResponse_ConfigResponse{}, fmt.Errorf("error marshalling command to json: %w", err)
 	}
 	return r.Request(&cfg_apiv1.SendConfigRequest{
-		Targets:         req.Targets,
-		Name:            req.CommandName,
-		PayloadEncoding: common_apiv1.Encoding_ENCODING_JSON,
-		Payload:         b,
-		DryRun:          req.DryRun,
-		RefreshSchema:   req.RefreshSchema,
-		ForcePush:       req.ForcePush,
+		Targets:           req.Targets,
+		Name:              req.CommandName,
+		PayloadEncoding:   common_apiv1.Encoding_ENCODING_JSON,
+		Payload:           b,
+		DryRun:            req.DryRun,
+		RefreshSchema:     req.RefreshSchema,
+		ForcePush:         req.ForcePush,
+		SendOnlyDifferent: req.SendOnlyDifferent,
 	})
 }
