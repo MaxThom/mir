@@ -76,21 +76,6 @@ func main() {
 		}
 	})
 
-	m.HandleProperties(&config_devicev1.Config{}, func(msg proto.Message) {
-		fmt.Println("------")
-	}, func(msg proto.Message) {
-		fmt.Println("++++++")
-	})
-
-	m.HandleProperties(&config_devicev1.Config{}, []func(msg proto.Message){
-		func(msg proto.Message) {
-			fmt.Println("First function")
-		},
-		func(msg proto.Message) {
-			fmt.Println("Second function")
-		},
-	}...)
-
 	mir_signals.WaitForOsSignals(func() {
 		cancel()
 		mirWg.Wait()
