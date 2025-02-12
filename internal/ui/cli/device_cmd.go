@@ -35,7 +35,7 @@ type DeviceListCmd struct {
 }
 
 type DeviceCreateCmd struct {
-	Output string `short:"o" help:"output format for response [pretty|json|yaml]" default:"pretty"`
+	Output string `short:"o" help:"output format for response [pretty|json|yaml]" default:"yaml"`
 	NameNs string `name:"name/namespace" arg:"" optional:"" help:"shortcut to set name and namespace"`
 
 	ShowJsonTemplate bool              `short:"j" help:"Show json template for creating a device"`
@@ -51,7 +51,7 @@ type DeviceCreateCmd struct {
 }
 
 type DeviceUpdateCmd struct {
-	Output string `short:"o" help:"output format for response [pretty|json|yaml]" default:"pretty"`
+	Output string `short:"o" help:"output format for response [pretty|json|yaml]" default:"yaml"`
 	Target `embed:"" prefix:"target."`
 	NameNs string `name:"name/namespace" arg:"" optional:"" help:"shortcut to set name and namespace"`
 
@@ -65,7 +65,7 @@ type DeviceUpdateCmd struct {
 }
 
 type DeviceDeleteCmd struct {
-	Output string `short:"o" help:"output format for response [pretty|json|yaml]" default:"pretty"`
+	Output string `short:"o" help:"output format for response [pretty|json|yaml]" default:"yaml"`
 	NameNs string `name:"name/namespace" arg:"" optional:"" help:"delete single device."`
 	Target `embed:"" prefix:"target."`
 }
@@ -123,14 +123,13 @@ func (d *DeviceListCmd) Run(c CLI) error {
 	}
 
 	list := mir_models.NewDeviceListFromProtoDevices(resp.GetOk().Devices)
-	if d.Output == "pretty" {
-		fmt.Println(prettyStringDevices(list))
+	if d.Output == "pretty" && len(list) == 1 {
+		d.Output = "yaml"
+	}
+	if str, err := stringifyDevices(d.Output, list); err != nil {
+		return fmt.Errorf("error marshalling response: %w", err)
 	} else {
-		if out, e := MarshalResponse(d.Output, list); e != nil {
-			return fmt.Errorf("error marshalling response: %w", err)
-		} else {
-			fmt.Println(out)
-		}
+		fmt.Println(str)
 	}
 
 	return nil
@@ -177,7 +176,7 @@ func (d *DeviceCreateCmd) Run(c CLI) error {
 		if d.Output == "pretty" {
 			d.Output = "yaml"
 		}
-		if out, e := MarshalResponse(d.Output, mir_models.NewDevice()); e != nil {
+		if out, e := marshalResponse(d.Output, mir_models.NewDevice()); e != nil {
 			return fmt.Errorf("error marshalling response: %w", e)
 		} else {
 			fmt.Println(out)
@@ -235,14 +234,10 @@ func (d *DeviceCreateCmd) Run(c CLI) error {
 
 	if len(respDevs) > 0 {
 		list := mir_models.NewDeviceListFromProtoDevices(respDevs)
-		if d.Output == "pretty" {
-			fmt.Println(prettyStringDevices(list))
+		if str, err := stringifyDevices(d.Output, list); err != nil {
+			return fmt.Errorf("error marshalling response: %w", err)
 		} else {
-			if out, e := MarshalResponse(d.Output, list); e != nil {
-				return fmt.Errorf("error marshalling response: %w", e)
-			} else {
-				fmt.Println(out)
-			}
+			fmt.Println(str)
 		}
 	}
 	return errs
@@ -349,14 +344,10 @@ func (d *DeviceUpdateCmd) Run(c CLI) error {
 		return errors.New(resp.GetError())
 	} else {
 		list := mir_models.NewDeviceListFromProtoDevices(resp.GetOk().Devices)
-		if d.Output == "pretty" {
-			fmt.Println(prettyStringDevices(list))
+		if str, err := stringifyDevices(d.Output, list); err != nil {
+			return fmt.Errorf("error marshalling response: %w", err)
 		} else {
-			if out, e := MarshalResponse(d.Output, list); e != nil {
-				return fmt.Errorf("error marshalling response: %w", e)
-			} else {
-				fmt.Println(out)
-			}
+			fmt.Println(str)
 		}
 	}
 
@@ -415,20 +406,27 @@ func (d *DeviceDeleteCmd) Run(c CLI) error {
 		return errors.New(resp.GetError())
 	} else {
 		list := mir_models.NewDeviceListFromProtoDevices(resp.GetOk().Devices)
-		if d.Output == "pretty" {
-			fmt.Println(prettyStringDevices(list))
+		if str, err := stringifyDevices(d.Output, list); err != nil {
+			return fmt.Errorf("error marshalling response: %w", err)
 		} else {
-			if out, e := MarshalResponse(d.Output, list); e != nil {
-				return fmt.Errorf("error marshalling response: %w", e)
-			} else {
-				fmt.Println(out)
-			}
+			fmt.Println(str)
 		}
 	}
 	return nil
 }
 
-func MarshalResponse(format string, v any) (string, error) {
+func stringifyDevices(output string, devices []mir_models.Device) (string, error) {
+	switch output {
+	case "json":
+	case "yaml":
+		return marshalResponse(output, devices)
+	case "pretty":
+		return prettyStringDevices(devices), nil
+	}
+	return "", errors.New("invalid output format")
+}
+
+func marshalResponse(format string, v any) (string, error) {
 	var out []byte
 	var e error
 
