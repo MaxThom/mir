@@ -203,7 +203,7 @@ func (b *deviceBuilder) WithSchema(s ...protoreflect.FileDescriptor) *deviceBuil
 	return b
 }
 
-func (b *deviceBuilder) WithCommandHandler(t protoreflect.ProtoMessage, handler func(protoreflect.ProtoMessage) (protoreflect.ProtoMessage, error)) *deviceBuilder {
+func (b *deviceBuilder) WithCommandHandler(t proto.Message, handler func(proto.Message) (proto.Message, error)) *deviceBuilder {
 	b.cmd = append(b.cmd, commandHandler{
 		target:  t,
 		handler: handler,
@@ -211,7 +211,7 @@ func (b *deviceBuilder) WithCommandHandler(t protoreflect.ProtoMessage, handler 
 	return b
 }
 
-func (b *deviceBuilder) WithConfigHandler(t protoreflect.ProtoMessage, handler func(protoreflect.ProtoMessage)) *deviceBuilder {
+func (b *deviceBuilder) WithConfigHandler(t proto.Message, handler func(proto.Message)) *deviceBuilder {
 	b.cfg = append(b.cfg, configHandler{
 		target:  t,
 		handler: handler,

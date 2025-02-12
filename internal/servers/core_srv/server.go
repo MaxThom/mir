@@ -152,25 +152,49 @@ func (s *CoreServer) createDeviceSub(msg *mir.Msg, clientId string, req *core_ap
 func (s *CoreServer) updateDeviceSub(msg *mir.Msg, clientId string, req *core_apiv1.UpdateDeviceRequest) ([]*core_apiv1.Device, error) {
 	l.Debug().Str("route", "update").Str("payload", fmt.Sprintf("%v", req)).Msg("update device request")
 
-	// TODO
-	// Have config validator that can be check here before sent to store
-	// If valid sent to store, else failed
-	// If invalid
-	// if update to desired properties, set it to null
-	// publish device config update event
-
-	// 1. Send cfg to cfg mod
-	//		1. Check if props are different then current
-	// 2. If return is error, return error
-	// 2a. If return is success, set props to null in req and update device with rest
-
+	// Send config to cfg module
+	// We do it twice, one with dry run to validate the config
+	// It seems slow and redundant, but we must validate the config for all
 	if req.GetProps() != nil && req.GetProps().GetDesired() != nil && req.GetProps().GetDesired().Fields != nil && len(req.GetProps().GetDesired().Fields) > 0 {
+		l.Debug().Str("route", "update").Msg("sending config to cfg module")
 		props := req.GetProps().GetDesired().Fields
-		for k := range props {
-			fmt.Println(k)
+
+		// First we validate all the properties
+		// We do this as we do not want to have only a subset of the request to be written
+		var errs error
+		for k, v := range props {
+			cfgRespDryRun, err := s.m.Server().SendConfig().RequestJson(&mir.SendDeviceConfigRequestJson{
+				Targets:        req.Targets,
+				CommandName:    k,
+				CommandPayload: v.AsInterface(),
+				DryRun:         true,
+			})
+			if err != nil {
+				l.Error().Err(err).Msgf("error validating config '%s' to cfg module", k)
+				errs = errors.Join(fmt.Errorf("error validating config '%s' to cfg module: %w", k, err))
+			}
+			for devName, cfg := range cfgRespDryRun {
+				if cfg.Error != "" {
+					l.Error().Err(err).Msgf("error validating config '%s' to device %s", k, devName)
+					errs = errors.Join(fmt.Errorf("error validating config '%s' to device %s: %s", k, devName, cfg.Error))
+				}
+			}
+		}
+		if errs != nil {
+			return nil, errs
+		}
+
+		// If all validated, we can send
+		// We know they were validated, so if error, it means its to the device
+		for k, v := range props {
+			s.m.Server().SendConfig().RequestJson(&mir.SendDeviceConfigRequestJson{
+				Targets:           req.Targets,
+				CommandName:       k,
+				CommandPayload:    v.AsInterface(),
+				SendOnlyDifferent: true,
+			})
 		}
 	}
-	// s.m.Server().SendConfig().RequestJson(&mir.SendDeviceConfigRequestJson{})
 
 	respDb, err := s.store.UpdateDevice(req)
 	if err != nil {

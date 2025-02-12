@@ -2,6 +2,7 @@ package mir
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -165,7 +166,7 @@ func (r *createDeviceRoute) Request(req *core_apiv1.CreateDeviceRequest) (mir_mo
 		return mir_models.Device{}, err
 	}
 	if resp.GetError() != "" {
-		return mir_models.Device{}, fmt.Errorf(resp.GetError())
+		return mir_models.Device{}, errors.New(resp.GetError())
 	}
 
 	return mir_models.NewDeviceFromProtoDevice(resp.GetOk()), nil
@@ -240,7 +241,7 @@ func (r *updateDeviceRoute) Request(req *core_apiv1.UpdateDeviceRequest) ([]mir_
 		return []mir_models.Device{}, err
 	}
 	if resp.GetError() != "" {
-		return []mir_models.Device{}, fmt.Errorf(resp.GetError())
+		return []mir_models.Device{}, errors.New(resp.GetError())
 	}
 
 	return mir_models.NewDeviceListFromProtoDevices(resp.GetOk().Devices), nil
@@ -315,7 +316,7 @@ func (r *deleteDeviceRoute) Request(req *core_apiv1.DeleteDeviceRequest) ([]mir_
 		return []mir_models.Device{}, err
 	}
 	if resp.GetError() != "" {
-		return []mir_models.Device{}, fmt.Errorf(resp.GetError())
+		return []mir_models.Device{}, errors.New(resp.GetError())
 	}
 
 	return mir_models.NewDeviceListFromProtoDevices(resp.GetOk().Devices), nil
@@ -390,7 +391,7 @@ func (r *listDeviceRoute) Request(req *core_apiv1.ListDeviceRequest) ([]mir_mode
 		return []mir_models.Device{}, err
 	}
 	if resp.GetError() != "" {
-		return []mir_models.Device{}, fmt.Errorf(resp.GetError())
+		return []mir_models.Device{}, errors.New(resp.GetError())
 	}
 
 	return mir_models.NewDeviceListFromProtoDevices(resp.GetOk().Devices), nil

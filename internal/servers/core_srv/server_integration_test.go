@@ -1,6 +1,7 @@
 package core_srv
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"slices"
@@ -14,13 +15,18 @@ import (
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	"github.com/maxthom/mir/internal/libs/swarm"
 	"github.com/maxthom/mir/internal/libs/test_utils"
+	core_testv1 "github.com/maxthom/mir/internal/servers/core_srv/proto_test/gen/core_test/v1"
+	"github.com/maxthom/mir/internal/servers/protocfg_srv"
 	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
+	mirDev "github.com/maxthom/mir/pkgs/device/mir"
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/nats-io/nats.go"
 	"github.com/surrealdb/surrealdb.go"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/known/structpb"
 	"gotest.tools/assert"
 )
 
@@ -44,6 +50,10 @@ func TestMain(m *testing.M) {
 	}
 	coreSrv, err := NewCore(log, mSdk, mng.NewSurrealDeviceStore(db))
 	if err := coreSrv.Serve(); err != nil {
+		panic(err)
+	}
+	cfgSrv, err := protocfg_srv.NewProtoCfg(log, mSdk, mng.NewSurrealDeviceStore(db))
+	if err := cfgSrv.Serve(); err != nil {
 		panic(err)
 	}
 	fmt.Println(" -> bus")
@@ -73,6 +83,7 @@ func TestMain(m *testing.M) {
 	time.Sleep(1 * time.Second)
 	b.Drain()
 	coreSrv.Shutdown()
+	cfgSrv.Shutdown()
 	b.Close()
 	db.Close()
 	fmt.Println(" -> core")
@@ -2464,6 +2475,209 @@ func TestDeviceAutoProvision(t *testing.T) {
 	assert.Equal(t, 1, createEventCount)
 	s.Unsubscribe()
 	c.Unsubscribe()
+}
+
+func TestDeviceUpdateDesiredProperties(t *testing.T) {
+	// Arrange
+	count := 0
+	ctx, cancel := context.WithCancel(context.Background())
+	s := swarm.NewSwarm(b)
+	id := "update_desired_props"
+	if _, err := s.AddDevice(&core_apiv1.CreateDeviceRequest{
+		Meta: &core_apiv1.Meta{
+			Name:      id,
+			Namespace: "testing_core",
+			Labels: map[string]string{
+				"testing": "core",
+			},
+		},
+		Spec: &core_apiv1.Spec{
+			DeviceId: id,
+		},
+	}).WithStoreOptions(mirDev.StoreOptions{InMemory: true}).
+		WithSchema(core_testv1.File_core_test_v1_core_proto).
+		WithConfigHandler(&core_testv1.Conduit{}, func(protoreflect.ProtoMessage) {
+			count += 1
+		}).
+		Incubate(); err != nil {
+		t.Error(err)
+	}
+
+	prop := &core_testv1.Conduit{
+		Power:     5,
+		ValveOpen: true,
+		GazLevel:  24,
+	}
+	propName := string(prop.ProtoReflect().Descriptor().FullName())
+	st, err := test_utils.ProtoToDesiredStructPb(prop)
+	if err != nil {
+		t.Error(err)
+	}
+	reqUpd := &core_apiv1.UpdateDeviceRequest{
+		Targets: s.ToTarget(),
+		Props: &core_apiv1.UpdateDeviceRequest_Properties{
+			Desired: st,
+		},
+	}
+
+	// Act
+	wgs, err := s.Deploy(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+	devs, err := mSdk.Server().UpdateDevice().Request(reqUpd)
+	if err != nil {
+		t.Error(err)
+	}
+	dev := devs[0]
+	time.Sleep(1 * time.Second)
+
+	// Assert
+	assert.Equal(t, dev.Properties.Desired[propName].(map[string]any)["power"], float64(5))
+	assert.Equal(t, 2, count)
+
+	cancel()
+	for _, wg := range wgs {
+		wg.Wait()
+	}
+}
+
+func TestDeviceUpdateDesiredPropertiesDoubleSameUpdate(t *testing.T) {
+	// Arrange
+	count := 0
+	ctx, cancel := context.WithCancel(context.Background())
+	s := swarm.NewSwarm(b)
+	id := "update_desired_props_double"
+	if _, err := s.AddDevice(&core_apiv1.CreateDeviceRequest{
+		Meta: &core_apiv1.Meta{
+			Name:      id,
+			Namespace: "testing_core",
+			Labels: map[string]string{
+				"testing": "core",
+			},
+		},
+		Spec: &core_apiv1.Spec{
+			DeviceId: id,
+		},
+	}).WithStoreOptions(mirDev.StoreOptions{InMemory: true}).
+		WithSchema(core_testv1.File_core_test_v1_core_proto).
+		WithConfigHandler(&core_testv1.Conduit{}, func(protoreflect.ProtoMessage) {
+			count += 1
+		}).
+		Incubate(); err != nil {
+		t.Error(err)
+	}
+
+	prop := &core_testv1.Conduit{
+		Power:     5,
+		ValveOpen: true,
+		GazLevel:  24,
+	}
+	propName := string(prop.ProtoReflect().Descriptor().FullName())
+	st, err := test_utils.ProtoToDesiredStructPb(prop)
+	if err != nil {
+		t.Error(err)
+	}
+	reqUpd := &core_apiv1.UpdateDeviceRequest{
+		Targets: s.ToTarget(),
+		Props: &core_apiv1.UpdateDeviceRequest_Properties{
+			Desired: st,
+		},
+	}
+
+	// Act
+	wgs, err := s.Deploy(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+	devs, err := mSdk.Server().UpdateDevice().Request(reqUpd)
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+	devs, err = mSdk.Server().UpdateDevice().Request(reqUpd)
+	if err != nil {
+		t.Error(err)
+	}
+	dev := devs[0]
+	time.Sleep(1 * time.Second)
+
+	// Assert
+	assert.Equal(t, dev.Properties.Desired[propName].(map[string]any)["power"], float64(5))
+	assert.Equal(t, 2, count)
+
+	cancel()
+	for _, wg := range wgs {
+		wg.Wait()
+	}
+}
+
+func TestDeviceUpdateDesiredPropertiesInvalid(t *testing.T) {
+	// Arrange
+	count := 0
+	ctx, cancel := context.WithCancel(context.Background())
+	s := swarm.NewSwarm(b)
+	id := "update_desired_props_invalid"
+	if _, err := s.AddDevice(&core_apiv1.CreateDeviceRequest{
+		Meta: &core_apiv1.Meta{
+			Name:      id,
+			Namespace: "testing_core",
+			Labels: map[string]string{
+				"testing": "core",
+			},
+		},
+		Spec: &core_apiv1.Spec{
+			DeviceId: id,
+		},
+	}).WithStoreOptions(mirDev.StoreOptions{InMemory: true}).
+		WithSchema(core_testv1.File_core_test_v1_core_proto).
+		WithConfigHandler(&core_testv1.Conduit{}, func(protoreflect.ProtoMessage) {
+			count += 1
+		}).
+		Incubate(); err != nil {
+		t.Error(err)
+	}
+
+	prop := &core_testv1.Conduit{
+		Power:     5,
+		ValveOpen: true,
+		GazLevel:  24,
+	}
+	propName := string(prop.ProtoReflect().Descriptor().FullName())
+	propMap, err := test_utils.ProtoToMap(prop)
+	propMap["wrong_field"] = "wrong"
+	propMap = map[string]any{
+		propName: propMap,
+	}
+	st, err := structpb.NewStruct(propMap)
+	if err != nil {
+		t.Error(err)
+	}
+	reqUpd := &core_apiv1.UpdateDeviceRequest{
+		Targets: s.ToTarget(),
+		Props: &core_apiv1.UpdateDeviceRequest_Properties{
+			Desired: st,
+		},
+	}
+
+	// Act
+	wgs, err := s.Deploy(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+	_, err = mSdk.Server().UpdateDevice().Request(reqUpd)
+
+	// Assert
+	assert.ErrorContains(t, err, "error validating config")
+	assert.Equal(t, 1, count)
+
+	cancel()
+	for _, wg := range wgs {
+		wg.Wait()
+	}
 }
 
 func strRef(s string) *string {

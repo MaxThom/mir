@@ -205,17 +205,6 @@ type cmdDevicePayload struct {
 	msgDesc    protoreflect.MessageDescriptor
 }
 
-// TODO
-// - [x] Always validate and cast to json since we need to write the payload in the db in JSON format
-// - [x] Send to device in Proto, but can receive proto or json
-// - [x] Write Json to db, send proto to device
-// - [x] DeviceSDK for config (send and receive)
-// - [x] Have a timestamp for last updated desired properties. Used to compared if event is old on device on bootup
-// - [x] Reported properties
-// - [ ] Update from core
-// - [x] Device desired properties multiple handler for same cfg
-// - [x] More test
-
 func (s *ProtoCfgServer) sendConfigToDevices(req *cfg_apiv1.SendConfigRequest) (map[string]*cfg_apiv1.SendConfigResponse_ConfigResponse, error) {
 	devs, err := s.devStore.ListDevice(&core_apiv1.ListDeviceRequest{Targets: req.Targets})
 	if err != nil {
@@ -395,13 +384,6 @@ func (s *ProtoCfgServer) sendConfigToDevices(req *cfg_apiv1.SendConfigRequest) (
 	// even if some errors
 	if (devInError && !req.ForcePush) || req.DryRun {
 		l.Info().Bool("device_in_error", devInError).Bool("force_push", req.ForcePush).Bool("dry_run", req.DryRun).Msgf("config processed but not sent")
-		// Events
-		// TODO not sure this should be there. same in cmd
-		// for _, cfgResp := range devResp {
-		// 	if err := cfg_client.PublishDeviceConfigEvent(s.m.Bus, "protocfg", cfgResp.DeviceId, cfgResp); err != nil {
-		// 		l.Error().Err(err).Msg("error while publishing device config event")
-		// 	}
-		// }
 		return devResp, nil
 	}
 

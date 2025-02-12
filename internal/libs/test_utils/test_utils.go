@@ -2,6 +2,7 @@ package test_utils
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"strings"
 	"testing"
@@ -16,6 +17,9 @@ import (
 	"github.com/rs/zerolog"
 	logger "github.com/rs/zerolog/log"
 	"github.com/surrealdb/surrealdb.go"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 type ConnsInfo struct {
@@ -141,4 +145,39 @@ func TestLogger(component string) zerolog.Logger {
 		Out:     os.Stdout,
 		NoColor: true,
 	}).Level(zerolog.DebugLevel)
+}
+
+func ProtoToMap(p proto.Message) (map[string]any, error) {
+	jsonData, err := protojson.Marshal(p)
+	if err != nil {
+		return nil, err
+	}
+
+	var result map[string]any
+	err = json.Unmarshal(jsonData, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func ProtoToStructPb(p proto.Message) (*structpb.Struct, error) {
+	m, err := ProtoToMap(p)
+	if err != nil {
+		return nil, err
+	}
+	return structpb.NewStruct(m)
+}
+
+func ProtoToDesiredStructPb(p proto.Message) (*structpb.Struct, error) {
+	m, err := ProtoToMap(p)
+	if err != nil {
+		return nil, err
+	}
+
+	m = map[string]any{
+		string(p.ProtoReflect().Descriptor().FullName()): m,
+	}
+	return structpb.NewStruct(m)
 }
