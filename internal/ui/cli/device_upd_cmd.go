@@ -13,7 +13,7 @@ import (
 )
 
 type DeviceEditCmd struct {
-	Output string `short:"o" help:"output format for response [pretty|json|yaml]" default:"pretty"`
+	Output string `short:"o" help:"output format for response [pretty|json|yaml]" default:"yaml"`
 	NameNs string `name:"name/namespace" arg:"" optional:"" help:"edit single device"`
 	Target `embed:"" prefix:"target."`
 }
@@ -125,14 +125,10 @@ func (d *DeviceEditCmd) Run(c CLI) error {
 
 	if len(respDevs) > 0 {
 		list := mir_models.NewDeviceListFromProtoDevices(respDevs)
-		if d.Output == "pretty" {
-			fmt.Println(prettyStringDevices(list))
+		if str, err := stringifyDevices(d.Output, list); err != nil {
+			return fmt.Errorf("error marshalling response: %w", err)
 		} else {
-			if out, e := MarshalResponse(d.Output, list); e != nil {
-				return fmt.Errorf("error marshalling response: %w", e)
-			} else {
-				fmt.Println(out)
-			}
+			fmt.Println(str)
 		}
 	}
 
@@ -196,10 +192,10 @@ func (d *DeviceApplyCmd) Run(c CLI) error {
 
 	if len(respDevs) > 0 {
 		list := mir_models.NewDeviceListFromProtoDevices(respDevs)
-		if out, e := MarshalResponse("yaml", list); e != nil {
-			return e
+		if str, err := stringifyDevices("yaml", list); err != nil {
+			return fmt.Errorf("error marshalling response: %w", err)
 		} else {
-			fmt.Println(out)
+			fmt.Println(str)
 		}
 	}
 
@@ -211,7 +207,7 @@ func (d *DeviceApplyCmd) Run(c CLI) error {
 }
 
 type DeviceMergeCmd struct {
-	Output string `short:"o" help:"output format for response [pretty|json|yaml]" default:"pretty"`
+	Output string `short:"o" help:"output format for response [pretty|json|yaml]" default:"yaml"`
 	NameNs string `name:"name/namespace" arg:"" optional:"" help:"edit single device"`
 	Target `embed:"" prefix:"target."`
 	Patch  string `short:"p" help:"Json patch of device. You can also pipe file content. Tips: use 'mir device list --targets... -o yaml > name.yaml' to get initial content"`
@@ -280,10 +276,10 @@ func (d *DeviceMergeCmd) Run(c CLI) error {
 
 	if len(respDevs) > 0 {
 		list := mir_models.NewDeviceListFromProtoDevices(respDevs)
-		if out, e := MarshalResponse("yaml", list); e != nil {
-			return fmt.Errorf("error marshalling response: %w", e)
+		if str, err := stringifyDevices("yaml", list); err != nil {
+			return fmt.Errorf("error marshalling response: %w", err)
 		} else {
-			fmt.Println(out)
+			fmt.Println(str)
 		}
 	}
 

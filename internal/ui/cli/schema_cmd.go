@@ -114,7 +114,7 @@ func (d *SchemaUploadCmd) Run(c CLI) error {
 		if d.Output == "pretty" {
 			fmt.Println(prettyStringDevices(list))
 		} else {
-			if out, e := MarshalResponse(d.Output, list); e != nil {
+			if out, e := marshalResponse(d.Output, list); e != nil {
 				return fmt.Errorf("error marshalling response: %w", e)
 			} else {
 				fmt.Println(out)
@@ -242,7 +242,7 @@ func (d *SchemaExploreCmd) Run(c CLI) error {
 		fmt.Println(errs)
 	}
 
-	if out, e := MarshalResponse(d.Output, devSchemasArray); e != nil {
+	if out, e := marshalResponse(d.Output, devSchemasArray); e != nil {
 		return fmt.Errorf("error marshalling response: %w", e)
 	} else {
 		fmt.Println(out)
