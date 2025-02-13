@@ -13,6 +13,7 @@ OUTPUT_BINARY="mir"
 TEMP_FOLDER=.release
 README=book/src/running_mir/binary.md
 LICENSE=LICENSE
+LD_FLAGS="-s -w -X 'github.com/maxthom/mir/internal/libs/build_meta.Version=$VERSION' -X 'github.com/maxthom/mir/internal/libs/build_meta.User=$(id -u -n)' -X 'github.com/maxthom/mir/internal/libs/build_meta.Time=$(date -u)'"
 
 rm -rf $TEMP_FOLDER
 
@@ -43,27 +44,27 @@ cat $README > $TEMP_FOLDER/darwin-arm64/README.md
 
 # Linux amd64
 echo "Building Linux amd64..."
-GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o "./$TEMP_FOLDER/linux-amd64/${OUTPUT_BINARY}" cmds/mir/main.go
+GOOS=linux GOARCH=amd64 go build -ldflags="$LD_FLAGS" -o "./$TEMP_FOLDER/linux-amd64/${OUTPUT_BINARY}" cmds/mir/main.go
 
 # Linux arm64
 echo "Building Linux arm64..."
-GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o "./$TEMP_FOLDER/linux-arm64/${OUTPUT_BINARY}" cmds/mir/main.go
+GOOS=linux GOARCH=arm64 go build -ldflags="$LD_FLAGS" -o "./$TEMP_FOLDER/linux-arm64/${OUTPUT_BINARY}" cmds/mir/main.go
 
 # Windows amd64
 echo "Building Windows amd64..."
-GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o "./$TEMP_FOLDER/windows-amd64/${OUTPUT_BINARY}.exe" cmds/mir/main.go
+GOOS=windows GOARCH=amd64 go build -ldflags="$LD_FLAGS" -o "./$TEMP_FOLDER/windows-amd64/${OUTPUT_BINARY}.exe" cmds/mir/main.go
 
 # Windows arm64
 echo "Building Windows arm64..."
-GOOS=windows GOARCH=arm64 go build -ldflags="-s -w" -o "./$TEMP_FOLDER/windows-arm64/${OUTPUT_BINARY}.exe" cmds/mir/main.go
+GOOS=windows GOARCH=arm64 go build -ldflags="$LD_FLAGS" -o "./$TEMP_FOLDER/windows-arm64/${OUTPUT_BINARY}.exe" cmds/mir/main.go
 
 # Darwin amd64
 echo "Building Darwin amd64..."
-GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o "./$TEMP_FOLDER/darwin-amd64/${OUTPUT_BINARY}" cmds/mir/main.go
+GOOS=darwin GOARCH=amd64 go build -ldflags="$LD_FLAGS" -o "./$TEMP_FOLDER/darwin-amd64/${OUTPUT_BINARY}" cmds/mir/main.go
 
 # Darwin arm64
 echo "Building Darwin arm64..."
-GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o "./$TEMP_FOLDER/darwin-arm64/${OUTPUT_BINARY}" cmds/mir/main.go
+GOOS=darwin GOARCH=arm64 go build -ldflags="$LD_FLAGS" -o "./$TEMP_FOLDER/darwin-arm64/${OUTPUT_BINARY}" cmds/mir/main.go
 
 # Create tar.gz for Linux amd64
 echo "Creating tar.gz for Linux amd64..."
