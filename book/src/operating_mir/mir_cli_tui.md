@@ -24,6 +24,7 @@ A command line and terminal user interface to operate the Mir ecosystem 🛰️
 
 Commands:
   device (dev)       Manage fleet of Mir devices
+  config (cfg)       Explore Mir devices configuration
   telemetry (tlm)    Explore Mir devices telemetry
   command (cmd)      Send and explore commands to devices
   schema (sch)       Upload and explore device proto schema
@@ -34,7 +35,6 @@ Commands:
 
 Run "mir <command> --help" for more information on a command.
 ```
-
 
 Let's get the server up and running to have something to work with.
 
@@ -149,19 +149,46 @@ As device update, there is a few ways to send a command:
 # List available commands
 mir command <name/namespace>
 # Shortcut to see available commands
-mir send <name/namespace>
+mir cmd send <name/namespace>
 # See a command json payload
-mir send <name/namespace> -n <command_name> -j
+mir cmd send <name/namespace> -n <command_name> -j
 # Send a command. Single quotes help in writing json on terminal.
-mir send <name/namespace> -n <command_name> -p '<json_payload>'
+mir cmd send <name/namespace> -n <command_name> -p '<json_payload>'
 # Send a command declaratively
-cat payload.json | mir send <name/namespace> -n <command_name>
+cat payload.json | mir cmd send <name/namespace> -n <command_name>
 # Send a command interactively
-mir send <name/namespace> -n <command_name> -e
+mir cmd send <name/namespace> -n <command_name> -e
 ```
 
 Each command will return a response from each devices that the command targeted.
 Moreover, you can use the flag `--dry-run`to validate the command without sending it.
+
+*! Tips: if you dont see all commands, use `-r` to refresh the schema*
+
+#### Device configuration
+
+As device update, there is a few ways to send configuration:
+
+```bash
+# List available config
+mir config <name/namespace>
+# Shortcut to see available config
+mir cfg send <name/namespace>
+# See a config current values
+mir cfg send <name/namespace> -n <config_name> -c
+# See a config json payload
+mir cfg send <name/namespace> -n <config_name> -j
+# Send a config update. Single quotes help in writing json on terminal.
+mir cfg send <name/namespace> -n <config_name> -p '<json_payload>'
+# Send a config declaratively
+cat payload.json | mir cfg send <name/namespace> -n <command_name>
+# Send a config interactively
+mir cfg send <name/namespace> -n <config_name> -e
+```
+
+As configuration is async, the server response does not validate if the device received the config,
+but indicate if it was successfully sent and written to store.
+Moreover, you can use the flag `--dry-run`to validate the config without sending it.
 
 *! Tips: if you dont see all commands, use `-r` to refresh the schema*
 
