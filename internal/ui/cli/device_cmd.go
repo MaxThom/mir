@@ -418,6 +418,7 @@ func (d *DeviceDeleteCmd) Run(c CLI) error {
 func stringifyDevices(output string, devices []mir_models.Device) (string, error) {
 	switch output {
 	case "json":
+		return marshalResponse(output, devices)
 	case "yaml":
 		return marshalResponse(output, devices)
 	case "pretty":

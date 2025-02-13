@@ -504,7 +504,8 @@ func (s *ProtoCfgServer) reportedPropsSub(msg *mir.Msg, deviceId string, msgName
 		return
 	}
 
-	msgJson, err := protojson.Marshal(msgProto)
+	opts := protojson.MarshalOptions{EmitDefaultValues: true}
+	msgJson, err := opts.Marshal(msgProto)
 	if err != nil {
 		l.Error().Err(err).Str("device_id", deviceId).Msg("error marshaling reported properties to JSON")
 		return
