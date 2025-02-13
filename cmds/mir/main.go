@@ -8,6 +8,7 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/maxthom/mir/internal/libs/boiler/mir_config"
 	"github.com/maxthom/mir/internal/libs/boiler/mir_log"
+	"github.com/maxthom/mir/internal/libs/build_meta"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	"github.com/maxthom/mir/internal/ui/cli"
 	"github.com/maxthom/mir/internal/ui/tui"
@@ -54,7 +55,6 @@ type (
 
 const (
 	AppName = "mir"
-	Version = "0.0.1"
 )
 
 var (
@@ -89,7 +89,7 @@ func main() {
 			NoExpandSubcommands: true,
 		}),
 		kong.Vars{
-			"version": string(Version),
+			"version": build_meta.GetLongVersion(),
 		})
 
 	// Config

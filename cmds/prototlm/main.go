@@ -19,6 +19,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/boiler/mir_config"
 	"github.com/maxthom/mir/internal/libs/boiler/mir_log"
 	"github.com/maxthom/mir/internal/libs/boiler/mir_signals"
+	"github.com/maxthom/mir/internal/libs/build_meta"
 	"github.com/maxthom/mir/internal/libs/external/influx"
 	"github.com/maxthom/mir/internal/libs/external/surreal"
 	"github.com/maxthom/mir/internal/servers/prototlm_srv"
@@ -30,7 +31,6 @@ import (
 
 const (
 	AppName = "prototlm"
-	Version = "0.0.1"
 )
 
 type (
@@ -106,6 +106,7 @@ func main() {
 		mir_cli.WithLogLevel(&flagLogLevel),
 		mir_cli.WithLogDebug(&flagDebug),
 		mir_cli.WithDefaultConfig(&defaultCfg, mir_config.Yaml),
+		mir_cli.WithVersion(build_meta.GetShortVersion()),
 		mir_cli.WithManual(
 			"Connect to Mir Message bus to receives and processes protobuff data from Mir devices to InfluxDB.",
 			&defaultCfg, true, ""),
@@ -153,7 +154,7 @@ func main() {
 	log.Info().Str("config", string(prettyCfg)).Msg("")
 
 	// Meta metrics
-	metrics.RegisterMirMetrics(AppName, Version, map[string]string{}, string(prettyCfg))
+	metrics.RegisterMirMetrics(AppName, build_meta.GetShortVersion(), map[string]string{}, string(prettyCfg))
 
 	// Run!!!
 	if err := run(ctx, log, cfg); err != nil {

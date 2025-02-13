@@ -76,11 +76,13 @@ type mirCli struct {
 	extra     string
 	manualCfg any
 	cfgPrint  string
+	version   string
 }
 
 var cli *mirCli
 var flagManualOut bool
 var flagConfigPrint bool
+var flagVersionPrint bool
 
 func Setup(appName string, options ...func(*mirCli)) {
 	cli = &mirCli{
@@ -110,7 +112,7 @@ func Setup(appName string, options ...func(*mirCli)) {
 	flag.Usage = func() {
 		fmt.Fprintf(flag.CommandLine.Output(), "Usage of %s:\n", cli.appName)
 		if cli.desc != "" {
-			fmt.Fprintf(flag.CommandLine.Output(), cli.desc+"\n")
+			fmt.Fprint(flag.CommandLine.Output(), cli.desc+"\n")
 		}
 		fmt.Fprintf(flag.CommandLine.Output(), "Args:\n")
 		flag.PrintDefaults()
@@ -128,6 +130,10 @@ func Parse() error {
 		fmt.Println(cli.cfgPrint)
 		os.Exit(0)
 	}
+	if flagVersionPrint {
+		fmt.Println(cli.version)
+		os.Exit(0)
+	}
 	return nil
 }
 
@@ -138,6 +144,13 @@ func Args() []string {
 func WithDescription(desc string) func(*mirCli) {
 	return func(cli *mirCli) {
 		cli.desc = desc
+	}
+}
+
+func WithVersion(version string) func(*mirCli) {
+	return func(cli *mirCli) {
+		cli.version = version
+		flag.BoolVar(&flagVersionPrint, "version", false, "print version information")
 	}
 }
 

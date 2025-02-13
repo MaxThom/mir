@@ -17,6 +17,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/boiler/mir_config"
 	"github.com/maxthom/mir/internal/libs/boiler/mir_log"
 	"github.com/maxthom/mir/internal/libs/boiler/mir_signals"
+	"github.com/maxthom/mir/internal/libs/build_meta"
 	"github.com/maxthom/mir/internal/libs/external/influx"
 	"github.com/maxthom/mir/internal/libs/external/surreal"
 	"github.com/maxthom/mir/internal/servers/core_srv"
@@ -61,7 +62,6 @@ type (
 
 const (
 	AppName = "mir"
-	Version = "0.3.0"
 )
 
 type ServeCmd struct {
@@ -133,7 +133,7 @@ func (d *ServeCmd) Run(c CLI) error {
 		os.Exit(1)
 	}
 	log.Info().Str("config", string(prettyCfg)).Msg("")
-	metrics.RegisterMirMetrics(AppName, Version, map[string]string{}, string(prettyCfg))
+	metrics.RegisterMirMetrics(AppName, build_meta.GetShortVersion(), map[string]string{}, string(prettyCfg))
 
 	if err := run(context.Background(), log, d.ServeConfig); err != nil {
 		log.Error().Err(err).Msg("")

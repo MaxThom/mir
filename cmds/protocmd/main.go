@@ -17,6 +17,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/boiler/mir_config"
 	"github.com/maxthom/mir/internal/libs/boiler/mir_log"
 	"github.com/maxthom/mir/internal/libs/boiler/mir_signals"
+	"github.com/maxthom/mir/internal/libs/build_meta"
 	"github.com/maxthom/mir/internal/libs/external/surreal"
 	"github.com/maxthom/mir/internal/servers/protocmd_srv"
 	"github.com/maxthom/mir/pkgs/module/mir"
@@ -27,7 +28,6 @@ import (
 
 const (
 	AppName = "protocmd"
-	Version = "0.0.1"
 )
 
 type (
@@ -85,6 +85,7 @@ func main() {
 		mir_cli.WithLogLevel(&flagLogLevel),
 		mir_cli.WithLogDebug(&flagDebug),
 		mir_cli.WithDefaultConfig(&defaultCfg, mir_config.Yaml),
+		mir_cli.WithVersion(build_meta.GetShortVersion()),
 		mir_cli.WithManual(
 			"Connect to Mir Message bus to receives and sends protobuf commands to Mir devices.",
 			&defaultCfg, true, ""),
@@ -132,7 +133,7 @@ func main() {
 	log.Info().Str("config", string(prettyCfg)).Msg("")
 
 	// Meta metrics
-	metrics.RegisterMirMetrics(AppName, Version, map[string]string{}, string(prettyCfg))
+	metrics.RegisterMirMetrics(AppName, build_meta.GetShortVersion(), map[string]string{}, string(prettyCfg))
 
 	// Run!!!
 	if err := run(ctx, log, cfg); err != nil {
