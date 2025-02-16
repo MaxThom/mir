@@ -1949,7 +1949,7 @@ func TestPublishReportedProperties(t *testing.T) {
 	reqPayload := protocfg_testv1.PowerLevel{
 		Power: 5,
 	}
-	if err = dev.SendReportedProperties(&reqPayload); err != nil {
+	if err = dev.SendProperties(&reqPayload); err != nil {
 		t.Error(err)
 	}
 
@@ -2002,7 +2002,7 @@ func TestPublishReportedPropertiesEvent(t *testing.T) {
 	reqPayload := protocfg_testv1.PowerLevel{
 		Power: 5,
 	}
-	if err = dev.SendReportedProperties(&reqPayload); err != nil {
+	if err = dev.SendProperties(&reqPayload); err != nil {
 		t.Error(err)
 	}
 

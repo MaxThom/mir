@@ -13,6 +13,7 @@ modules:
   - path: examples/telemetry_device/proto
   - path: examples/command_device/proto
   - path: examples/config_device/proto
+  - path: examples/tutorial_device/proto
   - path: internal/ui/cli/proto
   # test proto
   - path: internal/servers/core_srv/proto_test

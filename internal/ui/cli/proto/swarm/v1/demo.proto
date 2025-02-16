@@ -42,33 +42,26 @@ message PowerConsuption {
 	double power = 4;
 }
 
-
-message OpenDoorRequest {
+message ActivateHVAC {
 	option (mir.device.v1.message_type) = MESSAGE_TYPE_TELECOMMAND;
 
+	int32 duration_sec = 1;
 }
 
-message OpenDoorResponse {
-    bool success = 1;
+message ActivateHVACResponse {
+  bool success = 1;
 }
 
-message SendElevatorRequest {
-	option (mir.device.v1.message_type) = MESSAGE_TYPE_TELECOMMAND;
-
-	int32 floor = 1;
-}
-
-message SendElevatorResponse {
-    int32 floor = 1;
-}
-
-message ChangeDataRateProp {
+message DataRateProp {
   option (mir.device.v1.message_type) = MESSAGE_TYPE_TELECONFIG;
 
   int32 sec = 1;
 }
 
-message ReportedProps {
-    int32 datarate_sec = 1;
-    int32 elevator_floor = 2;
+message DataRateStatus {
+  int32 sec = 1;
+}
+
+message HVACStatus {
+   bool online = 1;
 }

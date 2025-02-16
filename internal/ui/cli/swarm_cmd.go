@@ -65,7 +65,6 @@ func (d *SwarmCmd) Run(c CLI) error {
 	s := swarm.NewSwarm(msgBus)
 	_, err = s.AddDeviceWithIds(d.DeviceIds).
 		WithSchema(swarmv1.File_swarm_v1_demo_proto).
-		WithCommandHandler(&swarmv1.OpenDoorRequest{}, handleOpenDoorRequest).
 		WithLogLevel(logLvl).
 		Incubate()
 	if err != nil {
@@ -82,15 +81,20 @@ func (d *SwarmCmd) Run(c CLI) error {
 	wg := &sync.WaitGroup{}
 	for _, d := range s.Devices {
 		intSec := time.Duration(5)
-		d.HandleCommand(&swarmv1.SendElevatorRequest{}, handleSendElevatorRequest(d))
-		d.HandleProperties(&swarmv1.ChangeDataRateProp{},
+		d.HandleCommand(&swarmv1.ActivateHVAC{}, handleActivateHVACRequest(d))
+		d.HandleProperties(&swarmv1.DataRateProp{},
 			func(m proto.Message) {
-				cfg := m.(*swarmv1.ChangeDataRateProp)
+				cfg := m.(*swarmv1.DataRateProp)
+				if cfg.Sec < 1 {
+					cfg.Sec = 1
+				}
 				intSec = time.Duration(cfg.Sec)
-				d.Logger().Info().Int("rate_sec", int(cfg.Sec)).Msg("handling change data request command")
-				d.SendReportedProperties(&swarmv1.ReportedProps{
-					DatarateSec: cfg.Sec,
-				})
+				d.Logger().Info().Int("rate_sec", int(cfg.Sec)).Msg("handling data rate properties")
+				if err := d.SendProperties(&swarmv1.DataRateStatus{
+					Sec: cfg.Sec,
+				}); err != nil {
+					d.Logger().Error().Err(err).Msg("error sending data rate status property")
+				}
 			},
 		)
 		wg.Add(1)
@@ -152,20 +156,26 @@ func sendTelemetry(d *mir.Mir) {
 		Msg("sending telemetry...")
 }
 
-func handleOpenDoorRequest(m proto.Message) (proto.Message, error) {
-	return &swarmv1.OpenDoorResponse{
-		Success: true,
-	}, nil
-}
-
-func handleSendElevatorRequest(d *mir.Mir) func(proto.Message) (proto.Message, error) {
+func handleActivateHVACRequest(d *mir.Mir) func(proto.Message) (proto.Message, error) {
 	return func(m proto.Message) (proto.Message, error) {
-		cmd := m.(*swarmv1.SendElevatorRequest)
-		err := d.SendReportedProperties(&swarmv1.ReportedProps{
-			ElevatorFloor: cmd.Floor,
-		})
-		return &swarmv1.SendElevatorResponse{
-			Floor: cmd.Floor,
-		}, err
+		cmd := m.(*swarmv1.ActivateHVAC)
+
+		if err := d.SendProperties(&swarmv1.HVACStatus{Online: true}); err != nil {
+			d.Logger().Error().Err(err).Msgf("error sending reported properties: %s", err.Error())
+		}
+		d.Logger().Info().Msgf("handling command: activating HVAC for %d sec", cmd.DurationSec)
+
+		go func() {
+			<-time.After(time.Duration(cmd.DurationSec) * time.Second)
+			d.Logger().Info().Msg("turning off HVAC")
+
+			if err := d.SendProperties(&swarmv1.HVACStatus{Online: false}); err != nil {
+				d.Logger().Error().Err(err).Msgf("error sending reported properties: %s", err.Error())
+			}
+		}()
+
+		return &swarmv1.ActivateHVACResponse{
+			Success: true,
+		}, nil
 	}
 }

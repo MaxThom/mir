@@ -239,7 +239,7 @@ func (m Mir) SendTelemetry(t proto.Message) error {
 }
 
 // Send proto reported properties to Mir Server
-func (m Mir) SendReportedProperties(t proto.Message) error {
+func (m Mir) SendProperties(t proto.Message) error {
 	return cfg_client.PublishReportedPropertiesStream(m.b, m.cfg.DeviceId, t)
 }
 

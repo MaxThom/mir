@@ -58,7 +58,6 @@ power/default                                 power            online     2024-1
 You should see your running device. To see its digital twin, use `mir device ls power/default`:
 
 ```yaml
-# Output
 apiVersion: v1alpha
 apiName: device
 meta:
@@ -71,26 +70,28 @@ spec:
     disabled: false
 properties:
     desired:
-        swarm.v1.ChangeDataRateProp:
+        swarm.v1.DataRateProp:
             sec: 0
     reported:
-        swarm.v1.ReportedProps:
-            datarateSec: 0
-            elevatorFloor: 0
+        swarm.v1.DataRateStatus:
+            sec: 1
+        swarm.v1.HVACStatus:
+            online: false
 status:
     online: true
-    lastHearthbeat: 2025-02-13T12:27:46.295414516Z
+    lastHearthbeat: 2025-02-16T09:14:57.327357581Z
     schema:
         packageNames:
             - google.protobuf
             - mir.device.v1
             - swarm.v1
-        lastSchemaFetch: 2025-02-13T12:27:48.344371595Z
+        lastSchemaFetch: 2025-02-16T09:10:19.347707831Z
     properties:
         desired:
-            swarm.v1.ChangeDataRateProp: 2025-02-13T12:27:48.349770386Z
+            swarm.v1.DataRateProp: 2025-02-16T09:11:48.359211255Z
         reported:
-            swarm.v1.ReportedProps: 2025-02-13T12:27:48.353080302Z
+            swarm.v1.DataRateStatus: 2025-02-16T09:11:48.362475929Z
+            swarm.v1.HVACStatus: 2025-02-16T09:13:06.57108616Z
 ```
 
 The digital twin is the virtual representation of the device. It contains the device's properties, status, schema and more.
@@ -129,28 +130,27 @@ To send device commands, run `mir cmd send power/default` to see the available c
 ➜ mir cmd send power/default
 # Output
 1. power/default
-swarm.v1.OpenDoorRequest{}
-swarm.v1.SendElevatorRequest{}
+swarm.v1.ActivateHVAC{}
 ```
 
 To send a commands, use the following:
 
 ```bash
 # See command payload
-mir command send power/default -n swarm.v1.SendElevatorRequest -j
+mir command send power/default -n swarm.v1.ActivateHVAC -j
 # Send command with modified payload
-mir command send power/default -n swarm.v1.SendElevatorRequest -p '{"floor": 5}'
+mir command send power/default -n swarm.v1.ActivateHVAC -p '{"durationSec": 5}'
 # Quickly edit and send a command
-mir command send power/default -n swarm.v1.SendElevatorRequest -e
+mir command send power/default -n swarm.v1.ActivateHVAC -e
 ```
 
 ```bash
-➜ mir command send power/default -n swarm.v1.SendElevatorRequest -e
+➜ mir command send power/default -n swarm.v1.ActivateHVAC -e
 # Output
 1. power/default COMMAND_RESPONSE_STATUS_SUCCESS
-swarm.v1.SendElevatorResponse
+swarm.v1.ActivateHVACResponse
 {
-  "floor": 5
+  "success": true
 }
 ```
 
@@ -166,27 +166,27 @@ To see the device configuration options, run `mir cfg send power/default`:
 ➜ mir config send power/default
 # Output
 1. power/default
-swarm.v1.ChangeDataRateProp{}
+swarm.v1.DataRateProp{}
 ```
 
 To update configuration, use the following:
 
 ```bash
 # See current config
-mir config send power/default -n swarm.v1.ChangeDataRateProp -c
+mir config send power/default -n swarm.v1.DataRateProp -c
 # See config template payload
-mir config send power/default -n swarm.v1.ChangeDataRateProp -j
+mir config send power/default -n swarm.v1.DataRateProp -j
 # Send config with modified payload
-mir config send power/default -n swarm.v1.ChangeDataRateProp -p '{"sec": 5}'
+mir config send power/default -n swarm.v1.DataRateProp -p '{"sec": 5}'
 # Quickly edit and send a config
-mir config send power/default -n swarm.v1.ChangeDataRateProp -e
+mir config send power/default -n swarm.v1.DataRateProp -e
 ```
 
 ```bash
-➜ mir config send power/default -n swarm.v1.ChangeDataRateProp -e
+➜ mir config send power/default -n swarm.v1.DataRateProp -e
 # Output
 1. power/default
-swarm.v1.ChangeDataRateProp{}
+swarm.v1.DataRateProp{}
 {
   "sec": 5
 }
@@ -194,7 +194,7 @@ swarm.v1.ChangeDataRateProp{}
 
 To see the updated configuration, run `mir dev ls power/default`:
 
-```bash
+```yaml
 apiVersion: v1alpha
 apiName: device
 meta:
@@ -203,19 +203,21 @@ meta:
 ...
 properties:
     desired:
-        swarm.v1.ChangeDataRateProp:
+        swarm.v1.DataRateProp:
             sec: 5
     reported:
-        swarm.v1.ReportedProps:
-            datarateSec: 5
-            elevatorFloor: 0
+        swarm.v1.DataRateStatus:
+            sec: 5
+        swarm.v1.HVACStatus:
+            online: true
 status:
 ...
     properties:
         desired:
-            swarm.v1.ChangeDataRateProp: 2025-02-13T13:29:04.013967811Z
+            swarm.v1.DataRateProp: 2025-02-16T09:11:48.359211255Z
         reported:
-            swarm.v1.ReportedProps: 2025-02-13T13:29:04.018232548Z
+            swarm.v1.DataRateStatus: 2025-02-16T09:11:48.362475929Z
+            swarm.v1.HVACStatus: 2025-02-16T09:18:32.916095932Z
 ```
 
 As you can see, the desired properties have been updated with our request and the device has reported the new values.

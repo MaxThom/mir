@@ -74,7 +74,6 @@ is much incertainties about the feasibility of that one
   - [x] Create builder or Option patterns for sdk
   - [x] Have Hearthbeat functionality implemented
   - [x] Config and Logging setup
-  - [ ] How do we publish a library? Pkg folder instead of sdks?
   - [x] Design the event system
     - [x] How to publish new event
     - [x] How to catch those events
@@ -94,27 +93,27 @@ as well as the visualiazing tools for the data
 
 #### Server Module
 
-- [ ] ProtoFlux, handle telemetry data from protobuf to line protocol
+- [x] ProtoFlux, handle telemetry data from protobuf to line protocol
 
 #### CLI/TUI
 
-- [ ] Upload schema via CLI
-- [ ] Schema explorer via CLI and maybe TUI
-- [ ] Create ProtoDash which can generate a dashboard from a proto file
+- [x] Upload schema via CLI
+- [x] Schema explorer via CLI and maybe TUI
+- [x] Create ProtoDash which can generate a dashboard from a proto file
 
 #### Device SDK
 
-- [ ] Custom Protobuff annotation for Mir System
-- [ ] Added telemetry function to the SDK
+- [x] Custom Protobuff annotation for Mir System
+- [x] Added telemetry function to the SDK
 
 #### Module SDK
 
-- [ ] Add new set of events regarding telemetry
-- [ ] Add stream subscriptions
+- [x] Add new set of events regarding telemetry
+- [x] Add stream subscriptions
 
 ### Testing
 
-- [ ] Integration test for the telemetry module
+- [x] Integration test for the telemetry module
 
 ### Improvements/Tech dett
 
@@ -129,8 +128,8 @@ as well as the visualiazing tools for the data
 
 ### Ergonomics
 
-- [ ] Create tmuxifier layouts in repo
-- [ ] Make command for buf generate
+- [x] Create tmuxifier layouts in repo
+- [x] Make command for buf generate
 
 ## v0.3.0 Command Module
 
@@ -141,26 +140,26 @@ as well as the supporting tooling and visualization
 
 #### Server Module
 
-- [ ] Can define commands in protobuf schema
-- [ ] Send command with Targets and JSON payload to target multiple devices
+- [x] Can define commands in protobuf schema
+- [x] Send command with Targets and JSON payload to target multiple devices
 
 #### CLI/TUI
 
-- [ ] Explore commands
-- [ ] Be able to send commands via  window with parameters based on the schema
+- [x] Explore commands
+- [x] Be able to send commands via  window with parameters based on the schema
 
 #### Device SDK
 
-- [ ] Custom Protobuff annotation for Mir System for commands
-- [ ] Added commands handler to the SDK
+- [x] Custom Protobuff annotation for Mir System for commands
+- [x] Added commands handler to the SDK
 
 #### Module SDK
 
-- [ ] Add new set of events regarding commands
+- [x] Add new set of events regarding commands
 
 ### Testing
 
-- [ ] Integration test for the command module
+- [x] Integration test for the command module
 
 ### Improvements/Tech dett
 
@@ -182,22 +181,22 @@ Twin module to tackle the configuration mangement of devices. Flow of desired pr
 
 #### Server Module
 
-- [ ] Can define properties in protobuf schema
+- [x] Can define properties in protobuf schema
 	  	or maybe JSON is better since it will be hard with the twin template
 
 #### CLI/TUI
 
-- [ ] Can create twin template
+- [x] Can update and list configurations
 
 #### Device SDK
 
-- [ ] Custom Protobuff annotation for Mir System for properties
-- [ ] Add desired properties handler to the SDK
-- [ ] Add reported properties function
+- [x] Custom Protobuff annotation for Mir System for properties
+- [x] Add desired properties handler to the SDK
+- [x] Add reported properties function
 
 #### Module SDK
 
-- [ ] Add new set of events regarding propeties
+- [x] Add new set of events regarding propeties
 - [ ] create the twin template features
 
 ### Testing
@@ -252,13 +251,13 @@ and conternarization
 
 - [ ] Containerize all services
 - [ ] Provide template container for sdk
-- [ ] Create Docker Compose for each and one all together
+- [x] Create Docker Compose for each and one all together
 
-- [ ] Create set of pipelines for unit and integration testing
-- [ ] Pipeline to release binaries of each interfaces or services
+- [x] Create set of pipelines for unit and integration testing
+- [x] Pipeline to release binaries of each interfaces or services
 - [ ] Pipeline for publishing containers
 
-- [ ] Make sure the sdks are available via go get/install
+- [x] Make sure the sdks are available via go get/install
 
 
 

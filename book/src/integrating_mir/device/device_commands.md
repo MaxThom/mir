@@ -5,13 +5,13 @@ Device commands are request-reply messages from the server to a set of devices. 
 Let's add a command to our example to change the data rate. First, let's definine them in the schema:
 
 ```proto
-message ChangeDataRate {
+message ActivateHVAC {
 	option (mir.device.v1.message_type) = MESSAGE_TYPE_TELECOMMAND;
 
-	int64 datarate_sec = 1;
+	int32 duration_sec = 1;
 }
 
-message ChangeDataRateResponse {
+message ActivateHVACResponse {
   bool success = 1;
 }
 ```
@@ -32,15 +32,15 @@ Each command takes a callback function that will be called when the server sends
 
 ```go
 m.HandleCommand(
- 	&schemav1.ChangeDataRate{}, // Empty struct of the command type
+ 	&schemav1.ActivateHVAC{}, // Empty struct of the command type
  	func(c proto.Message) (proto.Message, error) {
- 		cmd := c.(*schemav1.ChangeDataRate) // Cast the command to the correct type
+ 		cmd := c.(*schemav1.ActivateHVAC) // Cast the command to the correct type
 
 		/* Command processing...*/
 
    	// Return the command response. This can be any proto message.
     // You can also return an error that will be pass back to the server and requester.
- 		return &schemav1.ChangeDataRateResponse{
+ 		return &schemav1.ActivateHVACResponse{
  			Success: true,
  		}, nil
  	})
@@ -53,7 +53,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"math/rand/v2"
 	"mir-device/schemav1"
 	"os"
@@ -68,7 +67,7 @@ import (
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	m, err := mir.Builder().
-		DeviceId("weather_dev").
+		DeviceId("weather").
 		Target("nats://127.0.0.1:4222").
 		Schema(schemav1.File_schema_proto).
 		Build()
@@ -81,16 +80,18 @@ func main() {
 		panic(err)
 	}
 
-	dataRate := int64(3)
 	m.HandleCommand(
-		&schemav1.ChangeDataRate{},
+		&schemav1.ActivateHVAC{},
 		func(c proto.Message) (proto.Message, error) {
-			cmd := c.(*schemav1.ChangeDataRate)
+			cmd := msg.(*schemav1.ActivateHVAC)
+			m.Logger().Info().Msgf("handling command: activating HVAC for %d sec", cmd.DurationSec)
 
-			dataRate = cmd.DatarateSec
-			log.Default().Printf("handling change data rate command to %d seconds\n", cmd.DatarateSec)
+			go func() {
+				<-time.After(time.Duration(cmd.DurationSec) * time.Second)
+				m.Logger().Info().Msg("turning off HVAC")
+			}()
 
-			return &schemav1.ChangeDataRateResponse{
+			return &tutorial_devicev1.ActivateHVACResponse{
 				Success: true,
 			}, nil
 		})
@@ -101,14 +102,14 @@ func main() {
 			case <-ctx.Done():
 				wg.Done()
 				return
-			case <-time.After(time.Duration(dataRate) * time.Second):
-				if err := m.SendTelemetry(&schemav1.EnvTlm{
+			case <-time.After(3 * time.Second):
+				if err := m.SendTelemetry(&schemav1.Env{
 					Ts:          time.Now().UTC().UnixNano(),
 					Temperature: rand.Int32N(101),
 					Pressure:    rand.Int32N(101),
 					Humidity:    rand.Int32N(101),
 				}); err != nil {
-            log.Default().Printf("error sending telemetry: %w\n", err)
+					m.Logger().Error().Err(err).Msg("error sending telemetry")
 				}
 			}
 		}
@@ -127,40 +128,40 @@ Our device is now sending periodic telemetry and can receive one command to chan
 
 ```bash
 # List all available commands
-# ps: you can use 'mir command send weather_dev' to also see the available commands
-mir command list weather_dev
+# ps: you can use 'mir command send weather' to also see the available commands
+mir command list weather
   schemav1.ChangeDataRate{}
 
 # If you don't see the change in your schema, add the refresh flag.
 # Available on most CLI commands
-mir command list weather_dev -r
+mir command list weather -r
   schemav1.ChangeDataRate{}
 
 # Show command JSON template for payload
-mir cmd send weather_dev/default -n schemav1.ChangeDataRate -j
+mir cmd send weather/default -n schemav1.ChangeDataRate -j
   {
     "datarateSec": 0
   }
 
 # Send command to change data rate to 5 seconds
 # ps: use single quotes for easy json
-mir cmd send weather_dev/default -n schemav1.ChangeDataRate -p '{"datarateSec": 5}'
-  1. weather_dev/default COMMAND_RESPONSE_STATUS_SUCCESS
+mir cmd send weather/default -n schemav1.ChangeDataRate -p '{"datarateSec": 5}'
+  1. weather/default COMMAND_RESPONSE_STATUS_SUCCESS
   schemav1.ChangeDataRateResponse
   {
     "success": true
   }
 
 # Use pipes to pass payload
-mir cmd send weather_dev/default -n schemav1.ChangeDataRate -j > ChangeDataRate.json
+mir cmd send weather/default -n schemav1.ChangeDataRate -j > ChangeDataRate.json
 # Edit ChangeDataRate.json
 # Send it!
-cat ChangeDataRate.json | mir cmd send weather_dev/default -n schemav1.ChangeDataRate
+cat ChangeDataRate.json | mir cmd send weather/default -n schemav1.ChangeDataRate
 
 # Interactively edit for easy interaction
 # Upon quit and save, it will send the command
-mir cmd send weather_dev/default -n schemav1.ChangeDataRate -e
-  1. weather_dev/default COMMAND_RESPONSE_STATUS_SUCCESS
+mir cmd send weather/default -n schemav1.ChangeDataRate -e
+  1. weather/default COMMAND_RESPONSE_STATUS_SUCCESS
   schemav1.ChangeDataRateResponse
   {
     "success": true

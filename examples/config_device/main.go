@@ -49,7 +49,7 @@ func main() {
 	}
 	l.Info().Msg("Mir is at maxq and nominal")
 
-	if err = m.SendReportedProperties(&config_devicev1.Args{
+	if err = m.SendProperties(&config_devicev1.Args{
 		PizzaCount: 23,
 		Names:      []string{"pep", "hawai"},
 		Ingredients: map[string]int32{
@@ -64,7 +64,7 @@ func main() {
 	m.HandleProperties(&config_devicev1.Config{}, func(msg proto.Message) {
 		cfg := msg.(*config_devicev1.Config)
 		fmt.Println(cfg)
-		if err = m.SendReportedProperties(&config_devicev1.Args{
+		if err = m.SendProperties(&config_devicev1.Args{
 			PizzaCount: 14,
 			Names:      []string{"marguerita"},
 			Ingredients: map[string]int32{

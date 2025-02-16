@@ -167,26 +167,28 @@ func (x *PowerConsuption) GetPower() float64 {
 	return 0
 }
 
-type OpenDoorRequest struct {
+type ActivateHVAC struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
+
+	DurationSec int32 `protobuf:"varint,1,opt,name=duration_sec,json=durationSec,proto3" json:"duration_sec,omitempty"`
 }
 
-func (x *OpenDoorRequest) Reset() {
-	*x = OpenDoorRequest{}
+func (x *ActivateHVAC) Reset() {
+	*x = ActivateHVAC{}
 	mi := &file_swarm_v1_demo_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *OpenDoorRequest) String() string {
+func (x *ActivateHVAC) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*OpenDoorRequest) ProtoMessage() {}
+func (*ActivateHVAC) ProtoMessage() {}
 
-func (x *OpenDoorRequest) ProtoReflect() protoreflect.Message {
+func (x *ActivateHVAC) ProtoReflect() protoreflect.Message {
 	mi := &file_swarm_v1_demo_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -198,12 +200,19 @@ func (x *OpenDoorRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use OpenDoorRequest.ProtoReflect.Descriptor instead.
-func (*OpenDoorRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use ActivateHVAC.ProtoReflect.Descriptor instead.
+func (*ActivateHVAC) Descriptor() ([]byte, []int) {
 	return file_swarm_v1_demo_proto_rawDescGZIP(), []int{2}
 }
 
-type OpenDoorResponse struct {
+func (x *ActivateHVAC) GetDurationSec() int32 {
+	if x != nil {
+		return x.DurationSec
+	}
+	return 0
+}
+
+type ActivateHVACResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -211,20 +220,20 @@ type OpenDoorResponse struct {
 	Success bool `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
 }
 
-func (x *OpenDoorResponse) Reset() {
-	*x = OpenDoorResponse{}
+func (x *ActivateHVACResponse) Reset() {
+	*x = ActivateHVACResponse{}
 	mi := &file_swarm_v1_demo_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *OpenDoorResponse) String() string {
+func (x *ActivateHVACResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*OpenDoorResponse) ProtoMessage() {}
+func (*ActivateHVACResponse) ProtoMessage() {}
 
-func (x *OpenDoorResponse) ProtoReflect() protoreflect.Message {
+func (x *ActivateHVACResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_swarm_v1_demo_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -236,109 +245,19 @@ func (x *OpenDoorResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use OpenDoorResponse.ProtoReflect.Descriptor instead.
-func (*OpenDoorResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use ActivateHVACResponse.ProtoReflect.Descriptor instead.
+func (*ActivateHVACResponse) Descriptor() ([]byte, []int) {
 	return file_swarm_v1_demo_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *OpenDoorResponse) GetSuccess() bool {
+func (x *ActivateHVACResponse) GetSuccess() bool {
 	if x != nil {
 		return x.Success
 	}
 	return false
 }
 
-type SendElevatorRequest struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Floor int32 `protobuf:"varint,1,opt,name=floor,proto3" json:"floor,omitempty"`
-}
-
-func (x *SendElevatorRequest) Reset() {
-	*x = SendElevatorRequest{}
-	mi := &file_swarm_v1_demo_proto_msgTypes[4]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SendElevatorRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SendElevatorRequest) ProtoMessage() {}
-
-func (x *SendElevatorRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_swarm_v1_demo_proto_msgTypes[4]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SendElevatorRequest.ProtoReflect.Descriptor instead.
-func (*SendElevatorRequest) Descriptor() ([]byte, []int) {
-	return file_swarm_v1_demo_proto_rawDescGZIP(), []int{4}
-}
-
-func (x *SendElevatorRequest) GetFloor() int32 {
-	if x != nil {
-		return x.Floor
-	}
-	return 0
-}
-
-type SendElevatorResponse struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Floor int32 `protobuf:"varint,1,opt,name=floor,proto3" json:"floor,omitempty"`
-}
-
-func (x *SendElevatorResponse) Reset() {
-	*x = SendElevatorResponse{}
-	mi := &file_swarm_v1_demo_proto_msgTypes[5]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SendElevatorResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SendElevatorResponse) ProtoMessage() {}
-
-func (x *SendElevatorResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_swarm_v1_demo_proto_msgTypes[5]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SendElevatorResponse.ProtoReflect.Descriptor instead.
-func (*SendElevatorResponse) Descriptor() ([]byte, []int) {
-	return file_swarm_v1_demo_proto_rawDescGZIP(), []int{5}
-}
-
-func (x *SendElevatorResponse) GetFloor() int32 {
-	if x != nil {
-		return x.Floor
-	}
-	return 0
-}
-
-type ChangeDataRateProp struct {
+type DataRateProp struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -346,21 +265,21 @@ type ChangeDataRateProp struct {
 	Sec int32 `protobuf:"varint,1,opt,name=sec,proto3" json:"sec,omitempty"`
 }
 
-func (x *ChangeDataRateProp) Reset() {
-	*x = ChangeDataRateProp{}
-	mi := &file_swarm_v1_demo_proto_msgTypes[6]
+func (x *DataRateProp) Reset() {
+	*x = DataRateProp{}
+	mi := &file_swarm_v1_demo_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ChangeDataRateProp) String() string {
+func (x *DataRateProp) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ChangeDataRateProp) ProtoMessage() {}
+func (*DataRateProp) ProtoMessage() {}
 
-func (x *ChangeDataRateProp) ProtoReflect() protoreflect.Message {
-	mi := &file_swarm_v1_demo_proto_msgTypes[6]
+func (x *DataRateProp) ProtoReflect() protoreflect.Message {
+	mi := &file_swarm_v1_demo_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -371,42 +290,41 @@ func (x *ChangeDataRateProp) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ChangeDataRateProp.ProtoReflect.Descriptor instead.
-func (*ChangeDataRateProp) Descriptor() ([]byte, []int) {
-	return file_swarm_v1_demo_proto_rawDescGZIP(), []int{6}
+// Deprecated: Use DataRateProp.ProtoReflect.Descriptor instead.
+func (*DataRateProp) Descriptor() ([]byte, []int) {
+	return file_swarm_v1_demo_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *ChangeDataRateProp) GetSec() int32 {
+func (x *DataRateProp) GetSec() int32 {
 	if x != nil {
 		return x.Sec
 	}
 	return 0
 }
 
-type ReportedProps struct {
+type DataRateStatus struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	DatarateSec   int32 `protobuf:"varint,1,opt,name=datarate_sec,json=datarateSec,proto3" json:"datarate_sec,omitempty"`
-	ElevatorFloor int32 `protobuf:"varint,2,opt,name=elevator_floor,json=elevatorFloor,proto3" json:"elevator_floor,omitempty"`
+	Sec int32 `protobuf:"varint,1,opt,name=sec,proto3" json:"sec,omitempty"`
 }
 
-func (x *ReportedProps) Reset() {
-	*x = ReportedProps{}
-	mi := &file_swarm_v1_demo_proto_msgTypes[7]
+func (x *DataRateStatus) Reset() {
+	*x = DataRateStatus{}
+	mi := &file_swarm_v1_demo_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ReportedProps) String() string {
+func (x *DataRateStatus) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ReportedProps) ProtoMessage() {}
+func (*DataRateStatus) ProtoMessage() {}
 
-func (x *ReportedProps) ProtoReflect() protoreflect.Message {
-	mi := &file_swarm_v1_demo_proto_msgTypes[7]
+func (x *DataRateStatus) ProtoReflect() protoreflect.Message {
+	mi := &file_swarm_v1_demo_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -417,23 +335,61 @@ func (x *ReportedProps) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ReportedProps.ProtoReflect.Descriptor instead.
-func (*ReportedProps) Descriptor() ([]byte, []int) {
-	return file_swarm_v1_demo_proto_rawDescGZIP(), []int{7}
+// Deprecated: Use DataRateStatus.ProtoReflect.Descriptor instead.
+func (*DataRateStatus) Descriptor() ([]byte, []int) {
+	return file_swarm_v1_demo_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *ReportedProps) GetDatarateSec() int32 {
+func (x *DataRateStatus) GetSec() int32 {
 	if x != nil {
-		return x.DatarateSec
+		return x.Sec
 	}
 	return 0
 }
 
-func (x *ReportedProps) GetElevatorFloor() int32 {
+type HVACStatus struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Online bool `protobuf:"varint,1,opt,name=online,proto3" json:"online,omitempty"`
+}
+
+func (x *HVACStatus) Reset() {
+	*x = HVACStatus{}
+	mi := &file_swarm_v1_demo_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HVACStatus) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HVACStatus) ProtoMessage() {}
+
+func (x *HVACStatus) ProtoReflect() protoreflect.Message {
+	mi := &file_swarm_v1_demo_proto_msgTypes[6]
 	if x != nil {
-		return x.ElevatorFloor
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
 	}
-	return 0
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HVACStatus.ProtoReflect.Descriptor instead.
+func (*HVACStatus) Descriptor() ([]byte, []int) {
+	return file_swarm_v1_demo_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *HVACStatus) GetOnline() bool {
+	if x != nil {
+		return x.Online
+	}
+	return false
 }
 
 var File_swarm_v1_demo_proto protoreflect.FileDescriptor
@@ -465,36 +421,31 @@ var file_swarm_v1_demo_proto_rawDesc = []byte{
 	0x14, 0x0a, 0x05, 0x70, 0x6f, 0x77, 0x65, 0x72, 0x18, 0x04, 0x20, 0x01, 0x28, 0x01, 0x52, 0x05,
 	0x70, 0x6f, 0x77, 0x65, 0x72, 0x3a, 0x23, 0x88, 0xb5, 0x18, 0x01, 0x92, 0xb5, 0x18, 0x1b, 0x0a,
 	0x0d, 0x0a, 0x08, 0x62, 0x75, 0x69, 0x6c, 0x64, 0x69, 0x6e, 0x67, 0x12, 0x01, 0x41, 0x0a, 0x0a,
-	0x0a, 0x05, 0x66, 0x6c, 0x6f, 0x6f, 0x72, 0x12, 0x01, 0x32, 0x22, 0x17, 0x0a, 0x0f, 0x4f, 0x70,
-	0x65, 0x6e, 0x44, 0x6f, 0x6f, 0x72, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x3a, 0x04, 0x88,
-	0xb5, 0x18, 0x02, 0x22, 0x2c, 0x0a, 0x10, 0x4f, 0x70, 0x65, 0x6e, 0x44, 0x6f, 0x6f, 0x72, 0x52,
-	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x18, 0x0a, 0x07, 0x73, 0x75, 0x63, 0x63, 0x65,
-	0x73, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x52, 0x07, 0x73, 0x75, 0x63, 0x63, 0x65, 0x73,
-	0x73, 0x22, 0x31, 0x0a, 0x13, 0x53, 0x65, 0x6e, 0x64, 0x45, 0x6c, 0x65, 0x76, 0x61, 0x74, 0x6f,
-	0x72, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x14, 0x0a, 0x05, 0x66, 0x6c, 0x6f, 0x6f,
-	0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x05, 0x52, 0x05, 0x66, 0x6c, 0x6f, 0x6f, 0x72, 0x3a, 0x04,
-	0x88, 0xb5, 0x18, 0x02, 0x22, 0x2c, 0x0a, 0x14, 0x53, 0x65, 0x6e, 0x64, 0x45, 0x6c, 0x65, 0x76,
-	0x61, 0x74, 0x6f, 0x72, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x14, 0x0a, 0x05,
-	0x66, 0x6c, 0x6f, 0x6f, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x05, 0x52, 0x05, 0x66, 0x6c, 0x6f,
-	0x6f, 0x72, 0x22, 0x2c, 0x0a, 0x12, 0x43, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x44, 0x61, 0x74, 0x61,
-	0x52, 0x61, 0x74, 0x65, 0x50, 0x72, 0x6f, 0x70, 0x12, 0x10, 0x0a, 0x03, 0x73, 0x65, 0x63, 0x18,
-	0x01, 0x20, 0x01, 0x28, 0x05, 0x52, 0x03, 0x73, 0x65, 0x63, 0x3a, 0x04, 0x88, 0xb5, 0x18, 0x03,
-	0x22, 0x59, 0x0a, 0x0d, 0x52, 0x65, 0x70, 0x6f, 0x72, 0x74, 0x65, 0x64, 0x50, 0x72, 0x6f, 0x70,
-	0x73, 0x12, 0x21, 0x0a, 0x0c, 0x64, 0x61, 0x74, 0x61, 0x72, 0x61, 0x74, 0x65, 0x5f, 0x73, 0x65,
-	0x63, 0x18, 0x01, 0x20, 0x01, 0x28, 0x05, 0x52, 0x0b, 0x64, 0x61, 0x74, 0x61, 0x72, 0x61, 0x74,
-	0x65, 0x53, 0x65, 0x63, 0x12, 0x25, 0x0a, 0x0e, 0x65, 0x6c, 0x65, 0x76, 0x61, 0x74, 0x6f, 0x72,
-	0x5f, 0x66, 0x6c, 0x6f, 0x6f, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x05, 0x52, 0x0d, 0x65, 0x6c,
-	0x65, 0x76, 0x61, 0x74, 0x6f, 0x72, 0x46, 0x6c, 0x6f, 0x6f, 0x72, 0x42, 0x8f, 0x01, 0x0a, 0x0c,
-	0x63, 0x6f, 0x6d, 0x2e, 0x73, 0x77, 0x61, 0x72, 0x6d, 0x2e, 0x76, 0x31, 0x42, 0x09, 0x44, 0x65,
-	0x6d, 0x6f, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x33, 0x67, 0x69, 0x74, 0x68, 0x75,
-	0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x6d, 0x61, 0x78, 0x74, 0x68, 0x6f, 0x6d, 0x2f, 0x6d, 0x69,
-	0x72, 0x2f, 0x69, 0x6e, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x2f, 0x75, 0x69, 0x2f, 0x63, 0x6c,
-	0x69, 0x2f, 0x67, 0x65, 0x6e, 0x2f, 0x73, 0x77, 0x61, 0x72, 0x6d, 0x2f, 0x76, 0x31, 0xa2, 0x02,
-	0x03, 0x53, 0x58, 0x58, 0xaa, 0x02, 0x08, 0x53, 0x77, 0x61, 0x72, 0x6d, 0x2e, 0x56, 0x31, 0xca,
-	0x02, 0x08, 0x53, 0x77, 0x61, 0x72, 0x6d, 0x5c, 0x56, 0x31, 0xe2, 0x02, 0x14, 0x53, 0x77, 0x61,
-	0x72, 0x6d, 0x5c, 0x56, 0x31, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74,
-	0x61, 0xea, 0x02, 0x09, 0x53, 0x77, 0x61, 0x72, 0x6d, 0x3a, 0x3a, 0x56, 0x31, 0x62, 0x06, 0x70,
-	0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x0a, 0x05, 0x66, 0x6c, 0x6f, 0x6f, 0x72, 0x12, 0x01, 0x32, 0x22, 0x37, 0x0a, 0x0c, 0x41, 0x63,
+	0x74, 0x69, 0x76, 0x61, 0x74, 0x65, 0x48, 0x56, 0x41, 0x43, 0x12, 0x21, 0x0a, 0x0c, 0x64, 0x75,
+	0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x73, 0x65, 0x63, 0x18, 0x01, 0x20, 0x01, 0x28, 0x05,
+	0x52, 0x0b, 0x64, 0x75, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x53, 0x65, 0x63, 0x3a, 0x04, 0x88,
+	0xb5, 0x18, 0x02, 0x22, 0x30, 0x0a, 0x14, 0x41, 0x63, 0x74, 0x69, 0x76, 0x61, 0x74, 0x65, 0x48,
+	0x56, 0x41, 0x43, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x18, 0x0a, 0x07, 0x73,
+	0x75, 0x63, 0x63, 0x65, 0x73, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x52, 0x07, 0x73, 0x75,
+	0x63, 0x63, 0x65, 0x73, 0x73, 0x22, 0x26, 0x0a, 0x0c, 0x44, 0x61, 0x74, 0x61, 0x52, 0x61, 0x74,
+	0x65, 0x50, 0x72, 0x6f, 0x70, 0x12, 0x10, 0x0a, 0x03, 0x73, 0x65, 0x63, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x05, 0x52, 0x03, 0x73, 0x65, 0x63, 0x3a, 0x04, 0x88, 0xb5, 0x18, 0x03, 0x22, 0x22, 0x0a,
+	0x0e, 0x44, 0x61, 0x74, 0x61, 0x52, 0x61, 0x74, 0x65, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x12,
+	0x10, 0x0a, 0x03, 0x73, 0x65, 0x63, 0x18, 0x01, 0x20, 0x01, 0x28, 0x05, 0x52, 0x03, 0x73, 0x65,
+	0x63, 0x22, 0x24, 0x0a, 0x0a, 0x48, 0x56, 0x41, 0x43, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x12,
+	0x16, 0x0a, 0x06, 0x6f, 0x6e, 0x6c, 0x69, 0x6e, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x52,
+	0x06, 0x6f, 0x6e, 0x6c, 0x69, 0x6e, 0x65, 0x42, 0x8f, 0x01, 0x0a, 0x0c, 0x63, 0x6f, 0x6d, 0x2e,
+	0x73, 0x77, 0x61, 0x72, 0x6d, 0x2e, 0x76, 0x31, 0x42, 0x09, 0x44, 0x65, 0x6d, 0x6f, 0x50, 0x72,
+	0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x33, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f,
+	0x6d, 0x2f, 0x6d, 0x61, 0x78, 0x74, 0x68, 0x6f, 0x6d, 0x2f, 0x6d, 0x69, 0x72, 0x2f, 0x69, 0x6e,
+	0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x2f, 0x75, 0x69, 0x2f, 0x63, 0x6c, 0x69, 0x2f, 0x67, 0x65,
+	0x6e, 0x2f, 0x73, 0x77, 0x61, 0x72, 0x6d, 0x2f, 0x76, 0x31, 0xa2, 0x02, 0x03, 0x53, 0x58, 0x58,
+	0xaa, 0x02, 0x08, 0x53, 0x77, 0x61, 0x72, 0x6d, 0x2e, 0x56, 0x31, 0xca, 0x02, 0x08, 0x53, 0x77,
+	0x61, 0x72, 0x6d, 0x5c, 0x56, 0x31, 0xe2, 0x02, 0x14, 0x53, 0x77, 0x61, 0x72, 0x6d, 0x5c, 0x56,
+	0x31, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x09,
+	0x53, 0x77, 0x61, 0x72, 0x6d, 0x3a, 0x3a, 0x56, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f,
+	0x33,
 }
 
 var (
@@ -509,20 +460,19 @@ func file_swarm_v1_demo_proto_rawDescGZIP() []byte {
 	return file_swarm_v1_demo_proto_rawDescData
 }
 
-var file_swarm_v1_demo_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_swarm_v1_demo_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_swarm_v1_demo_proto_goTypes = []any{
 	(*EnvironmentTlm)(nil),       // 0: swarm.v1.EnvironmentTlm
 	(*PowerConsuption)(nil),      // 1: swarm.v1.PowerConsuption
-	(*OpenDoorRequest)(nil),      // 2: swarm.v1.OpenDoorRequest
-	(*OpenDoorResponse)(nil),     // 3: swarm.v1.OpenDoorResponse
-	(*SendElevatorRequest)(nil),  // 4: swarm.v1.SendElevatorRequest
-	(*SendElevatorResponse)(nil), // 5: swarm.v1.SendElevatorResponse
-	(*ChangeDataRateProp)(nil),   // 6: swarm.v1.ChangeDataRateProp
-	(*ReportedProps)(nil),        // 7: swarm.v1.ReportedProps
-	(*v1.Timestamp)(nil),         // 8: mir.device.v1.Timestamp
+	(*ActivateHVAC)(nil),         // 2: swarm.v1.ActivateHVAC
+	(*ActivateHVACResponse)(nil), // 3: swarm.v1.ActivateHVACResponse
+	(*DataRateProp)(nil),         // 4: swarm.v1.DataRateProp
+	(*DataRateStatus)(nil),       // 5: swarm.v1.DataRateStatus
+	(*HVACStatus)(nil),           // 6: swarm.v1.HVACStatus
+	(*v1.Timestamp)(nil),         // 7: mir.device.v1.Timestamp
 }
 var file_swarm_v1_demo_proto_depIdxs = []int32{
-	8, // 0: swarm.v1.EnvironmentTlm.ts:type_name -> mir.device.v1.Timestamp
+	7, // 0: swarm.v1.EnvironmentTlm.ts:type_name -> mir.device.v1.Timestamp
 	1, // [1:1] is the sub-list for method output_type
 	1, // [1:1] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
@@ -541,7 +491,7 @@ func file_swarm_v1_demo_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_swarm_v1_demo_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
