@@ -43,8 +43,7 @@ var (
 )
 
 type mirLog struct {
-	timeFormat string
-	logLevel   string
+	logLevel string
 	zerolog.Logger
 	hasWriter bool
 }
@@ -74,7 +73,7 @@ func Setup(options ...func(*mirLog)) zerolog.Logger {
 func WithTimeFormatUnix() func(*mirLog) {
 	return func(log *mirLog) {
 		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-		log.timeFormat = zerolog.TimeFormatUnix
+		log.Logger = log.Logger.With().Timestamp().Logger()
 	}
 }
 

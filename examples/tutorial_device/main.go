@@ -19,6 +19,7 @@ func main() {
 		DeviceId("weather").
 		Target("nats://127.0.0.1:4222").
 		Schema(tutorial_devicev1.File_tutorial_device_v1_schema_proto).
+		LogPretty(false).
 		Build()
 	if err != nil {
 		panic(err)

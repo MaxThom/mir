@@ -181,6 +181,7 @@ func main() {
 	m, err := mir.Builder().
 		DeviceId("weather").
 		Target("nats://127.0.0.1:4222").
+		LogPretty(false).
 		Schema(schemav1.File_schema.v1_schema_proto).
 		Build()
 	if err != nil {
@@ -238,12 +239,11 @@ func main() {
 				wg.Done()
 				return
 			case <-time.After(time.Duration(dataRate) * time.Second):
-				t, h, p := getData()
 				if err := m.SendTelemetry(&schemav1.Env{
 					Ts:          time.Now().UTC().UnixNano(),
-					Temperature: int32(t),
-					Humidity:    int32(h),
-					Pressure:    int32(p),
+					Temperature: rand.Int32N(101),
+					Pressure:    rand.Int32N(101),
+					Humidity:    rand.Int32N(101),
 				}); err != nil {
 					m.Logger().Error().Err(err).Msg("error sending telemetry")
 				}
@@ -257,19 +257,6 @@ func main() {
 
 	cancel()
 	wg.Wait()
-}
-
-func getData() (float64, float64, float64) {
-	t := time.Now().UTC()
-	seconds := float64(t.Second())
-	millis := float64(t.Nanosecond()) / 1e9
-	timeValue := (seconds + millis) / 60.0
-
-	temp := (math.Sin(2*math.Pi*timeValue) + 1) * 100
-	hum := (math.Cos(2*math.Pi*timeValue) + 1) * 100
-	pre := (math.Cos(3*math.Pi*timeValue) + 20) * 10
-
-	return temp, hum, pre
 }
 ```
 
