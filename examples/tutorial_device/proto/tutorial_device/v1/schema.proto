@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package tutorial_device.v1;
+option go_package = "github.com/maxthom/mir/examples/tutorial_device/gen/schema/v1";
+
+import "mir/device/v1/mir.proto";
+
+message Env {
+	option (mir.device.v1.message_type) = MESSAGE_TYPE_TELEMETRY;
+
+	int64 ts = 1 [(mir.device.v1.timestamp) = TIMESTAMP_TYPE_NANO];
+	int32 temperature = 2;
+	int32 pressure = 3;
+	int32 humidity = 4;
+}
+
+message ActivateHVAC {
+	option (mir.device.v1.message_type) = MESSAGE_TYPE_TELECOMMAND;
+
+	int32 duration_sec = 1;
+}
+
+message ActivateHVACResponse {
+  bool success = 1;
+}
+
+message DataRateProp {
+  option (mir.device.v1.message_type) = MESSAGE_TYPE_TELECONFIG;
+
+  int32 sec = 1;
+}
+
+message DataRateStatus {
+  int32 sec = 1;
+}
+
+message HVACStatus {
+   bool online = 1;
+}

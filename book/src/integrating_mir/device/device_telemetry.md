@@ -17,7 +17,7 @@ option go_package = "github.com/maxthom/mir-device/schemav1";
 
 import "mir/device/v1/mir.proto";
 
-message EnvTlm {
+message Env {
 	option (mir.device.v1.message_type) = MESSAGE_TYPE_TELEMETRY;
 
 	int64 ts = 1 [(mir.device.v1.timestamp) = TIMESTAMP_TYPE_NANO];
@@ -27,7 +27,7 @@ message EnvTlm {
 }
 ```
 
-Here we define a message `EnvTlm` that will be used. The options are used to annotate the message with metadata:
+Here we define a message `Env` that will be used. The options are used to annotate the message with metadata:
 
 - `mir.device.v1.message_type`: This tell the server that this message is of telemetry type.
 - `mir.device.v1.timestamp`: This tell the server that the field `ts` is the main timestamp and the precision is NANOSECONDS. Second, Microsecond and Millisecond are also available.
@@ -62,7 +62,7 @@ import (
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	m, err := mir.Builder().
-		DeviceId("weather_dev").
+		DeviceId("weather").
 		Target("nats://127.0.0.1:4222").
 		Schema(schemav1.File_schema_proto).
 		Build()
@@ -85,14 +85,13 @@ func main() {
 				wg.Done()
 				return
 			case <-time.After(3 * time.Second):
-			  log.Default().Println("sending telemetry data...")
-				if err := m.SendTelemetry(&schemav1.EnvTlm{
+				if err := m.SendTelemetry(&schemav1.Env{
 					Ts:          time.Now().UTC().UnixNano(),
 					Temperature: rand.Int32N(101),
 					Pressure:    rand.Int32N(101),
 					Humidity:    rand.Int32N(101),
 				}); err != nil {
-					log.Default().Printf("error sending telemetry: %w\n", err)
+					m.Logger().Error().Err(err).Msg("error sending telemetry")
 				}
 			}
 		}
@@ -109,10 +108,10 @@ func main() {
 
 And just like that, we now have telemetry that his stored server side
 ```bash
-mir tlm list weather_dev
+mir tlm list weather
 
-1. weather_dev/default
-schemav1.EnvTlm{} localhost:3000/explore
+1. weather/default
+schemav1.Env{} localhost:3000/explore
 ```
 
 Click on the link to open Grafana and visualize the data.

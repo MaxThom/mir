@@ -13,7 +13,7 @@
 		- [Communication](./integrating_mir/device/device_communication.md)
 		- [Telemetry](./integrating_mir/device/device_telemetry.md)
 		- [Commands](./integrating_mir/device/device_commands.md)
-		- [Configuration]()
+		- [Configuration](./integrating_mir/device/device_configuration.md)
 		- [What's Next](./integrating_mir/device/device_next.md)
 	- [Module SDK]()
 - [Running Mir](./running_mir/running_mir.md)

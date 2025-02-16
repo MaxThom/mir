@@ -33,14 +33,14 @@ protoc \
 
 Add schema import to your `cmd/main.go`
 ```go
-	"github.com/maxthom/pi-demo/schemav1"
+	schemav1 "github.com/<path>/schema/v1"
 ```
 
 Uncomment line 17, edit deviceid and edit Target url if not local:
 
 ```go
 m, err := mir.Builder().
-	DeviceId("pi_demo").
+	DeviceId("template").
 	Target("nats://192.168.3.73:4222").
 	Schema(schemav1.File_schema_proto).
 	Build()
