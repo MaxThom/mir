@@ -66,6 +66,7 @@ func (d *SwarmCmd) Run(c CLI) error {
 	_, err = s.AddDeviceWithIds(d.DeviceIds).
 		WithSchema(swarmv1.File_swarm_v1_demo_proto).
 		WithLogLevel(logLvl).
+		WithPrettyLogger(false).
 		Incubate()
 	if err != nil {
 		return fmt.Errorf("error incubating swarm: %w", err)

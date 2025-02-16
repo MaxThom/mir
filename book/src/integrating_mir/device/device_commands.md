@@ -69,6 +69,7 @@ func main() {
 	m, err := mir.Builder().
 		DeviceId("weather").
 		Target("nats://127.0.0.1:4222").
+		LogPretty(false).
 		Schema(schemav1.File_schema_proto).
 		Build()
 	if err != nil {

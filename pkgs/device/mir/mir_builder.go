@@ -10,6 +10,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/boiler/mir_config"
 	"github.com/maxthom/mir/internal/libs/boiler/mir_log"
 	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
+	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
@@ -142,6 +143,14 @@ func (b builder) LogWriters(writers []io.Writer) builder {
 	return b
 }
 
+func (b builder) LogPretty(colors bool) builder {
+	b.logWriters = append(b.logWriters, zerolog.ConsoleWriter{
+		Out:     os.Stdout,
+		NoColor: !colors,
+	})
+	return b
+}
+
 func (b builder) Schema(s ...protoreflect.FileDescriptor) builder {
 	if len(s) > 0 {
 		b.telemetryModuleFlag = true
@@ -215,16 +224,18 @@ func (b builder) Build() (*Mir, error) {
 	l := mir_log.Setup(
 		mir_log.WithLogLevel(c.LogLevel),
 		mir_log.WithTimeFormatUnix(),
-		mir_log.WithAppName("mir"),
 		mir_log.WithCustomWriters(b.logWriters),
 	)
-	l = l.With().Str("deviceId", c.DeviceId).Logger()
+	cleanLogger := l.With().Logger()
+	l = l.With().Str("source", "mir").Logger()
 
 	if errs != nil {
 		l.Error().Err(errs).Msg("Error while loading configuration")
 		return nil, errs
 	}
-	l.Info().Strs("lookup config", lookupFiles).Strs("found config", foundFiles).Msg("configuration loaded")
+	if len(b.fileOpts) > 0 {
+		l.Info().Strs("lookup config", lookupFiles).Strs("found config", foundFiles).Msg("configuration loaded")
+	}
 
 	if prettyCfg, err := mir_config.JsonMarshalWithoutSecrets(c); err != nil {
 		l.Error().Err(err).Msg("Error marshalling config")
@@ -273,8 +284,8 @@ func (b builder) Build() (*Mir, error) {
 	}
 	return &Mir{
 		cfg:         c,
-		l:           l.With().Str("source", "sdk").Logger(),
-		cleanLogger: l.With().Logger(),
+		l:           l.With().Str("device_id", c.DeviceId).Logger(),
+		cleanLogger: cleanLogger.With().Str("device_id", c.DeviceId).Logger(),
 		store:       store,
 		schema:      b.schema,
 		schemaReg:   reg,

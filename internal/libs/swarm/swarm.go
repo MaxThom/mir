@@ -3,6 +3,8 @@ package swarm
 import (
 	"context"
 	"errors"
+	"io"
+	"os"
 	"sync"
 	"time"
 
@@ -10,6 +12,7 @@ import (
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	mirDevice "github.com/maxthom/mir/pkgs/device/mir"
+	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
@@ -52,6 +55,7 @@ func (s swarm) ToTarget() *core_apiv1.Targets {
 type devicesBuilder struct {
 	s          *swarm
 	logLevel   mirDevice.LogLevel
+	logWriters []io.Writer
 	deviceReqs []*core_apiv1.CreateDeviceRequest
 	deviceIds  []string
 	sch        []protoreflect.FileDescriptor
@@ -61,13 +65,14 @@ type devicesBuilder struct {
 }
 
 type deviceBuilder struct {
-	s         *swarm
-	logLevel  mirDevice.LogLevel
-	deviceReq *core_apiv1.CreateDeviceRequest
-	sch       []protoreflect.FileDescriptor
-	cmd       []commandHandler
-	cfg       []configHandler
-	storeOpts mirDevice.StoreOptions
+	s          *swarm
+	logLevel   mirDevice.LogLevel
+	logWriters []io.Writer
+	deviceReq  *core_apiv1.CreateDeviceRequest
+	sch        []protoreflect.FileDescriptor
+	cmd        []commandHandler
+	cfg        []configHandler
+	storeOpts  mirDevice.StoreOptions
 }
 
 type commandHandler struct {
@@ -137,6 +142,14 @@ func (b *devicesBuilder) WithLogLevel(l mirDevice.LogLevel) *devicesBuilder {
 	return b
 }
 
+func (b *devicesBuilder) WithPrettyLogger(colors bool) *devicesBuilder {
+	b.logWriters = append(b.logWriters, zerolog.ConsoleWriter{
+		Out:     os.Stdout,
+		NoColor: !colors,
+	})
+	return b
+}
+
 func (b *devicesBuilder) WithStoreOptions(opts mirDevice.StoreOptions) *devicesBuilder {
 	b.storeOpts = opts
 	return b
@@ -169,6 +182,7 @@ func (b *devicesBuilder) Incubate() ([]*core_apiv1.CreateDeviceResponse, error) 
 		dev, err := mirDevice.Builder().
 			DeviceId(d).
 			LogLevel(b.logLevel).
+			LogWriters(b.logWriters).
 			Store(b.storeOpts).
 			Target(b.s.bus.ConnectedUrl()).
 			Schema(b.sch...).Build()
@@ -224,6 +238,14 @@ func (b *deviceBuilder) WithLogLevel(l mirDevice.LogLevel) *deviceBuilder {
 	return b
 }
 
+func (b *deviceBuilder) WithDevLogger() *deviceBuilder {
+	b.logWriters = append(b.logWriters, zerolog.ConsoleWriter{
+		Out:     os.Stdout,
+		NoColor: false,
+	})
+	return b
+}
+
 func (b *deviceBuilder) WithStoreOptions(opts mirDevice.StoreOptions) *deviceBuilder {
 	b.storeOpts = opts
 	return b
@@ -233,6 +255,7 @@ func (b *deviceBuilder) Incubate() (*core_apiv1.CreateDeviceResponse, error) {
 	dev, err := mirDevice.Builder().
 		DeviceId(b.deviceReq.Spec.DeviceId).
 		LogLevel(b.logLevel).
+		LogWriters(b.logWriters).
 		Store(b.storeOpts).
 		Target(b.s.bus.ConnectedUrl()).
 		Schema(b.sch...).Build()
