@@ -14,9 +14,17 @@ var (
 	registry = prometheus.NewRegistry()
 
 	namespace = "mir"
-	subsystem = ""
 	extraTags = map[string]string{}
 )
+
+func init() {
+	// Register default collectors
+	registry.Register(collectors.NewBuildInfoCollector())
+	registry.Register(collectors.NewGoCollector())
+	registry.Register(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
+	prometheus.DefaultGatherer = registry
+	prometheus.DefaultRegisterer = registry
+}
 
 // RegisterMirMetrics registers the Mir-specific metrics for the application.
 // It takes the following parameters:
@@ -29,13 +37,7 @@ var (
 //   - pinned tag should be use with prometheus scraper instead
 //   - perhaps could be use for device id on device lib
 func RegisterMirMetrics(appName string, appVersion string, pinnedTags map[string]string, config string) {
-	// TODO investigate later how to fill the values
-	registry.Register(collectors.NewBuildInfoCollector())
-	registry.Register(collectors.NewGoCollector())
-	registry.Register(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
-
 	// set module vars
-	subsystem = appName
 	extraTags = pinnedTags
 
 	// Mir metrics
@@ -51,8 +53,6 @@ func RegisterMirMetrics(appName string, appVersion string, pinnedTags map[string
 	appInfo.Inc()
 	registry.Register(appInfo)
 
-	prometheus.DefaultGatherer = registry
-	prometheus.DefaultRegisterer = registry
 }
 
 func Registry() *prometheus.Registry {
@@ -64,25 +64,25 @@ func NewCounter(opts prometheus.CounterOpts) prometheus.Counter {
 	if opts.Namespace == "" {
 		opts.Namespace = namespace
 	}
-	if opts.Subsystem == "" {
-		opts.Subsystem = subsystem
-	}
 	opts.ConstLabels = setPinnedTags(opts.ConstLabels)
 
-	return prometheus.NewCounter(opts)
+	c := prometheus.NewCounter(opts)
+	c.Add(0)
+	registry.Register(c)
+	return c
 }
 
-// NewCounter creates a new Prometheus Counter metric with the given options.
+// NewCounterVec creates a new Prometheus CounterVec metric with the given options.
+// Vector counter are not initialized with a value of 0.
 func NewCounterVec(opts prometheus.CounterOpts, labels []string) *prometheus.CounterVec {
 	if opts.Namespace == "" {
 		opts.Namespace = namespace
 	}
-	if opts.Subsystem == "" {
-		opts.Subsystem = subsystem
-	}
 	opts.ConstLabels = setPinnedTags(opts.ConstLabels)
 
-	return prometheus.NewCounterVec(opts, labels)
+	c := prometheus.NewCounterVec(opts, labels)
+	registry.Register(c)
+	return c
 }
 
 // NewGauge creates a new Prometheus Gauge metric with the given options.
@@ -90,12 +90,25 @@ func NewGauge(opts prometheus.GaugeOpts) prometheus.Gauge {
 	if opts.Namespace == "" {
 		opts.Namespace = namespace
 	}
-	if opts.Subsystem == "" {
-		opts.Subsystem = subsystem
+	opts.ConstLabels = setPinnedTags(opts.ConstLabels)
+
+	c := prometheus.NewGauge(opts)
+	c.Add(0)
+	registry.Register(c)
+	return c
+}
+
+// NewGaugeVec creates a new Prometheus Gauge metric with the given options.
+// Gauge counter are not intialized with a value of 0
+func NewGaugeVec(opts prometheus.GaugeOpts, labels []string) *prometheus.GaugeVec {
+	if opts.Namespace == "" {
+		opts.Namespace = namespace
 	}
 	opts.ConstLabels = setPinnedTags(opts.ConstLabels)
 
-	return prometheus.NewGauge(opts)
+	c := prometheus.NewGaugeVec(opts, labels)
+	registry.Register(c)
+	return c
 }
 
 // NewHistogram creates a new Prometheus Histogram metric with the given options.
@@ -103,12 +116,12 @@ func NewHistogram(opts prometheus.HistogramOpts) prometheus.Histogram {
 	if opts.Namespace == "" {
 		opts.Namespace = namespace
 	}
-	if opts.Subsystem == "" {
-		opts.Subsystem = subsystem
-	}
 	opts.ConstLabels = setPinnedTags(opts.ConstLabels)
 
-	return prometheus.NewHistogram(opts)
+	c := prometheus.NewHistogram(opts)
+	c.Observe(0)
+	registry.Register(c)
+	return c
 }
 
 // NewSummary creates a new Prometheus Summary metric with the given options.
@@ -116,16 +129,22 @@ func NewSummary(opts prometheus.SummaryOpts) prometheus.Summary {
 	if opts.Namespace == "" {
 		opts.Namespace = namespace
 	}
-	if opts.Subsystem == "" {
-		opts.Subsystem = subsystem
-	}
 	opts.ConstLabels = setPinnedTags(opts.ConstLabels)
 
-	return prometheus.NewSummary(opts)
+	c := prometheus.NewSummary(opts)
+	c.Observe(0)
+	registry.Register(c)
+	return c
 }
 
 func Register(c prometheus.Collector) {
-	registry.Register(c)
+	registry.MustRegister(c)
+}
+
+func Registers(cs ...prometheus.Collector) {
+	for _, c := range cs {
+		registry.MustRegister(c)
+	}
 }
 
 // RegisterRoutes registers the /metrics route for exposing the Prometheus metrics.

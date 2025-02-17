@@ -173,26 +173,22 @@ func run(
 	if err != nil {
 		return err
 	}
-	core_srv.RegisterMetrics(metrics.Registry())
 
 	// Services
 	cfgSrv, err := protocfg_srv.NewProtoCfg(log, m, mng.NewSurrealDeviceStore(db))
 	if err != nil {
 		return err
 	}
-	protocfg_srv.RegisterMetrics(metrics.Registry())
 
 	cmdSrv, err := protocmd_srv.NewProtoCmd(log, m, mng.NewSurrealDeviceStore(db))
 	if err != nil {
 		return err
 	}
-	protocmd_srv.RegisterMetrics(metrics.Registry())
 
 	tlmSrv, err := prototlm_srv.NewProtoTlm(log, m, mng.NewSurrealDeviceStore(db), ts.NewInfluxTelemetryStore(cfg.Influx.Org, cfg.Influx.Bucket, lpClient))
 	if err != nil {
 		return err
 	}
-	prototlm_srv.RegisterMetrics(metrics.Registry())
 
 	// Metrics & Health
 	mux := http.NewServeMux()
@@ -211,7 +207,7 @@ func run(
 	go func() {
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Err(err).Msg("")
-			health.SetUneady()
+			health.SetUnready()
 			mir_signals.Shutdown()
 		}
 		log.Debug().Msg("http server shutdown")

@@ -40,12 +40,6 @@ type ProtoTlmServer struct {
 // - dp count
 // - number of device schema fetch
 
-// IDEA clean ingesters map for schema refresh after timespan
-// for better schema mng
-
-// Will have to listen to device update event for new
-// data that are saved as tag such as namespace and name
-
 type deviceProtoKey struct {
 	deviceId     string
 	protoMsgName string
@@ -60,21 +54,38 @@ const (
 )
 
 var (
-	uploadMetric = metrics.NewCounter(prometheus.CounterOpts{
-		Name: "upload_schema_counter",
-		Help: "Upload schema",
-	})
+	requestTotal = metrics.NewCounterVec(prometheus.CounterOpts{
+		Subsystem: "tlm",
+		Name:      "request_total",
+		Help:      "Number of request for telemetry routes",
+	}, []string{"route"})
+	requestErrorTotal = metrics.NewCounterVec(prometheus.CounterOpts{
+		Subsystem: "tlm",
+		Name:      "request_error_total",
+		Help:      "Number of error request for telemetry routes",
+	}, []string{"route"})
 	datapointCount = metrics.NewCounter(prometheus.CounterOpts{
-		Name: "datapoint_count",
-		Help: "Number of datapoint fed into protoproxy from nats",
+		Subsystem: "tlm",
+		Name:      "datapoint_count",
+		Help:      "Number of datapoint ingested from devices to tsdb",
 	})
+	datapointErrorCount = metrics.NewCounter(prometheus.CounterOpts{
+		Subsystem: "tlm",
+		Name:      "datapoint_error_count",
+		Help:      "Number of datapoint errors from devices",
+	})
+	ingestersCount = metrics.NewGauge(prometheus.GaugeOpts{
+		Subsystem: "tlm",
+		Name:      "timeseries_ingesters_count",
+		Help:      "Number of ingesters currently loaded",
+	})
+
+	l zerolog.Logger
 )
 
-var l zerolog.Logger
-
-func RegisterMetrics(reg prometheus.Registerer) {
-	reg.Register(uploadMetric)
-	reg.Register(datapointCount)
+func init() {
+	requestTotal.With(prometheus.Labels{"route": "list"}).Add(0)
+	requestErrorTotal.With(prometheus.Labels{"route": "list"}).Add(0)
 }
 
 func NewProtoTlm(logger zerolog.Logger, m *mir.Mir, devStore mng.DeviceStore, tlmStore ts.TelemetryStore) (*ProtoTlmServer, error) {
@@ -111,6 +122,7 @@ func (s *ProtoTlmServer) handleInfluxErrorChannel() {
 					return
 				}
 				l.Error().Err(err).Msg("Error writing to InfluxDB")
+				datapointErrorCount.Inc()
 			case <-s.ctx.Done():
 				return
 			}
@@ -136,7 +148,6 @@ func (s *ProtoTlmServer) Shutdown() error {
 }
 
 func (s *ProtoTlmServer) handleTelemetryStream(msg *mir.Msg, deviceId string, protoMsgName string, data []byte) {
-	// TODO prometheus
 	// TODO set maximum relidelivery in subscribe
 	// TODO handler error with schema if we can't have it.
 	// Nak might just create to many relideveries in case of can't find the schema
@@ -155,6 +166,7 @@ func (s *ProtoTlmServer) handleTelemetryStream(msg *mir.Msg, deviceId string, pr
 		desc, _, dev, err := s.schStore.GetDeviceSchemaAndDescriptor(deviceId, protoMsgName, false)
 		if err != nil {
 			l.Error().Err(err).Str("deviceId", deviceId).Msg("Failed to retrieve schema from device")
+			datapointErrorCount.Inc()
 			return
 		}
 		fn, err := generateIngesters(desc, deviceId, dev)
@@ -164,6 +176,7 @@ func (s *ProtoTlmServer) handleTelemetryStream(msg *mir.Msg, deviceId string, pr
 			l.Warn().Err(err).Str("deviceId", deviceId).Str("protoMsg", protoMsgName).Msg("Failed to generate ingester function, requesting schema from device")
 			desc, _, dev, err := s.schStore.GetDeviceSchemaAndDescriptor(deviceId, protoMsgName, true)
 			if err != nil {
+				datapointErrorCount.Inc()
 				l.Error().Err(err).Str("deviceId", deviceId).Msg("Failed to retrieve schema from device")
 				return
 			}
@@ -182,18 +195,21 @@ func (s *ProtoTlmServer) handleTelemetryStream(msg *mir.Msg, deviceId string, pr
 		}
 		s.devWriters[deviceId][protoMsgName] = fn
 		devWriter = fn
+		ingestersCount.Inc()
 		s.devWritersLock.Unlock()
 	}
 	// TODO update function to return error
 	lp := devWriter(data, map[string]string{})
 	// fmt.Println(lp)
 	s.tlmStore.WriteDatapoint(lp)
+	datapointCount.Inc()
 }
 
 func (s *ProtoTlmServer) handleDeviceUpdate(deviceId string, device mir_models.Device, schema mir_proto.MirProtoSchema) {
 	l.Debug().Str("device_id", deviceId).Msg("device updated, invalidating device ingesters")
 	s.devWritersLock.Lock()
 	delete(s.devWriters, deviceId)
+	ingestersCount.Sub(1)
 	s.devWritersLock.Unlock()
 }
 
@@ -206,9 +222,11 @@ type schemaPerDevices struct {
 
 func (s *ProtoTlmServer) handleTelemetryListRequest(msg *mir.Msg, clientId string, req *tlm_apiv1.SendListTelemetryRequest) ([]*tlm_apiv1.DevicesTelemetry, error) {
 	l.Info().Any("req", req).Msg("list telemetry request")
+	requestTotal.WithLabelValues("list").Inc()
 
 	devs, err := s.devStore.ListDevice(&core_apiv1.ListDeviceRequest{Targets: req.Targets})
 	if err != nil {
+		requestErrorTotal.WithLabelValues("list").Inc()
 		l.Error().Err(err).Msg("error occure while listing devices")
 		return nil, fmt.Errorf("error listing device from db: %w", err)
 	}
@@ -258,6 +276,7 @@ func (s *ProtoTlmServer) handleTelemetryListRequest(msg *mir.Msg, clientId strin
 				DevicesNamens: sch.devsNameNs,
 				Error:         err.Error(),
 			})
+			requestErrorTotal.WithLabelValues("list").Inc()
 			continue
 		}
 
