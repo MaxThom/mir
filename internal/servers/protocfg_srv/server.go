@@ -45,22 +45,59 @@ const (
 )
 
 var (
+	requestTotal = metrics.NewCounterVec(prometheus.CounterOpts{
+		Subsystem: "cfg",
+		Name:      "request_total",
+		Help:      "Number of request for config routes",
+	}, []string{"route"})
+	requestErrorTotal = metrics.NewCounterVec(prometheus.CounterOpts{
+		Subsystem: "cfg",
+		Name:      "request_error_total",
+		Help:      "Number of error request for config routes",
+	}, []string{"route"})
+	deviceCfgSentTotal = metrics.NewCounter(prometheus.CounterOpts{
+		Subsystem: "cfg",
+		Name:      "device_cfg_sent_total",
+		Help:      "Number of config sent to devices",
+	})
+	deviceCfgSentErrorTotal = metrics.NewCounter(prometheus.CounterOpts{
+		Subsystem: "cfg",
+		Name:      "device_cfg_sent_error_total",
+		Help:      "Number of config failed to sent to devices",
+	})
+	deviceDesiredPropsRequestTotal = metrics.NewCounter(prometheus.CounterOpts{
+		Subsystem: "cfg",
+		Name:      "device_desired_props_request_total",
+		Help:      "Total number of desired properties requests from devices",
+	})
+	deviceDesiredPropsRequestErrorTotal = metrics.NewCounter(prometheus.CounterOpts{
+		Subsystem: "cfg",
+		Name:      "device_desired_props_request_error_total",
+		Help:      "Total number of desired properties error requests from devices",
+	})
+	deviceReportedPropsRequestTotal = metrics.NewCounter(prometheus.CounterOpts{
+		Subsystem: "cfg",
+		Name:      "device_reported_props_request_total",
+		Help:      "Total number of reported properties requests from devices",
+	})
+	deviceReportedPropsRequestErrorTotal = metrics.NewCounter(prometheus.CounterOpts{
+		Subsystem: "cfg",
+		Name:      "device_reported_props_request_error_total",
+		Help:      "Total number of reported properties error requests from devices",
+	})
+
 	devMirErrType = devicev1.Error{}
 	devMirErrStr  = string(devMirErrType.ProtoReflect().Descriptor().FullName())
-)
 
-var requestCount = metrics.NewCounterVec(prometheus.CounterOpts{
-	Name: "request_count",
-	Help: "Number of request for core",
-}, []string{"route"})
-
-var (
 	l            zerolog.Logger
 	offlineAfter = time.Second * 30
 )
 
-func RegisterMetrics(reg prometheus.Registerer) {
-	reg.Register(requestCount)
+func init() {
+	requestTotal.With(prometheus.Labels{"route": "list"}).Add(0)
+	requestTotal.With(prometheus.Labels{"route": "send"}).Add(0)
+	requestErrorTotal.With(prometheus.Labels{"route": "list"}).Add(0)
+	requestErrorTotal.With(prometheus.Labels{"route": "send"}).Add(0)
 }
 
 func NewProtoCfg(logger zerolog.Logger, m *mir.Mir, store mng.DeviceStore) (*ProtoCfgServer, error) {
@@ -105,6 +142,7 @@ func (s *ProtoCfgServer) Shutdown() error {
 
 func (s *ProtoCfgServer) listCfgSub(msg *mir.Msg, clientId string, req *cfg_apiv1.SendListConfigRequest) (map[string]*cfg_apiv1.Configs, error) {
 	l.Info().Any("req", req).Msg("list config request")
+	requestTotal.WithLabelValues("list").Inc()
 	// 1. get device list
 	// 2. for each device, get stored schema, if empty, fetch from device
 	// 3. return list of config
@@ -112,6 +150,7 @@ func (s *ProtoCfgServer) listCfgSub(msg *mir.Msg, clientId string, req *cfg_apiv
 	devs, err := s.devStore.ListDevice(&core_apiv1.ListDeviceRequest{Targets: req.Targets})
 	if err != nil {
 		l.Error().Err(err).Msg("error occure while listing devices")
+		requestErrorTotal.WithLabelValues("list").Inc()
 		return nil, fmt.Errorf("error listing devices from db: %w", err)
 	}
 
@@ -156,6 +195,7 @@ func (s *ProtoCfgServer) listCfgSub(msg *mir.Msg, clientId string, req *cfg_apiv
 
 func (s *ProtoCfgServer) sendConfigSub(msg *mir.Msg, clientId string, req *cfg_apiv1.SendConfigRequest) (*cfg_apiv1.SendConfigResponse_ConfigResponses, error) {
 	l.Info().Any("req", req).Msg("send config request")
+	requestTotal.WithLabelValues("send").Inc()
 
 	errs := []string{}
 	if req.Targets == nil ||
@@ -177,6 +217,7 @@ func (s *ProtoCfgServer) sendConfigSub(msg *mir.Msg, clientId string, req *cfg_a
 	}
 	if len(errs) > 0 {
 		l.Error().Err(fmt.Errorf("%w: %s", mir_models.ErrorBadRequest, strings.Join(errs, ", "))).Msg("")
+		requestErrorTotal.WithLabelValues("send").Inc()
 		return nil, fmt.Errorf("%w: %s", mir_models.ErrorBadRequest, errs)
 	}
 	// If command was specified with labels
@@ -187,6 +228,7 @@ func (s *ProtoCfgServer) sendConfigSub(msg *mir.Msg, clientId string, req *cfg_a
 	resp, err := s.sendConfigToDevices(req)
 	if err != nil {
 		l.Error().Err(err).Msg("error occure while processing send config request")
+		requestErrorTotal.WithLabelValues("send").Inc()
 		return nil, fmt.Errorf("error sending config to devices: %w", err)
 	}
 
@@ -224,6 +266,7 @@ func (s *ProtoCfgServer) sendConfigToDevices(req *cfg_apiv1.SendConfigRequest) (
 		msgReqDesc, _, _, err := s.schStore.GetDeviceSchemaAndDescriptor(dev.Spec.DeviceId, req.Name, req.RefreshSchema)
 		if err != nil {
 			l.Error().Err(err).Str("device_id", dev.Spec.DeviceId).Msg("error retrieving config descriptor from device schema")
+			deviceCfgSentErrorTotal.Inc()
 			devResp[dev.GetNameNamespace()] = &cfg_apiv1.SendConfigResponse_ConfigResponse{
 				DeviceId: dev.Spec.DeviceId,
 				Status:   cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_ERROR,
@@ -237,6 +280,7 @@ func (s *ProtoCfgServer) sendConfigToDevices(req *cfg_apiv1.SendConfigRequest) (
 			tpl, err := json_template.GenerateTemplate(msgReqDesc.(protoreflect.MessageDescriptor), json_template.Options{})
 			if err != nil {
 				l.Error().Err(err).Str("device_id", dev.Spec.DeviceId).Msg("error generating config template from device schema")
+				deviceCfgSentErrorTotal.Inc()
 				devResp[dev.GetNameNamespace()] = &cfg_apiv1.SendConfigResponse_ConfigResponse{
 					DeviceId: dev.Spec.DeviceId,
 					Status:   cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_ERROR,
@@ -256,6 +300,7 @@ func (s *ProtoCfgServer) sendConfigToDevices(req *cfg_apiv1.SendConfigRequest) (
 			if v, ok := dev.Properties.Desired[req.Name]; ok {
 				b, err = json.Marshal(v)
 				if err != nil {
+					deviceCfgSentErrorTotal.Inc()
 					devResp[dev.GetNameNamespace()] = &cfg_apiv1.SendConfigResponse_ConfigResponse{
 						DeviceId: dev.Spec.DeviceId,
 						Status:   cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_ERROR,
@@ -268,6 +313,7 @@ func (s *ProtoCfgServer) sendConfigToDevices(req *cfg_apiv1.SendConfigRequest) (
 				b, err = json_template.GenerateTemplate(msgReqDesc.(protoreflect.MessageDescriptor), json_template.Options{})
 				if err != nil {
 					l.Error().Err(err).Str("device_id", dev.Spec.DeviceId).Msg("error generating config template from device schema")
+					deviceCfgSentErrorTotal.Inc()
 					devResp[dev.GetNameNamespace()] = &cfg_apiv1.SendConfigResponse_ConfigResponse{
 						DeviceId: dev.Spec.DeviceId,
 						Status:   cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_ERROR,
@@ -314,6 +360,7 @@ func (s *ProtoCfgServer) sendConfigToDevices(req *cfg_apiv1.SendConfigRequest) (
 		}
 		if err != nil {
 			l.Error().Err(err).Str("device_id", dev.Spec.DeviceId).Msg("error unmarshaling payload")
+			deviceCfgSentErrorTotal.Inc()
 			devResp[dev.GetNameNamespace()] = &cfg_apiv1.SendConfigResponse_ConfigResponse{
 				DeviceId: dev.Spec.DeviceId,
 				Status:   cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_ERROR,
@@ -328,6 +375,7 @@ func (s *ProtoCfgServer) sendConfigToDevices(req *cfg_apiv1.SendConfigRequest) (
 			new, err := minifyJSON(jsonPayload)
 			if err != nil {
 				l.Error().Err(err).Str("device_id", dev.Spec.DeviceId).Msg("error minifying json")
+				deviceCfgSentErrorTotal.Inc()
 				devResp[dev.GetNameNamespace()] = &cfg_apiv1.SendConfigResponse_ConfigResponse{
 					DeviceId: dev.Spec.DeviceId,
 					Status:   cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_ERROR,
@@ -339,6 +387,7 @@ func (s *ProtoCfgServer) sendConfigToDevices(req *cfg_apiv1.SendConfigRequest) (
 			old, err := json.Marshal(dev.Properties.Desired[string(msgReqDesc.FullName())])
 			if err != nil {
 				l.Error().Err(err).Str("device_id", dev.Spec.DeviceId).Msg("error unmarshaling device current config")
+				deviceCfgSentErrorTotal.Inc()
 				devResp[dev.GetNameNamespace()] = &cfg_apiv1.SendConfigResponse_ConfigResponse{
 					DeviceId: dev.Spec.DeviceId,
 					Status:   cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_ERROR,
@@ -399,6 +448,7 @@ func (s *ProtoCfgServer) sendConfigToDevices(req *cfg_apiv1.SendConfigRequest) (
 			props, err := structpb.NewStruct(p.mapPayload)
 			if err != nil {
 				l.Error().Err(err).Str("device_id", p.deviceId).Msg("error marshalling properties to pbstruct")
+				deviceCfgSentErrorTotal.Inc()
 				devResp[nameNs] = &cfg_apiv1.SendConfigResponse_ConfigResponse{
 					DeviceId: p.deviceId,
 					Status:   cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_ERROR,
@@ -426,6 +476,7 @@ func (s *ProtoCfgServer) sendConfigToDevices(req *cfg_apiv1.SendConfigRequest) (
 			})
 			if err != nil {
 				l.Error().Err(err).Str("device_id", p.deviceId).Msg("error updating device properties in store")
+				deviceCfgSentErrorTotal.Inc()
 				devResp[nameNs] = &cfg_apiv1.SendConfigResponse_ConfigResponse{
 					DeviceId: p.deviceId,
 					Status:   cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_ERROR,
@@ -445,6 +496,7 @@ func (s *ProtoCfgServer) sendConfigToDevices(req *cfg_apiv1.SendConfigRequest) (
 			}, p.time)
 			if err != nil {
 				l.Error().Err(err).Str("device_id", p.deviceId).Msg("error during sent config request to device")
+				deviceCfgSentErrorTotal.Inc()
 				devResp[nameNs] = &cfg_apiv1.SendConfigResponse_ConfigResponse{
 					DeviceId: p.deviceId,
 					Status:   cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_ERROR,
@@ -452,6 +504,7 @@ func (s *ProtoCfgServer) sendConfigToDevices(req *cfg_apiv1.SendConfigRequest) (
 				}
 				return
 			}
+			deviceCfgSentTotal.Inc()
 
 			dt := dev[0].Properties.Desired[req.Name].(map[string]interface{})
 			byteResp, err := json.Marshal(dt)
@@ -472,6 +525,7 @@ func (s *ProtoCfgServer) sendConfigToDevices(req *cfg_apiv1.SendConfigRequest) (
 				}
 				if err != nil {
 					l.Error().Err(err).Str("device_id", p.deviceId).Msg("error marshalling properties to protobuf")
+					deviceCfgSentErrorTotal.Inc()
 					devResp[nameNs] = &cfg_apiv1.SendConfigResponse_ConfigResponse{
 						DeviceId: p.deviceId,
 						Status:   cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_ERROR,
@@ -492,15 +546,18 @@ func (s *ProtoCfgServer) sendConfigToDevices(req *cfg_apiv1.SendConfigRequest) (
 }
 
 func (s *ProtoCfgServer) reportedPropsSub(msg *mir.Msg, deviceId string, msgName string, data []byte) {
+	deviceReportedPropsRequestTotal.Inc()
 	msgDesc, _, _, err := s.schStore.GetDeviceSchemaAndDescriptor(deviceId, msgName, false)
 	if err != nil {
 		l.Error().Err(err).Str("device_id", deviceId).Msg("error retrieving config descriptor from device schema")
+		deviceReportedPropsRequestErrorTotal.Inc()
 		return
 	}
 
 	msgProto := dynamicpb.NewMessage(msgDesc.(protoreflect.MessageDescriptor))
 	if err = proto.Unmarshal(data, msgProto); err != nil {
 		l.Error().Err(err).Str("device_id", deviceId).Msg("error unmarshaling reported properties")
+		deviceReportedPropsRequestErrorTotal.Inc()
 		return
 	}
 
@@ -508,11 +565,13 @@ func (s *ProtoCfgServer) reportedPropsSub(msg *mir.Msg, deviceId string, msgName
 	msgJson, err := opts.Marshal(msgProto)
 	if err != nil {
 		l.Error().Err(err).Str("device_id", deviceId).Msg("error marshaling reported properties to JSON")
+		deviceReportedPropsRequestErrorTotal.Inc()
 		return
 	}
 	msgMap := make(map[string]interface{})
 	if err = json.Unmarshal(msgJson, &msgMap); err != nil {
 		l.Error().Err(err).Str("device_id", deviceId).Msg("error unmarshaling reported properties to map")
+		deviceReportedPropsRequestErrorTotal.Inc()
 		return
 	}
 	timeNow := time.Now().UTC()
@@ -534,6 +593,7 @@ func (s *ProtoCfgServer) reportedPropsSub(msg *mir.Msg, deviceId string, msgName
 	jsonRaw, err := json.Marshal(msgMap)
 	if err != nil {
 		l.Error().Err(err).Str("device_id", deviceId).Msg("error marshaling reported properties to JSON")
+		deviceReportedPropsRequestErrorTotal.Inc()
 		return
 	}
 
@@ -546,6 +606,7 @@ func (s *ProtoCfgServer) reportedPropsSub(msg *mir.Msg, deviceId string, msgName
 	)
 	if err != nil {
 		l.Error().Err(err).Str("device_id", deviceId).Msg("error updating device properties in store")
+		deviceReportedPropsRequestErrorTotal.Inc()
 		return
 	}
 	if len(dev) > 0 {
@@ -556,6 +617,7 @@ func (s *ProtoCfgServer) reportedPropsSub(msg *mir.Msg, deviceId string, msgName
 }
 
 func (s *ProtoCfgServer) desiredPropsSub(msg *mir.Msg, deviceId string) (*device_apiv1.ReportedProperties, error) {
+	deviceDesiredPropsRequestTotal.Inc()
 	devs, err := s.devStore.ListDevice(&core_apiv1.ListDeviceRequest{
 		Targets: &core_apiv1.Targets{
 			Ids: []string{deviceId},
@@ -563,10 +625,12 @@ func (s *ProtoCfgServer) desiredPropsSub(msg *mir.Msg, deviceId string) (*device
 	})
 	if err != nil {
 		l.Error().Err(err).Str("device_id", deviceId).Msg("error listing device from db")
+		deviceDesiredPropsRequestErrorTotal.Inc()
 		return &device_apiv1.ReportedProperties{}, err
 	}
 	if len(devs) == 0 {
 		l.Error().Str("device_id", deviceId).Msg("device not found in store")
+		deviceDesiredPropsRequestErrorTotal.Inc()
 		return &device_apiv1.ReportedProperties{}, mng.ErrorNoDeviceFound
 	}
 	dev := devs[0]
@@ -574,6 +638,7 @@ func (s *ProtoCfgServer) desiredPropsSub(msg *mir.Msg, deviceId string) (*device
 	devSch, _, err := s.schStore.GetDeviceSchema(deviceId, false)
 	if err != nil {
 		l.Error().Err(err).Str("device_id", deviceId).Msg("error retrieving device schema")
+		deviceDesiredPropsRequestErrorTotal.Inc()
 		return &device_apiv1.ReportedProperties{}, err
 	}
 
@@ -585,6 +650,7 @@ func (s *ProtoCfgServer) desiredPropsSub(msg *mir.Msg, deviceId string) (*device
 	cfgDescs, err := devSch.GetConfigList(nil)
 	if err != nil {
 		l.Error().Str("device_id", deviceId).Err(err).Msg("error getting config list")
+		deviceDesiredPropsRequestErrorTotal.Inc()
 		return &device_apiv1.ReportedProperties{}, err
 	}
 
@@ -600,6 +666,7 @@ func (s *ProtoCfgServer) desiredPropsSub(msg *mir.Msg, deviceId string) (*device
 		desc, devSch, err = s.schStore.FindMessageDescriptor(deviceId, devSch, cfgDesc.Name)
 		if err != nil {
 			l.Error().Err(err).Str("device_id", deviceId).Str("msg_name", cfgDesc.Name).Msg("error finding descriptor in device schema")
+			deviceDesiredPropsRequestErrorTotal.Inc()
 			continue
 		}
 
@@ -611,6 +678,7 @@ func (s *ProtoCfgServer) desiredPropsSub(msg *mir.Msg, deviceId string) (*device
 			jsonRaw, err = json.Marshal(props)
 			if err != nil {
 				l.Error().Err(err).Str("device_id", deviceId).Str("msg_name", cfgDesc.Name).Msg("error marshaling desired properties to JSON")
+				deviceDesiredPropsRequestErrorTotal.Inc()
 				continue
 			}
 
@@ -624,12 +692,14 @@ func (s *ProtoCfgServer) desiredPropsSub(msg *mir.Msg, deviceId string) (*device
 			)
 			if err != nil {
 				l.Error().Err(err).Str("device_id", deviceId).Msg("error marshaling default reported properties to JSON")
+				deviceDesiredPropsRequestErrorTotal.Inc()
 				continue
 			}
 
 			msgMap := make(map[string]interface{})
 			if err = json.Unmarshal(jsonRaw, &msgMap); err != nil {
 				l.Error().Err(err).Str("device_id", deviceId).Msg("error unmarshaling reported properties to map")
+				deviceDesiredPropsRequestErrorTotal.Inc()
 				continue
 			}
 
@@ -641,11 +711,14 @@ func (s *ProtoCfgServer) desiredPropsSub(msg *mir.Msg, deviceId string) (*device
 
 		msg := dynamicpb.NewMessage(desc.(protoreflect.MessageDescriptor))
 		if err = protojson.Unmarshal(jsonRaw, msg); err != nil {
+			deviceDesiredPropsRequestErrorTotal.Inc()
 			l.Error().Err(err).Str("device_id", deviceId).Str("msg_name", cfgDesc.Name).Msg("error unmarshaling desired properties")
+			continue
 		}
 		protoRaw, err := proto.Marshal(msg)
 		if err != nil {
 			l.Error().Err(err).Str("device_id", deviceId).Str("msg_name", cfgDesc.Name).Msg("error marshaling desired properties to protobuf")
+			deviceDesiredPropsRequestErrorTotal.Inc()
 			continue
 		}
 		desiredProps.Properties[cfgDesc.Name] = &device_apiv1.Properties{
@@ -658,6 +731,7 @@ func (s *ProtoCfgServer) desiredPropsSub(msg *mir.Msg, deviceId string) (*device
 		props, err := structpb.NewStruct(missingCfg)
 		if err != nil {
 			l.Error().Err(err).Str("device_id", deviceId).Msg("error marshalling properties to pbstruct")
+			deviceDesiredPropsRequestErrorTotal.Inc()
 		} else {
 			devs, err := s.devStore.UpdateDevice(&core_apiv1.UpdateDeviceRequest{
 				Targets: &core_apiv1.Targets{
@@ -674,6 +748,7 @@ func (s *ProtoCfgServer) desiredPropsSub(msg *mir.Msg, deviceId string) (*device
 			})
 			if err != nil {
 				l.Error().Err(err).Str("device_id", deviceId).Msg("error updating device properties in store")
+				deviceDesiredPropsRequestErrorTotal.Inc()
 			} else {
 				if len(devs) > 0 {
 					dev = devs[0]

@@ -2,21 +2,42 @@ package health
 
 import (
 	"net/http"
+
+	"github.com/maxthom/mir/internal/libs/api/metrics"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 var (
 	isReady bool
+
+	readyStatus = metrics.NewGauge(prometheus.GaugeOpts{
+		Subsystem: "health",
+		Name:      "ready",
+		Help:      "Status of readiness of running process",
+	})
+	aliveStatus = metrics.NewGauge(prometheus.GaugeOpts{
+		Subsystem: "health",
+		Name:      "alive",
+		Help:      "Status of aliveness of running process",
+	})
 )
+
+func init() {
+	aliveStatus.Set(1)
+	readyStatus.Set(0)
+}
 
 func IsReady() bool {
 	return isReady
 }
 
 func SetReady() {
+	readyStatus.Set(1)
 	isReady = true
 }
 
-func SetUneady() {
+func SetUnready() {
+	readyStatus.Set(0)
 	isReady = false
 }
 

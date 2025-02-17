@@ -39,25 +39,38 @@ const (
 )
 
 var (
-	uploadMetric = metrics.NewCounter(prometheus.CounterOpts{
-		Name: "upload_schema_counter",
-		Help: "Upload schema",
+	requestTotal = metrics.NewCounterVec(prometheus.CounterOpts{
+		Subsystem: "cmd",
+		Name:      "request_total",
+		Help:      "Number of request for commands routes",
+	}, []string{"route"})
+	requestErrorTotal = metrics.NewCounterVec(prometheus.CounterOpts{
+		Subsystem: "cmd",
+		Name:      "request_error_total",
+		Help:      "Number of error request for commands routes",
+	}, []string{"route"})
+	deviceCmdSentTotal = metrics.NewCounter(prometheus.CounterOpts{
+		Subsystem: "cmd",
+		Name:      "device_cmd_sent_total",
+		Help:      "Number of commands sent to devices",
 	})
-	datapointCount = metrics.NewCounter(prometheus.CounterOpts{
-		Name: "datapoint_count",
-		Help: "Number of datapoint fed into protoproxy from nats",
+	deviceCmdSentErrorTotal = metrics.NewCounter(prometheus.CounterOpts{
+		Subsystem: "cmd",
+		Name:      "device_cmd_sent_error_total",
+		Help:      "Number of commands failed to sent to devices",
 	})
-)
 
-var l zerolog.Logger
-var (
 	devMirErrType = devicev1.Error{}
 	devMirErrStr  = string(devMirErrType.ProtoReflect().Descriptor().FullName())
+
+	l zerolog.Logger
 )
 
-func RegisterMetrics(reg prometheus.Registerer) {
-	reg.Register(uploadMetric)
-	reg.Register(datapointCount)
+func init() {
+	requestTotal.With(prometheus.Labels{"route": "list"}).Add(0)
+	requestTotal.With(prometheus.Labels{"route": "send"}).Add(0)
+	requestErrorTotal.With(prometheus.Labels{"route": "list"}).Add(0)
+	requestErrorTotal.With(prometheus.Labels{"route": "send"}).Add(0)
 }
 
 func NewProtoCmd(logger zerolog.Logger, m *mir.Mir, devStore mng.DeviceStore) (*ProtoCmdServer, error) {
@@ -89,6 +102,7 @@ func (s *ProtoCmdServer) Shutdown() error {
 
 func (s *ProtoCmdServer) sendCommandSub(msg *mir.Msg, clientId string, req *cmd_apiv1.SendCommandRequest) (*cmd_apiv1.SendCommandResponse_CommandResponses, error) {
 	l.Info().Any("req", req).Msg("send command request")
+	requestTotal.WithLabelValues("send").Inc()
 
 	errs := []string{}
 	if req.Targets == nil ||
@@ -110,6 +124,7 @@ func (s *ProtoCmdServer) sendCommandSub(msg *mir.Msg, clientId string, req *cmd_
 	}
 	if len(errs) > 0 {
 		l.Error().Err(fmt.Errorf("%w: %s", mir_models.ErrorBadRequest, strings.Join(errs, ", "))).Msg("")
+		requestErrorTotal.WithLabelValues("send").Inc()
 		return nil, fmt.Errorf("%w: %s", mir_models.ErrorBadRequest, errs)
 	}
 	// If command was specified with labels
@@ -120,6 +135,7 @@ func (s *ProtoCmdServer) sendCommandSub(msg *mir.Msg, clientId string, req *cmd_
 	resp, err := s.sendCommandToDevices(req)
 	if err != nil {
 		l.Error().Err(err).Msg("error occure while processing send command request")
+		requestErrorTotal.WithLabelValues("send").Inc()
 		return nil, fmt.Errorf("error sending command to devices: %w", err)
 	}
 
@@ -162,6 +178,7 @@ func (s *ProtoCmdServer) sendCommandToDevices(req *cmd_apiv1.SendCommandRequest)
 					Error:    errors.Wrap(err, "error retrieve command descriptor from device schema").Error(),
 				}
 				devInError = true
+				deviceCmdSentErrorTotal.Inc()
 				continue
 			}
 
@@ -169,6 +186,7 @@ func (s *ProtoCmdServer) sendCommandToDevices(req *cmd_apiv1.SendCommandRequest)
 				tpl, err := json_template.GenerateTemplate(msgReqDesc.(protoreflect.MessageDescriptor), json_template.Options{})
 				if err != nil {
 					l.Error().Err(err).Str("device_id", dev.Spec.DeviceId).Msg("error generating command template from device schema")
+					deviceCmdSentErrorTotal.Inc()
 					devResp[dev.GetNameNamespace()] = &cmd_apiv1.SendCommandResponse_CommandResponse{
 						DeviceId: dev.Spec.DeviceId,
 						Status:   cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_ERROR,
@@ -199,6 +217,7 @@ func (s *ProtoCmdServer) sendCommandToDevices(req *cmd_apiv1.SendCommandRequest)
 			}
 			if err != nil {
 				l.Error().Err(err).Str("device_id", dev.Spec.DeviceId).Msg("error unmarshaling payload")
+				deviceCmdSentErrorTotal.Inc()
 				devResp[dev.GetNameNamespace()] = &cmd_apiv1.SendCommandResponse_CommandResponse{
 					DeviceId: dev.Spec.DeviceId,
 					Status:   cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_ERROR,
@@ -253,6 +272,7 @@ func (s *ProtoCmdServer) sendCommandToDevices(req *cmd_apiv1.SendCommandRequest)
 			}, timeout)
 			if err != nil {
 				l.Error().Err(err).Str("device_id", p.deviceId).Msg("error during sent command request to device")
+				deviceCmdSentErrorTotal.Inc()
 				devResp[nameNs] = &cmd_apiv1.SendCommandResponse_CommandResponse{
 					DeviceId: p.deviceId,
 					Status:   cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_ERROR,
@@ -260,12 +280,14 @@ func (s *ProtoCmdServer) sendCommandToDevices(req *cmd_apiv1.SendCommandRequest)
 				}
 				return
 			}
+			deviceCmdSentTotal.Inc()
 
 			l.Debug().Str("device_id", p.deviceId).Msgf("received command response from device")
 			respPayload := cmdResp.Payload
 			if cmdResp.Name == devMirErrStr {
 				var errPl devicev1.Error
 				if err = proto.Unmarshal(respPayload, &errPl); err != nil {
+					deviceCmdSentErrorTotal.Inc()
 					l.Error().Err(err).Str("device_id", p.deviceId).Msg("error unmarshaling error payload")
 					devResp[nameNs].Error = fmt.Errorf("error unmarshaling error payload: %w", err).Error()
 				} else {
@@ -280,6 +302,7 @@ func (s *ProtoCmdServer) sendCommandToDevices(req *cmd_apiv1.SendCommandRequest)
 				msgRespDesc, _, _, err := s.schStore.GetDeviceSchemaAndDescriptor(p.deviceId, cmdResp.Name, false)
 				if err != nil {
 					l.Error().Err(err).Str("device_id", p.deviceId).Msg("error finding command response in schema")
+					deviceCmdSentErrorTotal.Inc()
 					devResp[nameNs] = &cmd_apiv1.SendCommandResponse_CommandResponse{
 						DeviceId: p.deviceId,
 						Status:   cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_ERROR,
@@ -291,6 +314,7 @@ func (s *ProtoCmdServer) sendCommandToDevices(req *cmd_apiv1.SendCommandRequest)
 				err = proto.Unmarshal(respPayload, msgResp)
 				if err != nil {
 					l.Error().Err(err).Str("device_id", p.deviceId).Msg("error unmarshaling payload of command reponse")
+					deviceCmdSentErrorTotal.Inc()
 					devResp[nameNs] = &cmd_apiv1.SendCommandResponse_CommandResponse{
 						DeviceId: p.deviceId,
 						Status:   cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_ERROR,
@@ -302,6 +326,7 @@ func (s *ProtoCmdServer) sendCommandToDevices(req *cmd_apiv1.SendCommandRequest)
 					respPayload, err = protojson.Marshal(msgResp)
 					if err != nil {
 						l.Error().Err(err).Str("device_id", p.deviceId).Msg("error marshaling proto payload to json")
+						deviceCmdSentErrorTotal.Inc()
 						devResp[nameNs] = &cmd_apiv1.SendCommandResponse_CommandResponse{
 							DeviceId: p.deviceId,
 							Status:   cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_ERROR,
@@ -331,6 +356,7 @@ func (s *ProtoCmdServer) sendCommandToDevices(req *cmd_apiv1.SendCommandRequest)
 
 func (s *ProtoCmdServer) listCommandsSub(msg *mir.Msg, clientId string, req *cmd_apiv1.SendListCommandsRequest) (map[string]*cmd_apiv1.Commands, error) {
 	l.Info().Any("req", req).Msg("list command request")
+	requestTotal.WithLabelValues("list").Inc()
 	// 1. get device list
 	// 2. for each device, get stored schema, if empty, fetch from device
 	// 3. return list of commands
@@ -338,6 +364,7 @@ func (s *ProtoCmdServer) listCommandsSub(msg *mir.Msg, clientId string, req *cmd
 	devs, err := s.devStore.ListDevice(&core_apiv1.ListDeviceRequest{Targets: req.Targets})
 	if err != nil {
 		l.Error().Err(err).Msg("error occure while listing devices")
+		requestErrorTotal.WithLabelValues("list").Inc()
 		return nil, fmt.Errorf("error listing devices from db: %w", err)
 	}
 

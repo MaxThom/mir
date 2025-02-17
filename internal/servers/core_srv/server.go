@@ -50,18 +50,38 @@ const (
 	ServiceName = "mir_core"
 )
 
-var requestCount = metrics.NewCounterVec(prometheus.CounterOpts{
-	Name: "request_count",
-	Help: "Number of request for core",
-}, []string{"route"})
-
 var (
+	requestTotal = metrics.NewCounterVec(prometheus.CounterOpts{
+		Subsystem: "core",
+		Name:      "request_total",
+		Help:      "Number of request for core",
+	}, []string{"route"})
+	requestErrorTotal = metrics.NewCounterVec(prometheus.CounterOpts{
+		Subsystem: "core",
+		Name:      "request_error_total",
+		Help:      "Number of error request for core",
+	}, []string{"route"})
+	deviceStatusCount = metrics.NewGaugeVec(prometheus.GaugeOpts{
+		Subsystem: "core",
+		Name:      "device_status_count",
+		Help:      "Number of devices online or offline",
+	}, []string{"status"})
+
 	l            zerolog.Logger
 	offlineAfter = time.Second * 30
 )
 
-func RegisterMetrics(reg prometheus.Registerer) {
-	reg.Register(requestCount)
+func init() {
+	requestTotal.With(prometheus.Labels{"route": "list"}).Add(0)
+	requestTotal.With(prometheus.Labels{"route": "create"}).Add(0)
+	requestTotal.With(prometheus.Labels{"route": "update"}).Add(0)
+	requestTotal.With(prometheus.Labels{"route": "delete"}).Add(0)
+	requestErrorTotal.With(prometheus.Labels{"route": "list"}).Add(0)
+	requestErrorTotal.With(prometheus.Labels{"route": "create"}).Add(0)
+	requestErrorTotal.With(prometheus.Labels{"route": "update"}).Add(0)
+	requestErrorTotal.With(prometheus.Labels{"route": "delete"}).Add(0)
+	deviceStatusCount.With(prometheus.Labels{"status": "online"}).Add(0)
+	deviceStatusCount.With(prometheus.Labels{"status": "offline"}).Add(0)
 }
 
 func NewCore(logger zerolog.Logger, m *mir.Mir, store mng.DeviceStore) (*CoreServer, error) {
@@ -83,6 +103,9 @@ func NewCore(logger zerolog.Logger, m *mir.Mir, store mng.DeviceStore) (*CoreSer
 		// If a device becomes offline, it's removed from the map
 		if d.Status.Online {
 			hearbeats[d.Spec.DeviceId] = d.Status.LastHearthbeat
+			deviceStatusCount.WithLabelValues("online").Inc()
+		} else {
+			deviceStatusCount.WithLabelValues("offline").Inc()
 		}
 	}
 
@@ -134,10 +157,12 @@ func (s *CoreServer) Shutdown() error {
 
 func (s *CoreServer) createDeviceSub(msg *mir.Msg, clientId string, req *core_apiv1.CreateDeviceRequest) (*core_apiv1.Device, error) {
 	l.Debug().Str("route", "create").Str("payload", fmt.Sprintf("%v", req)).Msg("new device request")
+	requestTotal.WithLabelValues("create").Inc()
 
 	newDev, err := s.store.CreateDevice(req)
 	if err != nil {
 		l.Error().Err(err).Msg("error occure while creating device")
+		requestErrorTotal.WithLabelValues("create").Inc()
 		return nil, fmt.Errorf("error creating device: %w", err)
 	}
 
@@ -151,6 +176,7 @@ func (s *CoreServer) createDeviceSub(msg *mir.Msg, clientId string, req *core_ap
 
 func (s *CoreServer) updateDeviceSub(msg *mir.Msg, clientId string, req *core_apiv1.UpdateDeviceRequest) ([]*core_apiv1.Device, error) {
 	l.Debug().Str("route", "update").Str("payload", fmt.Sprintf("%v", req)).Msg("update device request")
+	requestTotal.WithLabelValues("update").Inc()
 
 	// Send config to cfg module
 	// We do it twice, one with dry run to validate the config
@@ -181,6 +207,7 @@ func (s *CoreServer) updateDeviceSub(msg *mir.Msg, clientId string, req *core_ap
 			}
 		}
 		if errs != nil {
+			requestErrorTotal.WithLabelValues("update").Inc()
 			return nil, errs
 		}
 
@@ -202,14 +229,17 @@ func (s *CoreServer) updateDeviceSub(msg *mir.Msg, clientId string, req *core_ap
 			resp, err := s.m.Server().CreateDevice().Request(mir_models.NewCreateDeviceReqFromDeviceUpdateRequest(req))
 			if err != nil {
 				l.Error().Err(err).Msg("error creating device")
+				requestErrorTotal.WithLabelValues("update").Inc()
 				return nil, fmt.Errorf("error creating device: %w", err)
 			}
 			l.Info().Str("route", "device_update").Str("device_id", resp.Spec.DeviceId).Msg("new device created from update (upsert)")
 			respDb = []mir_models.Device{resp}
 		} else if errors.Is(err, mir_models.ErrorNoDeviceTargetProvided) {
+			requestErrorTotal.WithLabelValues("update").Inc()
 			l.Error().Err(err).Msg("error no target found")
 			return nil, fmt.Errorf("error no target found: %w", err)
 		} else {
+			requestErrorTotal.WithLabelValues("update").Inc()
 			l.Error().Err(err).Msg("error updating device")
 			return nil, fmt.Errorf("error updating device: %w", err)
 		}
@@ -228,10 +258,12 @@ func (s *CoreServer) updateDeviceSub(msg *mir.Msg, clientId string, req *core_ap
 
 func (s *CoreServer) deleteDeviceSub(msg *mir.Msg, clientId string, req *core_apiv1.DeleteDeviceRequest) ([]*core_apiv1.Device, error) {
 	l.Debug().Str("route", "delete").Str("payload", fmt.Sprintf("%v", req)).Msg("delete device request")
+	requestTotal.WithLabelValues("delete").Inc()
 
 	devList, err := s.store.DeleteDevice(req)
 	if err != nil {
 		if errors.Is(err, mir_models.ErrorNoDeviceTargetProvided) {
+			requestErrorTotal.WithLabelValues("delete").Inc()
 			return nil, fmt.Errorf("error no target found: %w", err)
 		}
 		l.Error().Err(err).Msg("error occure while executing delete device request")
@@ -250,9 +282,11 @@ func (s *CoreServer) deleteDeviceSub(msg *mir.Msg, clientId string, req *core_ap
 
 func (s *CoreServer) listDeviceSub(msg *mir.Msg, clientId string, req *core_apiv1.ListDeviceRequest) ([]*core_apiv1.Device, error) {
 	l.Debug().Str("route", "list").Str("payload", fmt.Sprintf("%v", req)).Msg("list device request")
+	requestTotal.WithLabelValues("list").Inc()
 
 	respDb, err := s.store.ListDevice(req)
 	if err != nil {
+		requestErrorTotal.WithLabelValues("list").Inc()
 		l.Error().Err(err).Msg("error occure while executing a db query")
 		return nil, fmt.Errorf("error listing device: %w", err)
 	}
@@ -301,6 +335,8 @@ func (s *CoreServer) hearthbeatPulsor(ctx context.Context, interval time.Duratio
 					}
 					delete(s.hearthbeats, d.Spec.DeviceId)
 				}
+				deviceStatusCount.WithLabelValues("offline").Add(float64(len(devs)))
+				deviceStatusCount.WithLabelValues("online").Sub(float64(len(devs)))
 				s.hearthbeatsMutex.Unlock()
 			}
 
@@ -354,6 +390,7 @@ func (s *CoreServer) hearthbeatSub(msg *mir.Msg, deviceId string) {
 			msg.Ack()
 			return
 		}
+		deviceStatusCount.WithLabelValues("offline").Inc()
 	}
 
 	if _, ok := s.hearthbeats[deviceId]; !ok && len(dev) > 0 {
@@ -362,6 +399,8 @@ func (s *CoreServer) hearthbeatSub(msg *mir.Msg, deviceId string) {
 		if err != nil {
 			l.Warn().Err(err).Str("device_id", deviceId).Msg("error occure while publishing device online event")
 		}
+		deviceStatusCount.WithLabelValues("online").Inc()
+		deviceStatusCount.WithLabelValues("offline").Sub(1)
 	}
 	s.hearthbeatsMutex.Lock()
 	s.hearthbeats[deviceId] = time.Now().UTC()

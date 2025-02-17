@@ -7,15 +7,42 @@ import (
 
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
 
+	"github.com/maxthom/mir/internal/libs/api/metrics"
 	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-var l zerolog.Logger
+var (
+	schemaCacheCount = metrics.NewGauge(prometheus.GaugeOpts{
+		Subsystem: "schemastore",
+		Name:      "schema_cache_count",
+		Help:      "Number of proto schema in cache",
+	})
+	schemaReconcileTotal = metrics.NewCounterVec(prometheus.CounterOpts{
+		Subsystem: "schemastore",
+		Name:      "schema_reconciled_total",
+		Help:      "Number of proto schema reconciled",
+	}, []string{"source"})
+	schemaReconcileErrorTotal = metrics.NewCounter(prometheus.CounterOpts{
+		Subsystem: "schemastore",
+		Name:      "schema_reconciled_error_total",
+		Help:      "Number of proto schema reconciled in error",
+	})
+
+	l zerolog.Logger
+)
+
+func init() {
+	schemaReconcileTotal.With(prometheus.Labels{"source": "database"}).Add(0)
+	schemaReconcileTotal.With(prometheus.Labels{"source": "device"}).Add(0)
+	schemaReconcileTotal.With(prometheus.Labels{"source": "cache"}).Add(0)
+	schemaReconcileTotal.With(prometheus.Labels{"source": "update_sub"}).Add(0)
+}
 
 type MirProtoCache struct {
 	m           *mir.Mir
@@ -59,10 +86,14 @@ func (c *MirProtoCache) GetDeviceSchema(deviceId string, refreshSchema bool) (*m
 			sch: sch,
 		}
 		c.cacheLock.Unlock()
+		schemaCacheCount.Inc()
 		if err != nil {
 			l.Error().Err(err).Str("device_id", deviceId).Msg("cannot reconcile device schema")
+			schemaReconcileErrorTotal.Inc()
 			return nil, mir_models.Device{}, errors.Wrap(err, "cannot reconcile device schema")
 		}
+	} else {
+		schemaReconcileTotal.WithLabelValues("cache").Inc()
 	}
 
 	return c.cache[deviceId].sch, c.cache[deviceId].dev, nil
@@ -114,28 +145,28 @@ func (c *MirProtoCache) reconcileDeviceSchema(deviceId string, forceDeviceFetch 
 	// 2. If not there, fetch from device
 	// 3. Update db
 	// IDEA refresh if last fetch is older then a timespan
-	l.Debug().Str("device_id", deviceId).Msg("device schema not in cache, reconciling...")
-	respList := &core_apiv1.ListDeviceResponse{}
-	devs, err := c.m.Server().ListDevice().Request(
-		&core_apiv1.ListDeviceRequest{
-			Targets: &core_apiv1.Targets{
-				Ids: []string{deviceId},
-			},
-		},
-	)
-	if err != nil {
-		return mir_models.Device{}, nil, fmt.Errorf("error listing devices: %s", respList.GetError())
-	}
-	if len(devs) == 0 {
-		return mir_models.Device{}, nil, fmt.Errorf("device %s not found", deviceId)
-	}
 	if !forceDeviceFetch {
+		l.Debug().Str("device_id", deviceId).Msg("device schema not in cache, reconciling...")
+		devs, err := c.m.Server().ListDevice().Request(
+			&core_apiv1.ListDeviceRequest{
+				Targets: &core_apiv1.Targets{
+					Ids: []string{deviceId},
+				},
+			},
+		)
+		if err != nil {
+			return mir_models.Device{}, nil, fmt.Errorf("error listing devices: %s", err)
+		}
+		if len(devs) == 0 {
+			return mir_models.Device{}, nil, fmt.Errorf("device %s not found", deviceId)
+		}
 		if len(devs) > 0 {
 			if devs[0].Status.Schema.CompressedSchema != nil &&
 				len(devs[0].Status.Schema.CompressedSchema) != 0 {
 				sch, err := mir_proto.DecompressSchema(devs[0].Status.Schema.CompressedSchema)
 				if err == nil {
 					l.Info().Str("device_id", deviceId).Msgf("reconciled schema for %s from db", deviceId)
+					schemaReconcileTotal.WithLabelValues("database").Inc()
 					return devs[0], sch, nil
 				}
 				// If error, we fetch from device
@@ -153,7 +184,7 @@ func (c *MirProtoCache) reconcileDeviceSchema(deviceId string, forceDeviceFetch 
 		return mir_models.Device{}, nil, err
 	}
 
-	_, err = c.m.Server().UpdateDevice().Request(&core_apiv1.UpdateDeviceRequest{
+	devResp, err := c.m.Server().UpdateDevice().Request(&core_apiv1.UpdateDeviceRequest{
 		Targets: &core_apiv1.Targets{
 			Ids: []string{deviceId},
 		},
@@ -169,9 +200,13 @@ func (c *MirProtoCache) reconcileDeviceSchema(deviceId string, forceDeviceFetch 
 	if err != nil {
 		return mir_models.Device{}, nil, fmt.Errorf("error updating device: %w", err)
 	}
+	if len(devResp) == 0 {
+		return mir_models.Device{}, nil, fmt.Errorf("no device found")
+	}
 
+	schemaReconcileTotal.WithLabelValues("device").Inc()
 	l.Info().Str("device_id", deviceId).Msgf("reconciled schema for %s from device", deviceId)
-	return devs[0], sch, err
+	return devResp[0], sch, err
 }
 
 func (c *MirProtoCache) getProtoSchemaFromDevice(deviceId string) (*mir_proto.MirProtoSchema, error) {
@@ -202,6 +237,7 @@ func (c *MirProtoCache) deviceUpdateSub(msg *mir.Msg, deviceId string, device mi
 		sch: sch,
 	}
 	c.cacheLock.Unlock()
+	schemaReconcileTotal.WithLabelValues("update_sub").Inc()
 	for _, fn := range c.subscribers {
 		fn(deviceId, device, *sch)
 	}

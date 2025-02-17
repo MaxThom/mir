@@ -169,7 +169,6 @@ func run(
 	if err != nil {
 		return err
 	}
-	protocmd_srv.RegisterMetrics(metrics.Registry())
 
 	// Metrics & Health
 	mux := http.NewServeMux()
@@ -187,7 +186,7 @@ func run(
 	go func() {
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Err(err).Msg("")
-			health.SetUneady()
+			health.SetUnready()
 			mir_signals.Shutdown()
 		}
 		log.Debug().Msg("http server shutdown")
