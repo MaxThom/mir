@@ -10,24 +10,30 @@ scrape_configs:
   - job_name: "node"
     static_configs:
       - targets: ["localhost:9100"]
-  - job_name: "questdb"
-    static_configs:
-      - targets: ["localhost:9003"]
+  # - job_name: "questdb"
+  #   static_configs:
+  #     - targets: ["localhost:9003"]
   - job_name: "influxdb"
     static_configs:
       - targets: ["localhost:8086"]
   - job_name: "natsio"
     static_configs:
       - targets: ["localhost:7777"]
-  - job_name: "victoriametrics"
+  # - job_name: "victoriametrics"
+  #   static_configs:
+  #     - targets: ["localhost:8428"]
+  - job_name: "mir"
     static_configs:
-      - targets: ["localhost:8428"]
+      - targets: ["localhost:3015"]
   - job_name: "core"
     static_configs:
       - targets: ["localhost:3016"]
-  - job_name: "prototlm"
+  - job_name: "tlm"
     static_configs:
       - targets: ["localhost:3017"]
-  - job_name: "protocmd"
+  - job_name: "cmd"
     static_configs:
       - targets: ["localhost:3018"]
+  - job_name: "cfg"
+    static_configs:
+      - targets: ["localhost:3019"]
