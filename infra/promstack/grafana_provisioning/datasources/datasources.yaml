@@ -7,32 +7,32 @@ datasources:
     access: proxy
     url: http://localhost:9090
     isDefault: true
-  - name: QuestDB
-    uid: mir-questdb
-    typeName: PostgreSQL
-    type: grafana-postgresql-datasource
-    typeLogoUrl: "/public/app/plugins/datasource/grafana-postgresql-datasource/img/postgresql_logo.svg"
-    access: proxy
-    url: localhost:8812
-    user: admin
-    database: ""
-    secureJsonData:
-      password: "quest"
-    jsonData:
-      connMaxLifetime: 14400
-      database: qdb
-      maxIdleConns: 100
-      maxIdleConnsAuto: true
-      maxOpenConns: 100
-      postgresVersion: 1230
-      sslmode: disable
-  - name: VictoriaMetrics
-    type: prometheus
-    access: proxy
-    url: http://localhost:8428
-    isDefault: false
-    jsonData:
-      prometheusType: Prometheus
+  # - name: QuestDB
+  #   uid: mir-questdb
+  #   typeName: PostgreSQL
+  #   type: grafana-postgresql-datasource
+  #   typeLogoUrl: "/public/app/plugins/datasource/grafana-postgresql-datasource/img/postgresql_logo.svg"
+  #   access: proxy
+  #   url: localhost:8812
+  #   user: admin
+  #   database: ""
+  #   secureJsonData:
+  #     password: "quest"
+  #   jsonData:
+  #     connMaxLifetime: 14400
+  #     database: qdb
+  #     maxIdleConns: 100
+  #     maxIdleConnsAuto: true
+  #     maxOpenConns: 100
+  #     postgresVersion: 1230
+  #     sslmode: disable
+  # - name: VictoriaMetrics
+  #   type: prometheus
+  #   access: proxy
+  #   url: http://localhost:8428
+  #   isDefault: false
+  #   jsonData:
+  #     prometheusType: Prometheus
   - name: influxdb
     type: influxdb
     uid: mir-influxdb

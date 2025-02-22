@@ -32,7 +32,7 @@
       "collapsed": false,
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "mir-prometheus"
       },
       "gridPos": {
         "h": 1,
@@ -46,7 +46,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "mir-prometheus"
           },
           "refId": "A"
         }
@@ -57,7 +57,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "mir-prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -124,11 +124,7 @@
       "links": [],
       "options": {
         "legend": {
-          "calcs": [
-            "mean",
-            "lastNotNull",
-            "max"
-          ],
+          "calcs": ["mean", "lastNotNull", "max"],
           "displayMode": "table",
           "placement": "bottom",
           "showLegend": true
@@ -143,7 +139,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "mir-prometheus"
           },
           "editorMode": "code",
           "expr": "gnatsd_varz_mem",
@@ -159,7 +155,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "mir-prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -226,11 +222,7 @@
       "links": [],
       "options": {
         "legend": {
-          "calcs": [
-            "mean",
-            "lastNotNull",
-            "max"
-          ],
+          "calcs": ["mean", "lastNotNull", "max"],
           "displayMode": "table",
           "placement": "bottom",
           "showLegend": true
@@ -245,7 +237,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "mir-prometheus"
           },
           "editorMode": "code",
           "expr": "gnatsd_varz_mem",
@@ -262,7 +254,7 @@
       "collapsed": false,
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "mir-prometheus"
       },
       "gridPos": {
         "h": 1,
@@ -276,7 +268,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "mir-prometheus"
           },
           "refId": "A"
         }
@@ -287,7 +279,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "mir-prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -354,9 +346,7 @@
       "links": [],
       "options": {
         "legend": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "displayMode": "table",
           "placement": "bottom",
           "showLegend": true
@@ -371,7 +361,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "mir-prometheus"
           },
           "editorMode": "code",
           "expr": "gnatsd_varz_in_bytes",
@@ -387,7 +377,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "mir-prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -454,9 +444,7 @@
       "links": [],
       "options": {
         "legend": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "displayMode": "table",
           "placement": "bottom",
           "showLegend": true
@@ -471,7 +459,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "mir-prometheus"
           },
           "editorMode": "code",
           "expr": "gnatsd_varz_in_msgs",
@@ -487,7 +475,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "mir-prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -554,9 +542,7 @@
       "links": [],
       "options": {
         "legend": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "displayMode": "table",
           "placement": "bottom",
           "showLegend": true
@@ -571,7 +557,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "mir-prometheus"
           },
           "editorMode": "code",
           "expr": "gnatsd_varz_out_bytes",
@@ -587,7 +573,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "mir-prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -654,9 +640,7 @@
       "links": [],
       "options": {
         "legend": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "displayMode": "table",
           "placement": "bottom",
           "showLegend": true
@@ -671,7 +655,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "mir-prometheus"
           },
           "editorMode": "code",
           "expr": "gnatsd_varz_out_msgs",
@@ -688,7 +672,7 @@
       "collapsed": false,
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "mir-prometheus"
       },
       "gridPos": {
         "h": 1,
@@ -702,7 +686,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "mir-prometheus"
           },
           "refId": "A"
         }
@@ -713,7 +697,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "mir-prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -781,11 +765,7 @@
       "links": [],
       "options": {
         "legend": {
-          "calcs": [
-            "mean",
-            "lastNotNull",
-            "max"
-          ],
+          "calcs": ["mean", "lastNotNull", "max"],
           "displayMode": "table",
           "placement": "bottom",
           "showLegend": true
@@ -800,7 +780,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "mir-prometheus"
           },
           "editorMode": "code",
           "expr": "gnatsd_varz_connections",
@@ -816,7 +796,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "mir-prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -884,11 +864,7 @@
       "links": [],
       "options": {
         "legend": {
-          "calcs": [
-            "mean",
-            "lastNotNull",
-            "max"
-          ],
+          "calcs": ["mean", "lastNotNull", "max"],
           "displayMode": "table",
           "placement": "bottom",
           "showLegend": true
@@ -903,7 +879,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "mir-prometheus"
           },
           "editorMode": "code",
           "expr": "gnatsd_varz_subscriptions",
@@ -919,7 +895,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "mir-prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -987,11 +963,7 @@
       "links": [],
       "options": {
         "legend": {
-          "calcs": [
-            "mean",
-            "lastNotNull",
-            "max"
-          ],
+          "calcs": ["mean", "lastNotNull", "max"],
           "displayMode": "table",
           "placement": "bottom",
           "showLegend": true
@@ -1006,7 +978,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "mir-prometheus"
           },
           "editorMode": "code",
           "expr": "gnatsd_varz_slow_consumers",
@@ -1043,17 +1015,7 @@
       "2h",
       "1d"
     ],
-    "time_options": [
-      "5m",
-      "15m",
-      "1h",
-      "6h",
-      "12h",
-      "24h",
-      "2d",
-      "7d",
-      "30d"
-    ]
+    "time_options": ["5m", "15m", "1h", "6h", "12h", "24h", "2d", "7d", "30d"]
   },
   "timezone": "browser",
   "title": "NATS Servers",
