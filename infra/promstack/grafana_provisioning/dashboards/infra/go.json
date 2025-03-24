@@ -1084,7 +1084,7 @@
   ],
   "refresh": "5s",
   "schemaVersion": 39,
-  "tags": ["go", "golang"],
+  "tags": ["mir", "mir-infra", "go", "golang"],
   "templating": {
     "list": [
       {
