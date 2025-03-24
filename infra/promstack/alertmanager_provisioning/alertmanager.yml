@@ -1,0 +1,36 @@
+global:
+  resolve_timeout: 5m
+  # Email configuration
+  # smtp_smarthost: "smtp.office365.com:587" # Replace with your SMTP server:port
+  # smtp_from: "bot-mirhub@outlook.com" # Replace with your sender email
+  # smtp_auth_username: "bot-mirhub@outlook.com" # Replace with your email username
+  # smtp_auth_password: "mir-operator" # Replace with your email password
+  # smtp_require_tls: true # Set to false if your email server doesn't use TLS
+
+route:
+  group_by: ["alertname", "job", "severity"]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  receiver: "email-notifications" # Default receiver
+  routes:
+    #- match:
+    #    severity: critical
+    #  receiver: "email-notifications"
+    #  continue: true
+
+receivers:
+  - name: "email-notifications"
+  #  email_configs:
+  #    - to: "maxthomassin@outlook.com" # Replace with recipient email address
+  #      send_resolved: true # Send email when alerts are resolved
+  #      html: '{{ template "email.default.html" . }}'
+  #      headers:
+  #        subject: '{{ template "email.default.subject" . }}'
+
+inhibit_rules:
+  - source_match:
+      severity: "critical"
+    target_match:
+      severity: "warning"
+    equal: ["alertname", "dev", "instance"]

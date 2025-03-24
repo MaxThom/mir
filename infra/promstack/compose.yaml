@@ -10,18 +10,30 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=mir-operator
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./grafana_provisioning:/etc/grafana/provisioning
+      - ./grafana_provisioning:/etc/grafana
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
     network_mode: "host"
     volumes:
       - prometheus_data:/prometheus
-      - ./prometheus.yaml:/etc/prometheus/prometheus.yml
+      - ./prometheus_provisioning:/etc/prometheus
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
     ports:
       - "9090:9090"
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: alertmanager
+    network_mode: "host"
+    ports:
+      - "9093:9093"
+    volumes:
+      - alertmanager_data:/alertmanager
+      - ./alertmanager_provisioning:/etc/alertmanager
+    command:
+      - "--config.file=/etc/alertmanager/alertmanager.yml"
+      - "--storage.path=/alertmanager"
   node-exporter:
     image: prom/node-exporter:latest
     container_name: node-exporter
@@ -31,3 +43,4 @@ services:
 volumes:
   grafana_data:
   prometheus_data:
+  alertmanager_data:
