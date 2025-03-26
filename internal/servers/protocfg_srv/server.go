@@ -100,12 +100,8 @@ func init() {
 	requestErrorTotal.With(prometheus.Labels{"route": "send"}).Add(0)
 }
 
-func NewProtoCfg(logger zerolog.Logger, m *mir.Mir, store mng.DeviceStore) (*ProtoCfgServer, error) {
+func NewProtoCfg(logger zerolog.Logger, m *mir.Mir, store mng.DeviceStore, schemaCache *schema_cache.MirProtoCache) (*ProtoCfgServer, error) {
 	l = logger.With().Str("srv", "protocfg_server").Logger()
-	cc, err := schema_cache.NewMirProtoCache(l, m)
-	if err != nil {
-		return nil, err
-	}
 	ctx, cancelFn := context.WithCancel(context.Background())
 	return &ProtoCfgServer{
 		ctx:       ctx,
@@ -113,7 +109,7 @@ func NewProtoCfg(logger zerolog.Logger, m *mir.Mir, store mng.DeviceStore) (*Pro
 		wg:        &sync.WaitGroup{},
 		m:         m,
 		devStore:  store,
-		schStore:  cc,
+		schStore:  schemaCache,
 	}, nil
 }
 

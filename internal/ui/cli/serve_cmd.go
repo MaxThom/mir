@@ -24,6 +24,7 @@ import (
 	"github.com/maxthom/mir/internal/servers/protocfg_srv"
 	"github.com/maxthom/mir/internal/servers/protocmd_srv"
 	"github.com/maxthom/mir/internal/servers/prototlm_srv"
+	"github.com/maxthom/mir/internal/services/schema_cache"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/rs/zerolog"
 	"golang.org/x/net/http2"
@@ -175,17 +176,21 @@ func run(
 	}
 
 	// Services
-	cfgSrv, err := protocfg_srv.NewProtoCfg(log, m, mng.NewSurrealDeviceStore(db))
+	cc, err := schema_cache.NewMirProtoCache(log, m)
+	if err != nil {
+		return err
+	}
+	cfgSrv, err := protocfg_srv.NewProtoCfg(log, m, mng.NewSurrealDeviceStore(db), cc)
 	if err != nil {
 		return err
 	}
 
-	cmdSrv, err := protocmd_srv.NewProtoCmd(log, m, mng.NewSurrealDeviceStore(db))
+	cmdSrv, err := protocmd_srv.NewProtoCmd(log, m, mng.NewSurrealDeviceStore(db), cc)
 	if err != nil {
 		return err
 	}
 
-	tlmSrv, err := prototlm_srv.NewProtoTlm(log, m, mng.NewSurrealDeviceStore(db), ts.NewInfluxTelemetryStore(cfg.Influx.Org, cfg.Influx.Bucket, lpClient))
+	tlmSrv, err := prototlm_srv.NewProtoTlm(log, m, mng.NewSurrealDeviceStore(db), ts.NewInfluxTelemetryStore(cfg.Influx.Org, cfg.Influx.Bucket, lpClient), cc)
 	if err != nil {
 		return err
 	}

@@ -73,16 +73,12 @@ func init() {
 	requestErrorTotal.With(prometheus.Labels{"route": "send"}).Add(0)
 }
 
-func NewProtoCmd(logger zerolog.Logger, m *mir.Mir, devStore mng.DeviceStore) (*ProtoCmdServer, error) {
+func NewProtoCmd(logger zerolog.Logger, m *mir.Mir, devStore mng.DeviceStore, schemaCache *schema_cache.MirProtoCache) (*ProtoCmdServer, error) {
 	l = logger.With().Str("srv", "protocmd_server").Logger()
-	cc, err := schema_cache.NewMirProtoCache(l, m)
-	if err != nil {
-		return nil, err
-	}
 	return &ProtoCmdServer{
 		m:        m,
 		devStore: devStore,
-		schStore: cc,
+		schStore: schemaCache,
 	}, nil
 }
 

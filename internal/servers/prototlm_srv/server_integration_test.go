@@ -21,6 +21,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/test_utils"
 	"github.com/maxthom/mir/internal/servers/core_srv"
 	prototlm_testv1 "github.com/maxthom/mir/internal/servers/prototlm_srv/proto_test/gen/prototlm_test/v1"
+	"github.com/maxthom/mir/internal/services/schema_cache"
 	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	tlm_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/tlm_api"
@@ -72,7 +73,11 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	protoTlmSrv, err := NewProtoTlm(log, mSdk, mng.NewSurrealDeviceStore(db), ts.NewInfluxTelemetryStore("Mir", "mir_integration_test", lpClient))
+	cc, err := schema_cache.NewMirProtoCache(log, mSdk)
+	if err != nil {
+		panic(err)
+	}
+	protoTlmSrv, err := NewProtoTlm(log, mSdk, mng.NewSurrealDeviceStore(db), ts.NewInfluxTelemetryStore("Mir", "mir_integration_test", lpClient), cc)
 	if err != nil {
 		panic(err)
 	}
