@@ -23,7 +23,7 @@
     {
       "asDropdown": true,
       "icon": "external link",
-      "includeVars": true,
+      "includeVars": false,
       "keepTime": true,
       "tags": ["mir", "mir-module"],
       "targetBlank": true,
@@ -636,7 +636,7 @@
           "refId": "B"
         }
       ],
-      "title": "Commands sent to Devices",
+      "title": "Commands Sent to Devices",
       "type": "timeseries"
     },
     {
@@ -1222,7 +1222,7 @@
           "query": "label_values(mir_app_info{name=~\"protocmd|mir\"},instance)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
-        "refresh": 1,
+        "refresh": 2,
         "regex": "",
         "type": "query"
       }
