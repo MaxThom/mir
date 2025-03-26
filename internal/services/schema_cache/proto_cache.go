@@ -41,7 +41,7 @@ func init() {
 	schemaReconcileTotal.With(prometheus.Labels{"source": "database"}).Add(0)
 	schemaReconcileTotal.With(prometheus.Labels{"source": "device"}).Add(0)
 	schemaReconcileTotal.With(prometheus.Labels{"source": "cache"}).Add(0)
-	schemaReconcileTotal.With(prometheus.Labels{"source": "update_sub"}).Add(0)
+	schemaReconcileTotal.With(prometheus.Labels{"source": "event"}).Add(0)
 }
 
 type MirProtoCache struct {
@@ -232,12 +232,15 @@ func (c *MirProtoCache) deviceUpdateSub(msg *mir.Msg, deviceId string, device mi
 	}
 	l.Info().Str("device_id", deviceId).Msg("cache updated")
 	c.cacheLock.Lock()
+	if _, ok := c.cache[deviceId]; !ok {
+		schemaCacheCount.Inc()
+	}
 	c.cache[deviceId] = cacheEntry{
 		dev: device,
 		sch: sch,
 	}
 	c.cacheLock.Unlock()
-	schemaReconcileTotal.WithLabelValues("update_sub").Inc()
+	schemaReconcileTotal.WithLabelValues("event").Inc()
 	for _, fn := range c.subscribers {
 		fn(deviceId, device, *sch)
 	}
