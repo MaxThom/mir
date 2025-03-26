@@ -88,14 +88,9 @@ func init() {
 	requestErrorTotal.With(prometheus.Labels{"route": "list"}).Add(0)
 }
 
-func NewProtoTlm(logger zerolog.Logger, m *mir.Mir, devStore mng.DeviceStore, tlmStore ts.TelemetryStore) (*ProtoTlmServer, error) {
+func NewProtoTlm(logger zerolog.Logger, m *mir.Mir, devStore mng.DeviceStore, tlmStore ts.TelemetryStore, schemaCache *schema_cache.MirProtoCache) (*ProtoTlmServer, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	l = logger.With().Str("srv", "prototlm_server").Logger()
-	cc, err := schema_cache.NewMirProtoCache(l, m)
-	if err != nil {
-		cancel()
-		return nil, err
-	}
 	srv := &ProtoTlmServer{
 		ctx:        ctx,
 		cancelCtx:  cancel,
@@ -104,7 +99,7 @@ func NewProtoTlm(logger zerolog.Logger, m *mir.Mir, devStore mng.DeviceStore, tl
 		m:          m,
 		devStore:   devStore,
 		devWriters: make(map[string]map[string]proto_lineprotocol.ProtoBytesToLpFn),
-		schStore:   cc,
+		schStore:   schemaCache,
 	}
 	srv.schStore.AddDeviceUpdateSub(srv.handleDeviceUpdate)
 	return srv, nil

@@ -17,6 +17,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/test_utils"
 	core_testv1 "github.com/maxthom/mir/internal/servers/core_srv/proto_test/gen/core_test/v1"
 	"github.com/maxthom/mir/internal/servers/protocfg_srv"
+	"github.com/maxthom/mir/internal/services/schema_cache"
 	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	mirDev "github.com/maxthom/mir/pkgs/device/mir"
@@ -52,7 +53,11 @@ func TestMain(m *testing.M) {
 	if err := coreSrv.Serve(); err != nil {
 		panic(err)
 	}
-	cfgSrv, err := protocfg_srv.NewProtoCfg(log, mSdk, mng.NewSurrealDeviceStore(db))
+	cc, err := schema_cache.NewMirProtoCache(log, mSdk)
+	if err != nil {
+		panic(err)
+	}
+	cfgSrv, err := protocfg_srv.NewProtoCfg(log, mSdk, mng.NewSurrealDeviceStore(db), cc)
 	if err := cfgSrv.Serve(); err != nil {
 		panic(err)
 	}

@@ -18,6 +18,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/swarm"
 	"github.com/maxthom/mir/internal/libs/test_utils"
 	"github.com/maxthom/mir/internal/servers/core_srv"
+	"github.com/maxthom/mir/internal/services/schema_cache"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -69,7 +70,11 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	protocmdSrv, err := NewProtoCmd(log, mSdk, mng.NewSurrealDeviceStore(db))
+	cc, err := schema_cache.NewMirProtoCache(log, mSdk)
+	if err != nil {
+		panic(err)
+	}
+	protocmdSrv, err := NewProtoCmd(log, mSdk, mng.NewSurrealDeviceStore(db), cc)
 	if err != nil {
 		panic(err)
 	}
