@@ -188,6 +188,17 @@
                 }
               },
               "type": "value"
+            },
+            {
+              "options": {
+                "match": "null+nan",
+                "result": {
+                  "color": "red",
+                  "index": 2,
+                  "text": "OFFLINE"
+                }
+              },
+              "type": "special"
             }
           ],
           "thresholds": {
@@ -220,7 +231,7 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": ["last"],
           "fields": "",
           "values": false
         },
@@ -232,9 +243,11 @@
       "targets": [
         {
           "editorMode": "code",
+          "exemplar": false,
           "expr": "mir_health_alive{instance=\"$instance\"}",
+          "instant": true,
           "legendFormat": "__auto",
-          "range": true,
+          "range": false,
           "refId": "A"
         }
       ],
@@ -463,6 +476,17 @@
                 }
               },
               "type": "value"
+            },
+            {
+              "options": {
+                "match": "null+nan",
+                "result": {
+                  "color": "red",
+                  "index": 2,
+                  "text": "OFFLINE"
+                }
+              },
+              "type": "special"
             }
           ],
           "thresholds": {
@@ -495,7 +519,7 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": ["last"],
           "fields": "",
           "values": false
         },
@@ -507,9 +531,11 @@
       "targets": [
         {
           "editorMode": "code",
+          "exemplar": false,
           "expr": "mir_health_ready{instance=\"$instance\"}",
+          "instant": true,
           "legendFormat": "__auto",
-          "range": true,
+          "range": false,
           "refId": "A"
         }
       ],
@@ -1396,6 +1422,6 @@
   "timezone": "browser",
   "title": "Telemetry",
   "uid": "aegy9ow2toagwa",
-  "version": 2,
+  "version": 8,
   "weekStart": ""
 }
