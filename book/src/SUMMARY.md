@@ -26,6 +26,8 @@
 - [Operating Mir](./operating_mir/operating_mir.md)
 	- [Mir CLI](./operating_mir/mir_cli_tui.md)
 	- [Mir Web]()
+	- [Monitoring](./operating_mir/monitoring.md)
+	- [Integrate your own Prometheus Stack]()
 - [Mir Concept]()
 	- [What is Mir IotHub]()
 	- [Architecture]()
