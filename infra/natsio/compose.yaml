@@ -14,6 +14,6 @@ services:
     container_name: nats-exporter
     ports:
       - "7777:7777"
-    command: -varz -channelz -serverz -connz_detailed -routez -subz -jsz all "http://nats:8222"
+    command: -varz -connz_detailed -routez -subz -jsz all "http://nats:8222"
     depends_on:
       - nats
