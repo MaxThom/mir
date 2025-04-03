@@ -144,9 +144,11 @@ func sendTelemetry(d *mir.Mir) {
 		Voltage: volt,
 		Power:   amp * volt,
 	}
-	d.SendTelemetry(&dataPwr)
+	if err := d.SendTelemetry(&dataPwr); err != nil {
+		d.Logger().Error().Err(err).Msgf("error sending telemetry: %s", err.Error())
+	}
 
-	d.Logger().Debug().
+	d.Logger().Trace().
 		Int32("humidity", dataEnv.Humidity).
 		Int32("temperature", dataEnv.Temperature).
 		Int32("pressure", dataEnv.Pressure).

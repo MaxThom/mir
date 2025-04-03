@@ -17,6 +17,7 @@ import (
 
 var (
 	msgHandlers map[string]func(msg *nats.Msg, m *Mir) error
+	msgSender   func(msg *nats.Msg) error
 )
 
 func init() {
@@ -164,15 +165,15 @@ func sendReplyOrAck(bus *bus.BusConn, msg *nats.Msg, m protoreflect.ProtoMessage
 	return nil
 }
 
-func sendMsg(bus *bus.BusConn, subject string, m protoreflect.ProtoMessage, h nats.Header, shouldZstdCompress bool) error {
+func (m Mir) sendProtoMsg(subject string, protoMsg protoreflect.ProtoMessage, h nats.Header, shouldZstdCompress bool) error {
 	if h == nil {
 		h = nats.Header{}
 	}
-	bResp, err := proto.Marshal(m)
+	bResp, err := proto.Marshal(protoMsg)
 	if err != nil {
 		return err
 	}
-	h.Add("__msg", string(m.ProtoReflect().Descriptor().FullName()))
+	h.Add("__msg", string(protoMsg.ProtoReflect().Descriptor().FullName()))
 
 	data := bResp
 	if shouldZstdCompress {
@@ -183,9 +184,58 @@ func sendMsg(bus *bus.BusConn, subject string, m protoreflect.ProtoMessage, h na
 		}
 	}
 
-	return bus.PublishMsg(&nats.Msg{
+	return m.sendMsg(&nats.Msg{
 		Subject: subject,
 		Header:  h,
 		Data:    data,
 	})
+}
+
+func (m Mir) setOnlineHandler() {
+	if m.store.opts.Msgs.MsgStorageType == StorageTypeNoStorage || m.store.opts.InMemory {
+		msgSender = m.sendMsgOnly
+		m.l.Debug().Msg("Send msg only")
+	} else if m.store.opts.Msgs.MsgStorageType == StorageTypeOnlyIfOffline {
+		msgSender = m.sendMsgOnly
+		m.l.Debug().Msg("Send msg only")
+	} else if m.store.opts.Msgs.MsgStorageType == StorageTypeAlways {
+		msgSender = m.sendMsgWithStorage
+		m.l.Debug().Msg("Send msg with storage")
+	}
+}
+
+func (m Mir) setOfflineHandler() {
+	if m.store.opts.Msgs.MsgStorageType == StorageTypeNoStorage || m.store.opts.InMemory {
+		msgSender = m.sendNothing
+		m.l.Debug().Msg("Send nothing")
+	} else if m.store.opts.Msgs.MsgStorageType == StorageTypeOnlyIfOffline {
+		msgSender = m.saveMsgInPending
+		m.l.Debug().Msg("Save in pending")
+	} else if m.store.opts.Msgs.MsgStorageType == StorageTypeAlways {
+		msgSender = m.saveMsgInPending
+		m.l.Debug().Msg("Save in pending")
+	}
+}
+
+func (m Mir) sendMsg(msg *nats.Msg) error {
+	return msgSender(msg)
+}
+
+func (m Mir) sendNothing(msg *nats.Msg) error {
+	return nil
+}
+func (m Mir) sendMsgOnly(msg *nats.Msg) error {
+	return m.b.PublishMsg(msg)
+}
+
+func (m Mir) saveMsgInPending(msg *nats.Msg) error {
+	return m.store.SaveMsgToPending(*msg)
+}
+
+// Performance solution would be to do batch writes
+func (m Mir) sendMsgWithStorage(msg *nats.Msg) error {
+	if err := m.store.SaveMsgToSent(*msg); err != nil {
+		m.l.Warn().Err(err).Msg("error saving msg to sent store")
+	}
+	return m.b.PublishMsg(msg)
 }

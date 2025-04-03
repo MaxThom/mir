@@ -51,7 +51,7 @@ func WithReconnect() func(*BusConn) {
 		bus.opts = append(bus.opts, []nats.Option{
 			nats.RetryOnFailedConnect(true),
 			nats.MaxReconnects(-1),                                  // Set maximum reconnect attempts
-			nats.ReconnectWait(2 * time.Second),                     // Set the wait time between reconnect attempts
+			nats.ReconnectWait(3 * time.Second),                     // Set the wait time between reconnect attempts
 			nats.ReconnectJitter(time.Millisecond*100, time.Second), // Set the jitter for reconnects
 		}...)
 	}

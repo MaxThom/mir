@@ -84,23 +84,27 @@ func (m *Mir) Launch(ctx context.Context) (*sync.WaitGroup, error) {
 	if err := m.store.Load(); err != nil {
 		return &wg, fmt.Errorf("error loading local store: %w", err)
 	}
+	fmt.Println(m.store.opts)
 	m.l.Debug().Msg("persistence loaded")
 
 	// Setup Mir bus
 	m.b, err = bus.New(m.cfg.Target,
 		bus.WithReconnHandler(func(nc *nats.Conn) {
 			m.l.Warn().Msg("reconnected to Mir Server ")
+			m.setOnlineHandler()
 		}),
 		bus.WithDisconnHandler(func(_ *nats.Conn, err error) {
-			if err != nil {
-				m.l.Error().Err(err).Msg(fmt.Sprintf("disconnected due to %v, will attempt to reconnect ", err))
-			}
+			m.l.Warn().Err(err).Msg("disconnected from Mir Server")
+			m.setOfflineHandler()
 		}),
 		bus.WithClosedHandler(func(nc *nats.Conn) {
+			m.l.Warn().Err(err).Msg("closed connection from Mir Server")
+			m.setOfflineHandler()
 		}))
 	if err != nil {
 		return &wg, err
 	}
+	m.setOnlineHandler()
 
 	sub, err := m.b.SubscribeSync(fmt.Sprintf("%s.>", m.cfg.DeviceId))
 	if err != nil {
@@ -235,7 +239,11 @@ func (m Mir) marshalTelemetrySchema() ([]byte, error) {
 
 // Send proto telemetry to Mir Server
 func (m Mir) SendTelemetry(t proto.Message) error {
-	return tlm_client.PublishTelemetryStream(m.b, m.cfg.DeviceId, t)
+	msg, err := tlm_client.GetTelemetryStreamMsg(m.cfg.DeviceId, t)
+	if err != nil {
+		return err
+	}
+	return m.sendMsg(msg)
 }
 
 // Send proto reported properties to Mir Server
@@ -249,7 +257,7 @@ func (m Mir) sendSchema() error {
 		return nil
 	}
 
-	return sendMsg(m.b, core_client.SchemaDeviceStream.WithId(m.GetDeviceId()), &device_apiv1.SchemaRetrieveResponse{
+	return m.sendProtoMsg(core_client.SchemaDeviceStream.WithId(m.GetDeviceId()), &device_apiv1.SchemaRetrieveResponse{
 		Response: &device_apiv1.SchemaRetrieveResponse_Schema{
 			Schema: bytes,
 		},

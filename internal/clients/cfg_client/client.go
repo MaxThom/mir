@@ -66,18 +66,27 @@ func PublishListConfigRequest(bus *bus.BusConn, req *cfg_apiv1.SendListConfigReq
 }
 
 func PublishReportedPropertiesStream(bus *bus.BusConn, deviceId string, t proto.Message) error {
-	b, err := proto.Marshal(t)
+	msg, err := GetReportedPropertiesStreamMsg(deviceId, t)
 	if err != nil {
 		return err
 	}
 
-	return bus.PublishMsg(&nats.Msg{
+	return bus.PublishMsg(msg)
+}
+
+func GetReportedPropertiesStreamMsg(deviceId string, t proto.Message) (*nats.Msg, error) {
+	b, err := proto.Marshal(t)
+	if err != nil {
+		return nil, err
+	}
+
+	return &nats.Msg{
 		Subject: ReportedPropertiesStream.WithId(deviceId),
 		Header: nats.Header{
 			"__msg": []string{string(t.ProtoReflect().Descriptor().FullName())},
 		},
 		Data: b,
-	})
+	}, nil
 }
 
 func PublishRequestDesiredPropertiesStream(bus *bus.BusConn, deviceId string) (*device_apiv1.ReportedPropertiesResponse, error) {
