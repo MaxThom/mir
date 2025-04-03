@@ -20,6 +20,11 @@ func main() {
 		Target("nats://127.0.0.1:4222").
 		Schema(tutorial_devicev1.File_tutorial_device_v1_schema_proto).
 		LogPretty(false).
+		Store(mir.StoreOptions{
+			Msgs: mir.StoreMsgOptions{
+				MsgStorageType: mir.StorageTypeOnlyIfOffline,
+			},
+		}).
 		Build()
 	if err != nil {
 		panic(err)

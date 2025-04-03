@@ -278,6 +278,12 @@ func (b builder) Build() (*Mir, error) {
 	if b.storeOpts.Path == "" {
 		b.storeOpts.Path = filepath.Join(xdg.DataHome, "mir", "mir.db")
 	}
+	if b.storeOpts.Msgs.DiskSpaceLimit == 0 {
+		b.storeOpts.Msgs.DiskSpaceLimit = 85
+	}
+	if b.storeOpts.Msgs.MsgStorageType == StorageTypeNone {
+		b.storeOpts.Msgs.MsgStorageType = StorageTypeOnlyIfOffline
+	}
 	store, err := NewStore(b.storeOpts)
 	if err != nil {
 		return nil, fmt.Errorf("error creating store: %w", err)

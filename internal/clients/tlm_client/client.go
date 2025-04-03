@@ -17,18 +17,27 @@ const (
 )
 
 func PublishTelemetryStream(bus *bus.BusConn, deviceId string, t protoreflect.ProtoMessage) error {
-	b, err := proto.Marshal(t)
+	msg, err := GetTelemetryStreamMsg(deviceId, t)
 	if err != nil {
 		return err
 	}
 
-	return bus.PublishMsg(&nats.Msg{
+	return bus.PublishMsg(msg)
+}
+
+func GetTelemetryStreamMsg(deviceId string, t protoreflect.ProtoMessage) (*nats.Msg, error) {
+	b, err := proto.Marshal(t)
+	if err != nil {
+		return nil, err
+	}
+
+	return &nats.Msg{
 		Subject: TelemetryDeviceStream.WithId(deviceId),
 		Header: nats.Header{
 			"__msg": []string{string(t.ProtoReflect().Descriptor().FullName())},
 		},
 		Data: b,
-	})
+	}, nil
 }
 
 func PublishTelemetryListRequest(bus *bus.BusConn, req *tlm_apiv1.SendListTelemetryRequest) (*tlm_apiv1.SendListTelemetryResponse, error) {
