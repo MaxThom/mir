@@ -2,9 +2,9 @@ package mir_models
 
 import (
 	"strings"
-	"time"
 
 	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
+	surrealdbModels "github.com/surrealdb/surrealdb.go/pkg/models"
 )
 
 type Device struct {
@@ -89,22 +89,22 @@ type Properties struct {
 }
 
 type PropertiesTime struct {
-	Desired  map[string]time.Time `json:"desired,omitempty" yaml:"desired"`
-	Reported map[string]time.Time `json:"reported,omitempty" yaml:"reported"`
+	Desired  map[string]surrealdbModels.CustomDateTime `json:"desired,omitempty" yaml:"desired"`
+	Reported map[string]surrealdbModels.CustomDateTime `json:"reported,omitempty" yaml:"reported"`
 }
 
 type Status struct {
-	Online         bool           `json:"online,omitempty" yaml:"online"`
-	LastHearthbeat time.Time      `json:"lastHearthbeat,omitempty" yaml:"lastHearthbeat"`
-	Schema         Schema         `json:"schema,omitempty" yaml:"schema"`
-	Properties     PropertiesTime `json:"properties,omitempty" yaml:"properties"`
+	Online         bool                           `json:"online,omitempty" yaml:"online"`
+	LastHearthbeat surrealdbModels.CustomDateTime `json:"lastHearthbeat,omitempty" yaml:"lastHearthbeat"`
+	Schema         Schema                         `json:"schema,omitempty" yaml:"schema"`
+	Properties     PropertiesTime                 `json:"properties,omitempty" yaml:"properties"`
 }
 
 type Schema struct {
 	// Compressed with ZSTD
-	CompressedSchema []byte    `json:"compressedSchema,omitempty" yaml:"-"`
-	PackageNames     []string  `json:"packageNames,omitempty" yaml:"packageNames"`
-	LastSchemaFetch  time.Time `json:"lastSchemaFetch,omitempty" yaml:"lastSchemaFetch"`
+	CompressedSchema []byte                         `json:"compressedSchema,omitempty" yaml:"-"`
+	PackageNames     []string                       `json:"packageNames,omitempty" yaml:"packageNames"`
+	LastSchemaFetch  surrealdbModels.CustomDateTime `json:"lastSchemaFetch,omitempty" yaml:"lastSchemaFetch"`
 }
 
 func (s Schema) GetProtoFiles() (*mir_proto.MirProtoSchema, error) {

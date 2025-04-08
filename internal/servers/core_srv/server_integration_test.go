@@ -337,7 +337,7 @@ func TestPublishDeviceUpdateTargetIds(t *testing.T) {
 
 	respDb := test_utils.ExecuteTestQueryForType[[]mir_models.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE spec.deviceId = $id;",
-		map[string]string{
+		map[string]any{
 			"tb": "devices",
 			"id": id,
 		})
@@ -416,7 +416,7 @@ func TestPublishDeviceUpdateTargetNames(t *testing.T) {
 
 	respDb := test_utils.ExecuteTestQueryForType[[]mir_models.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE spec.deviceId = $id;",
-		map[string]string{
+		map[string]any{
 			"tb": "devices",
 			"id": id,
 		})
@@ -494,7 +494,7 @@ func TestPublishDeviceUpdateTargetNamespace(t *testing.T) {
 
 	respDb := test_utils.ExecuteTestQueryForType[[]mir_models.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE spec.deviceId = $id;",
-		map[string]string{
+		map[string]any{
 			"tb": "devices",
 			"id": id,
 		})
@@ -613,7 +613,7 @@ func TestPublishDeviceUpdateTargetLabels(t *testing.T) {
 
 	respDb := test_utils.ExecuteTestQueryForType[[]mir_models.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE spec.deviceId = $id1 OR spec.deviceId = $id2 OR spec.deviceId = $id3;",
-		map[string]string{
+		map[string]any{
 			"tb":  "devices",
 			"id1": deviceIds[0],
 			"id2": deviceIds[1],
@@ -748,7 +748,7 @@ func TestPublishDeviceUpdateTargetMixs(t *testing.T) {
 
 	respDb := test_utils.ExecuteTestQueryForType[[]*core_apiv1.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE device_id = $id1 OR device_id = $id2 OR device_id = $id3;",
-		map[string]string{
+		map[string]any{
 			"tb":  "devices",
 			"id1": deviceIds[0],
 			"id2": deviceIds[1],
@@ -872,7 +872,7 @@ func TestPublishDeviceDeleteTargetIds(t *testing.T) {
 
 	respDb := test_utils.ExecuteTestQueryForType[[]mir_models.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE spec.deviceId = $id1 OR spec.deviceId = $id2 OR spec.deviceId = $id3;",
-		map[string]string{
+		map[string]any{
 			"tb":  "devices",
 			"id1": deviceIds[0],
 			"id2": deviceIds[1],
@@ -973,7 +973,7 @@ func TestPublishDeviceDeleteTargetNames(t *testing.T) {
 
 	respDb := test_utils.ExecuteTestQueryForType[[]mir_models.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE spec.deviceId = $id1 OR spec.deviceId = $id2 OR spec.deviceId = $id3;",
-		map[string]string{
+		map[string]any{
 			"tb":  "devices",
 			"id1": deviceIds[0],
 			"id2": deviceIds[1],
@@ -1072,7 +1072,7 @@ func TestPublishDeviceDeleteTargetNamespace(t *testing.T) {
 
 	dbResp := test_utils.ExecuteTestQueryForType[[]mir_models.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE spec.deviceId = $id1 OR spec.deviceId = $id2 OR spec.deviceId = $id3;",
-		map[string]string{
+		map[string]any{
 			"tb":  "devices",
 			"id1": deviceIds[0],
 			"id2": deviceIds[1],
@@ -1172,7 +1172,7 @@ func TestPublishDeviceDeleteTargetLabels(t *testing.T) {
 
 	respDb := test_utils.ExecuteTestQueryForType[[]mir_models.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE spec.deviceId = $id1 OR spec.deviceId = $id2 OR spec.deviceId = $id3;",
-		map[string]string{
+		map[string]any{
 			"tb":  "devices",
 			"id1": deviceIds[0],
 			"id2": deviceIds[1],
@@ -1272,7 +1272,7 @@ func TestPublishDeviceListTargetIds(t *testing.T) {
 
 	respDb := test_utils.ExecuteTestQueryForType[[]mir_models.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE spec.deviceId = $id1 OR spec.deviceId = $id2 OR spec.deviceId = $id3;",
-		map[string]string{
+		map[string]any{
 			"tb":  "devices",
 			"id1": deviceIds[0],
 			"id2": deviceIds[1],
@@ -1372,7 +1372,7 @@ func TestPublishDeviceListTargetNames(t *testing.T) {
 
 	respDb := test_utils.ExecuteTestQueryForType[[]mir_models.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE spec.deviceId = $id1 OR spec.deviceId = $id2 OR spec.deviceId = $id3;",
-		map[string]string{
+		map[string]any{
 			"tb":  "devices",
 			"id1": deviceIds[0],
 			"id2": deviceIds[1],
@@ -1473,7 +1473,7 @@ func TestPublishDeviceListTargetNamespace(t *testing.T) {
 
 	respDb := test_utils.ExecuteTestQueryForType[[]mir_models.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE spec.deviceId = $id1 OR spec.deviceId = $id2 OR spec.deviceId = $id3;",
-		map[string]string{
+		map[string]any{
 			"tb":  "devices",
 			"id1": deviceIds[0],
 			"id2": deviceIds[1],
@@ -1576,7 +1576,7 @@ func TestPublishDeviceListTargetLabels(t *testing.T) {
 
 	respDb := test_utils.ExecuteTestQueryForType[[]core_apiv1.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE spec.deviceId = $id1 OR spec.deviceId = $id2 OR spec.deviceId = $id3;",
-		map[string]string{
+		map[string]any{
 			"tb":  "devices",
 			"id1": deviceIds[0],
 			"id2": deviceIds[1],

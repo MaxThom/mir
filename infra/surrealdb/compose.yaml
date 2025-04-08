@@ -1,14 +1,14 @@
 services:
   surrealdb:
-    image: surrealdb/surrealdb:v1.5.4 # Last release of surrealdb before v2
+    image: surrealdb/surrealdb:latest # Last release of surrealdb before v2
     ports:
       - "8000:8000"
     volumes:
-      - surrealdb-data:/var/lib/surrealdb
+      - surrealdb_data:/var/lib/surrealdb
     user: root
     command:
       - start
-      - file:/var/lib/surrealdb/mydatabase.db
+      - surrealkv:/var/lib/surrealdb/mydatabase.db
       - --user
       - root
       - --pass
@@ -18,4 +18,4 @@ services:
       #- trace
 
 volumes:
-  surrealdb-data:
+  surrealdb_data:

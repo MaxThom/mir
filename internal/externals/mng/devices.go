@@ -12,7 +12,7 @@ import (
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/pkg/errors"
-	"github.com/surrealdb/surrealdb.go"
+	surrealdb "github.com/surrealdb/surrealdb.go"
 )
 
 var (
@@ -86,16 +86,18 @@ func (s *surrealDeviceStore) CreateDevice(cdr *core_apiv1.CreateDeviceRequest) (
 	}
 
 	// Create
-	respDb, err := s.db.Create("devices", mir_models.NewDeviceFromCreateDeviceReq(cdr))
+	respDb, err := surrealdb.Create[mir_models.Device](s.db, "devices", mir_models.NewDeviceFromCreateDeviceReq(cdr))
 	if err != nil {
 		return mir_models.Device{}, fmt.Errorf("%w: %w", mir_models.ErrorDbExecutingQuery, err)
 	}
-	newDev := []mir_models.Device{}
-	err = surrealdb.Unmarshal(respDb, &newDev)
-	if err != nil {
-		return mir_models.Device{}, fmt.Errorf("%w for device %s/%s: %w", mir_models.ErrorDbDeserializingResponse, cdr.Meta.Name, cdr.Meta.Namespace, err)
-	}
-	return newDev[0], nil
+	// newDev := []mir_models.Device{}
+	// err = surrealdb.Unmarshal(respDb, &newDev)
+	// if err != nil {
+	// 	return mir_models.Device{}, fmt.Errorf("%w for device %s/%s: %w", mir_models.ErrorDbDeserializingResponse, cdr.Meta.Name, cdr.Meta.Namespace, err)
+	// }
+	// return newDev[0], nil
+	newDev := *respDb
+	return newDev, nil
 }
 
 // This method is too OP
@@ -475,7 +477,7 @@ func createUpdateQueryForDevice(t *core_apiv1.Targets, upd *core_apiv1.UpdateDev
 					if v == nil {
 						sb.WriteString("NONE")
 					} else {
-						sb.WriteString("\"")
+						sb.WriteString("d\"")
 						sb.WriteString(mir_models.AsGoTime(v).Format(time.RFC3339Nano))
 						sb.WriteString("\"")
 					}
@@ -493,7 +495,7 @@ func createUpdateQueryForDevice(t *core_apiv1.Targets, upd *core_apiv1.UpdateDev
 					if v == nil {
 						sb.WriteString("NONE")
 					} else {
-						sb.WriteString("\"")
+						sb.WriteString("d\"")
 						sb.WriteString(mir_models.AsGoTime(v).Format(time.RFC3339Nano))
 						sb.WriteString("\"")
 					}
@@ -519,6 +521,7 @@ func createUpdateQueryForDevice(t *core_apiv1.Targets, upd *core_apiv1.UpdateDev
 		qSb.WriteString(";")
 	}
 	sql = qSb.String()
+	fmt.Println(sql)
 
 	return
 }
@@ -576,15 +579,18 @@ func createWhereStatementWithTargets(t *core_apiv1.Targets) string {
 
 func executeQueryForType[T any](db *surrealdb.DB, query string, vars map[string]any) (T, error) {
 	var empty T
-	result, err := db.Query(query, vars)
+	result, err := surrealdb.Query[T](db, query, vars)
 	if err != nil {
 		return empty, err
 	}
+	res := *result
 
-	res, err := surrealdb.SmartUnmarshal[T](result, err)
-	if err != nil {
-		return empty, err
+	// res, err := surrealdb.SmartUnmarshal[T](result, err)
+	// if err != nil {
+	// 	return empty, err
+	// }
+	if len(res) == 0 {
+		return empty, nil
 	}
-
-	return res, nil
+	return res[0].Result, nil
 }

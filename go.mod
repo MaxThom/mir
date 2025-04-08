@@ -3,6 +3,7 @@ module github.com/maxthom/mir
 go 1.23.2
 
 require (
+	github.com/adrg/xdg v0.5.3
 	github.com/alecthomas/kong v0.9.0
 	github.com/charmbracelet/bubbles v0.18.0
 	github.com/charmbracelet/bubbletea v0.25.0
@@ -15,19 +16,21 @@ require (
 	github.com/nats-io/nats.go v1.31.0
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.31.0
-	github.com/surrealdb/surrealdb.go v0.2.1
+	github.com/surrealdb/surrealdb.go v0.3.0
+	go.etcd.io/bbolt v1.3.11
 	golang.org/x/net v0.19.0
 	google.golang.org/protobuf v1.32.0
 )
 
 require (
-	github.com/adrg/xdg v0.5.3 // indirect
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/containerd/console v1.0.4-0.20230313162750-1ae8d489ac81 // indirect
+	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
+	github.com/gofrs/uuid v4.4.0+incompatible // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/influxdata/line-protocol v0.0.0-20200327222509-2487e7298839 // indirect
@@ -49,7 +52,7 @@ require (
 	github.com/prometheus/common v0.45.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
-	go.etcd.io/bbolt v1.3.11 // indirect
+	github.com/x448/float16 v0.8.4 // indirect
 	golang.org/x/crypto v0.16.0 // indirect
 	golang.org/x/sync v0.8.0 // indirect
 	golang.org/x/term v0.15.0 // indirect

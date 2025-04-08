@@ -6,7 +6,6 @@ import (
 	"os"
 	"strings"
 	"testing"
-	"time"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/influxdata/influxdb-client-go/v2/api"
@@ -64,19 +63,19 @@ func SetupInfluxConnsPanic(ctx context.Context, url, token, org, bucket string) 
 }
 
 func SetupSurrealDbConnsPanic(url, user, pass, ns, db string) *surrealdb.DB {
-	d, err := surrealdb.New(url, surrealdb.WithTimeout(3*time.Second))
+	d, err := surrealdb.New(url)
 	if err != nil {
 		panic(err)
 	}
 
-	if _, err = d.Signin(map[string]any{
-		"user": user,
-		"pass": pass,
+	if _, err = d.SignIn(&surrealdb.Auth{
+		Username: user,
+		Password: pass,
 	}); err != nil {
 		panic(err)
 	}
 
-	if _, err = d.Use(ns, db); err != nil {
+	if err = d.Use(ns, db); err != nil {
 		panic(err)
 	}
 
@@ -113,18 +112,27 @@ func CreateDevices(bus *bus.BusConn, devices []*core_apiv1.CreateDeviceRequest) 
 	return responses, nil
 }
 
-func ExecuteTestQueryForType[T any](t *testing.T, db *surrealdb.DB, query string, vars map[string]string) T {
-	result, err := db.Query(query, vars)
+func ExecuteTestQueryForType[T any](t *testing.T, db *surrealdb.DB, query string, vars map[string]any) T {
+	var empty T
+	result, err := surrealdb.Query[T](db, query, vars)
 	if err != nil {
 		t.Error(err)
 	}
+	res := *result
 
-	res, err := surrealdb.SmartUnmarshal[T](result, err)
-	if err != nil {
-		t.Error(err)
+	// result, err := db.Query(query, vars)
+	// if err != nil {
+	// 	t.Error(err)
+	// }
+
+	// res, err := surrealdb.SmartUnmarshal[T](result, err)
+	// if err != nil {
+	// 	t.Error(err)
+	// }
+	if len(res) == 0 {
+		return empty
 	}
-
-	return res
+	return res[0].Result
 }
 
 func strRef(s string) *string {

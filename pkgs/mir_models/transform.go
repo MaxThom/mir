@@ -6,6 +6,7 @@ import (
 
 	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
+	surrealdbModels "github.com/surrealdb/surrealdb.go/pkg/models"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -50,7 +51,7 @@ func NewDeviceFromProtoDevice(d *core_apiv1.Device) Device {
 		}
 		dev.Status = Status{
 			Online:         d.Status.Online,
-			LastHearthbeat: lastHeartbeatTime,
+			LastHearthbeat: surrealdbModels.CustomDateTime{Time: lastHeartbeatTime},
 		}
 		if d.Status.Schema != nil {
 			var lastSchemaFetch time.Time
@@ -60,21 +61,21 @@ func NewDeviceFromProtoDevice(d *core_apiv1.Device) Device {
 			dev.Status.Schema = Schema{
 				CompressedSchema: d.Status.Schema.CompressedSchema,
 				PackageNames:     d.Status.Schema.PackageNames,
-				LastSchemaFetch:  lastSchemaFetch,
+				LastSchemaFetch:  surrealdbModels.CustomDateTime{Time: lastSchemaFetch},
 			}
 		}
 		if d.Status.Properties != nil {
 			dev.Status.Properties = PropertiesTime{}
 			if d.Status.Properties.Desired != nil {
-				dev.Status.Properties.Desired = map[string]time.Time{}
+				dev.Status.Properties.Desired = map[string]surrealdbModels.CustomDateTime{}
 				for k, v := range d.Status.Properties.Desired {
-					dev.Status.Properties.Desired[k] = AsGoTime(v)
+					dev.Status.Properties.Desired[k] = surrealdbModels.CustomDateTime{Time: AsGoTime(v)}
 				}
 			}
 			if d.Status.Properties.Reported != nil {
-				dev.Status.Properties.Reported = map[string]time.Time{}
+				dev.Status.Properties.Reported = map[string]surrealdbModels.CustomDateTime{}
 				for k, v := range d.Status.Properties.Reported {
-					dev.Status.Properties.Reported[k] = AsGoTime(v)
+					dev.Status.Properties.Reported[k] = surrealdbModels.CustomDateTime{Time: AsGoTime(v)}
 				}
 			}
 		}
@@ -113,11 +114,11 @@ func NewProtoDeviceFromDevice(d Device) *core_apiv1.Device {
 		},
 		Status: &core_apiv1.Status{
 			Online:         d.Status.Online,
-			LastHearthbeat: AsProtoTimestamp(d.Status.LastHearthbeat),
+			LastHearthbeat: AsProtoTimestamp(d.Status.LastHearthbeat.Time),
 			Schema: &core_apiv1.Schema{
 				CompressedSchema: d.Status.Schema.CompressedSchema,
 				PackageNames:     d.Status.Schema.PackageNames,
-				LastSchemaFetch:  AsProtoTimestamp(d.Status.Schema.LastSchemaFetch),
+				LastSchemaFetch:  AsProtoTimestamp(d.Status.Schema.LastSchemaFetch.Time),
 			},
 			Properties: &core_apiv1.PropertiesTime{
 				Desired:  mapToProtoTs(d.Status.Properties.Desired),
@@ -329,10 +330,10 @@ func AsGoTime(ts *common_apiv1.Timestamp) time.Time {
 	return time.Unix(int64(ts.GetSeconds()), int64(ts.GetNanos())).UTC()
 }
 
-func mapToProtoTs(m map[string]time.Time) map[string]*common_apiv1.Timestamp {
+func mapToProtoTs(m map[string]surrealdbModels.CustomDateTime) map[string]*common_apiv1.Timestamp {
 	ts := map[string]*common_apiv1.Timestamp{}
 	for k, v := range m {
-		ts[k] = AsProtoTimestamp(v)
+		ts[k] = AsProtoTimestamp(v.Time)
 	}
 	return ts
 }
