@@ -25,26 +25,32 @@ type StoreOptions struct {
 }
 
 // MsgStorageType represents the storage mechanism
-type MsgStorageType int
+type MsgStorageType string
 
 const (
-	StorageTypeNone MsgStorageType = iota
+	StorageTypeNone MsgStorageType = "none"
 	// StorageTypeNoStorage will not store messages
-	StorageTypeNoStorage
+	StorageTypeNoStorage = "nostorage"
 	// StorageTypeOnlyIfOffline will keep messages only if device is d/c
-	StorageTypeOnlyIfOffline
+	StorageTypeOnlyIfOffline = "ifoffline"
 	// StorageTypeAlways will keep all msgs
-	StorageTypeAlways
+	StorageTypeAlways = "always"
 )
 
 type StoreMsgOptions struct {
 	// Timelimit to store messages. If over, will start cycling messages
 	// Default to 0 for infinite
-	RententionLimit time.Duration
+	RententionLimit JsonReadableDuration
 	// Cannot write messages to store if disk space left is above the pourcentage limit
 	// Default to 85%, if disk space is at more then 85%, will start cycle the messages
 	DiskSpaceLimit uint
 	MsgStorageType MsgStorageType
+}
+
+type JsonReadableDuration time.Duration
+
+func (d JsonReadableDuration) MarshalJSON() ([]byte, error) {
+	return json.Marshal(time.Duration(d).String())
 }
 
 type propsValue struct {
@@ -223,7 +229,6 @@ func (s *Store) SaveMsgToSent(msg nats.Msg) error {
 func (s *Store) saveMsg(bucket string, msg nats.Msg) error {
 	// Save the message to the database
 	return s.db.Update(func(tx *bolt.Tx) error {
-		fmt.Println("CACA")
 		pendingBucket := tx.Bucket([]byte(bucket))
 		key := []byte(time.Now().UTC().Format(time.RFC3339Nano))
 
@@ -231,6 +236,12 @@ func (s *Store) saveMsg(bucket string, msg nats.Msg) error {
 		if err != nil {
 			return fmt.Errorf("failed to marshal message: %w", err)
 		}
+
+		// Data is too small for compression
+		// d, err := zstd.CompressData(msgData)
+		// if err != nil {
+		// 	return fmt.Errorf("failted to compress message: %w", err)
+		// }
 
 		// Store the message in the pending bucket
 		if err := pendingBucket.Put(key, msgData); err != nil {

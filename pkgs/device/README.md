@@ -19,8 +19,8 @@ Bucket name is 'msgs' for messages.
 
 Flow:
   Messages are all stored in the bucket with a timelimit and storage limit. Msgs are not stored in cache.
-  Reported properties stored?
-  What do we store? The data or the full nats msg
+  Reported properties stored? NO
+  What do we store? The data or the full nats msg. FULL
 
 Option1: All msgs are stored.
 Option2: Stored only if could not be sent

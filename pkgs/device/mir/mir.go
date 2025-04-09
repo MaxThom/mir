@@ -38,10 +38,11 @@ type Mir struct {
 }
 
 type Cfg struct {
-	DeviceId       string `json:"deviceId" yaml:"deviceId" cfg:""`
-	Target         string `json:"target" yaml:"target"`
-	LogLevel       string `json:"logLevel" yaml:"logLevel"`
-	NoSchemaOnBoot bool   `json:"noSchemaOnBoot" yaml:"noSchemaOnBoot"`
+	DeviceId       string       `json:"deviceId" yaml:"deviceId" cfg:""`
+	Target         string       `json:"target" yaml:"target"`
+	LogLevel       string       `json:"logLevel" yaml:"logLevel"`
+	NoSchemaOnBoot bool         `json:"noSchemaOnBoot" yaml:"noSchemaOnBoot"`
+	Store          StoreOptions `json:"store" yaml:"store"`
 }
 
 type cmdHandlerValue struct {
@@ -79,6 +80,7 @@ func (m *Mir) Launch(ctx context.Context) (*sync.WaitGroup, error) {
 		ctx = context.Background()
 	}
 	m.ctx, m.cancelFn = context.WithCancel(ctx)
+	connectWorkDone := make(chan struct{})
 
 	// Setup persistence
 	if err := m.store.Load(); err != nil {
@@ -89,28 +91,53 @@ func (m *Mir) Launch(ctx context.Context) (*sync.WaitGroup, error) {
 
 	// Setup Mir bus
 	m.b, err = bus.New(m.cfg.Target,
-		bus.WithReconnHandler(func(nc *nats.Conn) {
-			m.l.Warn().Msg("reconnected to Mir Server ")
+		bus.WithConnectHandler(func(nc *nats.Conn) {
+			m.l.Info().Msg("connected to Mir Server ")
 			m.setOnlineHandler()
+
+			if !m.cfg.NoSchemaOnBoot {
+				if err := m.sendSchema(); err != nil {
+					m.l.Error().Err(err).Msg("error sending schema on connect")
+				}
+				m.l.Debug().Msg("schema updated")
+			}
+
+			// Call config handler
+			if err := m.requestDesiredProperties(); err != nil {
+				m.l.Error().Err(err).Msg("error requesting desired properties")
+			}
+
+			close(connectWorkDone)
+		}),
+		bus.WithReconnHandler(func(nc *nats.Conn) {
+			m.l.Info().Msg("reconnected to Mir Server ")
+			// This time gives time for server side service
+			// to reconnect if they were disconnected as well
+			time.Sleep(1 * time.Second)
+			m.setOnlineHandler()
+			if err := m.requestDesiredProperties(); err != nil {
+				m.l.Error().Err(err).Msg("error requesting desired properties")
+			}
+			m.callAllCfgHandlers()
+			m.l.Debug().Msg("desired properties propagated")
 		}),
 		bus.WithDisconnHandler(func(_ *nats.Conn, err error) {
 			m.l.Warn().Err(err).Msg("disconnected from Mir Server")
 			m.setOfflineHandler()
 		}),
 		bus.WithClosedHandler(func(nc *nats.Conn) {
-			m.l.Warn().Err(err).Msg("closed connection from Mir Server")
+			m.l.Warn().Msg("closed connection from Mir Server")
 			m.setOfflineHandler()
-		}))
+		}),
+		bus.WithReconnect())
 	if err != nil {
 		return &wg, err
 	}
-	m.setOnlineHandler()
 
 	sub, err := m.b.SubscribeSync(fmt.Sprintf("%s.>", m.cfg.DeviceId))
 	if err != nil {
 		return &wg, err
 	}
-	m.l.Debug().Msg("connection establish")
 
 	wg.Add(1)
 	go func() {
@@ -137,25 +164,22 @@ func (m *Mir) Launch(ctx context.Context) (*sync.WaitGroup, error) {
 		wg.Done()
 	}()
 
-	// Wait for the connection to be established
-	// and device created on the server if needed
-	time.Sleep(2 * time.Second)
-
-	if !m.cfg.NoSchemaOnBoot {
-		if err := m.sendSchema(); err != nil {
-			m.l.Error().Err(err).Msg("error sending schema on boot")
-		}
-		m.l.Debug().Msg("schema updated")
+	select {
+	case <-connectWorkDone:
+		m.l.Debug().Msg("online initialization")
+	case <-time.After(2 * time.Second):
+		m.l.Warn().Msg("disconnected from Mir Server ")
+		m.setOfflineHandler()
+		m.l.Debug().Msg("offline initialization")
 	}
 
-	// Call config handler
-	if err := m.requestDesiredProperties(); err != nil {
-		m.l.Error().Err(err).Msg("error requesting desired properties")
-	}
 	m.callAllCfgHandlers()
 	m.l.Debug().Msg("desired properties propagated")
 	m.initialized = true
 	m.l.Debug().Msg("device initialized")
+
+	// Wait for the connection to be established
+	// and device created on the server if needed
 
 	return &wg, nil
 }
@@ -248,7 +272,11 @@ func (m Mir) SendTelemetry(t proto.Message) error {
 
 // Send proto reported properties to Mir Server
 func (m Mir) SendProperties(t proto.Message) error {
-	return cfg_client.PublishReportedPropertiesStream(m.b, m.cfg.DeviceId, t)
+	msg, err := cfg_client.GetReportedPropertiesStreamMsg(m.cfg.DeviceId, t)
+	if err != nil {
+		return err
+	}
+	return m.sendMsg(msg)
 }
 
 func (m Mir) sendSchema() error {
@@ -389,7 +417,7 @@ func (m Mir) NewSubject(module, version, function string, extra ...string) subje
 // use `m.NewSubject` to create a subject
 // Use the module sdk to subscribe to the subject and process the data
 func (m Mir) SendData(sbj subject, data []byte, h nats.Header) error {
-	return m.b.PublishMsg(&nats.Msg{
+	return m.sendMsg(&nats.Msg{
 		Subject: string(sbj),
 		Header:  h,
 		Data:    data,

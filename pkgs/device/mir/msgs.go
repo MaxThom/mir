@@ -194,26 +194,26 @@ func (m Mir) sendProtoMsg(subject string, protoMsg protoreflect.ProtoMessage, h 
 func (m Mir) setOnlineHandler() {
 	if m.store.opts.Msgs.MsgStorageType == StorageTypeNoStorage || m.store.opts.InMemory {
 		msgSender = m.sendMsgOnly
-		m.l.Debug().Msg("Send msg only")
+		m.l.Debug().Msg("send handler online: no storage")
 	} else if m.store.opts.Msgs.MsgStorageType == StorageTypeOnlyIfOffline {
 		msgSender = m.sendMsgOnly
-		m.l.Debug().Msg("Send msg only")
+		m.l.Debug().Msg("send handler online: no storage")
 	} else if m.store.opts.Msgs.MsgStorageType == StorageTypeAlways {
 		msgSender = m.sendMsgWithStorage
-		m.l.Debug().Msg("Send msg with storage")
+		m.l.Debug().Msg("send handler online: with storage")
 	}
 }
 
 func (m Mir) setOfflineHandler() {
 	if m.store.opts.Msgs.MsgStorageType == StorageTypeNoStorage || m.store.opts.InMemory {
 		msgSender = m.sendNothing
-		m.l.Debug().Msg("Send nothing")
+		m.l.Debug().Msg("send handler offline: nothing")
 	} else if m.store.opts.Msgs.MsgStorageType == StorageTypeOnlyIfOffline {
 		msgSender = m.saveMsgInPending
-		m.l.Debug().Msg("Save in pending")
+		m.l.Debug().Msg("send handler offline: pending storage")
 	} else if m.store.opts.Msgs.MsgStorageType == StorageTypeAlways {
 		msgSender = m.saveMsgInPending
-		m.l.Debug().Msg("Save in pending")
+		m.l.Debug().Msg("send handler offline: pending storage")
 	}
 }
 
