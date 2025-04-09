@@ -187,11 +187,11 @@ func run(
 	log.Info().Str("url", cfg.TelemetryServer.Url).Msg("connected to puthost")
 
 	// Bus
-	m, err := mir.Connect("prototlm", cfg.DataBusServer.Url)
+	m, err := mir.Connect("prototlm", cfg.DataBusServer.Url, append(mir.WithDefaultReconnectOpts(), mir.WithDefaultConnectionLogging(log)...)...)
 	if err != nil {
 		return err
 	}
-	log.Info().Str("url", cfg.DataBusServer.Url).Msg("connected to msg bus")
+	log.Info().Str("url", cfg.DataBusServer.Url).Str("status", m.Bus.Status().String()).Msg("msg bus status")
 
 	// Services
 	cc, err := schema_cache.NewMirProtoCache(log, m)

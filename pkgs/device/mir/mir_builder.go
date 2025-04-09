@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/adrg/xdg"
 	"github.com/maxthom/mir/internal/libs/boiler/mir_config"
@@ -237,6 +238,34 @@ func (b builder) Build() (*Mir, error) {
 		l.Info().Strs("lookup config", lookupFiles).Strs("found config", foundFiles).Msg("configuration loaded")
 	}
 
+	if b.storeOpts.Path == "" {
+		c.Store.Path = b.storeOpts.Path
+	}
+	if b.storeOpts.InMemory {
+		c.Store.InMemory = b.storeOpts.InMemory
+	}
+	if b.storeOpts.Msgs.DiskSpaceLimit > 0 {
+		c.Store.Msgs.DiskSpaceLimit = b.storeOpts.Msgs.DiskSpaceLimit
+	}
+	if b.storeOpts.Msgs.RententionLimit > 0 {
+		c.Store.Msgs.RententionLimit = b.storeOpts.Msgs.RententionLimit
+	}
+	if b.storeOpts.Msgs.MsgStorageType != StorageTypeNone {
+		c.Store.Msgs.MsgStorageType = b.storeOpts.Msgs.MsgStorageType
+	}
+	if b.storeOpts.Path == "" && c.Store.Path == "" {
+		c.Store.Path = filepath.Join(xdg.DataHome, "mir", "mir.db")
+	}
+	if b.storeOpts.Msgs.DiskSpaceLimit == 0 && c.Store.Msgs.DiskSpaceLimit == 0 {
+		c.Store.Msgs.DiskSpaceLimit = 85
+	}
+	if b.storeOpts.Msgs.RententionLimit == 0 && c.Store.Msgs.RententionLimit == 0 {
+		c.Store.Msgs.RententionLimit = JsonReadableDuration(time.Minute * 10080) // A week
+	}
+	if b.storeOpts.Msgs.MsgStorageType == StorageTypeNone && c.Store.Msgs.MsgStorageType == StorageTypeNone {
+		c.Store.Msgs.MsgStorageType = StorageTypeOnlyIfOffline
+	}
+
 	if prettyCfg, err := mir_config.JsonMarshalWithoutSecrets(c); err != nil {
 		l.Error().Err(err).Msg("Error marshalling config")
 	} else {
@@ -275,16 +304,7 @@ func (b builder) Build() (*Mir, error) {
 		return nil, fmt.Errorf("error creating schema registry: %w", err)
 	}
 
-	if b.storeOpts.Path == "" {
-		b.storeOpts.Path = filepath.Join(xdg.DataHome, "mir", "mir.db")
-	}
-	if b.storeOpts.Msgs.DiskSpaceLimit == 0 {
-		b.storeOpts.Msgs.DiskSpaceLimit = 85
-	}
-	if b.storeOpts.Msgs.MsgStorageType == StorageTypeNone {
-		b.storeOpts.Msgs.MsgStorageType = StorageTypeOnlyIfOffline
-	}
-	store, err := NewStore(b.storeOpts)
+	store, err := NewStore(c.Store)
 	if err != nil {
 		return nil, fmt.Errorf("error creating store: %w", err)
 	}

@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/maxthom/mir/internal/externals/distributed_lock"
 	"github.com/maxthom/mir/internal/libs/compression/zstd"
 	"github.com/nats-io/nats.go"
+	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -22,7 +22,6 @@ type Mir struct {
 	wg           *sync.WaitGroup
 	name         string
 	instanceName string
-	LockStore    distributed_lock.DistributedLockStore
 }
 
 type Msg struct {
@@ -51,7 +50,7 @@ const (
 // Establish connection to the Mir server
 // This will enable communication to and from the device
 // To properly close the connection, call the Close() function
-func Connect(name string, target string) (*Mir, error) {
+func Connect(name string, target string, natsOpts ...nats.Option) (*Mir, error) {
 	m := &Mir{
 		wg:           &sync.WaitGroup{},
 		name:         name,
@@ -62,31 +61,39 @@ func Connect(name string, target string) (*Mir, error) {
 	// Setup Mir bus
 	var err error
 	m.Bus, err = nats.Connect(target,
-		[]nats.Option{
-			nats.Name(name),
-			nats.RetryOnFailedConnect(true),
-			nats.MaxReconnects(-1),
-			nats.ReconnectWait(3 * time.Second),
-			nats.DisconnectErrHandler(func(c *nats.Conn, err error) {
-
-			}),
-			nats.ReconnectHandler(func(c *nats.Conn) {
-
-			}),
-			nats.ClosedHandler(func(c *nats.Conn) {
-				m.wg.Done()
-			}),
-		}...,
+		append([]nats.Option{nats.Name(name)}, natsOpts...)...,
 	)
 	if err != nil {
-		return nil, err
-	}
-	m.LockStore, err = distributed_lock.NewNatsLockStore(m.Bus, m.instanceName)
-	if err != nil {
-		return nil, err
+		return m, err
 	}
 
 	return m, nil
+}
+
+func WithDefaultReconnectOpts() []nats.Option {
+	return []nats.Option{
+		nats.RetryOnFailedConnect(true),
+		nats.MaxReconnects(-1),
+		nats.ReconnectWait(3 * time.Second),
+		nats.ReconnectJitter(time.Millisecond*100, time.Second), // Set the jitter for reconnects
+	}
+}
+
+func WithDefaultConnectionLogging(l zerolog.Logger) []nats.Option {
+	return []nats.Option{
+		nats.ConnectHandler(func(c *nats.Conn) {
+			l.Info().Msg("connected to Mir Server ")
+		}),
+		nats.DisconnectErrHandler(func(c *nats.Conn, err error) {
+			l.Warn().Err(err).Msg("disconnected from Mir Server")
+		}),
+		nats.ReconnectHandler(func(c *nats.Conn) {
+			l.Info().Msg("reconnected to Mir Server ")
+		}),
+		nats.ClosedHandler(func(c *nats.Conn) {
+			l.Warn().Msg("closed connection from Mir Server")
+		}),
+	}
 }
 
 // Close the connection to the Mir server

@@ -57,6 +57,14 @@ func WithReconnect() func(*BusConn) {
 	}
 }
 
+func WithConnectHandler(fn nats.ConnHandler) func(*BusConn) {
+	return func(bus *BusConn) {
+		bus.opts = append(bus.opts, []nats.Option{
+			nats.ConnectHandler(fn),
+		}...)
+	}
+}
+
 func WithReconnHandler(fn nats.ConnHandler) func(*BusConn) {
 	return func(bus *BusConn) {
 		bus.opts = append(bus.opts, []nats.Option{

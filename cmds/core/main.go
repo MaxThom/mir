@@ -158,11 +158,11 @@ func run(
 	log.Info().Str("url", cfg.DatabaseServer.Url).Str("namespace", "global").Str("database", "mir").Msg("connected to database")
 
 	// Bus
-	m, err := mir.Connect("protocmd", cfg.DataBusServer.Url)
+	m, err := mir.Connect("protocmd", cfg.DataBusServer.Url, append(mir.WithDefaultReconnectOpts(), mir.WithDefaultConnectionLogging(log)...)...)
 	if err != nil {
 		return err
 	}
-	log.Info().Str("url", cfg.DataBusServer.Url).Msg("connected to msg bus")
+	log.Info().Str("url", cfg.DataBusServer.Url).Str("status", m.Bus.Status().String()).Msg("msg bus status")
 
 	// Services
 	coreSrv, err := core_srv.NewCore(log, m, mng.NewSurrealDeviceStore(db))
