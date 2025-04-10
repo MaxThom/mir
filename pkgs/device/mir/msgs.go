@@ -194,26 +194,26 @@ func (m Mir) sendProtoMsg(subject string, protoMsg protoreflect.ProtoMessage, h 
 func (m Mir) setOnlineHandler() {
 	if m.store.opts.Msgs.MsgStorageType == StorageTypeNoStorage || m.store.opts.InMemory {
 		msgSender = m.sendMsgOnly
-		m.l.Debug().Msg("send handler online: no storage")
+		m.l.Info().Msg("set online handler: no storage")
 	} else if m.store.opts.Msgs.MsgStorageType == StorageTypeOnlyIfOffline {
 		msgSender = m.sendMsgOnly
-		m.l.Debug().Msg("send handler online: no storage")
-	} else if m.store.opts.Msgs.MsgStorageType == StorageTypeAlways {
+		m.l.Info().Msg("set online handler: no storage")
+	} else if m.store.opts.Msgs.MsgStorageType == StorageTypePersistent {
 		msgSender = m.sendMsgWithStorage
-		m.l.Debug().Msg("send handler online: with storage")
+		m.l.Info().Msg("set online handler: persistent storage")
 	}
 }
 
 func (m Mir) setOfflineHandler() {
 	if m.store.opts.Msgs.MsgStorageType == StorageTypeNoStorage || m.store.opts.InMemory {
 		msgSender = m.sendNothing
-		m.l.Debug().Msg("send handler offline: nothing")
+		m.l.Info().Msg("set offline handler: no storage")
 	} else if m.store.opts.Msgs.MsgStorageType == StorageTypeOnlyIfOffline {
 		msgSender = m.saveMsgInPending
-		m.l.Debug().Msg("send handler offline: pending storage")
-	} else if m.store.opts.Msgs.MsgStorageType == StorageTypeAlways {
+		m.l.Info().Msg("set offline handler: pending storage")
+	} else if m.store.opts.Msgs.MsgStorageType == StorageTypePersistent {
 		msgSender = m.saveMsgInPending
-		m.l.Debug().Msg("send handler offline: pending storage")
+		m.l.Info().Msg("set offline handler: pending storage")
 	}
 }
 
@@ -234,7 +234,7 @@ func (m Mir) saveMsgInPending(msg *nats.Msg) error {
 
 // Performance solution would be to do batch writes
 func (m Mir) sendMsgWithStorage(msg *nats.Msg) error {
-	if err := m.store.SaveMsgToSent(*msg); err != nil {
+	if err := m.store.SaveMsgToPermanent(*msg); err != nil {
 		m.l.Warn().Err(err).Msg("error saving msg to sent store")
 	}
 	return m.b.PublishMsg(msg)

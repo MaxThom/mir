@@ -107,6 +107,11 @@ func (m *Mir) Launch(ctx context.Context) (*sync.WaitGroup, error) {
 				m.l.Error().Err(err).Msg("error requesting desired properties")
 			}
 
+			go func() {
+				time.Sleep(1 * time.Second)
+				m.sendPendingMsgs()
+			}()
+
 			close(connectWorkDone)
 		}),
 		bus.WithReconnHandler(func(nc *nats.Conn) {
@@ -120,6 +125,11 @@ func (m *Mir) Launch(ctx context.Context) (*sync.WaitGroup, error) {
 			}
 			m.callAllCfgHandlers()
 			m.l.Debug().Msg("desired properties propagated")
+
+			go func() {
+				time.Sleep(1 * time.Second)
+				m.sendPendingMsgs()
+			}()
 		}),
 		bus.WithDisconnHandler(func(_ *nats.Conn, err error) {
 			m.l.Warn().Err(err).Msg("disconnected from Mir Server")
@@ -290,6 +300,37 @@ func (m Mir) sendSchema() error {
 			Schema: bytes,
 		},
 	}, nil, true)
+}
+
+func (m Mir) sendPendingMsgs() {
+	batchSize := 100
+	if m.cfg.Store.Msgs.MsgStorageType == StorageTypePersistent {
+		count := 0
+		if err := m.store.SwapMsgByBatch(msgPendingBucket, msgPersistentBucket, batchSize, func(msgs []nats.Msg) error {
+			var errs error
+			for _, msg := range msgs {
+				errs = errors.Join(m.sendMsgOnly(&msg))
+			}
+			count += len(msgs)
+			return errs
+		}); err != nil {
+			m.l.Error().Err(err).Msg("error sending pending messages to Mir")
+		}
+		m.l.Info().Msgf("%d pending messages sent to Mir and moved to persistent storage", count)
+	} else {
+		count := 0
+		if err := m.store.DeleteMsgByBatch(msgPendingBucket, batchSize, func(msgs []nats.Msg) error {
+			var errs error
+			for _, msg := range msgs {
+				errs = errors.Join(m.sendMsgOnly(&msg))
+			}
+			count += len(msgs)
+			return errs
+		}); err != nil {
+			m.l.Error().Err(err).Msg("error sending pending messages to Mir")
+		}
+		m.l.Info().Msgf("%d pending messages sent to Mir", count)
+	}
 }
 
 // Fill the properties store with the latest properties from Mir server
