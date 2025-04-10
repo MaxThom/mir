@@ -23,7 +23,7 @@ func main() {
 		LogLevel(mir.LogLevelDebug).
 		Store(mir.StoreOptions{
 			Msgs: mir.StoreMsgOptions{
-				MsgStorageType: mir.StorageTypeOnlyIfOffline,
+				MsgStorageType: mir.StorageTypePersistent,
 			},
 		}).
 		Build()

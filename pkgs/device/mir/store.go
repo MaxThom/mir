@@ -33,8 +33,12 @@ const (
 	StorageTypeNoStorage = "nostorage"
 	// StorageTypeOnlyIfOffline will keep messages only if device is d/c
 	StorageTypeOnlyIfOffline = "ifoffline"
-	// StorageTypeAlways will keep all msgs
-	StorageTypeAlways = "always"
+	// StorageTypePersistent will keep all msgs
+	StorageTypePersistent = "persistent"
+
+	msgPendingBucket    = "msgs.pending"
+	msgPersistentBucket = "msgs.persistent"
+	propertiesBucket    = "properties"
 )
 
 type StoreMsgOptions struct {
@@ -78,18 +82,18 @@ func (s *Store) Load() error {
 		}
 
 		if err := s.db.Update(func(tx *bolt.Tx) error {
-			_, err := tx.CreateBucketIfNotExists([]byte("msgs.pending"))
+			_, err := tx.CreateBucketIfNotExists([]byte(msgPendingBucket))
 			if err != nil {
-				return fmt.Errorf("failed to create msgs.pending bucket: %w", err)
+				return fmt.Errorf("failed to create %s bucket: %w", msgPendingBucket, err)
 			}
-			_, err = tx.CreateBucketIfNotExists([]byte("msgs.sent"))
+			_, err = tx.CreateBucketIfNotExists([]byte(msgPersistentBucket))
 			if err != nil {
-				return fmt.Errorf("failed to create msgs.sent bucket: %w", err)
+				return fmt.Errorf("failed to create %s bucket: %w", msgPersistentBucket, err)
 			}
 
-			b, err := tx.CreateBucketIfNotExists([]byte("properties"))
+			b, err := tx.CreateBucketIfNotExists([]byte(propertiesBucket))
 			if err != nil {
-				return fmt.Errorf("error creating properties bucket: %w", err)
+				return fmt.Errorf("error creating %s bucket: %w", propertiesBucket, err)
 			}
 			if err = b.ForEach(func(k, v []byte) error {
 				propsValue := propsValue{}
@@ -137,7 +141,7 @@ func (s *Store) UpdatePropsIfNew(name string, prop propsValue) (bool, error) {
 
 	if !s.opts.InMemory {
 		if err := s.db.Update(func(tx *bolt.Tx) error {
-			b := tx.Bucket([]byte("properties"))
+			b := tx.Bucket([]byte(propertiesBucket))
 
 			val, err := json.Marshal(localProp)
 			if err != nil {
@@ -164,66 +168,158 @@ func (s *Store) Close() error {
 	return s.db.Close()
 }
 
-func (s *Store) SaveMsgNoStorage(msg nats.Msg) error {
-	return nil
-}
-
 func (s *Store) SwapMsgFromPendingToSent(msg nats.Msg) error {
 	// return s.swapMsg("msgs.pending", "msgs.sent", msg)
 	return nil
 }
 
-func (s *Store) DeleteMsgByPatch(bucket string, size int) error {
-	msgs := []nats.Msg{}
+func (s *Store) SwapMsgByBatch(bucketFrom string, bucketTo string, size int, h func([]nats.Msg) error) error {
+	var errs error
 	key := []byte{}
+	startKey := []byte{}
 	v := []byte{}
-	count := 0
 
-	s.db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(bucket))
-		if b == nil {
-			return errors.New("bucket '" + bucket + "' not found")
-		}
-		c := b.Cursor()
-		if len(key) == 0 {
-			key, _ = c.First()
-		}
-
-		for key, v = c.Seek(key); key != nil && count < size; key, v = c.Next() {
-			count += 1
-			fmt.Printf("%s %s\n", string(key), string(v))
-
-			msg := nats.Msg{}
-			err := json.Unmarshal(v, &msg)
-			if err != nil {
-				return fmt.Errorf("failed to unmarshal message: %w", err)
+	for key != nil {
+		msgs := []nats.Msg{}
+		errs = s.db.View(func(tx *bolt.Tx) error {
+			bFrom := tx.Bucket([]byte(bucketFrom))
+			if bFrom == nil {
+				return errors.New("bucket '" + bucketFrom + "' not found")
 			}
-			msgs = append(msgs, msg)
-			fmt.Println(msg)
+			c := bFrom.Cursor()
+			if len(key) == 0 {
+				key, _ = c.First()
+			}
+			startKey := key
+			count := 0
+
+			var errs error
+			for key, v = c.Seek(startKey); key != nil && count < size; key, v = c.Next() {
+				count += 1
+				// fmt.Printf("%s %s\n", string(key), string(v))
+
+				msg := nats.Msg{}
+				err := json.Unmarshal(v, &msg)
+				if err != nil {
+					errs = errors.Join(errs, fmt.Errorf("failed to unmarshal message: %w", err))
+					continue
+				}
+				msgs = append(msgs, msg)
+			}
+
+			return errs
+		})
+
+		// Send msgs to handler, if success delete the keys
+		if len(msgs) > 0 {
+			err := h(msgs)
+			if err != nil {
+				errs = errors.Join(errs, fmt.Errorf("failed to handle batch messages: %w", err))
+				continue
+			}
 		}
 
-		return nil
-	})
+		// fmt.Println("--- d")
+		errs = errors.Join(errs, s.db.Update(func(tx *bolt.Tx) error {
+			b := tx.Bucket([]byte(bucketFrom))
+			if b == nil {
+				return errors.New("bucket '" + bucketFrom + "' not found")
+			}
+			bTo := tx.Bucket([]byte(bucketTo))
+			if bTo == nil {
+				return errors.New("bucket '" + bucketTo + "' not found")
+			}
+			c := b.Cursor()
 
-	return s.db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(bucket))
-		if b == nil {
-			return errors.New("bucket '" + bucket + "' not found")
+			count := 0
+			for key, v = c.Seek(startKey); key != nil && count < size; key, v = c.Next() {
+				count += 1
+				// fmt.Printf("%s %s\n", string(key), string(v))
+				errs = errors.Join(errs, c.Delete())
+				errs = errors.Join(errs, bTo.Put(key, v))
+			}
+			return errs
+		}))
+	}
+	return errs
+}
+
+func (s *Store) DeleteMsgByBatch(bucket string, size int, h func([]nats.Msg) error) error {
+	var errs error
+	key := []byte{}
+	startKey := []byte{}
+	v := []byte{}
+
+	for key != nil {
+		// fmt.Println("--- r")
+		msgs := []nats.Msg{}
+		errs = s.db.View(func(tx *bolt.Tx) error {
+			b := tx.Bucket([]byte(bucket))
+			if b == nil {
+				return errors.New("bucket '" + bucket + "' not found")
+			}
+			c := b.Cursor()
+			if len(key) == 0 {
+				key, _ = c.First()
+			}
+			startKey := key
+			count := 0
+
+			var errs error
+			for key, v = c.Seek(startKey); key != nil && count < size; key, v = c.Next() {
+				count += 1
+				// fmt.Printf("%s %s\n", string(key), string(v))
+
+				msg := nats.Msg{}
+				err := json.Unmarshal(v, &msg)
+				if err != nil {
+					errs = errors.Join(errs, fmt.Errorf("failed to unmarshal message: %w", err))
+					continue
+				}
+				msgs = append(msgs, msg)
+			}
+
+			return errs
+		})
+
+		// Send msgs to handler, if success delete the keys
+		if len(msgs) > 0 {
+			err := h(msgs)
+			if err != nil {
+				errs = errors.Join(errs, fmt.Errorf("failed to handle batch messages: %w", err))
+				continue
+			}
 		}
 
-		return nil
-	})
+		// fmt.Println("--- d")
+		errs = errors.Join(errs, s.db.Update(func(tx *bolt.Tx) error {
+			b := tx.Bucket([]byte(bucket))
+			if b == nil {
+				return errors.New("bucket '" + bucket + "' not found")
+			}
+			c := b.Cursor()
+
+			count := 0
+			for key, v = c.Seek(startKey); key != nil && count < size; key, v = c.Next() {
+				count += 1
+				// fmt.Printf("%s %s\n", string(key), string(v))
+				errs = errors.Join(errs, c.Delete())
+			}
+			return errs
+		}))
+	}
+	return errs
 }
 
 // Read by batch, send the batch, delete/swap the batch
 // Pass a handler to do by batch in one transaction
 
 func (s *Store) SaveMsgToPending(msg nats.Msg) error {
-	return s.saveMsg("msgs.pending", msg)
+	return s.saveMsg(msgPendingBucket, msg)
 }
 
-func (s *Store) SaveMsgToSent(msg nats.Msg) error {
-	return s.saveMsg("msgs.sent", msg)
+func (s *Store) SaveMsgToPermanent(msg nats.Msg) error {
+	return s.saveMsg(msgPersistentBucket, msg)
 }
 
 func (s *Store) saveMsg(bucket string, msg nats.Msg) error {
