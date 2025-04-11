@@ -1,6 +1,7 @@
 package mir
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"time"
@@ -238,4 +239,37 @@ func (m Mir) sendMsgWithStorage(msg *nats.Msg) error {
 		m.l.Warn().Err(err).Msg("error saving msg to sent store")
 	}
 	return m.b.PublishMsg(msg)
+}
+
+func (m Mir) sendPendingMsgs() {
+	if !m.store.opts.InMemory {
+		batchSize := 100
+		if m.cfg.Store.Msgs.MsgStorageType == StorageTypePersistent {
+			count := 0
+			if err := m.store.SwapMsgByBatch(msgPendingBucket, msgPersistentBucket, batchSize, func(msgs []nats.Msg) error {
+				var errs error
+				for _, msg := range msgs {
+					errs = errors.Join(m.sendMsgOnly(&msg))
+				}
+				count += len(msgs)
+				return errs
+			}); err != nil {
+				m.l.Error().Err(err).Msg("error sending pending messages to Mir")
+			}
+			m.l.Info().Msgf("%d pending messages sent to Mir and moved to persistent storage", count)
+		} else {
+			count := 0
+			if err := m.store.DeleteMsgByBatch(msgPendingBucket, batchSize, func(msgs []nats.Msg) error {
+				var errs error
+				for _, msg := range msgs {
+					errs = errors.Join(m.sendMsgOnly(&msg))
+				}
+				count += len(msgs)
+				return errs
+			}); err != nil {
+				m.l.Error().Err(err).Msg("error sending pending messages to Mir")
+			}
+			m.l.Info().Msgf("%d pending messages sent to Mir", count)
+		}
+	}
 }
