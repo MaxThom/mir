@@ -43,3 +43,14 @@ If connected, sent msg to server and sent bucket if Option 1.
 If disconnected, sent msg to pending bucket.
 Change writing handler for most effiency.
 On reconnect, redo properties handler?
+
+
+### Limits
+
+Rentention and DiskSpace
+
+Flow:
+ - On online connect, delete persistent on dates
+ - On offline connect, delete persistent and pending on dates
+ - After, batch of 100 msgs, delete at a time and check diskpace, persistent first then pending
+ - Task every hour that does this

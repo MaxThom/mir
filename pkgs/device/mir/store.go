@@ -30,11 +30,11 @@ type MsgStorageType string
 const (
 	StorageTypeNone MsgStorageType = "none"
 	// StorageTypeNoStorage will not store messages
-	StorageTypeNoStorage = "nostorage"
+	StorageTypeNoStorage MsgStorageType = "nostorage"
 	// StorageTypeOnlyIfOffline will keep messages only if device is d/c
-	StorageTypeOnlyIfOffline = "ifoffline"
+	StorageTypeOnlyIfOffline MsgStorageType = "ifoffline"
 	// StorageTypePersistent will keep all msgs
-	StorageTypePersistent = "persistent"
+	StorageTypePersistent MsgStorageType = "persistent"
 
 	msgPendingBucket    = "msgs.pending"
 	msgPersistentBucket = "msgs.persistent"

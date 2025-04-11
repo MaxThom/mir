@@ -250,7 +250,7 @@ func (b builder) Build() (*Mir, error) {
 	if b.storeOpts.Msgs.RententionLimit > 0 {
 		c.Store.Msgs.RententionLimit = b.storeOpts.Msgs.RententionLimit
 	}
-	if b.storeOpts.Msgs.MsgStorageType != StorageTypeNone {
+	if b.storeOpts.Msgs.MsgStorageType != "" {
 		c.Store.Msgs.MsgStorageType = b.storeOpts.Msgs.MsgStorageType
 	}
 	if b.storeOpts.Path == "" && c.Store.Path == "" {
@@ -262,7 +262,7 @@ func (b builder) Build() (*Mir, error) {
 	if b.storeOpts.Msgs.RententionLimit == 0 && c.Store.Msgs.RententionLimit == 0 {
 		c.Store.Msgs.RententionLimit = JsonReadableDuration(time.Minute * 10080) // A week
 	}
-	if b.storeOpts.Msgs.MsgStorageType == StorageTypeNone && c.Store.Msgs.MsgStorageType == StorageTypeNone {
+	if b.storeOpts.Msgs.MsgStorageType == "" && c.Store.Msgs.MsgStorageType == "" {
 		c.Store.Msgs.MsgStorageType = StorageTypeOnlyIfOffline
 	}
 

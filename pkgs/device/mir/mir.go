@@ -302,37 +302,6 @@ func (m Mir) sendSchema() error {
 	}, nil, true)
 }
 
-func (m Mir) sendPendingMsgs() {
-	batchSize := 100
-	if m.cfg.Store.Msgs.MsgStorageType == StorageTypePersistent {
-		count := 0
-		if err := m.store.SwapMsgByBatch(msgPendingBucket, msgPersistentBucket, batchSize, func(msgs []nats.Msg) error {
-			var errs error
-			for _, msg := range msgs {
-				errs = errors.Join(m.sendMsgOnly(&msg))
-			}
-			count += len(msgs)
-			return errs
-		}); err != nil {
-			m.l.Error().Err(err).Msg("error sending pending messages to Mir")
-		}
-		m.l.Info().Msgf("%d pending messages sent to Mir and moved to persistent storage", count)
-	} else {
-		count := 0
-		if err := m.store.DeleteMsgByBatch(msgPendingBucket, batchSize, func(msgs []nats.Msg) error {
-			var errs error
-			for _, msg := range msgs {
-				errs = errors.Join(m.sendMsgOnly(&msg))
-			}
-			count += len(msgs)
-			return errs
-		}); err != nil {
-			m.l.Error().Err(err).Msg("error sending pending messages to Mir")
-		}
-		m.l.Info().Msgf("%d pending messages sent to Mir", count)
-	}
-}
-
 // Fill the properties store with the latest properties from Mir server
 // Also write to the persistent store
 func (m Mir) requestDesiredProperties() error {
