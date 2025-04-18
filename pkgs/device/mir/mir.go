@@ -86,7 +86,6 @@ func (m *Mir) Launch(ctx context.Context) (*sync.WaitGroup, error) {
 	if err := m.store.Load(); err != nil {
 		return &wg, fmt.Errorf("error loading local store: %w", err)
 	}
-	fmt.Println(m.store.opts)
 	m.l.Debug().Msg("persistence loaded")
 
 	// Setup Mir bus
@@ -137,7 +136,6 @@ func (m *Mir) Launch(ctx context.Context) (*sync.WaitGroup, error) {
 		}),
 		bus.WithClosedHandler(func(nc *nats.Conn) {
 			m.l.Warn().Msg("closed connection from Mir Server")
-			m.setOfflineHandler()
 		}),
 		bus.WithReconnect())
 	if err != nil {
@@ -170,7 +168,11 @@ func (m *Mir) Launch(ctx context.Context) (*sync.WaitGroup, error) {
 	wg.Add(1)
 	go func() {
 		<-ctx.Done()
-		m.store.Close()
+		err := m.store.Close()
+		if err != nil {
+			m.l.Error().Err(err).Msg("error closing device store")
+		}
+		m.l.Info().Msg("flushing writes to store and closing")
 		wg.Done()
 	}()
 
@@ -239,14 +241,14 @@ func (m *Mir) commands(ctx context.Context, sub *nats.Subscription) {
 }
 
 func (m *Mir) shutdown(ctx context.Context) {
-	for {
-		select {
-		case <-ctx.Done():
-			m.l.Info().Msg("shutting down connection to Mir")
-			m.b.Conn.Close()
-			return
-		}
+	// for {
+	select {
+	case <-ctx.Done():
+		m.l.Info().Msg("shutting down connection to Mir")
+		m.b.Conn.Close()
+		return
 	}
+	// }
 }
 
 // Return a new context of the Mir SDK logger

@@ -238,8 +238,8 @@ func (b builder) Build() (*Mir, error) {
 		l.Info().Strs("lookup config", lookupFiles).Strs("found config", foundFiles).Msg("configuration loaded")
 	}
 
-	if b.storeOpts.Path == "" {
-		c.Store.Path = b.storeOpts.Path
+	if b.storeOpts.FolderPath == "" {
+		c.Store.FolderPath = b.storeOpts.FolderPath
 	}
 	if b.storeOpts.InMemory {
 		c.Store.InMemory = b.storeOpts.InMemory
@@ -253,8 +253,8 @@ func (b builder) Build() (*Mir, error) {
 	if b.storeOpts.Msgs.MsgStorageType != "" {
 		c.Store.Msgs.MsgStorageType = b.storeOpts.Msgs.MsgStorageType
 	}
-	if b.storeOpts.Path == "" && c.Store.Path == "" {
-		c.Store.Path = filepath.Join(xdg.DataHome, "mir", "mir.db")
+	if b.storeOpts.FolderPath == "" && c.Store.FolderPath == "" {
+		c.Store.FolderPath = filepath.Join(xdg.DataHome, "mir")
 	}
 	if b.storeOpts.Msgs.DiskSpaceLimit == 0 && c.Store.Msgs.DiskSpaceLimit == 0 {
 		c.Store.Msgs.DiskSpaceLimit = 85

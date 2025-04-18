@@ -193,7 +193,7 @@ func (m Mir) sendProtoMsg(subject string, protoMsg protoreflect.ProtoMessage, h 
 }
 
 func (m Mir) setOnlineHandler() {
-	if m.store.opts.Msgs.MsgStorageType == StorageTypeNoStorage || m.store.opts.InMemory {
+	if m.store.opts.Msgs.MsgStorageType == StorageTypeNoStorage {
 		msgSender = m.sendMsgOnly
 		m.l.Info().Msg("set online handler: no storage")
 	} else if m.store.opts.Msgs.MsgStorageType == StorageTypeOnlyIfOffline {
@@ -206,7 +206,7 @@ func (m Mir) setOnlineHandler() {
 }
 
 func (m Mir) setOfflineHandler() {
-	if m.store.opts.Msgs.MsgStorageType == StorageTypeNoStorage || m.store.opts.InMemory {
+	if m.store.opts.Msgs.MsgStorageType == StorageTypeNoStorage {
 		msgSender = m.sendNothing
 		m.l.Info().Msg("set offline handler: no storage")
 	} else if m.store.opts.Msgs.MsgStorageType == StorageTypeOnlyIfOffline {
@@ -242,33 +242,39 @@ func (m Mir) sendMsgWithStorage(msg *nats.Msg) error {
 }
 
 func (m Mir) sendPendingMsgs() {
-	if !m.store.opts.InMemory {
-		batchSize := 100
-		if m.cfg.Store.Msgs.MsgStorageType == StorageTypePersistent {
-			count := 0
-			if err := m.store.SwapMsgByBatch(msgPendingBucket, msgPersistentBucket, batchSize, func(msgs []nats.Msg) error {
-				var errs error
-				for _, msg := range msgs {
-					errs = errors.Join(m.sendMsgOnly(&msg))
-				}
-				count += len(msgs)
-				return errs
-			}); err != nil {
-				m.l.Error().Err(err).Msg("error sending pending messages to Mir")
+	batchSize := 100
+	if m.cfg.Store.Msgs.MsgStorageType == StorageTypePersistent {
+		count := 0
+		if err := m.store.SwapMsgByBatch(msgPendingBucket, msgPersistentBucket, batchSize, func(msgs []nats.Msg) error {
+			var errs error
+			for _, msg := range msgs {
+				errs = errors.Join(m.sendMsgOnly(&msg))
 			}
-			m.l.Info().Msgf("%d pending messages sent to Mir and moved to persistent storage", count)
+			count += len(msgs)
+			return errs
+		}); err != nil {
+			m.l.Error().Err(err).Msg("error sending pending messages to Mir")
+		}
+		if count == 0 {
+			m.l.Info().Msg("pending storage is empty")
 		} else {
-			count := 0
-			if err := m.store.DeleteMsgByBatch(msgPendingBucket, batchSize, func(msgs []nats.Msg) error {
-				var errs error
-				for _, msg := range msgs {
-					errs = errors.Join(m.sendMsgOnly(&msg))
-				}
-				count += len(msgs)
-				return errs
-			}); err != nil {
-				m.l.Error().Err(err).Msg("error sending pending messages to Mir")
+			m.l.Info().Msgf("%d pending messages sent to Mir and moved to persistent storage", count)
+		}
+	} else {
+		count := 0
+		if err := m.store.DeleteMsgByBatch(msgPendingBucket, batchSize, func(msgs []nats.Msg) error {
+			var errs error
+			for _, msg := range msgs {
+				errs = errors.Join(m.sendMsgOnly(&msg))
 			}
+			count += len(msgs)
+			return errs
+		}); err != nil {
+			m.l.Error().Err(err).Msg("error sending pending messages to Mir")
+		}
+		if count == 0 {
+			m.l.Info().Msg("pending storage is empty")
+		} else {
 			m.l.Info().Msgf("%d pending messages sent to Mir", count)
 		}
 	}

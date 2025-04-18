@@ -277,7 +277,7 @@ func TestStore(t *testing.T) {
 	path := "./" + id + ".db"
 
 	s, err := NewStore(StoreOptions{
-		Path: path,
+		FolderPath: path,
 	})
 	if err != nil {
 		t.Error(err)
@@ -314,7 +314,7 @@ func TestStore(t *testing.T) {
 	assert.Equal(t, true, bytes.Equal([]byte("hello_world!"), val.Value))
 	assert.Equal(t, true, ok)
 	assert.Equal(t, false, notOk)
-	if err := os.Remove(path); err != nil {
+	if err := os.RemoveAll(path); err != nil {
 		t.Error(err)
 	}
 }

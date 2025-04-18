@@ -1,31 +1,32 @@
 package mir
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"time"
 
+	badger "github.com/dgraph-io/badger/v4"
 	"github.com/nats-io/nats.go"
-	bolt "go.etcd.io/bbolt"
 )
 
 type Store struct {
 	props map[string]propsValue
-	db    *bolt.DB
+	db    *badger.DB
 	opts  StoreOptions
 }
 
 type StoreOptions struct {
-	Path     string
-	InMemory bool
-	Msgs     StoreMsgOptions
+	FolderPath string
+	InMemory   bool
+	Msgs       StoreMsgOptions
 }
 
 // MsgStorageType represents the storage mechanism
 type MsgStorageType string
+type StoreBucket string
 
 const (
 	StorageTypeNone MsgStorageType = "none"
@@ -36,10 +37,22 @@ const (
 	// StorageTypePersistent will keep all msgs
 	StorageTypePersistent MsgStorageType = "persistent"
 
-	msgPendingBucket    = "msgs.pending"
-	msgPersistentBucket = "msgs.persistent"
-	propertiesBucket    = "properties"
+	msgPendingBucket    StoreBucket = "msgs.pending"
+	msgPersistentBucket StoreBucket = "msgs.persistent"
+	propertiesBucket    StoreBucket = "properties"
 )
+
+func (b StoreBucket) ToPrefix() []byte {
+	return []byte(b + ":")
+}
+
+func (b StoreBucket) ToPrefixWithKey(key string) []byte {
+	return []byte(string(b) + ":" + key)
+}
+
+func (b StoreBucket) ToKeyWithoutPrefix(key []byte) []byte {
+	return bytes.TrimPrefix(key, []byte(b+":"))
+}
 
 type StoreMsgOptions struct {
 	// Timelimit to store messages. If over, will start cycling messages
@@ -71,46 +84,46 @@ func NewStore(opts StoreOptions) (*Store, error) {
 }
 
 func (s *Store) Load() error {
+	var err error
+	path := ""
 	if !s.opts.InMemory {
-		var err error
-		if err := os.MkdirAll(filepath.Dir(s.opts.Path), 0755); err != nil {
+		path = s.opts.FolderPath
+		if err := os.MkdirAll(path, 0755); err != nil {
 			return fmt.Errorf("error creating directory: %w", err)
 		}
-		s.db, err = bolt.Open(s.opts.Path, 0600, &bolt.Options{Timeout: 3 * time.Second})
-		if err != nil {
-			return err
-		}
-
-		if err := s.db.Update(func(tx *bolt.Tx) error {
-			_, err := tx.CreateBucketIfNotExists([]byte(msgPendingBucket))
-			if err != nil {
-				return fmt.Errorf("failed to create %s bucket: %w", msgPendingBucket, err)
-			}
-			_, err = tx.CreateBucketIfNotExists([]byte(msgPersistentBucket))
-			if err != nil {
-				return fmt.Errorf("failed to create %s bucket: %w", msgPersistentBucket, err)
-			}
-
-			b, err := tx.CreateBucketIfNotExists([]byte(propertiesBucket))
-			if err != nil {
-				return fmt.Errorf("error creating %s bucket: %w", propertiesBucket, err)
-			}
-			if err = b.ForEach(func(k, v []byte) error {
-				propsValue := propsValue{}
-				if err := json.Unmarshal(v, &propsValue); err != nil {
-					return fmt.Errorf("error unmarshalling props from store: %w", err)
-				}
-				s.props[string(k)] = propsValue
-				return nil
-			}); err != nil {
-				return fmt.Errorf("error loading store: %w", err)
-			}
-
-			return nil
-		}); err != nil {
-			return fmt.Errorf("error loading store: %w", err)
-		}
 	}
+
+	opts := badger.DefaultOptions(path).
+		WithInMemory(s.opts.InMemory).WithLoggingLevel(badger.WARNING)
+	s.db, err = badger.Open(opts)
+	if err != nil {
+		return fmt.Errorf("error opening database: %w", err)
+	}
+
+	// Load properties from the database
+	if err := s.db.View(func(txn *badger.Txn) error {
+		it := txn.NewIterator(badger.DefaultIteratorOptions)
+		defer it.Close()
+		prefix := propertiesBucket.ToPrefix()
+		val := []byte{}
+		for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
+			item := it.Item()
+			key := propertiesBucket.ToKeyWithoutPrefix(item.Key())
+			val, err = item.ValueCopy(val)
+			if err != nil {
+				return err
+			}
+			propsValue := propsValue{}
+			if err := json.Unmarshal(val, &propsValue); err != nil {
+				return fmt.Errorf("error unmarshalling props from store: %w", err)
+			}
+			s.props[string(key)] = propsValue
+		}
+		return nil
+	}); err != nil {
+		return fmt.Errorf("error loading properties from store: %w", err)
+	}
+
 	return nil
 }
 
@@ -120,7 +133,7 @@ func (s *Store) GetProps(name string) (propsValue, bool) {
 }
 
 // Update the properties if the new value is different from the old one
-// Returns the new value if it was updated, nil otherwise
+// Returns the true if it was updated, false otherwise
 func (s *Store) UpdatePropsIfNew(name string, prop propsValue) (bool, error) {
 	localProp, ok := s.GetProps(name)
 	if !ok {
@@ -139,78 +152,104 @@ func (s *Store) UpdatePropsIfNew(name string, prop propsValue) (bool, error) {
 		return false, nil
 	}
 
-	if !s.opts.InMemory {
-		if err := s.db.Update(func(tx *bolt.Tx) error {
-			b := tx.Bucket([]byte(propertiesBucket))
-
-			val, err := json.Marshal(localProp)
-			if err != nil {
-				return fmt.Errorf("error marshalling props to store: %w", err)
-			}
-
-			if err = b.Put([]byte(name), val); err != nil {
-				return fmt.Errorf("error writing props to store: %w", err)
-			}
-
-			return nil
-		}); err != nil {
-			return true, err
+	if err := s.db.Update(func(txn *badger.Txn) error {
+		val, err := json.Marshal(localProp)
+		if err != nil {
+			return fmt.Errorf("error marshalling props to store: %w", err)
 		}
+		return txn.Set(propertiesBucket.ToPrefixWithKey(name), val)
+	}); err != nil {
+		return false, fmt.Errorf("error updating properties in store: %w", err)
 	}
+
+	// if !s.opts.InMemory {
+	// 	if err := s.db.Update(func(tx *bolt.Tx) error {
+	// 		b := tx.Bucket([]byte(propertiesBucket))
+
+	// 		val, err := json.Marshal(localProp)
+	// 		if err != nil {
+	// 			return fmt.Errorf("error marshalling props to store: %w", err)
+	// 		}
+
+	// 		if err = b.Put([]byte(name), val); err != nil {
+	// 			return fmt.Errorf("error writing props to store: %w", err)
+	// 		}
+
+	// 		return nil
+	// 	}); err != nil {
+	// 		return true, err
+	// 	}
+	// }
 	return true, nil
 
 }
 
 func (s *Store) Close() error {
-	if s.opts.InMemory {
-		return nil
-	}
 	return s.db.Close()
 }
 
-func (s *Store) SwapMsgFromPendingToSent(msg nats.Msg) error {
-	// return s.swapMsg("msgs.pending", "msgs.sent", msg)
-	return nil
+type entryItem struct {
+	key []byte
+	val []byte
+	ttl time.Duration
 }
 
-func (s *Store) SwapMsgByBatch(bucketFrom string, bucketTo string, size int, h func([]nats.Msg) error) error {
+func (s *Store) SwapMsgByBatch(bucketFrom StoreBucket, bucketTo StoreBucket, size int, h func([]nats.Msg) error) error {
 	var errs error
-	key := []byte{}
-	startKey := []byte{}
-	v := []byte{}
+	prefix := bucketFrom.ToPrefix()
+	done := false
+	iOpts := badger.DefaultIteratorOptions
+	iOpts.PrefetchSize = size
 
-	for key != nil {
+	for !done {
 		msgs := []nats.Msg{}
-		errs = s.db.View(func(tx *bolt.Tx) error {
-			bFrom := tx.Bucket([]byte(bucketFrom))
-			if bFrom == nil {
-				return errors.New("bucket '" + bucketFrom + "' not found")
-			}
-			c := bFrom.Cursor()
-			if len(key) == 0 {
-				key, _ = c.First()
-			}
-			startKey := key
-			count := 0
+		batchStartKey := bucketFrom.ToPrefix()
+		itemMarkForSwap := []entryItem{}
 
-			var errs error
-			for key, v = c.Seek(startKey); key != nil && count < size; key, v = c.Next() {
+		if err := s.db.View(func(txn *badger.Txn) error {
+			it := txn.NewIterator(iOpts)
+			defer it.Close()
+
+			count := 0
+			val := []byte{}
+			var err error
+			for it.Seek(batchStartKey); it.ValidForPrefix(prefix) && count < size; it.Next() {
 				count += 1
-				// fmt.Printf("%s %s\n", string(key), string(v))
+				item := it.Item()
+				val, err = item.ValueCopy(val)
+				if err != nil {
+					return err
+				}
+				itemMarkForSwap = append(itemMarkForSwap, entryItem{
+					key: item.KeyCopy(nil),
+					val: bytes.Clone(val),
+					ttl: time.Duration(item.ExpiresAt()),
+				})
 
 				msg := nats.Msg{}
-				err := json.Unmarshal(v, &msg)
+				err := json.Unmarshal(val, &msg)
 				if err != nil {
 					errs = errors.Join(errs, fmt.Errorf("failed to unmarshal message: %w", err))
 					continue
 				}
 				msgs = append(msgs, msg)
 			}
+			if !it.ValidForPrefix(prefix) {
+				done = true
+			} else {
+				it.Next()
+				if !it.ValidForPrefix(prefix) {
+					done = true
+				} else {
+					batchStartKey = it.Item().Key()
+				}
+			}
 
-			return errs
-		})
+			return nil
+		}); err != nil {
+			return fmt.Errorf("error reading messages from store: %w", err)
+		}
 
-		// Send msgs to handler, if success delete the keys
 		if len(msgs) > 0 {
 			err := h(msgs)
 			if err != nil {
@@ -219,70 +258,82 @@ func (s *Store) SwapMsgByBatch(bucketFrom string, bucketTo string, size int, h f
 			}
 		}
 
-		// fmt.Println("--- d")
-		errs = errors.Join(errs, s.db.Update(func(tx *bolt.Tx) error {
-			b := tx.Bucket([]byte(bucketFrom))
-			if b == nil {
-				return errors.New("bucket '" + bucketFrom + "' not found")
-			}
-			bTo := tx.Bucket([]byte(bucketTo))
-			if bTo == nil {
-				return errors.New("bucket '" + bucketTo + "' not found")
-			}
-			c := b.Cursor()
+		if err := s.db.Update(func(txn *badger.Txn) error {
+			for _, k := range itemMarkForSwap {
+				errs = errors.Join(errs, txn.Delete(k.key))
 
-			count := 0
-			for key, v = c.Seek(startKey); key != nil && count < size; key, v = c.Next() {
-				count += 1
-				// fmt.Printf("%s %s\n", string(key), string(v))
-				errs = errors.Join(errs, c.Delete())
-				errs = errors.Join(errs, bTo.Put(key, v))
+				newKey := bucketTo.ToPrefixWithKey(string(bucketFrom.ToKeyWithoutPrefix(k.key)))
+				newItem := badger.NewEntry(newKey, k.val).WithTTL(k.ttl)
+				if err := txn.SetEntry(newItem); err != nil {
+					errs = errors.Join(errs, err)
+					continue
+				}
 			}
 			return errs
-		}))
+		}); err != nil {
+			return fmt.Errorf("error deleting messages from store: %w", err)
+		}
 	}
+
 	return errs
 }
 
-func (s *Store) DeleteMsgByBatch(bucket string, size int, h func([]nats.Msg) error) error {
+func (s *Store) DeleteMsgByBatch(bucket StoreBucket, size int, h func([]nats.Msg) error) error {
 	var errs error
-	key := []byte{}
-	startKey := []byte{}
-	v := []byte{}
+	prefix := bucket.ToPrefix()
+	done := false
+	iOpts := badger.DefaultIteratorOptions
+	iOpts.PrefetchSize = size
 
-	for key != nil {
-		// fmt.Println("--- r")
+	for !done {
 		msgs := []nats.Msg{}
-		errs = s.db.View(func(tx *bolt.Tx) error {
-			b := tx.Bucket([]byte(bucket))
-			if b == nil {
-				return errors.New("bucket '" + bucket + "' not found")
-			}
-			c := b.Cursor()
-			if len(key) == 0 {
-				key, _ = c.First()
-			}
-			startKey := key
-			count := 0
+		batchStartKey := bucket.ToPrefix()
+		itemMarkForSwap := []entryItem{}
 
-			var errs error
-			for key, v = c.Seek(startKey); key != nil && count < size; key, v = c.Next() {
+		if err := s.db.View(func(txn *badger.Txn) error {
+			it := txn.NewIterator(iOpts)
+			defer it.Close()
+
+			count := 0
+			val := []byte{}
+			var err error
+			for it.Seek(batchStartKey); it.ValidForPrefix(prefix) && count < size; it.Next() {
 				count += 1
-				// fmt.Printf("%s %s\n", string(key), string(v))
+				item := it.Item()
+				val, err = item.ValueCopy(val)
+				if err != nil {
+					return err
+				}
+				itemMarkForSwap = append(itemMarkForSwap, entryItem{
+					key: item.KeyCopy(nil),
+					val: bytes.Clone(val),
+					ttl: time.Duration(item.ExpiresAt()),
+				})
 
 				msg := nats.Msg{}
-				err := json.Unmarshal(v, &msg)
+				err := json.Unmarshal(val, &msg)
 				if err != nil {
 					errs = errors.Join(errs, fmt.Errorf("failed to unmarshal message: %w", err))
 					continue
 				}
 				msgs = append(msgs, msg)
 			}
+			if !it.ValidForPrefix(prefix) {
+				done = true
+			} else {
+				it.Next()
+				if !it.ValidForPrefix(prefix) {
+					done = true
+				} else {
+					batchStartKey = it.Item().Key()
+				}
+			}
 
-			return errs
-		})
+			return nil
+		}); err != nil {
+			return fmt.Errorf("error reading messages from store: %w", err)
+		}
 
-		// Send msgs to handler, if success delete the keys
 		if len(msgs) > 0 {
 			err := h(msgs)
 			if err != nil {
@@ -291,22 +342,14 @@ func (s *Store) DeleteMsgByBatch(bucket string, size int, h func([]nats.Msg) err
 			}
 		}
 
-		// fmt.Println("--- d")
-		errs = errors.Join(errs, s.db.Update(func(tx *bolt.Tx) error {
-			b := tx.Bucket([]byte(bucket))
-			if b == nil {
-				return errors.New("bucket '" + bucket + "' not found")
-			}
-			c := b.Cursor()
-
-			count := 0
-			for key, v = c.Seek(startKey); key != nil && count < size; key, v = c.Next() {
-				count += 1
-				// fmt.Printf("%s %s\n", string(key), string(v))
-				errs = errors.Join(errs, c.Delete())
+		if err := s.db.Update(func(txn *badger.Txn) error {
+			for _, k := range itemMarkForSwap {
+				errs = errors.Join(errs, txn.Delete(k.key))
 			}
 			return errs
-		}))
+		}); err != nil {
+			return fmt.Errorf("error deleting messages from store: %w", err)
+		}
 	}
 	return errs
 }
@@ -322,32 +365,40 @@ func (s *Store) SaveMsgToPermanent(msg nats.Msg) error {
 	return s.saveMsg(msgPersistentBucket, msg)
 }
 
-func (s *Store) saveMsg(bucket string, msg nats.Msg) error {
+func (s *Store) saveMsg(bucket StoreBucket, msg nats.Msg) error {
 	// Save the message to the database
-	return s.db.Update(func(tx *bolt.Tx) error {
-		pendingBucket := tx.Bucket([]byte(bucket))
-		key := []byte(time.Now().UTC().Format(time.RFC3339Nano))
-
+	if err := s.db.Update(func(txn *badger.Txn) error {
+		key := bucket.ToPrefixWithKey(time.Now().UTC().Format(time.RFC3339Nano))
 		msgData, err := json.Marshal(msg)
 		if err != nil {
 			return fmt.Errorf("failed to marshal message: %w", err)
 		}
-
-		// Data is too small for compression
-		// d, err := zstd.CompressData(msgData)
-		// if err != nil {
-		// 	return fmt.Errorf("failted to compress message: %w", err)
-		// }
-
-		// Store the message in the pending bucket
-		if err := pendingBucket.Put(key, msgData); err != nil {
-			return fmt.Errorf("failed to store message: %w", err)
-		}
-
-		return nil
-	})
-}
-
-func (s *Store) SaveMsgAlways(msg nats.Msg) error {
+		entry := badger.NewEntry(key, msgData).WithTTL(time.Duration(s.opts.Msgs.RententionLimit))
+		return txn.SetEntry(entry)
+	}); err != nil {
+		return fmt.Errorf("error storing message in store: %w", err)
+	}
 	return nil
+	// return s.db.Update(func(tx *bolt.Tx) error {
+	// 	pendingBucket := tx.Bucket([]byte(bucket))
+	// 	key := []byte(time.Now().UTC().Format(time.RFC3339Nano))
+
+	// 	msgData, err := json.Marshal(msg)
+	// 	if err != nil {
+	// 		return fmt.Errorf("failed to marshal message: %w", err)
+	// 	}
+
+	// 	// Data is too small for compression
+	// 	// d, err := zstd.CompressData(msgData)
+	// 	// if err != nil {
+	// 	// 	return fmt.Errorf("failted to compress message: %w", err)
+	// 	// }
+
+	// 	// Store the message in the pending bucket
+	// 	if err := pendingBucket.Put(key, msgData); err != nil {
+	// 		return fmt.Errorf("failed to store message: %w", err)
+	// 	}
+
+	// 	return nil
+	// })
 }
