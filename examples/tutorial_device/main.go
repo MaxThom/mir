@@ -22,8 +22,9 @@ func main() {
 		LogPretty(true).
 		LogLevel(mir.LogLevelDebug).
 		Store(mir.StoreOptions{
+			InMemory: false,
 			Msgs: mir.StoreMsgOptions{
-				MsgStorageType: mir.StorageTypePersistent,
+				MsgStorageType: mir.StorageTypeOnlyIfOffline,
 			},
 		}).
 		Build()
@@ -79,7 +80,6 @@ func main() {
 		for {
 			select {
 			case <-ctx.Done():
-				wg.Done()
 				return
 			case <-time.After(time.Duration(dataRate) * time.Second):
 				t, h, p := getData()

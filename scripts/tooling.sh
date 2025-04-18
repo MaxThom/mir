@@ -30,6 +30,8 @@ echo "- air"
 go install github.com/air-verse/air@latest
 echo "- buf"
 go install github.com/bufbuild/buf/cmd/buf@latest
+echo "- badger"
+go install github.com/dgraph-io/badger/v4/badger@latest
 echo "- mdbook"
 cargo install mdbook@0.4.40
 echo "- just"
