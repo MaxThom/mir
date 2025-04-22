@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"regexp"
 	"slices"
 	"strings"
 	"time"
@@ -19,41 +18,14 @@ var (
 	ErrorListingDevices        = errors.New("error listing devices from database")
 	ErrorNoDeviceFound         = errors.New("no device found with current targets criteria")
 	ErrorDeviceShouldBeCreated = errors.New("device should be created")
-
-	nullRegEx = regexp.MustCompile(`([:,{\[]\s*)null`)
 )
-
-type UpdateType string
-
-const (
-	JsonPatch  UpdateType = "json-patch"
-	MergePatch UpdateType = "merge-patch"
-)
-
-type DeviceStore interface {
-	ListDevice(req *core_apiv1.ListDeviceRequest) ([]mir_models.Device, error)
-	CreateDevice(req *core_apiv1.CreateDeviceRequest) (mir_models.Device, error)
-	UpdateDevice(req *core_apiv1.UpdateDeviceRequest) ([]mir_models.Device, error)
-	MergeDevice(targets *core_apiv1.Targets, patch json.RawMessage, op UpdateType) ([]mir_models.Device, error)
-	DeleteDevice(req *core_apiv1.DeleteDeviceRequest) ([]mir_models.Device, error)
-}
-
-type surrealDeviceStore struct {
-	db *surrealdb.DB
-}
 
 type deviceWithId struct {
 	Id string `json:"id"`
 	mir_models.Device
 }
 
-func NewSurrealDeviceStore(db *surrealdb.DB) *surrealDeviceStore {
-	return &surrealDeviceStore{
-		db: db,
-	}
-}
-
-func (s *surrealDeviceStore) ListDevice(req *core_apiv1.ListDeviceRequest) ([]mir_models.Device, error) {
+func (s *surrealMirStore) ListDevice(req *core_apiv1.ListDeviceRequest) ([]mir_models.Device, error) {
 	q, v := createListQueryForDevice(req)
 	devs, err := executeQueryForType[[]mir_models.Device](s.db, q, v)
 	if err != nil {
@@ -62,7 +34,7 @@ func (s *surrealDeviceStore) ListDevice(req *core_apiv1.ListDeviceRequest) ([]mi
 	return devs, nil
 }
 
-func (s *surrealDeviceStore) CreateDevice(cdr *core_apiv1.CreateDeviceRequest) (mir_models.Device, error) {
+func (s *surrealMirStore) CreateDevice(cdr *core_apiv1.CreateDeviceRequest) (mir_models.Device, error) {
 	// Validate
 	if cdr.Meta != nil && cdr.Meta.Name == "" && cdr.Spec.DeviceId == "" {
 		return mir_models.Device{}, fmt.Errorf("device name and id are missing")
@@ -102,7 +74,7 @@ func (s *surrealDeviceStore) CreateDevice(cdr *core_apiv1.CreateDeviceRequest) (
 // Maybe it need to be divided into Upsert and Patch
 // Upsert is for apply and edit
 // Patch is for patch
-func (s *surrealDeviceStore) UpdateDevice(req *core_apiv1.UpdateDeviceRequest) ([]mir_models.Device, error) {
+func (s *surrealMirStore) UpdateDevice(req *core_apiv1.UpdateDeviceRequest) ([]mir_models.Device, error) {
 	if req.Targets == nil ||
 		len(req.Targets.Ids) == 0 &&
 			len(req.Targets.Names) == 0 &&
@@ -146,7 +118,7 @@ func (s *surrealDeviceStore) UpdateDevice(req *core_apiv1.UpdateDeviceRequest) (
 	return respDb, nil
 }
 
-func (s *surrealDeviceStore) MergeDevice(targets *core_apiv1.Targets, patch json.RawMessage, op UpdateType) ([]mir_models.Device, error) {
+func (s *surrealMirStore) MergeDevice(targets *core_apiv1.Targets, patch json.RawMessage, op UpdateType) ([]mir_models.Device, error) {
 	if targets == nil ||
 		len(targets.Ids) == 0 &&
 			len(targets.Names) == 0 &&
@@ -174,7 +146,7 @@ func (s *surrealDeviceStore) MergeDevice(targets *core_apiv1.Targets, patch json
 			patch = nullRegEx.ReplaceAll(patch, []byte("${1}NONE"))
 			qSb.Write(patch)
 			qSb.WriteString(" WHERE ")
-			qSb.WriteString(createWhereStatementWithTargets(targets))
+			qSb.WriteString(createDeviceWhereStatementWithTargets(targets))
 			qSb.WriteString(";")
 		}
 		sql := qSb.String()
@@ -188,7 +160,7 @@ func (s *surrealDeviceStore) MergeDevice(targets *core_apiv1.Targets, patch json
 	return nil, errors.New("only MergePatch operation is implemented")
 }
 
-func (s *surrealDeviceStore) DeleteDevice(req *core_apiv1.DeleteDeviceRequest) ([]mir_models.Device, error) {
+func (s *surrealMirStore) DeleteDevice(req *core_apiv1.DeleteDeviceRequest) ([]mir_models.Device, error) {
 	if req.Targets == nil ||
 		len(req.Targets.Ids) == 0 &&
 			len(req.Targets.Names) == 0 &&
@@ -222,7 +194,7 @@ func (s *surrealDeviceStore) DeleteDevice(req *core_apiv1.DeleteDeviceRequest) (
 // If name only, multiple devices can be updated if no collision
 // If namespace only, multiple devices can be updated if no collision
 // DILEMMA: maybe we should limite name/namespace/deviceId changes to one device only
-func (s *surrealDeviceStore) validateDeviceUniqueness(targets *core_apiv1.Targets, name, ns, deviceId string) error {
+func (s *surrealMirStore) validateDeviceUniqueness(targets *core_apiv1.Targets, name, ns, deviceId string) error {
 	if name != "" || ns != "" || deviceId != "" {
 		changingDevs, err := s.ListDevice(&core_apiv1.ListDeviceRequest{
 			Targets: targets,
@@ -343,7 +315,7 @@ func createListQueryForDevice(req *core_apiv1.ListDeviceRequest) (sql string, va
 	vars = map[string]any{}
 
 	q.WriteString("SELECT * FROM devices")
-	where := createWhereStatementWithTargets(req.Targets)
+	where := createDeviceWhereStatementWithTargets(req.Targets)
 	if len(where) > 0 {
 		q.WriteString(" WHERE ")
 		q.WriteString(where)
@@ -515,7 +487,7 @@ func createUpdateQueryForDevice(t *core_apiv1.Targets, upd *core_apiv1.UpdateDev
 		qSb.WriteString("UPDATE devices MERGE {")
 		qSb.WriteString(q.String())
 		qSb.WriteString("} WHERE ")
-		qSb.WriteString(createWhereStatementWithTargets(t))
+		qSb.WriteString(createDeviceWhereStatementWithTargets(t))
 		qSb.WriteString(";")
 	}
 	sql = qSb.String()
@@ -528,13 +500,13 @@ func createDeleteQueryForDevice(req *core_apiv1.DeleteDeviceRequest) (sql string
 	vars = map[string]any{}
 
 	q.WriteString("DELETE FROM devices WHERE ")
-	q.WriteString(createWhereStatementWithTargets(req.Targets))
+	q.WriteString(createDeviceWhereStatementWithTargets(req.Targets))
 	q.WriteString(";")
 	sql = q.String()
 	return
 }
 
-func createWhereStatementWithTargets(t *core_apiv1.Targets) string {
+func createDeviceWhereStatementWithTargets(t *core_apiv1.Targets) string {
 	var q strings.Builder
 	if t == nil {
 		return ""
@@ -572,19 +544,4 @@ func createWhereStatementWithTargets(t *core_apiv1.Targets) string {
 	q.WriteString(strings.Join(cond, " AND "))
 	ti := q.String()
 	return ti
-}
-
-func executeQueryForType[T any](db *surrealdb.DB, query string, vars map[string]any) (T, error) {
-	var empty T
-	result, err := db.Query(query, vars)
-	if err != nil {
-		return empty, err
-	}
-
-	res, err := surrealdb.SmartUnmarshal[T](result, err)
-	if err != nil {
-		return empty, err
-	}
-
-	return res, nil
 }

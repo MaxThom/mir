@@ -170,7 +170,7 @@ func run(
 	if err != nil {
 		return err
 	}
-	protocmdSrv, err := protocmd_srv.NewProtoCmd(log, m, mng.NewSurrealDeviceStore(db), cc)
+	protocmdSrv, err := protocmd_srv.NewProtoCmd(log, m, mng.NewSurrealMirStore(db), cc)
 	if err != nil {
 		return err
 	}

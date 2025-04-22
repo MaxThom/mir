@@ -10,9 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/maxthom/mir/internal/externals/mng"
-	"github.com/maxthom/mir/internal/externals/ts"
 	"github.com/maxthom/mir/internal/libs/api/health"
 	"github.com/maxthom/mir/internal/libs/api/metrics"
 	"github.com/maxthom/mir/internal/libs/boiler/mir_cli"
@@ -20,10 +18,8 @@ import (
 	"github.com/maxthom/mir/internal/libs/boiler/mir_log"
 	"github.com/maxthom/mir/internal/libs/boiler/mir_signals"
 	"github.com/maxthom/mir/internal/libs/build_meta"
-	"github.com/maxthom/mir/internal/libs/external/influx"
 	"github.com/maxthom/mir/internal/libs/external/surreal"
-	"github.com/maxthom/mir/internal/servers/prototlm_srv"
-	"github.com/maxthom/mir/internal/services/schema_cache"
+	"github.com/maxthom/mir/internal/servers/eventstore_srv"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/rs/zerolog"
 	"golang.org/x/net/http2"
@@ -31,16 +27,15 @@ import (
 )
 
 const (
-	AppName = "prototlm"
+	AppName = "eventstore"
 )
 
 type (
 	CoreConfig struct {
-		LogLevel        string
-		HttpServer      HttpServer
-		DataBusServer   DataBusServer
-		DatabaseServer  DatabaseSever
-		TelemetryServer TelemetryServer
+		LogLevel       string
+		HttpServer     HttpServer
+		DataBusServer  DataBusServer
+		DatabaseServer DatabaseSever
 	}
 
 	HttpServer struct {
@@ -56,21 +51,13 @@ type (
 		User     string
 		Password string `cfg:"secret"`
 	}
-	TelemetryServer struct {
-		Url      string
-		Token    string `cfg:"secret"`
-		User     string
-		Password string `cfg:"secret"`
-		Org      string
-		Bucket   string
-	}
 )
 
 var (
 	defaultCfg = CoreConfig{
 		LogLevel: "info",
 		HttpServer: HttpServer{
-			Port: 3017,
+			Port: 3020,
 		},
 		DataBusServer: DataBusServer{
 			Url: "nats://127.0.0.1:4222",
@@ -79,15 +66,6 @@ var (
 			Url:      "ws://127.0.0.1:8000/rpc",
 			User:     "root",
 			Password: "root",
-		},
-		TelemetryServer: TelemetryServer{
-			// QuestDB
-			//Url: "ws://127.0.0.1:8000/rpc",
-			// InfluxDB
-			Url:    "http://localhost:8086/",
-			Org:    "Mir",
-			Bucket: "mir",
-			Token:  "mir-operator-token",
 		},
 	}
 )
@@ -102,14 +80,14 @@ func main() {
 	var flagLogLevel string
 
 	mir_cli.Setup(AppName,
-		mir_cli.WithDescription("Receives and processes protobuff data from Mir devices to InfluxDB."),
+		mir_cli.WithDescription("Capture, process and store all Mir events"),
 		mir_cli.WithConfigFilePath(&flagFilePath),
 		mir_cli.WithLogLevel(&flagLogLevel),
 		mir_cli.WithLogDebug(&flagDebug),
 		mir_cli.WithDefaultConfig(&defaultCfg, mir_config.Yaml),
 		mir_cli.WithVersion(build_meta.GetShortVersion()),
 		mir_cli.WithManual(
-			"Connect to Mir Message bus to receives and processes protobuff data from Mir devices to InfluxDB.",
+			"Capture all Mir events and store them for easy retrieval and visualizing device's behavior",
 			&defaultCfg, true, ""),
 		mir_cli.WithOsFlag(func() {
 			flag.StringVar(&flagMirTarget, "target", "", "set Mir server url. Default to nats://127.0.0.1:4222.")
@@ -121,8 +99,8 @@ func main() {
 	cfg := defaultCfg
 	err, lookupFiles, foundFiles := mir_config.
 		New(AppName,
-			mir_config.WithEtcFilePath("mir/prototlm.yaml", mir_config.Yaml, false),
-			mir_config.WithXdgConfigHomeFilePath("mir/prototlm.yaml", mir_config.Yaml, true),
+			mir_config.WithEtcFilePath("mir/eventstore.yaml", mir_config.Yaml, false),
+			mir_config.WithXdgConfigHomeFilePath("mir/eventstore.yaml", mir_config.Yaml, true),
 			mir_config.WithFilePath(flagFilePath, mir_config.Yaml, false),
 			mir_config.WithEnvVars("mir"),
 		).
@@ -165,7 +143,7 @@ func main() {
 }
 
 func run(
-	ctx context.Context,
+	_ context.Context,
 	log zerolog.Logger,
 	cfg CoreConfig,
 ) error {
@@ -179,26 +157,15 @@ func run(
 	}
 	log.Info().Str("url", cfg.DatabaseServer.Url).Str("namespace", "global").Str("database", "mir").Msg("connected to database")
 
-	// Timeseries Database
-	lpClient := influxdb2.NewClient(cfg.TelemetryServer.Url, cfg.TelemetryServer.Token)
-	if err := influx.CreateOrgAndBucket(ctx, lpClient, cfg.TelemetryServer.Org, cfg.TelemetryServer.Bucket); err != nil {
-		return err
-	}
-	log.Info().Str("url", cfg.TelemetryServer.Url).Msg("connected to puthost")
-
 	// Bus
-	m, err := mir.Connect("prototlm", cfg.DataBusServer.Url, append(mir.WithDefaultReconnectOpts(), mir.WithDefaultConnectionLogging(log)...)...)
+	m, err := mir.Connect("eventstore", cfg.DataBusServer.Url, append(mir.WithDefaultReconnectOpts(), mir.WithDefaultConnectionLogging(log)...)...)
 	if err != nil {
 		return err
 	}
 	log.Info().Str("url", cfg.DataBusServer.Url).Str("status", m.Bus.Status().String()).Msg("msg bus status")
 
 	// Services
-	cc, err := schema_cache.NewMirProtoCache(log, m)
-	if err != nil {
-		return err
-	}
-	prototlmSrv, err := prototlm_srv.NewProtoTlm(log, m, mng.NewSurrealMirStore(db), ts.NewInfluxTelemetryStore(cfg.TelemetryServer.Org, cfg.TelemetryServer.Bucket, lpClient), cc)
+	eventSrv, err := eventstore_srv.NewEventStore(log, m, mng.NewSurrealMirStore(db))
 	if err != nil {
 		return err
 	}
@@ -226,8 +193,8 @@ func run(
 		wg.Done()
 	}()
 
-	if err := prototlmSrv.Serve(); err != nil {
-		panic(err)
+	if err := eventSrv.Serve(); err != nil {
+		return err
 	}
 
 	// Handle shutdown
@@ -236,14 +203,16 @@ func run(
 	mir_signals.WaitForOsSignals(func() {
 		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 1*time.Second)
 		if err := server.Shutdown(shutdownCtx); err != nil {
-			log.Error().Err(err).Msg("failed to gracefully shutdown server")
+			log.Error().Err(err).Msg("failed to gracefully shutdown http server")
 		}
-		m.Disconnect()
+		if err := eventSrv.Shutdown(); err != nil {
+			log.Error().Err(err).Msg("failed to gracefully shutdown event store server")
+		}
+		if err := m.Disconnect(); err != nil {
+			log.Error().Err(err).Msg("failed to gracefully shutdown Mir")
+		}
 		db.Close()
-		if err := prototlmSrv.Shutdown(); err != nil {
-			log.Error().Err(err).Msg("failed to gracefully shutdown prototlm server")
-		}
-		log.Debug().Msg("db connection closed")
+		log.Debug().Msg("db conn shutdown")
 		shutdownCancel()
 		wg.Wait()
 		log.Info().Msg("all system have shutdown gracefully")

@@ -165,7 +165,7 @@ func run(
 	log.Info().Str("url", cfg.DataBusServer.Url).Str("status", m.Bus.Status().String()).Msg("msg bus status")
 
 	// Services
-	coreSrv, err := core_srv.NewCore(log, m, mng.NewSurrealDeviceStore(db))
+	coreSrv, err := core_srv.NewCore(log, m, mng.NewSurrealMirStore(db))
 	if err != nil {
 		return err
 	}

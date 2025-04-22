@@ -47,7 +47,7 @@ func TestMain(m *testing.M) {
 	fmt.Println(" -> db")
 	fmt.Println(" -> cleaning db")
 
-	coreSrv, err := core_srv.NewCore(log, mSdk, mng.NewSurrealDeviceStore(db))
+	coreSrv, err := core_srv.NewCore(log, mSdk, mng.NewSurrealMirStore(db))
 	if err != nil {
 		panic(err)
 	}

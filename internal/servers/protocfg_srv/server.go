@@ -36,7 +36,7 @@ type ProtoCfgServer struct {
 	cancelCtx context.CancelFunc
 	wg        *sync.WaitGroup
 	m         *mir.Mir
-	devStore  mng.DeviceStore
+	devStore  mng.MirStore
 	schStore  *schema_cache.MirProtoCache
 }
 
@@ -100,7 +100,7 @@ func init() {
 	requestErrorTotal.With(prometheus.Labels{"route": "send"}).Add(0)
 }
 
-func NewProtoCfg(logger zerolog.Logger, m *mir.Mir, store mng.DeviceStore, schemaCache *schema_cache.MirProtoCache) (*ProtoCfgServer, error) {
+func NewProtoCfg(logger zerolog.Logger, m *mir.Mir, store mng.MirStore, schemaCache *schema_cache.MirProtoCache) (*ProtoCfgServer, error) {
 	l = logger.With().Str("srv", "protocfg_server").Logger()
 	ctx, cancelFn := context.WithCancel(context.Background())
 	return &ProtoCfgServer{

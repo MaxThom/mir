@@ -41,7 +41,7 @@ type CoreServer struct {
 	cancelCtx        context.CancelFunc
 	wg               *sync.WaitGroup
 	m                *mir.Mir
-	store            mng.DeviceStore
+	store            mng.MirStore
 	hearthbeats      map[string]time.Time
 	hearthbeatsMutex sync.RWMutex
 }
@@ -84,7 +84,7 @@ func init() {
 	deviceStatusCount.With(prometheus.Labels{"status": "offline"}).Add(0)
 }
 
-func NewCore(logger zerolog.Logger, m *mir.Mir, store mng.DeviceStore) (*CoreServer, error) {
+func NewCore(logger zerolog.Logger, m *mir.Mir, store mng.MirStore) (*CoreServer, error) {
 	l = logger.With().Str("srv", "core_server").Logger()
 	hearbeats := map[string]time.Time{}
 

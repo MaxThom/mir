@@ -74,7 +74,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	protocmdSrv, err := NewProtoCmd(log, mSdk, mng.NewSurrealDeviceStore(db), cc)
+	protocmdSrv, err := NewProtoCmd(log, mSdk, mng.NewSurrealMirStore(db), cc)
 	if err != nil {
 		panic(err)
 	}
@@ -82,7 +82,7 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	coreSrv, err := core_srv.NewCore(log, mSdk, mng.NewSurrealDeviceStore(db))
+	coreSrv, err := core_srv.NewCore(log, mSdk, mng.NewSurrealMirStore(db))
 	if err != nil {
 		panic(err)
 	}

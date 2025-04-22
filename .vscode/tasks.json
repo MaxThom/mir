@@ -71,10 +71,29 @@
                 "instanceLimit": 1
             },
         },
-        {
+{
             "label": "Mir cmd run",
             "type": "shell",
             "command": "sleep 5 && air -c .air/protocmd.toml",
+            "problemMatcher": [],
+            "group": {
+                "kind": "none",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "new",
+                "focus": false,
+                "close": false
+            },
+            "runOptions": {
+                "instanceLimit": 1
+            },
+        },
+        {
+            "label": "Mir eventstore run",
+            "type": "shell",
+            "command": "sleep 5 && air -c .air/eventstore.toml",
             "problemMatcher": [],
             "group": {
                 "kind": "none",

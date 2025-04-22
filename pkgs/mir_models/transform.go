@@ -34,7 +34,7 @@ func NewDeviceFromProtoDevice(d *core_apiv1.Device) Device {
 		}
 	}
 	if d.Spec != nil {
-		dev.Spec = Spec{
+		dev.Spec = DeviceSpec{
 			DeviceId: d.Spec.DeviceId,
 			Disabled: d.Spec.Disabled,
 		}
@@ -48,7 +48,7 @@ func NewDeviceFromProtoDevice(d *core_apiv1.Device) Device {
 		if d.Status.LastHearthbeat != nil {
 			lastHeartbeatTime = AsGoTime(d.Status.LastHearthbeat)
 		}
-		dev.Status = Status{
+		dev.Status = DeviceStatus{
 			Online:         d.Status.Online,
 			LastHearthbeat: lastHeartbeatTime,
 		}
@@ -299,19 +299,21 @@ func NewCreateDeviceReqFromDeviceUpdateRequest(d *core_apiv1.UpdateDeviceRequest
 
 func NewDeviceFromCreateDeviceReq(d *core_apiv1.CreateDeviceRequest) Device {
 	return Device{
-		ApiVersion: "v1alpha",
-		ApiName:    "device",
-		Meta: Meta{
-			Name:        d.Meta.Name,
-			Namespace:   d.Meta.Namespace,
-			Labels:      d.Meta.Labels,
-			Annotations: d.Meta.Annotations,
+		Object: Object{
+			ApiVersion: "v1alpha",
+			ApiName:    "device",
+			Meta: Meta{
+				Name:        d.Meta.Name,
+				Namespace:   d.Meta.Namespace,
+				Labels:      d.Meta.Labels,
+				Annotations: d.Meta.Annotations,
+			},
 		},
-		Spec: Spec{
+		Spec: DeviceSpec{
 			DeviceId: d.Spec.DeviceId,
 			Disabled: d.Spec.Disabled,
 		},
-		Status: Status{},
+		Status: DeviceStatus{},
 	}
 }
 

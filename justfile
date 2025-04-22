@@ -11,6 +11,7 @@ build:
 	go build -ldflags="{{ld_flags}}" -o bin/core cmds/core/main.go
 	go build -ldflags="{{ld_flags}}" -o bin/prototlm cmds/prototlm/main.go
 	go build -ldflags="{{ld_flags}}" -o bin/protocmd cmds/protocmd/main.go
+	go build -ldflags="{{ld_flags}}" -o bin/eventstore cmds/eventstore/main.go
 
 # Build Mir binary
 build-mir:

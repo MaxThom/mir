@@ -21,6 +21,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/external/influx"
 	"github.com/maxthom/mir/internal/libs/external/surreal"
 	"github.com/maxthom/mir/internal/servers/core_srv"
+	"github.com/maxthom/mir/internal/servers/eventstore_srv"
 	"github.com/maxthom/mir/internal/servers/protocfg_srv"
 	"github.com/maxthom/mir/internal/servers/protocmd_srv"
 	"github.com/maxthom/mir/internal/servers/prototlm_srv"
@@ -170,7 +171,7 @@ func run(
 	log.Info().Str("url", cfg.Mir.Url).Str("status", m.Bus.Status().String()).Msg("msg bus status")
 
 	// Services
-	coreSrv, err := core_srv.NewCore(log, m, mng.NewSurrealDeviceStore(db))
+	coreSrv, err := core_srv.NewCore(log, m, mng.NewSurrealMirStore(db))
 	if err != nil {
 		return err
 	}
@@ -180,17 +181,22 @@ func run(
 	if err != nil {
 		return err
 	}
-	cfgSrv, err := protocfg_srv.NewProtoCfg(log, m, mng.NewSurrealDeviceStore(db), cc)
+	cfgSrv, err := protocfg_srv.NewProtoCfg(log, m, mng.NewSurrealMirStore(db), cc)
 	if err != nil {
 		return err
 	}
 
-	cmdSrv, err := protocmd_srv.NewProtoCmd(log, m, mng.NewSurrealDeviceStore(db), cc)
+	cmdSrv, err := protocmd_srv.NewProtoCmd(log, m, mng.NewSurrealMirStore(db), cc)
 	if err != nil {
 		return err
 	}
 
-	tlmSrv, err := prototlm_srv.NewProtoTlm(log, m, mng.NewSurrealDeviceStore(db), ts.NewInfluxTelemetryStore(cfg.Influx.Org, cfg.Influx.Bucket, lpClient), cc)
+	tlmSrv, err := prototlm_srv.NewProtoTlm(log, m, mng.NewSurrealMirStore(db), ts.NewInfluxTelemetryStore(cfg.Influx.Org, cfg.Influx.Bucket, lpClient), cc)
+	if err != nil {
+		return err
+	}
+
+	eventSrv, err := eventstore_srv.NewEventStore(log, m, mng.NewSurrealMirStore(db))
 	if err != nil {
 		return err
 	}
@@ -231,6 +237,9 @@ func run(
 	if err := tlmSrv.Serve(); err != nil {
 		return err
 	}
+	if err := eventSrv.Serve(); err != nil {
+		return err
+	}
 
 	// Handle shutdown
 	log.Info().Msg(fmt.Sprintf("%s initialized", AppName))
@@ -251,6 +260,9 @@ func run(
 		}
 		if err := tlmSrv.Shutdown(); err != nil {
 			log.Error().Err(err).Msg("failed to gracefully shutdown tlm server")
+		}
+		if err := eventSrv.Shutdown(); err != nil {
+			log.Error().Err(err).Msg("failed to gracefully shutdown event store server")
 		}
 		m.Disconnect()
 		db.Close()

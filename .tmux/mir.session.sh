@@ -15,6 +15,7 @@ if initialize_session "mir"; then
 	load_window "./.tmux/protocfg.window.sh"
 	load_window "./.tmux/prototlm.window.sh"
 	load_window "./.tmux/protocmd.window.sh"
+	load_window "./.tmux/eventstore.window.sh"
 	load_window "./.tmux/infra.window.sh"
 	load_window "./.tmux/cfg.window.sh"
 	load_window "./.tmux/book.window.sh"

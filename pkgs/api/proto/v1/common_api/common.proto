@@ -39,3 +39,43 @@ enum Encoding {
   ENCODING_PROTOBUF = 1;
   ENCODING_JSON = 2;
 }
+
+/*
+  Represent a object in the system
+*/
+message Object {
+  string api_version = 1; // Current version of the spec
+  string api_name = 2; // Name of the spec
+  Meta meta = 3; // Represent the specifications that can be updated
+}
+
+/*
+* Set of data from the Mir system to describe any object
+* or an entity in the system
+*/
+message Meta {
+    string name = 1; // Name of the object
+    string namespace = 2; // Name of the object
+    map<string, string> labels = 3; // Labels are used to uniquely identify the device
+    map<string, string> annotations = 4; // Annotations are used to add additional information
+}
+
+/*
+* Meta update request for any object
+*/
+message MetaUpdate {
+  optional string name = 1; // Name of the object
+  optional string namespace = 2; // Name of the object
+  map<string, common_api.v1.OptString> labels = 3; // set key to nil to remove it
+  map<string, common_api.v1.OptString> annotations = 4; // set key to nil to remove it
+}
+
+/*
+  Targets is used to target a set of object using
+  a combination of name, namespace, labels and annotations
+*/
+message Targets {
+  repeated string names = 1; // names of the objects
+  repeated string namespaces = 2; // namespace of the object
+  map<string, string> labels = 3; // Labels are used to uniquely identify the object
+}

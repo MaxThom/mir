@@ -170,7 +170,7 @@ func run(
 	if err != nil {
 		return err
 	}
-	coreSrv, err := protocfg_srv.NewProtoCfg(log, m, mng.NewSurrealDeviceStore(db), cc)
+	coreSrv, err := protocfg_srv.NewProtoCfg(log, m, mng.NewSurrealMirStore(db), cc)
 	if err != nil {
 		return err
 	}

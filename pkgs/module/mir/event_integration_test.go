@@ -69,11 +69,13 @@ func TestEventRoutes_NewSubject(t *testing.T) {
 func TestDeviceOnlineEvent(t *testing.T) {
 	deviceID := "test-event-online"
 	testDevice := mir_models.Device{
-		Meta: mir_models.Meta{
-			Name:      "Test_Device",
-			Namespace: "default",
+		Object: mir_models.Object{
+			Meta: mir_models.Meta{
+				Name:      "Test_Device",
+				Namespace: "default",
+			},
 		},
-		Spec: mir_models.Spec{
+		Spec: mir_models.DeviceSpec{
 			DeviceId: deviceID,
 		},
 	}
@@ -102,11 +104,13 @@ func TestDeviceOnlineEvent(t *testing.T) {
 func TestDeviceOfflineEvent(t *testing.T) {
 	deviceID := "test-event-offline"
 	testDevice := mir_models.Device{
-		Meta: mir_models.Meta{
-			Name:      "Test_Device",
-			Namespace: "default",
+		Object: mir_models.Object{
+			Meta: mir_models.Meta{
+				Name:      "Test_Device",
+				Namespace: "default",
+			},
 		},
-		Spec: mir_models.Spec{
+		Spec: mir_models.DeviceSpec{
 			DeviceId: deviceID,
 		},
 	}
@@ -135,11 +139,13 @@ func TestDeviceOfflineEvent(t *testing.T) {
 func TestDeviceCreatedEvent(t *testing.T) {
 	deviceID := "test-event-created"
 	testDevice := mir_models.Device{
-		Meta: mir_models.Meta{
-			Name:      "Test_Device",
-			Namespace: "default",
+		Object: mir_models.Object{
+			Meta: mir_models.Meta{
+				Name:      "Test_Device",
+				Namespace: "default",
+			},
 		},
-		Spec: mir_models.Spec{
+		Spec: mir_models.DeviceSpec{
 			DeviceId: deviceID,
 		},
 	}
@@ -168,11 +174,13 @@ func TestDeviceCreatedEvent(t *testing.T) {
 func TestDeviceUpdateEvent(t *testing.T) {
 	deviceID := "test-event-uodate"
 	testDevice := mir_models.Device{
-		Meta: mir_models.Meta{
-			Name:      "Test_Device",
-			Namespace: "default",
+		Object: mir_models.Object{
+			Meta: mir_models.Meta{
+				Name:      "Test_Device",
+				Namespace: "default",
+			},
 		},
-		Spec: mir_models.Spec{
+		Spec: mir_models.DeviceSpec{
 			DeviceId: deviceID,
 		},
 	}
@@ -201,11 +209,13 @@ func TestDeviceUpdateEvent(t *testing.T) {
 func TestDeviceDeleteEvent(t *testing.T) {
 	deviceID := "test-event=delete"
 	testDevice := mir_models.Device{
-		Meta: mir_models.Meta{
-			Name:      "Test_Device",
-			Namespace: "default",
+		Object: mir_models.Object{
+			Meta: mir_models.Meta{
+				Name:      "Test_Device",
+				Namespace: "default",
+			},
 		},
-		Spec: mir_models.Spec{
+		Spec: mir_models.DeviceSpec{
 			DeviceId: deviceID,
 		},
 	}

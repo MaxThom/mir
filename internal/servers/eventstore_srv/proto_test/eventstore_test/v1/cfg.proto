@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package eventstore_test.v1;
+option go_package = "github.com/maxthom/mir/internal/servers/eventstore_srv/proto_test/gen/eventstore_test/v1";
+
+import "mir/device/v1/mir.proto";
+
+message Conduit {
+	option (mir.device.v1.message_type) = MESSAGE_TYPE_TELECONFIG;
+	option (mir.device.v1.meta) = {
+		tags: [{
+			key: "building",
+			value: "A"
+		}, {
+			key: "floor",
+			value: "1"
+		}]
+	};
+
+	int32 power = 1;
+	bool valve_open = 2;
+	int32 gaz_level = 3;
+}
+
+message PowerLevel {
+	option (mir.device.v1.message_type) = MESSAGE_TYPE_TELECONFIG;
+	option (mir.device.v1.meta) = {
+		tags: [{
+			key: "building",
+			value: "A"
+		}, {
+			key: "floor",
+			value: "2"
+		}]
+	};
+
+	int32 power = 1;
+}
+
+message PowerLevelReport {
+    bool success = 1;
+}
+
+message Coordinate {
+	option (mir.device.v1.message_type) = MESSAGE_TYPE_TELECONFIG;
+
+	int32 x = 1;
+	int32 y = 2;
+	int32 z = 3;
+}
+
+message Destination {
+	option (mir.device.v1.message_type) = MESSAGE_TYPE_TELECONFIG;
+
+	string name = 1;
+	Coordinate pos = 2;
+}

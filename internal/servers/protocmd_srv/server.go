@@ -29,7 +29,7 @@ import (
 // IDEA possible perf improvement, cache of descriptor
 type ProtoCmdServer struct {
 	m        *mir.Mir
-	devStore mng.DeviceStore
+	devStore mng.MirStore
 	schStore *schema_cache.MirProtoCache
 }
 
@@ -73,7 +73,7 @@ func init() {
 	requestErrorTotal.With(prometheus.Labels{"route": "send"}).Add(0)
 }
 
-func NewProtoCmd(logger zerolog.Logger, m *mir.Mir, devStore mng.DeviceStore, schemaCache *schema_cache.MirProtoCache) (*ProtoCmdServer, error) {
+func NewProtoCmd(logger zerolog.Logger, m *mir.Mir, devStore mng.MirStore, schemaCache *schema_cache.MirProtoCache) (*ProtoCmdServer, error) {
 	l = logger.With().Str("srv", "protocmd_server").Logger()
 	return &ProtoCmdServer{
 		m:        m,

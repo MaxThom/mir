@@ -17,6 +17,7 @@ buf generate --clean --template internal/servers/core_srv/proto_test/buf.gen.yam
 buf generate --clean --template internal/servers/prototlm_srv/proto_test/buf.gen.yaml
 buf generate --clean --template internal/servers/protocmd_srv/proto_test/buf.gen.yaml
 buf generate --clean --template internal/servers/protocfg_srv/proto_test/buf.gen.yaml
+buf generate --clean --template internal/servers/eventstore_srv/proto_test/buf.gen.yaml
 buf generate --clean --template internal/services/schema_cache/proto_test/buf.gen.yaml
 buf generate --clean --template internal/libs/proto/line_protocol/proto_test/buf.gen.yaml
 buf generate --clean --template internal/libs/proto/json_template/proto_test/buf.gen.yaml
