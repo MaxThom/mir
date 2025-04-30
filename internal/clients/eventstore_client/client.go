@@ -9,7 +9,7 @@ import (
 const (
 	ListEventsRequest clients.ServerSubject = "client.%s.events.v1alpha.list"
 
-	EventsStream clients.ServerSubject = "event.*.*.*.*"
+	EventsStream clients.ServerSubject = "event.%s.*.*.*"
 )
 
 func PublishEventsStream(bus *bus.BusConn) error {

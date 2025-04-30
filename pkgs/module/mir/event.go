@@ -9,8 +9,10 @@ import (
 	"github.com/maxthom/mir/internal/clients/cfg_client"
 	"github.com/maxthom/mir/internal/clients/cmd_client"
 	"github.com/maxthom/mir/internal/clients/core_client"
+	"github.com/maxthom/mir/internal/clients/eventstore_client"
 	cmd_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cmd_api"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
+	event_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/event_api"
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
@@ -25,6 +27,10 @@ func (e eventSubject) String() string {
 func (e eventSubject) WithId(id string) eventSubject {
 	e[1] = id
 	return e
+}
+
+func (e eventSubject) GetId() string {
+	return e[1]
 }
 
 type eventRoutes struct {
@@ -48,7 +54,7 @@ func (r *eventRoutes) PublishProto(sbj eventSubject, originalId string, data pro
 		return fmt.Errorf("error serializing data: %w", err)
 
 	}
-	return r.m.publish(sbj.String(), b, nats.Header{HeaderOriginalTrigger: []string{originalId}})
+	return r.m.publish(sbj.String(), b, nats.Header{HeaderPreviousTrigger: []string{originalId}})
 }
 
 // Publish json data to a custom event stream from serve
@@ -58,12 +64,51 @@ func (r *eventRoutes) PublishJson(sbj eventSubject, originalId string, data any)
 		return fmt.Errorf("error serializing data: %w", err)
 
 	}
-	return r.m.publish(sbj.String(), b, nats.Header{HeaderOriginalTrigger: []string{originalId}})
+	return r.m.publish(sbj.String(), b, nats.Header{HeaderPreviousTrigger: []string{originalId}})
 }
 
 // Publish data to a custom event stream from serve
 func (r *eventRoutes) Publish(sbj eventSubject, originalId string, data []byte) error {
-	return r.m.publish(sbj.String(), data, nats.Header{HeaderOriginalTrigger: []string{originalId}})
+	return r.m.publish(sbj.String(), data, nats.Header{HeaderPreviousTrigger: []string{originalId}})
+}
+
+func (r *eventRoutes) PublishObject(sbj eventSubject, event mir_models.EventSpec, triggerChain *[]string) error {
+	h := nats.Header{}
+	if triggerChain != nil && len(*triggerChain) > 0 {
+		h[HeaderTrigger] = *triggerChain
+	}
+	e := mir_models.MirEventSpecToProtoCreateEvent(event)
+	b, err := proto.Marshal(e)
+	if err != nil {
+		return fmt.Errorf("error serializing data: %w", err)
+	}
+
+	return r.m.publish(sbj.String(), b, h)
+}
+
+// Subscribe to event stream
+func (r *eventRoutes) SubscribeObject(f func(msg *Msg, subjectId string, req mir_models.EventSpec, e error)) error {
+	sbj := eventstore_client.EventsStream.WithId("*")
+	return r.m.subscribe(sbj, r.handlerWrapper(f))
+}
+
+// Queue subscribe to event stream
+func (r *eventRoutes) QueueSubscribeObject(queue string, f func(msg *Msg, subjectId string, req mir_models.EventSpec, e error)) error {
+	sbj := eventstore_client.EventsStream.WithId("*")
+	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
+}
+
+func (r *eventRoutes) handlerWrapper(f func(msg *Msg, subjectId string, req mir_models.EventSpec, e error)) nats.MsgHandler {
+	return func(msg *nats.Msg) {
+		subjectId := clients.ServerSubject(msg.Subject).GetId()
+		req := &event_apiv1.CreateEventRequest{}
+		if err := proto.Unmarshal(msg.Data, req); err != nil {
+			f(&Msg{msg}, subjectId, mir_models.EventSpec{}, err)
+			return
+		}
+
+		f(&Msg{msg}, subjectId, mir_models.ProtoCreateEventReqToMirEventSpec(req), nil)
+	}
 }
 
 // Listen to a custom event stream from server
@@ -135,7 +180,7 @@ func (r *deviceOnlineEventRoute) Publish(originalId string, device mir_models.De
 		return err
 	}
 
-	err = r.m.publish(sbj, b, nats.Header{HeaderOriginalTrigger: []string{originalId}})
+	err = r.m.publish(sbj, b, nats.Header{HeaderPreviousTrigger: []string{originalId}})
 	if err != nil {
 		return err
 	}
@@ -185,7 +230,7 @@ func (r *deviceOfflineEventRoute) Publish(originalId string, device mir_models.D
 		return err
 	}
 
-	err = r.m.publish(sbj, b, nats.Header{HeaderOriginalTrigger: []string{originalId}})
+	err = r.m.publish(sbj, b, nats.Header{HeaderPreviousTrigger: []string{originalId}})
 	if err != nil {
 		return err
 	}
@@ -235,7 +280,7 @@ func (r *deviceCreateEventRoute) Publish(originalId string, device mir_models.De
 		return err
 	}
 
-	err = r.m.publish(sbj, b, nats.Header{HeaderOriginalTrigger: []string{originalId}})
+	err = r.m.publish(sbj, b, nats.Header{HeaderPreviousTrigger: []string{originalId}})
 	if err != nil {
 		return err
 	}
@@ -285,7 +330,7 @@ func (r *deviceUpdateEventRoute) Publish(originalId string, device mir_models.De
 		return err
 	}
 
-	err = r.m.publish(sbj, b, nats.Header{HeaderOriginalTrigger: []string{originalId}})
+	err = r.m.publish(sbj, b, nats.Header{HeaderPreviousTrigger: []string{originalId}})
 	if err != nil {
 		return err
 	}
@@ -335,7 +380,7 @@ func (r *deviceDeleteEventRoute) Publish(originalId string, device mir_models.De
 		return err
 	}
 
-	err = r.m.publish(sbj, b, nats.Header{HeaderOriginalTrigger: []string{originalId}})
+	err = r.m.publish(sbj, b, nats.Header{HeaderPreviousTrigger: []string{originalId}})
 	if err != nil {
 		return err
 	}
@@ -385,7 +430,7 @@ func (r *commandEventRoute) Publish(originalId string, cmd *cmd_apiv1.SendComman
 		return err
 	}
 
-	err = r.m.publish(sbj, b, nats.Header{HeaderOriginalTrigger: []string{originalId}})
+	err = r.m.publish(sbj, b, nats.Header{HeaderPreviousTrigger: []string{originalId}})
 	if err != nil {
 		return err
 	}
@@ -439,7 +484,7 @@ func (r *desiredPropertiesEventRoute) Publish(originalId string, deviceId string
 	}
 
 	sbj := cfg_client.DesiredPropertiesEvent.WithId(deviceId)
-	err = r.m.publish(sbj, b, nats.Header{HeaderOriginalTrigger: []string{originalId}})
+	err = r.m.publish(sbj, b, nats.Header{HeaderPreviousTrigger: []string{originalId}})
 	if err != nil {
 		return err
 	}
@@ -493,7 +538,7 @@ func (r *reportedPropertiesEventRoute) Publish(originalId string, deviceId strin
 	}
 
 	sbj := cfg_client.ReportedPropertiesEvent.WithId(deviceId)
-	err = r.m.publish(sbj, b, nats.Header{HeaderOriginalTrigger: []string{originalId}})
+	err = r.m.publish(sbj, b, nats.Header{HeaderPreviousTrigger: []string{originalId}})
 	if err != nil {
 		return err
 	}

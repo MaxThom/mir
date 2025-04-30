@@ -9,7 +9,16 @@ const (
 	EventTypeWarning EventType = "warning"
 )
 
-func NewEvent(m Meta) Event {
+func NewEvent() Event {
+	return Event{
+		Object: Object{
+			ApiVersion: "v1alpha",
+			ApiName:    "mir/events",
+		},
+	}
+}
+
+func NewEventWithMeta(m Meta) Event {
 	return Event{
 		Object: Object{
 			ApiVersion: "v1alpha",
@@ -40,7 +49,7 @@ type EventSpec struct {
 	Reason        string         `json:"reason,omitempty" yaml:"reason"`
 	Message       string         `json:"message,omitempty" yaml:"message"`
 	Payload       map[string]any `json:"payload,omitempty" yaml:"payload"`
-	RelatedObject *Object        `json:"relatedObject,omitempty" yaml:"relatedObject"`
+	RelatedObject Object         `json:"relatedObject,omitempty" yaml:"relatedObject"`
 }
 
 type EventStatus struct {

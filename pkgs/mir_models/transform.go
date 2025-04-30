@@ -6,6 +6,7 @@ import (
 
 	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
+	event_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/event_api"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -314,6 +315,155 @@ func NewDeviceFromCreateDeviceReq(d *core_apiv1.CreateDeviceRequest) Device {
 			Disabled: d.Spec.Disabled,
 		},
 		Status: DeviceStatus{},
+	}
+}
+
+/// Objects
+
+func MirObjectTargetToProtoObjectTarget(t ObjectTarget) *common_apiv1.Targets {
+	return &common_apiv1.Targets{
+		Names:      t.Names,
+		Namespaces: t.Namespaces,
+		Labels:     t.Labels,
+	}
+}
+
+func ProtoObjectTargetToMirObjectTarget(t *common_apiv1.Targets) ObjectTarget {
+	if t == nil {
+		return ObjectTarget{}
+	}
+	return ObjectTarget{
+		Names:      t.Names,
+		Namespaces: t.Namespaces,
+		Labels:     t.Labels,
+	}
+}
+
+func ProtoObjectToMirObject(o *common_apiv1.Object) Object {
+	if o == nil {
+		return Object{}
+	}
+	return Object{
+		ApiVersion: o.ApiVersion,
+		ApiName:    o.ApiName,
+		Meta: Meta{
+			Name:        o.Meta.Name,
+			Namespace:   o.Meta.Namespace,
+			Labels:      o.Meta.Labels,
+			Annotations: o.Meta.Annotations,
+		},
+	}
+}
+
+func MirObjectToProtoObject(o Object) *common_apiv1.Object {
+	return &common_apiv1.Object{
+		ApiVersion: o.ApiVersion,
+		ApiName:    o.ApiName,
+		Meta: &common_apiv1.Meta{
+			Name:        o.Meta.Name,
+			Namespace:   o.Meta.Namespace,
+			Labels:      o.Meta.Labels,
+			Annotations: o.Meta.Annotations,
+		},
+	}
+}
+
+/// Events
+
+func MirEventToProtoEvent(e Event) *event_apiv1.Event {
+	pb, err := structpb.NewStruct(e.Spec.Payload)
+	if err != nil {
+		return nil
+	}
+	return &event_apiv1.Event{
+		Object: MirObjectToProtoObject(e.Object),
+		Spec: &event_apiv1.EventSpec{
+			Type:          e.Spec.Type,
+			Reason:        e.Spec.Reason,
+			Message:       e.Spec.Message,
+			Payload:       pb,
+			RelatedObject: MirObjectToProtoObject(e.Spec.RelatedObject),
+		},
+		Status: &event_apiv1.EventStatus{
+			Count:   int32(e.Status.Count),
+			FirstAt: AsProtoTimestamp(e.Status.FirstAt),
+			LastAt:  AsProtoTimestamp(e.Status.LastAt),
+		},
+	}
+}
+func MirEventSpecToProtoCreateEvent(e EventSpec) *event_apiv1.CreateEventRequest {
+	pb, err := structpb.NewStruct(e.Payload)
+	if err != nil {
+		return nil
+	}
+	return &event_apiv1.CreateEventRequest{
+		Spec: &event_apiv1.EventSpec{
+			Type:          e.Type,
+			Reason:        e.Reason,
+			Message:       e.Message,
+			Payload:       pb,
+			RelatedObject: MirObjectToProtoObject(e.RelatedObject),
+		},
+	}
+}
+func ProtoEventsToMirEvents(events []*event_apiv1.Event) []Event {
+	var mirEvents []Event
+	for _, event := range events {
+		mirEvents = append(mirEvents, ProtoEventToMirEvent(event))
+	}
+	return mirEvents
+}
+
+func MirEventsToProtoEvents(events []Event) []*event_apiv1.Event {
+	var protoEvents []*event_apiv1.Event
+	for _, event := range events {
+		protoEvents = append(protoEvents, MirEventToProtoEvent(event))
+	}
+	return protoEvents
+}
+
+func ProtoEventToMirEvent(e *event_apiv1.Event) Event {
+	if e == nil {
+		return Event{}
+	}
+	o := ProtoObjectToMirObject(e.Spec.RelatedObject)
+	return Event{
+		Object: Object{
+			ApiVersion: "v1alpha",
+			ApiName:    "event",
+			Meta: Meta{
+				Name:        e.Object.Meta.Name,
+				Namespace:   e.Object.Meta.Namespace,
+				Labels:      e.Object.Meta.Labels,
+				Annotations: e.Object.Meta.Annotations,
+			},
+		},
+		Spec: EventSpec{
+			Type:          e.Spec.Type,
+			Reason:        e.Spec.Reason,
+			Message:       e.Spec.Message,
+			Payload:       e.Spec.Payload.AsMap(),
+			RelatedObject: o,
+		},
+		Status: EventStatus{
+			Count:   int(e.Status.Count),
+			FirstAt: AsGoTime(e.Status.FirstAt),
+			LastAt:  AsGoTime(e.Status.LastAt),
+		},
+	}
+}
+
+func ProtoCreateEventReqToMirEventSpec(e *event_apiv1.CreateEventRequest) EventSpec {
+	if e == nil {
+		return EventSpec{}
+	}
+	o := ProtoObjectToMirObject(e.Spec.RelatedObject)
+	return EventSpec{
+		Type:          e.Spec.Type,
+		Reason:        e.Spec.Reason,
+		Message:       e.Spec.Message,
+		Payload:       e.Spec.Payload.AsMap(),
+		RelatedObject: o,
 	}
 }
 

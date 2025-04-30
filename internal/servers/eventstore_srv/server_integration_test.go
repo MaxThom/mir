@@ -3,6 +3,7 @@ package eventstore_srv
 import (
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -10,9 +11,11 @@ import (
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	"github.com/maxthom/mir/internal/libs/test_utils"
 	"github.com/maxthom/mir/internal/servers/core_srv"
+	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/nats-io/nats.go"
 	"github.com/surrealdb/surrealdb.go"
+	"gotest.tools/assert"
 )
 
 var log = test_utils.TestLogger("eventstore")
@@ -33,12 +36,13 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	coreSrv, err := core_srv.NewCore(log, mSdk, mng.NewSurrealMirStore(db))
+	store := mng.NewSurrealMirStore(db)
+	coreSrv, err := core_srv.NewCore(log, mSdk, store)
 	if err := coreSrv.Serve(); err != nil {
 		panic(err)
 	}
-	cfgSrv, err := NewEventStore(log, mSdk, mng.NewSurrealMirStore(db))
-	if err := cfgSrv.Serve(); err != nil {
+	eventSrv, err := NewEventStore(log, mSdk, store)
+	if err := eventSrv.Serve(); err != nil {
 		panic(err)
 	}
 	fmt.Println(" -> bus")
@@ -46,9 +50,13 @@ func TestMain(m *testing.M) {
 	fmt.Println(" -> core")
 	time.Sleep(1 * time.Second)
 	// Clear data
-	test_utils.DeleteDevicesWithLabelsPanic(b, map[string]string{
-		"testing": "eventstore",
-	})
+	if _, err = store.DeleteEvent(mir_models.ObjectTarget{
+		Namespaces: []string{
+			"event_testing",
+		},
+	}); err != nil {
+		panic(err)
+	}
 	fmt.Println(" -> ready")
 
 	// Tests
@@ -56,14 +64,18 @@ func TestMain(m *testing.M) {
 
 	// Teardown
 	fmt.Println("Test Teardown")
-	test_utils.DeleteDevicesWithLabelsPanic(b, map[string]string{
-		"testing": "eventstore",
-	})
+	if _, err = store.DeleteEvent(mir_models.ObjectTarget{
+		Namespaces: []string{
+			"event_testing",
+		},
+	}); err != nil {
+		panic(err)
+	}
 	fmt.Println(" -> cleaned up")
 	time.Sleep(1 * time.Second)
 	b.Drain()
 	coreSrv.Shutdown()
-	cfgSrv.Shutdown()
+	eventSrv.Shutdown()
 	b.Close()
 	db.Close()
 	fmt.Println(" -> core")
@@ -73,20 +85,125 @@ func TestMain(m *testing.M) {
 	os.Exit(exitVal)
 }
 
-func TestPublishEventStoreListRequest(t *testing.T) {
+func TestPublishEventStoreNormal(t *testing.T) {
 	// Arrange
-	// ctx, cancel := context.WithCancel(context.Background())
+	sbj := mSdk.Event().NewSubject("event_test", "v1", "list_req").WithId("0xf86")
+	name := "list_request_test"
+	namespace := "event_testing"
+	triggerChain := []string{"pizza", "toppings"}
+	event := mir_models.EventSpec{
+		Type:    mir_models.EventTypeNormal,
+		Reason:  "device_online",
+		Message: "device 'carrot' is online",
+		Payload: map[string]any{
+			"key1": "val1",
+			"key2": map[string]any{
+				"key3": "val3",
+			},
+		},
+		RelatedObject: mir_models.Object{
+			ApiVersion: "v1alpha",
+			ApiName:    "mir/device",
+			Meta: mir_models.Meta{
+				Name:      name,
+				Namespace: namespace,
+			},
+		},
+	}
 
 	// Act
-	// wgs, err := s.Deploy(ctx)
-	// if err != nil {
-	// 	t.Error(err)
-	// }
+	err := mSdk.Event().PublishObject(sbj, event, &triggerChain)
+	if err != nil {
+		t.Error(err)
+	}
+
+	time.Sleep(1 * time.Second)
+
+	events, err := mSdk.Server().ListEvents().Request(
+		mir_models.ObjectTarget{
+			Namespaces: []string{
+				namespace,
+			},
+		},
+	)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// TODO list with mir_models.events
+	testEvent := mir_models.Event{}
+	for _, event := range events {
+		if event.Spec.RelatedObject.Meta.Name == name {
+			testEvent = event
+		}
+	}
 
 	// Assert
+	assert.Equal(t, event.Message, testEvent.Spec.Message)
+	assert.Equal(t, strings.Contains(testEvent.Meta.Name, name), true)
+	assert.Equal(t, namespace, testEvent.Object.Meta.Namespace)
+	assert.Equal(t, strings.Contains(testEvent.Object.Meta.Annotations[mir.HeaderTrigger], "pizza,toppings,test_eventstore-"), true)
+	assert.Equal(t, strings.Contains(testEvent.Object.Meta.Annotations[mir.HeaderRoute], sbj.String()), true)
+	assert.Equal(t, strings.Contains(testEvent.Object.Meta.Annotations[mir.HeaderSubject], sbj.GetId()), true)
+}
 
-	// cancel()
-	// for _, wg := range wgs {
-	// 	wg.Wait()
-	// }
+func TestPublishEventStoreNsDefault(t *testing.T) {
+	// Arrange
+	sbj := mSdk.Event().NewSubject("event_test", "v1", "list_req").WithId("0xf86")
+	name := "list_request_test_default"
+	namespace := "default"
+	triggerChain := []string{"pizza", "toppings"}
+	event := mir_models.EventSpec{
+		Type:    mir_models.EventTypeNormal,
+		Reason:  "device_online",
+		Message: "device 'carrot' is online",
+		Payload: map[string]any{
+			"key1": "val1",
+			"key2": map[string]any{
+				"key3": "val3",
+			},
+		},
+		RelatedObject: mir_models.Object{
+			ApiVersion: "v1alpha",
+			ApiName:    "mir/device",
+			Meta: mir_models.Meta{
+				Name: name,
+			},
+		},
+	}
+
+	// Act
+	err := mSdk.Event().PublishObject(sbj, event, &triggerChain)
+	if err != nil {
+		t.Error(err)
+	}
+
+	time.Sleep(1 * time.Second)
+
+	events, err := mSdk.Server().ListEvents().Request(
+		mir_models.ObjectTarget{
+			Namespaces: []string{
+				namespace,
+			},
+		},
+	)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// TODO list with mir_models.events
+	testEvent := mir_models.Event{}
+	for _, event := range events {
+		if event.Spec.RelatedObject.Meta.Name == name {
+			testEvent = event
+		}
+	}
+
+	// Assert
+	assert.Equal(t, event.Message, testEvent.Spec.Message)
+	assert.Equal(t, strings.Contains(testEvent.Meta.Name, name), true)
+	assert.Equal(t, namespace, testEvent.Object.Meta.Namespace)
+	assert.Equal(t, strings.Contains(testEvent.Object.Meta.Annotations[mir.HeaderTrigger], "pizza,toppings,test_eventstore-"), true)
+	assert.Equal(t, strings.Contains(testEvent.Object.Meta.Annotations[mir.HeaderRoute], sbj.String()), true)
+	assert.Equal(t, strings.Contains(testEvent.Object.Meta.Annotations[mir.HeaderSubject], sbj.GetId()), true)
 }

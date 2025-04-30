@@ -2,12 +2,16 @@ package eventstore_srv
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"sync"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/maxthom/mir/internal/externals/mng"
 	"github.com/maxthom/mir/internal/libs/api/metrics"
 	"github.com/maxthom/mir/internal/services/schema_cache"
-	eventstore_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/eventstore_api"
+	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
@@ -18,7 +22,7 @@ type EventStoreServer struct {
 	cancelCtx context.CancelFunc
 	wg        *sync.WaitGroup
 	m         *mir.Mir
-	devStore  mng.MirStore
+	store     mng.MirStore
 	schStore  *schema_cache.MirProtoCache
 }
 
@@ -64,13 +68,16 @@ func NewEventStore(logger zerolog.Logger, m *mir.Mir, store mng.MirStore) (*Even
 		cancelCtx: cancelFn,
 		wg:        &sync.WaitGroup{},
 		m:         m,
-		devStore:  store,
+		store:     store,
 	}, nil
 }
 
 // Using the db and bus, listen for telemetry, deserialize using proto and push to line protocol db
 func (s *EventStoreServer) Serve() error {
 	if err := s.m.Server().ListEvents().QueueSubscribe(ServiceName, s.listEventsSub); err != nil {
+		return err
+	}
+	if err := s.m.Event().QueueSubscribeObject(ServiceName, s.streamEventsSub); err != nil {
 		return err
 	}
 	return nil
@@ -82,10 +89,72 @@ func (s *EventStoreServer) Shutdown() error {
 	return nil
 }
 
-func (s *EventStoreServer) listEventsSub(msg *mir.Msg, clientId string, req *eventstore_apiv1.SendListEventsRequest) ([]*eventstore_apiv1.Event, error) {
+func (s *EventStoreServer) listEventsSub(msg *mir.Msg, clientId string, req mir_models.ObjectTarget) ([]mir_models.Event, error) {
 	l.Info().Any("req", req).Msg("list events request")
 	requestTotal.WithLabelValues("list").Inc()
 
+	respDb, err := s.store.ListEvent(req)
+	if err != nil {
+		requestErrorTotal.WithLabelValues("list").Inc()
+		l.Error().Err(err).Msg("error occure while listing events in a db query")
+		return nil, fmt.Errorf("error listing events: %w", err)
+	}
+
 	l.Info().Msg("list events request processed successfully")
-	return []*eventstore_apiv1.Event{}, nil
+	return respDb, nil
+}
+
+func (s *EventStoreServer) streamEventsSub(msg *mir.Msg, subjectId string, req mir_models.EventSpec, e error) {
+	l.Info().Any("req", req).Msg("event received")
+	eventCaptureTotal.Inc()
+	defer msg.Ack()
+	if e != nil {
+		eventCaptureErrorTotal.Inc()
+		l.Error().Err(e).Msg("error occure while streaming event")
+		return
+	}
+
+	// TODO name of events, tbd
+	event := mir_models.NewEvent()
+	id, err := uuid.NewV7()
+	if err != nil {
+		l.Error().Err(err).Msg("error generating UUID")
+		return
+	}
+	if req.RelatedObject.Meta.Name != "" {
+		event.Meta.Name = req.RelatedObject.Meta.Name + "_" + id.String()
+	} else {
+		event.Meta.Name = id.String()
+	}
+	event.Meta.Namespace = req.RelatedObject.Meta.Namespace
+	if event.Meta.Namespace == "" {
+		event.Meta.Namespace = "default"
+	}
+	if event.Meta.Labels == nil {
+		event.Meta.Labels = make(map[string]string)
+	}
+	if event.Meta.Annotations == nil {
+		event.Meta.Annotations = make(map[string]string)
+	}
+	event.Meta.Annotations[mir.HeaderRoute] = msg.Subject
+	event.Meta.Annotations[mir.HeaderSubject] = subjectId
+	if len(msg.Header.Values(mir.HeaderTrigger)) > 0 {
+		event.Meta.Annotations[mir.HeaderTrigger] = strings.Join(msg.Header.Values(mir.HeaderTrigger), ",")
+	}
+
+	event.Spec = req
+
+	// TODO stack algo
+	event.Status.Count = 1
+	event.Status.FirstAt = time.Now().UTC()
+	event.Status.LastAt = time.Now().UTC()
+
+	_, err = s.store.CreateEvent(event)
+	if err != nil {
+		eventCaptureErrorTotal.Inc()
+		l.Error().Err(err).Msg("error occure while streaming event")
+		return
+	}
+
+	l.Info().Msg("event streamed successfully")
 }

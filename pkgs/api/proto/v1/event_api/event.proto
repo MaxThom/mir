@@ -1,15 +1,15 @@
 syntax = "proto3";
 
-package eventstore_api.v1;
+package event_api.v1;
 
 import "v1/common_api/common.proto";
 import "google/protobuf/struct.proto";
 
-message SendListEventsRequest {
+message ListEventsRequest {
     common_api.v1.Targets targets = 1;
 }
 
-message SendListEventsResponse {
+message ListEventsResponse {
   oneof response {
     Events ok = 1; // list of events returned
     string error = 2;  // error if something went wrong
@@ -17,8 +17,7 @@ message SendListEventsResponse {
 }
 
 message CreateEventRequest {
-   common_api.v1.Meta meta = 1;
-   EventSpec spec = 2;
+   EventSpec spec = 1;
 }
 
 message CreateEventResponse {
