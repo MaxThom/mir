@@ -60,7 +60,7 @@ func createTargetStatementForObjects(t mir_models.ObjectTarget) string {
 	if len(t.Names) > 0 {
 		var i []string
 		for _, ns := range t.Names {
-			i = append(i, fmt.Sprintf("meta.name = \"%s\"", ns))
+			i = append(i, fmt.Sprintf("meta.name CONTAINS \"%s\"", ns))
 		}
 		cond = append(cond, "("+strings.Join(i, " OR ")+")")
 	}
@@ -74,7 +74,7 @@ func createTargetStatementForObjects(t mir_models.ObjectTarget) string {
 	if len(t.Labels) > 0 {
 		var i []string
 		for k, v := range t.Labels {
-			i = append(i, fmt.Sprintf("meta.labels.%s = \"%s\"", k, v))
+			i = append(i, fmt.Sprintf("meta.labels.%s CONTAINS \"%s\"", k, v))
 		}
 		cond = append(cond, "("+strings.Join(i, " AND ")+")")
 	}

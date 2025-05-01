@@ -323,6 +323,7 @@ func createListQueryForDevice(req *core_apiv1.ListDeviceRequest) (sql string, va
 
 	q.WriteString(";")
 	sql = q.String()
+	fmt.Println(sql)
 	return
 }
 
@@ -523,7 +524,7 @@ func createDeviceWhereStatementWithTargets(t *core_apiv1.Targets) string {
 	if len(t.Names) > 0 {
 		var i []string
 		for _, ns := range t.Names {
-			i = append(i, fmt.Sprintf("meta.name = \"%s\"", ns))
+			i = append(i, fmt.Sprintf("meta.name CONTAINS \"%s\"", ns))
 		}
 		cond = append(cond, "("+strings.Join(i, " OR ")+")")
 	}
@@ -537,7 +538,7 @@ func createDeviceWhereStatementWithTargets(t *core_apiv1.Targets) string {
 	if len(t.Labels) > 0 {
 		var i []string
 		for k, v := range t.Labels {
-			i = append(i, fmt.Sprintf("meta.labels.%s = \"%s\"", k, v))
+			i = append(i, fmt.Sprintf("meta.labels.%s CONTAINS \"%s\"", k, v))
 		}
 		cond = append(cond, "("+strings.Join(i, " AND ")+")")
 	}

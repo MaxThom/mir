@@ -57,6 +57,13 @@ func TestMain(m *testing.M) {
 	}); err != nil {
 		panic(err)
 	}
+	if _, err = store.DeleteEvent(mir_models.ObjectTarget{
+		Namespaces: []string{
+			"default",
+		},
+	}); err != nil {
+		panic(err)
+	}
 	fmt.Println(" -> ready")
 
 	// Tests
@@ -67,6 +74,13 @@ func TestMain(m *testing.M) {
 	if _, err = store.DeleteEvent(mir_models.ObjectTarget{
 		Namespaces: []string{
 			"event_testing",
+		},
+	}); err != nil {
+		panic(err)
+	}
+	if _, err = store.DeleteEvent(mir_models.ObjectTarget{
+		Namespaces: []string{
+			"default",
 		},
 	}); err != nil {
 		panic(err)

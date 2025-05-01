@@ -1,0 +1,163 @@
+package cli
+
+import (
+	"errors"
+	"fmt"
+	"sort"
+	"strings"
+	"time"
+
+	"github.com/maxthom/mir/internal/clients/event_client"
+	bus "github.com/maxthom/mir/internal/libs/external/natsio"
+	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
+	event_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/event_api"
+	"github.com/maxthom/mir/pkgs/mir_models"
+)
+
+// TODO get command which is ls but with -o yaml
+type EventCmd struct {
+	List EventListCmd `cmd:"" aliases:"ls" help:"List events"`
+}
+
+type EventListCmd struct {
+	Output string `short:"o" help:"output format for response [pretty|json|yaml]" default:"pretty"`
+	NameNs string `name:"name/namespace" arg:"" optional:"" help:"list single event."`
+	Target `embed:"" prefix:"target."`
+}
+
+type TargetEvent struct {
+	Names      []string          `help:"List of events to fetch by names"`
+	Namespaces []string          `help:"List of events to fetch by namespaces"`
+	Labels     map[string]string `help:"Set of labels to filter events"`
+}
+
+func (d EventCmd) Run() error {
+	return nil
+}
+
+func (d *EventListCmd) Validate() error {
+	err := MirInvalidInputError{
+		Details: []string{},
+	}
+	if strings.ToLower(d.Output) != "pretty" && strings.ToLower(d.Output) != "yaml" && strings.ToLower(d.Output) != "json" {
+		d.Output = "pretty"
+	}
+
+	if d.NameNs != "" {
+		d.Target = getTargetFromNameNs(d.NameNs)
+	}
+
+	if len(err.Details) > 0 {
+		return err
+	}
+	return nil
+}
+
+func (d *EventListCmd) Run(c CLI) error {
+	var err error
+	msgBus, err := bus.New(c.Target)
+	if err != nil {
+		e := MirConnectionError{Target: c.Target, e: err}
+		return e
+	}
+	defer msgBus.Close()
+
+	resp, err := event_client.PublishEventListRequest(msgBus, &event_apiv1.ListEventsRequest{
+		Targets: &common_apiv1.Targets{
+			Names:      d.Names,
+			Namespaces: d.Namespaces,
+			Labels:     d.Labels,
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("error publising list event request: %w", err)
+	} else if resp.GetError() != "" {
+		return errors.New(resp.GetError())
+	}
+
+	list := mir_models.ProtoEventsToMirEvents(resp.GetOk().Events)
+	if d.Output == "pretty" && len(list) == 1 {
+		d.Output = "yaml"
+	}
+	if str, err := stringifyEvents(d.Output, list); err != nil {
+		return fmt.Errorf("error marshalling response: %w", err)
+	} else {
+		fmt.Println(str)
+	}
+
+	return nil
+}
+
+func stringifyEvents(output string, events []mir_models.Event) (string, error) {
+	switch output {
+	case "json":
+		return marshalResponse(output, events)
+	case "yaml":
+		return marshalResponse(output, events)
+	case "pretty":
+		return prettyStringEvents(events), nil
+	}
+	return "", errors.New("invalid output format")
+}
+
+func prettyStringEvents(events []mir_models.Event) string {
+	format := "%-20s %-16s %-40s %-8s %-20s %-60s\n"
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf(format, "NAMESPACE", "AGE", "NAME", "TYPE", "REASON", "MESSAGE"))
+
+	// TODO sort namespace, time
+	sort.Slice(events, func(i, j int) bool {
+		if events[i].Meta.Namespace == events[j].Meta.Namespace {
+			if events[i].Status.FirstAt.Equal(events[j].Status.FirstAt) {
+				return events[i].Meta.Name < events[j].Meta.Name
+			} else {
+				return events[i].Status.FirstAt.After(events[j].Status.FirstAt)
+			}
+		} else {
+			return events[i].Meta.Namespace < events[j].Meta.Namespace
+		}
+	})
+
+	for _, d := range events {
+		st := ""
+		if d.Spec.Type == mir_models.EventTypeNormal {
+			st = "normal"
+		} else if d.Spec.Type == mir_models.EventTypeWarning {
+			st = "warning"
+		} else {
+			st = "normal"
+		}
+
+		age := ""
+		if !d.Status.FirstAt.IsZero() {
+			age = prettyDuration(time.Now().UTC().Sub(d.Status.FirstAt))
+		}
+
+		sb.WriteString(fmt.Sprintf(format, d.Meta.Namespace, age, d.Meta.Name, st, d.Spec.Reason, d.Spec.Message))
+	}
+	return sb.String()
+}
+
+func prettyDuration(d time.Duration) string {
+	days := d / (24 * time.Hour)
+	d -= days * 24 * time.Hour
+
+	hours := d / time.Hour
+	d -= hours * time.Hour
+
+	minutes := d / time.Minute
+	d -= minutes * time.Minute
+
+	seconds := d / time.Second
+
+	if days > 0 {
+		return fmt.Sprintf("%dd %dh %dm %ds", days, hours, minutes, seconds)
+	}
+	if hours > 0 {
+		return fmt.Sprintf("%dh %dm %ds", hours, minutes, seconds)
+	}
+	if minutes > 0 {
+		return fmt.Sprintf("%dm %ds", minutes, seconds)
+	}
+	return fmt.Sprintf("%ds", seconds)
+}

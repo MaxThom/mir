@@ -122,7 +122,7 @@ func (s *EventStoreServer) streamEventsSub(msg *mir.Msg, subjectId string, req m
 		return
 	}
 	if req.RelatedObject.Meta.Name != "" {
-		event.Meta.Name = req.RelatedObject.Meta.Name + "_" + id.String()
+		event.Meta.Name = req.RelatedObject.Meta.Name + "-" + id.String()[:8]
 	} else {
 		event.Meta.Name = id.String()
 	}

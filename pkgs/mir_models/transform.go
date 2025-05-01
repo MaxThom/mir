@@ -454,7 +454,7 @@ func ProtoEventToMirEvent(e *event_apiv1.Event) Event {
 }
 
 func ProtoCreateEventReqToMirEventSpec(e *event_apiv1.CreateEventRequest) EventSpec {
-	if e == nil {
+	if e == nil || e.Spec == nil {
 		return EventSpec{}
 	}
 	o := ProtoObjectToMirObject(e.Spec.RelatedObject)

@@ -9,7 +9,7 @@ import (
 	"github.com/maxthom/mir/internal/clients/cfg_client"
 	"github.com/maxthom/mir/internal/clients/cmd_client"
 	"github.com/maxthom/mir/internal/clients/core_client"
-	"github.com/maxthom/mir/internal/clients/eventstore_client"
+	"github.com/maxthom/mir/internal/clients/event_client"
 	cmd_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cmd_api"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	event_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/event_api"
@@ -88,13 +88,13 @@ func (r *eventRoutes) PublishObject(sbj eventSubject, event mir_models.EventSpec
 
 // Subscribe to event stream
 func (r *eventRoutes) SubscribeObject(f func(msg *Msg, subjectId string, req mir_models.EventSpec, e error)) error {
-	sbj := eventstore_client.EventsStream.WithId("*")
+	sbj := event_client.EventsStream.WithId("*")
 	return r.m.subscribe(sbj, r.handlerWrapper(f))
 }
 
 // Queue subscribe to event stream
 func (r *eventRoutes) QueueSubscribeObject(queue string, f func(msg *Msg, subjectId string, req mir_models.EventSpec, e error)) error {
-	sbj := eventstore_client.EventsStream.WithId("*")
+	sbj := event_client.EventsStream.WithId("*")
 	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
 }
 

@@ -60,7 +60,7 @@ func TestPublishEventStoreCreateRequest(t *testing.T) {
 	// Arrange
 	m := mir_models.NewEventWithMeta(mir_models.Meta{
 		Name:      "create_event",
-		Namespace: "default",
+		Namespace: "store_test",
 		Labels: map[string]string{
 			"eventstore": "testing",
 		},
@@ -73,7 +73,7 @@ func TestPublishEventStoreCreateRequest(t *testing.T) {
 			ApiName:    "mir/devices",
 			Meta: mir_models.Meta{
 				Name:      "device1",
-				Namespace: "default",
+				Namespace: "store_test",
 			},
 		},
 		Payload: map[string]any{
@@ -104,14 +104,14 @@ func TestPublishEventStoreNotUnique(t *testing.T) {
 	// Arrange
 	m := mir_models.NewEventWithMeta(mir_models.Meta{
 		Name:      "create_event_unique",
-		Namespace: "default",
+		Namespace: "store_test",
 		Labels: map[string]string{
 			"eventstore": "testing",
 		},
 	})
 	m2 := mir_models.NewEventWithMeta(mir_models.Meta{
 		Name:      "create_event_unique",
-		Namespace: "default",
+		Namespace: "store_test",
 		Labels: map[string]string{
 			"eventstore": "testing",
 		},
@@ -136,14 +136,14 @@ func TestPublishEventStoreListName(t *testing.T) {
 	}
 	m := mir_models.NewEventWithMeta(mir_models.Meta{
 		Name:      "list_event_1",
-		Namespace: "default",
+		Namespace: "store_test",
 		Labels: map[string]string{
 			"eventstore": "testing",
 		},
 	})
 	m2 := mir_models.NewEventWithMeta(mir_models.Meta{
 		Name:      "list_event_2",
-		Namespace: "default",
+		Namespace: "store_test",
 		Labels: map[string]string{
 			"eventstore": "testing",
 		},
@@ -218,7 +218,7 @@ func TestPublishEventStoreListLabels(t *testing.T) {
 	}
 	m := mir_models.NewEventWithMeta(mir_models.Meta{
 		Name:      "list_event_1_lbl",
-		Namespace: "default",
+		Namespace: "store_test",
 		Labels: map[string]string{
 			"eventstore": "testing",
 			"test":       "list_labels",
@@ -226,7 +226,7 @@ func TestPublishEventStoreListLabels(t *testing.T) {
 	})
 	m2 := mir_models.NewEventWithMeta(mir_models.Meta{
 		Name:      "list_event_2_lbl",
-		Namespace: "default",
+		Namespace: "store_test",
 		Labels: map[string]string{
 			"eventstore": "testing",
 			"test":       "list_labels",
@@ -261,14 +261,14 @@ func TestPublishEventStoreDeleteName(t *testing.T) {
 	}
 	m := mir_models.NewEventWithMeta(mir_models.Meta{
 		Name:      "delete_event_1",
-		Namespace: "default",
+		Namespace: "store_test",
 		Labels: map[string]string{
 			"eventstore": "testing",
 		},
 	})
 	m2 := mir_models.NewEventWithMeta(mir_models.Meta{
 		Name:      "delete_event_2",
-		Namespace: "default",
+		Namespace: "store_test",
 		Labels: map[string]string{
 			"eventstore": "testing",
 		},
@@ -351,7 +351,7 @@ func TestPublishEventStoreDeleteLabels(t *testing.T) {
 	}
 	m := mir_models.NewEventWithMeta(mir_models.Meta{
 		Name:      "delete_event_1_lbl",
-		Namespace: "default",
+		Namespace: "store_test",
 		Labels: map[string]string{
 			"eventstore": "testing",
 			"test":       "delete_labels",
@@ -359,7 +359,7 @@ func TestPublishEventStoreDeleteLabels(t *testing.T) {
 	})
 	m2 := mir_models.NewEventWithMeta(mir_models.Meta{
 		Name:      "delete_event_2_lbl",
-		Namespace: "default",
+		Namespace: "store_test",
 		Labels: map[string]string{
 			"eventstore": "testing",
 			"test":       "delete_labels",
@@ -398,7 +398,7 @@ func TestPublishEventStoreUpdateMetaLblAnnoRequest(t *testing.T) {
 	}
 	m := mir_models.NewEventWithMeta(mir_models.Meta{
 		Name:      "update_event_meta_lbl",
-		Namespace: "default",
+		Namespace: "store_test",
 		Labels: map[string]string{
 			"eventstore": "testing",
 			"key3":       "test",
@@ -416,7 +416,7 @@ func TestPublishEventStoreUpdateMetaLblAnnoRequest(t *testing.T) {
 			ApiName:    "mir/devices",
 			Meta: mir_models.Meta{
 				Name:      "device1",
-				Namespace: "default",
+				Namespace: "store_test",
 			},
 		},
 		Payload: map[string]any{
@@ -475,7 +475,7 @@ func TestPublishEventStoreUpdateNameRequest(t *testing.T) {
 	}
 	m := mir_models.NewEventWithMeta(mir_models.Meta{
 		Name:      "update_event_meta_name",
-		Namespace: "default",
+		Namespace: "store_test",
 		Labels: map[string]string{
 			"eventstore": "testing",
 		},
@@ -488,7 +488,7 @@ func TestPublishEventStoreUpdateNameRequest(t *testing.T) {
 			ApiName:    "mir/devices",
 			Meta: mir_models.Meta{
 				Name:      "device1",
-				Namespace: "default",
+				Namespace: "store_test",
 			},
 		},
 		Payload: map[string]any{
@@ -533,14 +533,14 @@ func TestPublishEventStoreUpdateNameRequestDuplicate(t *testing.T) {
 	}
 	m := mir_models.NewEventWithMeta(mir_models.Meta{
 		Name:      "update_event_meta_name_1",
-		Namespace: "default",
+		Namespace: "store_test",
 		Labels: map[string]string{
 			"eventstore": "testing",
 		},
 	})
 	m2 := mir_models.NewEventWithMeta(mir_models.Meta{
 		Name:      "update_event_meta_name_2",
-		Namespace: "default",
+		Namespace: "store_test",
 		Labels: map[string]string{
 			"eventstore": "testing",
 		},
@@ -576,7 +576,7 @@ func TestPublishEventStoreUpdateNamespaceRequestDuplicate(t *testing.T) {
 	}
 	m := mir_models.NewEventWithMeta(mir_models.Meta{
 		Name:      "update_event_meta_namespace_1",
-		Namespace: "default",
+		Namespace: "store_test",
 		Labels: map[string]string{
 			"eventstore": "testing",
 		},
@@ -619,7 +619,7 @@ func TestPublishEventStoreUpdateNameNamespaceRequestDuplicate(t *testing.T) {
 	}
 	m := mir_models.NewEventWithMeta(mir_models.Meta{
 		Name:      "update_event_meta_namens_1",
-		Namespace: "default",
+		Namespace: "store_test",
 		Labels: map[string]string{
 			"eventstore": "testing",
 		},
@@ -663,7 +663,7 @@ func TestPublishEventStoreUpdateSpecRequest(t *testing.T) {
 	}
 	m := mir_models.NewEventWithMeta(mir_models.Meta{
 		Name:      "update_event_spec",
-		Namespace: "default",
+		Namespace: "store_test",
 		Labels: map[string]string{
 			"eventstore": "testing",
 		},
@@ -676,7 +676,7 @@ func TestPublishEventStoreUpdateSpecRequest(t *testing.T) {
 			ApiName:    "mir/devices",
 			Meta: mir_models.Meta{
 				Name:      "device1",
-				Namespace: "default",
+				Namespace: "store_test",
 			},
 		},
 		Payload: map[string]any{
@@ -732,7 +732,7 @@ func TestPublishEventStoreUpdateStatusRequest(t *testing.T) {
 	}
 	m := mir_models.NewEventWithMeta(mir_models.Meta{
 		Name:      "update_event_status",
-		Namespace: "default",
+		Namespace: "store_test",
 		Labels: map[string]string{
 			"eventstore": "testing",
 		},
@@ -745,7 +745,7 @@ func TestPublishEventStoreUpdateStatusRequest(t *testing.T) {
 			ApiName:    "mir/devices",
 			Meta: mir_models.Meta{
 				Name:      "device1",
-				Namespace: "default",
+				Namespace: "store_test",
 			},
 		},
 		Payload: map[string]any{

@@ -2,7 +2,7 @@ package mir
 
 import (
 	"github.com/maxthom/mir/internal/clients"
-	"github.com/maxthom/mir/internal/clients/eventstore_client"
+	"github.com/maxthom/mir/internal/clients/event_client"
 	event_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/event_api"
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/nats-io/nats.go"
@@ -22,13 +22,13 @@ func (r *serverRoutes) ListEvents() *listEventsRoute {
 
 // Subscribe to list events request
 func (r *listEventsRoute) Subscribe(f func(msg *Msg, clientId string, req mir_models.ObjectTarget) ([]mir_models.Event, error)) error {
-	sbj := eventstore_client.ListEventsRequest.WithId("*")
+	sbj := event_client.ListEventsRequest.WithId("*")
 	return r.m.subscribe(sbj, r.handlerWrapper(f))
 }
 
 // Queue subscribe to list telemetry request
 func (r *listEventsRoute) QueueSubscribe(queue string, f func(msg *Msg, clientId string, req mir_models.ObjectTarget) ([]mir_models.Event, error)) error {
-	sbj := eventstore_client.ListEventsRequest.WithId("*")
+	sbj := event_client.ListEventsRequest.WithId("*")
 	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
 }
 
@@ -62,7 +62,7 @@ func (r *listEventsRoute) handlerWrapper(f func(msg *Msg, clientId string, req m
 
 // Request listing of telemetry per device
 func (r *listEventsRoute) Request(t mir_models.ObjectTarget) ([]mir_models.Event, error) {
-	sbj := eventstore_client.ListEventsRequest.WithId(r.m.GetInstanceName())
+	sbj := event_client.ListEventsRequest.WithId(r.m.GetInstanceName())
 
 	bReq, err := proto.Marshal(&event_apiv1.ListEventsRequest{
 		Targets: mir_models.MirObjectTargetToProtoObjectTarget(t),
