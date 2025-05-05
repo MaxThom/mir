@@ -159,7 +159,7 @@ func run(
 	log.Info().Str("url", cfg.DatabaseServer.Url).Str("namespace", "global").Str("database", "mir").Msg("connected to database")
 
 	// Bus
-	m, err := mir.Connect("protocfg", cfg.DataBusServer.Url, append(mir.WithDefaultReconnectOpts(), mir.WithDefaultConnectionLogging(log)...)...)
+	m, err := mir.Connect(AppName, cfg.DataBusServer.Url, append(mir.WithDefaultReconnectOpts(), mir.WithDefaultConnectionLogging(log)...)...)
 	if err != nil {
 		return err
 	}

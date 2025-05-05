@@ -101,10 +101,12 @@ func TestMain(m *testing.M) {
 
 func TestPublishEventStoreNormal(t *testing.T) {
 	// Arrange
-	sbj := mSdk.Event().NewSubject("event_test", "v1", "list_req").WithId("0xf86")
+	sbj := mir.NewEventSubject("event_test", "v1", "list_req").WithId("0xf86")
 	name := "list_request_test"
 	namespace := "event_testing"
 	triggerChain := []string{"pizza", "toppings"}
+	msg := mir.NewMsg(sbj.String())
+	msg.AddToTriggerChain(triggerChain...)
 	event := mir_models.EventSpec{
 		Type:    mir_models.EventTypeNormal,
 		Reason:  "device_online",
@@ -126,7 +128,7 @@ func TestPublishEventStoreNormal(t *testing.T) {
 	}
 
 	// Act
-	err := mSdk.Event().PublishObject(sbj, event, &triggerChain)
+	err := mSdk.Event().Publish(sbj, event, msg)
 	if err != nil {
 		t.Error(err)
 	}
@@ -163,10 +165,12 @@ func TestPublishEventStoreNormal(t *testing.T) {
 
 func TestPublishEventStoreNsDefault(t *testing.T) {
 	// Arrange
-	sbj := mSdk.Event().NewSubject("event_test", "v1", "list_req").WithId("0xf86")
+	sbj := mir.NewEventSubject("event_test", "v1", "list_req").WithId("0xf86")
 	name := "list_request_test_default"
 	namespace := "default"
 	triggerChain := []string{"pizza", "toppings"}
+	msg := mir.NewMsg(sbj.String())
+	msg.AddToTriggerChain(triggerChain...)
 	event := mir_models.EventSpec{
 		Type:    mir_models.EventTypeNormal,
 		Reason:  "device_online",
@@ -187,7 +191,7 @@ func TestPublishEventStoreNsDefault(t *testing.T) {
 	}
 
 	// Act
-	err := mSdk.Event().PublishObject(sbj, event, &triggerChain)
+	err := mSdk.Event().Publish(sbj, event, msg)
 	if err != nil {
 		t.Error(err)
 	}

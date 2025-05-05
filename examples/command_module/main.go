@@ -23,7 +23,7 @@ func main() {
 	}
 
 	err = m.Event().Command().Subscribe(
-		func(msg *mir.Msg, serverId string, cmd *cmd_apiv1.SendCommandResponse_CommandResponse) {
+		func(msg *mir.Msg, serverId string, cmd *cmd_apiv1.SendCommandResponse_CommandResponse, err error) {
 			fmt.Println("---EVENT---")
 			msg.Ack()
 		})

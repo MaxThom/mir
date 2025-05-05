@@ -18,14 +18,9 @@ func NewEvent() Event {
 	}
 }
 
-func NewEventWithMeta(m Meta) Event {
-	return Event{
-		Object: Object{
-			ApiVersion: "v1alpha",
-			ApiName:    "mir/events",
-			Meta:       m,
-		},
-	}
+func (e Event) WithMeta(m Meta) Event {
+	e.Meta = m
+	return e
 }
 
 type Event struct {

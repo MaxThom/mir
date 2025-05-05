@@ -101,9 +101,9 @@ func stringifyEvents(output string, events []mir_models.Event) (string, error) {
 }
 
 func prettyStringEvents(events []mir_models.Event) string {
-	format := "%-20s %-16s %-40s %-8s %-20s %-60s\n"
+	format := "%-16s %-30s %-8s %-20s %-60s\n"
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf(format, "NAMESPACE", "AGE", "NAME", "TYPE", "REASON", "MESSAGE"))
+	sb.WriteString(fmt.Sprintf(format, "AGE", "NAMESPACE/NAME", "TYPE", "REASON", "MESSAGE"))
 
 	// TODO sort namespace, time
 	sort.Slice(events, func(i, j int) bool {
@@ -133,7 +133,7 @@ func prettyStringEvents(events []mir_models.Event) string {
 			age = prettyDuration(time.Now().UTC().Sub(d.Status.FirstAt))
 		}
 
-		sb.WriteString(fmt.Sprintf(format, d.Meta.Namespace, age, d.Meta.Name, st, d.Spec.Reason, d.Spec.Message))
+		sb.WriteString(fmt.Sprintf(format, age, d.Meta.Namespace+"/"+d.Spec.RelatedObject.Meta.Name, st, d.Spec.Reason, d.Spec.Message))
 	}
 	return sb.String()
 }

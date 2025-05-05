@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	cmd_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cmd_api"
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/nats-io/nats.go"
 	"gotest.tools/assert"
@@ -60,229 +59,72 @@ func TestEventRoutes_NewSubject(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("%s-%s-%s", tt.module, tt.version, tt.function), func(t *testing.T) {
-			subject := m.Event().NewSubject(tt.module, tt.version, tt.function, tt.extra...)
+			subject := NewEventSubject(tt.module, tt.version, tt.function, tt.extra...)
 			assert.Equal(t, tt.expected, subject.String())
 		})
 	}
 }
 
-func TestDeviceOnlineEvent(t *testing.T) {
-	deviceID := "test-event-online"
-	testDevice := mir_models.Device{
-		Object: mir_models.Object{
-			Meta: mir_models.Meta{
-				Name:      "Test_Device",
-				Namespace: "default",
-			},
-		},
-		Spec: mir_models.DeviceSpec{
-			DeviceId: deviceID,
-		},
-	}
-
-	// Channel for test synchronization
-	received := make(chan mir_models.Device)
-
-	err := m.Event().DeviceOnline().Subscribe(func(msg *Msg, serverId string, device mir_models.Device) {
-		received <- device
-	})
-
-	err = m.Event().DeviceOnline().Publish(m.GetInstanceName(), testDevice)
-	if err != nil {
-		t.Error(err)
-	}
-
-	select {
-	case receivedDevice := <-received:
-		assert.Equal(t, testDevice.Meta.Name, receivedDevice.Meta.Name)
-		assert.Equal(t, testDevice.Spec.DeviceId, receivedDevice.Spec.DeviceId)
-	case <-time.After(5 * time.Second):
-		t.Error("Timeout waiting for event")
-	}
-}
-
-func TestDeviceOfflineEvent(t *testing.T) {
-	deviceID := "test-event-offline"
-	testDevice := mir_models.Device{
-		Object: mir_models.Object{
-			Meta: mir_models.Meta{
-				Name:      "Test_Device",
-				Namespace: "default",
-			},
-		},
-		Spec: mir_models.DeviceSpec{
-			DeviceId: deviceID,
-		},
-	}
-
-	// Channel for test synchronization
-	received := make(chan mir_models.Device)
-
-	err := m.Event().DeviceOffline().Subscribe(func(msg *Msg, serverId string, device mir_models.Device) {
-		received <- device
-	})
-
-	err = m.Event().DeviceOffline().Publish(m.GetInstanceName(), testDevice)
-	if err != nil {
-		t.Error(err)
-	}
-
-	select {
-	case receivedDevice := <-received:
-		assert.Equal(t, testDevice.Meta.Name, receivedDevice.Meta.Name)
-		assert.Equal(t, testDevice.Spec.DeviceId, receivedDevice.Spec.DeviceId)
-	case <-time.After(5 * time.Second):
-		t.Error("Timeout waiting for event")
-	}
-}
-
-func TestDeviceCreatedEvent(t *testing.T) {
-	deviceID := "test-event-created"
-	testDevice := mir_models.Device{
-		Object: mir_models.Object{
-			Meta: mir_models.Meta{
-				Name:      "Test_Device",
-				Namespace: "default",
-			},
-		},
-		Spec: mir_models.DeviceSpec{
-			DeviceId: deviceID,
-		},
-	}
-
-	// Channel for test synchronization
-	received := make(chan mir_models.Device)
-
-	err := m.Event().DeviceCreate().Subscribe(func(msg *Msg, serverId string, device mir_models.Device) {
-		received <- device
-	})
-
-	err = m.Event().DeviceCreate().Publish(m.GetInstanceName(), testDevice)
-	if err != nil {
-		t.Error(err)
-	}
-
-	select {
-	case receivedDevice := <-received:
-		assert.Equal(t, testDevice.Meta.Name, receivedDevice.Meta.Name)
-		assert.Equal(t, testDevice.Spec.DeviceId, receivedDevice.Spec.DeviceId)
-	case <-time.After(5 * time.Second):
-		t.Error("Timeout waiting for event")
-	}
-}
-
-func TestDeviceUpdateEvent(t *testing.T) {
-	deviceID := "test-event-uodate"
-	testDevice := mir_models.Device{
-		Object: mir_models.Object{
-			Meta: mir_models.Meta{
-				Name:      "Test_Device",
-				Namespace: "default",
-			},
-		},
-		Spec: mir_models.DeviceSpec{
-			DeviceId: deviceID,
-		},
-	}
-
-	// Channel for test synchronization
-	received := make(chan mir_models.Device)
-
-	err := m.Event().DeviceUpdate().Subscribe(func(msg *Msg, serverId string, device mir_models.Device) {
-		received <- device
-	})
-
-	err = m.Event().DeviceUpdate().Publish(m.GetInstanceName(), testDevice)
-	if err != nil {
-		t.Error(err)
-	}
-
-	select {
-	case receivedDevice := <-received:
-		assert.Equal(t, testDevice.Meta.Name, receivedDevice.Meta.Name)
-		assert.Equal(t, testDevice.Spec.DeviceId, receivedDevice.Spec.DeviceId)
-	case <-time.After(5 * time.Second):
-		t.Error("Timeout waiting for event")
-	}
-}
-
-func TestDeviceDeleteEvent(t *testing.T) {
-	deviceID := "test-event=delete"
-	testDevice := mir_models.Device{
-		Object: mir_models.Object{
-			Meta: mir_models.Meta{
-				Name:      "Test_Device",
-				Namespace: "default",
-			},
-		},
-		Spec: mir_models.DeviceSpec{
-			DeviceId: deviceID,
-		},
-	}
-
-	// Channel for test synchronization
-	received := make(chan mir_models.Device)
-
-	err := m.Event().DeviceDelete().Subscribe(func(msg *Msg, serverId string, device mir_models.Device) {
-		received <- device
-	})
-
-	err = m.Event().DeviceDelete().Publish(m.GetInstanceName(), testDevice)
-	if err != nil {
-		t.Error(err)
-	}
-
-	select {
-	case receivedDevice := <-received:
-		assert.Equal(t, testDevice.Meta.Name, receivedDevice.Meta.Name)
-		assert.Equal(t, testDevice.Spec.DeviceId, receivedDevice.Spec.DeviceId)
-	case <-time.After(5 * time.Second):
-		t.Error("Timeout waiting for event")
-	}
-}
-
-func TestCommandEvent(t *testing.T) {
-	resp := cmd_apiv1.SendCommandResponse_CommandResponse{
-		DeviceId: "0xTest",
-	}
-
-	// Channel for test synchronization
-	received := make(chan *cmd_apiv1.SendCommandResponse_CommandResponse)
-
-	err := m.Event().Command().Subscribe(func(msg *Msg, serverId string, cmd *cmd_apiv1.SendCommandResponse_CommandResponse) {
-		received <- cmd
-	})
-
-	err = m.Event().Command().Publish(m.GetInstanceName(), &resp)
-	if err != nil {
-		t.Error(err)
-	}
-
-	select {
-	case cmd := <-received:
-		assert.Equal(t, resp.DeviceId, cmd.DeviceId)
-	case <-time.After(5 * time.Second):
-		t.Error("Timeout waiting for event")
-	}
-}
-
 func TestEventQueueSubscribe(t *testing.T) {
 	// Test data
-	subject := m.Event().NewSubject("test", "v1", "queue-test")
+	subject := NewEventSubject("test", "v1", "queue-test").WithId("test-queue-event")
 	queueName := "test-queue"
 	messageCount := 10
 	rCount1 := 0
 	rCount2 := 0
 
 	// Subscribe both clients to the same queue group
-	err := m.Event().QueueSubscribe(queueName, subject, func(msg *Msg, clientID string) {
+	err := m.Event().QueueSubscribe(queueName, func(msg *Msg, subjectId string, evt mir_models.EventSpec, err error) {
+		if subjectId == "test-queue-event" {
+			rCount1 += 1
+		}
+	})
+	if err != nil {
+		t.Error(err)
+	}
+
+	err = m.Event().QueueSubscribe(queueName, func(msg *Msg, subjectId string, evt mir_models.EventSpec, err error) {
+		if subjectId == "test-queue-event" {
+			rCount2 += 1
+		}
+	})
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Publish messages
+	for i := 0; i < messageCount; i++ {
+		err := m.Event().Publish(subject, mir_models.EventSpec{}, nil)
+		if err != nil {
+			t.Error(err)
+		}
+	}
+
+	// Wait for all messages to be processed
+	time.Sleep(1 * time.Second)
+
+	// Verify that messages were distributed between subscribers
+	assert.Equal(t, messageCount, rCount1+rCount2)
+	assert.Equal(t, rCount1 > 0 && rCount2 > 0, true)
+}
+
+func TestEventQueueSubscribeSubject(t *testing.T) {
+	// Test data
+	subject := NewEventSubject("test", "v1", "queue-test").WithId("test-queue-event-sbj")
+	queueName := "test-queue-sbj"
+	messageCount := 10
+	rCount1 := 0
+	rCount2 := 0
+
+	// Subscribe both clients to the same queue group
+	err := m.Event().QueueSubscribeSubject(queueName, subject, func(msg *Msg, subjectId string, evt mir_models.EventSpec, err error) {
 		rCount1 += 1
 	})
 	if err != nil {
 		t.Error(err)
 	}
 
-	err = m.Event().QueueSubscribe(queueName, subject, func(msg *Msg, clientID string) {
+	err = m.Event().QueueSubscribeSubject(queueName, subject, func(msg *Msg, subjectId string, evt mir_models.EventSpec, err error) {
 		rCount2 += 1
 	})
 	if err != nil {
@@ -291,7 +133,7 @@ func TestEventQueueSubscribe(t *testing.T) {
 
 	// Publish messages
 	for i := 0; i < messageCount; i++ {
-		err := m.Event().Publish(subject, m.GetInstanceName(), []byte{})
+		err := m.Event().Publish(subject, mir_models.EventSpec{}, nil)
 		if err != nil {
 			t.Error(err)
 		}

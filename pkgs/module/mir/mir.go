@@ -28,6 +28,12 @@ type Msg struct {
 	*nats.Msg
 }
 
+func NewMsg(subject string) *Msg {
+	return &Msg{
+		Msg: nats.NewMsg(subject),
+	}
+}
+
 // Mainly present for Events
 // Represent the serverId that made the request trigger
 func (m Msg) GetOriginalTriggerId() string {
@@ -37,6 +43,15 @@ func (m Msg) GetOriginalTriggerId() string {
 // ServerId that triggered the event
 func (m Msg) GetOrigin() string {
 	return m.Header.Get(HeaderTrigger)
+}
+
+func (m *Msg) AddToTriggerChain(s ...string) {
+	if m.Header == nil {
+		m.Header = nats.Header{}
+	}
+	for _, v := range s {
+		m.Header.Add(HeaderTrigger, v)
+	}
 }
 
 func (m Msg) GetTriggerChain() []string {

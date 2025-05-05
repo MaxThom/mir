@@ -464,7 +464,7 @@ func prettyStringDevices(devs []mir_models.Device) string {
 	format := "%-45s %-16s %-10s %-20s %-20s %-60s\n"
 	timeFormat := "2006-01-02 15:04:05"
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf(format, "NAME/NAMESPACE", "DEVICE_ID", "STATUS", "LAST_HEARTHBEAT", "LAST_SCHEMA_FETCH", "LABELS"))
+	sb.WriteString(fmt.Sprintf(format, "NAMESPACE/NAME", "DEVICE_ID", "STATUS", "LAST_HEARTHBEAT", "LAST_SCHEMA_FETCH", "LABELS"))
 
 	sort.Slice(devs, func(i, j int) bool {
 		return devs[i].Meta.Namespace < devs[j].Meta.Namespace
@@ -489,7 +489,7 @@ func prettyStringDevices(devs []mir_models.Device) string {
 			sf = d.Status.Schema.LastSchemaFetch.Format(timeFormat)
 		}
 
-		sb.WriteString(fmt.Sprintf(format, d.Meta.Name+"/"+d.Meta.Namespace, d.Spec.DeviceId, st, hb, sf, formatLabels(d.Meta.Labels)))
+		sb.WriteString(fmt.Sprintf(format, d.Meta.Namespace+"/"+d.Meta.Name, d.Spec.DeviceId, st, hb, sf, formatLabels(d.Meta.Labels)))
 	}
 	return sb.String()
 }

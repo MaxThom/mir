@@ -102,7 +102,7 @@ func TestPublishDeviceUpdateCache(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 
-	cache, err := NewMirProtoCache(l, mSdk)
+	cache, err := NewMirProtoCache(log, mSdk)
 	if err != nil {
 		t.Error(err)
 	}

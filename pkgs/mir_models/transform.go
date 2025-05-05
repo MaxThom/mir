@@ -1,6 +1,9 @@
 package mir_models
 
 import (
+	"encoding/json"
+	"errors"
+	"reflect"
 	"strings"
 	"time"
 
@@ -487,4 +490,27 @@ func mapToProtoTs(m map[string]time.Time) map[string]*common_apiv1.Timestamp {
 		ts[k] = AsProtoTimestamp(v)
 	}
 	return ts
+}
+
+func StructToMapAny(s interface{}) (map[string]interface{}, error) {
+	result := make(map[string]interface{})
+	v := reflect.ValueOf(s)
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+
+	if v.Kind() != reflect.Struct {
+		return result, errors.New("argument is not a struct")
+	}
+	data, err := json.Marshal(s)
+	if err != nil {
+		return result, err
+	}
+
+	err = json.Unmarshal(data, &result)
+	if err != nil {
+		return result, err
+	}
+
+	return result, nil
 }

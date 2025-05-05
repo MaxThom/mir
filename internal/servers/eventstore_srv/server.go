@@ -77,7 +77,7 @@ func (s *EventStoreServer) Serve() error {
 	if err := s.m.Server().ListEvents().QueueSubscribe(ServiceName, s.listEventsSub); err != nil {
 		return err
 	}
-	if err := s.m.Event().QueueSubscribeObject(ServiceName, s.streamEventsSub); err != nil {
+	if err := s.m.Event().QueueSubscribe(ServiceName, s.streamEventsSub); err != nil {
 		return err
 	}
 	return nil
@@ -105,7 +105,7 @@ func (s *EventStoreServer) listEventsSub(msg *mir.Msg, clientId string, req mir_
 }
 
 func (s *EventStoreServer) streamEventsSub(msg *mir.Msg, subjectId string, req mir_models.EventSpec, e error) {
-	l.Info().Any("req", req).Msg("event received")
+	l.Info().Any("req", req).Str("subject", msg.Subject).Msg("event received")
 	eventCaptureTotal.Inc()
 	defer msg.Ack()
 	if e != nil {
@@ -122,7 +122,7 @@ func (s *EventStoreServer) streamEventsSub(msg *mir.Msg, subjectId string, req m
 		return
 	}
 	if req.RelatedObject.Meta.Name != "" {
-		event.Meta.Name = req.RelatedObject.Meta.Name + "-" + id.String()[:8]
+		event.Meta.Name = req.RelatedObject.Meta.Name + "-" + id.String()[24:]
 	} else {
 		event.Meta.Name = id.String()
 	}

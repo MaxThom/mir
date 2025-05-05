@@ -187,7 +187,7 @@ func run(
 	log.Info().Str("url", cfg.TelemetryServer.Url).Msg("connected to puthost")
 
 	// Bus
-	m, err := mir.Connect("prototlm", cfg.DataBusServer.Url, append(mir.WithDefaultReconnectOpts(), mir.WithDefaultConnectionLogging(log)...)...)
+	m, err := mir.Connect(AppName, cfg.DataBusServer.Url, append(mir.WithDefaultReconnectOpts(), mir.WithDefaultConnectionLogging(log)...)...)
 	if err != nil {
 		return err
 	}
