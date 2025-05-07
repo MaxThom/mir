@@ -218,11 +218,16 @@ func (c *MirProtoCache) getProtoSchemaFromDevice(deviceId string) (*mir_proto.Mi
 	return sch, nil
 }
 
-func (c *MirProtoCache) deviceUpdateSub(msg *mir.Msg, deviceId string, device mir_models.Device) {
+func (c *MirProtoCache) deviceUpdateSub(msg *mir.Msg, deviceId string, device mir_models.Device, err error) {
 	// TODO this wont work if one instance of Mir with many cache from flux or cmd. If we have single binary
 	// need a subcomponent header or something
-	if c.m.GetInstanceName() == msg.GetOriginalTriggerId() {
-		msg.Ack()
+	// if slices.Contains(msg.GetTriggerChain(), c.m.GetInstanceName()) {
+	// 	// if c.m.GetInstanceName() == msg.GetTriggerChain() {
+	// 	msg.Ack()
+	// 	return
+	// }
+	if err != nil {
+		l.Error().Str("device_id", deviceId).Err(err).Msg("error deserializing event")
 		return
 	}
 	sch, err := mir_proto.DecompressSchema(device.Status.Schema.CompressedSchema)

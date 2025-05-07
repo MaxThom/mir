@@ -20,6 +20,7 @@ modules:
   - path: internal/servers/prototlm_srv/proto_test
   - path: internal/servers/protocmd_srv/proto_test
   - path: internal/servers/protocfg_srv/proto_test
+  - path: internal/servers/eventstore_srv/proto_test
   - path: internal/services/schema_cache/proto_test
   - path: pkgs/device/mir/proto_test
   - path: internal/libs/proto/line_protocol/proto_test

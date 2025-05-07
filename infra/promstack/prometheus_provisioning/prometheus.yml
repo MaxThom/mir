@@ -49,3 +49,6 @@ scrape_configs:
   - job_name: "cfg"
     static_configs:
       - targets: ["localhost:3019"]
+  - job_name: "eventstore"
+    static_configs:
+      - targets: ["localhost:3020"]

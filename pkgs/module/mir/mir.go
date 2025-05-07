@@ -28,23 +28,44 @@ type Msg struct {
 	*nats.Msg
 }
 
+func NewMsg(subject string) *Msg {
+	return &Msg{
+		Msg: nats.NewMsg(subject),
+	}
+}
+
 // Mainly present for Events
 // Represent the serverId that made the request trigger
 func (m Msg) GetOriginalTriggerId() string {
-	return m.Header.Get(HeaderOriginalTrigger)
+	return m.Header.Get(HeaderPreviousTrigger)
 }
 
 // ServerId that triggered the event
 func (m Msg) GetOrigin() string {
-	return m.Header.Get(HeaderOrigin)
+	return m.Header.Get(HeaderTrigger)
+}
+
+func (m *Msg) AddToTriggerChain(s ...string) {
+	if m.Header == nil {
+		m.Header = nats.Header{}
+	}
+	for _, v := range s {
+		m.Header.Add(HeaderTrigger, v)
+	}
+}
+
+func (m Msg) GetTriggerChain() []string {
+	return m.Header.Values(HeaderTrigger)
 }
 
 const (
-	HeaderRequestEnconding = "request-encoding"
-	HeaderContentEncoding  = "content-encoding"
-	HeaderOriginalTrigger  = "original-trigger"
-	HeaderOrigin           = "origin"
-	HeaderZstdEncoding     = "zstd"
+	HeaderRequestEnconding = "mir-request-encoding"
+	HeaderContentEncoding  = "mir-content-encoding"
+	HeaderPreviousTrigger  = "mir-previous-trigger"
+	HeaderTrigger          = "mir-trigger-chain"
+	HeaderRoute            = "mir-route"
+	HeaderSubject          = "mir-subject"
+	HeaderZstdEncoding     = "mir-zstd"
 )
 
 // Establish connection to the Mir server
@@ -146,7 +167,7 @@ func (m *Mir) publish(subject string, data []byte, headers nats.Header) error {
 	if headers == nil {
 		headers = nats.Header{}
 	}
-	headers.Add(HeaderOrigin, m.GetInstanceName())
+	headers.Add(HeaderTrigger, m.GetInstanceName())
 
 	msg := &nats.Msg{
 		Subject: subject,
@@ -160,7 +181,7 @@ func (m *Mir) request(subject string, data []byte, headers nats.Header, timeout 
 	if headers == nil {
 		headers = nats.Header{}
 	}
-	headers.Add(HeaderOrigin, m.GetInstanceName())
+	headers.Add(HeaderTrigger, m.GetInstanceName())
 
 	msg := &nats.Msg{
 		Subject: subject,
@@ -208,7 +229,7 @@ func (m *Mir) sendReplyOrAck(msg *nats.Msg, resp proto.Message) error {
 			return fmt.Errorf("error marshalling response: %w", err)
 		}
 		headers := nats.Header{}
-		headers.Add(HeaderOrigin, m.GetInstanceName())
+		headers.Add(HeaderTrigger, m.GetInstanceName())
 		reply := &nats.Msg{
 			Subject: msg.Reply,
 			Header:  headers,

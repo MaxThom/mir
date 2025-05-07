@@ -9,7 +9,6 @@ import (
 	device_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/device_api"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 const (
@@ -103,40 +102,4 @@ func PublishRequestDesiredPropertiesStream(bus *bus.BusConn, deviceId string) (*
 	}
 
 	return resp, nil
-}
-
-func PublishDesiredPropertiesEvent(bus *nats.Conn, originalInstance string, deviceId string, props map[string]any) error {
-	s, err := structpb.NewStruct(props)
-	if err != nil {
-		return err
-	}
-	b, err := proto.Marshal(s)
-	if err != nil {
-		return err
-	}
-	msg := &nats.Msg{
-		Subject: DesiredPropertiesEvent.WithId(deviceId),
-		Data:    b,
-		Header:  nats.Header{},
-	}
-	msg.Header.Add("original-trigger", originalInstance)
-	return bus.PublishMsg(msg)
-}
-
-func PublishReportedPropertiesEvent(bus *nats.Conn, originalInstance string, deviceId string, props map[string]any) error {
-	s, err := structpb.NewStruct(props)
-	if err != nil {
-		return err
-	}
-	b, err := proto.Marshal(s)
-	if err != nil {
-		return err
-	}
-	msg := &nats.Msg{
-		Subject: ReportedPropertiesEvent.WithId(deviceId),
-		Data:    b,
-		Header:  nats.Header{},
-	}
-	msg.Header.Add("original-trigger", originalInstance)
-	return bus.PublishMsg(msg)
 }

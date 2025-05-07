@@ -49,7 +49,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	coreSrv, err := NewCore(log, mSdk, mng.NewSurrealDeviceStore(db))
+	coreSrv, err := NewCore(log, mSdk, mng.NewSurrealMirStore(db))
 	if err := coreSrv.Serve(); err != nil {
 		panic(err)
 	}
@@ -57,7 +57,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	cfgSrv, err := protocfg_srv.NewProtoCfg(log, mSdk, mng.NewSurrealDeviceStore(db), cc)
+	cfgSrv, err := protocfg_srv.NewProtoCfg(log, mSdk, mng.NewSurrealMirStore(db), cc)
 	if err := cfgSrv.Serve(); err != nil {
 		panic(err)
 	}
@@ -2601,13 +2601,13 @@ func TestDeviceUpdateDesiredPropertiesDoubleSameUpdate(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	time.Sleep(1 * time.Second)
+	time.Sleep(2 * time.Second)
 	devs, err = mSdk.Server().UpdateDevice().Request(reqUpd)
 	if err != nil {
 		t.Error(err)
 	}
 	dev := devs[0]
-	time.Sleep(1 * time.Second)
+	time.Sleep(2 * time.Second)
 
 	// Assert
 	assert.Equal(t, dev.Properties.Desired[propName].(map[string]any)["power"], float64(5))
@@ -2682,6 +2682,182 @@ func TestDeviceUpdateDesiredPropertiesInvalid(t *testing.T) {
 	cancel()
 	for _, wg := range wgs {
 		wg.Wait()
+	}
+}
+
+func TestDeviceOnlineEvent(t *testing.T) {
+	deviceID := "test-event-online"
+	testDevice := mir_models.Device{
+		Object: mir_models.Object{
+			Meta: mir_models.Meta{
+				Name:      "Test_Device",
+				Namespace: "default",
+			},
+		},
+		Spec: mir_models.DeviceSpec{
+			DeviceId: deviceID,
+		},
+	}
+
+	// Channel for test synchronization
+	received := make(chan mir_models.Device)
+
+	err := mSdk.Event().DeviceOnline().Subscribe(func(msg *mir.Msg, serverId string, device mir_models.Device, err error) {
+		received <- device
+	})
+	if err != nil {
+		t.Error(err)
+	}
+
+	if err = publishDeviceOnlineEvent(mSdk, nil, testDevice); err != nil {
+		t.Error(err)
+	}
+
+	select {
+	case receivedDevice := <-received:
+		assert.Equal(t, testDevice.Meta.Name, receivedDevice.Meta.Name)
+		assert.Equal(t, testDevice.Spec.DeviceId, receivedDevice.Spec.DeviceId)
+	case <-time.After(5 * time.Second):
+		t.Error("Timeout waiting for event")
+	}
+}
+
+func TestDeviceOfflineEvent(t *testing.T) {
+	deviceID := "test-event-offline"
+	testDevice := mir_models.Device{
+		Object: mir_models.Object{
+			Meta: mir_models.Meta{
+				Name:      "Test_Device",
+				Namespace: "default",
+			},
+		},
+		Spec: mir_models.DeviceSpec{
+			DeviceId: deviceID,
+		},
+	}
+
+	// Channel for test synchronization
+	received := make(chan mir_models.Device)
+
+	err := mSdk.Event().DeviceOffline().Subscribe(func(msg *mir.Msg, serverId string, device mir_models.Device, err error) {
+		received <- device
+	})
+
+	if err = publishDeviceOfflineEvent(mSdk, nil, testDevice); err != nil {
+		t.Error(err)
+	}
+
+	select {
+	case receivedDevice := <-received:
+		assert.Equal(t, testDevice.Meta.Name, receivedDevice.Meta.Name)
+		assert.Equal(t, testDevice.Spec.DeviceId, receivedDevice.Spec.DeviceId)
+	case <-time.After(5 * time.Second):
+		t.Error("Timeout waiting for event")
+	}
+}
+
+func TestDeviceCreatedEvent(t *testing.T) {
+	deviceID := "test-event-created"
+	testDevice := mir_models.Device{
+		Object: mir_models.Object{
+			Meta: mir_models.Meta{
+				Name:      "Test_Device",
+				Namespace: "default",
+			},
+		},
+		Spec: mir_models.DeviceSpec{
+			DeviceId: deviceID,
+		},
+	}
+
+	// Channel for test synchronization
+	received := make(chan mir_models.Device)
+
+	err := mSdk.Event().DeviceCreate().Subscribe(func(msg *mir.Msg, serverId string, device mir_models.Device, err error) {
+		received <- device
+	})
+
+	err = publishDeviceCreateEvent(mSdk, nil, testDevice)
+	if err != nil {
+		t.Error(err)
+	}
+
+	select {
+	case receivedDevice := <-received:
+		assert.Equal(t, testDevice.Meta.Name, receivedDevice.Meta.Name)
+		assert.Equal(t, testDevice.Spec.DeviceId, receivedDevice.Spec.DeviceId)
+	case <-time.After(5 * time.Second):
+		t.Error("Timeout waiting for event")
+	}
+}
+
+func TestDeviceUpdateEvent(t *testing.T) {
+	deviceID := "test-event-uodate"
+	testDevice := mir_models.Device{
+		Object: mir_models.Object{
+			Meta: mir_models.Meta{
+				Name:      "Test_Device",
+				Namespace: "default",
+			},
+		},
+		Spec: mir_models.DeviceSpec{
+			DeviceId: deviceID,
+		},
+	}
+
+	// Channel for test synchronization
+	received := make(chan mir_models.Device)
+
+	err := mSdk.Event().DeviceUpdate().Subscribe(func(msg *mir.Msg, serverId string, device mir_models.Device, err error) {
+		received <- device
+	})
+
+	err = publishDeviceUpdateEvent(mSdk, nil, testDevice)
+	if err != nil {
+		t.Error(err)
+	}
+
+	select {
+	case receivedDevice := <-received:
+		assert.Equal(t, testDevice.Meta.Name, receivedDevice.Meta.Name)
+		assert.Equal(t, testDevice.Spec.DeviceId, receivedDevice.Spec.DeviceId)
+	case <-time.After(5 * time.Second):
+		t.Error("Timeout waiting for event")
+	}
+}
+
+func TestDeviceDeleteEvent(t *testing.T) {
+	deviceID := "test-event=delete"
+	testDevice := mir_models.Device{
+		Object: mir_models.Object{
+			Meta: mir_models.Meta{
+				Name:      "Test_Device",
+				Namespace: "default",
+			},
+		},
+		Spec: mir_models.DeviceSpec{
+			DeviceId: deviceID,
+		},
+	}
+
+	// Channel for test synchronization
+	received := make(chan mir_models.Device)
+
+	err := mSdk.Event().DeviceDelete().Subscribe(func(msg *mir.Msg, serverId string, device mir_models.Device, err error) {
+		received <- device
+	})
+
+	err = publishDeviceDeleteEvent(mSdk, nil, testDevice)
+	if err != nil {
+		t.Error(err)
+	}
+
+	select {
+	case receivedDevice := <-received:
+		assert.Equal(t, testDevice.Meta.Name, receivedDevice.Meta.Name)
+		assert.Equal(t, testDevice.Spec.DeviceId, receivedDevice.Spec.DeviceId)
+	case <-time.After(5 * time.Second):
+		t.Error("Timeout waiting for event")
 	}
 }
 

@@ -43,7 +43,7 @@ func main2() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	store := mng.NewSurrealDeviceStore(db)
+	store := mng.NewSurrealMirStore(db)
 
 	devJson := `{
 		"meta": {

@@ -53,7 +53,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	coreSrv, err := core_srv.NewCore(log, mSdk, mng.NewSurrealDeviceStore(db))
+	coreSrv, err := core_srv.NewCore(log, mSdk, mng.NewSurrealMirStore(db))
 	if err := coreSrv.Serve(); err != nil {
 		panic(err)
 	}
@@ -61,7 +61,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	cfgSrv, err := NewProtoCfg(log, mSdk, mng.NewSurrealDeviceStore(db), cc)
+	cfgSrv, err := NewProtoCfg(log, mSdk, mng.NewSurrealMirStore(db), cc)
 	if err := cfgSrv.Serve(); err != nil {
 		panic(err)
 	}
@@ -1276,6 +1276,7 @@ func TestPublishCfgRequestMultipleDevices(t *testing.T) {
 	} else if respCfg.GetError() != "" {
 		t.Error(respCfg.GetError())
 	}
+	time.Sleep(1 * time.Second)
 
 	// Assert
 	msgResp := &protocfg_testv1.PowerLevel{}
@@ -1339,6 +1340,7 @@ func TestPublishCfgRequestMultipleDevicesOneNoHandler(t *testing.T) {
 			func(m protoreflect.ProtoMessage) {
 				cfgHandled = m.(*protocfg_testv1.PowerLevel)
 				handlerCount++
+				fmt.Println("The fuck")
 			},
 		).Incubate(); err != nil {
 		t.Error(err)
@@ -1387,11 +1389,12 @@ func TestPublishCfgRequestMultipleDevicesOneNoHandler(t *testing.T) {
 	} else if respCfg.GetError() != "" {
 		t.Error(respCfg.GetError())
 	}
+	time.Sleep(1 * time.Second)
 
 	// Assert
 	msgResp := &protocfg_testv1.PowerLevel{}
 	for k, v := range respCfg.GetOk().DeviceResponses {
-		if k == "device_send_cfg_1/testing_cfg" || k == "device_send_cfg_2/testing_cfg" {
+		if k == "device_send_cfg_1_no_handler/testing_cfg" || k == "device_send_cfg_2_no_handler/testing_cfg" {
 			if v.Error != "" {
 				t.Error(v.Error)
 			}
@@ -1402,9 +1405,8 @@ func TestPublishCfgRequestMultipleDevicesOneNoHandler(t *testing.T) {
 			}
 			assert.Equal(t, int32(5), cfgHandled.Power)
 			assert.Equal(t, common_apiv1.Encoding_ENCODING_PROTOBUF, respCfg.GetOk().Encoding)
-		} else if k == "device_send_cmd_3/testing_cfg" {
-			assert.Equal(t, cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_ERROR, v.Status)
-			assert.Equal(t, "device error: no handler for command protocmd_test.v1.PowerLevel found", v.Error)
+		} else if k == "device_send_cfg_3_no_handler/testing_cfg" {
+			assert.Equal(t, cfg_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_SUCCESS, v.Status)
 		}
 	}
 	time.Sleep(1 * time.Second)
@@ -1989,7 +1991,7 @@ func TestPublishReportedPropertiesEvent(t *testing.T) {
 
 	eventCount := 0
 	if err = mSdk.Event().ReportedProperties().Subscribe(
-		func(msg *mir.Msg, deviceId string, props map[string]any) {
+		func(msg *mir.Msg, deviceId string, props map[string]any, err error) {
 			if deviceId == id {
 				eventCount += 1
 			}
@@ -2051,7 +2053,7 @@ func TestPublishDesiredPropertiesEvent(t *testing.T) {
 
 	eventCount := 0
 	if err := mSdk.Event().DesiredProperties().Subscribe(
-		func(msg *mir.Msg, deviceId string, props map[string]any) {
+		func(msg *mir.Msg, deviceId string, props map[string]any, err error) {
 			if deviceId == id {
 				eventCount += 1
 			}

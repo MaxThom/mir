@@ -30,8 +30,8 @@ func main() {
 	}
 
 	err = m.Event().DeviceOnline().Subscribe(
-		func(msg *mir.Msg, serverId string, device mir_models.Device) {
-			fmt.Println("Event device online ", device.Spec.DeviceId)
+		func(msg *mir.Msg, serverId string, device mir_models.Device, err error) {
+			fmt.Println("Event device online ", device.Spec.DeviceId, err)
 			msg.Ack()
 		})
 	if err != nil {
@@ -39,7 +39,7 @@ func main() {
 	}
 
 	err = m.Event().DeviceOffline().Subscribe(
-		func(msg *mir.Msg, serverId string, device mir_models.Device) {
+		func(msg *mir.Msg, serverId string, device mir_models.Device, err error) {
 			fmt.Println("Event device offline ", device.Spec.DeviceId)
 			msg.Ack()
 		})
@@ -48,8 +48,8 @@ func main() {
 	}
 
 	err = m.Event().DeviceDelete().Subscribe(
-		func(msg *mir.Msg, serverId string, d mir_models.Device) {
-			fmt.Println("Event device deleted ", d.Spec.DeviceId)
+		func(msg *mir.Msg, serverId string, device mir_models.Device, err error) {
+			fmt.Println("Event device deleted ", device.Spec.DeviceId)
 			msg.Ack()
 		})
 	if err != nil {
@@ -57,8 +57,8 @@ func main() {
 	}
 
 	err = m.Event().DeviceCreate().Subscribe(
-		func(msg *mir.Msg, serverId string, d mir_models.Device) {
-			fmt.Println("Event device created ", d.Spec.DeviceId)
+		func(msg *mir.Msg, serverId string, d mir_models.Device, err error) {
+			fmt.Println("Event device created ", d.Spec.DeviceId, err)
 			msg.Ack()
 		})
 	if err != nil {
@@ -66,8 +66,8 @@ func main() {
 	}
 
 	err = m.Event().DeviceUpdate().Subscribe(
-		func(msg *mir.Msg, serverId string, d mir_models.Device) {
-			fmt.Println("Event device updated ", d.Spec.DeviceId)
+		func(msg *mir.Msg, serverId string, d mir_models.Device, err error) {
+			fmt.Println("Event device updated ", d.Spec.DeviceId, err)
 			msg.Ack()
 		})
 	if err != nil {

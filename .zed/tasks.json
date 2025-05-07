@@ -38,6 +38,15 @@
     "shell": "system"
   },
   {
+    "label": "Mir eventstore run",
+    "command": "sleep 5 && air -c .air/eventstore.toml",
+    "use_new_terminal": true,
+    "allow_concurrent_runs": false,
+    "reveal": "always",
+    "hide": "never",
+    "shell": "system"
+  },
+  {
     "label": "Mir infra run",
     "command": "docker compose -f infra/local/compose.yaml up --force-recreate",
     "use_new_terminal": true,

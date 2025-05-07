@@ -332,11 +332,13 @@ func TestServerRoutes_PublishJson(t *testing.T) {
 	received := make(chan bool)
 
 	testData := mir_models.Device{
-		Meta: mir_models.Meta{
-			Name:      "Test Device",
-			Namespace: "default",
+		Object: mir_models.Object{
+			Meta: mir_models.Meta{
+				Name:      "Test Device",
+				Namespace: "default",
+			},
 		},
-		Spec: mir_models.Spec{
+		Spec: mir_models.DeviceSpec{
 			DeviceId: "test-server-publishjson",
 		},
 	}

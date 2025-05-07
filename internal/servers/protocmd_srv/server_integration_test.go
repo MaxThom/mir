@@ -66,7 +66,7 @@ func TestMain(m *testing.M) {
 		},
 	})
 	var err error
-	mSdk, err := mir.Connect("test_protocmd", busUrl)
+	mSdk, err = mir.Connect("test_protocmd", busUrl)
 	if err != nil {
 		panic(err)
 	}
@@ -74,7 +74,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	protocmdSrv, err := NewProtoCmd(log, mSdk, mng.NewSurrealDeviceStore(db), cc)
+	protocmdSrv, err := NewProtoCmd(log, mSdk, mng.NewSurrealMirStore(db), cc)
 	if err != nil {
 		panic(err)
 	}
@@ -82,7 +82,7 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	coreSrv, err := core_srv.NewCore(log, mSdk, mng.NewSurrealDeviceStore(db))
+	coreSrv, err := core_srv.NewCore(log, mSdk, mng.NewSurrealMirStore(db))
 	if err != nil {
 		panic(err)
 	}
@@ -698,6 +698,7 @@ func TestPublishCmdRequestMultipleDevices(t *testing.T) {
 	} else if respCmd.GetError() != "" {
 		t.Error(respCmd.GetError())
 	}
+	time.Sleep(1 * time.Second)
 
 	// Assert
 	msgResp := &protocmd_testv1.ChangePowerResp{}
@@ -806,6 +807,7 @@ func TestPublishCmdRequestMultipleDevicesOneNoHandler(t *testing.T) {
 	} else if respCmd.GetError() != "" {
 		t.Error(respCmd.GetError())
 	}
+	time.Sleep(1 * time.Second)
 
 	// Assert
 	msgResp := &protocmd_testv1.ChangePowerResp{}
@@ -929,6 +931,7 @@ func TestPublishCmdRequestMultipleDevicesOneTimeout(t *testing.T) {
 	} else if respCmd.GetError() != "" {
 		t.Error(respCmd.GetError())
 	}
+	time.Sleep(1 * time.Second)
 
 	// Assert
 	msgResp := &protocmd_testv1.ChangePowerResp{}
@@ -1010,13 +1013,13 @@ func TestPublishCmdRequestMultipleDevicesJson(t *testing.T) {
 
 	// Act
 	time.Sleep(1 * time.Second)
-
 	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
 	if err != nil {
 		t.Error(err)
 	} else if respCmd.GetError() != "" {
 		t.Error(respCmd.GetError())
 	}
+	time.Sleep(1 * time.Second)
 
 	// Assert
 	msgResp := &protocmd_testv1.ChangePowerResp{}
@@ -1096,13 +1099,13 @@ func TestPublishCmdRequestMultipleDevicesDescriptorNotFound(t *testing.T) {
 
 	// Act
 	time.Sleep(1 * time.Second)
-
 	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
 	if err != nil {
 		t.Error(err)
 	} else if respCmd.GetError() != "" {
 		t.Error(respCmd.GetError())
 	}
+	time.Sleep(1 * time.Second)
 
 	// Assert
 	// msgResp := &protocmd_testv1.ChangePowerResp{}
@@ -1191,13 +1194,13 @@ func TestPublishCmdRequestMultipleDevicesSingleDescriptorNotFoundForcePush(t *te
 
 	// Act
 	time.Sleep(1 * time.Second)
-
 	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
 	if err != nil {
 		t.Error(err)
 	} else if respCmd.GetError() != "" {
 		t.Error(respCmd.GetError())
 	}
+	time.Sleep(1 * time.Second)
 
 	// Assert
 	devValid := respCmd.GetOk().DeviceResponses["device_valid_cmd/testing_cmd"]
@@ -1451,14 +1454,15 @@ func TestPublishCmdJsonNameWithCurlyRequest(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	time.Sleep(1 * time.Second)
 
+	time.Sleep(1 * time.Second)
 	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
 	if err != nil {
 		t.Error(err)
 	} else if respCmd.GetError() != "" {
 		t.Error(respCmd.GetError())
 	}
+	time.Sleep(1 * time.Second)
 
 	msgResp := &protocmd_testv1.ChangePowerResp{}
 	for _, v := range respCmd.GetOk().DeviceResponses {
@@ -1478,4 +1482,30 @@ func TestPublishCmdJsonNameWithCurlyRequest(t *testing.T) {
 	assert.Equal(t, common_apiv1.Encoding_ENCODING_JSON, respCmd.GetOk().Encoding)
 	cancel()
 	wg.Wait()
+}
+
+func TestCommandEvent(t *testing.T) {
+	resp := cmd_apiv1.SendCommandResponse_CommandResponse{
+		DeviceId: "0xTest",
+	}
+
+	// Channel for test synchronization
+	received := make(chan *cmd_apiv1.SendCommandResponse_CommandResponse)
+
+	fmt.Println(mSdk)
+	err := mSdk.Event().Command().Subscribe(func(msg *mir.Msg, serverId string, cmd *cmd_apiv1.SendCommandResponse_CommandResponse, err error) {
+		received <- cmd
+	})
+
+	err = publishCommandEvent(mSdk, nil, "0xTest", "default", &resp)
+	if err != nil {
+		t.Error(err)
+	}
+
+	select {
+	case cmd := <-received:
+		assert.Equal(t, resp.DeviceId, cmd.DeviceId)
+	case <-time.After(5 * time.Second):
+		t.Error("Timeout waiting for event")
+	}
 }

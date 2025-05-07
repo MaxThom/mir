@@ -36,7 +36,7 @@ type ProtoCfgServer struct {
 	cancelCtx context.CancelFunc
 	wg        *sync.WaitGroup
 	m         *mir.Mir
-	devStore  mng.DeviceStore
+	devStore  mng.MirStore
 	schStore  *schema_cache.MirProtoCache
 }
 
@@ -100,7 +100,7 @@ func init() {
 	requestErrorTotal.With(prometheus.Labels{"route": "send"}).Add(0)
 }
 
-func NewProtoCfg(logger zerolog.Logger, m *mir.Mir, store mng.DeviceStore, schemaCache *schema_cache.MirProtoCache) (*ProtoCfgServer, error) {
+func NewProtoCfg(logger zerolog.Logger, m *mir.Mir, store mng.MirStore, schemaCache *schema_cache.MirProtoCache) (*ProtoCfgServer, error) {
 	l = logger.With().Str("srv", "protocfg_server").Logger()
 	ctx, cancelFn := context.WithCancel(context.Background())
 	return &ProtoCfgServer{
@@ -221,7 +221,7 @@ func (s *ProtoCfgServer) sendConfigSub(msg *mir.Msg, clientId string, req *cfg_a
 		req.Name = req.Name[:index]
 	}
 
-	resp, err := s.sendConfigToDevices(req)
+	resp, err := s.sendConfigToDevices(msg, req)
 	if err != nil {
 		l.Error().Err(err).Msg("error occure while processing send config request")
 		requestErrorTotal.WithLabelValues("send").Inc()
@@ -243,7 +243,7 @@ type cmdDevicePayload struct {
 	msgDesc    protoreflect.MessageDescriptor
 }
 
-func (s *ProtoCfgServer) sendConfigToDevices(req *cfg_apiv1.SendConfigRequest) (map[string]*cfg_apiv1.SendConfigResponse_ConfigResponse, error) {
+func (s *ProtoCfgServer) sendConfigToDevices(msg *mir.Msg, req *cfg_apiv1.SendConfigRequest) (map[string]*cfg_apiv1.SendConfigResponse_ConfigResponse, error) {
 	devs, err := s.devStore.ListDevice(&core_apiv1.ListDeviceRequest{Targets: req.Targets})
 	if err != nil {
 		return nil, err
@@ -482,7 +482,8 @@ func (s *ProtoCfgServer) sendConfigToDevices(req *cfg_apiv1.SendConfigRequest) (
 			}
 
 			// Event
-			if err := cfg_client.PublishDesiredPropertiesEvent(s.m.Bus, "protocfg", p.deviceId, dev[0].Properties.Desired); err != nil {
+			nns := strings.Split(nameNs, "/")
+			if err = publishDesiredPropertiesEvent(s.m, msg, nns[0], nns[1], p.deviceId, dev[0].Properties.Desired); err != nil {
 				l.Error().Err(err).Msg("error while publishing device config event")
 			}
 
@@ -606,7 +607,7 @@ func (s *ProtoCfgServer) reportedPropsSub(msg *mir.Msg, deviceId string, msgName
 		return
 	}
 	if len(dev) > 0 {
-		if err = cfg_client.PublishReportedPropertiesEvent(s.m.Bus, "protocfg", deviceId, dev[0].Properties.Reported); err != nil {
+		if err = publishReportedPropertiesEvent(s.m, msg, dev[0].Meta.Name, dev[0].Meta.Namespace, deviceId, dev[0].Properties.Reported); err != nil {
 			l.Error().Err(err).Msg("error while publishing device reported properties event")
 		}
 	}
@@ -762,4 +763,32 @@ func minifyJSON(input []byte) ([]byte, error) {
 		return []byte{}, err
 	}
 	return buffer.Bytes(), nil
+}
+
+func publishDesiredPropertiesEvent(m *mir.Mir, msg *mir.Msg, name, namespace, deviceId string, props map[string]any) error {
+	return m.Event().Publish(mir.NewEventSubjectString(cfg_client.DesiredPropertiesEvent.WithId(deviceId)),
+		mir_models.EventSpec{
+			Type:    mir_models.EventTypeNormal,
+			Reason:  "DeviceDesiredProps",
+			Message: "Device desired properties updated successfully",
+			Payload: props,
+			RelatedObject: mir_models.NewEvent().WithMeta(mir_models.Meta{
+				Name:      name,
+				Namespace: namespace,
+			}).Object,
+		}, msg)
+}
+
+func publishReportedPropertiesEvent(m *mir.Mir, msg *mir.Msg, name, namespace, deviceId string, props map[string]any) error {
+	return m.Event().Publish(mir.NewEventSubjectString(cfg_client.ReportedPropertiesEvent.WithId(deviceId)),
+		mir_models.EventSpec{
+			Type:    mir_models.EventTypeNormal,
+			Reason:  "DeviceReportedProps",
+			Message: "Device reported properties updated successfully",
+			Payload: props,
+			RelatedObject: mir_models.NewEvent().WithMeta(mir_models.Meta{
+				Name:      name,
+				Namespace: namespace,
+			}).Object,
+		}, msg)
 }

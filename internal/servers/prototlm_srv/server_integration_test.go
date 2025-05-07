@@ -77,7 +77,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	protoTlmSrv, err := NewProtoTlm(log, mSdk, mng.NewSurrealDeviceStore(db), ts.NewInfluxTelemetryStore("Mir", "mir_integration_test", lpClient), cc)
+	protoTlmSrv, err := NewProtoTlm(log, mSdk, mng.NewSurrealMirStore(db), ts.NewInfluxTelemetryStore("Mir", "mir_integration_test", lpClient), cc)
 	if err != nil {
 		panic(err)
 	}
@@ -85,7 +85,7 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	coreSrv, err := core_srv.NewCore(log, mSdk, mng.NewSurrealDeviceStore(db))
+	coreSrv, err := core_srv.NewCore(log, mSdk, mng.NewSurrealMirStore(db))
 	if err != nil {
 		panic(err)
 	}

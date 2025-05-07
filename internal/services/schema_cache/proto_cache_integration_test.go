@@ -60,7 +60,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	coreSrv, err := core_srv.NewCore(log, mSdk, mng.NewSurrealDeviceStore(db))
+	coreSrv, err := core_srv.NewCore(log, mSdk, mng.NewSurrealMirStore(db))
 	if err != nil {
 		panic(err)
 	}
@@ -102,7 +102,7 @@ func TestPublishDeviceUpdateCache(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 
-	cache, err := NewMirProtoCache(l, mSdk)
+	cache, err := NewMirProtoCache(log, mSdk)
 	if err != nil {
 		t.Error(err)
 	}

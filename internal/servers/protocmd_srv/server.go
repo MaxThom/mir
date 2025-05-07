@@ -29,7 +29,7 @@ import (
 // IDEA possible perf improvement, cache of descriptor
 type ProtoCmdServer struct {
 	m        *mir.Mir
-	devStore mng.DeviceStore
+	devStore mng.MirStore
 	schStore *schema_cache.MirProtoCache
 }
 
@@ -73,7 +73,7 @@ func init() {
 	requestErrorTotal.With(prometheus.Labels{"route": "send"}).Add(0)
 }
 
-func NewProtoCmd(logger zerolog.Logger, m *mir.Mir, devStore mng.DeviceStore, schemaCache *schema_cache.MirProtoCache) (*ProtoCmdServer, error) {
+func NewProtoCmd(logger zerolog.Logger, m *mir.Mir, devStore mng.MirStore, schemaCache *schema_cache.MirProtoCache) (*ProtoCmdServer, error) {
 	l = logger.With().Str("srv", "protocmd_server").Logger()
 	return &ProtoCmdServer{
 		m:        m,
@@ -128,7 +128,7 @@ func (s *ProtoCmdServer) sendCommandSub(msg *mir.Msg, clientId string, req *cmd_
 		req.Name = req.Name[:index]
 	}
 
-	resp, err := s.sendCommandToDevices(req)
+	resp, err := s.sendCommandToDevices(msg, req)
 	if err != nil {
 		l.Error().Err(err).Msg("error occure while processing send command request")
 		requestErrorTotal.WithLabelValues("send").Inc()
@@ -147,7 +147,7 @@ type cmdDevicePayload struct {
 	payload  []byte
 }
 
-func (s *ProtoCmdServer) sendCommandToDevices(req *cmd_apiv1.SendCommandRequest) (map[string]*cmd_apiv1.SendCommandResponse_CommandResponse, error) {
+func (s *ProtoCmdServer) sendCommandToDevices(msg *mir.Msg, req *cmd_apiv1.SendCommandRequest) (map[string]*cmd_apiv1.SendCommandResponse_CommandResponse, error) {
 	devs, err := s.devStore.ListDevice(&core_apiv1.ListDeviceRequest{Targets: req.Targets})
 	if err != nil {
 		return nil, err
@@ -341,9 +341,12 @@ func (s *ProtoCmdServer) sendCommandToDevices(req *cmd_apiv1.SendCommandRequest)
 	wg.Wait()
 
 	// Event
-	for _, cmdResp := range devResp {
-		if err := cmd_client.PublishDeviceCommandEvent(s.m.Bus, "protocmd", cmdResp.DeviceId, cmdResp); err != nil {
-			l.Error().Err(err).Msg("error while publishing device command event")
+	if len(commandsToSend) > 0 {
+		for nameNs, cmdResp := range devResp {
+			nns := strings.Split(nameNs, "/")
+			if err = publishCommandEvent(s.m, msg, nns[0], nns[1], cmdResp); err != nil {
+				l.Warn().Err(err).Msg("error while publishing device command event")
+			}
 		}
 	}
 
@@ -393,4 +396,22 @@ func (s *ProtoCmdServer) listCommandsSub(msg *mir.Msg, clientId string, req *cmd
 
 	l.Info().Msg("list command request processed successfully")
 	return devsCmds, nil
+}
+
+func publishCommandEvent(m *mir.Mir, msg *mir.Msg, name, namespace string, cmd *cmd_apiv1.SendCommandResponse_CommandResponse) error {
+	payload, err := mir_models.StructToMapAny(cmd)
+	if err != nil {
+		return err
+	}
+	return m.Event().Publish(mir.NewEventSubjectString(cmd_client.DeviceCommandEvent.WithId(cmd.DeviceId)),
+		mir_models.EventSpec{
+			Type:    mir_models.EventTypeNormal,
+			Reason:  "DeviceCommand",
+			Message: "Device command executed successfully",
+			Payload: payload,
+			RelatedObject: mir_models.NewEvent().WithMeta(mir_models.Meta{
+				Name:      name,
+				Namespace: namespace,
+			}).Object,
+		}, msg)
 }

@@ -112,26 +112,6 @@ func PublishHearthbeatStream(bus *bus.BusConn, deviceId string) error {
 	return bus.Publish(HearthbeatDeviceStream.WithId(deviceId), []byte{})
 }
 
-func PublishDeviceOnlineEvent(bus *bus.BusConn, originalInstance string, deviceId string) error {
-	msg := &nats.Msg{
-		Subject: DeviceOnlineEvent.WithId(deviceId),
-		Data:    []byte{},
-		Header:  nats.Header{},
-	}
-	msg.Header.Add("original-trigger", originalInstance)
-	return bus.PublishMsg(msg)
-}
-
-func PublishDeviceOfflineEvent(bus *bus.BusConn, originalInstance string, deviceId string) error {
-	msg := &nats.Msg{
-		Subject: DeviceOfflineEvent.WithId(deviceId),
-		Data:    []byte{},
-		Header:  nats.Header{},
-	}
-	msg.Header.Add("original-trigger", originalInstance)
-	return bus.PublishMsg(msg)
-}
-
 func PublishDeviceDeletedEvent(bus *bus.BusConn, originalInstance string, deviceId string, d mir_models.Device) error {
 	b, err := proto.Marshal(mir_models.NewProtoDeviceFromDevice(d))
 	if err != nil {

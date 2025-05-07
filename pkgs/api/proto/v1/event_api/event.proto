@@ -1,0 +1,102 @@
+syntax = "proto3";
+
+package event_api.v1;
+
+import "v1/common_api/common.proto";
+import "google/protobuf/struct.proto";
+
+message ListEventsRequest {
+    common_api.v1.Targets targets = 1;
+}
+
+message ListEventsResponse {
+  oneof response {
+    Events ok = 1; // list of events returned
+    string error = 2;  // error if something went wrong
+  }
+}
+
+message CreateEventRequest {
+   EventSpec spec = 1;
+}
+
+message CreateEventResponse {
+    oneof response {
+        Event ok = 1;
+        string error = 2;
+    }
+}
+
+message UpdateEventRequest {
+    common_api.v1.Targets targets = 1;
+    common_api.v1.MetaUpdate meta = 2;
+    Spec spec = 3;
+    Status status = 4;
+
+    message Spec {
+        optional string type = 1;
+        optional string reason = 2;
+        optional string message = 3;
+        optional google.protobuf.Struct payload = 4;
+        optional common_api.v1.Object related_object = 5;
+    }
+    message Status {
+        optional int32 count = 1;
+        optional common_api.v1.Timestamp first_at = 2;
+        optional common_api.v1.Timestamp last_at = 3;
+    }
+}
+
+message UpdateEventResponse {
+    oneof response {
+        Event ok = 1;
+        string error = 2;
+    }
+}
+
+message MergeEventRequest {
+    common_api.v1.Targets targets = 1;
+    google.protobuf.Struct event = 2;
+}
+
+message MergeDeviceResponse {
+  oneof response {
+    Events ok = 1;
+    string error = 2;
+  }
+}
+
+message DeleteEventRequest {
+    common_api.v1.Targets targets = 1;
+}
+
+message DeleteEventReponse {
+  oneof response {
+    Events ok = 1;
+    string error = 2;
+  }
+}
+
+message Events {
+    repeated Event events = 1;
+}
+
+message Event {
+    common_api.v1.Object object = 1;
+    EventSpec spec = 2;
+    EventStatus status = 3;
+}
+
+message EventSpec {
+    string type = 1;
+    string reason = 2;
+    string message = 3;
+    google.protobuf.Struct payload = 4;
+    common_api.v1.Object related_object = 5;
+}
+
+message EventStatus {
+    int32 count = 1;
+    common_api.v1.Timestamp first_at = 2;
+    common_api.v1.Timestamp last_at = 3;
+}

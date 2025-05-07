@@ -1,0 +1,9 @@
+version: v2
+managed:
+  enabled: true
+plugins:
+  - local: protoc-gen-go
+    out: internal/servers/eventstore_srv/proto_test/gen
+    opt: paths=source_relative
+inputs:
+  - directory: internal/servers/eventstore_srv/proto_test

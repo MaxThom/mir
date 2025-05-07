@@ -8,22 +8,18 @@ import (
 )
 
 type Device struct {
-	ApiVersion string     `json:"apiVersion,omitempty" yaml:"apiVersion"`
-	ApiName    string     `json:"apiName,omitempty" yaml:"apiName"`
-	Meta       Meta       `json:"meta,omitempty" yaml:"meta"`
-	Spec       Spec       `json:"spec,omitempty" yaml:"spec"`
-	Properties Properties `json:"properties,omitempty" yaml:"properties"`
-	Status     Status     `json:"status,omitempty" yaml:"status"`
+	Object     ``               // TODO check line
+	Spec       DeviceSpec       `json:"spec,omitempty" yaml:"spec"`
+	Properties DeviceProperties `json:"properties,omitempty" yaml:"properties"`
+	Status     DeviceStatus     `json:"status,omitempty" yaml:"status"`
 }
 
 func NewDevice() Device {
 	return Device{
-		ApiVersion: "v1alpha",
-		ApiName:    "device",
-		// Properties: Properties{
-		// 	Desired:  make(map[string]interface{}),
-		// 	Reported: make(map[string]interface{}),
-		// },
+		Object: Object{
+			ApiVersion: "v1alpha",
+			ApiName:    "device",
+		},
 	}
 }
 
@@ -71,19 +67,12 @@ func (d NameNs) GetNameNamespace() string {
 	return d.Name + "/" + d.Namespace
 }
 
-type Meta struct {
-	Name        string            `json:"name,omitempty" yaml:"name"`
-	Namespace   string            `json:"namespace,omitempty" yaml:"namespace"`
-	Labels      map[string]string `json:"labels,omitempty" yaml:"labels"`
-	Annotations map[string]string `json:"annotations,omitempty" yaml:"annotations"`
-}
-
-type Spec struct {
+type DeviceSpec struct {
 	DeviceId string `json:"deviceId,omitempty" yaml:"deviceId"`
 	Disabled bool   `json:"disabled,omitempty" yaml:"disabled"`
 }
 
-type Properties struct {
+type DeviceProperties struct {
 	Desired  map[string]interface{} `json:"desired,omitempty" yaml:"desired"`
 	Reported map[string]interface{} `json:"reported,omitempty" yaml:"reported"`
 }
@@ -93,7 +82,7 @@ type PropertiesTime struct {
 	Reported map[string]time.Time `json:"reported,omitempty" yaml:"reported"`
 }
 
-type Status struct {
+type DeviceStatus struct {
 	Online         bool           `json:"online,omitempty" yaml:"online"`
 	LastHearthbeat time.Time      `json:"lastHearthbeat,omitempty" yaml:"lastHearthbeat"`
 	Schema         Schema         `json:"schema,omitempty" yaml:"schema"`

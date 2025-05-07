@@ -30,7 +30,7 @@ func init() {
 
 func SchemaRetrieveHandler(msg *nats.Msg, m *Mir) error {
 	shouldZstd := false
-	if msg.Header.Get("request-encoding") == "zstd" {
+	if msg.Header.Get("mir-request-encoding") == "mir-zstd" {
 		shouldZstd = true
 	}
 	bytes, err := proto.Marshal(m.schema)
@@ -51,7 +51,7 @@ func SchemaRetrieveHandler(msg *nats.Msg, m *Mir) error {
 
 func DefinedCommandHandler(msg *nats.Msg, m *Mir) error {
 	shouldZstd := false
-	if msg.Header.Get("request-encoding") == "zstd" {
+	if msg.Header.Get("mir-request-encoding") == "mir-zstd" {
 		shouldZstd = true
 	}
 	descName := msg.Header.Get("__msg")
@@ -148,7 +148,7 @@ func sendReplyOrAck(bus *bus.BusConn, msg *nats.Msg, m protoreflect.ProtoMessage
 			compressedBytes, err := zstd.CompressData(bResp)
 			if err == nil {
 				data = compressedBytes
-				h.Add("content-encoding", "zstd")
+				h.Add("mir-content-encoding", "mir-zstd")
 			}
 		}
 
@@ -181,7 +181,7 @@ func (m Mir) sendProtoMsg(subject string, protoMsg protoreflect.ProtoMessage, h 
 		compressedBytes, err := zstd.CompressData(bResp)
 		if err == nil {
 			data = compressedBytes
-			h.Add("content-encoding", "zstd")
+			h.Add("mir-content-encoding", "mir-zstd")
 		}
 	}
 
@@ -234,6 +234,7 @@ func (m Mir) saveMsgInPending(msg *nats.Msg) error {
 }
 
 // Performance solution would be to do batch writes
+// and split DISK IO and Internet IO
 func (m Mir) sendMsgWithStorage(msg *nats.Msg) error {
 	if err := m.store.SaveMsgToPermanent(*msg); err != nil {
 		m.l.Warn().Err(err).Msg("error saving msg to sent store")

@@ -187,7 +187,7 @@ func run(
 	log.Info().Str("url", cfg.TelemetryServer.Url).Msg("connected to puthost")
 
 	// Bus
-	m, err := mir.Connect("prototlm", cfg.DataBusServer.Url, append(mir.WithDefaultReconnectOpts(), mir.WithDefaultConnectionLogging(log)...)...)
+	m, err := mir.Connect(AppName, cfg.DataBusServer.Url, append(mir.WithDefaultReconnectOpts(), mir.WithDefaultConnectionLogging(log)...)...)
 	if err != nil {
 		return err
 	}
@@ -198,7 +198,7 @@ func run(
 	if err != nil {
 		return err
 	}
-	prototlmSrv, err := prototlm_srv.NewProtoTlm(log, m, mng.NewSurrealDeviceStore(db), ts.NewInfluxTelemetryStore(cfg.TelemetryServer.Org, cfg.TelemetryServer.Bucket, lpClient), cc)
+	prototlmSrv, err := prototlm_srv.NewProtoTlm(log, m, mng.NewSurrealMirStore(db), ts.NewInfluxTelemetryStore(cfg.TelemetryServer.Org, cfg.TelemetryServer.Bucket, lpClient), cc)
 	if err != nil {
 		return err
 	}
