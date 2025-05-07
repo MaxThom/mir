@@ -89,7 +89,7 @@ func (s *EventStoreServer) Shutdown() error {
 	return nil
 }
 
-func (s *EventStoreServer) listEventsSub(msg *mir.Msg, clientId string, req mir_models.ObjectTarget) ([]mir_models.Event, error) {
+func (s *EventStoreServer) listEventsSub(msg *mir.Msg, clientId string, req mir_models.EventTarget) ([]mir_models.Event, error) {
 	l.Info().Any("req", req).Msg("list events request")
 	requestTotal.WithLabelValues("list").Inc()
 
@@ -141,6 +141,8 @@ func (s *EventStoreServer) streamEventsSub(msg *mir.Msg, subjectId string, req m
 	if len(msg.Header.Values(mir.HeaderTrigger)) > 0 {
 		event.Meta.Annotations[mir.HeaderTrigger] = strings.Join(msg.Header.Values(mir.HeaderTrigger), ",")
 	}
+	event.Meta.Labels["reason"] = req.Reason
+	event.Meta.Labels["type"] = req.Type
 
 	event.Spec = req
 

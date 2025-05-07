@@ -9,6 +9,20 @@ const (
 	EventTypeWarning EventType = "warning"
 )
 
+type EventTarget struct {
+	ObjectTarget
+	DateFilter DateFilter
+	Limit      int
+}
+
+func (o EventTarget) HasNoTarget() bool {
+	return len(o.Names) == 0 &&
+		len(o.Namespaces) == 0 &&
+		len(o.Labels) == 0 &&
+		o.DateFilter.From.IsZero() &&
+		o.DateFilter.To.IsZero()
+}
+
 func NewEvent() Event {
 	return Event{
 		Object: Object{

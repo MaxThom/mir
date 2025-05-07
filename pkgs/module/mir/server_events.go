@@ -21,18 +21,18 @@ func (r *serverRoutes) ListEvents() *listEventsRoute {
 }
 
 // Subscribe to list events request
-func (r *listEventsRoute) Subscribe(f func(msg *Msg, clientId string, req mir_models.ObjectTarget) ([]mir_models.Event, error)) error {
+func (r *listEventsRoute) Subscribe(f func(msg *Msg, clientId string, req mir_models.EventTarget) ([]mir_models.Event, error)) error {
 	sbj := event_client.ListEventsRequest.WithId("*")
 	return r.m.subscribe(sbj, r.handlerWrapper(f))
 }
 
 // Queue subscribe to list telemetry request
-func (r *listEventsRoute) QueueSubscribe(queue string, f func(msg *Msg, clientId string, req mir_models.ObjectTarget) ([]mir_models.Event, error)) error {
+func (r *listEventsRoute) QueueSubscribe(queue string, f func(msg *Msg, clientId string, req mir_models.EventTarget) ([]mir_models.Event, error)) error {
 	sbj := event_client.ListEventsRequest.WithId("*")
 	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
 }
 
-func (r *listEventsRoute) handlerWrapper(f func(msg *Msg, clientId string, req mir_models.ObjectTarget) ([]mir_models.Event, error)) nats.MsgHandler {
+func (r *listEventsRoute) handlerWrapper(f func(msg *Msg, clientId string, req mir_models.EventTarget) ([]mir_models.Event, error)) nats.MsgHandler {
 	return func(msg *nats.Msg) {
 		req := &event_apiv1.ListEventsRequest{}
 		if err := proto.Unmarshal(msg.Data, req); err != nil {
@@ -42,7 +42,7 @@ func (r *listEventsRoute) handlerWrapper(f func(msg *Msg, clientId string, req m
 			return
 		}
 
-		resp, err := f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), mir_models.ProtoObjectTargetToMirObjectTarget(req.Targets))
+		resp, err := f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), mir_models.ProtoEventTargetToMirEventTarget(req))
 		if err != nil {
 			_ = r.m.sendReplyOrAck(msg, &event_apiv1.ListEventsResponse{Response: &event_apiv1.ListEventsResponse_Error{
 				Error: err.Error(),
@@ -61,12 +61,10 @@ func (r *listEventsRoute) handlerWrapper(f func(msg *Msg, clientId string, req m
 }
 
 // Request listing of telemetry per device
-func (r *listEventsRoute) Request(t mir_models.ObjectTarget) ([]mir_models.Event, error) {
+func (r *listEventsRoute) Request(t mir_models.EventTarget) ([]mir_models.Event, error) {
 	sbj := event_client.ListEventsRequest.WithId(r.m.GetInstanceName())
 
-	bReq, err := proto.Marshal(&event_apiv1.ListEventsRequest{
-		Targets: mir_models.MirObjectTargetToProtoObjectTarget(t),
-	})
+	bReq, err := proto.Marshal(mir_models.MirEventTargetToProtoEventTarget(t))
 	if err != nil {
 		return []mir_models.Event{}, err
 	}

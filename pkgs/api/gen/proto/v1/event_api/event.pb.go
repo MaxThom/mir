@@ -27,7 +27,9 @@ type ListEventsRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Targets *common_api.Targets `protobuf:"bytes,1,opt,name=targets,proto3" json:"targets,omitempty"`
+	Targets     *common_api.Targets    `protobuf:"bytes,1,opt,name=targets,proto3" json:"targets,omitempty"`
+	FilterDate  *common_api.DateFilter `protobuf:"bytes,2,opt,name=filter_date,json=filterDate,proto3" json:"filter_date,omitempty"`
+	FilterLimit int32                  `protobuf:"varint,3,opt,name=filter_limit,json=filterLimit,proto3" json:"filter_limit,omitempty"`
 }
 
 func (x *ListEventsRequest) Reset() {
@@ -65,6 +67,20 @@ func (x *ListEventsRequest) GetTargets() *common_api.Targets {
 		return x.Targets
 	}
 	return nil
+}
+
+func (x *ListEventsRequest) GetFilterDate() *common_api.DateFilter {
+	if x != nil {
+		return x.FilterDate
+	}
+	return nil
+}
+
+func (x *ListEventsRequest) GetFilterLimit() int32 {
+	if x != nil {
+		return x.FilterLimit
+	}
+	return 0
 }
 
 type ListEventsResponse struct {
@@ -151,7 +167,7 @@ type CreateEventRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Spec *EventSpec `protobuf:"bytes,2,opt,name=spec,proto3" json:"spec,omitempty"`
+	Spec *EventSpec `protobuf:"bytes,1,opt,name=spec,proto3" json:"spec,omitempty"`
 }
 
 func (x *CreateEventRequest) Reset() {
@@ -1065,11 +1081,17 @@ var file_v1_event_api_event_proto_rawDesc = []byte{
 	0x6d, 0x6f, 0x6e, 0x5f, 0x61, 0x70, 0x69, 0x2f, 0x63, 0x6f, 0x6d, 0x6d, 0x6f, 0x6e, 0x2e, 0x70,
 	0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x1c, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2f, 0x70, 0x72, 0x6f,
 	0x74, 0x6f, 0x62, 0x75, 0x66, 0x2f, 0x73, 0x74, 0x72, 0x75, 0x63, 0x74, 0x2e, 0x70, 0x72, 0x6f,
-	0x74, 0x6f, 0x22, 0x45, 0x0a, 0x11, 0x4c, 0x69, 0x73, 0x74, 0x45, 0x76, 0x65, 0x6e, 0x74, 0x73,
-	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x30, 0x0a, 0x07, 0x74, 0x61, 0x72, 0x67, 0x65,
-	0x74, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x16, 0x2e, 0x63, 0x6f, 0x6d, 0x6d, 0x6f,
-	0x6e, 0x5f, 0x61, 0x70, 0x69, 0x2e, 0x76, 0x31, 0x2e, 0x54, 0x61, 0x72, 0x67, 0x65, 0x74, 0x73,
-	0x52, 0x07, 0x74, 0x61, 0x72, 0x67, 0x65, 0x74, 0x73, 0x22, 0x60, 0x0a, 0x12, 0x4c, 0x69, 0x73,
+	0x74, 0x6f, 0x22, 0xa4, 0x01, 0x0a, 0x11, 0x4c, 0x69, 0x73, 0x74, 0x45, 0x76, 0x65, 0x6e, 0x74,
+	0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x30, 0x0a, 0x07, 0x74, 0x61, 0x72, 0x67,
+	0x65, 0x74, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x16, 0x2e, 0x63, 0x6f, 0x6d, 0x6d,
+	0x6f, 0x6e, 0x5f, 0x61, 0x70, 0x69, 0x2e, 0x76, 0x31, 0x2e, 0x54, 0x61, 0x72, 0x67, 0x65, 0x74,
+	0x73, 0x52, 0x07, 0x74, 0x61, 0x72, 0x67, 0x65, 0x74, 0x73, 0x12, 0x3a, 0x0a, 0x0b, 0x66, 0x69,
+	0x6c, 0x74, 0x65, 0x72, 0x5f, 0x64, 0x61, 0x74, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32,
+	0x19, 0x2e, 0x63, 0x6f, 0x6d, 0x6d, 0x6f, 0x6e, 0x5f, 0x61, 0x70, 0x69, 0x2e, 0x76, 0x31, 0x2e,
+	0x44, 0x61, 0x74, 0x65, 0x46, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x52, 0x0a, 0x66, 0x69, 0x6c, 0x74,
+	0x65, 0x72, 0x44, 0x61, 0x74, 0x65, 0x12, 0x21, 0x0a, 0x0c, 0x66, 0x69, 0x6c, 0x74, 0x65, 0x72,
+	0x5f, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x05, 0x52, 0x0b, 0x66, 0x69,
+	0x6c, 0x74, 0x65, 0x72, 0x4c, 0x69, 0x6d, 0x69, 0x74, 0x22, 0x60, 0x0a, 0x12, 0x4c, 0x69, 0x73,
 	0x74, 0x45, 0x76, 0x65, 0x6e, 0x74, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12,
 	0x26, 0x0a, 0x02, 0x6f, 0x6b, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x14, 0x2e, 0x65, 0x76,
 	0x65, 0x6e, 0x74, 0x5f, 0x61, 0x70, 0x69, 0x2e, 0x76, 0x31, 0x2e, 0x45, 0x76, 0x65, 0x6e, 0x74,
@@ -1077,7 +1099,7 @@ var file_v1_event_api_event_proto_rawDesc = []byte{
 	0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x48, 0x00, 0x52, 0x05, 0x65, 0x72, 0x72, 0x6f, 0x72, 0x42,
 	0x0a, 0x0a, 0x08, 0x72, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x41, 0x0a, 0x12, 0x43,
 	0x72, 0x65, 0x61, 0x74, 0x65, 0x45, 0x76, 0x65, 0x6e, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
-	0x74, 0x12, 0x2b, 0x0a, 0x04, 0x73, 0x70, 0x65, 0x63, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32,
+	0x74, 0x12, 0x2b, 0x0a, 0x04, 0x73, 0x70, 0x65, 0x63, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32,
 	0x17, 0x2e, 0x65, 0x76, 0x65, 0x6e, 0x74, 0x5f, 0x61, 0x70, 0x69, 0x2e, 0x76, 0x31, 0x2e, 0x45,
 	0x76, 0x65, 0x6e, 0x74, 0x53, 0x70, 0x65, 0x63, 0x52, 0x04, 0x73, 0x70, 0x65, 0x63, 0x22, 0x60,
 	0x0a, 0x13, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x45, 0x76, 0x65, 0x6e, 0x74, 0x52, 0x65, 0x73,
@@ -1240,43 +1262,45 @@ var file_v1_event_api_event_proto_goTypes = []any{
 	(*UpdateEventRequest_Spec)(nil),   // 14: event_api.v1.UpdateEventRequest.Spec
 	(*UpdateEventRequest_Status)(nil), // 15: event_api.v1.UpdateEventRequest.Status
 	(*common_api.Targets)(nil),        // 16: common_api.v1.Targets
-	(*common_api.MetaUpdate)(nil),     // 17: common_api.v1.MetaUpdate
-	(*structpb.Struct)(nil),           // 18: google.protobuf.Struct
-	(*common_api.Object)(nil),         // 19: common_api.v1.Object
-	(*common_api.Timestamp)(nil),      // 20: common_api.v1.Timestamp
+	(*common_api.DateFilter)(nil),     // 17: common_api.v1.DateFilter
+	(*common_api.MetaUpdate)(nil),     // 18: common_api.v1.MetaUpdate
+	(*structpb.Struct)(nil),           // 19: google.protobuf.Struct
+	(*common_api.Object)(nil),         // 20: common_api.v1.Object
+	(*common_api.Timestamp)(nil),      // 21: common_api.v1.Timestamp
 }
 var file_v1_event_api_event_proto_depIdxs = []int32{
 	16, // 0: event_api.v1.ListEventsRequest.targets:type_name -> common_api.v1.Targets
-	10, // 1: event_api.v1.ListEventsResponse.ok:type_name -> event_api.v1.Events
-	12, // 2: event_api.v1.CreateEventRequest.spec:type_name -> event_api.v1.EventSpec
-	11, // 3: event_api.v1.CreateEventResponse.ok:type_name -> event_api.v1.Event
-	16, // 4: event_api.v1.UpdateEventRequest.targets:type_name -> common_api.v1.Targets
-	17, // 5: event_api.v1.UpdateEventRequest.meta:type_name -> common_api.v1.MetaUpdate
-	14, // 6: event_api.v1.UpdateEventRequest.spec:type_name -> event_api.v1.UpdateEventRequest.Spec
-	15, // 7: event_api.v1.UpdateEventRequest.status:type_name -> event_api.v1.UpdateEventRequest.Status
-	11, // 8: event_api.v1.UpdateEventResponse.ok:type_name -> event_api.v1.Event
-	16, // 9: event_api.v1.MergeEventRequest.targets:type_name -> common_api.v1.Targets
-	18, // 10: event_api.v1.MergeEventRequest.event:type_name -> google.protobuf.Struct
-	10, // 11: event_api.v1.MergeDeviceResponse.ok:type_name -> event_api.v1.Events
-	16, // 12: event_api.v1.DeleteEventRequest.targets:type_name -> common_api.v1.Targets
-	10, // 13: event_api.v1.DeleteEventReponse.ok:type_name -> event_api.v1.Events
-	11, // 14: event_api.v1.Events.events:type_name -> event_api.v1.Event
-	19, // 15: event_api.v1.Event.object:type_name -> common_api.v1.Object
-	12, // 16: event_api.v1.Event.spec:type_name -> event_api.v1.EventSpec
-	13, // 17: event_api.v1.Event.status:type_name -> event_api.v1.EventStatus
-	18, // 18: event_api.v1.EventSpec.payload:type_name -> google.protobuf.Struct
-	19, // 19: event_api.v1.EventSpec.related_object:type_name -> common_api.v1.Object
-	20, // 20: event_api.v1.EventStatus.first_at:type_name -> common_api.v1.Timestamp
-	20, // 21: event_api.v1.EventStatus.last_at:type_name -> common_api.v1.Timestamp
-	18, // 22: event_api.v1.UpdateEventRequest.Spec.payload:type_name -> google.protobuf.Struct
-	19, // 23: event_api.v1.UpdateEventRequest.Spec.related_object:type_name -> common_api.v1.Object
-	20, // 24: event_api.v1.UpdateEventRequest.Status.first_at:type_name -> common_api.v1.Timestamp
-	20, // 25: event_api.v1.UpdateEventRequest.Status.last_at:type_name -> common_api.v1.Timestamp
-	26, // [26:26] is the sub-list for method output_type
-	26, // [26:26] is the sub-list for method input_type
-	26, // [26:26] is the sub-list for extension type_name
-	26, // [26:26] is the sub-list for extension extendee
-	0,  // [0:26] is the sub-list for field type_name
+	17, // 1: event_api.v1.ListEventsRequest.filter_date:type_name -> common_api.v1.DateFilter
+	10, // 2: event_api.v1.ListEventsResponse.ok:type_name -> event_api.v1.Events
+	12, // 3: event_api.v1.CreateEventRequest.spec:type_name -> event_api.v1.EventSpec
+	11, // 4: event_api.v1.CreateEventResponse.ok:type_name -> event_api.v1.Event
+	16, // 5: event_api.v1.UpdateEventRequest.targets:type_name -> common_api.v1.Targets
+	18, // 6: event_api.v1.UpdateEventRequest.meta:type_name -> common_api.v1.MetaUpdate
+	14, // 7: event_api.v1.UpdateEventRequest.spec:type_name -> event_api.v1.UpdateEventRequest.Spec
+	15, // 8: event_api.v1.UpdateEventRequest.status:type_name -> event_api.v1.UpdateEventRequest.Status
+	11, // 9: event_api.v1.UpdateEventResponse.ok:type_name -> event_api.v1.Event
+	16, // 10: event_api.v1.MergeEventRequest.targets:type_name -> common_api.v1.Targets
+	19, // 11: event_api.v1.MergeEventRequest.event:type_name -> google.protobuf.Struct
+	10, // 12: event_api.v1.MergeDeviceResponse.ok:type_name -> event_api.v1.Events
+	16, // 13: event_api.v1.DeleteEventRequest.targets:type_name -> common_api.v1.Targets
+	10, // 14: event_api.v1.DeleteEventReponse.ok:type_name -> event_api.v1.Events
+	11, // 15: event_api.v1.Events.events:type_name -> event_api.v1.Event
+	20, // 16: event_api.v1.Event.object:type_name -> common_api.v1.Object
+	12, // 17: event_api.v1.Event.spec:type_name -> event_api.v1.EventSpec
+	13, // 18: event_api.v1.Event.status:type_name -> event_api.v1.EventStatus
+	19, // 19: event_api.v1.EventSpec.payload:type_name -> google.protobuf.Struct
+	20, // 20: event_api.v1.EventSpec.related_object:type_name -> common_api.v1.Object
+	21, // 21: event_api.v1.EventStatus.first_at:type_name -> common_api.v1.Timestamp
+	21, // 22: event_api.v1.EventStatus.last_at:type_name -> common_api.v1.Timestamp
+	19, // 23: event_api.v1.UpdateEventRequest.Spec.payload:type_name -> google.protobuf.Struct
+	20, // 24: event_api.v1.UpdateEventRequest.Spec.related_object:type_name -> common_api.v1.Object
+	21, // 25: event_api.v1.UpdateEventRequest.Status.first_at:type_name -> common_api.v1.Timestamp
+	21, // 26: event_api.v1.UpdateEventRequest.Status.last_at:type_name -> common_api.v1.Timestamp
+	27, // [27:27] is the sub-list for method output_type
+	27, // [27:27] is the sub-list for method input_type
+	27, // [27:27] is the sub-list for extension type_name
+	27, // [27:27] is the sub-list for extension extendee
+	0,  // [0:27] is the sub-list for field type_name
 }
 
 func init() { file_v1_event_api_event_proto_init() }

@@ -20,9 +20,12 @@ type EventCmd struct {
 }
 
 type EventListCmd struct {
-	Output string `short:"o" help:"output format for response [pretty|json|yaml]" default:"pretty"`
-	NameNs string `name:"name/namespace" arg:"" optional:"" help:"list single event."`
-	Target `embed:"" prefix:"target."`
+	Output      string `short:"o" help:"output format for response [pretty|json|yaml]" default:"pretty"`
+	NameNs      string `name:"name/namespace" arg:"" optional:"" help:"list single event."`
+	TargetEvent `embed:"" prefix:"target."`
+	Limit       int       `help:"Limit number of events in the ouput"`
+	From        time.Time `help:"Set starting date to filter event. (eg: 2025-05-01T00:00:00.00Z)"`
+	To          time.Time `help:"Set ending date to filter event. Default to now. (eg: 2025-05-02T00:00:00.00Z)"`
 }
 
 type TargetEvent struct {
@@ -44,7 +47,12 @@ func (d *EventListCmd) Validate() error {
 	}
 
 	if d.NameNs != "" {
-		d.Target = getTargetFromNameNs(d.NameNs)
+		tar := getTargetFromNameNs(d.NameNs)
+		d.TargetEvent = TargetEvent{
+			Names:      tar.Names,
+			Namespaces: tar.Namespaces,
+			Labels:     tar.Labels,
+		}
 	}
 
 	if len(err.Details) > 0 {
@@ -68,6 +76,11 @@ func (d *EventListCmd) Run(c CLI) error {
 			Namespaces: d.Namespaces,
 			Labels:     d.Labels,
 		},
+		FilterDate: &common_apiv1.DateFilter{
+			From: mir_models.AsProtoTimestamp(d.From),
+			To:   mir_models.AsProtoTimestamp(d.To),
+		},
+		FilterLimit: int32(d.Limit),
 	})
 	if err != nil {
 		return fmt.Errorf("error publising list event request: %w", err)
@@ -133,7 +146,7 @@ func prettyStringEvents(events []mir_models.Event) string {
 			age = prettyDuration(time.Now().UTC().Sub(d.Status.FirstAt))
 		}
 
-		sb.WriteString(fmt.Sprintf(format, age, d.Meta.Namespace+"/"+d.Spec.RelatedObject.Meta.Name, st, d.Spec.Reason, d.Spec.Message))
+		sb.WriteString(fmt.Sprintf(format, age, d.Meta.Namespace+"/"+d.Meta.Name, st, d.Spec.Reason, d.Spec.Message))
 	}
 	return sb.String()
 }
