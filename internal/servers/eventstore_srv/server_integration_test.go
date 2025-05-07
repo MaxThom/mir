@@ -50,16 +50,20 @@ func TestMain(m *testing.M) {
 	fmt.Println(" -> core")
 	time.Sleep(1 * time.Second)
 	// Clear data
-	if _, err = store.DeleteEvent(mir_models.ObjectTarget{
-		Namespaces: []string{
-			"event_testing",
+	if _, err = store.DeleteEvent(mir_models.EventTarget{
+		ObjectTarget: mir_models.ObjectTarget{
+			Namespaces: []string{
+				"event_testing",
+			},
 		},
 	}); err != nil {
 		panic(err)
 	}
-	if _, err = store.DeleteEvent(mir_models.ObjectTarget{
-		Namespaces: []string{
-			"default",
+	if _, err = store.DeleteEvent(mir_models.EventTarget{
+		ObjectTarget: mir_models.ObjectTarget{
+			Namespaces: []string{
+				"default",
+			},
 		},
 	}); err != nil {
 		panic(err)
@@ -71,16 +75,20 @@ func TestMain(m *testing.M) {
 
 	// Teardown
 	fmt.Println("Test Teardown")
-	if _, err = store.DeleteEvent(mir_models.ObjectTarget{
-		Namespaces: []string{
-			"event_testing",
+	if _, err = store.DeleteEvent(mir_models.EventTarget{
+		ObjectTarget: mir_models.ObjectTarget{
+			Namespaces: []string{
+				"event_testing",
+			},
 		},
 	}); err != nil {
 		panic(err)
 	}
-	if _, err = store.DeleteEvent(mir_models.ObjectTarget{
-		Namespaces: []string{
-			"default",
+	if _, err = store.DeleteEvent(mir_models.EventTarget{
+		ObjectTarget: mir_models.ObjectTarget{
+			Namespaces: []string{
+				"default",
+			},
 		},
 	}); err != nil {
 		panic(err)
@@ -103,7 +111,7 @@ func TestPublishEventStoreNormal(t *testing.T) {
 	// Arrange
 	sbj := mir.NewEventSubject("event_test", "v1", "list_req").WithId("0xf86")
 	name := "list_request_test"
-	namespace := "event_testing"
+	namespace := "event_testing_store_normal"
 	triggerChain := []string{"pizza", "toppings"}
 	msg := mir.NewMsg(sbj.String())
 	msg.AddToTriggerChain(triggerChain...)
@@ -136,9 +144,11 @@ func TestPublishEventStoreNormal(t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	events, err := mSdk.Server().ListEvents().Request(
-		mir_models.ObjectTarget{
-			Namespaces: []string{
-				namespace,
+		mir_models.EventTarget{
+			ObjectTarget: mir_models.ObjectTarget{
+				Namespaces: []string{
+					namespace,
+				},
 			},
 		},
 	)
@@ -199,9 +209,11 @@ func TestPublishEventStoreNsDefault(t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	events, err := mSdk.Server().ListEvents().Request(
-		mir_models.ObjectTarget{
-			Namespaces: []string{
-				namespace,
+		mir_models.EventTarget{
+			ObjectTarget: mir_models.ObjectTarget{
+				Namespaces: []string{
+					namespace,
+				},
 			},
 		},
 	)

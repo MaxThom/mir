@@ -470,6 +470,27 @@ func ProtoCreateEventReqToMirEventSpec(e *event_apiv1.CreateEventRequest) EventS
 	}
 }
 
+func ProtoEventTargetToMirEventTarget(t *event_apiv1.ListEventsRequest) EventTarget {
+	if t == nil {
+		return EventTarget{}
+	}
+	return EventTarget{
+		ObjectTarget: ProtoObjectTargetToMirObjectTarget(t.Targets),
+		DateFilter:   ProtoTimeFilterToMirTimeFilter(t.FilterDate),
+		Limit:        int(t.FilterLimit),
+	}
+}
+
+func MirEventTargetToProtoEventTarget(t EventTarget) *event_apiv1.ListEventsRequest {
+	return &event_apiv1.ListEventsRequest{
+		Targets:     MirObjectTargetToProtoObjectTarget(t.ObjectTarget),
+		FilterDate:  MirTimeFilterToProtoTimeFilter(t.DateFilter),
+		FilterLimit: int32(t.Limit),
+	}
+}
+
+/// Utils
+
 func AsProtoTimestamp(t time.Time) *common_apiv1.Timestamp {
 	if t.IsZero() {
 		return nil
@@ -481,6 +502,9 @@ func AsProtoTimestamp(t time.Time) *common_apiv1.Timestamp {
 }
 
 func AsGoTime(ts *common_apiv1.Timestamp) time.Time {
+	if ts == nil {
+		return time.Time{}
+	}
 	return time.Unix(int64(ts.GetSeconds()), int64(ts.GetNanos())).UTC()
 }
 
@@ -513,4 +537,21 @@ func StructToMapAny(s interface{}) (map[string]interface{}, error) {
 	}
 
 	return result, nil
+}
+
+func ProtoTimeFilterToMirTimeFilter(f *common_apiv1.DateFilter) DateFilter {
+	if f == nil {
+		return DateFilter{}
+	}
+	return DateFilter{
+		To:   AsGoTime(f.To),
+		From: AsGoTime(f.From),
+	}
+}
+
+func MirTimeFilterToProtoTimeFilter(f DateFilter) *common_apiv1.DateFilter {
+	return &common_apiv1.DateFilter{
+		To:   AsProtoTimestamp(f.To),
+		From: AsProtoTimestamp(f.From),
+	}
 }

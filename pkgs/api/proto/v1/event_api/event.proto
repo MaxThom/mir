@@ -7,6 +7,8 @@ import "google/protobuf/struct.proto";
 
 message ListEventsRequest {
     common_api.v1.Targets targets = 1;
+    common_api.v1.DateFilter filter_date = 2;
+    int32 filter_limit = 3;
 }
 
 message ListEventsResponse {

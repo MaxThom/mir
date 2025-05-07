@@ -1,6 +1,9 @@
 package mir_models
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 type Object struct {
 	ApiVersion string `json:"apiVersion,omitempty" yaml:"apiVersion"`
@@ -55,4 +58,9 @@ func (o ObjectTarget) HasNoTarget() bool {
 	return len(o.Names) == 0 &&
 		len(o.Namespaces) == 0 &&
 		len(o.Labels) == 0
+}
+
+type DateFilter struct {
+	To   time.Time
+	From time.Time
 }

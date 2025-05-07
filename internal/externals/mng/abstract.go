@@ -27,11 +27,11 @@ type MirStore interface {
 	MergeDevice(targets *core_apiv1.Targets, patch json.RawMessage, op UpdateType) ([]mir_models.Device, error)
 	DeleteDevice(req *core_apiv1.DeleteDeviceRequest) ([]mir_models.Device, error)
 
-	ListEvent(t mir_models.ObjectTarget) ([]mir_models.Event, error)
+	ListEvent(t mir_models.EventTarget) ([]mir_models.Event, error)
 	CreateEvent(e mir_models.Event) (mir_models.Event, error)
 	UpdateEvent(t mir_models.ObjectTarget, upd mir_models.EventUpdate) ([]mir_models.Event, error)
 	MergeEvent(t mir_models.ObjectTarget, patch json.RawMessage, op UpdateType) ([]mir_models.Event, error)
-	DeleteEvent(t mir_models.ObjectTarget) ([]mir_models.Event, error)
+	DeleteEvent(t mir_models.EventTarget) ([]mir_models.Event, error)
 }
 
 type surrealMirStore struct {

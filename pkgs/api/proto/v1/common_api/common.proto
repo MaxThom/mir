@@ -79,3 +79,8 @@ message Targets {
   repeated string namespaces = 2; // namespace of the object
   map<string, string> labels = 3; // Labels are used to uniquely identify the object
 }
+
+message DateFilter {
+    Timestamp from = 1;
+    Timestamp to = 2;
+}

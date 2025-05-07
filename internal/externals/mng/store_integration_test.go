@@ -27,9 +27,11 @@ func TestMain(m *testing.M) {
 	fmt.Println(" -> db")
 	time.Sleep(1 * time.Second)
 	// Clear data
-	if _, err = eventStore.DeleteEvent(mir_models.ObjectTarget{
-		Labels: map[string]string{
-			"eventstore": "testing",
+	if _, err = eventStore.DeleteEvent(mir_models.EventTarget{
+		ObjectTarget: mir_models.ObjectTarget{
+			Labels: map[string]string{
+				"eventstore": "testing",
+			},
 		},
 	}); err != nil {
 		panic(err)
@@ -41,9 +43,11 @@ func TestMain(m *testing.M) {
 
 	// Teardown
 	fmt.Println("Test Teardown")
-	if _, err = eventStore.DeleteEvent(mir_models.ObjectTarget{
-		Labels: map[string]string{
-			"eventstore": "testing",
+	if _, err = eventStore.DeleteEvent(mir_models.EventTarget{
+		ObjectTarget: mir_models.ObjectTarget{
+			Labels: map[string]string{
+				"eventstore": "testing",
+			},
 		},
 	}); err != nil {
 		panic(err)
@@ -131,8 +135,10 @@ func TestPublishEventStoreNotUnique(t *testing.T) {
 
 func TestPublishEventStoreListName(t *testing.T) {
 	// Arrange
-	tar := mir_models.ObjectTarget{
-		Names: []string{"list_event_1", "list_event_2"},
+	tar := mir_models.EventTarget{
+		ObjectTarget: mir_models.ObjectTarget{
+			Names: []string{"list_event_1", "list_event_2"},
+		},
 	}
 	m := mir_models.NewEvent().WithMeta(mir_models.Meta{
 		Name:      "list_event_1",
@@ -172,8 +178,10 @@ func TestPublishEventStoreListName(t *testing.T) {
 
 func TestPublishEventStoreListNamespace(t *testing.T) {
 	// Arrange
-	tar := mir_models.ObjectTarget{
-		Namespaces: []string{"events_list_test"},
+	tar := mir_models.EventTarget{
+		ObjectTarget: mir_models.ObjectTarget{
+			Namespaces: []string{"events_list_test"},
+		},
 	}
 	m := mir_models.NewEvent().WithMeta(mir_models.Meta{
 		Name:      "list_event_1_ns",
@@ -213,8 +221,10 @@ func TestPublishEventStoreListNamespace(t *testing.T) {
 
 func TestPublishEventStoreListLabels(t *testing.T) {
 	// Arrange
-	tar := mir_models.ObjectTarget{
-		Labels: map[string]string{"test": "list_labels"},
+	tar := mir_models.EventTarget{
+		ObjectTarget: mir_models.ObjectTarget{
+			Labels: map[string]string{"test": "list_labels"},
+		},
 	}
 	m := mir_models.NewEvent().WithMeta(mir_models.Meta{
 		Name:      "list_event_1_lbl",
@@ -254,10 +264,202 @@ func TestPublishEventStoreListLabels(t *testing.T) {
 	assert.Equal(t, lResp[1].Meta.Name == m.Meta.Name || lResp[1].Meta.Name == m2.Meta.Name, true)
 }
 
+func TestPublishEventStoreListLimit(t *testing.T) {
+	// Arrange
+	tar := mir_models.EventTarget{
+		ObjectTarget: mir_models.ObjectTarget{
+			Labels: map[string]string{"test": "list_limit"},
+		},
+		Limit: 2,
+	}
+	m := mir_models.NewEvent().WithMeta(mir_models.Meta{
+		Name:      "list_event_1_limit",
+		Namespace: "store_test",
+		Labels: map[string]string{
+			"eventstore": "testing",
+			"test":       "list_limit",
+		},
+	})
+	m2 := mir_models.NewEvent().WithMeta(mir_models.Meta{
+		Name:      "list_event_2_limit",
+		Namespace: "store_test",
+		Labels: map[string]string{
+			"eventstore": "testing",
+			"test":       "list_limit",
+		},
+	})
+	m3 := mir_models.NewEvent().WithMeta(mir_models.Meta{
+		Name:      "list_event_3_limit",
+		Namespace: "store_test",
+		Labels: map[string]string{
+			"eventstore": "testing",
+			"test":       "list_limit",
+		},
+	})
+	// Act
+	mResp, err := eventStore.CreateEvent(m)
+	if err != nil {
+		t.Error(err)
+	}
+	mResp2, err := eventStore.CreateEvent(m2)
+	if err != nil {
+		t.Error(err)
+	}
+	mResp3, err := eventStore.CreateEvent(m3)
+	if err != nil {
+		t.Error(err)
+	}
+	lResp, err := eventStore.ListEvent(tar)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, mResp.Meta.Name, m.Meta.Name)
+	assert.Equal(t, mResp2.Meta.Name, m2.Meta.Name)
+	assert.Equal(t, mResp3.Meta.Name, m3.Meta.Name)
+	assert.Equal(t, len(lResp), 2)
+}
+
+func TestPublishEventStoreListDateNow(t *testing.T) {
+	// Arrange
+	tar := mir_models.EventTarget{
+		ObjectTarget: mir_models.ObjectTarget{
+			Namespaces: []string{"store_test_time"},
+		},
+		DateFilter: mir_models.DateFilter{
+			From: time.Date(2025, 05, 7, 0, 0, 0, 0, time.UTC),
+		},
+	}
+	m := mir_models.NewEvent().WithMeta(mir_models.Meta{
+		Name:      "list_event_1_lbl",
+		Namespace: "store_test_time",
+		Labels: map[string]string{
+			"eventstore": "testing",
+			"test":       "list_limit",
+		},
+	}).WithStatus(mir_models.EventStatus{
+		FirstAt: time.Date(2025, 05, 7, 13, 0, 0, 0, time.UTC),
+	})
+	m2 := mir_models.NewEvent().WithMeta(mir_models.Meta{
+		Name:      "list_event_2_lbl",
+		Namespace: "store_test_time",
+		Labels: map[string]string{
+			"eventstore": "testing",
+			"test":       "list_limit",
+		},
+	}).WithStatus(mir_models.EventStatus{
+		FirstAt: time.Date(2025, 05, 7, 12, 0, 0, 0, time.UTC),
+	})
+	m3 := mir_models.NewEvent().WithMeta(mir_models.Meta{
+		Name:      "list_event_3_lbl",
+		Namespace: "store_test_time",
+		Labels: map[string]string{
+			"eventstore": "testing",
+			"test":       "list_limit",
+		},
+	}).WithStatus(mir_models.EventStatus{
+		FirstAt: time.Date(2025, 05, 5, 0, 0, 0, 0, time.UTC),
+	})
+	// Act
+	mResp, err := eventStore.CreateEvent(m)
+	if err != nil {
+		t.Error(err)
+	}
+	mResp2, err := eventStore.CreateEvent(m2)
+	if err != nil {
+		t.Error(err)
+	}
+	mResp3, err := eventStore.CreateEvent(m3)
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+	lResp, err := eventStore.ListEvent(tar)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, mResp.Meta.Name, m.Meta.Name)
+	assert.Equal(t, mResp2.Meta.Name, m2.Meta.Name)
+	assert.Equal(t, mResp3.Meta.Name, m3.Meta.Name)
+	assert.Equal(t, len(lResp), 2)
+}
+
+func TestPublishEventStoreListDateToFrom(t *testing.T) {
+	// Arrange
+	tar := mir_models.EventTarget{
+		ObjectTarget: mir_models.ObjectTarget{
+			Namespaces: []string{"store_test_time_to_from"},
+		},
+		DateFilter: mir_models.DateFilter{
+			From: time.Date(2025, 05, 7, 0, 0, 0, 0, time.UTC),
+			To:   time.Date(2025, 05, 7, 12, 0, 0, 0, time.UTC),
+		},
+	}
+	m := mir_models.NewEvent().WithMeta(mir_models.Meta{
+		Name:      "list_event_1_lbl",
+		Namespace: "store_test_time_to_from",
+		Labels: map[string]string{
+			"eventstore": "testing",
+			"test":       "list_limit",
+		},
+	}).WithStatus(mir_models.EventStatus{
+		FirstAt: time.Date(2025, 05, 7, 13, 0, 0, 0, time.UTC),
+	})
+	m2 := mir_models.NewEvent().WithMeta(mir_models.Meta{
+		Name:      "list_event_2_lbl",
+		Namespace: "store_test_time_to_from",
+		Labels: map[string]string{
+			"eventstore": "testing",
+			"test":       "list_limit",
+		},
+	}).WithStatus(mir_models.EventStatus{
+		FirstAt: time.Date(2025, 05, 7, 12, 0, 0, 0, time.UTC),
+	})
+	m3 := mir_models.NewEvent().WithMeta(mir_models.Meta{
+		Name:      "list_event_3_lbl",
+		Namespace: "store_test_time_to_from",
+		Labels: map[string]string{
+			"eventstore": "testing",
+			"test":       "list_limit",
+		},
+	}).WithStatus(mir_models.EventStatus{
+		FirstAt: time.Date(2025, 05, 5, 0, 0, 0, 0, time.UTC),
+	})
+	// Act
+	mResp, err := eventStore.CreateEvent(m)
+	if err != nil {
+		t.Error(err)
+	}
+	mResp2, err := eventStore.CreateEvent(m2)
+	if err != nil {
+		t.Error(err)
+	}
+	mResp3, err := eventStore.CreateEvent(m3)
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+	lResp, err := eventStore.ListEvent(tar)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, mResp.Meta.Name, m.Meta.Name)
+	assert.Equal(t, mResp2.Meta.Name, m2.Meta.Name)
+	assert.Equal(t, mResp3.Meta.Name, m3.Meta.Name)
+	assert.Equal(t, len(lResp), 1)
+}
+
 func TestPublishEventStoreDeleteName(t *testing.T) {
 	// Arrange
-	tar := mir_models.ObjectTarget{
-		Names: []string{"delete_event_1", "delete_event_2"},
+	tar := mir_models.EventTarget{
+		ObjectTarget: mir_models.ObjectTarget{
+			Names: []string{"delete_event_1", "delete_event_2"},
+		},
 	}
 	m := mir_models.NewEvent().WithMeta(mir_models.Meta{
 		Name:      "delete_event_1",
@@ -301,8 +503,10 @@ func TestPublishEventStoreDeleteName(t *testing.T) {
 
 func TestPublishEventStoreDeleteNamespace(t *testing.T) {
 	// Arrange
-	tar := mir_models.ObjectTarget{
-		Namespaces: []string{"events_delete_test"},
+	tar := mir_models.EventTarget{
+		ObjectTarget: mir_models.ObjectTarget{
+			Namespaces: []string{"events_delete_test"},
+		},
 	}
 	m := mir_models.NewEvent().WithMeta(mir_models.Meta{
 		Name:      "delete_event_1_ns",
@@ -346,8 +550,10 @@ func TestPublishEventStoreDeleteNamespace(t *testing.T) {
 
 func TestPublishEventStoreDeleteLabels(t *testing.T) {
 	// Arrange
-	tar := mir_models.ObjectTarget{
-		Labels: map[string]string{"test": "delete_labels"},
+	tar := mir_models.EventTarget{
+		ObjectTarget: mir_models.ObjectTarget{
+			Labels: map[string]string{"test": "delete_labels"},
+		},
 	}
 	m := mir_models.NewEvent().WithMeta(mir_models.Meta{
 		Name:      "delete_event_1_lbl",

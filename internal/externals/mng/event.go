@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/pkg/errors"
@@ -25,8 +26,8 @@ type eventWithId struct {
 	mir_models.Event
 }
 
-func (s *surrealMirStore) ListEvent(t mir_models.ObjectTarget) ([]mir_models.Event, error) {
-	q, v := createListQueryForObjects(surrealEventTable, t)
+func (s *surrealMirStore) ListEvent(t mir_models.EventTarget) ([]mir_models.Event, error) {
+	q, v := createListQueryForEvents(t)
 	devs, err := executeQueryForType[[]mir_models.Event](s.db, q, v)
 	if err != nil {
 		return nil, errors.Wrap(err, ErrorListingDevices.Error())
@@ -93,7 +94,7 @@ func (s *surrealMirStore) UpdateEvent(t mir_models.ObjectTarget, upd mir_models.
 	v := map[string]any{}
 	q, v = createUpdateQueryForEvents(t, upd)
 	if q == "" {
-		return s.ListEvent(t)
+		return s.ListEvent(mir_models.EventTarget{ObjectTarget: t})
 	}
 	respDb, err := executeQueryForType[[]mir_models.Event](s.db, q, v)
 	if err != nil {
@@ -141,18 +142,18 @@ func (s *surrealMirStore) MergeEvent(t mir_models.ObjectTarget, patch json.RawMe
 	return nil, errors.New("only MergePatch operation is implemented")
 }
 
-func (s *surrealMirStore) DeleteEvent(t mir_models.ObjectTarget) ([]mir_models.Event, error) {
+func (s *surrealMirStore) DeleteEvent(t mir_models.EventTarget) ([]mir_models.Event, error) {
 	if t.HasNoTarget() {
 		return nil, mir_models.ErrorNoDeviceTargetProvided
 	}
 
-	qList, vList := createListQueryForObjects(surrealEventTable, t)
+	qList, vList := createListQueryForEvents(t)
 	respDbList, err := executeQueryForType[[]mir_models.Event](s.db, qList, vList)
 	if err != nil {
 		return nil, mir_models.ErrorDbExecutingQuery
 	}
 
-	q, v := createDeleteQueryForObjects(surrealEventTable, t)
+	q, v := createDeleteQueryForEvents(t)
 	_, err = executeQueryForType[[]mir_models.Event](s.db, q, v)
 	if err != nil {
 		return nil, mir_models.ErrorDbExecutingQuery
@@ -337,5 +338,61 @@ func createUpdateQueryForEvents(t mir_models.ObjectTarget, upd mir_models.EventU
 	}
 	sql = qSb.String()
 
+	return
+}
+
+func createListQueryForEvents(t mir_models.EventTarget) (sql string, vars map[string]any) {
+	var q strings.Builder
+	vars = map[string]any{}
+
+	q.WriteString("SELECT * FROM events")
+	whereObj := createTargetStatementForEvents(t)
+
+	if len(whereObj) > 0 {
+		q.WriteString(" WHERE ")
+		q.WriteString(whereObj)
+	}
+	q.WriteString(" ORDER BY status.firstAt DESC")
+	if t.Limit > 0 {
+		q.WriteString(fmt.Sprintf(" LIMIT %d", t.Limit))
+	}
+	q.WriteString(";")
+	sql = q.String()
+	return
+}
+
+func createTargetStatementForEvents(t mir_models.EventTarget) string {
+	whereSt := []string{}
+	whereObj := createTargetStatementForObjects(t.ObjectTarget)
+	if len(whereObj) > 0 {
+		whereSt = append(whereSt, whereObj)
+	}
+	if !t.DateFilter.From.IsZero() {
+		var dt strings.Builder
+		dt.WriteString("status.firstAt >= ")
+		dt.WriteString("d\"")
+		dt.WriteString(t.DateFilter.From.Format(time.RFC3339Nano))
+		dt.WriteString("\"")
+		whereSt = append(whereSt, dt.String())
+	}
+	if !t.DateFilter.To.IsZero() {
+		var dt strings.Builder
+		dt.WriteString(" status.firstAt <= ")
+		dt.WriteString("d\"")
+		dt.WriteString(t.DateFilter.To.Format(time.RFC3339Nano))
+		dt.WriteString("\"")
+		whereSt = append(whereSt, dt.String())
+	}
+	return strings.Join(whereSt, " AND ")
+}
+
+func createDeleteQueryForEvents(t mir_models.EventTarget) (sql string, vars map[string]any) {
+	var q strings.Builder
+	vars = map[string]any{}
+
+	q.WriteString("DELETE FROM events WHERE ")
+	q.WriteString(createTargetStatementForEvents(t))
+	q.WriteString(";")
+	sql = q.String()
 	return
 }
