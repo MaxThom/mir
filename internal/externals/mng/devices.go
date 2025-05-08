@@ -314,7 +314,16 @@ func createListQueryForDevice(req *core_apiv1.ListDeviceRequest) (sql string, va
 	var q strings.Builder
 	vars = map[string]any{}
 
-	q.WriteString("SELECT * FROM devices")
+	if req.IncludeEvents {
+		q.WriteString("SELECT *, ")
+		q.WriteString("(")
+		q.WriteString("SELECT spec.type as type, spec.message as message, spec.reason as reason, status.firstAt as firstAt FROM events")
+		q.WriteString(" WHERE $parent.meta.name = spec.relatedObject.meta.name AND $parent.meta.namespace = spec.relatedObject.meta.namespace ORDER firstAt DESC LIMIT 5")
+		q.WriteString(") as status.events")
+		q.WriteString(" FROM devices")
+	} else {
+		q.WriteString("SELECT * FROM devices")
+	}
 	where := createDeviceWhereStatementWithTargets(req.Targets)
 	if len(where) > 0 {
 		q.WriteString(" WHERE ")

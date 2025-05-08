@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/maxthom/mir/internal/libs/test_utils"
+	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/surrealdb/surrealdb.go"
 	"gotest.tools/assert"
@@ -36,6 +37,15 @@ func TestMain(m *testing.M) {
 	}); err != nil {
 		panic(err)
 	}
+	if _, err = eventStore.DeleteDevice(&core_apiv1.DeleteDeviceRequest{
+		Targets: &core_apiv1.Targets{
+			Labels: map[string]string{
+				"eventstore": "testing",
+			},
+		},
+	}); err != nil {
+		panic(err)
+	}
 	fmt.Println(" -> ready")
 
 	// Tests
@@ -45,6 +55,15 @@ func TestMain(m *testing.M) {
 	fmt.Println("Test Teardown")
 	if _, err = eventStore.DeleteEvent(mir_models.EventTarget{
 		ObjectTarget: mir_models.ObjectTarget{
+			Labels: map[string]string{
+				"eventstore": "testing",
+			},
+		},
+	}); err != nil {
+		panic(err)
+	}
+	if _, err = eventStore.DeleteDevice(&core_apiv1.DeleteDeviceRequest{
+		Targets: &core_apiv1.Targets{
 			Labels: map[string]string{
 				"eventstore": "testing",
 			},
@@ -991,6 +1010,87 @@ func TestPublishEventStoreUpdateStatusRequest(t *testing.T) {
 	assert.Equal(t, uResp[0].Status.Count, *upd.Status.Count)
 	assert.Equal(t, uResp[0].Status.LastAt, *upd.Status.LastAt)
 	assert.Equal(t, uResp[0].Status.FirstAt, *upd.Status.FirstAt)
+}
+
+func TestPbulishListDeviceWithEvents(t *testing.T) {
+	// Arrange
+	tar := &core_apiv1.ListDeviceRequest{
+		Targets: &core_apiv1.Targets{
+			Ids: []string{"peanut_butter"},
+		},
+		IncludeEvents: true,
+	}
+	dev := &core_apiv1.CreateDeviceRequest{
+		Meta: &core_apiv1.Meta{
+			Name:      "peanut_butter",
+			Namespace: "eventstore_testing",
+			Labels: map[string]string{
+				"eventstore": "testing",
+			},
+		},
+		Spec: &core_apiv1.Spec{
+			DeviceId: "peanut_butter",
+		},
+	}
+	m := mir_models.NewEvent().WithMeta(mir_models.Meta{
+		Name:      "list_dev_with_event_1",
+		Namespace: "eventstore_testing",
+		Labels: map[string]string{
+			"eventstore": "testing",
+		},
+	}).WithSpec(mir_models.EventSpec{
+		Type:   mir_models.EventTypeNormal,
+		Reason: "PEANUT",
+		RelatedObject: mir_models.Object{
+			Meta: mir_models.Meta{
+				Name:      "peanut_butter",
+				Namespace: "eventstore_testing",
+			},
+		},
+	})
+	m2 := mir_models.NewEvent().WithMeta(mir_models.Meta{
+		Name:      "list_dev_with_event_2",
+		Namespace: "eventstore_testing",
+		Labels: map[string]string{
+			"eventstore": "testing",
+		},
+	}).WithSpec(mir_models.EventSpec{
+		Type:   mir_models.EventTypeNormal,
+		Reason: "PEANUT",
+		RelatedObject: mir_models.Object{
+			Meta: mir_models.Meta{
+				Name:      "peanut_butter",
+				Namespace: "eventstore_testing",
+			},
+		},
+	})
+	// Act
+	dResp, err := eventStore.CreateDevice(dev)
+	if err != nil {
+		t.Error(err)
+	}
+	mResp, err := eventStore.CreateEvent(m)
+	if err != nil {
+		t.Error(err)
+	}
+	mResp2, err := eventStore.CreateEvent(m2)
+	if err != nil {
+		t.Error(err)
+	}
+	lResp, err := eventStore.ListDevice(tar)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, mResp.Meta.Name, m.Meta.Name)
+	assert.Equal(t, mResp2.Meta.Name, m2.Meta.Name)
+	assert.Equal(t, dResp.Meta.Name, dev.Meta.Name)
+	assert.Equal(t, 1, len(lResp))
+	assert.Equal(t, len(lResp[0].Status.Events), 2)
+	assert.Equal(t, lResp[0].Status.Events[0].Reason, "PEANUT")
+	assert.Equal(t, lResp[0].Status.Events[1].Reason, "PEANUT")
+
 }
 
 func strPtr(s string) *string {
