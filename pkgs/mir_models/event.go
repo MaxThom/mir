@@ -54,7 +54,7 @@ func (e Event) WithStatus(status EventStatus) Event {
 }
 
 type EventSpec struct {
-	Type          EventType      `json:"type,omitempty" yaml:"status"`
+	Type          EventType      `json:"type,omitempty" yaml:"type"`
 	Reason        string         `json:"reason,omitempty" yaml:"reason"`
 	Message       string         `json:"message,omitempty" yaml:"message"`
 	Payload       map[string]any `json:"payload,omitempty" yaml:"payload"`

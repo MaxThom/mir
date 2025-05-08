@@ -115,6 +115,7 @@ func (d *DeviceListCmd) Run(c CLI) error {
 			Namespaces: d.Namespaces,
 			Labels:     d.Labels,
 		},
+		IncludeEvents: true,
 	})
 	if err != nil {
 		return fmt.Errorf("error publising list device request: %w", err)

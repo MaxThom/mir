@@ -82,6 +82,19 @@ func NewDeviceFromProtoDevice(d *core_apiv1.Device) Device {
 				}
 			}
 		}
+		if len(d.Status.Events) > 0 {
+			dev.Status.Events = []DeviceStatusEvent{}
+			for _, e := range d.Status.Events {
+				if e != nil {
+					dev.Status.Events = append(dev.Status.Events, DeviceStatusEvent{
+						Type:    e.Type,
+						Message: e.Message,
+						Reason:  e.Reason,
+						FirstAt: AsGoTime(e.FirstAt),
+					})
+				}
+			}
+		}
 	}
 
 	return dev
@@ -98,6 +111,17 @@ func NewProtoDeviceListFromDevices(d []Device) []*core_apiv1.Device {
 func NewProtoDeviceFromDevice(d Device) *core_apiv1.Device {
 	des, _ := structpb.NewStruct(d.Properties.Desired)
 	rep, _ := structpb.NewStruct(d.Properties.Reported)
+
+	evts := []*core_apiv1.DeviceStatusEvent{}
+	for _, e := range d.Status.Events {
+		evts = append(evts, &core_apiv1.DeviceStatusEvent{
+			Type:    e.Type,
+			Message: e.Message,
+			Reason:  e.Reason,
+			FirstAt: AsProtoTimestamp(e.FirstAt),
+		})
+	}
+
 	return &core_apiv1.Device{
 		ApiVersion: d.ApiVersion,
 		ApiName:    d.ApiName,
@@ -127,6 +151,7 @@ func NewProtoDeviceFromDevice(d Device) *core_apiv1.Device {
 				Desired:  mapToProtoTs(d.Status.Properties.Desired),
 				Reported: mapToProtoTs(d.Status.Properties.Reported),
 			},
+			Events: evts,
 		},
 	}
 }

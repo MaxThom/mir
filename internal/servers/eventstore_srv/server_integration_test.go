@@ -1,6 +1,7 @@
 package eventstore_srv
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -9,8 +10,10 @@ import (
 
 	"github.com/maxthom/mir/internal/externals/mng"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
+	"github.com/maxthom/mir/internal/libs/swarm"
 	"github.com/maxthom/mir/internal/libs/test_utils"
 	"github.com/maxthom/mir/internal/servers/core_srv"
+	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/nats-io/nats.go"
@@ -68,6 +71,15 @@ func TestMain(m *testing.M) {
 	}); err != nil {
 		panic(err)
 	}
+	if _, err = store.DeleteDevice(&core_apiv1.DeleteDeviceRequest{
+		Targets: &core_apiv1.Targets{
+			Namespaces: []string{
+				"event_testing",
+			},
+		},
+	}); err != nil {
+		panic(err)
+	}
 	fmt.Println(" -> ready")
 
 	// Tests
@@ -88,6 +100,15 @@ func TestMain(m *testing.M) {
 		ObjectTarget: mir_models.ObjectTarget{
 			Namespaces: []string{
 				"default",
+			},
+		},
+	}); err != nil {
+		panic(err)
+	}
+	if _, err = store.DeleteDevice(&core_apiv1.DeleteDeviceRequest{
+		Targets: &core_apiv1.Targets{
+			Namespaces: []string{
+				"event_testing",
 			},
 		},
 	}); err != nil {
@@ -236,4 +257,43 @@ func TestPublishEventStoreNsDefault(t *testing.T) {
 	assert.Equal(t, strings.Contains(testEvent.Object.Meta.Annotations[mir.HeaderTrigger], "pizza,toppings,test_eventstore-"), true)
 	assert.Equal(t, strings.Contains(testEvent.Object.Meta.Annotations[mir.HeaderRoute], sbj.String()), true)
 	assert.Equal(t, strings.Contains(testEvent.Object.Meta.Annotations[mir.HeaderSubject], sbj.GetId()), true)
+}
+
+func TestPublishListDeviceRequestWithEvents(t *testing.T) {
+	// Arrange
+	ctx, cancel := context.WithCancel(context.Background())
+	s := swarm.NewSwarm(b)
+	_, err := s.AddDevice(&core_apiv1.CreateDeviceRequest{
+		Meta: &core_apiv1.Meta{
+			Namespace: "event_testing",
+		},
+		Spec: &core_apiv1.Spec{
+			DeviceId: "jam_n_butter",
+		},
+	}).Incubate()
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Act
+	time.Sleep(1 * time.Second)
+	wgs, err := s.Deploy(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	dResp, err := mSdk.Server().ListDevice().Request(&core_apiv1.ListDeviceRequest{
+		Targets:       s.ToTarget(),
+		IncludeEvents: true,
+	})
+
+	// Assert
+	assert.Equal(t, len(dResp), 1)
+	assert.Equal(t, len(dResp[0].Status.Events) > 0, true)
+
+	cancel()
+	for _, wg := range wgs {
+		wg.Wait()
+	}
 }

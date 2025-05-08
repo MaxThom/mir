@@ -83,10 +83,18 @@ type PropertiesTime struct {
 }
 
 type DeviceStatus struct {
-	Online         bool           `json:"online,omitempty" yaml:"online"`
-	LastHearthbeat time.Time      `json:"lastHearthbeat,omitempty" yaml:"lastHearthbeat"`
-	Schema         Schema         `json:"schema,omitempty" yaml:"schema"`
-	Properties     PropertiesTime `json:"properties,omitempty" yaml:"properties"`
+	Online         bool                `json:"online,omitempty" yaml:"online"`
+	LastHearthbeat time.Time           `json:"lastHearthbeat,omitempty" yaml:"lastHearthbeat"`
+	Schema         Schema              `json:"schema,omitempty" yaml:"schema"`
+	Properties     PropertiesTime      `json:"properties,omitempty" yaml:"properties"`
+	Events         []DeviceStatusEvent `json:"events,omitempty" yaml:"events"`
+}
+
+type DeviceStatusEvent struct {
+	Type    EventType `json:"type,omitempty" yaml:"type"`
+	Reason  string    `json:"reason,omitempty" yaml:"reason"`
+	Message string    `json:"message,omitempty" yaml:"message"`
+	FirstAt time.Time `json:"firstAt,omitempty" yaml:"firstAt"`
 }
 
 type Schema struct {

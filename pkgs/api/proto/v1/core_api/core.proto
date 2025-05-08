@@ -116,6 +116,7 @@ message DeleteDeviceResponse {
 */
 message ListDeviceRequest {
   Targets targets = 1; // To target a set of devices, search using ids, labels and annotations
+  bool include_events = 2; // Add latest device events
 }
 
 /*
@@ -202,7 +203,16 @@ message Status {
   bool online = 2; // The device is online and sending heathbeath signal
   Schema schema = 3; // Telemetry and Commanding schema using protobuff
   PropertiesTime properties = 4; // Time of last update for properties
+  repeated DeviceStatusEvent events = 5; // Latest events related to this device
 }
+
+message DeviceStatusEvent {
+    string type = 1;
+    string reason = 2;
+    string message = 3;
+    common_api.v1.Timestamp first_at = 4;
+}
+
 
 /*
 * Devices properties time of last update
