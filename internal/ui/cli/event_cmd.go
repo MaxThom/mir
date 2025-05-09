@@ -16,7 +16,8 @@ import (
 
 // TODO get command which is ls but with -o yaml
 type EventCmd struct {
-	List EventListCmd `cmd:"" aliases:"ls" help:"List events"`
+	List   EventListCmd   `cmd:"" aliases:"ls" help:"List events"`
+	Delete EventDeleteCmd `cmd:"" help:"Delete events"`
 }
 
 type EventListCmd struct {
@@ -24,6 +25,14 @@ type EventListCmd struct {
 	NameNs      string `name:"name/namespace" arg:"" optional:"" help:"list single event."`
 	TargetEvent `embed:"" prefix:"target."`
 	Limit       int       `help:"Limit number of events in the ouput"`
+	From        time.Time `help:"Set starting date to filter event. (eg: 2025-05-01T00:00:00.00Z)"`
+	To          time.Time `help:"Set ending date to filter event. Default to now. (eg: 2025-05-02T00:00:00.00Z)"`
+}
+
+type EventDeleteCmd struct {
+	Output      string `short:"o" help:"output format for response [pretty|json|yaml]" default:"yaml"`
+	NameNs      string `name:"name/namespace" arg:"" optional:"" help:"delete single event."`
+	TargetEvent `embed:"" prefix:"target."`
 	From        time.Time `help:"Set starting date to filter event. (eg: 2025-05-01T00:00:00.00Z)"`
 	To          time.Time `help:"Set ending date to filter event. Default to now. (eg: 2025-05-02T00:00:00.00Z)"`
 }
@@ -86,6 +95,70 @@ func (d *EventListCmd) Run(c CLI) error {
 	})
 	if err != nil {
 		return fmt.Errorf("error publising list event request: %w", err)
+	} else if resp.GetError() != "" {
+		return errors.New(resp.GetError())
+	}
+
+	list := mir_models.ProtoEventsToMirEvents(resp.GetOk().Events)
+	if d.Output == "pretty" && len(list) == 1 {
+		d.Output = "yaml"
+	}
+	if str, err := stringifyEvents(d.Output, list); err != nil {
+		return fmt.Errorf("error marshalling response: %w", err)
+	} else {
+		fmt.Println(str)
+	}
+
+	return nil
+}
+
+func (d *EventDeleteCmd) Validate() error {
+	err := MirInvalidInputError{
+		Details: []string{},
+	}
+	if strings.ToLower(d.Output) != "pretty" && strings.ToLower(d.Output) != "yaml" && strings.ToLower(d.Output) != "json" {
+		d.Output = "pretty"
+	}
+
+	if d.NameNs != "" {
+		tar := getTargetFromNameNs(d.NameNs)
+		d.TargetEvent = TargetEvent{
+			Names:      tar.Names,
+			Namespaces: tar.Namespaces,
+			Labels:     tar.Labels,
+		}
+	}
+
+	if len(err.Details) > 0 {
+		return err
+	}
+	return nil
+}
+
+func (d *EventDeleteCmd) Run(c CLI) error {
+	var err error
+	msgBus, err := bus.New(c.Target)
+	if err != nil {
+		e := MirConnectionError{Target: c.Target, e: err}
+		return e
+	}
+	defer msgBus.Close()
+
+	resp, err := event_client.PublishEventDeleteRequest(msgBus, &event_apiv1.DeleteEventRequest{
+		Target: &event_apiv1.EventTarget{
+			Targets: &common_apiv1.Targets{
+				Names:      d.Names,
+				Namespaces: d.Namespaces,
+				Labels:     d.Labels,
+			},
+			FilterDate: &common_apiv1.DateFilter{
+				From: mir_models.AsProtoTimestamp(d.From),
+				To:   mir_models.AsProtoTimestamp(d.To),
+			},
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("error publising delete event request: %w", err)
 	} else if resp.GetError() != "" {
 		return errors.New(resp.GetError())
 	}
