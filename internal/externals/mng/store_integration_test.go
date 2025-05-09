@@ -1,12 +1,14 @@
 package mng
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/maxthom/mir/internal/libs/jsonyaml"
 	"github.com/maxthom/mir/internal/libs/test_utils"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	"github.com/maxthom/mir/pkgs/mir_models"
@@ -81,6 +83,17 @@ func TestMain(m *testing.M) {
 
 func TestPublishEventStoreCreateRequest(t *testing.T) {
 	// Arrange
+	j, err := json.Marshal(map[string]any{
+		"key":  "value",
+		"key2": "value2",
+		"key3": map[string]any{
+			"key3": "value3",
+			"key4": "value4",
+		},
+	})
+	if err != nil {
+		t.Error(err)
+	}
 	m := mir_models.NewEvent().WithMeta(mir_models.Meta{
 		Name:      "create_event",
 		Namespace: "store_test",
@@ -99,14 +112,7 @@ func TestPublishEventStoreCreateRequest(t *testing.T) {
 				Namespace: "store_test",
 			},
 		},
-		Payload: map[string]any{
-			"key":  "value",
-			"key2": "value2",
-			"key3": map[string]any{
-				"key3": "value3",
-				"key4": "value4",
-			},
-		},
+		Payload: j,
 	}).WithStatus(mir_models.EventStatus{
 		Count:   1,
 		FirstAt: time.Now().UTC(),
@@ -618,6 +624,17 @@ func TestPublishEventStoreDeleteLabels(t *testing.T) {
 
 func TestPublishEventStoreUpdateMetaLblAnnoRequest(t *testing.T) {
 	// Arrange
+	j, err := json.Marshal(map[string]any{
+		"key":  "value",
+		"key2": "value2",
+		"key3": map[string]any{
+			"key3": "value3",
+			"key4": "value4",
+		},
+	})
+	if err != nil {
+		t.Error(err)
+	}
 	tar := mir_models.ObjectTarget{
 		Names: []string{"update_event_meta_lbl"},
 	}
@@ -644,14 +661,7 @@ func TestPublishEventStoreUpdateMetaLblAnnoRequest(t *testing.T) {
 				Namespace: "store_test",
 			},
 		},
-		Payload: map[string]any{
-			"key":  "value",
-			"key2": "value2",
-			"key3": map[string]any{
-				"key3": "value3",
-				"key4": "value4",
-			},
-		},
+		Payload: j,
 	}).WithStatus(mir_models.EventStatus{
 		Count:   1,
 		FirstAt: time.Now().UTC(),
@@ -695,6 +705,17 @@ func TestPublishEventStoreUpdateMetaLblAnnoRequest(t *testing.T) {
 
 func TestPublishEventStoreUpdateNameRequest(t *testing.T) {
 	// Arrange
+	j, err := json.Marshal(map[string]any{
+		"key":  "value",
+		"key2": "value2",
+		"key3": map[string]any{
+			"key3": "value3",
+			"key4": "value4",
+		},
+	})
+	if err != nil {
+		t.Error(err)
+	}
 	tar := mir_models.ObjectTarget{
 		Names: []string{"update_event_meta_name"},
 	}
@@ -716,14 +737,7 @@ func TestPublishEventStoreUpdateNameRequest(t *testing.T) {
 				Namespace: "store_test",
 			},
 		},
-		Payload: map[string]any{
-			"key":  "value",
-			"key2": "value2",
-			"key3": map[string]any{
-				"key3": "value3",
-				"key4": "value4",
-			},
-		},
+		Payload: j,
 	}).WithStatus(mir_models.EventStatus{
 		Count:   1,
 		FirstAt: time.Now().UTC(),
@@ -883,6 +897,26 @@ func TestPublishEventStoreUpdateNameNamespaceRequestDuplicate(t *testing.T) {
 
 func TestPublishEventStoreUpdateSpecRequest(t *testing.T) {
 	// Arrange
+	j, err := json.Marshal(map[string]any{
+		"key":  "value",
+		"key2": "value2",
+		"key3": map[string]any{
+			"key3": "value3",
+			"key4": "value4",
+		},
+	})
+	if err != nil {
+		t.Error(err)
+	}
+	jUpdMap := map[string]any{
+		"caca_mou": "bien_mou",
+		"key3":     nil,
+	}
+	jUpd, err := json.Marshal(jUpdMap)
+	if err != nil {
+		t.Error(err)
+	}
+	jRaw := jsonyaml.RawMessage(jUpd)
 	tar := mir_models.ObjectTarget{
 		Names: []string{"update_event_spec"},
 	}
@@ -904,14 +938,7 @@ func TestPublishEventStoreUpdateSpecRequest(t *testing.T) {
 				Namespace: "store_test",
 			},
 		},
-		Payload: map[string]any{
-			"key":  "value",
-			"key2": "value2",
-			"key3": map[string]any{
-				"key3": "value3",
-				"key4": "value4",
-			},
-		},
+		Payload: j,
 	}).WithStatus(mir_models.EventStatus{
 		Count:   1,
 		FirstAt: time.Now().UTC(),
@@ -922,10 +949,7 @@ func TestPublishEventStoreUpdateSpecRequest(t *testing.T) {
 			Type:    strPtr(mir_models.EventTypeWarning),
 			Reason:  strPtr("pizza"),
 			Message: strPtr("test_de_la_mort"),
-			Payload: map[string]any{
-				"caca_mou": "bien_mou",
-				"key3":     nil,
-			},
+			Payload: &jRaw,
 		},
 	}
 
@@ -940,18 +964,35 @@ func TestPublishEventStoreUpdateSpecRequest(t *testing.T) {
 		t.Error(err)
 	}
 
+	uPayload := make(map[string]any)
+	err = json.Unmarshal(uResp[0].Spec.Payload, &uPayload)
+	if err != nil {
+		t.Error(err)
+	}
+
 	// Assert
 	assert.Equal(t, mResp.Meta.Name, m.Meta.Name)
 	assert.Equal(t, uResp[0].Spec.Reason, *upd.Spec.Reason)
 	assert.Equal(t, uResp[0].Spec.Message, *upd.Spec.Message)
 	assert.Equal(t, uResp[0].Spec.Type, *upd.Spec.Type)
-	assert.Equal(t, uResp[0].Spec.Payload["caca_mou"], upd.Spec.Payload["caca_mou"])
-	_, ok := uResp[0].Spec.Payload["key3"]
+	assert.Equal(t, uPayload["caca_mou"], jUpdMap["caca_mou"])
+	_, ok := uPayload["key3"]
 	assert.Equal(t, false, ok)
 }
 
 func TestPublishEventStoreUpdateStatusRequest(t *testing.T) {
 	// Arrange
+	j, err := json.Marshal(map[string]any{
+		"key":  "value",
+		"key2": "value2",
+		"key3": map[string]any{
+			"key3": "value3",
+			"key4": "value4",
+		},
+	})
+	if err != nil {
+		t.Error(err)
+	}
 	tar := mir_models.ObjectTarget{
 		Names: []string{"update_event_status"},
 	}
@@ -973,14 +1014,7 @@ func TestPublishEventStoreUpdateStatusRequest(t *testing.T) {
 				Namespace: "store_test",
 			},
 		},
-		Payload: map[string]any{
-			"key":  "value",
-			"key2": "value2",
-			"key3": map[string]any{
-				"key3": "value3",
-				"key4": "value4",
-			},
-		},
+		Payload: j,
 	}).WithStatus(mir_models.EventStatus{
 		Count:   1,
 		FirstAt: time.Now().UTC(),

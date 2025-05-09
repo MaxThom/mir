@@ -14,7 +14,6 @@ import (
 	event_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/event_api"
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/nats-io/nats.go"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -249,11 +248,7 @@ func eventMsgToObject(msg *nats.Msg, v any) error {
 		return err
 	}
 	if req.Spec != nil {
-		b, err := protojson.Marshal(req.Spec.Payload)
-		if err != nil {
-			return err
-		}
-		err = json.Unmarshal(b, v)
+		err = json.Unmarshal(req.Spec.JsonPayload, v)
 		if err != nil {
 			return err
 		}

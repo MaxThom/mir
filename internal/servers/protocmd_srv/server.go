@@ -1,6 +1,7 @@
 package protocmd_srv
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
@@ -399,7 +400,7 @@ func (s *ProtoCmdServer) listCommandsSub(msg *mir.Msg, clientId string, req *cmd
 }
 
 func publishCommandEvent(m *mir.Mir, msg *mir.Msg, name, namespace string, cmd *cmd_apiv1.SendCommandResponse_CommandResponse) error {
-	payload, err := mir_models.StructToMapAny(cmd)
+	payload, err := json.Marshal(cmd)
 	if err != nil {
 		return err
 	}
