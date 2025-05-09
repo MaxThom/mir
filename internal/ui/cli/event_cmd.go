@@ -71,16 +71,18 @@ func (d *EventListCmd) Run(c CLI) error {
 	defer msgBus.Close()
 
 	resp, err := event_client.PublishEventListRequest(msgBus, &event_apiv1.ListEventsRequest{
-		Targets: &common_apiv1.Targets{
-			Names:      d.Names,
-			Namespaces: d.Namespaces,
-			Labels:     d.Labels,
+		Target: &event_apiv1.EventTarget{
+			Targets: &common_apiv1.Targets{
+				Names:      d.Names,
+				Namespaces: d.Namespaces,
+				Labels:     d.Labels,
+			},
+			FilterDate: &common_apiv1.DateFilter{
+				From: mir_models.AsProtoTimestamp(d.From),
+				To:   mir_models.AsProtoTimestamp(d.To),
+			},
+			FilterLimit: int32(d.Limit),
 		},
-		FilterDate: &common_apiv1.DateFilter{
-			From: mir_models.AsProtoTimestamp(d.From),
-			To:   mir_models.AsProtoTimestamp(d.To),
-		},
-		FilterLimit: int32(d.Limit),
 	})
 	if err != nil {
 		return fmt.Errorf("error publising list event request: %w", err)

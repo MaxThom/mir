@@ -6,9 +6,7 @@ import "v1/common_api/common.proto";
 import "google/protobuf/struct.proto";
 
 message ListEventsRequest {
-    common_api.v1.Targets targets = 1;
-    common_api.v1.DateFilter filter_date = 2;
-    int32 filter_limit = 3;
+    EventTarget target = 1;
 }
 
 message ListEventsResponse {
@@ -69,7 +67,7 @@ message MergeDeviceResponse {
 }
 
 message DeleteEventRequest {
-    common_api.v1.Targets targets = 1;
+    EventTarget target = 1;
 }
 
 message DeleteEventReponse {
@@ -77,6 +75,12 @@ message DeleteEventReponse {
     Events ok = 1;
     string error = 2;
   }
+}
+
+message EventTarget {
+    common_api.v1.Targets targets = 1;
+    common_api.v1.DateFilter filter_date = 2;
+    int32 filter_limit = 3;
 }
 
 message Events {
