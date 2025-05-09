@@ -2,6 +2,7 @@ package eventstore_srv
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -77,6 +78,9 @@ func (s *EventStoreServer) Serve() error {
 	if err := s.m.Server().ListEvents().QueueSubscribe(ServiceName, s.listEventsSub); err != nil {
 		return err
 	}
+	if err := s.m.Server().DeleteEvents().QueueSubscribe(ServiceName, s.deleteEventsSub); err != nil {
+		return err
+	}
 	if err := s.m.Event().QueueSubscribe(ServiceName, s.streamEventsSub); err != nil {
 		return err
 	}
@@ -102,6 +106,23 @@ func (s *EventStoreServer) listEventsSub(msg *mir.Msg, clientId string, req mir_
 
 	l.Info().Msg("list events request processed successfully")
 	return respDb, nil
+}
+
+func (s *EventStoreServer) deleteEventsSub(msg *mir.Msg, clientId string, req mir_models.EventTarget) ([]mir_models.Event, error) {
+	l.Info().Any("req", req).Msg("delete events request")
+	requestTotal.WithLabelValues("delete").Inc()
+
+	evList, err := s.store.DeleteEvent(req)
+	if err != nil {
+		if errors.Is(err, mir_models.ErrorNoDeviceTargetProvided) {
+			requestErrorTotal.WithLabelValues("delete").Inc()
+			return nil, fmt.Errorf("error no target found: %w", err)
+		}
+		l.Error().Err(err).Msg("error occure while executing delete event request")
+		return nil, fmt.Errorf("error deleting event: %w", err)
+	}
+
+	return evList, nil
 }
 
 func (s *EventStoreServer) streamEventsSub(msg *mir.Msg, subjectId string, req mir_models.EventSpec, e error) {

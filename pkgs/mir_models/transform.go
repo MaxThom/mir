@@ -488,7 +488,7 @@ func ProtoCreateEventReqToMirEventSpec(e *event_apiv1.CreateEventRequest) EventS
 	}
 }
 
-func ProtoEventTargetToMirEventTarget(t *event_apiv1.ListEventsRequest) EventTarget {
+func ProtoEventTargetToMirEventTarget(t *event_apiv1.EventTarget) EventTarget {
 	if t == nil {
 		return EventTarget{}
 	}
@@ -499,8 +499,8 @@ func ProtoEventTargetToMirEventTarget(t *event_apiv1.ListEventsRequest) EventTar
 	}
 }
 
-func MirEventTargetToProtoEventTarget(t EventTarget) *event_apiv1.ListEventsRequest {
-	return &event_apiv1.ListEventsRequest{
+func MirEventTargetToProtoEventTarget(t EventTarget) *event_apiv1.EventTarget {
+	return &event_apiv1.EventTarget{
 		Targets:     MirObjectTargetToProtoObjectTarget(t.ObjectTarget),
 		FilterDate:  MirTimeFilterToProtoTimeFilter(t.DateFilter),
 		FilterLimit: int32(t.Limit),

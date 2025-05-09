@@ -310,3 +310,79 @@ func TestPublishListDeviceRequestWithEvents(t *testing.T) {
 		wg.Wait()
 	}
 }
+
+func TestPublishDeleteEventsRequest(t *testing.T) {
+	// Arrange
+	j, err := json.Marshal(map[string]any{
+		"key":  "value",
+		"key2": "value2",
+		"key3": map[string]any{
+			"key3": "value3",
+			"key4": "value4",
+		},
+	})
+	if err != nil {
+		t.Error(err)
+	}
+	sbj := mir.NewEventSubject("event_test", "v1", "list_req").WithId("0xf86")
+	name := "list_request_delete_test"
+	namespace := "event_testing"
+	triggerChain := []string{"pizza", "toppings"}
+	msg := mir.NewMsg(sbj.String())
+	msg.AddToTriggerChain(triggerChain...)
+	event := mir_models.EventSpec{
+		Type:    mir_models.EventTypeNormal,
+		Reason:  "device_online",
+		Message: "device 'carrot' is online",
+		Payload: j,
+		RelatedObject: mir_models.Object{
+			ApiVersion: "v1alpha",
+			ApiName:    "mir/device",
+			Meta: mir_models.Meta{
+				Name:      name,
+				Namespace: namespace,
+			},
+		},
+	}
+	target := mir_models.EventTarget{
+		ObjectTarget: mir_models.ObjectTarget{
+			Names: []string{
+				name,
+			},
+			Namespaces: []string{
+				namespace,
+			},
+		},
+	}
+
+	// Act
+	err = mSdk.Event().Publish(sbj, event, msg)
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	eventPresent, err := mSdk.Server().ListEvents().Request(target)
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	eventDeleted, err := mSdk.Server().DeleteEvents().Request(target)
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	eventGone, err := mSdk.Server().ListEvents().Request(target)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, len(eventPresent), 1)
+	assert.Equal(t, strings.Contains(eventPresent[0].Meta.Name, name), true)
+	assert.Equal(t, len(eventDeleted), 1)
+	assert.Equal(t, strings.Contains(eventDeleted[0].Meta.Name, name), true)
+	assert.Equal(t, len(eventGone), 0)
+}
