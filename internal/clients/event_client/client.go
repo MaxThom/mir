@@ -52,3 +52,22 @@ func PublishEventListRequest(bus *bus.BusConn, req *event_apiv1.ListEventsReques
 
 	return resp, nil
 }
+
+func PublishEventDeleteRequest(bus *bus.BusConn, req *event_apiv1.DeleteEventRequest) (*event_apiv1.DeleteEventReponse, error) {
+	bReq, err := proto.Marshal(req)
+	if err != nil {
+		return &event_apiv1.DeleteEventReponse{}, err
+	}
+	resMsg, err := bus.Request(DeleteEventsRequest.WithId("TODO"), bReq, 7*time.Second)
+	if err != nil {
+		return &event_apiv1.DeleteEventReponse{}, err
+	}
+
+	resp := &event_apiv1.DeleteEventReponse{}
+	err = proto.Unmarshal(resMsg.Data, resp)
+	if err != nil {
+		return &event_apiv1.DeleteEventReponse{}, err
+	}
+
+	return resp, nil
+}

@@ -7,3 +7,9 @@ for namespace in $namespaces; do
     echo "$namespace"
     $bin device delete --target.namespaces "$namespace"
 done
+
+namespaces=$($bin event list -o json | sed -n 's/.*"namespace": "\([^"]*\)".*/\1/p')
+for namespace in $namespaces; do
+    echo "$namespace"
+    $bin event delete --target.namespaces "$namespace"
+done
