@@ -766,12 +766,16 @@ func minifyJSON(input []byte) ([]byte, error) {
 }
 
 func publishDesiredPropertiesEvent(m *mir.Mir, msg *mir.Msg, name, namespace, deviceId string, props map[string]any) error {
+	payload, err := json.Marshal(props)
+	if err != nil {
+		return err
+	}
 	return m.Event().Publish(mir.NewEventSubjectString(cfg_client.DesiredPropertiesEvent.WithId(deviceId)),
 		mir_models.EventSpec{
 			Type:    mir_models.EventTypeNormal,
 			Reason:  "DeviceDesiredProps",
 			Message: "Device desired properties updated successfully",
-			Payload: props,
+			Payload: payload,
 			RelatedObject: mir_models.NewEvent().WithMeta(mir_models.Meta{
 				Name:      name,
 				Namespace: namespace,
@@ -780,12 +784,16 @@ func publishDesiredPropertiesEvent(m *mir.Mir, msg *mir.Msg, name, namespace, de
 }
 
 func publishReportedPropertiesEvent(m *mir.Mir, msg *mir.Msg, name, namespace, deviceId string, props map[string]any) error {
+	payload, err := json.Marshal(props)
+	if err != nil {
+		return err
+	}
 	return m.Event().Publish(mir.NewEventSubjectString(cfg_client.ReportedPropertiesEvent.WithId(deviceId)),
 		mir_models.EventSpec{
 			Type:    mir_models.EventTypeNormal,
 			Reason:  "DeviceReportedProps",
 			Message: "Device reported properties updated successfully",
-			Payload: props,
+			Payload: payload,
 			RelatedObject: mir_models.NewEvent().WithMeta(mir_models.Meta{
 				Name:      name,
 				Namespace: namespace,

@@ -2,6 +2,7 @@ package eventstore_srv
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -130,6 +131,17 @@ func TestMain(m *testing.M) {
 
 func TestPublishEventStoreNormal(t *testing.T) {
 	// Arrange
+	j, err := json.Marshal(map[string]any{
+		"key":  "value",
+		"key2": "value2",
+		"key3": map[string]any{
+			"key3": "value3",
+			"key4": "value4",
+		},
+	})
+	if err != nil {
+		t.Error(err)
+	}
 	sbj := mir.NewEventSubject("event_test", "v1", "list_req").WithId("0xf86")
 	name := "list_request_test"
 	namespace := "event_testing_store_normal"
@@ -140,12 +152,7 @@ func TestPublishEventStoreNormal(t *testing.T) {
 		Type:    mir_models.EventTypeNormal,
 		Reason:  "device_online",
 		Message: "device 'carrot' is online",
-		Payload: map[string]any{
-			"key1": "val1",
-			"key2": map[string]any{
-				"key3": "val3",
-			},
-		},
+		Payload: j,
 		RelatedObject: mir_models.Object{
 			ApiVersion: "v1alpha",
 			ApiName:    "mir/device",
@@ -157,7 +164,7 @@ func TestPublishEventStoreNormal(t *testing.T) {
 	}
 
 	// Act
-	err := mSdk.Event().Publish(sbj, event, msg)
+	err = mSdk.Event().Publish(sbj, event, msg)
 	if err != nil {
 		t.Error(err)
 	}
@@ -196,6 +203,17 @@ func TestPublishEventStoreNormal(t *testing.T) {
 
 func TestPublishEventStoreNsDefault(t *testing.T) {
 	// Arrange
+	j, err := json.Marshal(map[string]any{
+		"key":  "value",
+		"key2": "value2",
+		"key3": map[string]any{
+			"key3": "value3",
+			"key4": "value4",
+		},
+	})
+	if err != nil {
+		t.Error(err)
+	}
 	sbj := mir.NewEventSubject("event_test", "v1", "list_req").WithId("0xf86")
 	name := "list_request_test_default"
 	namespace := "default"
@@ -206,12 +224,7 @@ func TestPublishEventStoreNsDefault(t *testing.T) {
 		Type:    mir_models.EventTypeNormal,
 		Reason:  "device_online",
 		Message: "device 'carrot' is online",
-		Payload: map[string]any{
-			"key1": "val1",
-			"key2": map[string]any{
-				"key3": "val3",
-			},
-		},
+		Payload: j,
 		RelatedObject: mir_models.Object{
 			ApiVersion: "v1alpha",
 			ApiName:    "mir/device",
@@ -222,7 +235,7 @@ func TestPublishEventStoreNsDefault(t *testing.T) {
 	}
 
 	// Act
-	err := mSdk.Event().Publish(sbj, event, msg)
+	err = mSdk.Event().Publish(sbj, event, msg)
 	if err != nil {
 		t.Error(err)
 	}

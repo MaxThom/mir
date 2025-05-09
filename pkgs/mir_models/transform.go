@@ -399,17 +399,13 @@ func MirObjectToProtoObject(o Object) *common_apiv1.Object {
 /// Events
 
 func MirEventToProtoEvent(e Event) *event_apiv1.Event {
-	pb, err := structpb.NewStruct(e.Spec.Payload)
-	if err != nil {
-		return nil
-	}
 	return &event_apiv1.Event{
 		Object: MirObjectToProtoObject(e.Object),
 		Spec: &event_apiv1.EventSpec{
 			Type:          e.Spec.Type,
 			Reason:        e.Spec.Reason,
 			Message:       e.Spec.Message,
-			Payload:       pb,
+			JsonPayload:   e.Spec.Payload,
 			RelatedObject: MirObjectToProtoObject(e.Spec.RelatedObject),
 		},
 		Status: &event_apiv1.EventStatus{
@@ -419,17 +415,14 @@ func MirEventToProtoEvent(e Event) *event_apiv1.Event {
 		},
 	}
 }
+
 func MirEventSpecToProtoCreateEvent(e EventSpec) *event_apiv1.CreateEventRequest {
-	pb, err := structpb.NewStruct(e.Payload)
-	if err != nil {
-		return nil
-	}
 	return &event_apiv1.CreateEventRequest{
 		Spec: &event_apiv1.EventSpec{
 			Type:          e.Type,
 			Reason:        e.Reason,
 			Message:       e.Message,
-			Payload:       pb,
+			JsonPayload:   e.Payload,
 			RelatedObject: MirObjectToProtoObject(e.RelatedObject),
 		},
 	}
@@ -470,7 +463,7 @@ func ProtoEventToMirEvent(e *event_apiv1.Event) Event {
 			Type:          e.Spec.Type,
 			Reason:        e.Spec.Reason,
 			Message:       e.Spec.Message,
-			Payload:       e.Spec.Payload.AsMap(),
+			Payload:       e.Spec.JsonPayload,
 			RelatedObject: o,
 		},
 		Status: EventStatus{
@@ -490,7 +483,7 @@ func ProtoCreateEventReqToMirEventSpec(e *event_apiv1.CreateEventRequest) EventS
 		Type:          e.Spec.Type,
 		Reason:        e.Spec.Reason,
 		Message:       e.Spec.Message,
-		Payload:       e.Spec.Payload.AsMap(),
+		Payload:       e.Spec.JsonPayload,
 		RelatedObject: o,
 	}
 }

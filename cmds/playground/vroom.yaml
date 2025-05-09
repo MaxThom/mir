@@ -1,8 +1,0 @@
-apiVersion: v1alpha
-apiName: device
-meta:
-    name: vroom_vroom
-    namespace: car
-spec:
-    deviceid: vroom_vroom
-    disabled: true

@@ -1,6 +1,10 @@
 package mir_models
 
-import "time"
+import (
+	"time"
+
+	"github.com/maxthom/mir/internal/libs/jsonyaml"
+)
 
 type EventType = string
 
@@ -38,7 +42,7 @@ func (e Event) WithMeta(m Meta) Event {
 }
 
 type Event struct {
-	Object             // Todo inline json
+	Object `json:",inline" yaml:",inline"`
 	Spec   EventSpec   `json:"spec,omitempty" yaml:"spec"`
 	Status EventStatus `json:"status,omitempty" yaml:"status"`
 }
@@ -54,11 +58,11 @@ func (e Event) WithStatus(status EventStatus) Event {
 }
 
 type EventSpec struct {
-	Type          EventType      `json:"type,omitempty" yaml:"type"`
-	Reason        string         `json:"reason,omitempty" yaml:"reason"`
-	Message       string         `json:"message,omitempty" yaml:"message"`
-	Payload       map[string]any `json:"payload,omitempty" yaml:"payload"`
-	RelatedObject Object         `json:"relatedObject,omitempty" yaml:"relatedObject"`
+	Type          EventType           `json:"type,omitempty" yaml:"type"`
+	Reason        string              `json:"reason,omitempty" yaml:"reason"`
+	Message       string              `json:"message,omitempty" yaml:"message"`
+	Payload       jsonyaml.RawMessage `json:"payload,omitempty" yaml:"-"`
+	RelatedObject Object              `json:"relatedObject,omitempty" yaml:"relatedObject"`
 }
 
 type EventStatus struct {
@@ -74,11 +78,11 @@ type EventUpdate struct {
 }
 
 type EventUpdateSpec struct {
-	Type          *EventType     `json:"type,omitempty" yaml:"type"`
-	Reason        *string        `json:"reason,omitempty" yaml:"reason"`
-	Message       *string        `json:"message,omitempty" yaml:"message"`
-	Payload       map[string]any `json:"payload,omitempty" yaml:"payload"`
-	RelatedObject *ObjectUpdate  `json:"relatedObject,omitempty" yaml:"relatedObject"`
+	Type          *EventType           `json:"type,omitempty" yaml:"type"`
+	Reason        *string              `json:"reason,omitempty" yaml:"reason"`
+	Message       *string              `json:"message,omitempty" yaml:"message"`
+	Payload       *jsonyaml.RawMessage `json:"payload,omitempty" yaml:"payload"`
+	RelatedObject *ObjectUpdate        `json:"relatedObject,omitempty" yaml:"relatedObject"`
 }
 
 type EventUpdateStatus struct {

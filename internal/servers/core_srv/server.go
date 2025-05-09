@@ -2,6 +2,7 @@ package core_srv
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sync"
@@ -457,7 +458,7 @@ func sendReplyOrAck(bus *bus.BusConn, msg nats.Msg, m protoreflect.ProtoMessage)
 }
 
 func publishDeviceOnlineEvent(m *mir.Mir, msg *mir.Msg, d mir_models.Device) error {
-	payload, err := mir_models.StructToMapAny(d)
+	payload, err := json.Marshal(d)
 	if err != nil {
 		return err
 	}
@@ -475,7 +476,7 @@ func publishDeviceOnlineEvent(m *mir.Mir, msg *mir.Msg, d mir_models.Device) err
 }
 
 func publishDeviceOfflineEvent(m *mir.Mir, msg *mir.Msg, d mir_models.Device) error {
-	payload, err := mir_models.StructToMapAny(d)
+	payload, err := json.Marshal(d)
 	if err != nil {
 		return err
 	}
@@ -493,7 +494,7 @@ func publishDeviceOfflineEvent(m *mir.Mir, msg *mir.Msg, d mir_models.Device) er
 }
 
 func publishDeviceCreateEvent(m *mir.Mir, msg *mir.Msg, d mir_models.Device) error {
-	payload, err := mir_models.StructToMapAny(d)
+	payload, err := json.Marshal(d)
 	if err != nil {
 		return err
 	}
@@ -511,7 +512,7 @@ func publishDeviceCreateEvent(m *mir.Mir, msg *mir.Msg, d mir_models.Device) err
 }
 
 func publishDeviceUpdateEvent(m *mir.Mir, msg *mir.Msg, d mir_models.Device) error {
-	payload, err := mir_models.StructToMapAny(d)
+	payload, err := json.Marshal(d)
 	if err != nil {
 		return err
 	}
@@ -529,7 +530,7 @@ func publishDeviceUpdateEvent(m *mir.Mir, msg *mir.Msg, d mir_models.Device) err
 }
 
 func publishDeviceDeleteEvent(m *mir.Mir, msg *mir.Msg, d mir_models.Device) error {
-	payload, err := mir_models.StructToMapAny(d)
+	payload, err := json.Marshal(d)
 	if err != nil {
 		return err
 	}
