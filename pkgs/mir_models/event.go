@@ -30,8 +30,8 @@ func (o EventTarget) HasNoTarget() bool {
 func NewEvent() Event {
 	return Event{
 		Object: Object{
-			ApiVersion: "v1alpha",
-			ApiName:    "mir/events",
+			ApiVersion: "mir/v1alpha",
+			Kind:       "events",
 		},
 	}
 }

@@ -89,8 +89,8 @@ The config cli works similarly to the commands cli.
 Let's take a look at the device twin `mir dev ls weather/default`:
 
 ```yaml
-apiVersion: v1alpha
-apiName: device
+apiVersion: mir/v1alpha
+kind: device
 meta:
 name: weather
 ...

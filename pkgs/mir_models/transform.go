@@ -124,7 +124,7 @@ func NewProtoDeviceFromDevice(d Device) *core_apiv1.Device {
 
 	return &core_apiv1.Device{
 		ApiVersion: d.ApiVersion,
-		ApiName:    d.ApiName,
+		Kind:       d.Kind,
 		Meta: &core_apiv1.Meta{
 			Name:        d.Meta.Name,
 			Namespace:   d.Meta.Namespace,
@@ -329,8 +329,8 @@ func NewCreateDeviceReqFromDeviceUpdateRequest(d *core_apiv1.UpdateDeviceRequest
 func NewDeviceFromCreateDeviceReq(d *core_apiv1.CreateDeviceRequest) Device {
 	return Device{
 		Object: Object{
-			ApiVersion: "v1alpha",
-			ApiName:    "device",
+			ApiVersion: "mir/v1alpha",
+			Kind:       "device",
 			Meta: Meta{
 				Name:        d.Meta.Name,
 				Namespace:   d.Meta.Namespace,
@@ -373,7 +373,7 @@ func ProtoObjectToMirObject(o *common_apiv1.Object) Object {
 	}
 	return Object{
 		ApiVersion: o.ApiVersion,
-		ApiName:    o.ApiName,
+		Kind:       o.Kind,
 		Meta: Meta{
 			Name:        o.Meta.Name,
 			Namespace:   o.Meta.Namespace,
@@ -386,7 +386,7 @@ func ProtoObjectToMirObject(o *common_apiv1.Object) Object {
 func MirObjectToProtoObject(o Object) *common_apiv1.Object {
 	return &common_apiv1.Object{
 		ApiVersion: o.ApiVersion,
-		ApiName:    o.ApiName,
+		Kind:       o.Kind,
 		Meta: &common_apiv1.Meta{
 			Name:        o.Meta.Name,
 			Namespace:   o.Meta.Namespace,
@@ -450,8 +450,8 @@ func ProtoEventToMirEvent(e *event_apiv1.Event) Event {
 	o := ProtoObjectToMirObject(e.Spec.RelatedObject)
 	return Event{
 		Object: Object{
-			ApiVersion: "v1alpha",
-			ApiName:    "event",
+			ApiVersion: "mir/v1alpha",
+			Kind:       "event",
 			Meta: Meta{
 				Name:        e.Object.Meta.Name,
 				Namespace:   e.Object.Meta.Namespace,

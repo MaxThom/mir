@@ -8,7 +8,7 @@ import (
 )
 
 type Device struct {
-	Object     ``               // TODO check line
+	Object     `json:",inline" yaml:",inline"`
 	Spec       DeviceSpec       `json:"spec,omitempty" yaml:"spec"`
 	Properties DeviceProperties `json:"properties,omitempty" yaml:"properties"`
 	Status     DeviceStatus     `json:"status,omitempty" yaml:"status"`
@@ -17,10 +17,15 @@ type Device struct {
 func NewDevice() Device {
 	return Device{
 		Object: Object{
-			ApiVersion: "v1alpha",
-			ApiName:    "device",
+			ApiVersion: "mir/v1alpha",
+			Kind:       "device",
 		},
 	}
+}
+
+func (d Device) WithMeta(m Meta) Device {
+	d.Meta = m
+	return d
 }
 
 func (d Device) GetNameNamespace() string {

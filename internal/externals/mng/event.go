@@ -238,9 +238,9 @@ func createUpdateQueryForEvents(t mir_models.ObjectTarget, upd mir_models.EventU
 		}
 		if upd.Spec.RelatedObject != nil {
 			var sbObj strings.Builder
-			if upd.Spec.RelatedObject.ApiName != nil {
-				sb.WriteString("apiName: $API,")
-				vars["API"] = *upd.Spec.RelatedObject.ApiName
+			if upd.Spec.RelatedObject.Kind != nil {
+				sb.WriteString("kind: $API,")
+				vars["API"] = *upd.Spec.RelatedObject.Kind
 			}
 			if upd.Spec.RelatedObject.ApiVersion != nil {
 				sb.WriteString("apiVersion: $VER,")

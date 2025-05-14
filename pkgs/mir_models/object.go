@@ -7,13 +7,13 @@ import (
 
 type Object struct {
 	ApiVersion string `json:"apiVersion,omitempty" yaml:"apiVersion"`
-	ApiName    string `json:"apiName,omitempty" yaml:"apiName"`
+	Kind       string `json:"kind,omitempty" yaml:"kind"`
 	Meta       Meta   `json:"meta,omitempty" yaml:"meta"`
 }
 
 type ObjectUpdate struct {
 	ApiVersion *string     `json:"apiVersion,omitempty" yaml:"apiVersion"`
-	ApiName    *string     `json:"apiName,omitempty" yaml:"apiName"`
+	Kind       *string     `json:"kind,omitempty" yaml:"kind"`
 	Meta       *MetaUpdate `json:"meta,omitempty" yaml:"meta"`
 }
 

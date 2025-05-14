@@ -776,7 +776,7 @@ func publishDesiredPropertiesEvent(m *mir.Mir, msg *mir.Msg, name, namespace, de
 			Reason:  "DeviceDesiredProps",
 			Message: "Device desired properties updated successfully",
 			Payload: payload,
-			RelatedObject: mir_models.NewEvent().WithMeta(mir_models.Meta{
+			RelatedObject: mir_models.NewDevice().WithMeta(mir_models.Meta{
 				Name:      name,
 				Namespace: namespace,
 			}).Object,
@@ -794,7 +794,7 @@ func publishReportedPropertiesEvent(m *mir.Mir, msg *mir.Msg, name, namespace, d
 			Reason:  "DeviceReportedProps",
 			Message: "Device reported properties updated successfully",
 			Payload: payload,
-			RelatedObject: mir_models.NewEvent().WithMeta(mir_models.Meta{
+			RelatedObject: mir_models.NewDevice().WithMeta(mir_models.Meta{
 				Name:      name,
 				Namespace: namespace,
 			}).Object,

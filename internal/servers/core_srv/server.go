@@ -468,7 +468,7 @@ func publishDeviceOnlineEvent(m *mir.Mir, msg *mir.Msg, d mir_models.Device) err
 			Reason:  "DeviceOnline",
 			Message: "Device is now online",
 			Payload: payload,
-			RelatedObject: mir_models.NewEvent().WithMeta(mir_models.Meta{
+			RelatedObject: mir_models.NewDevice().WithMeta(mir_models.Meta{
 				Name:      d.Meta.Name,
 				Namespace: d.Meta.Namespace,
 			}).Object,
@@ -486,7 +486,7 @@ func publishDeviceOfflineEvent(m *mir.Mir, msg *mir.Msg, d mir_models.Device) er
 			Reason:  "DeviceOffline",
 			Message: "Device is now offline",
 			Payload: payload,
-			RelatedObject: mir_models.NewEvent().WithMeta(mir_models.Meta{
+			RelatedObject: mir_models.NewDevice().WithMeta(mir_models.Meta{
 				Name:      d.Meta.Name,
 				Namespace: d.Meta.Namespace,
 			}).Object,
@@ -504,7 +504,7 @@ func publishDeviceCreateEvent(m *mir.Mir, msg *mir.Msg, d mir_models.Device) err
 			Reason:  "DeviceCreated",
 			Message: "A device has been created successfully",
 			Payload: payload,
-			RelatedObject: mir_models.NewEvent().WithMeta(mir_models.Meta{
+			RelatedObject: mir_models.NewDevice().WithMeta(mir_models.Meta{
 				Name:      d.Meta.Name,
 				Namespace: d.Meta.Namespace,
 			}).Object,
@@ -522,7 +522,7 @@ func publishDeviceUpdateEvent(m *mir.Mir, msg *mir.Msg, d mir_models.Device) err
 			Reason:  "DeviceUpdated",
 			Message: "A device has been updated successfully",
 			Payload: payload,
-			RelatedObject: mir_models.NewEvent().WithMeta(mir_models.Meta{
+			RelatedObject: mir_models.NewDevice().WithMeta(mir_models.Meta{
 				Name:      d.Meta.Name,
 				Namespace: d.Meta.Namespace,
 			}).Object,
@@ -540,7 +540,7 @@ func publishDeviceDeleteEvent(m *mir.Mir, msg *mir.Msg, d mir_models.Device) err
 			Reason:  "DeviceDeleted",
 			Message: "A device has been deleted successfully",
 			Payload: payload,
-			RelatedObject: mir_models.NewEvent().WithMeta(mir_models.Meta{
+			RelatedObject: mir_models.NewDevice().WithMeta(mir_models.Meta{
 				Name:      d.Meta.Name,
 				Namespace: d.Meta.Namespace,
 			}).Object,

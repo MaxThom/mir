@@ -154,8 +154,8 @@ func TestPublishEventStoreNormal(t *testing.T) {
 		Message: "device 'carrot' is online",
 		Payload: j,
 		RelatedObject: mir_models.Object{
-			ApiVersion: "v1alpha",
-			ApiName:    "mir/device",
+			ApiVersion: "mir/v1alpha",
+			Kind:       "device",
 			Meta: mir_models.Meta{
 				Name:      name,
 				Namespace: namespace,
@@ -226,8 +226,8 @@ func TestPublishEventStoreNsDefault(t *testing.T) {
 		Message: "device 'carrot' is online",
 		Payload: j,
 		RelatedObject: mir_models.Object{
-			ApiVersion: "v1alpha",
-			ApiName:    "mir/device",
+			ApiVersion: "mir/v1alpha",
+			Kind:       "device",
 			Meta: mir_models.Meta{
 				Name: name,
 			},
@@ -336,8 +336,8 @@ func TestPublishDeleteEventsRequest(t *testing.T) {
 		Message: "device 'carrot' is online",
 		Payload: j,
 		RelatedObject: mir_models.Object{
-			ApiVersion: "v1alpha",
-			ApiName:    "mir/device",
+			ApiVersion: "mir/v1alpha",
+			Kind:       "device",
 			Meta: mir_models.Meta{
 				Name:      name,
 				Namespace: namespace,

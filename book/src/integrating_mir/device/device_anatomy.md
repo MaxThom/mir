@@ -58,8 +58,8 @@ In a seperation terminal, run `mir device list` to see your online device.
 Each device is represented in the system by it's Digital Twin, use `mir device list weather/default -o yaml` to see yours:
 
 ```yaml
-apiVersion: v1alpha
-apiName: device
+apiVersion: mir/v1alpha
+kind: device
 meta:
     name: weather
     namespace: default
