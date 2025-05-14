@@ -410,7 +410,7 @@ func publishCommandEvent(m *mir.Mir, msg *mir.Msg, name, namespace string, cmd *
 			Reason:  "DeviceCommand",
 			Message: "Device command executed successfully",
 			Payload: payload,
-			RelatedObject: mir_models.NewEvent().WithMeta(mir_models.Meta{
+			RelatedObject: mir_models.NewDevice().WithMeta(mir_models.Meta{
 				Name:      name,
 				Namespace: namespace,
 			}).Object,

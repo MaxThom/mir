@@ -58,8 +58,8 @@ power/default                                 power            online     2024-1
 You should see your running device. To see its digital twin, use `mir device ls power/default`:
 
 ```yaml
-apiVersion: v1alpha
-apiName: device
+apiVersion: mir/v1alpha
+kind: device
 meta:
     name: power
     namespace: default
@@ -195,8 +195,8 @@ swarm.v1.DataRateProp{}
 To see the updated configuration, run `mir dev ls power/default`:
 
 ```yaml
-apiVersion: v1alpha
-apiName: device
+apiVersion: mir/v1alpha
+kind: device
 meta:
     name: power
     namespace: default

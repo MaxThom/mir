@@ -45,7 +45,7 @@ enum Encoding {
 */
 message Object {
   string api_version = 1; // Current version of the spec
-  string api_name = 2; // Name of the spec
+  string kind = 2; // Name of the object
   Meta meta = 3; // Represent the specifications that can be updated
 }
 

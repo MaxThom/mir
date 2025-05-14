@@ -105,8 +105,8 @@ func TestPublishEventStoreCreateRequest(t *testing.T) {
 		Reason:  "integration_test",
 		Message: "a simple test",
 		RelatedObject: mir_models.Object{
-			ApiVersion: "v1alpha",
-			ApiName:    "mir/devices",
+			ApiVersion: "mir/v1alpha",
+			Kind:       "device",
 			Meta: mir_models.Meta{
 				Name:      "device1",
 				Namespace: "store_test",
@@ -654,8 +654,8 @@ func TestPublishEventStoreUpdateMetaLblAnnoRequest(t *testing.T) {
 		Reason:  "integration_test",
 		Message: "a simple test",
 		RelatedObject: mir_models.Object{
-			ApiVersion: "v1alpha",
-			ApiName:    "mir/devices",
+			ApiVersion: "mir/v1alpha",
+			Kind:       "device",
 			Meta: mir_models.Meta{
 				Name:      "device1",
 				Namespace: "store_test",
@@ -730,8 +730,8 @@ func TestPublishEventStoreUpdateNameRequest(t *testing.T) {
 		Reason:  "integration_test",
 		Message: "a simple test",
 		RelatedObject: mir_models.Object{
-			ApiVersion: "v1alpha",
-			ApiName:    "mir/devices",
+			ApiVersion: "mir/v1alpha",
+			Kind:       "device",
 			Meta: mir_models.Meta{
 				Name:      "device1",
 				Namespace: "store_test",
@@ -931,8 +931,8 @@ func TestPublishEventStoreUpdateSpecRequest(t *testing.T) {
 		Reason:  "integration_test",
 		Message: "a simple test",
 		RelatedObject: mir_models.Object{
-			ApiVersion: "v1alpha",
-			ApiName:    "mir/devices",
+			ApiVersion: "mir/v1alpha",
+			Kind:       "device",
 			Meta: mir_models.Meta{
 				Name:      "device1",
 				Namespace: "store_test",
@@ -1007,8 +1007,8 @@ func TestPublishEventStoreUpdateStatusRequest(t *testing.T) {
 		Reason:  "integration_test",
 		Message: "a simple test",
 		RelatedObject: mir_models.Object{
-			ApiVersion: "v1alpha",
-			ApiName:    "mir/devices",
+			ApiVersion: "mir/v1alpha",
+			Kind:       "device",
 			Meta: mir_models.Meta{
 				Name:      "device1",
 				Namespace: "store_test",

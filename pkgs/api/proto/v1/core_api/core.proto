@@ -160,7 +160,7 @@ message DeviceIdList {
 */
 message Device {
   string api_version = 1; // Current version of the spec
-  string api_name = 2; // Name of the spec
+  string kind = 2; // Name of the object
   Meta meta = 3; // Represent the specifications that can be updated
   Spec spec = 4; // Represent device twin specific config from Mir
   Properties properties = 5; // Represent set of device defined properties
