@@ -58,7 +58,7 @@ func (d *TelemetryListCmd) Run(c CLI) error {
 	defer msgBus.Close()
 
 	req := &tlm_apiv1.SendListTelemetryRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids:        d.Target.Ids,
 			Names:      d.Target.Names,
 			Namespaces: d.Target.Namespaces,

@@ -73,7 +73,7 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 	if _, err = store.DeleteDevice(&core_apiv1.DeleteDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Namespaces: []string{
 				"event_testing",
 			},
@@ -107,7 +107,7 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 	if _, err = store.DeleteDevice(&core_apiv1.DeleteDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Namespaces: []string{
 				"event_testing",
 			},

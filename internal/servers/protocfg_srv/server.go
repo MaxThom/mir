@@ -458,7 +458,7 @@ func (s *ProtoCfgServer) sendConfigToDevices(msg *mir.Msg, req *cfg_apiv1.SendCo
 				timeMap[k] = time
 			}
 			dev, err := s.devStore.UpdateDevice(&core_apiv1.UpdateDeviceRequest{
-				Targets: &core_apiv1.Targets{
+				Targets: &core_apiv1.DeviceTarget{
 					Ids: []string{p.deviceId},
 				},
 				Props: &core_apiv1.UpdateDeviceRequest_Properties{
@@ -595,7 +595,7 @@ func (s *ProtoCfgServer) reportedPropsSub(msg *mir.Msg, deviceId string, msgName
 	}
 
 	dev, err := s.devStore.MergeDevice(
-		&core_apiv1.Targets{
+		&core_apiv1.DeviceTarget{
 			Ids: []string{deviceId},
 		},
 		jsonRaw,
@@ -616,7 +616,7 @@ func (s *ProtoCfgServer) reportedPropsSub(msg *mir.Msg, deviceId string, msgName
 func (s *ProtoCfgServer) desiredPropsSub(msg *mir.Msg, deviceId string) (*device_apiv1.ReportedProperties, error) {
 	deviceDesiredPropsRequestTotal.Inc()
 	devs, err := s.devStore.ListDevice(&core_apiv1.ListDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{deviceId},
 		},
 	})
@@ -731,7 +731,7 @@ func (s *ProtoCfgServer) desiredPropsSub(msg *mir.Msg, deviceId string) (*device
 			deviceDesiredPropsRequestErrorTotal.Inc()
 		} else {
 			devs, err := s.devStore.UpdateDevice(&core_apiv1.UpdateDeviceRequest{
-				Targets: &core_apiv1.Targets{
+				Targets: &core_apiv1.DeviceTarget{
 					Ids: []string{deviceId},
 				},
 				Props: &core_apiv1.UpdateDeviceRequest_Properties{

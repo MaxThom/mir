@@ -55,7 +55,7 @@ func (d *DeviceEditCmd) Run(c CLI) error {
 	defer msgBus.Close()
 
 	respList, err := core_client.PublishDeviceListRequest(msgBus, &core_apiv1.ListDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids:        d.Ids,
 			Names:      d.Names,
 			Namespaces: d.Namespaces,
@@ -174,7 +174,7 @@ func (d *DeviceApplyCmd) Run(c CLI) error {
 	var errs error
 	respDevs := []*core_apiv1.Device{}
 	for _, d := range devs {
-		req := mir_models.NewUpdateDeviceReqFromProtoDevice(&core_apiv1.Targets{
+		req := mir_models.NewUpdateDeviceReqFromProtoDevice(&core_apiv1.DeviceTarget{
 			Names:      []string{d.GetMeta().GetName()},
 			Namespaces: []string{d.GetMeta().GetNamespace()},
 		}, d)
@@ -256,7 +256,7 @@ func (d *DeviceMergeCmd) Run(c CLI) error {
 	var errs error
 	respDevs := []*core_apiv1.Device{}
 	for _, de := range devs {
-		req := mir_models.NewUpdateDeviceReqFromDeviceWithTarget(mir_models.Targets{
+		req := mir_models.NewUpdateDeviceReqFromDeviceWithTarget(mir_models.DeviceTarget{
 			Ids:        d.Ids,
 			Names:      d.Names,
 			Namespaces: d.Namespaces,

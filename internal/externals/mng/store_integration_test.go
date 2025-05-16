@@ -10,15 +10,14 @@ import (
 
 	"github.com/maxthom/mir/internal/libs/jsonyaml"
 	"github.com/maxthom/mir/internal/libs/test_utils"
-	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/surrealdb/surrealdb.go"
 	"gotest.tools/assert"
 )
 
-var log = test_utils.TestLogger("eventstore")
+var log = test_utils.TestLogger("mirstore")
 var db *surrealdb.DB
-var eventStore *surrealMirStore
+var mirStore *surrealMirStore
 
 func TestMain(m *testing.M) {
 	// Setup
@@ -26,23 +25,23 @@ func TestMain(m *testing.M) {
 	var err error
 
 	db = test_utils.SetupSurrealDbConnsPanic("ws://127.0.0.1:8000/rpc", "root", "root", "global", "mir_testing")
-	eventStore = NewSurrealMirStore(db)
+	mirStore = NewSurrealMirStore(db)
 	fmt.Println(" -> db")
 	time.Sleep(1 * time.Second)
 	// Clear data
-	if _, err = eventStore.DeleteEvent(mir_models.EventTarget{
+	if _, err = mirStore.DeleteEvent(mir_models.EventTarget{
 		ObjectTarget: mir_models.ObjectTarget{
 			Labels: map[string]string{
-				"eventstore": "testing",
+				"mirstore": "testing",
 			},
 		},
 	}); err != nil {
 		panic(err)
 	}
-	if _, err = eventStore.DeleteDevice(&core_apiv1.DeleteDeviceRequest{
-		Targets: &core_apiv1.Targets{
+	if _, err = mirStore.DeleteDevice(mir_models.DeviceTarget{
+		ObjectTarget: mir_models.ObjectTarget{
 			Labels: map[string]string{
-				"eventstore": "testing",
+				"mirstore": "testing",
 			},
 		},
 	}); err != nil {
@@ -55,30 +54,1362 @@ func TestMain(m *testing.M) {
 
 	// Teardown
 	fmt.Println("Test Teardown")
-	if _, err = eventStore.DeleteEvent(mir_models.EventTarget{
-		ObjectTarget: mir_models.ObjectTarget{
-			Labels: map[string]string{
-				"eventstore": "testing",
-			},
-		},
-	}); err != nil {
-		panic(err)
-	}
-	if _, err = eventStore.DeleteDevice(&core_apiv1.DeleteDeviceRequest{
-		Targets: &core_apiv1.Targets{
-			Labels: map[string]string{
-				"eventstore": "testing",
-			},
-		},
-	}); err != nil {
-		panic(err)
-	}
+	// if _, err = mirStore.DeleteEvent(mir_models.EventTarget{
+	// 	ObjectTarget: mir_models.ObjectTarget{
+	// 		Labels: map[string]string{
+	// 			"mirstore": "testing",
+	// 		},
+	// 	},
+	// }); err != nil {
+	// 	panic(err)
+	// }
+	// if _, err = mirStore.DeleteDevice(mir_models.DeviceTarget{
+	// 	ObjectTarget: mir_models.ObjectTarget{
+	// 		Labels: map[string]string{
+	// 			"mirstore": "testing",
+	// 		},
+	// 	},
+	// }); err != nil {
+	// 	panic(err)
+	// }
 	fmt.Println(" -> cleaned up")
 	time.Sleep(1 * time.Second)
 	db.Close()
 	fmt.Println(" -> db")
 
 	os.Exit(exitVal)
+}
+
+func TestPublishStoreDeviceCreate(t *testing.T) {
+	// Arrange
+	d := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Name:      "create_dev",
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+		Annotations: map[string]string{
+			"info": "supra",
+		},
+	}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: "create_dev",
+		Disabled: boolPtr(true),
+	})
+	// Act
+	dResp, err := mirStore.CreateDevice(d)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, d.ApiVersion, dResp.ApiVersion)
+	assert.Equal(t, d.Kind, dResp.Kind)
+	assert.Equal(t, d.Meta.Name, dResp.Meta.Name)
+	assert.Equal(t, d.Meta.Namespace, dResp.Meta.Namespace)
+	assert.Equal(t, d.Meta.Labels["mirstore"], dResp.Meta.Labels["mirstore"])
+	assert.Equal(t, d.Meta.Annotations["info"], dResp.Meta.Annotations["info"])
+	assert.Equal(t, d.Spec.DeviceId, dResp.Spec.DeviceId)
+	assert.Equal(t, *d.Spec.Disabled, *dResp.Spec.Disabled)
+}
+
+func TestPublishStoreDeviceCreateMissingNameNamespace(t *testing.T) {
+	// Arrange
+	d := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+	}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: "create_dev_missing_namens",
+	})
+	// Act
+	dResp, err := mirStore.CreateDevice(d)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, d.ApiVersion, dResp.ApiVersion)
+	assert.Equal(t, d.Kind, dResp.Kind)
+	assert.Equal(t, d.Spec.DeviceId, dResp.Meta.Name)
+	assert.Equal(t, "default", dResp.Meta.Namespace)
+}
+
+func TestPublishStoreDeviceCreateMissingId(t *testing.T) {
+	// Arrange
+	d := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+	}).WithSpec(mir_models.DeviceSpec{})
+	// Act
+	_, err := mirStore.CreateDevice(d)
+
+	// Assert
+	assert.ErrorContains(t, err, "device id is missing")
+}
+
+func TestPublishStoreDeviceCreateAlreadyExistId(t *testing.T) {
+	// Arrange
+	d0 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+	}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: "create_dev_already_exist_id",
+	})
+	d1 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Namespace: "mirstore2",
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+	}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: "create_dev_already_exist_id",
+	})
+	// Act
+	_, err := mirStore.CreateDevice(d0)
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = mirStore.CreateDevice(d1)
+
+	// Assert
+	assert.ErrorContains(t, err, "device create_dev_already_exist_id/mirstore2 with deviceId create_dev_already_exist_id already exist")
+}
+
+func TestPublishStoreDeviceCreateAlreadyExistNameNs(t *testing.T) {
+	// Arrange
+	d0 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Name:      "already_exist_name",
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+	}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: "create_dev_already_exist_name_0",
+	})
+	d1 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Name:      "already_exist_name",
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+	}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: "create_dev_already_exist_name_1",
+	})
+	// Act
+	_, err := mirStore.CreateDevice(d0)
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = mirStore.CreateDevice(d1)
+
+	// Assert
+	assert.ErrorContains(t, err, "device already_exist_name/mirstore with deviceId create_dev_already_exist_name_1 already exist")
+}
+
+func TestPublishStoreDeviceCreateSameNameDifferentNs(t *testing.T) {
+	// Arrange
+	d0 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Name:      "same_name_diff_ns",
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+	}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: "same_name_diff_ns_0",
+	})
+	d1 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Name:      "same_name_diff_ns",
+		Namespace: "mirstore2",
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+	}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: "same_name_diff_ns_1",
+	})
+	// Act
+	_, err0 := mirStore.CreateDevice(d0)
+	_, err1 := mirStore.CreateDevice(d1)
+
+	// Assert
+	assert.NilError(t, err0)
+	assert.NilError(t, err1)
+}
+
+func TestPublishStoreDeviceListByIds(t *testing.T) {
+	// Arrange
+	ids := []string{"list_dev_0", "list_dev_1"}
+	d0 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+		Annotations: map[string]string{
+			"info": "supra",
+		},
+	}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: ids[0],
+	})
+	d1 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+		Annotations: map[string]string{
+			"info": "supra",
+		},
+	}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: ids[1],
+	})
+	l := mir_models.DeviceTarget{
+		Ids: ids,
+	}
+
+	// Act
+	_, err := mirStore.CreateDevice(d0)
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = mirStore.CreateDevice(d1)
+	if err != nil {
+		t.Error(err)
+	}
+	lResp, err := mirStore.ListDevice(l, false)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, len(lResp), 2)
+}
+
+func TestPublishStoreDeviceListByName(t *testing.T) {
+	// Arrange
+	ids := []string{"list_dev_0_name", "list_dev_1_name", "list_dev_2_name"}
+	d0 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+		Annotations: map[string]string{
+			"info": "supra",
+		},
+	}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: ids[0],
+	})
+	d1 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+		Annotations: map[string]string{
+			"info": "supra",
+		},
+	}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: ids[1],
+	})
+	d2 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+		Annotations: map[string]string{
+			"info": "supra",
+		},
+	}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: ids[2],
+	})
+	l := mir_models.DeviceTarget{
+		ObjectTarget: mir_models.ObjectTarget{
+			Names: ids[:2],
+		},
+	}
+
+	// Act
+	_, err := mirStore.CreateDevice(d0)
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = mirStore.CreateDevice(d1)
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = mirStore.CreateDevice(d2)
+	if err != nil {
+		t.Error(err)
+	}
+	lResp, err := mirStore.ListDevice(l, false)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, len(lResp), 2)
+}
+
+func TestPublishStoreDeviceListByLabel(t *testing.T) {
+	// Arrange
+	ids := []string{"list_dev_0_lbl", "list_dev_1_lbl", "list_dev_2_lbl"}
+	d0 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+			"lbl":      "yiha",
+		},
+		Annotations: map[string]string{
+			"info": "supra",
+		},
+	}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: ids[0],
+	})
+	d1 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+			"lbl":      "yiha",
+		},
+		Annotations: map[string]string{
+			"info": "supra",
+		},
+	}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: ids[1],
+	})
+	d2 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+		Annotations: map[string]string{
+			"info": "supra",
+		},
+	}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: ids[2],
+	})
+	l := mir_models.DeviceTarget{
+		ObjectTarget: mir_models.ObjectTarget{
+			Labels: map[string]string{
+				"lbl": "yiha",
+			},
+		},
+	}
+
+	// Act
+	_, err := mirStore.CreateDevice(d0)
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = mirStore.CreateDevice(d1)
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = mirStore.CreateDevice(d2)
+	if err != nil {
+		t.Error(err)
+	}
+	lResp, err := mirStore.ListDevice(l, false)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, len(lResp), 2)
+}
+
+func TestPublishStoreDeviceListByNamespace(t *testing.T) {
+	// Arrange
+	ids := []string{"list_dev_0_namespace", "list_dev_1_namespace"}
+	d0 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Namespace: "mirstore_list",
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+		Annotations: map[string]string{
+			"info": "supra",
+		},
+	}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: ids[0],
+	})
+	d1 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Namespace: "mirstore_list",
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+		Annotations: map[string]string{
+			"info": "supra",
+		},
+	}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: ids[1],
+	})
+	l := mir_models.DeviceTarget{
+		ObjectTarget: mir_models.ObjectTarget{
+			Namespaces: []string{"mirstore_list"},
+		},
+	}
+
+	// Act
+	_, err := mirStore.CreateDevice(d0)
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = mirStore.CreateDevice(d1)
+	if err != nil {
+		t.Error(err)
+	}
+	lResp, err := mirStore.ListDevice(l, false)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, len(lResp), 2)
+}
+
+func TestPublishStoreDeviceDeleteByIds(t *testing.T) {
+	// Arrange
+	ids := []string{"del_dev_0", "del_dev_1"}
+	d0 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+		Annotations: map[string]string{
+			"info": "supra",
+		},
+	}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: ids[0],
+	})
+	d1 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+		Annotations: map[string]string{
+			"info": "supra",
+		},
+	}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: ids[1],
+	})
+	l := mir_models.DeviceTarget{
+		Ids: ids,
+	}
+
+	// Act
+	_, err := mirStore.CreateDevice(d0)
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = mirStore.CreateDevice(d1)
+	if err != nil {
+		t.Error(err)
+	}
+	dResp, err := mirStore.DeleteDevice(l)
+	if err != nil {
+		t.Error(err)
+	}
+	lResp, err := mirStore.ListDevice(l, false)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, len(dResp), 2)
+	assert.Equal(t, len(lResp), 0)
+}
+
+func TestPublishStoreDeviceDeleteByName(t *testing.T) {
+	// Arrange
+	ids := []string{"del_dev_0_name", "del_dev_1_name", "del_dev_2_name"}
+	d0 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+		Annotations: map[string]string{
+			"info": "supra",
+		},
+	}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: ids[0],
+	})
+	d1 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+		Annotations: map[string]string{
+			"info": "supra",
+		},
+	}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: ids[1],
+	})
+	d2 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+		Annotations: map[string]string{
+			"info": "supra",
+		},
+	}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: ids[2],
+	})
+	l := mir_models.DeviceTarget{
+		ObjectTarget: mir_models.ObjectTarget{
+			Names: ids[:2],
+		},
+	}
+
+	// Act
+	_, err := mirStore.CreateDevice(d0)
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = mirStore.CreateDevice(d1)
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = mirStore.CreateDevice(d2)
+	if err != nil {
+		t.Error(err)
+	}
+	dResp, err := mirStore.DeleteDevice(l)
+	if err != nil {
+		t.Error(err)
+	}
+	lResp, err := mirStore.ListDevice(l, false)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, len(dResp), 2)
+	assert.Equal(t, len(lResp), 0)
+}
+
+func TestPublishStoreDeviceDeleteByLabel(t *testing.T) {
+	// Arrange
+	ids := []string{"del_dev_0_lbl", "del_dev_1_lbl", "del_dev_2_lbl"}
+	d0 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+			"lbl":      "yiha_del",
+		},
+		Annotations: map[string]string{
+			"info": "supra",
+		},
+	}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: ids[0],
+	})
+	d1 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+			"lbl":      "yiha_del",
+		},
+		Annotations: map[string]string{
+			"info": "supra",
+		},
+	}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: ids[1],
+	})
+	d2 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+		Annotations: map[string]string{
+			"info": "supra",
+		},
+	}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: ids[2],
+	})
+	l := mir_models.DeviceTarget{
+		ObjectTarget: mir_models.ObjectTarget{
+			Labels: map[string]string{
+				"lbl": "yiha_del",
+			},
+		},
+	}
+
+	// Act
+	_, err := mirStore.CreateDevice(d0)
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = mirStore.CreateDevice(d1)
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = mirStore.CreateDevice(d2)
+	if err != nil {
+		t.Error(err)
+	}
+	dResp, err := mirStore.DeleteDevice(l)
+	if err != nil {
+		t.Error(err)
+	}
+	lResp, err := mirStore.ListDevice(l, false)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, len(dResp), 2)
+	assert.Equal(t, len(lResp), 0)
+}
+
+func TestPublishStoreDeviceDeleteByNamespace(t *testing.T) {
+	// Arrange
+	ids := []string{"del_dev_0_namespace", "del_dev_1_namespace"}
+	d0 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Namespace: "mirstore_del",
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+		Annotations: map[string]string{
+			"info": "supra",
+		},
+	}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: ids[0],
+	})
+	d1 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Namespace: "mirstore_del",
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+		Annotations: map[string]string{
+			"info": "supra",
+		},
+	}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: ids[1],
+	})
+	l := mir_models.DeviceTarget{
+		ObjectTarget: mir_models.ObjectTarget{
+			Namespaces: []string{"mirstore_del"},
+		},
+	}
+
+	// Act
+	_, err := mirStore.CreateDevice(d0)
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = mirStore.CreateDevice(d1)
+	if err != nil {
+		t.Error(err)
+	}
+	dResp, err := mirStore.DeleteDevice(l)
+	if err != nil {
+		t.Error(err)
+	}
+	lResp, err := mirStore.ListDevice(l, false)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, len(dResp), 2)
+	assert.Equal(t, len(lResp), 0)
+}
+
+func TestPublishStoreDeviceUpdateMeta(t *testing.T) {
+	// Arrange
+	d := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Name:      "update_dev",
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+			"test":     "hotdog",
+			"test2":    "ham",
+		},
+		Annotations: map[string]string{
+			"info": "supra",
+		},
+	}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: "update_dev",
+		Disabled: boolPtr(true),
+	})
+	// Act
+	_, err := mirStore.CreateDevice(d)
+	if err != nil {
+		t.Error(err)
+	}
+	d.Meta.Name = "update_dev_post"
+	d.Meta.Namespace = "mirstore_post"
+	d.Meta.Labels["test"] = "pizza"
+	d.Meta.Labels["test2"] = ""
+	d.Meta.Labels["food"] = "gross"
+	d.Meta.Annotations["food"] = "gross"
+	d.Meta.Annotations["info"] = ""
+	uResp, err := mirStore.UpdateDevice(d.ToTarget(), d)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, d.ApiVersion, uResp[0].ApiVersion)
+	assert.Equal(t, d.Kind, uResp[0].Kind)
+	assert.Equal(t, d.Meta.Name, uResp[0].Meta.Name)
+	assert.Equal(t, d.Meta.Namespace, uResp[0].Meta.Namespace)
+	assert.Equal(t, d.Meta.Labels["mirstore"], uResp[0].Meta.Labels["mirstore"])
+	assert.Equal(t, d.Meta.Labels["test"], uResp[0].Meta.Labels["test"])
+	assert.Equal(t, d.Meta.Labels["food"], uResp[0].Meta.Labels["food"])
+	_, ok := uResp[0].Meta.Labels["test2"]
+	assert.Equal(t, false, ok)
+	assert.Equal(t, d.Meta.Annotations["food"], uResp[0].Meta.Annotations["food"])
+	_, ok = uResp[0].Meta.Annotations["info"]
+	assert.Equal(t, false, ok)
+}
+
+func TestPublishStoreDeviceUpdateSpec(t *testing.T) {
+	// Arrange
+	d := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Name:      "update_dev_spec",
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+			"test":     "hotdog",
+			"test2":    "ham",
+		},
+		Annotations: map[string]string{
+			"info": "supra",
+		},
+	}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: "update_dev_spec",
+		Disabled: boolPtr(true),
+	})
+	dUpd := mir_models.NewDevice().WithSpec(mir_models.DeviceSpec{
+		DeviceId: "bob",
+		Disabled: boolPtr(false),
+	})
+	// Act
+	_, err := mirStore.CreateDevice(d)
+	if err != nil {
+		t.Error(err)
+	}
+	uResp, err := mirStore.UpdateDevice(d.ToTarget(), dUpd)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, "bob", uResp[0].Spec.DeviceId)
+	assert.Equal(t, false, *uResp[0].Spec.Disabled)
+}
+
+func TestPublishStoreDeviceUpdateProps(t *testing.T) {
+	// Arrange
+	d := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Name:      "update_dev_props",
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+	}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: "update_dev_props",
+	})
+	dUpd := mir_models.NewDevice()
+	dUpd.Properties.Desired = map[string]any{
+		"test": "pizza",
+		"test2": map[string]any{
+			"inner": true,
+		},
+	}
+	dUpd.Properties.Reported = map[string]any{
+		"test": "pizza",
+		"test2": map[string]any{
+			"inner": []int{1, 2, 3},
+		},
+	}
+	dUpd2 := mir_models.NewDevice()
+	dUpd2.Properties.Desired = map[string]any{
+		"test":  "bob",
+		"test2": nil,
+		"test3": "bobby",
+	}
+	dUpd2.Properties.Reported = map[string]any{
+		"test":  "bob",
+		"test3": "bobby",
+		"test2": map[string]any{
+			"inner": []int{1, 2, 3, 4, 5},
+		},
+	}
+
+	// Act
+	_, err := mirStore.CreateDevice(d)
+	if err != nil {
+		t.Error(err)
+	}
+	uResp1, err := mirStore.UpdateDevice(d.ToTarget(), dUpd)
+	if err != nil {
+		t.Error(err)
+	}
+	uResp2, err := mirStore.UpdateDevice(d.ToTarget(), dUpd2)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, uResp1[0].Properties.Desired["test"], "pizza")
+	assert.Equal(t, uResp1[0].Properties.Desired["test2"].(map[string]any)["inner"], true)
+	assert.Equal(t, uResp2[0].Properties.Desired["test"], "bob")
+	assert.Equal(t, uResp2[0].Properties.Desired["test3"], "bobby")
+	_, ok := uResp2[0].Properties.Desired["test2"]
+	assert.Equal(t, false, ok)
+
+	assert.Equal(t, uResp1[0].Properties.Reported["test"], "pizza")
+	assert.Equal(t, len(uResp1[0].Properties.Reported["test2"].(map[string]any)["inner"].([]any)), 3)
+	assert.Equal(t, uResp2[0].Properties.Reported["test"], "bob")
+	assert.Equal(t, uResp2[0].Properties.Reported["test3"], "bobby")
+	assert.Equal(t, len(uResp2[0].Properties.Reported["test2"].(map[string]any)["inner"].([]any)), 5)
+}
+
+func TestPublishStoreDeviceUpdateStatus(t *testing.T) {
+	// Arrange
+	d := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Name:      "update_dev_st",
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+	}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: "update_dev_st",
+	})
+	dUpd := mir_models.NewDevice().WithStatus(mir_models.DeviceStatus{
+		Online:         boolPtr(true),
+		LastHearthbeat: timePtr(time.Date(1992, 10, 14, 14, 0, 0, 0, time.UTC)),
+		Schema: mir_models.Schema{
+			CompressedSchema: []byte{0x12},
+			PackageNames:     []string{"bob"},
+			LastSchemaFetch:  timePtr(time.Date(1992, 10, 14, 14, 0, 0, 0, time.UTC)),
+		},
+		Properties: mir_models.PropertiesTime{
+			Desired: map[string]time.Time{
+				"test": time.Date(1992, 10, 14, 14, 0, 0, 0, time.UTC),
+			},
+			Reported: map[string]time.Time{
+				"test": time.Date(1992, 10, 14, 14, 0, 0, 0, time.UTC),
+			},
+		},
+	})
+	dUpd2 := mir_models.NewDevice().WithStatus(mir_models.DeviceStatus{
+		Properties: mir_models.PropertiesTime{
+			Desired: map[string]time.Time{
+				"test": {},
+			},
+			Reported: map[string]time.Time{
+				"test": {},
+			},
+		},
+	})
+
+	// Act
+	_, err := mirStore.CreateDevice(d)
+	if err != nil {
+		t.Error(err)
+	}
+	uResp, err := mirStore.UpdateDevice(d.ToTarget(), dUpd)
+	if err != nil {
+		t.Error(err)
+	}
+	uResp1, err := mirStore.UpdateDevice(d.ToTarget(), dUpd2)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, *dUpd.Status.LastHearthbeat, *uResp[0].Status.LastHearthbeat)
+	assert.Equal(t, *dUpd.Status.Online, *uResp[0].Status.Online)
+	assert.Equal(t, len(dUpd.Status.Schema.CompressedSchema), len(uResp[0].Status.Schema.CompressedSchema))
+	assert.Equal(t, dUpd.Status.Schema.PackageNames[0], uResp[0].Status.Schema.PackageNames[0])
+	assert.Equal(t, *dUpd.Status.Schema.LastSchemaFetch, *uResp[0].Status.Schema.LastSchemaFetch)
+	assert.Equal(t, dUpd.Status.Properties.Desired["test"], uResp[0].Status.Properties.Desired["test"])
+	assert.Equal(t, dUpd.Status.Properties.Reported["test"], uResp[0].Status.Properties.Reported["test"])
+	_, ok := uResp1[0].Status.Properties.Desired["test"]
+	assert.Equal(t, false, ok)
+	_, ok = uResp1[0].Status.Properties.Reported["test"]
+	assert.Equal(t, false, ok)
+}
+
+func TestPublishStoreDeviceUpdateMetaNameAlreadyExist(t *testing.T) {
+	// Arrange
+	d0 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Name:      "update_dev_al0",
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+			"test":     "hotdog",
+			"test2":    "ham",
+		},
+		Annotations: map[string]string{
+			"info": "supra",
+		},
+	}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: "update_dev_al0",
+		Disabled: boolPtr(true),
+	})
+	d1 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Name:      "update_dev_al1",
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+			"test":     "hotdog",
+			"test2":    "ham",
+		},
+		Annotations: map[string]string{
+			"info": "supra",
+		},
+	}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: "update_dev_al1",
+		Disabled: boolPtr(true),
+	})
+	// Act
+	_, err := mirStore.CreateDevice(d0)
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = mirStore.CreateDevice(d1)
+	if err != nil {
+		t.Error(err)
+	}
+	d0.Meta.Name = d1.Meta.Name
+	_, err = mirStore.UpdateDevice(d0.ToTarget(), d0)
+
+	// Assert
+	assert.ErrorContains(t, err, "")
+}
+
+func TestPublishStoreDeviceUpdateMetaIdAlreadyExist(t *testing.T) {
+	// Arrange
+	d0 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+			"test":     "hotdog",
+			"test2":    "ham",
+		},
+		Annotations: map[string]string{
+			"info": "supra",
+		},
+	}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: "update_dev_id0",
+		Disabled: boolPtr(true),
+	})
+	d1 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+			"test":     "hotdog",
+			"test2":    "ham",
+		},
+		Annotations: map[string]string{
+			"info": "supra",
+		},
+	}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: "update_dev_id1",
+		Disabled: boolPtr(true),
+	})
+	// Act
+	_, err := mirStore.CreateDevice(d0)
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = mirStore.CreateDevice(d1)
+	if err != nil {
+		t.Error(err)
+	}
+	d0.Spec.DeviceId = d1.Spec.DeviceId
+	_, err = mirStore.UpdateDevice(d0.ToTarget(), d0)
+
+	// Assert
+	assert.ErrorContains(t, err, "")
+}
+
+func TestPublishStoreDeviceUpdateMetaMultipleOnlyNamespace(t *testing.T) {
+	// Arrange
+	d0 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Name:      "update_dev_id0_onlyname",
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+			"test":     "hotdog",
+			"test2":    "ham",
+		},
+		Annotations: map[string]string{
+			"info": "supra",
+		},
+	}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: "update_dev_id0_onlyname_1",
+		Disabled: boolPtr(true),
+	})
+	d1 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Name:      "update_dev_id0_onlyname",
+		Namespace: "mirstore2",
+		Labels: map[string]string{
+			"mirstore": "testing",
+			"test":     "hotdog",
+			"test2":    "ham",
+		},
+		Annotations: map[string]string{
+			"info": "supra",
+		},
+	}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: "update_dev_id0_onlyname_2",
+		Disabled: boolPtr(true),
+	})
+	d2 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Namespace: "mirstore3",
+	}) // Act
+	_, err := mirStore.CreateDevice(d0)
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = mirStore.CreateDevice(d1)
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = mirStore.UpdateDevice(mir_models.ToTargets(d0, d1), d2)
+
+	// Assert
+	assert.ErrorContains(t, err, "cannot update device as multiple device will have the same name 'update_dev_id0_onlyname' in namespace 'mirstore3'")
+}
+
+func TestPublishStoreDeviceUpdateMetaMultipleOnlyName(t *testing.T) {
+	// Arrange
+	d0 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Name:      "update_dev_id0_onlynamens",
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+			"test":     "hotdog",
+			"test2":    "ham",
+		},
+		Annotations: map[string]string{
+			"info": "supra",
+		},
+	}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: "update_dev_id0_onlynamens_1",
+		Disabled: boolPtr(true),
+	})
+	d1 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Name:      "update_dev_id1_onlynamens",
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+			"test":     "hotdog",
+			"test2":    "ham",
+		},
+		Annotations: map[string]string{
+			"info": "supra",
+		},
+	}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: "update_dev_id0_onlynamens_2",
+		Disabled: boolPtr(true),
+	})
+	d2 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Name: "clash_name_b",
+	}) // Act
+	_, err := mirStore.CreateDevice(d0)
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = mirStore.CreateDevice(d1)
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = mirStore.UpdateDevice(mir_models.ToTargets(d0, d1), d2)
+
+	// Assert
+	assert.ErrorContains(t, err, "cannot update device as multiple device will have the same name 'clash_name_b' in namespace 'mirstore'")
+}
+
+func TestMergeDeviceBasic(t *testing.T) {
+	// Arrange
+	device := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Name:      "merge_device_basic",
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+		Annotations: map[string]string{
+			"info": "original",
+		},
+	}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: "merge_device_basic",
+		Disabled: boolPtr(false),
+	})
+
+	// Create initial device
+	_, err := mirStore.CreateDevice(device)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Prepare merge patch
+	mergePatch := map[string]interface{}{
+		"meta": map[string]interface{}{
+			"labels": map[string]string{
+				"test":     "updated",
+				"new_test": "added",
+			},
+			"annotations": map[string]string{
+				"info":     "updated",
+				"new_info": "added",
+			},
+		},
+	}
+	patchBytes, err := json.Marshal(mergePatch)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Act
+	mergedDevices, err := mirStore.MergeDevice(device.ToTarget(), patchBytes, MergePatch)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, len(mergedDevices), 1)
+	assert.Equal(t, "merge_device_basic", mergedDevices[0].Meta.Name)
+	assert.Equal(t, "mirstore", mergedDevices[0].Meta.Namespace)
+	assert.Equal(t, "updated", mergedDevices[0].Meta.Labels["test"])
+	assert.Equal(t, "added", mergedDevices[0].Meta.Labels["new_test"])
+	assert.Equal(t, "updated", mergedDevices[0].Meta.Annotations["info"])
+	assert.Equal(t, "added", mergedDevices[0].Meta.Annotations["new_info"])
+	assert.Equal(t, "merge_device_basic", mergedDevices[0].Spec.DeviceId)
+	assert.Equal(t, false, *mergedDevices[0].Spec.Disabled)
+}
+
+func TestMergeDeviceSpec(t *testing.T) {
+	// Arrange
+	device := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Name:      "merge_device_spec",
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+	}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: "merge_device_spec",
+		Disabled: boolPtr(false),
+	})
+
+	// Create initial device
+	_, err := mirStore.CreateDevice(device)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Prepare merge patch
+	mergePatch := map[string]interface{}{
+		"spec": map[string]interface{}{
+			"disabled": true,
+		},
+	}
+	patchBytes, err := json.Marshal(mergePatch)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Act
+	mergedDevices, err := mirStore.MergeDevice(device.ToTarget(), patchBytes, MergePatch)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, len(mergedDevices), 1)
+	assert.Equal(t, "merge_device_spec", mergedDevices[0].Meta.Name)
+	assert.Equal(t, true, *mergedDevices[0].Spec.Disabled)
+}
+
+func TestMergeDeviceProperties(t *testing.T) {
+	// Arrange
+	device := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Name:      "merge_device_props",
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+	}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: "merge_device_props",
+	})
+
+	initialProps := mir_models.DeviceProperties{
+		Desired: map[string]any{
+			"config": map[string]any{
+				"feature1": true,
+				"feature2": "enabled",
+				"nested": map[string]any{
+					"setting1": 123,
+					"setting2": "value",
+				},
+			},
+		},
+		Reported: map[string]any{
+			"status": "online",
+			"metrics": map[string]any{
+				"memory": 1024,
+				"cpu":    0.5,
+			},
+		},
+	}
+	device.Properties = initialProps
+
+	// Create initial device
+	_, err := mirStore.CreateDevice(device)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Prepare merge patch
+	mergePatch := map[string]interface{}{
+		"properties": map[string]interface{}{
+			"desired": map[string]interface{}{
+				"config": map[string]interface{}{
+					"feature2": "disabled",
+					"feature3": "new",
+					"nested": map[string]interface{}{
+						"setting1": 456,
+						"setting3": "new",
+					},
+				},
+			},
+			"reported": map[string]interface{}{
+				"metrics": map[string]interface{}{
+					"memory": 2048,
+					"disk":   75,
+				},
+			},
+		},
+	}
+	patchBytes, err := json.Marshal(mergePatch)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Act
+	mergedDevices, err := mirStore.MergeDevice(device.ToTarget(), patchBytes, MergePatch)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, len(mergedDevices), 1)
+
+	// Check desired properties
+	config := mergedDevices[0].Properties.Desired["config"].(map[string]any)
+	assert.Equal(t, true, config["feature1"])
+	assert.Equal(t, "disabled", config["feature2"])
+	assert.Equal(t, "new", config["feature3"])
+
+	nested := config["nested"].(map[string]any)
+	assert.Equal(t, float64(456), nested["setting1"])
+	assert.Equal(t, "value", nested["setting2"])
+	assert.Equal(t, "new", nested["setting3"])
+
+	// Check reported properties
+	assert.Equal(t, "online", mergedDevices[0].Properties.Reported["status"])
+
+	metrics := mergedDevices[0].Properties.Reported["metrics"].(map[string]any)
+	assert.Equal(t, float64(2048), metrics["memory"])
+	assert.Equal(t, float64(0.5), metrics["cpu"])
+	assert.Equal(t, float64(75), metrics["disk"])
+}
+
+func TestMergeDeviceInvalidJson(t *testing.T) {
+	// Arrange
+	device := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Name:      "merge_device_invalid",
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+	}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: "merge_device_invalid",
+	})
+
+	// Create initial device
+	_, err := mirStore.CreateDevice(device)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Prepare invalid JSON patch
+	invalidJson := []byte(`{"meta": {"name": "new_name", "invalid_field": true}`)
+
+	// Act
+	_, err = mirStore.MergeDevice(device.ToTarget(), invalidJson, MergePatch)
+
+	// Assert
+	assert.ErrorContains(t, err, "unknown fields in json patch")
+}
+
+func TestMergeDeviceNoTarget(t *testing.T) {
+	// Arrange
+	emptyTarget := mir_models.DeviceTarget{}
+	patch := []byte(`{"meta": {"labels": {"test": "value"}}}`)
+
+	// Act
+	_, err := mirStore.MergeDevice(emptyTarget, patch, MergePatch)
+
+	// Assert
+	assert.ErrorContains(t, err, mir_models.ErrorNoDeviceTargetProvided.Error())
+}
+
+func TestMergeDeviceUniqueConstraintViolation(t *testing.T) {
+	// Arrange
+	// Create first device
+	device1 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Name:      "merge_device_unique1",
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+	}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: "merge_device_unique1",
+	})
+
+	// Create second device
+	device2 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+		Name:      "merge_device_unique2",
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+	}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: "merge_device_unique2",
+	})
+
+	// Create both devices
+	_, err := mirStore.CreateDevice(device1)
+	if err != nil {
+		t.Error(err)
+	}
+
+	_, err = mirStore.CreateDevice(device2)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Prepare patch that would violate uniqueness constraint
+	// by changing device2's name to device1's name
+	mergePatch := map[string]interface{}{
+		"meta": map[string]interface{}{
+			"name": "merge_device_unique1",
+		},
+	}
+	patchBytes, err := json.Marshal(mergePatch)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Act
+	_, err = mirStore.MergeDevice(device2.ToTarget(), patchBytes, MergePatch)
+
+	// Assert
+	assert.ErrorContains(t, err, "cannot update device as name 'merge_device_unique1' is already in use in namespace 'mirstore'")
 }
 
 func TestPublishEventStoreCreateRequest(t *testing.T) {
@@ -98,7 +1429,7 @@ func TestPublishEventStoreCreateRequest(t *testing.T) {
 		Name:      "create_event",
 		Namespace: "store_test",
 		Labels: map[string]string{
-			"eventstore": "testing",
+			"mirstore": "testing",
 		},
 	}).WithSpec(mir_models.EventSpec{
 		Type:    mir_models.EventTypeNormal,
@@ -120,7 +1451,7 @@ func TestPublishEventStoreCreateRequest(t *testing.T) {
 	})
 
 	// Act
-	mResp, err := eventStore.CreateEvent(m)
+	mResp, err := mirStore.CreateEvent(m)
 	if err != nil {
 		t.Error(err)
 	}
@@ -135,22 +1466,22 @@ func TestPublishEventStoreNotUnique(t *testing.T) {
 		Name:      "create_event_unique",
 		Namespace: "store_test",
 		Labels: map[string]string{
-			"eventstore": "testing",
+			"mirstore": "testing",
 		},
 	})
 	m2 := mir_models.NewEvent().WithMeta(mir_models.Meta{
 		Name:      "create_event_unique",
 		Namespace: "store_test",
 		Labels: map[string]string{
-			"eventstore": "testing",
+			"mirstore": "testing",
 		},
 	})
 	// Act
-	mResp, err := eventStore.CreateEvent(m)
+	mResp, err := mirStore.CreateEvent(m)
 	if err != nil {
 		t.Error(err)
 	}
-	_, err = eventStore.CreateEvent(m2)
+	_, err = mirStore.CreateEvent(m2)
 
 	// Assert
 	assert.Equal(t, mResp.Meta.Name, m.Meta.Name)
@@ -169,26 +1500,26 @@ func TestPublishEventStoreListName(t *testing.T) {
 		Name:      "list_event_1",
 		Namespace: "store_test",
 		Labels: map[string]string{
-			"eventstore": "testing",
+			"mirstore": "testing",
 		},
 	})
 	m2 := mir_models.NewEvent().WithMeta(mir_models.Meta{
 		Name:      "list_event_2",
 		Namespace: "store_test",
 		Labels: map[string]string{
-			"eventstore": "testing",
+			"mirstore": "testing",
 		},
 	})
 	// Act
-	mResp, err := eventStore.CreateEvent(m)
+	mResp, err := mirStore.CreateEvent(m)
 	if err != nil {
 		t.Error(err)
 	}
-	mResp2, err := eventStore.CreateEvent(m2)
+	mResp2, err := mirStore.CreateEvent(m2)
 	if err != nil {
 		t.Error(err)
 	}
-	lResp, err := eventStore.ListEvent(tar)
+	lResp, err := mirStore.ListEvent(tar)
 	if err != nil {
 		t.Error(err)
 	}
@@ -212,26 +1543,26 @@ func TestPublishEventStoreListNamespace(t *testing.T) {
 		Name:      "list_event_1_ns",
 		Namespace: "events_list_test",
 		Labels: map[string]string{
-			"eventstore": "testing",
+			"mirstore": "testing",
 		},
 	})
 	m2 := mir_models.NewEvent().WithMeta(mir_models.Meta{
 		Name:      "list_event_2_ns",
 		Namespace: "events_list_test",
 		Labels: map[string]string{
-			"eventstore": "testing",
+			"mirstore": "testing",
 		},
 	})
 	// Act
-	mResp, err := eventStore.CreateEvent(m)
+	mResp, err := mirStore.CreateEvent(m)
 	if err != nil {
 		t.Error(err)
 	}
-	mResp2, err := eventStore.CreateEvent(m2)
+	mResp2, err := mirStore.CreateEvent(m2)
 	if err != nil {
 		t.Error(err)
 	}
-	lResp, err := eventStore.ListEvent(tar)
+	lResp, err := mirStore.ListEvent(tar)
 	if err != nil {
 		t.Error(err)
 	}
@@ -255,28 +1586,28 @@ func TestPublishEventStoreListLabels(t *testing.T) {
 		Name:      "list_event_1_lbl",
 		Namespace: "store_test",
 		Labels: map[string]string{
-			"eventstore": "testing",
-			"test":       "list_labels",
+			"mirstore": "testing",
+			"test":     "list_labels",
 		},
 	})
 	m2 := mir_models.NewEvent().WithMeta(mir_models.Meta{
 		Name:      "list_event_2_lbl",
 		Namespace: "store_test",
 		Labels: map[string]string{
-			"eventstore": "testing",
-			"test":       "list_labels",
+			"mirstore": "testing",
+			"test":     "list_labels",
 		},
 	})
 	// Act
-	mResp, err := eventStore.CreateEvent(m)
+	mResp, err := mirStore.CreateEvent(m)
 	if err != nil {
 		t.Error(err)
 	}
-	mResp2, err := eventStore.CreateEvent(m2)
+	mResp2, err := mirStore.CreateEvent(m2)
 	if err != nil {
 		t.Error(err)
 	}
-	lResp, err := eventStore.ListEvent(tar)
+	lResp, err := mirStore.ListEvent(tar)
 	if err != nil {
 		t.Error(err)
 	}
@@ -301,40 +1632,40 @@ func TestPublishEventStoreListLimit(t *testing.T) {
 		Name:      "list_event_1_limit",
 		Namespace: "store_test",
 		Labels: map[string]string{
-			"eventstore": "testing",
-			"test":       "list_limit",
+			"mirstore": "testing",
+			"test":     "list_limit",
 		},
 	})
 	m2 := mir_models.NewEvent().WithMeta(mir_models.Meta{
 		Name:      "list_event_2_limit",
 		Namespace: "store_test",
 		Labels: map[string]string{
-			"eventstore": "testing",
-			"test":       "list_limit",
+			"mirstore": "testing",
+			"test":     "list_limit",
 		},
 	})
 	m3 := mir_models.NewEvent().WithMeta(mir_models.Meta{
 		Name:      "list_event_3_limit",
 		Namespace: "store_test",
 		Labels: map[string]string{
-			"eventstore": "testing",
-			"test":       "list_limit",
+			"mirstore": "testing",
+			"test":     "list_limit",
 		},
 	})
 	// Act
-	mResp, err := eventStore.CreateEvent(m)
+	mResp, err := mirStore.CreateEvent(m)
 	if err != nil {
 		t.Error(err)
 	}
-	mResp2, err := eventStore.CreateEvent(m2)
+	mResp2, err := mirStore.CreateEvent(m2)
 	if err != nil {
 		t.Error(err)
 	}
-	mResp3, err := eventStore.CreateEvent(m3)
+	mResp3, err := mirStore.CreateEvent(m3)
 	if err != nil {
 		t.Error(err)
 	}
-	lResp, err := eventStore.ListEvent(tar)
+	lResp, err := mirStore.ListEvent(tar)
 	if err != nil {
 		t.Error(err)
 	}
@@ -360,8 +1691,8 @@ func TestPublishEventStoreListDateNow(t *testing.T) {
 		Name:      "list_event_1_lbl",
 		Namespace: "store_test_time",
 		Labels: map[string]string{
-			"eventstore": "testing",
-			"test":       "list_limit",
+			"mirstore": "testing",
+			"test":     "list_limit",
 		},
 	}).WithStatus(mir_models.EventStatus{
 		FirstAt: time.Date(2025, 05, 7, 13, 0, 0, 0, time.UTC),
@@ -370,8 +1701,8 @@ func TestPublishEventStoreListDateNow(t *testing.T) {
 		Name:      "list_event_2_lbl",
 		Namespace: "store_test_time",
 		Labels: map[string]string{
-			"eventstore": "testing",
-			"test":       "list_limit",
+			"mirstore": "testing",
+			"test":     "list_limit",
 		},
 	}).WithStatus(mir_models.EventStatus{
 		FirstAt: time.Date(2025, 05, 7, 12, 0, 0, 0, time.UTC),
@@ -380,27 +1711,27 @@ func TestPublishEventStoreListDateNow(t *testing.T) {
 		Name:      "list_event_3_lbl",
 		Namespace: "store_test_time",
 		Labels: map[string]string{
-			"eventstore": "testing",
-			"test":       "list_limit",
+			"mirstore": "testing",
+			"test":     "list_limit",
 		},
 	}).WithStatus(mir_models.EventStatus{
 		FirstAt: time.Date(2025, 05, 5, 0, 0, 0, 0, time.UTC),
 	})
 	// Act
-	mResp, err := eventStore.CreateEvent(m)
+	mResp, err := mirStore.CreateEvent(m)
 	if err != nil {
 		t.Error(err)
 	}
-	mResp2, err := eventStore.CreateEvent(m2)
+	mResp2, err := mirStore.CreateEvent(m2)
 	if err != nil {
 		t.Error(err)
 	}
-	mResp3, err := eventStore.CreateEvent(m3)
+	mResp3, err := mirStore.CreateEvent(m3)
 	if err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
-	lResp, err := eventStore.ListEvent(tar)
+	lResp, err := mirStore.ListEvent(tar)
 	if err != nil {
 		t.Error(err)
 	}
@@ -427,8 +1758,8 @@ func TestPublishEventStoreListDateToFrom(t *testing.T) {
 		Name:      "list_event_1_lbl",
 		Namespace: "store_test_time_to_from",
 		Labels: map[string]string{
-			"eventstore": "testing",
-			"test":       "list_limit",
+			"mirstore": "testing",
+			"test":     "list_limit",
 		},
 	}).WithStatus(mir_models.EventStatus{
 		FirstAt: time.Date(2025, 05, 7, 13, 0, 0, 0, time.UTC),
@@ -437,8 +1768,8 @@ func TestPublishEventStoreListDateToFrom(t *testing.T) {
 		Name:      "list_event_2_lbl",
 		Namespace: "store_test_time_to_from",
 		Labels: map[string]string{
-			"eventstore": "testing",
-			"test":       "list_limit",
+			"mirstore": "testing",
+			"test":     "list_limit",
 		},
 	}).WithStatus(mir_models.EventStatus{
 		FirstAt: time.Date(2025, 05, 7, 12, 0, 0, 0, time.UTC),
@@ -447,27 +1778,27 @@ func TestPublishEventStoreListDateToFrom(t *testing.T) {
 		Name:      "list_event_3_lbl",
 		Namespace: "store_test_time_to_from",
 		Labels: map[string]string{
-			"eventstore": "testing",
-			"test":       "list_limit",
+			"mirstore": "testing",
+			"test":     "list_limit",
 		},
 	}).WithStatus(mir_models.EventStatus{
 		FirstAt: time.Date(2025, 05, 5, 0, 0, 0, 0, time.UTC),
 	})
 	// Act
-	mResp, err := eventStore.CreateEvent(m)
+	mResp, err := mirStore.CreateEvent(m)
 	if err != nil {
 		t.Error(err)
 	}
-	mResp2, err := eventStore.CreateEvent(m2)
+	mResp2, err := mirStore.CreateEvent(m2)
 	if err != nil {
 		t.Error(err)
 	}
-	mResp3, err := eventStore.CreateEvent(m3)
+	mResp3, err := mirStore.CreateEvent(m3)
 	if err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
-	lResp, err := eventStore.ListEvent(tar)
+	lResp, err := mirStore.ListEvent(tar)
 	if err != nil {
 		t.Error(err)
 	}
@@ -490,30 +1821,30 @@ func TestPublishEventStoreDeleteName(t *testing.T) {
 		Name:      "delete_event_1",
 		Namespace: "store_test",
 		Labels: map[string]string{
-			"eventstore": "testing",
+			"mirstore": "testing",
 		},
 	})
 	m2 := mir_models.NewEvent().WithMeta(mir_models.Meta{
 		Name:      "delete_event_2",
 		Namespace: "store_test",
 		Labels: map[string]string{
-			"eventstore": "testing",
+			"mirstore": "testing",
 		},
 	})
 	// Act
-	mResp, err := eventStore.CreateEvent(m)
+	mResp, err := mirStore.CreateEvent(m)
 	if err != nil {
 		t.Error(err)
 	}
-	mResp2, err := eventStore.CreateEvent(m2)
+	mResp2, err := mirStore.CreateEvent(m2)
 	if err != nil {
 		t.Error(err)
 	}
-	dResp, err := eventStore.DeleteEvent(tar)
+	dResp, err := mirStore.DeleteEvent(tar)
 	if err != nil {
 		t.Error(err)
 	}
-	lResp, err := eventStore.ListEvent(tar)
+	lResp, err := mirStore.ListEvent(tar)
 	if err != nil {
 		t.Error(err)
 	}
@@ -537,30 +1868,30 @@ func TestPublishEventStoreDeleteNamespace(t *testing.T) {
 		Name:      "delete_event_1_ns",
 		Namespace: "events_delete_test",
 		Labels: map[string]string{
-			"eventstore": "testing",
+			"mirstore": "testing",
 		},
 	})
 	m2 := mir_models.NewEvent().WithMeta(mir_models.Meta{
 		Name:      "delete_event_2_ns",
 		Namespace: "events_delete_test",
 		Labels: map[string]string{
-			"eventstore": "testing",
+			"mirstore": "testing",
 		},
 	})
 	// Act
-	mResp, err := eventStore.CreateEvent(m)
+	mResp, err := mirStore.CreateEvent(m)
 	if err != nil {
 		t.Error(err)
 	}
-	mResp2, err := eventStore.CreateEvent(m2)
+	mResp2, err := mirStore.CreateEvent(m2)
 	if err != nil {
 		t.Error(err)
 	}
-	dResp, err := eventStore.DeleteEvent(tar)
+	dResp, err := mirStore.DeleteEvent(tar)
 	if err != nil {
 		t.Error(err)
 	}
-	lResp, err := eventStore.ListEvent(tar)
+	lResp, err := mirStore.ListEvent(tar)
 	if err != nil {
 		t.Error(err)
 	}
@@ -584,32 +1915,32 @@ func TestPublishEventStoreDeleteLabels(t *testing.T) {
 		Name:      "delete_event_1_lbl",
 		Namespace: "store_test",
 		Labels: map[string]string{
-			"eventstore": "testing",
-			"test":       "delete_labels",
+			"mirstore": "testing",
+			"test":     "delete_labels",
 		},
 	})
 	m2 := mir_models.NewEvent().WithMeta(mir_models.Meta{
 		Name:      "delete_event_2_lbl",
 		Namespace: "store_test",
 		Labels: map[string]string{
-			"eventstore": "testing",
-			"test":       "delete_labels",
+			"mirstore": "testing",
+			"test":     "delete_labels",
 		},
 	})
 	// Act
-	mResp, err := eventStore.CreateEvent(m)
+	mResp, err := mirStore.CreateEvent(m)
 	if err != nil {
 		t.Error(err)
 	}
-	mResp2, err := eventStore.CreateEvent(m2)
+	mResp2, err := mirStore.CreateEvent(m2)
 	if err != nil {
 		t.Error(err)
 	}
-	dResp, err := eventStore.DeleteEvent(tar)
+	dResp, err := mirStore.DeleteEvent(tar)
 	if err != nil {
 		t.Error(err)
 	}
-	lResp, err := eventStore.ListEvent(tar)
+	lResp, err := mirStore.ListEvent(tar)
 	if err != nil {
 		t.Error(err)
 	}
@@ -642,12 +1973,12 @@ func TestPublishEventStoreUpdateMetaLblAnnoRequest(t *testing.T) {
 		Name:      "update_event_meta_lbl",
 		Namespace: "store_test",
 		Labels: map[string]string{
-			"eventstore": "testing",
-			"key3":       "test",
+			"mirstore": "testing",
+			"key3":     "test",
 		},
 		Annotations: map[string]string{
-			"eventstore": "testing",
-			"key3":       "test",
+			"mirstore": "testing",
+			"key3":     "test",
 		},
 	}).WithSpec(mir_models.EventSpec{
 		Type:    mir_models.EventTypeNormal,
@@ -681,23 +2012,23 @@ func TestPublishEventStoreUpdateMetaLblAnnoRequest(t *testing.T) {
 	}
 
 	// Act
-	mResp, err := eventStore.CreateEvent(m)
+	mResp, err := mirStore.CreateEvent(m)
 	if err != nil {
 		t.Error(err)
 	}
 
-	uResp, err := eventStore.UpdateEvent(tar, upd)
+	uResp, err := mirStore.UpdateEvent(tar, upd)
 	if err != nil {
 		t.Error(err)
 	}
 
 	// Assert
 	assert.Equal(t, mResp.Meta.Name, m.Meta.Name)
-	assert.Equal(t, uResp[0].Meta.Labels["eventstore"], m.Meta.Labels["eventstore"])
+	assert.Equal(t, uResp[0].Meta.Labels["mirstore"], m.Meta.Labels["mirstore"])
 	assert.Equal(t, uResp[0].Meta.Labels["caca_mou"], *upd.Meta.Labels["caca_mou"])
 	_, ok := uResp[0].Meta.Labels["key3"]
 	assert.Equal(t, false, ok)
-	assert.Equal(t, uResp[0].Meta.Annotations["eventstore"], m.Meta.Annotations["eventstore"])
+	assert.Equal(t, uResp[0].Meta.Annotations["mirstore"], m.Meta.Annotations["mirstore"])
 	assert.Equal(t, uResp[0].Meta.Annotations["caca_mou"], *upd.Meta.Annotations["caca_mou"])
 	_, ok = uResp[0].Meta.Annotations["key3"]
 	assert.Equal(t, false, ok)
@@ -723,7 +2054,7 @@ func TestPublishEventStoreUpdateNameRequest(t *testing.T) {
 		Name:      "update_event_meta_name",
 		Namespace: "store_test",
 		Labels: map[string]string{
-			"eventstore": "testing",
+			"mirstore": "testing",
 		},
 	}).WithSpec(mir_models.EventSpec{
 		Type:    mir_models.EventTypeNormal,
@@ -750,12 +2081,12 @@ func TestPublishEventStoreUpdateNameRequest(t *testing.T) {
 	}
 
 	// Act
-	mResp, err := eventStore.CreateEvent(m)
+	mResp, err := mirStore.CreateEvent(m)
 	if err != nil {
 		t.Error(err)
 	}
 
-	uResp, err := eventStore.UpdateEvent(tar, upd)
+	uResp, err := mirStore.UpdateEvent(tar, upd)
 	if err != nil {
 		t.Error(err)
 	}
@@ -774,14 +2105,14 @@ func TestPublishEventStoreUpdateNameRequestDuplicate(t *testing.T) {
 		Name:      "update_event_meta_name_1",
 		Namespace: "store_test",
 		Labels: map[string]string{
-			"eventstore": "testing",
+			"mirstore": "testing",
 		},
 	})
 	m2 := mir_models.NewEvent().WithMeta(mir_models.Meta{
 		Name:      "update_event_meta_name_2",
 		Namespace: "store_test",
 		Labels: map[string]string{
-			"eventstore": "testing",
+			"mirstore": "testing",
 		},
 	})
 	upd := mir_models.EventUpdate{
@@ -791,17 +2122,17 @@ func TestPublishEventStoreUpdateNameRequestDuplicate(t *testing.T) {
 	}
 
 	// Act
-	mResp, err := eventStore.CreateEvent(m)
+	mResp, err := mirStore.CreateEvent(m)
 	if err != nil {
 		t.Error(err)
 	}
-	_, err = eventStore.CreateEvent(m2)
+	_, err = mirStore.CreateEvent(m2)
 	if err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
 
-	_, err = eventStore.UpdateEvent(tar, upd)
+	_, err = mirStore.UpdateEvent(tar, upd)
 
 	// Assert
 	assert.Equal(t, mResp.Meta.Name, m.Meta.Name)
@@ -817,14 +2148,14 @@ func TestPublishEventStoreUpdateNamespaceRequestDuplicate(t *testing.T) {
 		Name:      "update_event_meta_namespace_1",
 		Namespace: "store_test",
 		Labels: map[string]string{
-			"eventstore": "testing",
+			"mirstore": "testing",
 		},
 	})
 	m2 := mir_models.NewEvent().WithMeta(mir_models.Meta{
 		Name:      "update_event_meta_namespace_1",
 		Namespace: "test_ns",
 		Labels: map[string]string{
-			"eventstore": "testing",
+			"mirstore": "testing",
 		},
 	})
 	upd := mir_models.EventUpdate{
@@ -834,17 +2165,17 @@ func TestPublishEventStoreUpdateNamespaceRequestDuplicate(t *testing.T) {
 	}
 
 	// Act
-	mResp, err := eventStore.CreateEvent(m)
+	mResp, err := mirStore.CreateEvent(m)
 	if err != nil {
 		t.Error(err)
 	}
-	_, err = eventStore.CreateEvent(m2)
+	_, err = mirStore.CreateEvent(m2)
 	if err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
 
-	_, err = eventStore.UpdateEvent(tar, upd)
+	_, err = mirStore.UpdateEvent(tar, upd)
 
 	// Assert
 	assert.Equal(t, mResp.Meta.Name, m.Meta.Name)
@@ -860,14 +2191,14 @@ func TestPublishEventStoreUpdateNameNamespaceRequestDuplicate(t *testing.T) {
 		Name:      "update_event_meta_namens_1",
 		Namespace: "store_test",
 		Labels: map[string]string{
-			"eventstore": "testing",
+			"mirstore": "testing",
 		},
 	})
 	m2 := mir_models.NewEvent().WithMeta(mir_models.Meta{
 		Name:      "update_event_meta_namens_2",
 		Namespace: "test_ns",
 		Labels: map[string]string{
-			"eventstore": "testing",
+			"mirstore": "testing",
 		},
 	})
 	upd := mir_models.EventUpdate{
@@ -878,17 +2209,17 @@ func TestPublishEventStoreUpdateNameNamespaceRequestDuplicate(t *testing.T) {
 	}
 
 	// Act
-	mResp, err := eventStore.CreateEvent(m)
+	mResp, err := mirStore.CreateEvent(m)
 	if err != nil {
 		t.Error(err)
 	}
-	_, err = eventStore.CreateEvent(m2)
+	_, err = mirStore.CreateEvent(m2)
 	if err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
 
-	_, err = eventStore.UpdateEvent(tar, upd)
+	_, err = mirStore.UpdateEvent(tar, upd)
 
 	// Assert
 	assert.Equal(t, mResp.Meta.Name, m.Meta.Name)
@@ -924,7 +2255,7 @@ func TestPublishEventStoreUpdateSpecRequest(t *testing.T) {
 		Name:      "update_event_spec",
 		Namespace: "store_test",
 		Labels: map[string]string{
-			"eventstore": "testing",
+			"mirstore": "testing",
 		},
 	}).WithSpec(mir_models.EventSpec{
 		Type:    mir_models.EventTypeNormal,
@@ -954,12 +2285,12 @@ func TestPublishEventStoreUpdateSpecRequest(t *testing.T) {
 	}
 
 	// Act
-	mResp, err := eventStore.CreateEvent(m)
+	mResp, err := mirStore.CreateEvent(m)
 	if err != nil {
 		t.Error(err)
 	}
 
-	uResp, err := eventStore.UpdateEvent(tar, upd)
+	uResp, err := mirStore.UpdateEvent(tar, upd)
 	if err != nil {
 		t.Error(err)
 	}
@@ -1000,7 +2331,7 @@ func TestPublishEventStoreUpdateStatusRequest(t *testing.T) {
 		Name:      "update_event_status",
 		Namespace: "store_test",
 		Labels: map[string]string{
-			"eventstore": "testing",
+			"mirstore": "testing",
 		},
 	}).WithSpec(mir_models.EventSpec{
 		Type:    mir_models.EventTypeNormal,
@@ -1029,12 +2360,12 @@ func TestPublishEventStoreUpdateStatusRequest(t *testing.T) {
 	}
 
 	// Act
-	mResp, err := eventStore.CreateEvent(m)
+	mResp, err := mirStore.CreateEvent(m)
 	if err != nil {
 		t.Error(err)
 	}
 
-	uResp, err := eventStore.UpdateEvent(tar, upd)
+	uResp, err := mirStore.UpdateEvent(tar, upd)
 	if err != nil {
 		t.Error(err)
 	}
@@ -1048,21 +2379,20 @@ func TestPublishEventStoreUpdateStatusRequest(t *testing.T) {
 
 func TestPbulishListDeviceWithEvents(t *testing.T) {
 	// Arrange
-	tar := &core_apiv1.ListDeviceRequest{
-		Targets: &core_apiv1.Targets{
-			Ids: []string{"peanut_butter"},
-		},
-		IncludeEvents: true,
+	tar := mir_models.DeviceTarget{
+		Ids: []string{"peanut_butter"},
 	}
-	dev := &core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
-			Name:      "peanut_butter",
-			Namespace: "eventstore_testing",
-			Labels: map[string]string{
-				"eventstore": "testing",
+	dev := mir_models.Device{
+		Object: mir_models.Object{
+			Meta: mir_models.Meta{
+				Name:      "peanut_butter",
+				Namespace: "eventstore_testing",
+				Labels: map[string]string{
+					"mirstore": "testing",
+				},
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: mir_models.DeviceSpec{
 			DeviceId: "peanut_butter",
 		},
 	}
@@ -1070,7 +2400,7 @@ func TestPbulishListDeviceWithEvents(t *testing.T) {
 		Name:      "list_dev_with_event_1",
 		Namespace: "eventstore_testing",
 		Labels: map[string]string{
-			"eventstore": "testing",
+			"mirstore": "testing",
 		},
 	}).WithSpec(mir_models.EventSpec{
 		Type:   mir_models.EventTypeNormal,
@@ -1086,7 +2416,7 @@ func TestPbulishListDeviceWithEvents(t *testing.T) {
 		Name:      "list_dev_with_event_2",
 		Namespace: "eventstore_testing",
 		Labels: map[string]string{
-			"eventstore": "testing",
+			"mirstore": "testing",
 		},
 	}).WithSpec(mir_models.EventSpec{
 		Type:   mir_models.EventTypeNormal,
@@ -1099,19 +2429,19 @@ func TestPbulishListDeviceWithEvents(t *testing.T) {
 		},
 	})
 	// Act
-	dResp, err := eventStore.CreateDevice(dev)
+	dResp, err := mirStore.CreateDevice(dev)
 	if err != nil {
 		t.Error(err)
 	}
-	mResp, err := eventStore.CreateEvent(m)
+	mResp, err := mirStore.CreateEvent(m)
 	if err != nil {
 		t.Error(err)
 	}
-	mResp2, err := eventStore.CreateEvent(m2)
+	mResp2, err := mirStore.CreateEvent(m2)
 	if err != nil {
 		t.Error(err)
 	}
-	lResp, err := eventStore.ListDevice(tar)
+	lResp, err := mirStore.ListDevice(tar, true)
 	if err != nil {
 		t.Error(err)
 	}
@@ -1136,5 +2466,9 @@ func timePtr(s time.Time) *time.Time {
 }
 
 func intPtr(s int) *int {
+	return &s
+}
+
+func boolPtr(s bool) *bool {
 	return &s
 }

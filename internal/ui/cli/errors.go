@@ -82,7 +82,7 @@ func (e MirProcessError) Error() string {
 }
 
 type MirDeviceNotFoundError struct {
-	Targets *core_apiv1.Targets
+	Targets *core_apiv1.DeviceTarget
 }
 
 func (e MirDeviceNotFoundError) Error() string {

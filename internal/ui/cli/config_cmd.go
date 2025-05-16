@@ -67,7 +67,7 @@ func (d *ConfigListCmd) Run(c CLI) error {
 	defer msgBus.Close()
 
 	req := &cfg_apiv1.SendListConfigRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids:        d.Target.Ids,
 			Names:      d.Target.Names,
 			Namespaces: d.Target.Namespaces,
@@ -185,7 +185,7 @@ func (d *ConfigSendCmd) Run(c CLI) error {
 	}
 
 	req := &cfg_apiv1.SendConfigRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids:        d.Target.Ids,
 			Names:      d.Target.Names,
 			Namespaces: d.Target.Namespaces,

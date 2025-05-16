@@ -42,12 +42,12 @@ func (s *swarm) Deploy(ctx context.Context) ([]*sync.WaitGroup, error) {
 	return wgs, errs
 }
 
-func (s swarm) ToTarget() *core_apiv1.Targets {
+func (s swarm) ToTarget() *core_apiv1.DeviceTarget {
 	devIds := make([]string, len(s.Devices))
 	for i, d := range s.Devices {
 		devIds[i] = d.GetDeviceId()
 	}
-	return &core_apiv1.Targets{
+	return &core_apiv1.DeviceTarget{
 		Ids: devIds,
 	}
 }

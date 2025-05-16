@@ -93,7 +93,7 @@ func NewCore(logger zerolog.Logger, m *mir.Mir, store mng.MirStore) (*CoreServer
 	// Preload hearthbeat map. Required in case the
 	// app is down while a device is also, but report as online
 	// because it went offline when the app was down
-	devices, err := store.ListDevice(&core_apiv1.ListDeviceRequest{Targets: &core_apiv1.Targets{}})
+	devices, err := store.ListDevice(&core_apiv1.ListDeviceRequest{Targets: &core_apiv1.DeviceTarget{}})
 	if err != nil {
 		l.Error().Err(err).Msg("error occure while executing list query")
 	}
@@ -315,7 +315,7 @@ func (s *CoreServer) hearthbeatPulsor(ctx context.Context, interval time.Duratio
 					return &b
 				}
 				devs, err := s.store.UpdateDevice(&core_apiv1.UpdateDeviceRequest{
-					Targets: &core_apiv1.Targets{
+					Targets: &core_apiv1.DeviceTarget{
 						Ids: newOffline,
 					},
 					Status: &core_apiv1.UpdateDeviceRequest_Status{
@@ -357,7 +357,7 @@ func (s *CoreServer) hearthbeatSub(msg *mir.Msg, deviceId string) {
 	}
 	// Since this update is only for hearthbeat and often, we dont want to have a device update event
 	updReq := &core_apiv1.UpdateDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{deviceId},
 		},
 		Status: &core_apiv1.UpdateDeviceRequest_Status{
@@ -422,7 +422,7 @@ func (s *CoreServer) schemaSub(msg *mir.Msg, deviceId string, sch *mir_proto.Mir
 	}
 
 	_, err = s.m.Server().UpdateDevice().Request(&core_apiv1.UpdateDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{deviceId},
 		},
 		Status: &core_apiv1.UpdateDeviceRequest_Status{

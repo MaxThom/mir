@@ -59,7 +59,7 @@ func TestMain(m *testing.M) {
 
 	// Prepare test data
 	if _, err := deleteDevices(b, &core_apiv1.DeleteDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Labels: map[string]string{
 				"test": "mir_device",
 			},
@@ -99,7 +99,7 @@ func TestMain(m *testing.M) {
 	// Teardown
 	fmt.Println("Test Teardown")
 	if _, err := deleteDevices(b, &core_apiv1.DeleteDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Labels: map[string]string{
 				"test": "mir_device",
 			},
@@ -141,7 +141,7 @@ func TestLaunchHearthbeat(t *testing.T) {
 	// Takes some time for the hearthbeat to be sent
 	time.Sleep(15 * time.Second)
 	resp, err := core_client.PublishDeviceListRequest(b, &core_apiv1.ListDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{"TestLaunchHearthbeat"},
 		},
 	})
@@ -249,7 +249,7 @@ func TestSendSchema(t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	resp, err := core_client.PublishDeviceListRequest(b, &core_apiv1.ListDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 	})

@@ -88,7 +88,7 @@ func (d *SchemaUploadCmd) Run(c CLI) error {
 	packNames := sch.GetPackageList()
 
 	req := &core_apiv1.UpdateDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids:        d.Target.Ids,
 			Names:      d.Target.Names,
 			Namespaces: d.Target.Namespaces,
@@ -162,7 +162,7 @@ func (d *SchemaExploreCmd) Run(c CLI) error {
 	defer msgBus.Close()
 
 	req := &core_apiv1.ListDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids:        d.Target.Ids,
 			Names:      d.Target.Names,
 			Namespaces: d.Target.Namespaces,
@@ -180,7 +180,7 @@ func (d *SchemaExploreCmd) Run(c CLI) error {
 	devs := resp.GetOk().GetDevices()
 	if len(devs) == 0 {
 		e := MirDeviceNotFoundError{
-			Targets: &core_apiv1.Targets{
+			Targets: &core_apiv1.DeviceTarget{
 				Ids:        d.Target.Ids,
 				Names:      d.Target.Names,
 				Namespaces: d.Target.Namespaces,

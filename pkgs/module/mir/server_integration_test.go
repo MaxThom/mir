@@ -166,7 +166,7 @@ func TestServerRoutes_UpdateDevice(t *testing.T) {
 
 	// Test request
 	req := &core_apiv1.UpdateDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{testDevice.Spec.DeviceId},
 		},
 		Meta: &core_apiv1.UpdateDeviceRequest_Meta{
@@ -214,7 +214,7 @@ func TestServerRoutes_DeleteDevice(t *testing.T) {
 
 	// Test request
 	req := &core_apiv1.DeleteDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{testDevice.Spec.DeviceId},
 		},
 	}
@@ -255,7 +255,7 @@ func TestServerRoutes_ListDevice(t *testing.T) {
 
 	// Test request
 	req := &core_apiv1.ListDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{testDevice.Spec.DeviceId},
 		},
 	}
@@ -387,7 +387,7 @@ func TestServerRoutes_ListTelemetry(t *testing.T) {
 	assert.NilError(t, err)
 
 	resp, err := m.Server().ListTelemetry().Request(&tlm_apiv1.SendListTelemetryRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{deviceID},
 		},
 	})
@@ -415,7 +415,7 @@ func TestServerRoutes_ListCommand(t *testing.T) {
 	assert.NilError(t, err)
 
 	resp, err := m.Server().ListCommands().Request(&cmd_apiv1.SendListCommandsRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{deviceID},
 		},
 	})
@@ -441,7 +441,7 @@ func TestServerRoutes_SendCommand(t *testing.T) {
 	assert.NilError(t, err)
 
 	resp, err := m.Server().SendCommand().Request(&cmd_apiv1.SendCommandRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{deviceID},
 		},
 	})

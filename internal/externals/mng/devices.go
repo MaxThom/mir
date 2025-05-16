@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/pkg/errors"
 	"github.com/surrealdb/surrealdb.go"
@@ -25,8 +24,8 @@ type deviceWithId struct {
 	mir_models.Device
 }
 
-func (s *surrealMirStore) ListDevice(req *core_apiv1.ListDeviceRequest) ([]mir_models.Device, error) {
-	q, v := createListQueryForDevice(req)
+func (s *surrealMirStore) ListDevice(t mir_models.DeviceTarget, includeEvents bool) ([]mir_models.Device, error) {
+	q, v := createListQueryForDevice(t, includeEvents)
 	devs, err := executeQueryForType[[]mir_models.Device](s.db, q, v)
 	if err != nil {
 		return nil, errors.Wrap(err, ErrorListingDevices.Error())
@@ -34,38 +33,37 @@ func (s *surrealMirStore) ListDevice(req *core_apiv1.ListDeviceRequest) ([]mir_m
 	return devs, nil
 }
 
-func (s *surrealMirStore) CreateDevice(cdr *core_apiv1.CreateDeviceRequest) (mir_models.Device, error) {
+func (s *surrealMirStore) CreateDevice(d mir_models.Device) (mir_models.Device, error) {
 	// Validate
-	if cdr.Meta != nil && cdr.Meta.Name == "" && cdr.Spec.DeviceId == "" {
-		return mir_models.Device{}, fmt.Errorf("device name and id are missing")
+	if d.Spec.DeviceId == "" {
+		return mir_models.Device{}, fmt.Errorf("device id is missing")
 	}
-	if cdr.Meta == nil {
-		cdr.Meta = &core_apiv1.Meta{}
+	if d.Meta.Name == "" {
+		d.Meta.Name = d.Spec.DeviceId
 	}
-	if cdr.Meta.Name == "" {
-		cdr.Meta.Name = cdr.Spec.DeviceId
+	if d.Meta.Namespace == "" {
+		d.Meta.Namespace = "default"
 	}
-	if cdr.Meta.Namespace == "" {
-		cdr.Meta.Namespace = "default"
-	}
-	q, v := createIsDeviceUniqueQuery(cdr.Meta.Name, cdr.Meta.Namespace, cdr.Spec.DeviceId)
+	// Device status is readonly and set by the system
+	d.Status = mir_models.DeviceStatus{}
+	q, v := createIsDeviceUniqueQuery(d.Meta.Name, d.Meta.Namespace, d.Spec.DeviceId)
 	respCheck, err := executeQueryForType[[]mir_models.Device](s.db, q, v)
 	if err != nil {
-		return mir_models.Device{}, fmt.Errorf("%w for device %s/%s: %w", mir_models.ErrorDbExecutingQuery, cdr.Meta.Name, cdr.Meta.Namespace, err)
+		return mir_models.Device{}, fmt.Errorf("%w for device %s/%s: %w", mir_models.ErrorDbExecutingQuery, d.Meta.Name, d.Meta.Namespace, err)
 	}
 	if len(respCheck) > 0 {
-		return mir_models.Device{}, fmt.Errorf("device %s/%s with deviceId %s already exist", cdr.Meta.Name, cdr.Meta.Namespace, cdr.Spec.DeviceId)
+		return mir_models.Device{}, fmt.Errorf("device %s/%s with deviceId %s already exist", d.Meta.Name, d.Meta.Namespace, d.Spec.DeviceId)
 	}
 
 	// Create
-	respDb, err := s.db.Create("devices", mir_models.NewDeviceFromCreateDeviceReq(cdr))
+	respDb, err := s.db.Create("devices", d)
 	if err != nil {
 		return mir_models.Device{}, fmt.Errorf("%w: %w", mir_models.ErrorDbExecutingQuery, err)
 	}
 	newDev := []mir_models.Device{}
 	err = surrealdb.Unmarshal(respDb, &newDev)
 	if err != nil {
-		return mir_models.Device{}, fmt.Errorf("%w for device %s/%s: %w", mir_models.ErrorDbDeserializingResponse, cdr.Meta.Name, cdr.Meta.Namespace, err)
+		return mir_models.Device{}, fmt.Errorf("%w for device %s/%s: %w", mir_models.ErrorDbDeserializingResponse, d.Meta.Name, d.Meta.Namespace, err)
 	}
 	return newDev[0], nil
 }
@@ -74,28 +72,12 @@ func (s *surrealMirStore) CreateDevice(cdr *core_apiv1.CreateDeviceRequest) (mir
 // Maybe it need to be divided into Upsert and Patch
 // Upsert is for apply and edit
 // Patch is for patch
-func (s *surrealMirStore) UpdateDevice(req *core_apiv1.UpdateDeviceRequest) ([]mir_models.Device, error) {
-	if req.Targets == nil ||
-		len(req.Targets.Ids) == 0 &&
-			len(req.Targets.Names) == 0 &&
-			len(req.Targets.Namespaces) == 0 &&
-			len(req.Targets.Labels) == 0 {
+func (s *surrealMirStore) UpdateDevice(t mir_models.DeviceTarget, d mir_models.Device) ([]mir_models.Device, error) {
+	if t.HasNoTarget() {
 		return nil, mir_models.ErrorNoDeviceTargetProvided
 	}
 
-	name := ""
-	ns := ""
-	id := ""
-	if req.Meta != nil && req.Meta.Name != nil {
-		name = *req.Meta.Name
-	}
-	if req.Meta != nil && req.Meta.Namespace != nil {
-		ns = *req.Meta.Namespace
-	}
-	if req.Spec != nil && req.Spec.DeviceId != nil {
-		id = *req.Spec.DeviceId
-	}
-	if err := s.validateDeviceUniqueness(req.Targets, name, ns, id); err != nil {
+	if err := s.validateDeviceUniqueness(t, d.Meta.Name, d.Meta.Namespace, d.Spec.DeviceId); err != nil {
 		return nil, err
 	}
 
@@ -104,11 +86,9 @@ func (s *surrealMirStore) UpdateDevice(req *core_apiv1.UpdateDeviceRequest) ([]m
 	// Modify is a patch
 	q := ""
 	v := map[string]any{}
-	q, v = createUpdateQueryForDevice(req.Targets, req)
+	q, v = createUpdateQueryForDevice(t, d)
 	if q == "" {
-		return s.ListDevice(&core_apiv1.ListDeviceRequest{
-			Targets: req.Targets,
-		})
+		return s.ListDevice(t, false)
 	}
 	respDb, err := executeQueryForType[[]mir_models.Device](s.db, q, v)
 	if err != nil {
@@ -118,12 +98,8 @@ func (s *surrealMirStore) UpdateDevice(req *core_apiv1.UpdateDeviceRequest) ([]m
 	return respDb, nil
 }
 
-func (s *surrealMirStore) MergeDevice(targets *core_apiv1.Targets, patch json.RawMessage, op UpdateType) ([]mir_models.Device, error) {
-	if targets == nil ||
-		len(targets.Ids) == 0 &&
-			len(targets.Names) == 0 &&
-			len(targets.Namespaces) == 0 &&
-			len(targets.Labels) == 0 {
+func (s *surrealMirStore) MergeDevice(t mir_models.DeviceTarget, patch json.RawMessage, op UpdateType) ([]mir_models.Device, error) {
+	if t.HasNoTarget() {
 		return nil, mir_models.ErrorNoDeviceTargetProvided
 	}
 	if op == MergePatch {
@@ -135,7 +111,7 @@ func (s *surrealMirStore) MergeDevice(targets *core_apiv1.Targets, patch json.Ra
 			return nil, fmt.Errorf("unknown fields in json patch: %w", err)
 		}
 
-		if err := s.validateDeviceUniqueness(targets, dev.Meta.Name, dev.Meta.Namespace, dev.Spec.DeviceId); err != nil {
+		if err := s.validateDeviceUniqueness(t, dev.Meta.Name, dev.Meta.Namespace, dev.Spec.DeviceId); err != nil {
 			return nil, err
 		}
 
@@ -146,7 +122,7 @@ func (s *surrealMirStore) MergeDevice(targets *core_apiv1.Targets, patch json.Ra
 			patch = nullRegEx.ReplaceAll(patch, []byte("${1}NONE"))
 			qSb.Write(patch)
 			qSb.WriteString(" WHERE ")
-			qSb.WriteString(createDeviceWhereStatementWithTargets(targets))
+			qSb.WriteString(createDeviceWhereStatementWithTargets(t))
 			qSb.WriteString(";")
 		}
 		sql := qSb.String()
@@ -160,24 +136,18 @@ func (s *surrealMirStore) MergeDevice(targets *core_apiv1.Targets, patch json.Ra
 	return nil, errors.New("only MergePatch operation is implemented")
 }
 
-func (s *surrealMirStore) DeleteDevice(req *core_apiv1.DeleteDeviceRequest) ([]mir_models.Device, error) {
-	if req.Targets == nil ||
-		len(req.Targets.Ids) == 0 &&
-			len(req.Targets.Names) == 0 &&
-			len(req.Targets.Namespaces) == 0 &&
-			len(req.Targets.Labels) == 0 {
+func (s *surrealMirStore) DeleteDevice(t mir_models.DeviceTarget) ([]mir_models.Device, error) {
+	if t.HasNoTarget() {
 		return nil, mir_models.ErrorNoDeviceTargetProvided
 	}
 
-	qList, vList := createListQueryForDevice(&core_apiv1.ListDeviceRequest{
-		Targets: req.Targets,
-	})
+	qList, vList := createListQueryForDevice(t, false)
 	respDbList, err := executeQueryForType[[]mir_models.Device](s.db, qList, vList)
 	if err != nil {
 		return nil, mir_models.ErrorDbExecutingQuery
 	}
 
-	q, v := createDeleteQueryForDevice(req)
+	q, v := createDeleteQueryForDevice(t)
 	_, err = executeQueryForType[[]mir_models.Device](s.db, q, v)
 	if err != nil {
 		return nil, mir_models.ErrorDbExecutingQuery
@@ -194,11 +164,9 @@ func (s *surrealMirStore) DeleteDevice(req *core_apiv1.DeleteDeviceRequest) ([]m
 // If name only, multiple devices can be updated if no collision
 // If namespace only, multiple devices can be updated if no collision
 // DILEMMA: maybe we should limite name/namespace/deviceId changes to one device only
-func (s *surrealMirStore) validateDeviceUniqueness(targets *core_apiv1.Targets, name, ns, deviceId string) error {
+func (s *surrealMirStore) validateDeviceUniqueness(targets mir_models.DeviceTarget, name, ns, deviceId string) error {
 	if name != "" || ns != "" || deviceId != "" {
-		changingDevs, err := s.ListDevice(&core_apiv1.ListDeviceRequest{
-			Targets: targets,
-		})
+		changingDevs, err := s.ListDevice(targets, false)
 		if err != nil {
 			return fmt.Errorf("%w: %w", mir_models.ErrorDbExecutingQuery, err)
 		}
@@ -237,11 +205,11 @@ func (s *surrealMirStore) validateDeviceUniqueness(targets *core_apiv1.Targets, 
 				return ErrorDeviceShouldBeCreated
 			}
 		} else if ns != "" {
-			currentDevs, err := s.ListDevice(&core_apiv1.ListDeviceRequest{
-				Targets: &core_apiv1.Targets{
+			currentDevs, err := s.ListDevice(mir_models.DeviceTarget{
+				ObjectTarget: mir_models.ObjectTarget{
 					Namespaces: []string{ns},
 				},
-			})
+			}, false)
 			if err != nil {
 				return fmt.Errorf("%w: %w", mir_models.ErrorDbExecutingQuery, err)
 			}
@@ -263,11 +231,11 @@ func (s *surrealMirStore) validateDeviceUniqueness(targets *core_apiv1.Targets, 
 				}
 			}
 		} else if name != "" {
-			currentDevs, err := s.ListDevice(&core_apiv1.ListDeviceRequest{
-				Targets: &core_apiv1.Targets{
+			currentDevs, err := s.ListDevice(mir_models.DeviceTarget{
+				ObjectTarget: mir_models.ObjectTarget{
 					Names: []string{name},
 				},
-			})
+			}, false)
 			if err != nil {
 				return fmt.Errorf("%w: %w", mir_models.ErrorDbExecutingQuery, err)
 			}
@@ -310,11 +278,11 @@ func createIsDeviceUniqueQuery(name, ns, id string) (sql string, vars map[string
 	return
 }
 
-func createListQueryForDevice(req *core_apiv1.ListDeviceRequest) (sql string, vars map[string]any) {
+func createListQueryForDevice(t mir_models.DeviceTarget, includeEvents bool) (sql string, vars map[string]any) {
 	var q strings.Builder
 	vars = map[string]any{}
 
-	if req.IncludeEvents {
+	if includeEvents {
 		q.WriteString("SELECT *, ")
 		q.WriteString("(")
 		q.WriteString("SELECT spec.type as type, spec.message as message, spec.reason as reason, status.firstAt as firstAt FROM events")
@@ -324,7 +292,7 @@ func createListQueryForDevice(req *core_apiv1.ListDeviceRequest) (sql string, va
 	} else {
 		q.WriteString("SELECT * FROM devices")
 	}
-	where := createDeviceWhereStatementWithTargets(req.Targets)
+	where := createDeviceWhereStatementWithTargets(t)
 	if len(where) > 0 {
 		q.WriteString(" WHERE ")
 		q.WriteString(where)
@@ -335,160 +303,179 @@ func createListQueryForDevice(req *core_apiv1.ListDeviceRequest) (sql string, va
 	return
 }
 
-func createUpdateQueryForDevice(t *core_apiv1.Targets, upd *core_apiv1.UpdateDeviceRequest) (sql string, vars map[string]any) {
+func createUpdateQueryForDevice(t mir_models.DeviceTarget, d mir_models.Device) (sql string, vars map[string]any) {
 	var q strings.Builder
 	vars = map[string]any{}
-	if upd.Meta != nil {
-		var sb strings.Builder
-		if upd.Meta.Name != nil && *upd.Meta.Name != "" {
-			sb.WriteString("name: $NAME,")
-			vars["NAME"] = *upd.Meta.Name
-		}
-		if upd.Meta.Namespace != nil && *upd.Meta.Namespace != "" {
-			sb.WriteString("namespace: $NS,")
-			vars["NS"] = *upd.Meta.Namespace
-		}
-		if upd.Meta.Labels != nil && len(upd.Meta.Labels) > 0 {
-			sb.WriteString("labels: {")
-			for key, val := range upd.Meta.Labels {
-				sb.WriteString("\"")
-				sb.WriteString(key)
-				sb.WriteString("\"")
-				sb.WriteString(": ")
-				if val == nil || val.Value == nil {
-					sb.WriteString("NONE")
-				} else {
-					sb.WriteString(fmt.Sprintf("\"%s\"", val.GetValue()))
-				}
-				sb.WriteString(",")
+	// META
+	var sbMeta strings.Builder
+	if d.Meta.Name != "" {
+		sbMeta.WriteString("name: $NAME,")
+		vars["NAME"] = d.Meta.Name
+	}
+	if d.Meta.Namespace != "" {
+		sbMeta.WriteString("namespace: $NS,")
+		vars["NS"] = d.Meta.Namespace
+	}
+	if d.Meta.Labels != nil && len(d.Meta.Labels) > 0 {
+		sbMeta.WriteString("labels: {")
+		for key, val := range d.Meta.Labels {
+			sbMeta.WriteString("\"")
+			sbMeta.WriteString(key)
+			sbMeta.WriteString("\"")
+			sbMeta.WriteString(": ")
+			if val == "" {
+				sbMeta.WriteString("NONE")
+			} else {
+				sbMeta.WriteString(fmt.Sprintf("\"%s\"", val))
 			}
-			sb.WriteString("},")
+			sbMeta.WriteString(",")
 		}
-		if upd.Meta.Annotations != nil && len(upd.Meta.Annotations) > 0 {
-			sb.WriteString("annotations: {")
-			for key, val := range upd.Meta.Annotations {
-				sb.WriteString("\"")
-				sb.WriteString(key)
-				sb.WriteString("\"")
-				sb.WriteString(": ")
-				if val == nil || val.Value == nil {
-					sb.WriteString("NONE")
-				} else {
-					sb.WriteString(fmt.Sprintf("\"%s\"", val.GetValue()))
-				}
-				sb.WriteString(",")
+		sbMeta.WriteString("},")
+	}
+	if d.Meta.Annotations != nil && len(d.Meta.Annotations) > 0 {
+		sbMeta.WriteString("annotations: {")
+		for key, val := range d.Meta.Annotations {
+			sbMeta.WriteString("\"")
+			sbMeta.WriteString(key)
+			sbMeta.WriteString("\"")
+			sbMeta.WriteString(": ")
+			if val == "" {
+				sbMeta.WriteString("NONE")
+			} else {
+				sbMeta.WriteString(fmt.Sprintf("\"%s\"", val))
 			}
-			sb.WriteString("},")
+			sbMeta.WriteString(",")
 		}
-		if sb.Len() > 0 {
-			q.WriteString("meta: {")
-			q.WriteString(sb.String())
-			q.WriteString("},")
+		sbMeta.WriteString("},")
+	}
+	if sbMeta.Len() > 0 {
+		q.WriteString("meta: {")
+		q.WriteString(sbMeta.String())
+		q.WriteString("},")
+	}
+
+	// SPEC
+	var sbSpec strings.Builder
+	if d.Spec.DeviceId != "" {
+		sbSpec.WriteString("deviceId: $ID,")
+		vars["ID"] = d.Spec.DeviceId
+	}
+	if d.Spec.Disabled != nil {
+		sbSpec.WriteString("disabled: $DIS,")
+		vars["DIS"] = *d.Spec.Disabled
+	}
+	if sbSpec.Len() > 0 {
+		q.WriteString("spec: {")
+		q.WriteString(sbSpec.String())
+		q.WriteString("},")
+	}
+
+	// PROPS
+	var sbProps strings.Builder
+	if d.Properties.Desired != nil && len(d.Properties.Desired) > 0 {
+		x, _ := json.Marshal(d.Properties.Desired)
+		if len(x) > 0 {
+			// Curlies are in the desired json already
+			sbProps.WriteString("desired: ")
+			sbProps.Write(nullRegEx.ReplaceAll(x, []byte("${1}NONE")))
+			sbProps.WriteString(",")
 		}
 	}
-	if upd.Spec != nil {
-		var sb strings.Builder
-		if upd.Spec.DeviceId != nil && *upd.Spec.DeviceId != "" {
-			sb.WriteString("deviceId: $ID,")
-			vars["ID"] = *upd.Spec.DeviceId
-		}
-		if upd.Spec.Disabled != nil {
-			sb.WriteString("disabled: $DIS,")
-			vars["DIS"] = *upd.Spec.Disabled
-		}
-		if sb.Len() > 0 {
-			q.WriteString("spec: {")
-			q.WriteString(sb.String())
-			q.WriteString("},")
+	if d.Properties.Reported != nil && len(d.Properties.Reported) > 0 {
+		x, _ := json.Marshal(d.Properties.Reported)
+		if len(x) > 0 {
+			// Curlies are in the desired json already
+			sbProps.WriteString("reported: ")
+			sbProps.Write(nullRegEx.ReplaceAll(x, []byte("${1}NONE")))
+			sbProps.WriteString(",")
 		}
 	}
-	if upd.Props != nil {
-		var sb strings.Builder
-		if upd.Props.Desired != nil {
-			x, _ := upd.Props.Desired.MarshalJSON()
-			if len(x) > 0 {
-				// Curlies are in the desired json already
-				sb.WriteString("desired: ")
-				sb.Write(nullRegEx.ReplaceAll(x, []byte("${1}NONE")))
-			}
-		}
-		if sb.Len() > 0 {
-			q.WriteString("properties: {")
-			q.WriteString(sb.String())
-			q.WriteString("},")
-		}
+	if sbProps.Len() > 0 {
+		q.WriteString("properties: {")
+		q.WriteString(sbProps.String())
+		q.WriteString("},")
 	}
-	if upd.Status != nil {
-		var sb strings.Builder
-		if upd.Status.LastHearthbeat != nil && !mir_models.AsGoTime(upd.Status.LastHearthbeat).IsZero() {
-			sb.WriteString("lastHearthbeat: $BEAT,")
-			vars["BEAT"] = mir_models.AsGoTime(upd.Status.LastHearthbeat)
-		}
-		if upd.Status.Online != nil {
-			sb.WriteString("online: $ON,")
-			vars["ON"] = upd.Status.Online
-		}
-		if upd.Status.Schema != nil {
-			sb.WriteString("schema: {")
-			if upd.Status.Schema.CompressedSchema != nil {
-				sb.WriteString("compressedSchema: $COMPSCHEMA,")
-				vars["COMPSCHEMA"] = upd.Status.Schema.CompressedSchema
+
+	// STATUS
+	var sbStatus strings.Builder
+	if d.Status.LastHearthbeat != nil && !d.Status.LastHearthbeat.IsZero() {
+		sbStatus.WriteString("lastHearthbeat: $BEAT,")
+		vars["BEAT"] = d.Status.LastHearthbeat
+	}
+	if d.Status.Online != nil {
+		sbStatus.WriteString("online: $ON,")
+		vars["ON"] = d.Status.Online
+	}
+
+	// STATUS SCHEMA
+	var sbStatusSchema strings.Builder
+	if d.Status.Schema.CompressedSchema != nil {
+		sbStatusSchema.WriteString("compressedSchema: $COMPSCHEMA,")
+		vars["COMPSCHEMA"] = d.Status.Schema.CompressedSchema
+	}
+	if d.Status.Schema.PackageNames != nil {
+		sbStatusSchema.WriteString("packageNames: $PACKNAMES,")
+		vars["PACKNAMES"] = d.Status.Schema.PackageNames
+	}
+	if d.Status.Schema.LastSchemaFetch != nil && !d.Status.Schema.LastSchemaFetch.IsZero() {
+		sbStatusSchema.WriteString("lastSchemaFetch: $LASTSCHFETCH,")
+		vars["LASTSCHFETCH"] = d.Status.Schema.LastSchemaFetch
+	}
+	if sbStatusSchema.Len() > 0 {
+		sbStatus.WriteString("schema: {")
+		sbStatus.WriteString(sbStatusSchema.String())
+		sbStatus.WriteString("},")
+	}
+
+	// STATUS PROPERTIES
+	var sbStatusProps strings.Builder
+	if d.Status.Properties.Desired != nil {
+		sbStatusProps.WriteString("desired: {")
+		for k, v := range d.Status.Properties.Desired {
+			sbStatusProps.WriteString("\"")
+			sbStatusProps.WriteString(k)
+			sbStatusProps.WriteString("\"")
+			sbStatusProps.WriteString(": ")
+			if v.IsZero() {
+				sbStatusProps.WriteString("NONE")
+			} else {
+				sbStatusProps.WriteString("\"")
+				sbStatusProps.WriteString(v.Format(time.RFC3339Nano))
+				sbStatusProps.WriteString("\"")
 			}
-			if upd.Status.Schema.PackageNames != nil {
-				sb.WriteString("packageNames: $PACKNAMES,")
-				vars["PACKNAMES"] = upd.Status.Schema.PackageNames
-			}
-			if upd.Status.Schema.LastSchemaFetch != nil && !mir_models.AsGoTime(upd.Status.Schema.LastSchemaFetch).IsZero() {
-				sb.WriteString("lastSchemaFetch: $LASTSCHFETCH,")
-				vars["LASTSCHFETCH"] = mir_models.AsGoTime(upd.Status.Schema.LastSchemaFetch)
-			}
-			sb.WriteString("},")
+			sbStatusProps.WriteString(",")
 		}
-		if upd.Status.Properties != nil {
-			sb.WriteString("properties: {")
-			if upd.Status.Properties.Desired != nil {
-				sb.WriteString("desired: {")
-				for k, v := range upd.Status.Properties.Desired {
-					sb.WriteString("\"")
-					sb.WriteString(k)
-					sb.WriteString("\"")
-					sb.WriteString(": ")
-					if v == nil {
-						sb.WriteString("NONE")
-					} else {
-						sb.WriteString("\"")
-						sb.WriteString(mir_models.AsGoTime(v).Format(time.RFC3339Nano))
-						sb.WriteString("\"")
-					}
-					sb.WriteString(",")
-				}
-				sb.WriteString("},")
+		sbStatusProps.WriteString("},")
+	}
+	if d.Status.Properties.Reported != nil {
+		sbStatusProps.WriteString("reported: {")
+		for k, v := range d.Status.Properties.Reported {
+			sbStatusProps.WriteString("\"")
+			sbStatusProps.WriteString(k)
+			sbStatusProps.WriteString("\"")
+			sbStatusProps.WriteString(": ")
+			if v.IsZero() {
+				sbStatusProps.WriteString("NONE")
+			} else {
+				sbStatusProps.WriteString("\"")
+				sbStatusProps.WriteString(v.Format(time.RFC3339Nano))
+				sbStatusProps.WriteString("\"")
 			}
-			if upd.Status.Properties.Reported != nil {
-				sb.WriteString("reported: {")
-				for k, v := range upd.Status.Properties.Reported {
-					sb.WriteString("\"")
-					sb.WriteString(k)
-					sb.WriteString("\"")
-					sb.WriteString(": ")
-					if v == nil {
-						sb.WriteString("NONE")
-					} else {
-						sb.WriteString("\"")
-						sb.WriteString(mir_models.AsGoTime(v).Format(time.RFC3339Nano))
-						sb.WriteString("\"")
-					}
-					sb.WriteString(",")
-				}
-				sb.WriteString("},")
-			}
-			sb.WriteString("},")
+			sbStatusProps.WriteString(",")
 		}
-		if sb.Len() > 0 {
-			q.WriteString("status: {")
-			q.WriteString(sb.String())
-			q.WriteString("},")
-		}
+		sbStatusProps.WriteString("},")
+	}
+
+	if sbStatusProps.Len() > 0 {
+		sbStatus.WriteString("properties: {")
+		sbStatus.WriteString(sbStatusProps.String())
+		sbStatus.WriteString("},")
+	}
+
+	if sbStatus.Len() > 0 {
+		q.WriteString("status: {")
+		q.WriteString(sbStatus.String())
+		q.WriteString("},")
 	}
 
 	var qSb strings.Builder
@@ -504,22 +491,19 @@ func createUpdateQueryForDevice(t *core_apiv1.Targets, upd *core_apiv1.UpdateDev
 	return
 }
 
-func createDeleteQueryForDevice(req *core_apiv1.DeleteDeviceRequest) (sql string, vars map[string]any) {
+func createDeleteQueryForDevice(t mir_models.DeviceTarget) (sql string, vars map[string]any) {
 	var q strings.Builder
 	vars = map[string]any{}
 
 	q.WriteString("DELETE FROM devices WHERE ")
-	q.WriteString(createDeviceWhereStatementWithTargets(req.Targets))
+	q.WriteString(createDeviceWhereStatementWithTargets(t))
 	q.WriteString(";")
 	sql = q.String()
 	return
 }
 
-func createDeviceWhereStatementWithTargets(t *core_apiv1.Targets) string {
+func createDeviceWhereStatementWithTargets(t mir_models.DeviceTarget) string {
 	var q strings.Builder
-	if t == nil {
-		return ""
-	}
 
 	cond := []string{}
 	if len(t.Ids) > 0 {

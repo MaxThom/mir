@@ -109,7 +109,7 @@ func (d *DeviceListCmd) Run(c CLI) error {
 	defer msgBus.Close()
 
 	resp, err := core_client.PublishDeviceListRequest(msgBus, &core_apiv1.ListDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids:        d.Ids,
 			Names:      d.Names,
 			Namespaces: d.Namespaces,
@@ -310,7 +310,7 @@ func (d *DeviceUpdateCmd) Run(c CLI) error {
 		}
 	}
 	req := &core_apiv1.UpdateDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids:        d.Target.Ids,
 			Names:      d.Target.Names,
 			Namespaces: d.Target.Namespaces,
@@ -392,7 +392,7 @@ func (d *DeviceDeleteCmd) Run(c CLI) error {
 	defer msgBus.Close()
 
 	resp, err := core_client.PublishDeviceDeleteRequest(msgBus, &core_apiv1.DeleteDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids:        d.Target.Ids,
 			Names:      d.Target.Names,
 			Namespaces: d.Target.Namespaces,

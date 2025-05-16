@@ -33,7 +33,7 @@ func main() {
 
 	respList, e := m.Server().ListCommands().Request(
 		&cmd_apiv1.SendListCommandsRequest{
-			Targets: &core_apiv1.Targets{
+			Targets: &core_apiv1.DeviceTarget{
 				Ids: []string{"0xf86tlm", "0xf86cmd"},
 			},
 		})
@@ -47,7 +47,7 @@ func main() {
 	cmdPayload := &command_devicev1.ChangePower{}
 	respProto, e := m.Server().SendCommand().RequestProto(
 		&mir.SendDeviceCommandRequestProto{
-			Targets: &core_apiv1.Targets{
+			Targets: &core_apiv1.DeviceTarget{
 				Ids: []string{"0xf86tlm", "0xf86cmd"},
 			},
 			Command: cmdPayload,
