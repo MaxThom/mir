@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"regexp"
 
-	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/surrealdb/surrealdb.go"
 )
@@ -21,11 +20,11 @@ const (
 )
 
 type MirStore interface {
-	ListDevice(req *core_apiv1.ListDeviceRequest) ([]mir_models.Device, error)
-	CreateDevice(req *core_apiv1.CreateDeviceRequest) (mir_models.Device, error)
-	UpdateDevice(req *core_apiv1.UpdateDeviceRequest) ([]mir_models.Device, error)
-	MergeDevice(targets *core_apiv1.Targets, patch json.RawMessage, op UpdateType) ([]mir_models.Device, error)
-	DeleteDevice(req *core_apiv1.DeleteDeviceRequest) ([]mir_models.Device, error)
+	ListDevice(t mir_models.DeviceTarget, includeEvents bool) ([]mir_models.Device, error)
+	CreateDevice(d mir_models.Device) (mir_models.Device, error)
+	UpdateDevice(t mir_models.DeviceTarget, d mir_models.Device) ([]mir_models.Device, error)
+	MergeDevice(t mir_models.DeviceTarget, patch json.RawMessage, op UpdateType) ([]mir_models.Device, error)
+	DeleteDevice(t mir_models.DeviceTarget) ([]mir_models.Device, error)
 
 	ListEvent(t mir_models.EventTarget) ([]mir_models.Event, error)
 	CreateEvent(e mir_models.Event) (mir_models.Event, error)

@@ -155,7 +155,7 @@ func TestPublishDeviceUpdateCache(t *testing.T) {
 
 	str := "update"
 	if _, err = core_client.PublishDeviceUpdateRequest(b, &core_apiv1.UpdateDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 		Meta: &core_apiv1.UpdateDeviceRequest_Meta{

@@ -195,7 +195,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, tea.Batch(
 					msgs.ReqMsgCmd("deleting device "+device.Spec.DeviceId+"..."),
 					msgs.DeleteMirDevice(store.Bus, &core_apiv1.DeleteDeviceRequest{
-						Targets: &core_apiv1.Targets{
+						Targets: &core_apiv1.DeviceTarget{
 							Ids: []string{device.Spec.DeviceId},
 						},
 					}))

@@ -149,7 +149,7 @@ func (c *MirProtoCache) reconcileDeviceSchema(deviceId string, forceDeviceFetch 
 		l.Debug().Str("device_id", deviceId).Msg("device schema not in cache, reconciling...")
 		devs, err := c.m.Server().ListDevice().Request(
 			&core_apiv1.ListDeviceRequest{
-				Targets: &core_apiv1.Targets{
+				Targets: &core_apiv1.DeviceTarget{
 					Ids: []string{deviceId},
 				},
 			},
@@ -185,7 +185,7 @@ func (c *MirProtoCache) reconcileDeviceSchema(deviceId string, forceDeviceFetch 
 	}
 
 	devResp, err := c.m.Server().UpdateDevice().Request(&core_apiv1.UpdateDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{deviceId},
 		},
 		Status: &core_apiv1.UpdateDeviceRequest_Status{

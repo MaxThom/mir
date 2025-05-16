@@ -40,7 +40,7 @@ func ListMirDevices(bus *bus.BusConn) tea.Cmd {
 func listMirDevicesCmd(bus *bus.BusConn, noToast bool) func() tea.Msg {
 	return func() tea.Msg {
 		resp, err := core_client.PublishDeviceListRequest(bus, &core_apiv1.ListDeviceRequest{
-			Targets: &core_apiv1.Targets{},
+			Targets: &core_apiv1.DeviceTarget{},
 		})
 		if err != nil {
 			// TODO move error from cli to next to core client and use it here as well

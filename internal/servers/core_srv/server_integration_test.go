@@ -80,7 +80,7 @@ func TestMain(m *testing.M) {
 		"testing": "core",
 	})
 	core_client.PublishDeviceDeleteRequest(b, &core_apiv1.DeleteDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{"device_auto_provision"},
 		},
 	})
@@ -134,7 +134,7 @@ func TestPublishDeviceCreate(t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	respList, err := core_client.PublishDeviceListRequest(b, &core_apiv1.ListDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 	})
@@ -187,7 +187,7 @@ func TestPublishDeviceCreateClient(t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	respList, err := core_client.PublishDeviceListRequest(b, &core_apiv1.ListDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 	})
@@ -295,7 +295,7 @@ func TestPublishDeviceUpdateTargetIds(t *testing.T) {
 		})
 
 	reqUpd := &core_apiv1.UpdateDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 		Meta: &core_apiv1.UpdateDeviceRequest_Meta{
@@ -374,7 +374,7 @@ func TestPublishDeviceUpdateTargetNames(t *testing.T) {
 	}
 
 	reqUpd := &core_apiv1.UpdateDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Names: []string{id},
 		},
 		Meta: &core_apiv1.UpdateDeviceRequest_Meta{
@@ -452,7 +452,7 @@ func TestPublishDeviceUpdateTargetNamespace(t *testing.T) {
 	}
 
 	reqUpd := &core_apiv1.UpdateDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Namespaces: []string{ns},
 		},
 		Meta: &core_apiv1.UpdateDeviceRequest_Meta{
@@ -508,7 +508,7 @@ func TestPublishDeviceUpdateTargetLabels(t *testing.T) {
 	// Arrange
 	deviceIds := []string{"device_update_target_labels_1", "device_update_target_labels_2", "device_update_target_labels_3"}
 	reqUpd := &core_apiv1.UpdateDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Labels: map[string]string{
 				"factory": "D",
 				"land":    "sheep",
@@ -643,7 +643,7 @@ func TestPublishDeviceUpdateTargetMixs(t *testing.T) {
 	// Arrange
 	deviceIds := []string{"device_update_target_mix_1", "device_update_target_mix_2", "device_update_target_mix_3"}
 	reqUpd := &core_apiv1.UpdateDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{deviceIds[2], deviceIds[0]},
 			Labels: map[string]string{
 				"factory": "D",
@@ -778,7 +778,7 @@ func TestPublishDeviceDeleteTargetIds(t *testing.T) {
 	// Arrange
 	deviceIds := []string{"device_delete_target_ids_1", "device_delete_target_ids_2", "device_delete_target_ids_3"}
 	reqDel := &core_apiv1.DeleteDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{deviceIds[0], deviceIds[1]},
 		},
 	}
@@ -890,7 +890,7 @@ func TestPublishDeviceDeleteTargetNames(t *testing.T) {
 	// Arrange
 	deviceIds := []string{"device_delete_target_names_1", "device_delete_target_names_2", "device_delete_target_names_3"}
 	reqDel := &core_apiv1.DeleteDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Names: []string{deviceIds[0], deviceIds[1]},
 		},
 	}
@@ -992,7 +992,7 @@ func TestPublishDeviceDeleteTargetNamespace(t *testing.T) {
 	deviceIds := []string{"device_delete_target_ns_1", "device_delete_target_ns_2", "device_delete_target_ns_3"}
 	ns := "testing_" + strings.Join(deviceIds, "_")
 	reqDel := &core_apiv1.DeleteDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Namespaces: []string{ns},
 		},
 	}
@@ -1089,7 +1089,7 @@ func TestPublishDeviceDeleteTargetNamespace(t *testing.T) {
 func TestPublishDeviceDeleteTargetLabels(t *testing.T) {
 	// Arrange
 	reqDel := &core_apiv1.DeleteDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Labels: map[string]string{
 				"factory": "D",
 				"land":    "plane",
@@ -1190,7 +1190,7 @@ func TestPublishDeviceListTargetIds(t *testing.T) {
 	// Arrange
 	deviceIds := []string{"device_list_target_ids_1", "device_list_target_ids_2", "device_list_target_ids_3"}
 	reqList := &core_apiv1.ListDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{deviceIds[0], deviceIds[1]},
 		},
 	}
@@ -1290,7 +1290,7 @@ func TestPublishDeviceListTargetNames(t *testing.T) {
 	// Arrange
 	deviceIds := []string{"device_list_target_names_1", "device_list_target_names_2", "device_list_target_names_3"}
 	reqList := &core_apiv1.ListDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Names: []string{deviceIds[0], deviceIds[1]},
 		},
 	}
@@ -1391,7 +1391,7 @@ func TestPublishDeviceListTargetNamespace(t *testing.T) {
 	deviceIds := []string{"device_list_target_ns_1", "device_list_target_ns_2", "device_list_target_ns_3"}
 	ns := "testing_" + strings.Join(deviceIds, "_")
 	reqList := &core_apiv1.ListDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Namespaces: []string{ns},
 		},
 	}
@@ -1490,7 +1490,7 @@ func TestPublishDeviceListTargetNamespace(t *testing.T) {
 func TestPublishDeviceListTargetLabels(t *testing.T) {
 	// Arrange
 	reqList := &core_apiv1.ListDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Labels: map[string]string{
 				"factory": "D",
 				"land":    "lamb",
@@ -1593,7 +1593,7 @@ func TestPublishDeviceListTargetLabels(t *testing.T) {
 func TestPublishDeviceListNoTarget(t *testing.T) {
 	// Arrange
 	reqList := &core_apiv1.ListDeviceRequest{
-		Targets: &core_apiv1.Targets{},
+		Targets: &core_apiv1.DeviceTarget{},
 	}
 
 	deviceIds := []string{"device_list_target_no_1", "device_list_target_no_2", "device_list_target_no_3"}
@@ -1875,7 +1875,7 @@ func TestDeviceUpsertDevice(t *testing.T) {
 		Spec: &core_apiv1.UpdateDeviceRequest_Spec{
 			DeviceId: strRef(id),
 		},
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 	}
@@ -1931,7 +1931,7 @@ func TestDeviceUpdateManyTargetSameDeviceId(t *testing.T) {
 		Spec: &core_apiv1.UpdateDeviceRequest_Spec{
 			DeviceId: strRef("sameid"),
 		},
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Labels: map[string]string{
 				"swarm": "a",
 			},
@@ -1985,7 +1985,7 @@ func TestDeviceUpdateManyTargetSameNameNoExist(t *testing.T) {
 		Meta: &core_apiv1.UpdateDeviceRequest_Meta{
 			Name: strRef("samebloodyname"),
 		},
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Labels: map[string]string{
 				"swarm": "b",
 			},
@@ -2038,7 +2038,7 @@ func TestDeviceUpdateManyTargetSameNameOneExist(t *testing.T) {
 		Meta: &core_apiv1.UpdateDeviceRequest_Meta{
 			Name: strRef("samebloodyname"),
 		},
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Labels: map[string]string{
 				"swarm": "c",
 			},
@@ -2091,7 +2091,7 @@ func TestDeviceUpdateManyTargetSameNamespaceNoExist(t *testing.T) {
 		Meta: &core_apiv1.UpdateDeviceRequest_Meta{
 			Namespace: strRef("samebloodynamespace"),
 		},
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Labels: map[string]string{
 				"swarm": "d",
 			},
@@ -2143,7 +2143,7 @@ func TestDeviceUpdateManyTargetSameNamespaceOneExist(t *testing.T) {
 		Meta: &core_apiv1.UpdateDeviceRequest_Meta{
 			Namespace: strRef("samebloodynamespace"),
 		},
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Labels: map[string]string{
 				"swarm": "e",
 			},
@@ -2197,7 +2197,7 @@ func TestDeviceUpdateManyTargetSameNameNamespaceNoExist(t *testing.T) {
 			Name:      strRef("samebloodyname"),
 			Namespace: strRef("samebloodynamespace"),
 		},
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Labels: map[string]string{
 				"swarm": "f",
 			},
@@ -2251,7 +2251,7 @@ func TestDeviceUpdateManyTargetSameNameNamespaceOneExist(t *testing.T) {
 			Name:      strRef("samebloodyname"),
 			Namespace: strRef("samebloodynamespace"),
 		},
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Labels: map[string]string{
 				"swarm": "f",
 			},
@@ -2276,7 +2276,7 @@ func TestDeviceGoesOnline(t *testing.T) {
 	// Arrange
 	deviceIds := []string{"device_goes_online"}
 	reqList := &core_apiv1.ListDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: deviceIds,
 		},
 	}
@@ -2345,7 +2345,7 @@ func TestDeviceGoesOffline(t *testing.T) {
 	// Arrange
 	deviceIds := []string{"device_goes_offline"}
 	reqList := &core_apiv1.ListDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: deviceIds,
 		},
 	}
@@ -2432,7 +2432,7 @@ func TestDeviceAutoProvision(t *testing.T) {
 	// Arrange
 	deviceIds := []string{"device_auto_provision"}
 	reqList := &core_apiv1.ListDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: deviceIds,
 		},
 	}

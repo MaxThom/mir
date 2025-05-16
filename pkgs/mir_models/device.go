@@ -23,8 +23,33 @@ func NewDevice() Device {
 	}
 }
 
+func ToTargets(d ...Device) DeviceTarget {
+	t := DeviceTarget{
+		Ids: []string{},
+	}
+	for _, i := range d {
+		t.Ids = append(t.Ids, i.Spec.DeviceId)
+	}
+	return t
+}
+
+func (d Device) ToTarget() DeviceTarget {
+	return DeviceTarget{
+		Ids: []string{d.Spec.DeviceId},
+	}
+}
+
 func (d Device) WithMeta(m Meta) Device {
 	d.Meta = m
+	return d
+}
+
+func (d Device) WithSpec(s DeviceSpec) Device {
+	d.Spec = s
+	return d
+}
+func (d Device) WithStatus(s DeviceStatus) Device {
+	d.Status = s
 	return d
 }
 
@@ -36,11 +61,19 @@ func (d Device) GetNameNs() NameNs {
 	return NewNameNs(d.Meta.Name, d.Meta.Namespace)
 }
 
-type Targets struct {
-	Ids        []string
-	Names      []string
-	Namespaces []string
-	Labels     map[string]string
+type DeviceTarget struct {
+	ObjectTarget
+	Ids []string
+	// Names      []string
+	// Namespaces []string
+	// Labels     map[string]string
+}
+
+func (o DeviceTarget) HasNoTarget() bool {
+	return len(o.Names) == 0 &&
+		len(o.Namespaces) == 0 &&
+		len(o.Labels) == 0 &&
+		len(o.Ids) == 0
 }
 
 type NameNs struct {
@@ -74,7 +107,7 @@ func (d NameNs) GetNameNamespace() string {
 
 type DeviceSpec struct {
 	DeviceId string `json:"deviceId,omitempty" yaml:"deviceId"`
-	Disabled bool   `json:"disabled,omitempty" yaml:"disabled"`
+	Disabled *bool  `json:"disabled,omitempty" yaml:"disabled"`
 }
 
 type DeviceProperties struct {
@@ -88,8 +121,8 @@ type PropertiesTime struct {
 }
 
 type DeviceStatus struct {
-	Online         bool                `json:"online,omitempty" yaml:"online"`
-	LastHearthbeat time.Time           `json:"lastHearthbeat,omitempty" yaml:"lastHearthbeat"`
+	Online         *bool               `json:"online,omitempty" yaml:"online"`
+	LastHearthbeat *time.Time          `json:"lastHearthbeat,omitempty" yaml:"lastHearthbeat"`
 	Schema         Schema              `json:"schema,omitempty" yaml:"schema"`
 	Properties     PropertiesTime      `json:"properties,omitempty" yaml:"properties"`
 	Events         []DeviceStatusEvent `json:"events,omitempty" yaml:"events"`
@@ -104,9 +137,9 @@ type DeviceStatusEvent struct {
 
 type Schema struct {
 	// Compressed with ZSTD
-	CompressedSchema []byte    `json:"compressedSchema,omitempty" yaml:"-"`
-	PackageNames     []string  `json:"packageNames,omitempty" yaml:"packageNames"`
-	LastSchemaFetch  time.Time `json:"lastSchemaFetch,omitempty" yaml:"lastSchemaFetch"`
+	CompressedSchema []byte     `json:"compressedSchema,omitempty" yaml:"-"`
+	PackageNames     []string   `json:"packageNames,omitempty" yaml:"packageNames"`
+	LastSchemaFetch  *time.Time `json:"lastSchemaFetch,omitempty" yaml:"lastSchemaFetch"`
 }
 
 func (s Schema) GetProtoFiles() (*mir_proto.MirProtoSchema, error) {

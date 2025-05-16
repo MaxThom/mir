@@ -249,7 +249,7 @@ func (r *sendCommandRoute) Request(req *cmd_apiv1.SendCommandRequest) (map[strin
 }
 
 type SendDeviceCommandRequestProto struct {
-	Targets       *core_apiv1.Targets
+	Targets       *core_apiv1.DeviceTarget
 	Command       proto.Message
 	DryRun        bool
 	NoValidation  bool
@@ -429,7 +429,7 @@ func (r *sendConfigRoute) Request(req *cfg_apiv1.SendConfigRequest) (map[string]
 }
 
 type SendDeviceConfigRequestProto struct {
-	Targets           *core_apiv1.Targets
+	Targets           *core_apiv1.DeviceTarget
 	Command           proto.Message
 	DryRun            bool
 	RefreshSchema     bool
@@ -456,7 +456,7 @@ func (r *sendConfigRoute) RequestProto(req *SendDeviceConfigRequestProto) (map[s
 }
 
 type SendDeviceConfigRequestJson struct {
-	Targets           *core_apiv1.Targets
+	Targets           *core_apiv1.DeviceTarget
 	CommandName       string
 	CommandPayload    any
 	DryRun            bool

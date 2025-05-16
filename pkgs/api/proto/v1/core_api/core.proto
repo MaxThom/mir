@@ -32,7 +32,7 @@ message CreateDeviceResponse {
   - when nil, for a map value, it means mark for deletion
 */
 message UpdateDeviceRequest {
-  Targets targets = 1; // To target a set of devices, search using ids, labels and annotations
+  DeviceTarget targets = 1; // To target a set of devices, search using ids, labels and annotations
 
   Meta meta = 2;
   Spec spec = 3;
@@ -81,7 +81,7 @@ message UpdateDeviceResponse {
 }
 
 message MergeDeviceRequest {
-    Targets targets = 1; // To target a set of devices, search using ids, labels and annotations
+    DeviceTarget targets = 1; // To target a set of devices, search using ids, labels and annotations
 
     google.protobuf.Struct device = 2;
 }
@@ -97,7 +97,7 @@ message MergeDeviceResponse {
   Send a request to delete a device in the system
 */
 message DeleteDeviceRequest {
-  Targets targets = 1; // To target a set of devices, search using ids, labels and annotations
+  DeviceTarget targets = 1; // To target a set of devices, search using ids, labels and annotations
 }
 
 /*
@@ -115,7 +115,7 @@ message DeleteDeviceResponse {
   Send a request to list devices in the system
 */
 message ListDeviceRequest {
-  Targets targets = 1; // To target a set of devices, search using ids, labels and annotations
+  DeviceTarget targets = 1; // To target a set of devices, search using ids, labels and annotations
   bool include_events = 2; // Add latest device events
 }
 
@@ -134,11 +134,9 @@ message ListDeviceResponse {
   Targets is used to target a set of devices using
   a combination of ids, labels and annotations
 */
-message Targets {
-  repeated string ids = 1; // ids of the devices
-  repeated string names = 2; // names of the devices
-  repeated string namespaces = 3; // namespace of the devices
-  map<string, string> labels = 4; // Labels are used to uniquely identify the device
+message DeviceTarget {
+  common_api.v1.Targets targets = 1;
+  repeated string ids = 2; // ids of the devices
 }
 
 /*

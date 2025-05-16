@@ -81,3 +81,7 @@ protogen:
 # Go code line count
 line-count:
 	find . -name '*.go' ! -name '*.pb.go' | xargs -I {} cat {} | wc -l
+
+# Go test count
+test-count:
+    find . -name '*_test.go' -exec grep -E '^func Test' {} \; | wc -l

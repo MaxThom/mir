@@ -198,7 +198,7 @@ func TestPublishDevicePushTelemetry(t *testing.T) {
 
 	// Assert
 	respList, err := core_client.PublishDeviceListRequest(b, &core_apiv1.ListDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 	})
@@ -270,7 +270,7 @@ func TestPublishDeviceSchemaAlreadyPresent(t *testing.T) {
 	}
 	timeFetch := time.Date(1992, 10, 14, 14, 20, 00, 00, time.UTC)
 	reqUpd := &core_apiv1.UpdateDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 		Status: &core_apiv1.UpdateDeviceRequest_Status{
@@ -341,7 +341,7 @@ func TestPublishDeviceSchemaAlreadyPresent(t *testing.T) {
 
 	// Assert
 	respList, err := core_client.PublishDeviceListRequest(b, &core_apiv1.ListDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 	})
@@ -409,7 +409,7 @@ func TestPublishDeviceSchemaInvalid(t *testing.T) {
 	}
 	timeFetch := time.Date(1992, 10, 14, 14, 20, 00, 00, time.UTC)
 	reqUpd := &core_apiv1.UpdateDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 		Status: &core_apiv1.UpdateDeviceRequest_Status{
@@ -480,7 +480,7 @@ func TestPublishDeviceSchemaInvalid(t *testing.T) {
 
 	// Assert
 	respList, err := core_client.PublishDeviceListRequest(b, &core_apiv1.ListDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 	})
@@ -591,7 +591,7 @@ func TestPublishDevicePushTelemetryDeviceUpdate(t *testing.T) {
 	time.Sleep(2 * time.Second)
 	str := "update"
 	if _, err = core_client.PublishDeviceUpdateRequest(b, &core_apiv1.UpdateDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 		Meta: &core_apiv1.UpdateDeviceRequest_Meta{
@@ -724,7 +724,7 @@ func TestPublishTelemetryListPairs(t *testing.T) {
 	}
 
 	resp, err := tlm_client.PublishTelemetryListRequest(b, &tlm_apiv1.SendListTelemetryRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: s.ToTarget().Ids,
 		},
 		RefreshSchema: true,
@@ -788,7 +788,7 @@ func TestPublishTelemetryList(t *testing.T) {
 	}
 
 	resp, err := tlm_client.PublishTelemetryListRequest(b, &tlm_apiv1.SendListTelemetryRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: s.ToTarget().Ids,
 		},
 		RefreshSchema: true,
@@ -857,7 +857,7 @@ func TestPublishTelemetryListError(t *testing.T) {
 
 	// Act
 	resp, err := tlm_client.PublishTelemetryListRequest(b, &tlm_apiv1.SendListTelemetryRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{"dev_tlm_list_offline"},
 		},
 		RefreshSchema: true,

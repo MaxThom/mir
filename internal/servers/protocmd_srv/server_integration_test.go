@@ -286,7 +286,7 @@ func TestPublishCmdRequest(t *testing.T) {
 	}
 
 	reqCmd := &cmd_apiv1.SendCommandRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 		Name:            string(reqPayload.ProtoReflect().Descriptor().FullName()),
@@ -336,7 +336,7 @@ func TestPublishCmdRequest(t *testing.T) {
 func TestPublishCmdBadRequest(t *testing.T) {
 	// Arrange
 	reqCmd := &cmd_apiv1.SendCommandRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{},
 		},
 		Name:            "",
@@ -399,7 +399,7 @@ func TestPublishCmdJsonRequest(t *testing.T) {
 	}
 
 	reqCmd := &cmd_apiv1.SendCommandRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 		Name:            string(p.ProtoReflect().Descriptor().FullName()),
@@ -460,7 +460,7 @@ func TestPublishCmdNoDeviceFound(t *testing.T) {
 		t.Error(err)
 	}
 	reqCmd := &cmd_apiv1.SendCommandRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 		Name:            string(reqPayload.ProtoReflect().Descriptor().FullName()),
@@ -507,7 +507,7 @@ func TestPublishCmdProtoNoValidationDryRun(t *testing.T) {
 	}
 
 	reqCmd := &cmd_apiv1.SendCommandRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 		Name:            string(reqPayload.ProtoReflect().Descriptor().FullName()),
@@ -591,7 +591,7 @@ func TestPublishCmdProtoInvalidPayloadNoValidation(t *testing.T) {
 	}
 
 	reqCmd := &cmd_apiv1.SendCommandRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 		Name:            string(cmdHandled.ProtoReflect().Descriptor().FullName()),
@@ -900,7 +900,7 @@ func TestPublishCmdRequestMultipleDevicesOneTimeout(t *testing.T) {
 	}
 
 	reqCmd := &cmd_apiv1.SendCommandRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{id, id2},
 		},
 		Name:            string(reqPayload.ProtoReflect().Descriptor().FullName()),
@@ -1344,7 +1344,7 @@ func TestPublishCmdRequestMultipleDevicesOneTimeoutJsonTemplate(t *testing.T) {
 	reqCmdPayload := &protocmd_testv1.ChangePower{}
 	reqCmdName := string(reqCmdPayload.ProtoReflect().Descriptor().FullName())
 	reqCmd := &cmd_apiv1.SendCommandRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{id, id2},
 		},
 		Name:         reqCmdName,
@@ -1434,7 +1434,7 @@ func TestPublishCmdJsonNameWithCurlyRequest(t *testing.T) {
 	}
 
 	reqCmd := &cmd_apiv1.SendCommandRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 		Name:            string(p.ProtoReflect().Descriptor().FullName()) + "{x=y}",

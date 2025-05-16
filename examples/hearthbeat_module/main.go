@@ -112,7 +112,7 @@ func SendDeviceCrud(m *mir.Mir) {
 	newName := "PIPI2MOU"
 	respUpd, err := m.Server().UpdateDevice().Request(
 		&core_apiv1.UpdateDeviceRequest{
-			Targets: &core_apiv1.Targets{
+			Targets: &core_apiv1.DeviceTarget{
 				Ids: []string{id},
 			},
 			Meta: &core_apiv1.UpdateDeviceRequest_Meta{
@@ -126,7 +126,7 @@ func SendDeviceCrud(m *mir.Mir) {
 
 	respDel, err := m.Server().DeleteDevice().Request(
 		&core_apiv1.DeleteDeviceRequest{
-			Targets: &core_apiv1.Targets{
+			Targets: &core_apiv1.DeviceTarget{
 				Ids: []string{id},
 			}},
 	)

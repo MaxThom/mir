@@ -67,7 +67,7 @@ func (d *CommandListCmd) Run(c CLI) error {
 	defer msgBus.Close()
 
 	req := &cmd_apiv1.SendListCommandsRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids:        d.Target.Ids,
 			Names:      d.Target.Names,
 			Namespaces: d.Target.Namespaces,
@@ -180,7 +180,7 @@ func (d *CommandSendCmd) Run(c CLI) error {
 	}
 
 	req := &cmd_apiv1.SendCommandRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids:        d.Target.Ids,
 			Names:      d.Target.Names,
 			Namespaces: d.Target.Namespaces,

@@ -13,6 +13,7 @@ import (
 	"github.com/maxthom/mir/internal/clients/core_client"
 	"github.com/maxthom/mir/internal/libs/external/influx"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
+	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	"github.com/rs/zerolog"
 	logger "github.com/rs/zerolog/log"
@@ -93,8 +94,10 @@ func SetupNatsConPanic(url string) *bus.BusConn {
 
 func DeleteDevicesWithLabelsPanic(b *bus.BusConn, lbl map[string]string) {
 	if _, err := core_client.PublishDeviceDeleteRequest(b, &core_apiv1.DeleteDeviceRequest{
-		Targets: &core_apiv1.Targets{
-			Labels: lbl,
+		Targets: &core_apiv1.DeviceTarget{
+			Targets: &common_apiv1.Targets{
+				Labels: lbl,
+			},
 		},
 	}); err != nil {
 		panic(err)

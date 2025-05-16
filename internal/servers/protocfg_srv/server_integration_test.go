@@ -259,7 +259,7 @@ func TestPublishCfgRequest(t *testing.T) {
 	}
 
 	reqCmd := &cfg_apiv1.SendConfigRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 		Name:            string(reqPayload.ProtoReflect().Descriptor().FullName()),
@@ -309,7 +309,7 @@ func TestPublishCfgRequest(t *testing.T) {
 func TestPublishCfgBadRequest(t *testing.T) {
 	// Arrange
 	reqCmd := &cfg_apiv1.SendConfigRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{},
 		},
 		Name:            "",
@@ -371,7 +371,7 @@ func TestPublishCfgJsonRequest(t *testing.T) {
 	}
 
 	reqCmd := &cfg_apiv1.SendConfigRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 		Name:            string(p.ProtoReflect().Descriptor().FullName()),
@@ -465,7 +465,7 @@ func TestPublishCfgCurrentValues(t *testing.T) {
 	}
 
 	reqCfg := &cfg_apiv1.SendConfigRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 		Name:            string(p.ProtoReflect().Descriptor().FullName()),
@@ -475,7 +475,7 @@ func TestPublishCfgCurrentValues(t *testing.T) {
 	}
 
 	reqCurrent := &cfg_apiv1.SendConfigRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 		Name:            string(p.ProtoReflect().Descriptor().FullName()),
@@ -587,7 +587,7 @@ func TestPublishCfgRequestCheckTime(t *testing.T) {
 	}
 
 	reqCmd := &cfg_apiv1.SendConfigRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 		Name:            string(p.ProtoReflect().Descriptor().FullName()),
@@ -597,7 +597,7 @@ func TestPublishCfgRequestCheckTime(t *testing.T) {
 	}
 
 	reqDev := &core_apiv1.ListDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 	}
@@ -700,7 +700,7 @@ func TestPublishCfgDoubleUpdateSendIfDifferent(t *testing.T) {
 	}
 
 	reqCfg := &cfg_apiv1.SendConfigRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 		Name:              string(p.ProtoReflect().Descriptor().FullName()),
@@ -711,7 +711,7 @@ func TestPublishCfgDoubleUpdateSendIfDifferent(t *testing.T) {
 	}
 
 	reqCfgSec := &cfg_apiv1.SendConfigRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 		Name:              string(p.ProtoReflect().Descriptor().FullName()),
@@ -817,7 +817,7 @@ func TestPublishCfgDoubleUpdateSendAlways(t *testing.T) {
 	}
 
 	reqCfg := &cfg_apiv1.SendConfigRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 		Name:              string(p.ProtoReflect().Descriptor().FullName()),
@@ -828,7 +828,7 @@ func TestPublishCfgDoubleUpdateSendAlways(t *testing.T) {
 	}
 
 	reqCfgSec := &cfg_apiv1.SendConfigRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 		Name:              string(p.ProtoReflect().Descriptor().FullName()),
@@ -934,7 +934,7 @@ func TestPublishCfgDoubleUpdateIsDifferent(t *testing.T) {
 	}
 
 	reqCfg := &cfg_apiv1.SendConfigRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 		Name:              string(p.ProtoReflect().Descriptor().FullName()),
@@ -953,7 +953,7 @@ func TestPublishCfgDoubleUpdateIsDifferent(t *testing.T) {
 	}
 
 	reqCfgSec := &cfg_apiv1.SendConfigRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 		Name:              string(p.ProtoReflect().Descriptor().FullName()),
@@ -1026,7 +1026,7 @@ func TestPublishCfgNoDeviceFound(t *testing.T) {
 		t.Error(err)
 	}
 	reqCmd := &cfg_apiv1.SendConfigRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 		Name:            string(reqPayload.ProtoReflect().Descriptor().FullName()),
@@ -1083,7 +1083,7 @@ func TestPublishCfgProtoDryRun(t *testing.T) {
 	}
 
 	reqCmd := &cfg_apiv1.SendConfigRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 		Name:            string(reqPayload.ProtoReflect().Descriptor().FullName()),
@@ -1172,7 +1172,7 @@ func TestPublishCfgProtoInvalidPayload(t *testing.T) {
 	}
 
 	reqCfg := &cfg_apiv1.SendConfigRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 		Name:            "INVALID",
@@ -1796,7 +1796,7 @@ func TestPublishCfgRequestMultipleDevicesOneTimeoutJsonTemplate(t *testing.T) {
 	reqCfgPayload := &protocfg_testv1.PowerLevel{}
 	reqCfgName := string(reqCfgPayload.ProtoReflect().Descriptor().FullName())
 	reqCfg := &cfg_apiv1.SendConfigRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{id, id2},
 		},
 		Name:         reqCfgName,
@@ -1885,7 +1885,7 @@ func TestPublishCfgJsonNameWithCurlyRequest(t *testing.T) {
 	}
 
 	reqCfg := &cfg_apiv1.SendConfigRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 		Name:            string(p.ProtoReflect().Descriptor().FullName()) + "{x=y}",
@@ -1962,7 +1962,7 @@ func TestPublishReportedProperties(t *testing.T) {
 
 	time.Sleep(1 * time.Second)
 	listResp, err := core_client.PublishDeviceListRequest(b, &core_apiv1.ListDeviceRequest{
-		Targets: &core_apiv1.Targets{Ids: []string{id}},
+		Targets: &core_apiv1.DeviceTarget{Ids: []string{id}},
 	})
 	if err != nil {
 		t.Error(err)
@@ -2015,7 +2015,7 @@ func TestPublishReportedPropertiesEvent(t *testing.T) {
 
 	time.Sleep(1 * time.Second)
 	listResp, err := core_client.PublishDeviceListRequest(b, &core_apiv1.ListDeviceRequest{
-		Targets: &core_apiv1.Targets{Ids: []string{id}},
+		Targets: &core_apiv1.DeviceTarget{Ids: []string{id}},
 	})
 	if err != nil {
 		t.Error(err)
@@ -2085,7 +2085,7 @@ func TestPublishDesiredPropertiesEvent(t *testing.T) {
 	}
 
 	reqCmd := &cfg_apiv1.SendConfigRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 		Name:            string(reqPayload.ProtoReflect().Descriptor().FullName()),
@@ -2154,7 +2154,7 @@ func TestDesiredPropertiesDefaultWritten(t *testing.T) {
 	}
 
 	reqGet := &core_apiv1.ListDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 	}
@@ -2264,7 +2264,7 @@ func TestDesiredPropertiesRequestFromDeviceOnBoot(t *testing.T) {
 	packNames := sch.GetPackageList()
 
 	updateSchReq := &core_apiv1.UpdateDeviceRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 		Status: &core_apiv1.UpdateDeviceRequest_Status{
@@ -2284,7 +2284,7 @@ func TestDesiredPropertiesRequestFromDeviceOnBoot(t *testing.T) {
 	}
 
 	reqPowerLevel := &cfg_apiv1.SendConfigRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 		Name:            string(reqPayloadPowerLevel.ProtoReflect().Descriptor().FullName()),
@@ -2302,7 +2302,7 @@ func TestDesiredPropertiesRequestFromDeviceOnBoot(t *testing.T) {
 	}
 
 	reqConduit := &cfg_apiv1.SendConfigRequest{
-		Targets: &core_apiv1.Targets{
+		Targets: &core_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 		Name:            string(reqPayloadConduit.ProtoReflect().Descriptor().FullName()),
