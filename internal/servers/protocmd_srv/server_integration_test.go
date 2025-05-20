@@ -28,6 +28,7 @@ import (
 	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	mirDevice "github.com/maxthom/mir/pkgs/device/mir"
+	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/surrealdb/surrealdb.go"
 	"gotest.tools/assert"
@@ -153,7 +154,7 @@ func TestPublishCmdListRequest(t *testing.T) {
 	}
 
 	respListCmd, err := cmd_client.PublishListCommandsRequest(b, &cmd_apiv1.SendListCommandsRequest{
-		Targets:       s.ToTarget(),
+		Targets:       mir_models.MirDeviceTargetToProtoDeviceTarget(s.ToTarget()),
 		FilterLabels:  map[string]string{},
 		RefreshSchema: false,
 	})
@@ -214,7 +215,7 @@ func TestPublishCmdListFiltersRequest(t *testing.T) {
 	}
 
 	respListCmd, err := cmd_client.PublishListCommandsRequest(b, &cmd_apiv1.SendListCommandsRequest{
-		Targets: s.ToTarget(),
+		Targets: mir_models.MirDeviceTargetToProtoDeviceTarget(s.ToTarget()),
 		FilterLabels: map[string]string{
 			"building": "A",
 			"floor":    "2",
@@ -683,7 +684,7 @@ func TestPublishCmdRequestMultipleDevices(t *testing.T) {
 		t.Error(err)
 	}
 	reqCmd := &cmd_apiv1.SendCommandRequest{
-		Targets:         swarm.ToTarget(),
+		Targets:         mir_models.MirDeviceTargetToProtoDeviceTarget(swarm.ToTarget()),
 		Name:            string(reqPayload.ProtoReflect().Descriptor().FullName()),
 		PayloadEncoding: common_apiv1.Encoding_ENCODING_PROTOBUF,
 		Payload:         payloadBytes,
@@ -792,7 +793,7 @@ func TestPublishCmdRequestMultipleDevicesOneNoHandler(t *testing.T) {
 		t.Error(err)
 	}
 	reqCmd := &cmd_apiv1.SendCommandRequest{
-		Targets:         swarm.ToTarget(),
+		Targets:         mir_models.MirDeviceTargetToProtoDeviceTarget(swarm.ToTarget()),
 		Name:            string(reqPayload.ProtoReflect().Descriptor().FullName()),
 		PayloadEncoding: common_apiv1.Encoding_ENCODING_PROTOBUF,
 		Payload:         payloadBytes,
@@ -1005,7 +1006,7 @@ func TestPublishCmdRequestMultipleDevicesJson(t *testing.T) {
 		t.Error(err)
 	}
 	reqCmd := &cmd_apiv1.SendCommandRequest{
-		Targets:         swarm.ToTarget(),
+		Targets:         mir_models.MirDeviceTargetToProtoDeviceTarget(swarm.ToTarget()),
 		Name:            payloadName,
 		PayloadEncoding: common_apiv1.Encoding_ENCODING_JSON,
 		Payload:         payloadBytes,
@@ -1091,7 +1092,7 @@ func TestPublishCmdRequestMultipleDevicesDescriptorNotFound(t *testing.T) {
 		t.Error(err)
 	}
 	reqCmd := &cmd_apiv1.SendCommandRequest{
-		Targets:         swarm.ToTarget(),
+		Targets:         mir_models.MirDeviceTargetToProtoDeviceTarget(swarm.ToTarget()),
 		Name:            "nothing",
 		PayloadEncoding: common_apiv1.Encoding_ENCODING_JSON,
 		Payload:         payloadBytes,
@@ -1185,7 +1186,7 @@ func TestPublishCmdRequestMultipleDevicesSingleDescriptorNotFoundForcePush(t *te
 		t.Error(err)
 	}
 	reqCmd := &cmd_apiv1.SendCommandRequest{
-		Targets:         swarm.ToTarget(),
+		Targets:         mir_models.MirDeviceTargetToProtoDeviceTarget(swarm.ToTarget()),
 		Name:            payloadName,
 		PayloadEncoding: common_apiv1.Encoding_ENCODING_JSON,
 		Payload:         payloadBytes,
@@ -1265,7 +1266,7 @@ func TestPublishCmdRequestMultipleDevicesJsonTemplate(t *testing.T) {
 	reqPayload := protocmd_testv1.ChangePower{}
 	cmdName := string(reqPayload.ProtoReflect().Descriptor().FullName())
 	reqCmd := &cmd_apiv1.SendCommandRequest{
-		Targets:      swarm.ToTarget(),
+		Targets:      mir_models.MirDeviceTargetToProtoDeviceTarget(swarm.ToTarget()),
 		Name:         cmdName,
 		ShowTemplate: true,
 	}

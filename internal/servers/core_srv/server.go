@@ -13,7 +13,6 @@ import (
 	"github.com/maxthom/mir/internal/libs/api/metrics"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
-	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/nats-io/nats.go"
@@ -93,7 +92,7 @@ func NewCore(logger zerolog.Logger, m *mir.Mir, store mng.MirStore) (*CoreServer
 	// Preload hearthbeat map. Required in case the
 	// app is down while a device is also, but report as online
 	// because it went offline when the app was down
-	devices, err := store.ListDevice(&core_apiv1.ListDeviceRequest{Targets: &core_apiv1.DeviceTarget{}})
+	devices, err := store.ListDevice(mir_models.DeviceTarget{}, false)
 	if err != nil {
 		l.Error().Err(err).Msg("error occure while executing list query")
 	}
@@ -103,8 +102,8 @@ func NewCore(logger zerolog.Logger, m *mir.Mir, store mng.MirStore) (*CoreServer
 		// When an offline device sends a first pulse, it get added
 		// to the map.
 		// If a device becomes offline, it's removed from the map
-		if d.Status.Online {
-			hearbeats[d.Spec.DeviceId] = d.Status.LastHearthbeat
+		if d.Status.Online != nil && *d.Status.Online {
+			hearbeats[d.Spec.DeviceId] = *d.Status.LastHearthbeat
 			deviceStatusCount.WithLabelValues("online").Inc()
 		} else {
 			deviceStatusCount.WithLabelValues("offline").Inc()
@@ -157,15 +156,15 @@ func (s *CoreServer) Shutdown() error {
 	return nil
 }
 
-func (s *CoreServer) createDeviceSub(msg *mir.Msg, clientId string, req *core_apiv1.CreateDeviceRequest) (*core_apiv1.Device, error) {
-	l.Debug().Str("route", "create").Str("payload", fmt.Sprintf("%v", req)).Msg("new device request")
+func (s *CoreServer) createDeviceSub(msg *mir.Msg, clientId string, d mir_models.Device) (mir_models.Device, error) {
+	l.Debug().Str("route", "create").Str("payload", fmt.Sprintf("%v", d)).Msg("new device request")
 	requestTotal.WithLabelValues("create").Inc()
 
-	newDev, err := s.store.CreateDevice(req)
+	newDev, err := s.store.CreateDevice(d)
 	if err != nil {
 		l.Error().Err(err).Msg("error occure while creating device")
 		requestErrorTotal.WithLabelValues("create").Inc()
-		return nil, fmt.Errorf("error creating device: %w", err)
+		return mir_models.Device{}, fmt.Errorf("error creating device: %w", err)
 	}
 
 	// Publish created events
@@ -173,28 +172,27 @@ func (s *CoreServer) createDeviceSub(msg *mir.Msg, clientId string, req *core_ap
 		l.Warn().Err(err).Str("deviceId", newDev.Spec.DeviceId).Msg("error occure while publishing device created event")
 	}
 
-	return mir_models.NewProtoDeviceFromDevice(newDev), nil
+	return newDev, nil
 }
 
-func (s *CoreServer) updateDeviceSub(msg *mir.Msg, clientId string, req *core_apiv1.UpdateDeviceRequest) ([]*core_apiv1.Device, error) {
-	l.Debug().Str("route", "update").Str("payload", fmt.Sprintf("%v", req)).Msg("update device request")
+func (s *CoreServer) updateDeviceSub(msg *mir.Msg, clientId string, t mir_models.DeviceTarget, d mir_models.Device) ([]mir_models.Device, error) {
+	l.Debug().Str("route", "update").Str("payload", fmt.Sprintf("%v", t)).Msg("update device request")
 	requestTotal.WithLabelValues("update").Inc()
-
 	// Send config to cfg module
 	// We do it twice, one with dry run to validate the config
 	// It seems slow and redundant, but we must validate the config for all
-	if req.GetProps() != nil && req.GetProps().GetDesired() != nil && req.GetProps().GetDesired().Fields != nil && len(req.GetProps().GetDesired().Fields) > 0 {
+	if d.Properties.Desired != nil && len(d.Properties.Desired) > 0 {
 		l.Debug().Str("route", "update").Msg("sending config to cfg module")
-		props := req.GetProps().GetDesired().Fields
+		// props := req.GetProps().GetDesired().Fields
 
 		// First we validate all the properties
 		// We do this as we do not want to have only a subset of the request to be written
 		var errs error
-		for k, v := range props {
+		for k, v := range d.Properties.Desired {
 			cfgRespDryRun, err := s.m.Server().SendConfig().RequestJson(&mir.SendDeviceConfigRequestJson{
-				Targets:        req.Targets,
+				Targets:        mir_models.MirDeviceTargetToProtoDeviceTarget(t),
 				CommandName:    k,
-				CommandPayload: v.AsInterface(),
+				CommandPayload: v,
 				DryRun:         true,
 			})
 			if err != nil {
@@ -215,20 +213,20 @@ func (s *CoreServer) updateDeviceSub(msg *mir.Msg, clientId string, req *core_ap
 
 		// If all validated, we can send
 		// We know they were validated, so if error, it means its to the device
-		for k, v := range props {
+		for k, v := range d.Properties.Desired {
 			s.m.Server().SendConfig().RequestJson(&mir.SendDeviceConfigRequestJson{
-				Targets:           req.Targets,
+				Targets:           mir_models.MirDeviceTargetToProtoDeviceTarget(t),
 				CommandName:       k,
-				CommandPayload:    v.AsInterface(),
+				CommandPayload:    v,
 				SendOnlyDifferent: true,
 			})
 		}
 	}
 
-	respDb, err := s.store.UpdateDevice(req)
+	respDb, err := s.store.UpdateDevice(t, d)
 	if err != nil {
 		if errors.Is(err, mng.ErrorDeviceShouldBeCreated) {
-			resp, err := s.m.Server().CreateDevice().Request(mir_models.NewCreateDeviceReqFromDeviceUpdateRequest(req))
+			resp, err := s.m.Server().CreateDevice().Request(d)
 			if err != nil {
 				l.Error().Err(err).Msg("error creating device")
 				requestErrorTotal.WithLabelValues("update").Inc()
@@ -254,14 +252,14 @@ func (s *CoreServer) updateDeviceSub(msg *mir.Msg, clientId string, req *core_ap
 		}
 	}
 
-	return mir_models.NewProtoDeviceListFromDevices(respDb), nil
+	return respDb, nil
 }
 
-func (s *CoreServer) deleteDeviceSub(msg *mir.Msg, clientId string, req *core_apiv1.DeleteDeviceRequest) ([]*core_apiv1.Device, error) {
-	l.Debug().Str("route", "delete").Str("payload", fmt.Sprintf("%v", req)).Msg("delete device request")
+func (s *CoreServer) deleteDeviceSub(msg *mir.Msg, clientId string, t mir_models.DeviceTarget) ([]mir_models.Device, error) {
+	l.Debug().Str("route", "delete").Str("payload", fmt.Sprintf("%v", t)).Msg("delete device request")
 	requestTotal.WithLabelValues("delete").Inc()
 
-	devList, err := s.store.DeleteDevice(req)
+	devList, err := s.store.DeleteDevice(t)
 	if err != nil {
 		if errors.Is(err, mir_models.ErrorNoDeviceTargetProvided) {
 			requestErrorTotal.WithLabelValues("delete").Inc()
@@ -277,21 +275,21 @@ func (s *CoreServer) deleteDeviceSub(msg *mir.Msg, clientId string, req *core_ap
 			l.Warn().Err(err).Str("deviceId", d.Spec.DeviceId).Msg("error occure while publishing device deleted event")
 		}
 	}
-	return mir_models.NewProtoDeviceListFromDevices(devList), nil
+	return devList, nil
 }
 
-func (s *CoreServer) listDeviceSub(msg *mir.Msg, clientId string, req *core_apiv1.ListDeviceRequest) ([]*core_apiv1.Device, error) {
-	l.Debug().Str("route", "list").Str("payload", fmt.Sprintf("%v", req)).Msg("list device request")
+func (s *CoreServer) listDeviceSub(msg *mir.Msg, clientId string, t mir_models.DeviceTarget, includeEvents bool) ([]mir_models.Device, error) {
+	l.Debug().Str("route", "list").Str("payload", fmt.Sprintf("%v", t)).Msg("list device request")
 	requestTotal.WithLabelValues("list").Inc()
 
-	respDb, err := s.store.ListDevice(req)
+	respDb, err := s.store.ListDevice(t, includeEvents)
 	if err != nil {
 		requestErrorTotal.WithLabelValues("list").Inc()
 		l.Error().Err(err).Msg("error occure while executing a db query")
 		return nil, fmt.Errorf("error listing device: %w", err)
 	}
 
-	return mir_models.NewProtoDeviceListFromDevices(respDb), nil
+	return respDb, nil
 }
 
 func (s *CoreServer) hearthbeatPulsor(ctx context.Context, interval time.Duration, offlineAfter time.Duration) {
@@ -314,14 +312,13 @@ func (s *CoreServer) hearthbeatPulsor(ctx context.Context, interval time.Duratio
 				toBoolRef := func(b bool) *bool {
 					return &b
 				}
-				devs, err := s.store.UpdateDevice(&core_apiv1.UpdateDeviceRequest{
-					Targets: &core_apiv1.DeviceTarget{
-						Ids: newOffline,
-					},
-					Status: &core_apiv1.UpdateDeviceRequest_Status{
-						Online: toBoolRef(false),
-					},
+				t := mir_models.DeviceTarget{
+					Ids: newOffline,
+				}
+				d := mir_models.NewDevice().WithStatus(mir_models.DeviceStatus{
+					Online: toBoolRef(false),
 				})
+				devs, err := s.store.UpdateDevice(t, d)
 				if err != nil {
 					l.Error().Err(err).Msg("error occure while executing hearthbeat db query")
 					continue
@@ -356,16 +353,24 @@ func (s *CoreServer) hearthbeatSub(msg *mir.Msg, deviceId string) {
 		return &b
 	}
 	// Since this update is only for hearthbeat and often, we dont want to have a device update event
-	updReq := &core_apiv1.UpdateDeviceRequest{
-		Targets: &core_apiv1.DeviceTarget{
-			Ids: []string{deviceId},
-		},
-		Status: &core_apiv1.UpdateDeviceRequest_Status{
-			Online:         toBoolRef(true),
-			LastHearthbeat: mir_models.AsProtoTimestamp(timeNow),
-		},
+	// updReq := &core_apiv1.UpdateDeviceRequest{
+	// 	Targets: &core_apiv1.DeviceTarget{
+	// 		Ids: []string{deviceId},
+	// 	},
+	// 	Status: &core_apiv1.UpdateDeviceRequest_Status{
+	// 		Online:         toBoolRef(true),
+	// 		LastHearthbeat: mir_models.AsProtoTimestamp(timeNow),
+	// 	},
+	// }
+	t := mir_models.DeviceTarget{
+		Ids: []string{deviceId},
 	}
-	dev, err := s.store.UpdateDevice(updReq)
+	d := mir_models.NewDevice().WithStatus(mir_models.DeviceStatus{
+		Online:         toBoolRef(true),
+		LastHearthbeat: &timeNow,
+	})
+
+	dev, err := s.store.UpdateDevice(t, d)
 	if err != nil {
 		l.Error().Err(err).Msg("error occure while executing hearthbeat db query")
 		msg.Ack()
@@ -373,17 +378,15 @@ func (s *CoreServer) hearthbeatSub(msg *mir.Msg, deviceId string) {
 	}
 	// Means device is not in db, we provision it
 	if len(dev) == 0 {
-		_, err := s.m.Server().CreateDevice().Request(&core_apiv1.CreateDeviceRequest{
-			Spec: &core_apiv1.Spec{
-				DeviceId: deviceId,
-			},
-		})
+		_, err := s.m.Server().CreateDevice().Request(mir_models.NewDevice().WithSpec(mir_models.DeviceSpec{
+			DeviceId: deviceId,
+		}))
 		if err != nil {
 			l.Error().Err(err).Str("deviceId", deviceId).Msg("could not automaticly provision new device")
 			msg.Ack()
 			return
 		}
-		dev, err = s.store.UpdateDevice(updReq)
+		dev, err = s.store.UpdateDevice(t, d)
 		if err != nil {
 			l.Error().Err(err).Msg("error occure while executing hearthbeat db query")
 			msg.Ack()
@@ -421,21 +424,21 @@ func (s *CoreServer) schemaSub(msg *mir.Msg, deviceId string, sch *mir_proto.Mir
 		return
 	}
 
-	_, err = s.m.Server().UpdateDevice().Request(&core_apiv1.UpdateDeviceRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	timeNow := time.Now().UTC()
+	_, err = s.m.Server().UpdateDevice().Request(
+		mir_models.DeviceTarget{
 			Ids: []string{deviceId},
 		},
-		Status: &core_apiv1.UpdateDeviceRequest_Status{
-			Schema: &core_apiv1.UpdateDeviceRequest_Schema{
+		mir_models.NewDevice().WithStatus(mir_models.DeviceStatus{
+			Schema: mir_models.Schema{
 				CompressedSchema: compressSch,
 				PackageNames:     sch.GetPackageList(),
-				LastSchemaFetch:  mir_models.AsProtoTimestamp(time.Now().UTC()),
+				LastSchemaFetch:  &timeNow,
 			},
-		},
-	},
+		}),
 	)
 	if err != nil {
-		l.Error().Err(err).Msg("error compressing schema for store")
+		l.Error().Err(err).Msg("error updating schema for store")
 		msg.Ack()
 	}
 

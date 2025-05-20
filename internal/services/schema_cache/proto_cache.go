@@ -5,7 +5,6 @@ import (
 	"sync"
 	"time"
 
-	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
@@ -148,12 +147,9 @@ func (c *MirProtoCache) reconcileDeviceSchema(deviceId string, forceDeviceFetch 
 	if !forceDeviceFetch {
 		l.Debug().Str("device_id", deviceId).Msg("device schema not in cache, reconciling...")
 		devs, err := c.m.Server().ListDevice().Request(
-			&core_apiv1.ListDeviceRequest{
-				Targets: &core_apiv1.DeviceTarget{
-					Ids: []string{deviceId},
-				},
-			},
-		)
+			mir_models.DeviceTarget{
+				Ids: []string{deviceId},
+			}, false)
 		if err != nil {
 			return mir_models.Device{}, nil, fmt.Errorf("error listing devices: %s", err)
 		}
@@ -184,19 +180,21 @@ func (c *MirProtoCache) reconcileDeviceSchema(deviceId string, forceDeviceFetch 
 		return mir_models.Device{}, nil, err
 	}
 
-	devResp, err := c.m.Server().UpdateDevice().Request(&core_apiv1.UpdateDeviceRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	fmt.Println("SCHEMA3", deviceId)
+	timeNow := time.Now().UTC()
+	devResp, err := c.m.Server().UpdateDevice().Request(
+		mir_models.DeviceTarget{
 			Ids: []string{deviceId},
 		},
-		Status: &core_apiv1.UpdateDeviceRequest_Status{
-			Schema: &core_apiv1.UpdateDeviceRequest_Schema{
+		mir_models.NewDevice().WithStatus(mir_models.DeviceStatus{
+			Schema: mir_models.Schema{
 				CompressedSchema: compressSch,
 				PackageNames:     sch.GetPackageList(),
-				LastSchemaFetch:  mir_models.AsProtoTimestamp(time.Now().UTC()),
+				LastSchemaFetch:  &timeNow,
 			},
-		},
-	},
+		}),
 	)
+	fmt.Println("SCHEMA4", deviceId, err)
 	if err != nil {
 		return mir_models.Device{}, nil, fmt.Errorf("error updating device: %w", err)
 	}
@@ -210,10 +208,12 @@ func (c *MirProtoCache) reconcileDeviceSchema(deviceId string, forceDeviceFetch 
 }
 
 func (c *MirProtoCache) getProtoSchemaFromDevice(deviceId string) (*mir_proto.MirProtoSchema, error) {
+	fmt.Println("SCHEMA", deviceId)
 	sch, err := c.m.Device().Schema().Request(deviceId)
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("SCHEMA2", deviceId)
 
 	return sch, nil
 }

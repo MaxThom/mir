@@ -13,7 +13,6 @@ import (
 	"github.com/maxthom/mir/internal/clients/core_client"
 	"github.com/maxthom/mir/internal/libs/external/influx"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
-	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	"github.com/rs/zerolog"
 	logger "github.com/rs/zerolog/log"
@@ -95,9 +94,7 @@ func SetupNatsConPanic(url string) *bus.BusConn {
 func DeleteDevicesWithLabelsPanic(b *bus.BusConn, lbl map[string]string) {
 	if _, err := core_client.PublishDeviceDeleteRequest(b, &core_apiv1.DeleteDeviceRequest{
 		Targets: &core_apiv1.DeviceTarget{
-			Targets: &common_apiv1.Targets{
-				Labels: lbl,
-			},
+			Labels: lbl,
 		},
 	}); err != nil {
 		panic(err)
@@ -173,14 +170,13 @@ func ProtoToStructPb(p proto.Message) (*structpb.Struct, error) {
 	return structpb.NewStruct(m)
 }
 
-func ProtoToDesiredStructPb(p proto.Message) (*structpb.Struct, error) {
+func ProtoToPropertyMap(p proto.Message) (map[string]any, error) {
 	m, err := ProtoToMap(p)
 	if err != nil {
 		return nil, err
 	}
 
-	m = map[string]any{
+	return map[string]any{
 		string(p.ProtoReflect().Descriptor().FullName()): m,
-	}
-	return structpb.NewStruct(m)
+	}, nil
 }

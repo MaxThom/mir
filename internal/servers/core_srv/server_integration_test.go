@@ -27,7 +27,6 @@ import (
 	"github.com/surrealdb/surrealdb.go"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
-	"google.golang.org/protobuf/types/known/structpb"
 	"gotest.tools/assert"
 )
 
@@ -229,7 +228,7 @@ func TestPublishDeviceCreateClientNoID(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, resp.GetError() != "", true)
-	assert.Equal(t, resp.GetError(), "error creating device: device name and id are missing")
+	assert.Equal(t, resp.GetError(), "error creating device: device id is missing")
 }
 
 func TestPublishDeviceCreateClientNoNamespace(t *testing.T) {
@@ -2514,24 +2513,22 @@ func TestDeviceUpdateDesiredProperties(t *testing.T) {
 		GazLevel:  24,
 	}
 	propName := string(prop.ProtoReflect().Descriptor().FullName())
-	st, err := test_utils.ProtoToDesiredStructPb(prop)
+	st, err := test_utils.ProtoToPropertyMap(prop)
 	if err != nil {
 		t.Error(err)
 	}
-	reqUpd := &core_apiv1.UpdateDeviceRequest{
-		Targets: s.ToTarget(),
-		Props: &core_apiv1.UpdateDeviceRequest_Properties{
-			Desired: st,
-		},
-	}
+
+	devUpd := mir_models.NewDevice().WithProps(mir_models.DeviceProperties{
+		Desired: st,
+	})
 
 	// Act
 	wgs, err := s.Deploy(ctx)
 	if err != nil {
 		t.Error(err)
 	}
-	time.Sleep(1 * time.Second)
-	devs, err := mSdk.Server().UpdateDevice().Request(reqUpd)
+	time.Sleep(5 * time.Second)
+	devs, err := mSdk.Server().UpdateDevice().Request(s.ToTarget(), devUpd)
 	if err != nil {
 		t.Error(err)
 	}
@@ -2580,16 +2577,13 @@ func TestDeviceUpdateDesiredPropertiesDoubleSameUpdate(t *testing.T) {
 		GazLevel:  24,
 	}
 	propName := string(prop.ProtoReflect().Descriptor().FullName())
-	st, err := test_utils.ProtoToDesiredStructPb(prop)
+	st, err := test_utils.ProtoToPropertyMap(prop)
 	if err != nil {
 		t.Error(err)
 	}
-	reqUpd := &core_apiv1.UpdateDeviceRequest{
-		Targets: s.ToTarget(),
-		Props: &core_apiv1.UpdateDeviceRequest_Properties{
-			Desired: st,
-		},
-	}
+	updDev := mir_models.NewDevice().WithProps(mir_models.DeviceProperties{
+		Desired: st,
+	})
 
 	// Act
 	wgs, err := s.Deploy(ctx)
@@ -2597,12 +2591,12 @@ func TestDeviceUpdateDesiredPropertiesDoubleSameUpdate(t *testing.T) {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
-	devs, err := mSdk.Server().UpdateDevice().Request(reqUpd)
+	devs, err := mSdk.Server().UpdateDevice().Request(s.ToTarget(), updDev)
 	if err != nil {
 		t.Error(err)
 	}
 	time.Sleep(2 * time.Second)
-	devs, err = mSdk.Server().UpdateDevice().Request(reqUpd)
+	devs, err = mSdk.Server().UpdateDevice().Request(s.ToTarget(), updDev)
 	if err != nil {
 		t.Error(err)
 	}
@@ -2651,21 +2645,14 @@ func TestDeviceUpdateDesiredPropertiesInvalid(t *testing.T) {
 		GazLevel:  24,
 	}
 	propName := string(prop.ProtoReflect().Descriptor().FullName())
-	propMap, err := test_utils.ProtoToMap(prop)
+	propMap, err := test_utils.ProtoToPropertyMap(prop)
 	propMap["wrong_field"] = "wrong"
 	propMap = map[string]any{
 		propName: propMap,
 	}
-	st, err := structpb.NewStruct(propMap)
-	if err != nil {
-		t.Error(err)
-	}
-	reqUpd := &core_apiv1.UpdateDeviceRequest{
-		Targets: s.ToTarget(),
-		Props: &core_apiv1.UpdateDeviceRequest_Properties{
-			Desired: st,
-		},
-	}
+	devUpd := mir_models.NewDevice().WithProps(mir_models.DeviceProperties{
+		Desired: propMap,
+	})
 
 	// Act
 	wgs, err := s.Deploy(ctx)
@@ -2673,7 +2660,7 @@ func TestDeviceUpdateDesiredPropertiesInvalid(t *testing.T) {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
-	_, err = mSdk.Server().UpdateDevice().Request(reqUpd)
+	_, err = mSdk.Server().UpdateDevice().Request(s.ToTarget(), devUpd)
 
 	// Assert
 	assert.ErrorContains(t, err, "error validating config")

@@ -95,40 +95,38 @@ func TestServerRoutes_QueueSubscribe(t *testing.T) {
 
 func TestServerRoutes_CreateDevice(t *testing.T) {
 	deviceID := "test-server-create"
-	testDevice := &core_apiv1.Device{
-		Meta: &core_apiv1.Meta{
+	testDevice := mir_models.NewDevice().WithMeta(
+		mir_models.Meta{
 			Name:      "Test Device",
 			Namespace: "default",
-		},
-		Spec: &core_apiv1.Spec{
+		}).WithSpec(
+		mir_models.DeviceSpec{
 			DeviceId: deviceID,
-		},
-	}
+		})
 
 	err := m.Server().CreateDevice().Subscribe(
-		func(msg *Msg, clientId string, req *core_apiv1.CreateDeviceRequest) (*core_apiv1.Device, error) {
-			return &core_apiv1.Device{
-				Meta: &core_apiv1.Meta{
+		func(msg *Msg, clientId string, d mir_models.Device) (mir_models.Device, error) {
+			return mir_models.NewDevice().WithMeta(
+				mir_models.Meta{
 					Name:      testDevice.Meta.Name,
 					Namespace: testDevice.Meta.Namespace,
-				},
-				Spec: &core_apiv1.Spec{
+				}).WithSpec(
+				mir_models.DeviceSpec{
 					DeviceId: testDevice.Spec.DeviceId,
 				},
-			}, nil
+			), nil
 		})
 	assert.NilError(t, err)
 
 	// Test request
-	req := &core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	req := mir_models.NewDevice().WithMeta(
+		mir_models.Meta{
 			Name:      "Test Device",
 			Namespace: "default",
-		},
-		Spec: &core_apiv1.Spec{
+		}).WithSpec(
+		mir_models.DeviceSpec{
 			DeviceId: deviceID,
-		},
-	}
+		})
 
 	device, err := m.Server().CreateDevice().Request(req)
 	assert.NilError(t, err)
@@ -138,47 +136,25 @@ func TestServerRoutes_CreateDevice(t *testing.T) {
 
 func TestServerRoutes_UpdateDevice(t *testing.T) {
 	deviceID := "test-server-update"
-	testDevice := &core_apiv1.Device{
-		Meta: &core_apiv1.Meta{
+	testDevice := mir_models.NewDevice().WithMeta(
+		mir_models.Meta{
 			Name:      "Test Device",
 			Namespace: "default",
-		},
-		Spec: &core_apiv1.Spec{
-			DeviceId: deviceID,
-		},
-	}
+		}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: deviceID,
+	})
 
 	err := m.Server().UpdateDevice().Subscribe(
-		func(msg *Msg, clientId string, req *core_apiv1.UpdateDeviceRequest) ([]*core_apiv1.Device, error) {
-			return []*core_apiv1.Device{
-				{
-					Meta: &core_apiv1.Meta{
-						Name:      testDevice.Meta.Name,
-						Namespace: testDevice.Meta.Namespace,
-					},
-					Spec: &core_apiv1.Spec{
-						DeviceId: testDevice.Spec.DeviceId,
-					},
-				},
+		func(msg *Msg, clientId string, t mir_models.DeviceTarget, d mir_models.Device) ([]mir_models.Device, error) {
+			return []mir_models.Device{
+				testDevice,
 			}, nil
 		})
 	assert.NilError(t, err)
 
 	// Test request
-	req := &core_apiv1.UpdateDeviceRequest{
-		Targets: &core_apiv1.DeviceTarget{
-			Ids: []string{testDevice.Spec.DeviceId},
-		},
-		Meta: &core_apiv1.UpdateDeviceRequest_Meta{
-			Name:      &testDevice.Meta.Name,
-			Namespace: &testDevice.Meta.Namespace,
-		},
-		Spec: &core_apiv1.UpdateDeviceRequest_Spec{
-			DeviceId: &deviceID,
-		},
-	}
 
-	device, err := m.Server().UpdateDevice().Request(req)
+	device, err := m.Server().UpdateDevice().RequestSingle(testDevice)
 	assert.NilError(t, err)
 	assert.Equal(t, testDevice.Meta.Name, device[0].Meta.Name)
 	assert.Equal(t, testDevice.Spec.DeviceId, device[0].Spec.DeviceId)
@@ -186,40 +162,25 @@ func TestServerRoutes_UpdateDevice(t *testing.T) {
 
 func TestServerRoutes_DeleteDevice(t *testing.T) {
 	deviceID := "test-server-delete"
-	testDevice := &core_apiv1.Device{
-		Meta: &core_apiv1.Meta{
+	testDevice := mir_models.NewDevice().WithMeta(
+		mir_models.Meta{
 			Name:      "Test Device",
 			Namespace: "default",
-		},
-		Spec: &core_apiv1.Spec{
-			DeviceId: deviceID,
-		},
-	}
+		}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: deviceID,
+	})
 
 	err := m.Server().DeleteDevice().Subscribe(
-		func(msg *Msg, clientId string, req *core_apiv1.DeleteDeviceRequest) ([]*core_apiv1.Device, error) {
-			return []*core_apiv1.Device{
-				{
-					Meta: &core_apiv1.Meta{
-						Name:      testDevice.Meta.Name,
-						Namespace: testDevice.Meta.Namespace,
-					},
-					Spec: &core_apiv1.Spec{
-						DeviceId: testDevice.Spec.DeviceId,
-					},
-				},
+		func(msg *Msg, clientId string, req mir_models.DeviceTarget) ([]mir_models.Device, error) {
+			return []mir_models.Device{
+				testDevice,
 			}, nil
 		})
 	assert.NilError(t, err)
 
 	// Test request
-	req := &core_apiv1.DeleteDeviceRequest{
-		Targets: &core_apiv1.DeviceTarget{
-			Ids: []string{testDevice.Spec.DeviceId},
-		},
-	}
 
-	device, err := m.Server().DeleteDevice().Request(req)
+	device, err := m.Server().DeleteDevice().Request(testDevice.ToTarget())
 	assert.NilError(t, err)
 	assert.Equal(t, testDevice.Meta.Name, device[0].Meta.Name)
 	assert.Equal(t, testDevice.Spec.DeviceId, device[0].Spec.DeviceId)
@@ -227,40 +188,23 @@ func TestServerRoutes_DeleteDevice(t *testing.T) {
 
 func TestServerRoutes_ListDevice(t *testing.T) {
 	deviceID := "test-server-list"
-	testDevice := &core_apiv1.Device{
-		Meta: &core_apiv1.Meta{
+	testDevice := mir_models.NewDevice().WithMeta(
+		mir_models.Meta{
 			Name:      "Test Device",
 			Namespace: "default",
-		},
-		Spec: &core_apiv1.Spec{
-			DeviceId: deviceID,
-		},
-	}
+		}).WithSpec(mir_models.DeviceSpec{
+		DeviceId: deviceID,
+	})
 
 	err := m.Server().ListDevice().Subscribe(
-		func(msg *Msg, clientId string, req *core_apiv1.ListDeviceRequest) ([]*core_apiv1.Device, error) {
-			return []*core_apiv1.Device{
-				{
-					Meta: &core_apiv1.Meta{
-						Name:      testDevice.Meta.Name,
-						Namespace: testDevice.Meta.Namespace,
-					},
-					Spec: &core_apiv1.Spec{
-						DeviceId: testDevice.Spec.DeviceId,
-					},
-				},
-			}, nil
+		func(msg *Msg, clientId string, d mir_models.DeviceTarget, includeEvents bool) ([]mir_models.Device, error) {
+			return []mir_models.Device{testDevice}, nil
 		})
 	assert.NilError(t, err)
 
 	// Test request
-	req := &core_apiv1.ListDeviceRequest{
-		Targets: &core_apiv1.DeviceTarget{
-			Ids: []string{testDevice.Spec.DeviceId},
-		},
-	}
 
-	device, err := m.Server().ListDevice().Request(req)
+	device, err := m.Server().ListDevice().Request(testDevice.ToTarget(), false)
 	assert.NilError(t, err)
 	assert.Equal(t, testDevice.Meta.Name, device[0].Meta.Name)
 	assert.Equal(t, testDevice.Spec.DeviceId, device[0].Spec.DeviceId)

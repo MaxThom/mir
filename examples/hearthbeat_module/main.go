@@ -6,7 +6,6 @@ import (
 	"syscall"
 
 	"github.com/maxthom/mir/internal/libs/boiler/mir_signals"
-	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/maxthom/mir/pkgs/module/mir"
 )
@@ -87,14 +86,11 @@ func SendDeviceCrud(m *mir.Mir) {
 	// Request mean youre expecting a reply
 	// We only have client request in the sdk
 	respCreate, err := m.Server().CreateDevice().Request(
-		&core_apiv1.CreateDeviceRequest{
-			Meta: &core_apiv1.Meta{
-				Name: "VRMMOU",
-			},
-			Spec: &core_apiv1.Spec{
-				DeviceId: id,
-			},
-		},
+		mir_models.NewDevice().WithMeta(mir_models.Meta{
+			Name: "VRMMOU",
+		}).WithSpec(mir_models.DeviceSpec{
+			DeviceId: id,
+		}),
 	)
 	if err != nil {
 		panic(err)
@@ -102,7 +98,7 @@ func SendDeviceCrud(m *mir.Mir) {
 	fmt.Println("Created device ", respCreate.Spec.DeviceId)
 
 	respList, err := m.Server().ListDevice().Request(
-		&core_apiv1.ListDeviceRequest{},
+		mir_models.DeviceTarget{}, false,
 	)
 	if err != nil {
 		panic(err)
@@ -111,24 +107,20 @@ func SendDeviceCrud(m *mir.Mir) {
 
 	newName := "PIPI2MOU"
 	respUpd, err := m.Server().UpdateDevice().Request(
-		&core_apiv1.UpdateDeviceRequest{
-			Targets: &core_apiv1.DeviceTarget{
-				Ids: []string{id},
-			},
-			Meta: &core_apiv1.UpdateDeviceRequest_Meta{
-				Name: &newName,
-			}},
-	)
+		mir_models.DeviceTarget{
+			Ids: []string{id},
+		}, mir_models.NewDevice().WithMeta(mir_models.Meta{
+			Name: newName,
+		}))
 	if err != nil {
 		panic(err)
 	}
 	fmt.Println("Update device ", respUpd)
 
 	respDel, err := m.Server().DeleteDevice().Request(
-		&core_apiv1.DeleteDeviceRequest{
-			Targets: &core_apiv1.DeviceTarget{
-				Ids: []string{id},
-			}},
+		mir_models.DeviceTarget{
+			Ids: []string{id},
+		},
 	)
 	fmt.Println("Delete device ", respDel)
 }

@@ -14,7 +14,6 @@ import (
 	"github.com/maxthom/mir/internal/services/schema_cache"
 	cmd_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cmd_api"
 	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
-	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/maxthom/mir/pkgs/module/mir"
@@ -149,7 +148,7 @@ type cmdDevicePayload struct {
 }
 
 func (s *ProtoCmdServer) sendCommandToDevices(msg *mir.Msg, req *cmd_apiv1.SendCommandRequest) (map[string]*cmd_apiv1.SendCommandResponse_CommandResponse, error) {
-	devs, err := s.devStore.ListDevice(&core_apiv1.ListDeviceRequest{Targets: req.Targets})
+	devs, err := s.devStore.ListDevice(mir_models.ProtoDeviceTargetToMirDeviceTarget(req.Targets), false)
 	if err != nil {
 		return nil, err
 	} else if len(devs) == 0 {
@@ -361,7 +360,7 @@ func (s *ProtoCmdServer) listCommandsSub(msg *mir.Msg, clientId string, req *cmd
 	// 2. for each device, get stored schema, if empty, fetch from device
 	// 3. return list of commands
 
-	devs, err := s.devStore.ListDevice(&core_apiv1.ListDeviceRequest{Targets: req.Targets})
+	devs, err := s.devStore.ListDevice(mir_models.ProtoDeviceTargetToMirDeviceTarget(req.Targets), false)
 	if err != nil {
 		l.Error().Err(err).Msg("error occure while listing devices")
 		requestErrorTotal.WithLabelValues("list").Inc()

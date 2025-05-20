@@ -127,7 +127,7 @@ func TestPublishCfgListRequest(t *testing.T) {
 	}
 
 	respListCfg, err := cfg_client.PublishListConfigRequest(b, &cfg_apiv1.SendListConfigRequest{
-		Targets:       s.ToTarget(),
+		Targets:       mir_models.MirDeviceTargetToProtoDeviceTarget(s.ToTarget()),
 		FilterLabels:  map[string]string{},
 		RefreshSchema: false,
 	})
@@ -188,7 +188,7 @@ func TestPublishCfgListFiltersRequest(t *testing.T) {
 	}
 
 	respListCmd, err := cfg_client.PublishListConfigRequest(b, &cfg_apiv1.SendListConfigRequest{
-		Targets: s.ToTarget(),
+		Targets: mir_models.MirDeviceTargetToProtoDeviceTarget(s.ToTarget()),
 		FilterLabels: map[string]string{
 			"building": "A",
 			"floor":    "2",
@@ -1261,7 +1261,7 @@ func TestPublishCfgRequestMultipleDevices(t *testing.T) {
 		t.Error(err)
 	}
 	reqCmd := &cfg_apiv1.SendConfigRequest{
-		Targets:         swarm.ToTarget(),
+		Targets:         mir_models.MirDeviceTargetToProtoDeviceTarget(swarm.ToTarget()),
 		Name:            string(reqPayload.ProtoReflect().Descriptor().FullName()),
 		PayloadEncoding: common_apiv1.Encoding_ENCODING_PROTOBUF,
 		Payload:         payloadBytes,
@@ -1374,7 +1374,7 @@ func TestPublishCfgRequestMultipleDevicesOneNoHandler(t *testing.T) {
 		t.Error(err)
 	}
 	reqCmd := &cfg_apiv1.SendConfigRequest{
-		Targets:         swarm.ToTarget(),
+		Targets:         mir_models.MirDeviceTargetToProtoDeviceTarget(swarm.ToTarget()),
 		Name:            string(reqPayload.ProtoReflect().Descriptor().FullName()),
 		PayloadEncoding: common_apiv1.Encoding_ENCODING_PROTOBUF,
 		Payload:         payloadBytes,
@@ -1464,7 +1464,7 @@ func TestPublishCfgRequestMultipleDevicesJson(t *testing.T) {
 		t.Error(err)
 	}
 	reqCfg := &cfg_apiv1.SendConfigRequest{
-		Targets:         swarm.ToTarget(),
+		Targets:         mir_models.MirDeviceTargetToProtoDeviceTarget(swarm.ToTarget()),
 		Name:            payloadName,
 		PayloadEncoding: common_apiv1.Encoding_ENCODING_JSON,
 		Payload:         payloadBytes,
@@ -1549,7 +1549,7 @@ func TestPublishCfgRequestMultipleDevicesDescriptorNotFound(t *testing.T) {
 		t.Error(err)
 	}
 	reqCfg := &cfg_apiv1.SendConfigRequest{
-		Targets:         swarm.ToTarget(),
+		Targets:         mir_models.MirDeviceTargetToProtoDeviceTarget(swarm.ToTarget()),
 		Name:            "nothing",
 		PayloadEncoding: common_apiv1.Encoding_ENCODING_JSON,
 		Payload:         payloadBytes,
@@ -1637,7 +1637,7 @@ func TestPublishCfgRequestMultipleDevicesSingleDescriptorNotFoundForcePush(t *te
 		t.Error(err)
 	}
 	reqCfg := &cfg_apiv1.SendConfigRequest{
-		Targets:         swarm.ToTarget(),
+		Targets:         mir_models.MirDeviceTargetToProtoDeviceTarget(swarm.ToTarget()),
 		Name:            payloadName,
 		PayloadEncoding: common_apiv1.Encoding_ENCODING_JSON,
 		Payload:         payloadBytes,
@@ -1717,7 +1717,7 @@ func TestPublishCfgRequestMultipleDevicesJsonTemplate(t *testing.T) {
 	reqPayload := protocfg_testv1.PowerLevel{}
 	cmdName := string(reqPayload.ProtoReflect().Descriptor().FullName())
 	reqCfg := &cfg_apiv1.SendConfigRequest{
-		Targets:      swarm.ToTarget(),
+		Targets:      mir_models.MirDeviceTargetToProtoDeviceTarget(swarm.ToTarget()),
 		Name:         cmdName,
 		ShowTemplate: true,
 	}

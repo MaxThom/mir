@@ -68,7 +68,7 @@ func (s *surrealMirStore) CreateDevice(d mir_models.Device) (mir_models.Device, 
 	return newDev[0], nil
 }
 
-// This method is too OP
+// UpdateDevice This method is too OP
 // Maybe it need to be divided into Upsert and Patch
 // Upsert is for apply and edit
 // Patch is for patch
@@ -206,9 +206,7 @@ func (s *surrealMirStore) validateDeviceUniqueness(targets mir_models.DeviceTarg
 			}
 		} else if ns != "" {
 			currentDevs, err := s.ListDevice(mir_models.DeviceTarget{
-				ObjectTarget: mir_models.ObjectTarget{
-					Namespaces: []string{ns},
-				},
+				Namespaces: []string{ns},
 			}, false)
 			if err != nil {
 				return fmt.Errorf("%w: %w", mir_models.ErrorDbExecutingQuery, err)
@@ -232,9 +230,7 @@ func (s *surrealMirStore) validateDeviceUniqueness(targets mir_models.DeviceTarg
 			}
 		} else if name != "" {
 			currentDevs, err := s.ListDevice(mir_models.DeviceTarget{
-				ObjectTarget: mir_models.ObjectTarget{
-					Names: []string{name},
-				},
+				Names: []string{name},
 			}, false)
 			if err != nil {
 				return fmt.Errorf("%w: %w", mir_models.ErrorDbExecutingQuery, err)
