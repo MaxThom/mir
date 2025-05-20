@@ -215,7 +215,7 @@ func (d *DeviceCreateCmd) Run(c CLI) error {
 		dev.Meta.Labels = d.Labels
 		dev.Meta.Annotations = d.Anno
 		dev.Spec.DeviceId = d.Id
-		dev.Spec.Disabled = d.Disabled
+		dev.Spec.Disabled = &d.Disabled
 		devs = append(devs, &dev)
 	}
 
@@ -473,9 +473,9 @@ func prettyStringDevices(devs []mir_models.Device) string {
 
 	for _, d := range devs {
 		st := ""
-		if d.Spec.Disabled {
+		if *d.Spec.Disabled {
 			st = "disabled"
-		} else if d.Status.Online {
+		} else if *d.Status.Online {
 			st = "online"
 		} else {
 			st = "offline"

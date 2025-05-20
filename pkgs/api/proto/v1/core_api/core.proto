@@ -135,8 +135,10 @@ message ListDeviceResponse {
   a combination of ids, labels and annotations
 */
 message DeviceTarget {
-  common_api.v1.Targets targets = 1;
-  repeated string ids = 2; // ids of the devices
+  repeated string names = 1; // names of the objects
+  repeated string namespaces = 2; // namespace of the object
+  map<string, string> labels = 3; // Labels are used to uniquely identify the object
+  repeated string ids = 4; // ids of the devices
 }
 
 /*

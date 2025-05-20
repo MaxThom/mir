@@ -133,19 +133,19 @@ func NewProtoDeviceFromDevice(d Device) *core_apiv1.Device {
 		},
 		Spec: &core_apiv1.Spec{
 			DeviceId: d.Spec.DeviceId,
-			Disabled: *d.Spec.Disabled,
+			Disabled: asUnRefBool(d.Spec.Disabled),
 		},
 		Properties: &core_apiv1.Properties{
 			Desired:  des,
 			Reported: rep,
 		},
 		Status: &core_apiv1.Status{
-			Online:         *d.Status.Online,
-			LastHearthbeat: AsProtoTimestamp(*d.Status.LastHearthbeat),
+			Online:         asUnRefBool(d.Status.Online),
+			LastHearthbeat: AsRefProtoTimestamp(d.Status.LastHearthbeat),
 			Schema: &core_apiv1.Schema{
 				CompressedSchema: d.Status.Schema.CompressedSchema,
 				PackageNames:     d.Status.Schema.PackageNames,
-				LastSchemaFetch:  AsProtoTimestamp(*d.Status.Schema.LastSchemaFetch),
+				LastSchemaFetch:  AsRefProtoTimestamp(d.Status.Schema.LastSchemaFetch),
 			},
 			Properties: &core_apiv1.PropertiesTime{
 				Desired:  mapToProtoTs(d.Status.Properties.Desired),
@@ -165,10 +165,8 @@ func NewUpdateDeviceReqFromDeviceWithTarget(t DeviceTarget, d Device) *core_apiv
 func NewUpdateDeviceReqFromDeviceWithNameNs(n NameNs, d Device) *core_apiv1.UpdateDeviceRequest {
 	dev := NewUpdateDeviceReqFromDevice(d)
 	dev.Targets = &core_apiv1.DeviceTarget{
-		Targets: &common_apiv1.Targets{
-			Names:      []string{n.Name},
-			Namespaces: []string{n.Namespace},
-		},
+		Names:      []string{n.Name},
+		Namespaces: []string{n.Namespace},
 	}
 	return dev
 }
@@ -206,10 +204,8 @@ func NewUpdateDeviceReqFromDevice(d Device) *core_apiv1.UpdateDeviceRequest {
 			Desired: des,
 		},
 		Targets: &core_apiv1.DeviceTarget{
-			Targets: &common_apiv1.Targets{
-				Names:      []string{d.Meta.Name},
-				Namespaces: []string{d.Meta.Namespace},
-			},
+			Names:      []string{d.Meta.Name},
+			Namespaces: []string{d.Meta.Namespace},
 		},
 	}
 	if d.Spec.DeviceId == "" {
@@ -273,6 +269,71 @@ func NewUpdateDeviceReqFromProtoDevice(t *core_apiv1.DeviceTarget, d *core_apiv1
 	return devUpd
 }
 
+func NewDeviceFromUpdateDeviceReq(d *core_apiv1.UpdateDeviceRequest) Device {
+	dev := NewDevice()
+	if d == nil {
+		return dev
+	}
+	if d.Meta != nil {
+		if d.Meta.Name != nil {
+			dev.Meta.Name = *d.Meta.Name
+		}
+		if d.Meta.Namespace != nil {
+			dev.Meta.Namespace = *d.Meta.Namespace
+		}
+		if d.Meta.Labels != nil {
+			dev.Meta.Labels = make(map[string]string)
+			for k, v := range d.Meta.Labels {
+				if v != nil && v.Value != nil {
+					dev.Meta.Labels[k] = *v.Value
+				}
+			}
+		}
+		if d.Meta.Annotations != nil {
+			dev.Meta.Annotations = make(map[string]string)
+			for k, v := range d.Meta.Annotations {
+				if v != nil && v.Value != nil {
+					dev.Meta.Annotations[k] = *v.Value
+				}
+			}
+		}
+	}
+	if d.Spec != nil {
+		if d.Spec.DeviceId != nil {
+			dev.Spec.DeviceId = *d.Spec.DeviceId
+		}
+		if d.Spec.Disabled != nil {
+			dev.Spec.Disabled = d.Spec.Disabled
+		}
+	}
+	if d.Props != nil && d.Props.Desired != nil {
+		dev.Properties.Desired = d.Props.Desired.AsMap()
+	}
+
+	if d.Status != nil {
+		if d.Status.Online != nil {
+			dev.Status.Online = d.Status.Online
+		}
+		if d.Status.LastHearthbeat != nil {
+			heartbeat := AsGoTime(d.Status.LastHearthbeat)
+			dev.Status.LastHearthbeat = &heartbeat
+		}
+		if d.Status.Schema != nil {
+			if d.Status.Schema.CompressedSchema != nil && len(d.Status.Schema.CompressedSchema) > 0 {
+				dev.Status.Schema.CompressedSchema = d.Status.Schema.CompressedSchema
+			}
+			if d.Status.Schema.PackageNames != nil && len(d.Status.Schema.PackageNames) > 0 {
+				dev.Status.Schema.PackageNames = d.Status.Schema.PackageNames
+			}
+			if d.Status.Schema.LastSchemaFetch != nil {
+				lastFetch := AsGoTime(d.Status.Schema.LastSchemaFetch)
+				dev.Status.Schema.LastSchemaFetch = &lastFetch
+			}
+		}
+	}
+	return dev
+}
+
 func NewCreateDeviceReqFromDevice(d Device) *core_apiv1.CreateDeviceRequest {
 	return &core_apiv1.CreateDeviceRequest{
 		Meta: &core_apiv1.Meta{
@@ -283,10 +344,69 @@ func NewCreateDeviceReqFromDevice(d Device) *core_apiv1.CreateDeviceRequest {
 		},
 		Spec: &core_apiv1.Spec{
 			DeviceId: d.Spec.DeviceId,
-			Disabled: *d.Spec.Disabled,
+			Disabled: asUnRefBool(d.Spec.Disabled),
 		},
 		Properties: &core_apiv1.Properties{},
 	}
+}
+
+func DeviceToUpdateDeviceRequest(d Device) *core_apiv1.UpdateDeviceRequest {
+	toUpdateMap := func(m map[string]string) map[string]*common_apiv1.OptString {
+		opt := map[string]*common_apiv1.OptString{}
+		for k, v := range m {
+			if strings.ToLower(v) == "null" {
+				opt[k] = &common_apiv1.OptString{
+					Value: nil,
+				}
+			} else {
+				opt[k] = &common_apiv1.OptString{
+					Value: &v,
+				}
+			}
+		}
+		return opt
+	}
+
+	des, _ := structpb.NewStruct(d.Properties.Desired)
+
+	devUpd := &core_apiv1.UpdateDeviceRequest{
+		Meta: &core_apiv1.UpdateDeviceRequest_Meta{
+			Name:        &d.Meta.Name,
+			Namespace:   &d.Meta.Namespace,
+			Labels:      toUpdateMap(d.Meta.Labels),
+			Annotations: toUpdateMap(d.Meta.Annotations),
+		},
+		Spec: &core_apiv1.UpdateDeviceRequest_Spec{
+			DeviceId: &d.Spec.DeviceId,
+			Disabled: d.Spec.Disabled,
+		},
+		Props: &core_apiv1.UpdateDeviceRequest_Properties{
+			Desired: des,
+		},
+	}
+
+	if d.Spec.DeviceId == "" {
+		devUpd.Spec.DeviceId = nil
+	}
+
+	if d.Properties.Desired == nil && d.Properties.Reported == nil {
+		devUpd.Props = nil
+	}
+
+	devUpd.Status = &core_apiv1.UpdateDeviceRequest_Status{
+		Online:         d.Status.Online,
+		LastHearthbeat: AsRefProtoTimestamp(d.Status.LastHearthbeat),
+	}
+
+	if d.Status.Schema.CompressedSchema != nil || d.Status.Schema.PackageNames != nil || d.Status.Schema.LastSchemaFetch != nil {
+		devUpd.Status.Schema = &core_apiv1.UpdateDeviceRequest_Schema{
+			CompressedSchema: d.Status.Schema.CompressedSchema,
+			PackageNames:     d.Status.Schema.PackageNames,
+			LastSchemaFetch:  AsRefProtoTimestamp(d.Status.Schema.LastSchemaFetch),
+		}
+	}
+
+	return devUpd
 }
 
 func NewCreateDeviceReqFromDeviceUpdateRequest(d *core_apiv1.UpdateDeviceRequest) *core_apiv1.CreateDeviceRequest {
@@ -351,14 +471,19 @@ func ProtoDeviceTargetToMirDeviceTarget(t *core_apiv1.DeviceTarget) DeviceTarget
 		return DeviceTarget{}
 	}
 	return DeviceTarget{
-		ObjectTarget: ProtoObjectTargetToMirObjectTarget(t.Targets),
-		Ids:          t.Ids,
+		Names:      t.Names,
+		Namespaces: t.Namespaces,
+		Labels:     t.Labels,
+		Ids:        t.Ids,
 	}
 }
 
 func MirDeviceTargetToProtoDeviceTarget(t DeviceTarget) *core_apiv1.DeviceTarget {
 	return &core_apiv1.DeviceTarget{
-		Targets: MirObjectTargetToProtoObjectTarget(t.ObjectTarget),
+		Names:      t.Names,
+		Namespaces: t.Namespaces,
+		Labels:     t.Labels,
+		Ids:        t.Ids,
 	}
 }
 
@@ -526,8 +651,25 @@ func MirEventTargetToProtoEventTarget(t EventTarget) *event_apiv1.EventTarget {
 
 /// Utils
 
+func asUnRefBool(b *bool) bool {
+	if b == nil {
+		return false
+	}
+	return *b
+}
+
 func AsProtoTimestamp(t time.Time) *common_apiv1.Timestamp {
 	if t.IsZero() {
+		return nil
+	}
+	return &common_apiv1.Timestamp{
+		Seconds: int64(t.Unix()),
+		Nanos:   int32(t.Nanosecond()),
+	}
+}
+
+func AsRefProtoTimestamp(t *time.Time) *common_apiv1.Timestamp {
+	if t == nil || t.IsZero() {
 		return nil
 	}
 	return &common_apiv1.Timestamp{

@@ -11,7 +11,6 @@ import (
 	proto_lineprotocol "github.com/maxthom/mir/internal/libs/proto/line_protocol"
 	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
 	"github.com/maxthom/mir/internal/services/schema_cache"
-	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	tlm_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/tlm_api"
 	"github.com/maxthom/mir/pkgs/mir_models"
 	"github.com/maxthom/mir/pkgs/module/mir"
@@ -219,7 +218,7 @@ func (s *ProtoTlmServer) handleTelemetryListRequest(msg *mir.Msg, clientId strin
 	l.Info().Any("req", req).Msg("list telemetry request")
 	requestTotal.WithLabelValues("list").Inc()
 
-	devs, err := s.devStore.ListDevice(&core_apiv1.ListDeviceRequest{Targets: req.Targets})
+	devs, err := s.devStore.ListDevice(mir_models.ProtoDeviceTargetToMirDeviceTarget(req.Targets), false)
 	if err != nil {
 		requestErrorTotal.WithLabelValues("list").Inc()
 		l.Error().Err(err).Msg("error occure while listing devices")

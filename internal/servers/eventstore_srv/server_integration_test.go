@@ -72,11 +72,9 @@ func TestMain(m *testing.M) {
 	}); err != nil {
 		panic(err)
 	}
-	if _, err = store.DeleteDevice(&core_apiv1.DeleteDeviceRequest{
-		Targets: &core_apiv1.DeviceTarget{
-			Namespaces: []string{
-				"event_testing",
-			},
+	if _, err = store.DeleteDevice(mir_models.DeviceTarget{
+		Namespaces: []string{
+			"event_testing",
 		},
 	}); err != nil {
 		panic(err)
@@ -106,11 +104,9 @@ func TestMain(m *testing.M) {
 	}); err != nil {
 		panic(err)
 	}
-	if _, err = store.DeleteDevice(&core_apiv1.DeleteDeviceRequest{
-		Targets: &core_apiv1.DeviceTarget{
-			Namespaces: []string{
-				"event_testing",
-			},
+	if _, err = store.DeleteDevice(mir_models.DeviceTarget{
+		Namespaces: []string{
+			"event_testing",
 		},
 	}); err != nil {
 		panic(err)
@@ -296,10 +292,7 @@ func TestPublishListDeviceRequestWithEvents(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	dResp, err := mSdk.Server().ListDevice().Request(&core_apiv1.ListDeviceRequest{
-		Targets:       s.ToTarget(),
-		IncludeEvents: true,
-	})
+	dResp, err := mSdk.Server().ListDevice().Request(s.ToTarget(), true)
 
 	// Assert
 	assert.Equal(t, len(dResp), 1)

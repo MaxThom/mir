@@ -6,3 +6,4 @@ tmp/
 .tmp/
 book/book/
 .release/
+.idea/

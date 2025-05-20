@@ -39,10 +39,8 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 	if _, err = mirStore.DeleteDevice(mir_models.DeviceTarget{
-		ObjectTarget: mir_models.ObjectTarget{
-			Labels: map[string]string{
-				"mirstore": "testing",
-			},
+		Labels: map[string]string{
+			"mirstore": "testing",
 		},
 	}); err != nil {
 		panic(err)
@@ -321,9 +319,7 @@ func TestPublishStoreDeviceListByName(t *testing.T) {
 		DeviceId: ids[2],
 	})
 	l := mir_models.DeviceTarget{
-		ObjectTarget: mir_models.ObjectTarget{
-			Names: ids[:2],
-		},
+		Names: ids[:2],
 	}
 
 	// Act
@@ -387,10 +383,8 @@ func TestPublishStoreDeviceListByLabel(t *testing.T) {
 		DeviceId: ids[2],
 	})
 	l := mir_models.DeviceTarget{
-		ObjectTarget: mir_models.ObjectTarget{
-			Labels: map[string]string{
-				"lbl": "yiha",
-			},
+		Labels: map[string]string{
+			"lbl": "yiha",
 		},
 	}
 
@@ -442,9 +436,7 @@ func TestPublishStoreDeviceListByNamespace(t *testing.T) {
 		DeviceId: ids[1],
 	})
 	l := mir_models.DeviceTarget{
-		ObjectTarget: mir_models.ObjectTarget{
-			Namespaces: []string{"mirstore_list"},
-		},
+		Namespaces: []string{"mirstore_list"},
 	}
 
 	// Act
@@ -554,9 +546,7 @@ func TestPublishStoreDeviceDeleteByName(t *testing.T) {
 		DeviceId: ids[2],
 	})
 	l := mir_models.DeviceTarget{
-		ObjectTarget: mir_models.ObjectTarget{
-			Names: ids[:2],
-		},
+		Names: ids[:2],
 	}
 
 	// Act
@@ -625,10 +615,8 @@ func TestPublishStoreDeviceDeleteByLabel(t *testing.T) {
 		DeviceId: ids[2],
 	})
 	l := mir_models.DeviceTarget{
-		ObjectTarget: mir_models.ObjectTarget{
-			Labels: map[string]string{
-				"lbl": "yiha_del",
-			},
+		Labels: map[string]string{
+			"lbl": "yiha_del",
 		},
 	}
 
@@ -685,9 +673,7 @@ func TestPublishStoreDeviceDeleteByNamespace(t *testing.T) {
 		DeviceId: ids[1],
 	})
 	l := mir_models.DeviceTarget{
-		ObjectTarget: mir_models.ObjectTarget{
-			Namespaces: []string{"mirstore_del"},
-		},
+		Namespaces: []string{"mirstore_del"},
 	}
 
 	// Act
@@ -735,6 +721,7 @@ func TestPublishStoreDeviceUpdateMeta(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+	time.Sleep(1 * time.Second)
 	d.Meta.Name = "update_dev_post"
 	d.Meta.Namespace = "mirstore_post"
 	d.Meta.Labels["test"] = "pizza"
@@ -742,7 +729,7 @@ func TestPublishStoreDeviceUpdateMeta(t *testing.T) {
 	d.Meta.Labels["food"] = "gross"
 	d.Meta.Annotations["food"] = "gross"
 	d.Meta.Annotations["info"] = ""
-	uResp, err := mirStore.UpdateDevice(d.ToTarget(), d)
+	uResp, err := mirStore.UpdateDevice(mir_models.DeviceTarget{Ids: []string{d.Spec.DeviceId}}, d)
 	if err != nil {
 		t.Error(err)
 	}
@@ -1020,7 +1007,7 @@ func TestPublishStoreDeviceUpdateMetaIdAlreadyExist(t *testing.T) {
 		t.Error(err)
 	}
 	d0.Spec.DeviceId = d1.Spec.DeviceId
-	_, err = mirStore.UpdateDevice(d0.ToTarget(), d0)
+	_, err = mirStore.UpdateDevice(mir_models.DeviceTarget{Ids: []string{d0.Spec.DeviceId}}, d0)
 
 	// Assert
 	assert.ErrorContains(t, err, "")

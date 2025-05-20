@@ -35,7 +35,9 @@ func ToTargets(d ...Device) DeviceTarget {
 
 func (d Device) ToTarget() DeviceTarget {
 	return DeviceTarget{
-		Ids: []string{d.Spec.DeviceId},
+		Ids:        []string{d.Spec.DeviceId},
+		Names:      []string{d.Meta.Name},
+		Namespaces: []string{d.Meta.Namespace},
 	}
 }
 
@@ -48,6 +50,12 @@ func (d Device) WithSpec(s DeviceSpec) Device {
 	d.Spec = s
 	return d
 }
+
+func (d Device) WithProps(p DeviceProperties) Device {
+	d.Properties = p
+	return d
+}
+
 func (d Device) WithStatus(s DeviceStatus) Device {
 	d.Status = s
 	return d
@@ -62,11 +70,10 @@ func (d Device) GetNameNs() NameNs {
 }
 
 type DeviceTarget struct {
-	ObjectTarget
-	Ids []string
-	// Names      []string
-	// Namespaces []string
-	// Labels     map[string]string
+	Ids        []string
+	Names      []string
+	Namespaces []string
+	Labels     map[string]string
 }
 
 func (o DeviceTarget) HasNoTarget() bool {
