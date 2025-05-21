@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package device_api.v1;
+package mir_api.v1;
 
-import "v1/common_api/common.proto";
+import "mir_api/v1/common.proto";
 
 /*
   Send a request to retreive the schema of the device
@@ -20,19 +20,19 @@ message SchemaRetrieveResponse {
   }
 }
 
-message ReportedPropertiesResponse {
+message DeviceReportedPropertiesResponse {
 oneof response {
-  ReportedProperties ok = 1; // reported properties map
+  DeviceEncodedReportedProperties ok = 1; // reported properties map
   string error = 2; // Error in string value
 }
 }
 
-message ReportedProperties {
-  common_api.v1.Encoding encoding = 1; // Encoding type of payload
-  map<string, Properties> properties = 2;
+message DeviceEncodedReportedProperties {
+  Encoding encoding = 1; // Encoding type of payload
+  map<string, DeviceEncodedProperties> properties = 2;
 }
 
-message Properties {
+message DeviceEncodedProperties {
    string time = 1; // Last update time of the reported properties
-   bytes property = 2; // Endoded property
+   bytes property = 2; // Encoded property
 }

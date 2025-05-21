@@ -7,15 +7,13 @@ import (
 	"strings"
 	"time"
 
-	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
-	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
-	event_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/event_api"
+	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // Devices
 
-func NewDeviceListFromProtoDevices(d []*core_apiv1.Device) []Device {
+func NewDeviceListFromProtoDevices(d []*mir_apiv1.Device) []Device {
 	p := []Device{}
 	for _, v := range d {
 		dev := NewDeviceFromProtoDevice(v)
@@ -24,7 +22,7 @@ func NewDeviceListFromProtoDevices(d []*core_apiv1.Device) []Device {
 	return p
 }
 
-func NewDeviceFromProtoDevice(d *core_apiv1.Device) Device {
+func NewDeviceFromProtoDevice(d *mir_apiv1.Device) Device {
 	dev := NewDevice()
 	if d == nil {
 		return dev
@@ -100,21 +98,21 @@ func NewDeviceFromProtoDevice(d *core_apiv1.Device) Device {
 	return dev
 }
 
-func NewProtoDeviceListFromDevices(d []Device) []*core_apiv1.Device {
-	p := []*core_apiv1.Device{}
+func NewProtoDeviceListFromDevices(d []Device) []*mir_apiv1.Device {
+	p := []*mir_apiv1.Device{}
 	for _, v := range d {
 		p = append(p, NewProtoDeviceFromDevice(v))
 	}
 	return p
 }
 
-func NewProtoDeviceFromDevice(d Device) *core_apiv1.Device {
+func NewProtoDeviceFromDevice(d Device) *mir_apiv1.Device {
 	des, _ := structpb.NewStruct(d.Properties.Desired)
 	rep, _ := structpb.NewStruct(d.Properties.Reported)
 
-	evts := []*core_apiv1.DeviceStatusEvent{}
+	evts := []*mir_apiv1.DeviceStatusEvent{}
 	for _, e := range d.Status.Events {
-		evts = append(evts, &core_apiv1.DeviceStatusEvent{
+		evts = append(evts, &mir_apiv1.DeviceStatusEvent{
 			Type:    e.Type,
 			Message: e.Message,
 			Reason:  e.Reason,
@@ -122,32 +120,32 @@ func NewProtoDeviceFromDevice(d Device) *core_apiv1.Device {
 		})
 	}
 
-	return &core_apiv1.Device{
+	return &mir_apiv1.Device{
 		ApiVersion: d.ApiVersion,
 		Kind:       d.Kind,
-		Meta: &core_apiv1.Meta{
+		Meta: &mir_apiv1.Meta{
 			Name:        d.Meta.Name,
 			Namespace:   d.Meta.Namespace,
 			Labels:      d.Meta.Labels,
 			Annotations: d.Meta.Annotations,
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: d.Spec.DeviceId,
 			Disabled: asUnRefBool(d.Spec.Disabled),
 		},
-		Properties: &core_apiv1.Properties{
+		Properties: &mir_apiv1.DeviceProperties{
 			Desired:  des,
 			Reported: rep,
 		},
-		Status: &core_apiv1.Status{
+		Status: &mir_apiv1.DeviceStatus{
 			Online:         asUnRefBool(d.Status.Online),
 			LastHearthbeat: AsRefProtoTimestamp(d.Status.LastHearthbeat),
-			Schema: &core_apiv1.Schema{
+			Schema: &mir_apiv1.Schema{
 				CompressedSchema: d.Status.Schema.CompressedSchema,
 				PackageNames:     d.Status.Schema.PackageNames,
 				LastSchemaFetch:  AsRefProtoTimestamp(d.Status.Schema.LastSchemaFetch),
 			},
-			Properties: &core_apiv1.PropertiesTime{
+			Properties: &mir_apiv1.PropertiesTime{
 				Desired:  mapToProtoTs(d.Status.Properties.Desired),
 				Reported: mapToProtoTs(d.Status.Properties.Reported),
 			},
@@ -156,31 +154,31 @@ func NewProtoDeviceFromDevice(d Device) *core_apiv1.Device {
 	}
 }
 
-func NewUpdateDeviceReqFromDeviceWithTarget(t DeviceTarget, d Device) *core_apiv1.UpdateDeviceRequest {
+func NewUpdateDeviceReqFromDeviceWithTarget(t DeviceTarget, d Device) *mir_apiv1.UpdateDeviceRequest {
 	dev := NewUpdateDeviceReqFromDevice(d)
 	dev.Targets = MirDeviceTargetToProtoDeviceTarget(t)
 	return dev
 }
 
-func NewUpdateDeviceReqFromDeviceWithNameNs(n NameNs, d Device) *core_apiv1.UpdateDeviceRequest {
+func NewUpdateDeviceReqFromDeviceWithNameNs(n NameNs, d Device) *mir_apiv1.UpdateDeviceRequest {
 	dev := NewUpdateDeviceReqFromDevice(d)
-	dev.Targets = &core_apiv1.DeviceTarget{
+	dev.Targets = &mir_apiv1.DeviceTarget{
 		Names:      []string{n.Name},
 		Namespaces: []string{n.Namespace},
 	}
 	return dev
 }
 
-func NewUpdateDeviceReqFromDevice(d Device) *core_apiv1.UpdateDeviceRequest {
-	toUpdateMap := func(m map[string]string) map[string]*common_apiv1.OptString {
-		opt := map[string]*common_apiv1.OptString{}
+func NewUpdateDeviceReqFromDevice(d Device) *mir_apiv1.UpdateDeviceRequest {
+	toUpdateMap := func(m map[string]string) map[string]*mir_apiv1.OptString {
+		opt := map[string]*mir_apiv1.OptString{}
 		for k, v := range m {
 			if strings.ToLower(v) == "null" {
-				opt[k] = &common_apiv1.OptString{
+				opt[k] = &mir_apiv1.OptString{
 					Value: nil,
 				}
 			} else {
-				opt[k] = &common_apiv1.OptString{
+				opt[k] = &mir_apiv1.OptString{
 					Value: &v,
 				}
 			}
@@ -189,21 +187,21 @@ func NewUpdateDeviceReqFromDevice(d Device) *core_apiv1.UpdateDeviceRequest {
 	}
 	des, _ := structpb.NewStruct(d.Properties.Desired)
 
-	devUpd := &core_apiv1.UpdateDeviceRequest{
-		Meta: &core_apiv1.UpdateDeviceRequest_Meta{
+	devUpd := &mir_apiv1.UpdateDeviceRequest{
+		Meta: &mir_apiv1.UpdateDeviceRequest_Meta{
 			Name:        &d.Meta.Name,
 			Namespace:   &d.Meta.Namespace,
 			Labels:      toUpdateMap(d.Meta.Labels),
 			Annotations: toUpdateMap(d.Meta.Annotations),
 		},
-		Spec: &core_apiv1.UpdateDeviceRequest_Spec{
+		Spec: &mir_apiv1.UpdateDeviceRequest_Spec{
 			DeviceId: &d.Spec.DeviceId,
 			Disabled: d.Spec.Disabled,
 		},
-		Props: &core_apiv1.UpdateDeviceRequest_Properties{
+		Props: &mir_apiv1.UpdateDeviceRequest_Properties{
 			Desired: des,
 		},
-		Targets: &core_apiv1.DeviceTarget{
+		Targets: &mir_apiv1.DeviceTarget{
 			Names:      []string{d.Meta.Name},
 			Namespaces: []string{d.Meta.Namespace},
 		},
@@ -218,27 +216,27 @@ func NewUpdateDeviceReqFromDevice(d Device) *core_apiv1.UpdateDeviceRequest {
 	return devUpd
 }
 
-func NewUpdateDeviceReqFromProtoDevice(t *core_apiv1.DeviceTarget, d *core_apiv1.Device) *core_apiv1.UpdateDeviceRequest {
-	toUpdateMap := func(m map[string]string) map[string]*common_apiv1.OptString {
-		opt := map[string]*common_apiv1.OptString{}
+func NewUpdateDeviceReqFromProtoDevice(t *mir_apiv1.DeviceTarget, d *mir_apiv1.Device) *mir_apiv1.UpdateDeviceRequest {
+	toUpdateMap := func(m map[string]string) map[string]*mir_apiv1.OptString {
+		opt := map[string]*mir_apiv1.OptString{}
 		for k, v := range m {
 			if v == "none" {
-				opt[k] = &common_apiv1.OptString{
+				opt[k] = &mir_apiv1.OptString{
 					Value: nil,
 				}
 			} else {
-				opt[k] = &common_apiv1.OptString{
+				opt[k] = &mir_apiv1.OptString{
 					Value: &v,
 				}
 			}
 		}
 		return opt
 	}
-	devUpd := &core_apiv1.UpdateDeviceRequest{
+	devUpd := &mir_apiv1.UpdateDeviceRequest{
 		Targets: t,
 	}
 	if d.Meta != nil {
-		devUpd.Meta = &core_apiv1.UpdateDeviceRequest_Meta{
+		devUpd.Meta = &mir_apiv1.UpdateDeviceRequest_Meta{
 			Name:        &d.Meta.Name,
 			Namespace:   &d.Meta.Namespace,
 			Labels:      toUpdateMap(d.Meta.Labels),
@@ -252,7 +250,7 @@ func NewUpdateDeviceReqFromProtoDevice(t *core_apiv1.DeviceTarget, d *core_apiv1
 		}
 	}
 	if d.Spec != nil {
-		devUpd.Spec = &core_apiv1.UpdateDeviceRequest_Spec{
+		devUpd.Spec = &mir_apiv1.UpdateDeviceRequest_Spec{
 			DeviceId: &d.Spec.DeviceId,
 			Disabled: &d.Spec.Disabled,
 		}
@@ -261,7 +259,7 @@ func NewUpdateDeviceReqFromProtoDevice(t *core_apiv1.DeviceTarget, d *core_apiv1
 		}
 	}
 	if d.Properties != nil {
-		devUpd.Props = &core_apiv1.UpdateDeviceRequest_Properties{
+		devUpd.Props = &mir_apiv1.UpdateDeviceRequest_Properties{
 			Desired: d.Properties.Desired,
 		}
 	}
@@ -269,7 +267,7 @@ func NewUpdateDeviceReqFromProtoDevice(t *core_apiv1.DeviceTarget, d *core_apiv1
 	return devUpd
 }
 
-func NewDeviceFromUpdateDeviceReq(d *core_apiv1.UpdateDeviceRequest) Device {
+func NewDeviceFromUpdateDeviceReq(d *mir_apiv1.UpdateDeviceRequest) Device {
 	dev := NewDevice()
 	if d == nil {
 		return dev
@@ -334,32 +332,32 @@ func NewDeviceFromUpdateDeviceReq(d *core_apiv1.UpdateDeviceRequest) Device {
 	return dev
 }
 
-func NewCreateDeviceReqFromDevice(d Device) *core_apiv1.CreateDeviceRequest {
-	return &core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+func NewCreateDeviceReqFromDevice(d Device) *mir_apiv1.CreateDeviceRequest {
+	return &mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:        d.Meta.Name,
 			Namespace:   d.Meta.Namespace,
 			Labels:      d.Meta.Labels,
 			Annotations: d.Meta.Annotations,
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: d.Spec.DeviceId,
 			Disabled: asUnRefBool(d.Spec.Disabled),
 		},
-		Properties: &core_apiv1.Properties{},
+		Properties: &mir_apiv1.DeviceProperties{},
 	}
 }
 
-func DeviceToUpdateDeviceRequest(d Device) *core_apiv1.UpdateDeviceRequest {
-	toUpdateMap := func(m map[string]string) map[string]*common_apiv1.OptString {
-		opt := map[string]*common_apiv1.OptString{}
+func DeviceToUpdateDeviceRequest(d Device) *mir_apiv1.UpdateDeviceRequest {
+	toUpdateMap := func(m map[string]string) map[string]*mir_apiv1.OptString {
+		opt := map[string]*mir_apiv1.OptString{}
 		for k, v := range m {
 			if strings.ToLower(v) == "null" {
-				opt[k] = &common_apiv1.OptString{
+				opt[k] = &mir_apiv1.OptString{
 					Value: nil,
 				}
 			} else {
-				opt[k] = &common_apiv1.OptString{
+				opt[k] = &mir_apiv1.OptString{
 					Value: &v,
 				}
 			}
@@ -369,18 +367,18 @@ func DeviceToUpdateDeviceRequest(d Device) *core_apiv1.UpdateDeviceRequest {
 
 	des, _ := structpb.NewStruct(d.Properties.Desired)
 
-	devUpd := &core_apiv1.UpdateDeviceRequest{
-		Meta: &core_apiv1.UpdateDeviceRequest_Meta{
+	devUpd := &mir_apiv1.UpdateDeviceRequest{
+		Meta: &mir_apiv1.UpdateDeviceRequest_Meta{
 			Name:        &d.Meta.Name,
 			Namespace:   &d.Meta.Namespace,
 			Labels:      toUpdateMap(d.Meta.Labels),
 			Annotations: toUpdateMap(d.Meta.Annotations),
 		},
-		Spec: &core_apiv1.UpdateDeviceRequest_Spec{
+		Spec: &mir_apiv1.UpdateDeviceRequest_Spec{
 			DeviceId: &d.Spec.DeviceId,
 			Disabled: d.Spec.Disabled,
 		},
-		Props: &core_apiv1.UpdateDeviceRequest_Properties{
+		Props: &mir_apiv1.UpdateDeviceRequest_Properties{
 			Desired: des,
 		},
 	}
@@ -393,13 +391,13 @@ func DeviceToUpdateDeviceRequest(d Device) *core_apiv1.UpdateDeviceRequest {
 		devUpd.Props = nil
 	}
 
-	devUpd.Status = &core_apiv1.UpdateDeviceRequest_Status{
+	devUpd.Status = &mir_apiv1.UpdateDeviceRequest_Status{
 		Online:         d.Status.Online,
 		LastHearthbeat: AsRefProtoTimestamp(d.Status.LastHearthbeat),
 	}
 
 	if d.Status.Schema.CompressedSchema != nil || d.Status.Schema.PackageNames != nil || d.Status.Schema.LastSchemaFetch != nil {
-		devUpd.Status.Schema = &core_apiv1.UpdateDeviceRequest_Schema{
+		devUpd.Status.Schema = &mir_apiv1.UpdateDeviceRequest_Schema{
 			CompressedSchema: d.Status.Schema.CompressedSchema,
 			PackageNames:     d.Status.Schema.PackageNames,
 			LastSchemaFetch:  AsRefProtoTimestamp(d.Status.Schema.LastSchemaFetch),
@@ -409,8 +407,8 @@ func DeviceToUpdateDeviceRequest(d Device) *core_apiv1.UpdateDeviceRequest {
 	return devUpd
 }
 
-func NewCreateDeviceReqFromDeviceUpdateRequest(d *core_apiv1.UpdateDeviceRequest) *core_apiv1.CreateDeviceRequest {
-	toMap := func(m map[string]*common_apiv1.OptString) map[string]string {
+func NewCreateDeviceReqFromDeviceUpdateRequest(d *mir_apiv1.UpdateDeviceRequest) *mir_apiv1.CreateDeviceRequest {
+	toMap := func(m map[string]*mir_apiv1.OptString) map[string]string {
 		opt := map[string]string{}
 		for k, v := range m {
 			if v != nil && v.Value != nil {
@@ -419,13 +417,13 @@ func NewCreateDeviceReqFromDeviceUpdateRequest(d *core_apiv1.UpdateDeviceRequest
 		}
 		return opt
 	}
-	dev := &core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	dev := &mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Labels:      toMap(d.Meta.Labels),
 			Annotations: toMap(d.Meta.Annotations),
 		},
-		Spec:       &core_apiv1.Spec{},
-		Properties: &core_apiv1.Properties{},
+		Spec:       &mir_apiv1.DeviceSpec{},
+		Properties: &mir_apiv1.DeviceProperties{},
 	}
 	if d.Meta != nil {
 		if d.Meta.Name != nil {
@@ -446,7 +444,7 @@ func NewCreateDeviceReqFromDeviceUpdateRequest(d *core_apiv1.UpdateDeviceRequest
 	return dev
 }
 
-func NewDeviceFromCreateDeviceReq(d *core_apiv1.CreateDeviceRequest) Device {
+func NewDeviceFromCreateDeviceReq(d *mir_apiv1.CreateDeviceRequest) Device {
 	return Device{
 		Object: Object{
 			ApiVersion: "mir/v1alpha",
@@ -466,7 +464,7 @@ func NewDeviceFromCreateDeviceReq(d *core_apiv1.CreateDeviceRequest) Device {
 	}
 }
 
-func ProtoDeviceTargetToMirDeviceTarget(t *core_apiv1.DeviceTarget) DeviceTarget {
+func ProtoDeviceTargetToMirDeviceTarget(t *mir_apiv1.DeviceTarget) DeviceTarget {
 	if t == nil {
 		return DeviceTarget{}
 	}
@@ -478,8 +476,8 @@ func ProtoDeviceTargetToMirDeviceTarget(t *core_apiv1.DeviceTarget) DeviceTarget
 	}
 }
 
-func MirDeviceTargetToProtoDeviceTarget(t DeviceTarget) *core_apiv1.DeviceTarget {
-	return &core_apiv1.DeviceTarget{
+func MirDeviceTargetToProtoDeviceTarget(t DeviceTarget) *mir_apiv1.DeviceTarget {
+	return &mir_apiv1.DeviceTarget{
 		Names:      t.Names,
 		Namespaces: t.Namespaces,
 		Labels:     t.Labels,
@@ -489,15 +487,15 @@ func MirDeviceTargetToProtoDeviceTarget(t DeviceTarget) *core_apiv1.DeviceTarget
 
 /// Objects
 
-func MirObjectTargetToProtoObjectTarget(t ObjectTarget) *common_apiv1.Targets {
-	return &common_apiv1.Targets{
+func MirObjectTargetToProtoObjectTarget(t ObjectTarget) *mir_apiv1.Targets {
+	return &mir_apiv1.Targets{
 		Names:      t.Names,
 		Namespaces: t.Namespaces,
 		Labels:     t.Labels,
 	}
 }
 
-func ProtoObjectTargetToMirObjectTarget(t *common_apiv1.Targets) ObjectTarget {
+func ProtoObjectTargetToMirObjectTarget(t *mir_apiv1.Targets) ObjectTarget {
 	if t == nil {
 		return ObjectTarget{}
 	}
@@ -508,7 +506,7 @@ func ProtoObjectTargetToMirObjectTarget(t *common_apiv1.Targets) ObjectTarget {
 	}
 }
 
-func ProtoObjectToMirObject(o *common_apiv1.Object) Object {
+func ProtoObjectToMirObject(o *mir_apiv1.Object) Object {
 	if o == nil {
 		return Object{}
 	}
@@ -524,11 +522,11 @@ func ProtoObjectToMirObject(o *common_apiv1.Object) Object {
 	}
 }
 
-func MirObjectToProtoObject(o Object) *common_apiv1.Object {
-	return &common_apiv1.Object{
+func MirObjectToProtoObject(o Object) *mir_apiv1.Object {
+	return &mir_apiv1.Object{
 		ApiVersion: o.ApiVersion,
 		Kind:       o.Kind,
-		Meta: &common_apiv1.Meta{
+		Meta: &mir_apiv1.Meta{
 			Name:        o.Meta.Name,
 			Namespace:   o.Meta.Namespace,
 			Labels:      o.Meta.Labels,
@@ -539,17 +537,17 @@ func MirObjectToProtoObject(o Object) *common_apiv1.Object {
 
 /// Events
 
-func MirEventToProtoEvent(e Event) *event_apiv1.Event {
-	return &event_apiv1.Event{
+func MirEventToProtoEvent(e Event) *mir_apiv1.Event {
+	return &mir_apiv1.Event{
 		Object: MirObjectToProtoObject(e.Object),
-		Spec: &event_apiv1.EventSpec{
+		Spec: &mir_apiv1.EventSpec{
 			Type:          e.Spec.Type,
 			Reason:        e.Spec.Reason,
 			Message:       e.Spec.Message,
 			JsonPayload:   e.Spec.Payload,
 			RelatedObject: MirObjectToProtoObject(e.Spec.RelatedObject),
 		},
-		Status: &event_apiv1.EventStatus{
+		Status: &mir_apiv1.EventStatus{
 			Count:   int32(e.Status.Count),
 			FirstAt: AsProtoTimestamp(e.Status.FirstAt),
 			LastAt:  AsProtoTimestamp(e.Status.LastAt),
@@ -557,9 +555,9 @@ func MirEventToProtoEvent(e Event) *event_apiv1.Event {
 	}
 }
 
-func MirEventSpecToProtoCreateEvent(e EventSpec) *event_apiv1.CreateEventRequest {
-	return &event_apiv1.CreateEventRequest{
-		Spec: &event_apiv1.EventSpec{
+func MirEventSpecToProtoCreateEvent(e EventSpec) *mir_apiv1.CreateEventRequest {
+	return &mir_apiv1.CreateEventRequest{
+		Spec: &mir_apiv1.EventSpec{
 			Type:          e.Type,
 			Reason:        e.Reason,
 			Message:       e.Message,
@@ -569,7 +567,7 @@ func MirEventSpecToProtoCreateEvent(e EventSpec) *event_apiv1.CreateEventRequest
 	}
 }
 
-func ProtoEventsToMirEvents(events []*event_apiv1.Event) []Event {
+func ProtoEventsToMirEvents(events []*mir_apiv1.Event) []Event {
 	var mirEvents []Event
 	for _, event := range events {
 		mirEvents = append(mirEvents, ProtoEventToMirEvent(event))
@@ -577,15 +575,15 @@ func ProtoEventsToMirEvents(events []*event_apiv1.Event) []Event {
 	return mirEvents
 }
 
-func MirEventsToProtoEvents(events []Event) []*event_apiv1.Event {
-	var protoEvents []*event_apiv1.Event
+func MirEventsToProtoEvents(events []Event) []*mir_apiv1.Event {
+	var protoEvents []*mir_apiv1.Event
 	for _, event := range events {
 		protoEvents = append(protoEvents, MirEventToProtoEvent(event))
 	}
 	return protoEvents
 }
 
-func ProtoEventToMirEvent(e *event_apiv1.Event) Event {
+func ProtoEventToMirEvent(e *mir_apiv1.Event) Event {
 	if e == nil {
 		return Event{}
 	}
@@ -616,7 +614,7 @@ func ProtoEventToMirEvent(e *event_apiv1.Event) Event {
 	}
 }
 
-func ProtoCreateEventReqToMirEventSpec(e *event_apiv1.CreateEventRequest) EventSpec {
+func ProtoCreateEventReqToMirEventSpec(e *mir_apiv1.CreateEventRequest) EventSpec {
 	if e == nil || e.Spec == nil {
 		return EventSpec{}
 	}
@@ -630,7 +628,7 @@ func ProtoCreateEventReqToMirEventSpec(e *event_apiv1.CreateEventRequest) EventS
 	}
 }
 
-func ProtoEventTargetToMirEventTarget(t *event_apiv1.EventTarget) EventTarget {
+func ProtoEventTargetToMirEventTarget(t *mir_apiv1.EventTarget) EventTarget {
 	if t == nil {
 		return EventTarget{}
 	}
@@ -641,8 +639,8 @@ func ProtoEventTargetToMirEventTarget(t *event_apiv1.EventTarget) EventTarget {
 	}
 }
 
-func MirEventTargetToProtoEventTarget(t EventTarget) *event_apiv1.EventTarget {
-	return &event_apiv1.EventTarget{
+func MirEventTargetToProtoEventTarget(t EventTarget) *mir_apiv1.EventTarget {
+	return &mir_apiv1.EventTarget{
 		Targets:     MirObjectTargetToProtoObjectTarget(t.ObjectTarget),
 		FilterDate:  MirTimeFilterToProtoTimeFilter(t.DateFilter),
 		FilterLimit: int32(t.Limit),
@@ -658,35 +656,35 @@ func asUnRefBool(b *bool) bool {
 	return *b
 }
 
-func AsProtoTimestamp(t time.Time) *common_apiv1.Timestamp {
+func AsProtoTimestamp(t time.Time) *mir_apiv1.Timestamp {
 	if t.IsZero() {
 		return nil
 	}
-	return &common_apiv1.Timestamp{
+	return &mir_apiv1.Timestamp{
 		Seconds: int64(t.Unix()),
 		Nanos:   int32(t.Nanosecond()),
 	}
 }
 
-func AsRefProtoTimestamp(t *time.Time) *common_apiv1.Timestamp {
+func AsRefProtoTimestamp(t *time.Time) *mir_apiv1.Timestamp {
 	if t == nil || t.IsZero() {
 		return nil
 	}
-	return &common_apiv1.Timestamp{
+	return &mir_apiv1.Timestamp{
 		Seconds: int64(t.Unix()),
 		Nanos:   int32(t.Nanosecond()),
 	}
 }
 
-func AsGoTime(ts *common_apiv1.Timestamp) time.Time {
+func AsGoTime(ts *mir_apiv1.Timestamp) time.Time {
 	if ts == nil {
 		return time.Time{}
 	}
 	return time.Unix(int64(ts.GetSeconds()), int64(ts.GetNanos())).UTC()
 }
 
-func mapToProtoTs(m map[string]time.Time) map[string]*common_apiv1.Timestamp {
-	ts := map[string]*common_apiv1.Timestamp{}
+func mapToProtoTs(m map[string]time.Time) map[string]*mir_apiv1.Timestamp {
+	ts := map[string]*mir_apiv1.Timestamp{}
 	for k, v := range m {
 		ts[k] = AsProtoTimestamp(v)
 	}
@@ -716,7 +714,7 @@ func StructToMapAny(s interface{}) (map[string]interface{}, error) {
 	return result, nil
 }
 
-func ProtoTimeFilterToMirTimeFilter(f *common_apiv1.DateFilter) DateFilter {
+func ProtoTimeFilterToMirTimeFilter(f *mir_apiv1.DateFilter) DateFilter {
 	if f == nil {
 		return DateFilter{}
 	}
@@ -726,8 +724,8 @@ func ProtoTimeFilterToMirTimeFilter(f *common_apiv1.DateFilter) DateFilter {
 	}
 }
 
-func MirTimeFilterToProtoTimeFilter(f DateFilter) *common_apiv1.DateFilter {
-	return &common_apiv1.DateFilter{
+func MirTimeFilterToProtoTimeFilter(f DateFilter) *mir_apiv1.DateFilter {
+	return &mir_apiv1.DateFilter{
 		To:   AsProtoTimestamp(f.To),
 		From: AsProtoTimestamp(f.From),
 	}

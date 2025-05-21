@@ -5,7 +5,7 @@ import (
 
 	"github.com/maxthom/mir/internal/clients"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
-	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
+	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
@@ -29,80 +29,80 @@ const (
 
 // Core Builder
 
-func PublishDeviceCreateRequest(bus *bus.BusConn, req *core_apiv1.CreateDeviceRequest) (*core_apiv1.CreateDeviceResponse, error) {
+func PublishDeviceCreateRequest(bus *bus.BusConn, req *mir_apiv1.CreateDeviceRequest) (*mir_apiv1.CreateDeviceResponse, error) {
 	bReq, err := proto.Marshal(req)
 	if err != nil {
-		return &core_apiv1.CreateDeviceResponse{}, err
+		return &mir_apiv1.CreateDeviceResponse{}, err
 	}
 
 	resMsg, err := bus.Request(CreateDeviceRequest.WithId("todo"), bReq, 7*time.Second)
 	if err != nil {
-		return &core_apiv1.CreateDeviceResponse{}, err
+		return &mir_apiv1.CreateDeviceResponse{}, err
 	}
 
-	resp := &core_apiv1.CreateDeviceResponse{}
+	resp := &mir_apiv1.CreateDeviceResponse{}
 	err = proto.Unmarshal(resMsg.Data, resp)
 	if err != nil {
-		return &core_apiv1.CreateDeviceResponse{}, err
+		return &mir_apiv1.CreateDeviceResponse{}, err
 	}
 
 	return resp, nil
 }
 
-func PublishDeviceUpdateRequest(bus *bus.BusConn, req *core_apiv1.UpdateDeviceRequest) (*core_apiv1.UpdateDeviceResponse, error) {
+func PublishDeviceUpdateRequest(bus *bus.BusConn, req *mir_apiv1.UpdateDeviceRequest) (*mir_apiv1.UpdateDeviceResponse, error) {
 	bReq, err := proto.Marshal(req)
 	if err != nil {
-		return &core_apiv1.UpdateDeviceResponse{}, err
+		return &mir_apiv1.UpdateDeviceResponse{}, err
 	}
 
 	resMsg, err := bus.Request(UpdateDeviceRequest.WithId("TODO"), bReq, 7*time.Second)
 	if err != nil {
-		return &core_apiv1.UpdateDeviceResponse{}, err
+		return &mir_apiv1.UpdateDeviceResponse{}, err
 	}
 
-	resp := &core_apiv1.UpdateDeviceResponse{}
+	resp := &mir_apiv1.UpdateDeviceResponse{}
 	err = proto.Unmarshal(resMsg.Data, resp)
 	if err != nil {
-		return &core_apiv1.UpdateDeviceResponse{}, err
+		return &mir_apiv1.UpdateDeviceResponse{}, err
 	}
 
 	return resp, nil
 }
 
-func PublishDeviceDeleteRequest(bus *bus.BusConn, req *core_apiv1.DeleteDeviceRequest) (*core_apiv1.DeleteDeviceResponse, error) {
+func PublishDeviceDeleteRequest(bus *bus.BusConn, req *mir_apiv1.DeleteDeviceRequest) (*mir_apiv1.DeleteDeviceResponse, error) {
 	bReq, err := proto.Marshal(req)
 	if err != nil {
-		return &core_apiv1.DeleteDeviceResponse{}, err
+		return &mir_apiv1.DeleteDeviceResponse{}, err
 	}
 
 	resMsg, err := bus.Request(DeleteDeviceRequest.WithId("TODO"), bReq, 7*time.Second)
 	if err != nil {
-		return &core_apiv1.DeleteDeviceResponse{}, err
+		return &mir_apiv1.DeleteDeviceResponse{}, err
 	}
 
-	resp := &core_apiv1.DeleteDeviceResponse{}
+	resp := &mir_apiv1.DeleteDeviceResponse{}
 	err = proto.Unmarshal(resMsg.Data, resp)
 	if err != nil {
-		return &core_apiv1.DeleteDeviceResponse{}, err
+		return &mir_apiv1.DeleteDeviceResponse{}, err
 	}
 
 	return resp, nil
 }
 
-func PublishDeviceListRequest(bus *bus.BusConn, req *core_apiv1.ListDeviceRequest) (*core_apiv1.ListDeviceResponse, error) {
+func PublishDeviceListRequest(bus *bus.BusConn, req *mir_apiv1.ListDeviceRequest) (*mir_apiv1.ListDeviceResponse, error) {
 	bReq, err := proto.Marshal(req)
 	if err != nil {
-		return &core_apiv1.ListDeviceResponse{}, err
+		return &mir_apiv1.ListDeviceResponse{}, err
 	}
 	resMsg, err := bus.Request(ListDeviceRequest.WithId("TODO"), bReq, 7*time.Second)
 	if err != nil {
-		return &core_apiv1.ListDeviceResponse{}, err
+		return &mir_apiv1.ListDeviceResponse{}, err
 	}
 
-	resp := &core_apiv1.ListDeviceResponse{}
+	resp := &mir_apiv1.ListDeviceResponse{}
 	err = proto.Unmarshal(resMsg.Data, resp)
 	if err != nil {
-		return &core_apiv1.ListDeviceResponse{}, err
+		return &mir_apiv1.ListDeviceResponse{}, err
 	}
 
 	return resp, nil

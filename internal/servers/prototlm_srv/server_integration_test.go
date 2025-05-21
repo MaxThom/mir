@@ -22,9 +22,7 @@ import (
 	"github.com/maxthom/mir/internal/servers/core_srv"
 	prototlm_testv1 "github.com/maxthom/mir/internal/servers/prototlm_srv/proto_test/gen/prototlm_test/v1"
 	"github.com/maxthom/mir/internal/services/schema_cache"
-	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
-	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
-	tlm_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/tlm_api"
+	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
 	mirDevice "github.com/maxthom/mir/pkgs/device/mir"
 	"github.com/maxthom/mir/pkgs/mir_v1"
@@ -131,15 +129,15 @@ func TestPublishDevicePushTelemetry(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_push_tlm"
-	reqCreate := &core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	reqCreate := &mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_core",
 			Labels: map[string]string{
 				"testing": "tlm",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: id,
 		},
 	}
@@ -197,8 +195,8 @@ func TestPublishDevicePushTelemetry(t *testing.T) {
 	wgTlm.Wait()
 
 	// Assert
-	respList, err := core_client.PublishDeviceListRequest(b, &core_apiv1.ListDeviceRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	respList, err := core_client.PublishDeviceListRequest(b, &mir_apiv1.ListDeviceRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 	})
@@ -247,15 +245,15 @@ func TestPublishDeviceSchemaAlreadyPresent(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_schema_present"
-	reqCreate := &core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	reqCreate := &mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_core",
 			Labels: map[string]string{
 				"testing": "tlm",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: id,
 		},
 	}
@@ -269,12 +267,12 @@ func TestPublishDeviceSchemaAlreadyPresent(t *testing.T) {
 		t.Error(err)
 	}
 	timeFetch := time.Date(1992, 10, 14, 14, 20, 00, 00, time.UTC)
-	reqUpd := &core_apiv1.UpdateDeviceRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	reqUpd := &mir_apiv1.UpdateDeviceRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
-		Status: &core_apiv1.UpdateDeviceRequest_Status{
-			Schema: &core_apiv1.UpdateDeviceRequest_Schema{
+		Status: &mir_apiv1.UpdateDeviceRequest_Status{
+			Schema: &mir_apiv1.UpdateDeviceRequest_Schema{
 				CompressedSchema: compSchBytes,
 				LastSchemaFetch:  mir_v1.AsProtoTimestamp(timeFetch),
 			},
@@ -340,8 +338,8 @@ func TestPublishDeviceSchemaAlreadyPresent(t *testing.T) {
 	wgTlm.Wait()
 
 	// Assert
-	respList, err := core_client.PublishDeviceListRequest(b, &core_apiv1.ListDeviceRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	respList, err := core_client.PublishDeviceListRequest(b, &mir_apiv1.ListDeviceRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 	})
@@ -382,15 +380,15 @@ func TestPublishDeviceSchemaInvalid(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_invalid_schema"
-	reqCreate := &core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	reqCreate := &mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_core",
 			Labels: map[string]string{
 				"testing": "tlm",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: id,
 		},
 	}
@@ -408,12 +406,12 @@ func TestPublishDeviceSchemaInvalid(t *testing.T) {
 		t.Error(err)
 	}
 	timeFetch := time.Date(1992, 10, 14, 14, 20, 00, 00, time.UTC)
-	reqUpd := &core_apiv1.UpdateDeviceRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	reqUpd := &mir_apiv1.UpdateDeviceRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
-		Status: &core_apiv1.UpdateDeviceRequest_Status{
-			Schema: &core_apiv1.UpdateDeviceRequest_Schema{
+		Status: &mir_apiv1.UpdateDeviceRequest_Status{
+			Schema: &mir_apiv1.UpdateDeviceRequest_Schema{
 				CompressedSchema: badSchBytes,
 				LastSchemaFetch:  mir_v1.AsProtoTimestamp(timeFetch),
 			},
@@ -479,8 +477,8 @@ func TestPublishDeviceSchemaInvalid(t *testing.T) {
 	wgTlm.Wait()
 
 	// Assert
-	respList, err := core_client.PublishDeviceListRequest(b, &core_apiv1.ListDeviceRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	respList, err := core_client.PublishDeviceListRequest(b, &mir_apiv1.ListDeviceRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 	})
@@ -525,15 +523,15 @@ func TestPublishDevicePushTelemetryDeviceUpdate(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_push_tlm_upd"
-	reqCreate := &core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	reqCreate := &mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_core",
 			Labels: map[string]string{
 				"testing": "tlm",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: id,
 		},
 	}
@@ -590,12 +588,12 @@ func TestPublishDevicePushTelemetryDeviceUpdate(t *testing.T) {
 	}()
 	time.Sleep(2 * time.Second)
 	str := "update"
-	if _, err = core_client.PublishDeviceUpdateRequest(b, &core_apiv1.UpdateDeviceRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	if _, err = core_client.PublishDeviceUpdateRequest(b, &mir_apiv1.UpdateDeviceRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
-		Meta: &core_apiv1.UpdateDeviceRequest_Meta{
-			Labels: map[string]*common_apiv1.OptString{
+		Meta: &mir_apiv1.UpdateDeviceRequest_Meta{
+			Labels: map[string]*mir_apiv1.OptString{
 				"test": {
 					Value: &str,
 				},
@@ -632,81 +630,81 @@ func TestPublishTelemetryListPairs(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	s := swarm.NewSwarm(b)
 	_, err := s.AddDevices(
-		&core_apiv1.CreateDeviceRequest{
-			Meta: &core_apiv1.Meta{
+		&mir_apiv1.CreateDeviceRequest{
+			Meta: &mir_apiv1.Meta{
 				Name:      "dev_tlm_list_1",
 				Namespace: "testing_core",
 				Labels: map[string]string{
 					"testing": "tlm",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: "dev_tlm_list_1",
 			},
 		},
-		&core_apiv1.CreateDeviceRequest{
-			Meta: &core_apiv1.Meta{
+		&mir_apiv1.CreateDeviceRequest{
+			Meta: &mir_apiv1.Meta{
 				Name:      "dev_tlm_list_2",
 				Namespace: "testing_core",
 				Labels: map[string]string{
 					"testing": "tlm",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: "dev_tlm_list_2",
 			},
 		}).WithSchema(
 		prototlm_testv1.File_prototlm_test_v1_telemetry_proto,
 	).Incubate()
 	_, err = s.AddDevices(
-		&core_apiv1.CreateDeviceRequest{
-			Meta: &core_apiv1.Meta{
+		&mir_apiv1.CreateDeviceRequest{
+			Meta: &mir_apiv1.Meta{
 				Name:      "dev_tlm_list_3",
 				Namespace: "testing_core",
 				Labels: map[string]string{
 					"testing": "tlm",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: "dev_tlm_list_3",
 			},
 		},
-		&core_apiv1.CreateDeviceRequest{
-			Meta: &core_apiv1.Meta{
+		&mir_apiv1.CreateDeviceRequest{
+			Meta: &mir_apiv1.Meta{
 				Name:      "dev_tlm_list_4",
 				Namespace: "testing_core",
 				Labels: map[string]string{
 					"testing": "tlm",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: "dev_tlm_list_4",
 			},
 		}).WithSchema(
 		prototlm_testv1.File_prototlm_test_v1_telemetry2_proto,
 	).Incubate()
 	_, err = s.AddDevices(
-		&core_apiv1.CreateDeviceRequest{
-			Meta: &core_apiv1.Meta{
+		&mir_apiv1.CreateDeviceRequest{
+			Meta: &mir_apiv1.Meta{
 				Name:      "dev_tlm_list_5",
 				Namespace: "testing_core",
 				Labels: map[string]string{
 					"testing": "tlm",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: "dev_tlm_list_5",
 			},
 		},
-		&core_apiv1.CreateDeviceRequest{
-			Meta: &core_apiv1.Meta{
+		&mir_apiv1.CreateDeviceRequest{
+			Meta: &mir_apiv1.Meta{
 				Name:      "dev_tlm_list_6",
 				Namespace: "testing_core",
 				Labels: map[string]string{
 					"testing": "tlm",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: "dev_tlm_list_6",
 			},
 		}).WithSchema(
@@ -723,8 +721,8 @@ func TestPublishTelemetryListPairs(t *testing.T) {
 		t.Error(err)
 	}
 
-	resp, err := tlm_client.PublishTelemetryListRequest(b, &tlm_apiv1.SendListTelemetryRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	resp, err := tlm_client.PublishTelemetryListRequest(b, &mir_apiv1.SendListTelemetryRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Ids: s.ToTarget().Ids,
 		},
 		RefreshSchema: true,
@@ -763,15 +761,15 @@ func TestPublishTelemetryList(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	s := swarm.NewSwarm(b)
 	_, err := s.AddDevices(
-		&core_apiv1.CreateDeviceRequest{
-			Meta: &core_apiv1.Meta{
+		&mir_apiv1.CreateDeviceRequest{
+			Meta: &mir_apiv1.Meta{
 				Name:      "dev_tlm_listing_!",
 				Namespace: "testing_core",
 				Labels: map[string]string{
 					"testing": "tlm",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: "dev_tlm_listing_1",
 			},
 		},
@@ -787,8 +785,8 @@ func TestPublishTelemetryList(t *testing.T) {
 		t.Error(err)
 	}
 
-	resp, err := tlm_client.PublishTelemetryListRequest(b, &tlm_apiv1.SendListTelemetryRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	resp, err := tlm_client.PublishTelemetryListRequest(b, &mir_apiv1.SendListTelemetryRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Ids: s.ToTarget().Ids,
 		},
 		RefreshSchema: true,
@@ -837,15 +835,15 @@ func TestPublishTelemetryListError(t *testing.T) {
 	// Arrange
 	s := swarm.NewSwarm(b)
 	_, err := s.AddDevices(
-		&core_apiv1.CreateDeviceRequest{
-			Meta: &core_apiv1.Meta{
+		&mir_apiv1.CreateDeviceRequest{
+			Meta: &mir_apiv1.Meta{
 				Name:      "dev_tlm_list_offline",
 				Namespace: "testing_core",
 				Labels: map[string]string{
 					"testing": "tlm",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: "dev_tlm_list_offline",
 			},
 		},
@@ -856,8 +854,8 @@ func TestPublishTelemetryListError(t *testing.T) {
 	}
 
 	// Act
-	resp, err := tlm_client.PublishTelemetryListRequest(b, &tlm_apiv1.SendListTelemetryRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	resp, err := tlm_client.PublishTelemetryListRequest(b, &mir_apiv1.SendListTelemetryRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Ids: []string{"dev_tlm_list_offline"},
 		},
 		RefreshSchema: true,

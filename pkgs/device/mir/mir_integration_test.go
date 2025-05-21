@@ -16,7 +16,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
 	"github.com/maxthom/mir/internal/libs/test_utils"
 	"github.com/maxthom/mir/internal/servers/core_srv"
-	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
+	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
 	mir_device_testv1 "github.com/maxthom/mir/pkgs/device/mir/proto_test/gen/mir_device_test/v1"
 	"github.com/maxthom/mir/pkgs/mir_v1"
@@ -58,8 +58,8 @@ func TestMain(m *testing.M) {
 	time.Sleep(1 * time.Second)
 
 	// Prepare test data
-	if _, err := deleteDevices(b, &core_apiv1.DeleteDeviceRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	if _, err := deleteDevices(b, &mir_apiv1.DeleteDeviceRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Labels: map[string]string{
 				"test": "mir_device",
 			},
@@ -67,8 +67,8 @@ func TestMain(m *testing.M) {
 	}); err != nil {
 		panic(err)
 	}
-	devReq := &core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	devReq := &mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Labels: map[string]string{
 				"factory": "B",
 				"model":   "xx021",
@@ -79,12 +79,12 @@ func TestMain(m *testing.M) {
 				"mir/device/description": "hello world of devices !",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: "TestLaunchHearthbeat",
 		},
 	}
 
-	if _, err := createDevices(b, []*core_apiv1.CreateDeviceRequest{devReq}); err != nil {
+	if _, err := createDevices(b, []*mir_apiv1.CreateDeviceRequest{devReq}); err != nil {
 		panic(err)
 	}
 	time.Sleep(1 * time.Second)
@@ -98,8 +98,8 @@ func TestMain(m *testing.M) {
 
 	// Teardown
 	fmt.Println("Test Teardown")
-	if _, err := deleteDevices(b, &core_apiv1.DeleteDeviceRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	if _, err := deleteDevices(b, &mir_apiv1.DeleteDeviceRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Labels: map[string]string{
 				"test": "mir_device",
 			},
@@ -140,8 +140,8 @@ func TestLaunchHearthbeat(t *testing.T) {
 
 	// Takes some time for the hearthbeat to be sent
 	time.Sleep(15 * time.Second)
-	resp, err := core_client.PublishDeviceListRequest(b, &core_apiv1.ListDeviceRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	resp, err := core_client.PublishDeviceListRequest(b, &mir_apiv1.ListDeviceRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Ids: []string{"TestLaunchHearthbeat"},
 		},
 	})
@@ -248,8 +248,8 @@ func TestSendSchema(t *testing.T) {
 
 	time.Sleep(1 * time.Second)
 
-	resp, err := core_client.PublishDeviceListRequest(b, &core_apiv1.ListDeviceRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	resp, err := core_client.PublishDeviceListRequest(b, &mir_apiv1.ListDeviceRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 	})
@@ -640,8 +640,8 @@ func deleteDevicesDb(t *testing.T, db *surrealdb.DB, ids []string) error {
 	return nil
 }
 
-func createDevices(bus *bus.BusConn, devices []*core_apiv1.CreateDeviceRequest) ([]*core_apiv1.CreateDeviceResponse, error) {
-	responses := []*core_apiv1.CreateDeviceResponse{}
+func createDevices(bus *bus.BusConn, devices []*mir_apiv1.CreateDeviceRequest) ([]*mir_apiv1.CreateDeviceResponse, error) {
+	responses := []*mir_apiv1.CreateDeviceResponse{}
 	for _, dev := range devices {
 		resp, err := core_client.PublishDeviceCreateRequest(bus, dev)
 		responses = append(responses, resp)
@@ -652,7 +652,7 @@ func createDevices(bus *bus.BusConn, devices []*core_apiv1.CreateDeviceRequest) 
 	return responses, nil
 }
 
-func deleteDevices(bus *bus.BusConn, req *core_apiv1.DeleteDeviceRequest) (*core_apiv1.DeleteDeviceResponse, error) {
+func deleteDevices(bus *bus.BusConn, req *mir_apiv1.DeleteDeviceRequest) (*mir_apiv1.DeleteDeviceResponse, error) {
 	resp, err := core_client.PublishDeviceDeleteRequest(bus, req)
 	if err != nil {
 		return nil, err

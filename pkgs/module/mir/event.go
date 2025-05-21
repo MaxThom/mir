@@ -10,8 +10,7 @@ import (
 	"github.com/maxthom/mir/internal/clients/cmd_client"
 	"github.com/maxthom/mir/internal/clients/core_client"
 	"github.com/maxthom/mir/internal/clients/event_client"
-	cmd_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cmd_api"
-	event_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/event_api"
+	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
@@ -88,7 +87,7 @@ func (r *eventRoutes) QueueSubscribeSubject(queue string, sbj eventSubject, f fu
 func (r *eventRoutes) handlerWrapper(f func(msg *Msg, subjectId string, req mir_v1.EventSpec, e error)) nats.MsgHandler {
 	return func(msg *nats.Msg) {
 		subjectId := clients.ServerSubject(msg.Subject).GetId()
-		req := &event_apiv1.CreateEventRequest{}
+		req := &mir_apiv1.CreateEventRequest{}
 		if err := proto.Unmarshal(msg.Data, req); err != nil {
 			f(&Msg{msg}, subjectId, mir_v1.EventSpec{}, err)
 			return
@@ -234,8 +233,8 @@ func (r *deviceUpdateEventRoute) handlerWrapper(f func(msg *Msg, deviceId string
 	}
 }
 
-func getCreateEventRequest(msg *nats.Msg) (*event_apiv1.CreateEventRequest, error) {
-	req := &event_apiv1.CreateEventRequest{}
+func getCreateEventRequest(msg *nats.Msg) (*mir_apiv1.CreateEventRequest, error) {
+	req := &mir_apiv1.CreateEventRequest{}
 	if err := proto.Unmarshal(msg.Data, req); err != nil {
 		return nil, err
 	}
@@ -302,20 +301,20 @@ func (r *eventRoutes) Command() *commandEventRoute {
 }
 
 // Subscribe to device update event routes
-func (r *commandEventRoute) Subscribe(f func(msg *Msg, deviceId string, cmd *cmd_apiv1.SendCommandResponse_CommandResponse, err error)) error {
+func (r *commandEventRoute) Subscribe(f func(msg *Msg, deviceId string, cmd *mir_apiv1.SendCommandResponse_CommandResponse, err error)) error {
 	sbj := cmd_client.DeviceCommandEvent.WithId("*")
 	return r.m.subscribe(sbj, r.handlerWrapper(f))
 }
 
 // Queue subscribe to device update event routes
-func (r *commandEventRoute) QueueSubscribe(queue string, f func(msg *Msg, deviceId string, cmd *cmd_apiv1.SendCommandResponse_CommandResponse, err error)) error {
+func (r *commandEventRoute) QueueSubscribe(queue string, f func(msg *Msg, deviceId string, cmd *mir_apiv1.SendCommandResponse_CommandResponse, err error)) error {
 	sbj := cmd_client.DeviceCommandEvent.WithId("*")
 	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
 }
 
-func (r *commandEventRoute) handlerWrapper(f func(msg *Msg, deviceId string, cmd *cmd_apiv1.SendCommandResponse_CommandResponse, err error)) nats.MsgHandler {
+func (r *commandEventRoute) handlerWrapper(f func(msg *Msg, deviceId string, cmd *mir_apiv1.SendCommandResponse_CommandResponse, err error)) nats.MsgHandler {
 	return func(msg *nats.Msg) {
-		req := cmd_apiv1.SendCommandResponse_CommandResponse{}
+		req := mir_apiv1.SendCommandResponse_CommandResponse{}
 		if err := eventMsgToObject(msg, &req); err != nil {
 			f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), &req, err)
 			return

@@ -8,8 +8,7 @@ import (
 	"github.com/maxthom/mir/internal/clients/tlm_client"
 	"github.com/maxthom/mir/internal/libs/external/grafana"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
-	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
-	tlm_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/tlm_api"
+	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 )
 
 // TODO find how to move output here instead of per command
@@ -57,8 +56,8 @@ func (d *TelemetryListCmd) Run(c CLI) error {
 	}
 	defer msgBus.Close()
 
-	req := &tlm_apiv1.SendListTelemetryRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	req := &mir_apiv1.SendListTelemetryRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Ids:        d.Target.Ids,
 			Names:      d.Target.Names,
 			Namespaces: d.Target.Namespaces,
@@ -78,7 +77,7 @@ func (d *TelemetryListCmd) Run(c CLI) error {
 
 	var sb strings.Builder
 	i := 0
-	tlmsErr := []*tlm_apiv1.DevicesTelemetry{}
+	tlmsErr := []*mir_apiv1.DevicesTelemetry{}
 	for _, tlms := range resp.GetOk().DevicesTelemetry {
 		if tlms.Error != "" {
 			tlmsErr = append(tlmsErr, tlms)

@@ -9,7 +9,7 @@ import (
 	"github.com/maxthom/mir/internal/clients/tlm_client"
 	"github.com/maxthom/mir/internal/libs/compression/zstd"
 	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
-	device_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/device_api"
+	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
 	"gotest.tools/assert"
@@ -166,8 +166,8 @@ func TestDeviceRoutes_Schema(t *testing.T) {
 		func(msg *nats.Msg) {
 			bSchema, err := mockSchema.MarshalSchema()
 			assert.NilError(t, err)
-			response := &device_apiv1.SchemaRetrieveResponse{
-				Response: &device_apiv1.SchemaRetrieveResponse_Schema{
+			response := &mir_apiv1.SchemaRetrieveResponse{
+				Response: &mir_apiv1.SchemaRetrieveResponse_Schema{
 					Schema: bSchema,
 				},
 			}

@@ -5,9 +5,7 @@ import (
 	"testing"
 	"time"
 
-	cmd_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cmd_api"
-	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
-	tlm_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/tlm_api"
+	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"google.golang.org/protobuf/proto"
 	"gotest.tools/assert"
@@ -238,19 +236,19 @@ func TestServerRoutes_PublishProto(t *testing.T) {
 	subject := m.Server().NewSubject("test", "v1", "proto")
 	received := make(chan bool)
 
-	testDevice := &core_apiv1.Device{
-		Meta: &core_apiv1.Meta{
+	testDevice := &mir_apiv1.Device{
+		Meta: &mir_apiv1.Meta{
 			Name:      "Test Device",
 			Namespace: "default",
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: "test-server-publishproto",
 		},
 	}
 
 	// Subscribe
 	err := m.Server().Subscribe(subject, func(msg *Msg, clientId string) {
-		device := &core_apiv1.Device{}
+		device := &mir_apiv1.Device{}
 		err := proto.Unmarshal(msg.Data, device)
 		assert.NilError(t, err)
 		assert.Equal(t, testDevice.Meta.Name, device.Meta.Name)
@@ -312,10 +310,10 @@ func TestServerRoutes_PublishJson(t *testing.T) {
 
 func TestServerRoutes_ListTelemetry(t *testing.T) {
 	deviceID := "test-server-listtlm"
-	testTelemetry := []*tlm_apiv1.DevicesTelemetry{
+	testTelemetry := []*mir_apiv1.DevicesTelemetry{
 		{
 			DevicesNamens: []string{deviceID},
-			TlmDescriptors: []*tlm_apiv1.TelemetryDescriptor{
+			TlmDescriptors: []*mir_apiv1.TelemetryDescriptor{
 				{
 					Name: "test",
 				},
@@ -324,14 +322,14 @@ func TestServerRoutes_ListTelemetry(t *testing.T) {
 	}
 
 	err := m.Server().ListTelemetry().Subscribe(
-		func(msg *Msg, clientId string, req *tlm_apiv1.SendListTelemetryRequest) ([]*tlm_apiv1.DevicesTelemetry, error) {
+		func(msg *Msg, clientId string, req *mir_apiv1.SendListTelemetryRequest) ([]*mir_apiv1.DevicesTelemetry, error) {
 			return testTelemetry, nil
 		},
 	)
 	assert.NilError(t, err)
 
-	resp, err := m.Server().ListTelemetry().Request(&tlm_apiv1.SendListTelemetryRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	resp, err := m.Server().ListTelemetry().Request(&mir_apiv1.SendListTelemetryRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Ids: []string{deviceID},
 		},
 	})
@@ -341,9 +339,9 @@ func TestServerRoutes_ListTelemetry(t *testing.T) {
 
 func TestServerRoutes_ListCommand(t *testing.T) {
 	deviceID := "test-server-listcmd"
-	testCommands := map[string]*cmd_apiv1.Commands{
+	testCommands := map[string]*mir_apiv1.Commands{
 		"test-server-listcmd": {
-			Commands: []*cmd_apiv1.CommandDescriptor{
+			Commands: []*mir_apiv1.CommandDescriptor{
 				{
 					Name: "cmd_test",
 				},
@@ -352,14 +350,14 @@ func TestServerRoutes_ListCommand(t *testing.T) {
 	}
 
 	err := m.Server().ListCommands().Subscribe(
-		func(msg *Msg, clientId string, req *cmd_apiv1.SendListCommandsRequest) (map[string]*cmd_apiv1.Commands, error) {
+		func(msg *Msg, clientId string, req *mir_apiv1.SendListCommandsRequest) (map[string]*mir_apiv1.Commands, error) {
 			return testCommands, nil
 		},
 	)
 	assert.NilError(t, err)
 
-	resp, err := m.Server().ListCommands().Request(&cmd_apiv1.SendListCommandsRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	resp, err := m.Server().ListCommands().Request(&mir_apiv1.SendListCommandsRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Ids: []string{deviceID},
 		},
 	})
@@ -369,8 +367,8 @@ func TestServerRoutes_ListCommand(t *testing.T) {
 
 func TestServerRoutes_SendCommand(t *testing.T) {
 	deviceID := "test-server-sendcmd"
-	testCommands := &cmd_apiv1.SendCommandResponse_CommandResponses{
-		DeviceResponses: map[string]*cmd_apiv1.SendCommandResponse_CommandResponse{
+	testCommands := &mir_apiv1.SendCommandResponse_CommandResponses{
+		DeviceResponses: map[string]*mir_apiv1.SendCommandResponse_CommandResponse{
 			"test-server-sendcmd": {
 				DeviceId: deviceID,
 			},
@@ -378,14 +376,14 @@ func TestServerRoutes_SendCommand(t *testing.T) {
 	}
 
 	err := m.Server().SendCommand().Subscribe(
-		func(msg *Msg, clientId string, req *cmd_apiv1.SendCommandRequest) (*cmd_apiv1.SendCommandResponse_CommandResponses, error) {
+		func(msg *Msg, clientId string, req *mir_apiv1.SendCommandRequest) (*mir_apiv1.SendCommandResponse_CommandResponses, error) {
 			return testCommands, nil
 		},
 	)
 	assert.NilError(t, err)
 
-	resp, err := m.Server().SendCommand().Request(&cmd_apiv1.SendCommandRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	resp, err := m.Server().SendCommand().Request(&mir_apiv1.SendCommandRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Ids: []string{deviceID},
 		},
 	})

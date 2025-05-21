@@ -353,11 +353,11 @@ func (s *CoreServer) hearthbeatSub(msg *mir.Msg, deviceId string) {
 		return &b
 	}
 	// Since this update is only for hearthbeat and often, we dont want to have a device update event
-	// updReq := &core_apiv1.UpdateDeviceRequest{
-	// 	Targets: &core_apiv1.DeviceTarget{
+	// updReq := &mir_apiv1.UpdateDeviceRequest{
+	// 	Targets: &mir_apiv1.DeviceTarget{
 	// 		Ids: []string{deviceId},
 	// 	},
-	// 	Status: &core_apiv1.UpdateDeviceRequest_Status{
+	// 	Status: &mir_apiv1.UpdateDeviceRequest_Status{
 	// 		Online:         toBoolRef(true),
 	// 		LastHearthbeat: mir_v1.AsProtoTimestamp(timeNow),
 	// 	},

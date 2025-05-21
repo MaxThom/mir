@@ -8,7 +8,7 @@ import (
 	"github.com/maxthom/mir/internal/clients/core_client"
 	"github.com/maxthom/mir/internal/libs/editor"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
-	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
+	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 )
 
@@ -54,8 +54,8 @@ func (d *DeviceEditCmd) Run(c CLI) error {
 	}
 	defer msgBus.Close()
 
-	respList, err := core_client.PublishDeviceListRequest(msgBus, &core_apiv1.ListDeviceRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	respList, err := core_client.PublishDeviceListRequest(msgBus, &mir_apiv1.ListDeviceRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Ids:        d.Ids,
 			Names:      d.Names,
 			Namespaces: d.Namespaces,
@@ -108,7 +108,7 @@ func (d *DeviceEditCmd) Run(c CLI) error {
 	}
 
 	var errs error
-	respDevs := []*core_apiv1.Device{}
+	respDevs := []*mir_apiv1.Device{}
 	for i, d := range devs {
 		req := mir_v1.NewUpdateDeviceReqFromDeviceWithNameNs(targetNameNs[i], d)
 		resp, err := core_client.PublishDeviceUpdateRequest(msgBus, req)
@@ -163,18 +163,18 @@ func (d *DeviceApplyCmd) Run(c CLI) error {
 	}
 	defer msgBus.Close()
 
-	devs := []*core_apiv1.Device{}
+	devs := []*mir_apiv1.Device{}
 	if isPipedStdIn() || d.Path != "" {
-		devs, err = unmarshalTypeFromStdInOrFile[core_apiv1.Device](d.Path)
+		devs, err = unmarshalTypeFromStdInOrFile[mir_apiv1.Device](d.Path)
 		if err != nil {
 			return fmt.Errorf("error reading devices from file: %w", err)
 		}
 	}
 
 	var errs error
-	respDevs := []*core_apiv1.Device{}
+	respDevs := []*mir_apiv1.Device{}
 	for _, d := range devs {
-		req := mir_v1.NewUpdateDeviceReqFromProtoDevice(&core_apiv1.DeviceTarget{
+		req := mir_v1.NewUpdateDeviceReqFromProtoDevice(&mir_apiv1.DeviceTarget{
 			Names:      []string{d.GetMeta().GetName()},
 			Namespaces: []string{d.GetMeta().GetNamespace()},
 		}, d)
@@ -254,7 +254,7 @@ func (d *DeviceMergeCmd) Run(c CLI) error {
 	}
 
 	var errs error
-	respDevs := []*core_apiv1.Device{}
+	respDevs := []*mir_apiv1.Device{}
 	for _, de := range devs {
 		req := mir_v1.NewUpdateDeviceReqFromDeviceWithTarget(mir_v1.DeviceTarget{
 			Ids:        d.Ids,

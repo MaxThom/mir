@@ -8,11 +8,7 @@ import (
 	"github.com/maxthom/mir/internal/clients/cfg_client"
 	"github.com/maxthom/mir/internal/clients/cmd_client"
 	"github.com/maxthom/mir/internal/clients/tlm_client"
-	cfg_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cfg_api"
-	cmd_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cmd_api"
-	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
-	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
-	tlm_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/tlm_api"
+	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
 )
@@ -29,23 +25,23 @@ func (r *serverRoutes) ListTelemetry() *listTelemetryRoute {
 }
 
 // Subscribe to list telemetry request
-func (r *listTelemetryRoute) Subscribe(f func(msg *Msg, clientId string, req *tlm_apiv1.SendListTelemetryRequest) ([]*tlm_apiv1.DevicesTelemetry, error)) error {
+func (r *listTelemetryRoute) Subscribe(f func(msg *Msg, clientId string, req *mir_apiv1.SendListTelemetryRequest) ([]*mir_apiv1.DevicesTelemetry, error)) error {
 	sbj := tlm_client.TelemetryListRequest.WithId("*")
 	return r.m.subscribe(sbj, r.handlerWrapper(f))
 }
 
 // Queue subscribe to list telemetry request
-func (r *listTelemetryRoute) QueueSubscribe(queue string, f func(msg *Msg, clientId string, req *tlm_apiv1.SendListTelemetryRequest) ([]*tlm_apiv1.DevicesTelemetry, error)) error {
+func (r *listTelemetryRoute) QueueSubscribe(queue string, f func(msg *Msg, clientId string, req *mir_apiv1.SendListTelemetryRequest) ([]*mir_apiv1.DevicesTelemetry, error)) error {
 	sbj := tlm_client.TelemetryListRequest.WithId("*")
 	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
 }
 
-func (r *listTelemetryRoute) handlerWrapper(f func(msg *Msg, clientId string, req *tlm_apiv1.SendListTelemetryRequest) ([]*tlm_apiv1.DevicesTelemetry, error)) nats.MsgHandler {
+func (r *listTelemetryRoute) handlerWrapper(f func(msg *Msg, clientId string, req *mir_apiv1.SendListTelemetryRequest) ([]*mir_apiv1.DevicesTelemetry, error)) nats.MsgHandler {
 	return func(msg *nats.Msg) {
-		req := &tlm_apiv1.SendListTelemetryRequest{}
+		req := &mir_apiv1.SendListTelemetryRequest{}
 		if err := proto.Unmarshal(msg.Data, req); err != nil {
 			// TODO log error here
-			_ = r.m.sendReplyOrAck(msg, &tlm_apiv1.SendListTelemetryResponse{Response: &tlm_apiv1.SendListTelemetryResponse_Error{
+			_ = r.m.sendReplyOrAck(msg, &mir_apiv1.SendListTelemetryResponse{Response: &mir_apiv1.SendListTelemetryResponse_Error{
 				Error: err.Error(),
 			}})
 			return
@@ -53,15 +49,15 @@ func (r *listTelemetryRoute) handlerWrapper(f func(msg *Msg, clientId string, re
 
 		resp, err := f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), req)
 		if err != nil {
-			err = r.m.sendReplyOrAck(msg, &tlm_apiv1.SendListTelemetryResponse{Response: &tlm_apiv1.SendListTelemetryResponse_Error{
+			err = r.m.sendReplyOrAck(msg, &mir_apiv1.SendListTelemetryResponse{Response: &mir_apiv1.SendListTelemetryResponse_Error{
 				Error: err.Error(),
 			}})
 			return
 		}
 		// TODO log error here
-		err = r.m.sendReplyOrAck(msg, &tlm_apiv1.SendListTelemetryResponse{
-			Response: &tlm_apiv1.SendListTelemetryResponse_Ok{
-				Ok: &tlm_apiv1.TelemetryResponse{
+		err = r.m.sendReplyOrAck(msg, &mir_apiv1.SendListTelemetryResponse{
+			Response: &mir_apiv1.SendListTelemetryResponse_Ok{
+				Ok: &mir_apiv1.TelemetryResponse{
 					DevicesTelemetry: resp,
 				},
 			},
@@ -70,25 +66,25 @@ func (r *listTelemetryRoute) handlerWrapper(f func(msg *Msg, clientId string, re
 }
 
 // Request listing of telemetry per device
-func (r *listTelemetryRoute) Request(req *tlm_apiv1.SendListTelemetryRequest) ([]*tlm_apiv1.DevicesTelemetry, error) {
+func (r *listTelemetryRoute) Request(req *mir_apiv1.SendListTelemetryRequest) ([]*mir_apiv1.DevicesTelemetry, error) {
 	sbj := tlm_client.TelemetryListRequest.WithId(r.m.GetInstanceName())
 	bReq, err := proto.Marshal(req)
 	if err != nil {
-		return []*tlm_apiv1.DevicesTelemetry{}, err
+		return []*mir_apiv1.DevicesTelemetry{}, err
 	}
 
 	resMsg, err := r.m.request(sbj, bReq, nil, defaultTimeout)
 	if err != nil {
-		return []*tlm_apiv1.DevicesTelemetry{}, err
+		return []*mir_apiv1.DevicesTelemetry{}, err
 	}
 
-	resp := &tlm_apiv1.SendListTelemetryResponse{}
+	resp := &mir_apiv1.SendListTelemetryResponse{}
 	err = proto.Unmarshal(resMsg.Data, resp)
 	if err != nil {
-		return []*tlm_apiv1.DevicesTelemetry{}, err
+		return []*mir_apiv1.DevicesTelemetry{}, err
 	}
 	if resp.GetError() != "" {
-		return []*tlm_apiv1.DevicesTelemetry{}, err
+		return []*mir_apiv1.DevicesTelemetry{}, err
 	}
 
 	return resp.GetOk().DevicesTelemetry, nil
@@ -106,23 +102,23 @@ func (r *serverRoutes) ListCommands() *listCommandRoute {
 }
 
 // Subscribe to list command request
-func (r *listCommandRoute) Subscribe(f func(msg *Msg, clientId string, req *cmd_apiv1.SendListCommandsRequest) (map[string]*cmd_apiv1.Commands, error)) error {
+func (r *listCommandRoute) Subscribe(f func(msg *Msg, clientId string, req *mir_apiv1.SendListCommandsRequest) (map[string]*mir_apiv1.Commands, error)) error {
 	sbj := cmd_client.ListCommandsRequest.WithId("*")
 	return r.m.subscribe(sbj, r.handlerWrapper(f))
 }
 
 // Queue subscribe to list command request
-func (r *listCommandRoute) QueueSubscribe(queue string, f func(msg *Msg, clientId string, req *cmd_apiv1.SendListCommandsRequest) (map[string]*cmd_apiv1.Commands, error)) error {
+func (r *listCommandRoute) QueueSubscribe(queue string, f func(msg *Msg, clientId string, req *mir_apiv1.SendListCommandsRequest) (map[string]*mir_apiv1.Commands, error)) error {
 	sbj := cmd_client.ListCommandsRequest.WithId("*")
 	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
 }
 
-func (r *listCommandRoute) handlerWrapper(f func(msg *Msg, clientId string, req *cmd_apiv1.SendListCommandsRequest) (map[string]*cmd_apiv1.Commands, error)) nats.MsgHandler {
+func (r *listCommandRoute) handlerWrapper(f func(msg *Msg, clientId string, req *mir_apiv1.SendListCommandsRequest) (map[string]*mir_apiv1.Commands, error)) nats.MsgHandler {
 	return func(msg *nats.Msg) {
-		req := &cmd_apiv1.SendListCommandsRequest{}
+		req := &mir_apiv1.SendListCommandsRequest{}
 		if err := proto.Unmarshal(msg.Data, req); err != nil {
 			// TODO log error here
-			_ = r.m.sendReplyOrAck(msg, &cmd_apiv1.SendListCommandsResponse{Response: &cmd_apiv1.SendListCommandsResponse_Error{
+			_ = r.m.sendReplyOrAck(msg, &mir_apiv1.SendListCommandsResponse{Response: &mir_apiv1.SendListCommandsResponse_Error{
 				Error: err.Error(),
 			}})
 			return
@@ -131,15 +127,15 @@ func (r *listCommandRoute) handlerWrapper(f func(msg *Msg, clientId string, req 
 		resp, err := f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), req)
 		if err != nil {
 			// TODO log error here
-			_ = r.m.sendReplyOrAck(msg, &cmd_apiv1.SendListCommandsResponse{Response: &cmd_apiv1.SendListCommandsResponse_Error{
+			_ = r.m.sendReplyOrAck(msg, &mir_apiv1.SendListCommandsResponse{Response: &mir_apiv1.SendListCommandsResponse_Error{
 				Error: err.Error(),
 			}})
 			return
 		}
 		// TODO log error here
-		err = r.m.sendReplyOrAck(msg, &cmd_apiv1.SendListCommandsResponse{
-			Response: &cmd_apiv1.SendListCommandsResponse_Ok{
-				Ok: &cmd_apiv1.DevicesCommands{
+		err = r.m.sendReplyOrAck(msg, &mir_apiv1.SendListCommandsResponse{
+			Response: &mir_apiv1.SendListCommandsResponse_Ok{
+				Ok: &mir_apiv1.DevicesCommands{
 					DeviceCommands: resp,
 				},
 			},
@@ -148,25 +144,25 @@ func (r *listCommandRoute) handlerWrapper(f func(msg *Msg, clientId string, req 
 }
 
 // Request listing of command per device
-func (r *listCommandRoute) Request(req *cmd_apiv1.SendListCommandsRequest) (map[string]*cmd_apiv1.Commands, error) {
+func (r *listCommandRoute) Request(req *mir_apiv1.SendListCommandsRequest) (map[string]*mir_apiv1.Commands, error) {
 	sbj := cmd_client.ListCommandsRequest.WithId(r.m.GetInstanceName())
 	bReq, err := proto.Marshal(req)
 	if err != nil {
-		return map[string]*cmd_apiv1.Commands{}, err
+		return map[string]*mir_apiv1.Commands{}, err
 	}
 
 	resMsg, err := r.m.request(sbj, bReq, nil, defaultTimeout)
 	if err != nil {
-		return map[string]*cmd_apiv1.Commands{}, err
+		return map[string]*mir_apiv1.Commands{}, err
 	}
 
-	resp := &cmd_apiv1.SendListCommandsResponse{}
+	resp := &mir_apiv1.SendListCommandsResponse{}
 	err = proto.Unmarshal(resMsg.Data, resp)
 	if err != nil {
-		return map[string]*cmd_apiv1.Commands{}, err
+		return map[string]*mir_apiv1.Commands{}, err
 	}
 	if resp.GetError() != "" {
-		return map[string]*cmd_apiv1.Commands{}, err
+		return map[string]*mir_apiv1.Commands{}, err
 	}
 
 	return resp.GetOk().DeviceCommands, nil
@@ -184,23 +180,23 @@ func (r *serverRoutes) SendCommand() *sendCommandRoute {
 }
 
 // Subscribe to send command request
-func (r *sendCommandRoute) Subscribe(f func(msg *Msg, clientId string, req *cmd_apiv1.SendCommandRequest) (*cmd_apiv1.SendCommandResponse_CommandResponses, error)) error {
+func (r *sendCommandRoute) Subscribe(f func(msg *Msg, clientId string, req *mir_apiv1.SendCommandRequest) (*mir_apiv1.SendCommandResponse_CommandResponses, error)) error {
 	sbj := cmd_client.SendCommandRequest.WithId("*")
 	return r.m.subscribe(sbj, r.handlerWrapper(f))
 }
 
 // Queue subscribe to send command request
-func (r *sendCommandRoute) QueueSubscribe(queue string, f func(msg *Msg, clientId string, req *cmd_apiv1.SendCommandRequest) (*cmd_apiv1.SendCommandResponse_CommandResponses, error)) error {
+func (r *sendCommandRoute) QueueSubscribe(queue string, f func(msg *Msg, clientId string, req *mir_apiv1.SendCommandRequest) (*mir_apiv1.SendCommandResponse_CommandResponses, error)) error {
 	sbj := cmd_client.SendCommandRequest.WithId("*")
 	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
 }
 
-func (r *sendCommandRoute) handlerWrapper(f func(msg *Msg, clientId string, req *cmd_apiv1.SendCommandRequest) (*cmd_apiv1.SendCommandResponse_CommandResponses, error)) nats.MsgHandler {
+func (r *sendCommandRoute) handlerWrapper(f func(msg *Msg, clientId string, req *mir_apiv1.SendCommandRequest) (*mir_apiv1.SendCommandResponse_CommandResponses, error)) nats.MsgHandler {
 	return func(msg *nats.Msg) {
-		req := &cmd_apiv1.SendCommandRequest{}
+		req := &mir_apiv1.SendCommandRequest{}
 		if err := proto.Unmarshal(msg.Data, req); err != nil {
 			// TODO log error here
-			_ = r.m.sendReplyOrAck(msg, &cmd_apiv1.SendCommandResponse{Response: &cmd_apiv1.SendCommandResponse_Error{
+			_ = r.m.sendReplyOrAck(msg, &mir_apiv1.SendCommandResponse{Response: &mir_apiv1.SendCommandResponse_Error{
 				Error: err.Error(),
 			}})
 			return
@@ -209,14 +205,14 @@ func (r *sendCommandRoute) handlerWrapper(f func(msg *Msg, clientId string, req 
 		resp, err := f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), req)
 		if err != nil {
 			// TODO log error here
-			_ = r.m.sendReplyOrAck(msg, &cmd_apiv1.SendCommandResponse{Response: &cmd_apiv1.SendCommandResponse_Error{
+			_ = r.m.sendReplyOrAck(msg, &mir_apiv1.SendCommandResponse{Response: &mir_apiv1.SendCommandResponse_Error{
 				Error: err.Error(),
 			}})
 			return
 		}
 		// TODO log error here
-		err = r.m.sendReplyOrAck(msg, &cmd_apiv1.SendCommandResponse{
-			Response: &cmd_apiv1.SendCommandResponse_Ok{
+		err = r.m.sendReplyOrAck(msg, &mir_apiv1.SendCommandResponse{
+			Response: &mir_apiv1.SendCommandResponse_Ok{
 				Ok: resp,
 			},
 		})
@@ -224,32 +220,32 @@ func (r *sendCommandRoute) handlerWrapper(f func(msg *Msg, clientId string, req 
 }
 
 // Request send a command to device
-func (r *sendCommandRoute) Request(req *cmd_apiv1.SendCommandRequest) (map[string]*cmd_apiv1.SendCommandResponse_CommandResponse, error) {
+func (r *sendCommandRoute) Request(req *mir_apiv1.SendCommandRequest) (map[string]*mir_apiv1.SendCommandResponse_CommandResponse, error) {
 	sbj := cmd_client.SendCommandRequest.WithId(r.m.GetInstanceName())
 	bReq, err := proto.Marshal(req)
 	if err != nil {
-		return map[string]*cmd_apiv1.SendCommandResponse_CommandResponse{}, err
+		return map[string]*mir_apiv1.SendCommandResponse_CommandResponse{}, err
 	}
 
 	resMsg, err := r.m.request(sbj, bReq, nil, defaultTimeout)
 	if err != nil {
-		return map[string]*cmd_apiv1.SendCommandResponse_CommandResponse{}, err
+		return map[string]*mir_apiv1.SendCommandResponse_CommandResponse{}, err
 	}
 
-	resp := &cmd_apiv1.SendCommandResponse{}
+	resp := &mir_apiv1.SendCommandResponse{}
 	err = proto.Unmarshal(resMsg.Data, resp)
 	if err != nil {
-		return map[string]*cmd_apiv1.SendCommandResponse_CommandResponse{}, err
+		return map[string]*mir_apiv1.SendCommandResponse_CommandResponse{}, err
 	}
 	if resp.GetError() != "" {
-		return map[string]*cmd_apiv1.SendCommandResponse_CommandResponse{}, err
+		return map[string]*mir_apiv1.SendCommandResponse_CommandResponse{}, err
 	}
 
 	return resp.GetOk().DeviceResponses, nil
 }
 
 type SendDeviceCommandRequestProto struct {
-	Targets       *core_apiv1.DeviceTarget
+	Targets       *mir_apiv1.DeviceTarget
 	Command       proto.Message
 	DryRun        bool
 	NoValidation  bool
@@ -259,12 +255,12 @@ type SendDeviceCommandRequestProto struct {
 }
 
 // Request send a command to device
-func (r *sendCommandRoute) RequestProto(req *SendDeviceCommandRequestProto) (map[string]*cmd_apiv1.SendCommandResponse_CommandResponse, error) {
+func (r *sendCommandRoute) RequestProto(req *SendDeviceCommandRequestProto) (map[string]*mir_apiv1.SendCommandResponse_CommandResponse, error) {
 	b, _ := proto.Marshal(req.Command)
-	return r.Request(&cmd_apiv1.SendCommandRequest{
+	return r.Request(&mir_apiv1.SendCommandRequest{
 		Targets:         req.Targets,
 		Name:            string(req.Command.ProtoReflect().Descriptor().FullName()),
-		PayloadEncoding: common_apiv1.Encoding_ENCODING_PROTOBUF,
+		PayloadEncoding: mir_apiv1.Encoding_ENCODING_PROTOBUF,
 		Payload:         b,
 		DryRun:          req.DryRun,
 		NoValidation:    req.NoValidation,
@@ -286,23 +282,23 @@ func (r *serverRoutes) ListConfig() *listConfigurationRoute {
 }
 
 // Subscribe to list command request
-func (r *listConfigurationRoute) Subscribe(f func(msg *Msg, clientId string, req *cfg_apiv1.SendListConfigRequest) (map[string]*cfg_apiv1.Configs, error)) error {
+func (r *listConfigurationRoute) Subscribe(f func(msg *Msg, clientId string, req *mir_apiv1.SendListConfigRequest) (map[string]*mir_apiv1.Configs, error)) error {
 	sbj := cfg_client.ListConfigRequest.WithId("*")
 	return r.m.subscribe(sbj, r.handlerWrapper(f))
 }
 
 // Queue subscribe to list command request
-func (r *listConfigurationRoute) QueueSubscribe(queue string, f func(msg *Msg, clientId string, req *cfg_apiv1.SendListConfigRequest) (map[string]*cfg_apiv1.Configs, error)) error {
+func (r *listConfigurationRoute) QueueSubscribe(queue string, f func(msg *Msg, clientId string, req *mir_apiv1.SendListConfigRequest) (map[string]*mir_apiv1.Configs, error)) error {
 	sbj := cfg_client.ListConfigRequest.WithId("*")
 	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
 }
 
-func (r *listConfigurationRoute) handlerWrapper(f func(msg *Msg, clientId string, req *cfg_apiv1.SendListConfigRequest) (map[string]*cfg_apiv1.Configs, error)) nats.MsgHandler {
+func (r *listConfigurationRoute) handlerWrapper(f func(msg *Msg, clientId string, req *mir_apiv1.SendListConfigRequest) (map[string]*mir_apiv1.Configs, error)) nats.MsgHandler {
 	return func(msg *nats.Msg) {
-		req := &cfg_apiv1.SendListConfigRequest{}
+		req := &mir_apiv1.SendListConfigRequest{}
 		if err := proto.Unmarshal(msg.Data, req); err != nil {
 			// TODO log error here
-			_ = r.m.sendReplyOrAck(msg, &cfg_apiv1.SendListConfigResponse{Response: &cfg_apiv1.SendListConfigResponse_Error{
+			_ = r.m.sendReplyOrAck(msg, &mir_apiv1.SendListConfigResponse{Response: &mir_apiv1.SendListConfigResponse_Error{
 				Error: err.Error(),
 			}})
 			return
@@ -311,15 +307,15 @@ func (r *listConfigurationRoute) handlerWrapper(f func(msg *Msg, clientId string
 		resp, err := f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), req)
 		if err != nil {
 			// TODO log error here
-			_ = r.m.sendReplyOrAck(msg, &cfg_apiv1.SendListConfigResponse{Response: &cfg_apiv1.SendListConfigResponse_Error{
+			_ = r.m.sendReplyOrAck(msg, &mir_apiv1.SendListConfigResponse{Response: &mir_apiv1.SendListConfigResponse_Error{
 				Error: err.Error(),
 			}})
 			return
 		}
 		// TODO log error here
-		err = r.m.sendReplyOrAck(msg, &cfg_apiv1.SendListConfigResponse{
-			Response: &cfg_apiv1.SendListConfigResponse_Ok{
-				Ok: &cfg_apiv1.DevicesConfigs{
+		err = r.m.sendReplyOrAck(msg, &mir_apiv1.SendListConfigResponse{
+			Response: &mir_apiv1.SendListConfigResponse_Ok{
+				Ok: &mir_apiv1.DevicesConfigs{
 					DeviceConfigs: resp,
 				},
 			},
@@ -328,25 +324,25 @@ func (r *listConfigurationRoute) handlerWrapper(f func(msg *Msg, clientId string
 }
 
 // Request listing of command per device
-func (r *listConfigurationRoute) Request(req *cmd_apiv1.SendListCommandsRequest) (map[string]*cmd_apiv1.Commands, error) {
+func (r *listConfigurationRoute) Request(req *mir_apiv1.SendListCommandsRequest) (map[string]*mir_apiv1.Commands, error) {
 	sbj := cfg_client.ListConfigRequest.WithId(r.m.GetInstanceName())
 	bReq, err := proto.Marshal(req)
 	if err != nil {
-		return map[string]*cmd_apiv1.Commands{}, err
+		return map[string]*mir_apiv1.Commands{}, err
 	}
 
 	resMsg, err := r.m.request(sbj, bReq, nil, defaultTimeout)
 	if err != nil {
-		return map[string]*cmd_apiv1.Commands{}, err
+		return map[string]*mir_apiv1.Commands{}, err
 	}
 
-	resp := &cmd_apiv1.SendListCommandsResponse{}
+	resp := &mir_apiv1.SendListCommandsResponse{}
 	err = proto.Unmarshal(resMsg.Data, resp)
 	if err != nil {
-		return map[string]*cmd_apiv1.Commands{}, err
+		return map[string]*mir_apiv1.Commands{}, err
 	}
 	if resp.GetError() != "" {
-		return map[string]*cmd_apiv1.Commands{}, err
+		return map[string]*mir_apiv1.Commands{}, err
 	}
 
 	return resp.GetOk().DeviceCommands, nil
@@ -364,23 +360,23 @@ func (r *serverRoutes) SendConfig() *sendConfigRoute {
 }
 
 // Subscribe to send command request
-func (r *sendConfigRoute) Subscribe(f func(msg *Msg, clientId string, req *cfg_apiv1.SendConfigRequest) (*cfg_apiv1.SendConfigResponse_ConfigResponses, error)) error {
+func (r *sendConfigRoute) Subscribe(f func(msg *Msg, clientId string, req *mir_apiv1.SendConfigRequest) (*mir_apiv1.SendConfigResponse_ConfigResponses, error)) error {
 	sbj := cfg_client.SendConfigRequest.WithId("*")
 	return r.m.subscribe(sbj, r.handlerWrapper(f))
 }
 
 // Queue subscribe to send command request
-func (r *sendConfigRoute) QueueSubscribe(queue string, f func(msg *Msg, clientId string, req *cfg_apiv1.SendConfigRequest) (*cfg_apiv1.SendConfigResponse_ConfigResponses, error)) error {
+func (r *sendConfigRoute) QueueSubscribe(queue string, f func(msg *Msg, clientId string, req *mir_apiv1.SendConfigRequest) (*mir_apiv1.SendConfigResponse_ConfigResponses, error)) error {
 	sbj := cfg_client.SendConfigRequest.WithId("*")
 	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
 }
 
-func (r *sendConfigRoute) handlerWrapper(f func(msg *Msg, clientId string, req *cfg_apiv1.SendConfigRequest) (*cfg_apiv1.SendConfigResponse_ConfigResponses, error)) nats.MsgHandler {
+func (r *sendConfigRoute) handlerWrapper(f func(msg *Msg, clientId string, req *mir_apiv1.SendConfigRequest) (*mir_apiv1.SendConfigResponse_ConfigResponses, error)) nats.MsgHandler {
 	return func(msg *nats.Msg) {
-		req := &cfg_apiv1.SendConfigRequest{}
+		req := &mir_apiv1.SendConfigRequest{}
 		if err := proto.Unmarshal(msg.Data, req); err != nil {
 			// TODO log error here
-			_ = r.m.sendReplyOrAck(msg, &cfg_apiv1.SendConfigResponse{Response: &cfg_apiv1.SendConfigResponse_Error{
+			_ = r.m.sendReplyOrAck(msg, &mir_apiv1.SendConfigResponse{Response: &mir_apiv1.SendConfigResponse_Error{
 				Error: err.Error(),
 			}})
 			return
@@ -389,14 +385,14 @@ func (r *sendConfigRoute) handlerWrapper(f func(msg *Msg, clientId string, req *
 		resp, err := f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), req)
 		if err != nil {
 			// TODO log error here
-			_ = r.m.sendReplyOrAck(msg, &cfg_apiv1.SendConfigResponse{Response: &cfg_apiv1.SendConfigResponse_Error{
+			_ = r.m.sendReplyOrAck(msg, &mir_apiv1.SendConfigResponse{Response: &mir_apiv1.SendConfigResponse_Error{
 				Error: err.Error(),
 			}})
 			return
 		}
 		// TODO log error here
-		err = r.m.sendReplyOrAck(msg, &cfg_apiv1.SendConfigResponse{
-			Response: &cfg_apiv1.SendConfigResponse_Ok{
+		err = r.m.sendReplyOrAck(msg, &mir_apiv1.SendConfigResponse{
+			Response: &mir_apiv1.SendConfigResponse_Ok{
 				Ok: resp,
 			},
 		})
@@ -404,32 +400,32 @@ func (r *sendConfigRoute) handlerWrapper(f func(msg *Msg, clientId string, req *
 }
 
 // Request send a command to device
-func (r *sendConfigRoute) Request(req *cfg_apiv1.SendConfigRequest) (map[string]*cfg_apiv1.SendConfigResponse_ConfigResponse, error) {
+func (r *sendConfigRoute) Request(req *mir_apiv1.SendConfigRequest) (map[string]*mir_apiv1.SendConfigResponse_ConfigResponse, error) {
 	sbj := cfg_client.SendConfigRequest.WithId(r.m.GetInstanceName())
 	bReq, err := proto.Marshal(req)
 	if err != nil {
-		return map[string]*cfg_apiv1.SendConfigResponse_ConfigResponse{}, err
+		return map[string]*mir_apiv1.SendConfigResponse_ConfigResponse{}, err
 	}
 
 	resMsg, err := r.m.request(sbj, bReq, nil, defaultTimeout)
 	if err != nil {
-		return map[string]*cfg_apiv1.SendConfigResponse_ConfigResponse{}, err
+		return map[string]*mir_apiv1.SendConfigResponse_ConfigResponse{}, err
 	}
 
-	resp := &cfg_apiv1.SendConfigResponse{}
+	resp := &mir_apiv1.SendConfigResponse{}
 	err = proto.Unmarshal(resMsg.Data, resp)
 	if err != nil {
-		return map[string]*cfg_apiv1.SendConfigResponse_ConfigResponse{}, err
+		return map[string]*mir_apiv1.SendConfigResponse_ConfigResponse{}, err
 	}
 	if resp.GetError() != "" {
-		return map[string]*cfg_apiv1.SendConfigResponse_ConfigResponse{}, err
+		return map[string]*mir_apiv1.SendConfigResponse_ConfigResponse{}, err
 	}
 
 	return resp.GetOk().DeviceResponses, nil
 }
 
 type SendDeviceConfigRequestProto struct {
-	Targets           *core_apiv1.DeviceTarget
+	Targets           *mir_apiv1.DeviceTarget
 	Command           proto.Message
 	DryRun            bool
 	RefreshSchema     bool
@@ -438,15 +434,15 @@ type SendDeviceConfigRequestProto struct {
 }
 
 // Request send a config to device using proto data
-func (r *sendConfigRoute) RequestProto(req *SendDeviceConfigRequestProto) (map[string]*cfg_apiv1.SendConfigResponse_ConfigResponse, error) {
+func (r *sendConfigRoute) RequestProto(req *SendDeviceConfigRequestProto) (map[string]*mir_apiv1.SendConfigResponse_ConfigResponse, error) {
 	b, err := proto.Marshal(req.Command)
 	if err != nil {
-		return map[string]*cfg_apiv1.SendConfigResponse_ConfigResponse{}, fmt.Errorf("error marshalling command to proto: %w", err)
+		return map[string]*mir_apiv1.SendConfigResponse_ConfigResponse{}, fmt.Errorf("error marshalling command to proto: %w", err)
 	}
-	return r.Request(&cfg_apiv1.SendConfigRequest{
+	return r.Request(&mir_apiv1.SendConfigRequest{
 		Targets:           req.Targets,
 		Name:              string(req.Command.ProtoReflect().Descriptor().FullName()),
-		PayloadEncoding:   common_apiv1.Encoding_ENCODING_PROTOBUF,
+		PayloadEncoding:   mir_apiv1.Encoding_ENCODING_PROTOBUF,
 		Payload:           b,
 		DryRun:            req.DryRun,
 		RefreshSchema:     req.RefreshSchema,
@@ -456,7 +452,7 @@ func (r *sendConfigRoute) RequestProto(req *SendDeviceConfigRequestProto) (map[s
 }
 
 type SendDeviceConfigRequestJson struct {
-	Targets           *core_apiv1.DeviceTarget
+	Targets           *mir_apiv1.DeviceTarget
 	CommandName       string
 	CommandPayload    any
 	DryRun            bool
@@ -466,15 +462,15 @@ type SendDeviceConfigRequestJson struct {
 }
 
 // Request send a config to device using json data
-func (r *sendConfigRoute) RequestJson(req *SendDeviceConfigRequestJson) (map[string]*cfg_apiv1.SendConfigResponse_ConfigResponse, error) {
+func (r *sendConfigRoute) RequestJson(req *SendDeviceConfigRequestJson) (map[string]*mir_apiv1.SendConfigResponse_ConfigResponse, error) {
 	b, err := json.Marshal(req.CommandPayload)
 	if err != nil {
-		return map[string]*cfg_apiv1.SendConfigResponse_ConfigResponse{}, fmt.Errorf("error marshalling command to json: %w", err)
+		return map[string]*mir_apiv1.SendConfigResponse_ConfigResponse{}, fmt.Errorf("error marshalling command to json: %w", err)
 	}
-	return r.Request(&cfg_apiv1.SendConfigRequest{
+	return r.Request(&mir_apiv1.SendConfigRequest{
 		Targets:           req.Targets,
 		Name:              req.CommandName,
-		PayloadEncoding:   common_apiv1.Encoding_ENCODING_JSON,
+		PayloadEncoding:   mir_apiv1.Encoding_ENCODING_JSON,
 		Payload:           b,
 		DryRun:            req.DryRun,
 		RefreshSchema:     req.RefreshSchema,

@@ -5,7 +5,7 @@ import (
 
 	"github.com/maxthom/mir/internal/clients"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
-	event_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/event_api"
+	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
 )
@@ -34,39 +34,39 @@ func GetEventsStreamMsg() (*nats.Msg, error) {
 	}, nil
 }
 
-func PublishEventListRequest(bus *bus.BusConn, req *event_apiv1.ListEventsRequest) (*event_apiv1.ListEventsResponse, error) {
+func PublishEventListRequest(bus *bus.BusConn, req *mir_apiv1.ListEventsRequest) (*mir_apiv1.ListEventsResponse, error) {
 	bReq, err := proto.Marshal(req)
 	if err != nil {
-		return &event_apiv1.ListEventsResponse{}, err
+		return &mir_apiv1.ListEventsResponse{}, err
 	}
 	resMsg, err := bus.Request(ListEventsRequest.WithId("TODO"), bReq, 7*time.Second)
 	if err != nil {
-		return &event_apiv1.ListEventsResponse{}, err
+		return &mir_apiv1.ListEventsResponse{}, err
 	}
 
-	resp := &event_apiv1.ListEventsResponse{}
+	resp := &mir_apiv1.ListEventsResponse{}
 	err = proto.Unmarshal(resMsg.Data, resp)
 	if err != nil {
-		return &event_apiv1.ListEventsResponse{}, err
+		return &mir_apiv1.ListEventsResponse{}, err
 	}
 
 	return resp, nil
 }
 
-func PublishEventDeleteRequest(bus *bus.BusConn, req *event_apiv1.DeleteEventRequest) (*event_apiv1.DeleteEventReponse, error) {
+func PublishEventDeleteRequest(bus *bus.BusConn, req *mir_apiv1.DeleteEventRequest) (*mir_apiv1.DeleteEventReponse, error) {
 	bReq, err := proto.Marshal(req)
 	if err != nil {
-		return &event_apiv1.DeleteEventReponse{}, err
+		return &mir_apiv1.DeleteEventReponse{}, err
 	}
 	resMsg, err := bus.Request(DeleteEventsRequest.WithId("TODO"), bReq, 7*time.Second)
 	if err != nil {
-		return &event_apiv1.DeleteEventReponse{}, err
+		return &mir_apiv1.DeleteEventReponse{}, err
 	}
 
-	resp := &event_apiv1.DeleteEventReponse{}
+	resp := &mir_apiv1.DeleteEventReponse{}
 	err = proto.Unmarshal(resMsg.Data, resp)
 	if err != nil {
-		return &event_apiv1.DeleteEventReponse{}, err
+		return &mir_apiv1.DeleteEventReponse{}, err
 	}
 
 	return resp, nil

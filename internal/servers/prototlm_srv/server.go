@@ -11,7 +11,7 @@ import (
 	proto_lineprotocol "github.com/maxthom/mir/internal/libs/proto/line_protocol"
 	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
 	"github.com/maxthom/mir/internal/services/schema_cache"
-	tlm_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/tlm_api"
+	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/nats-io/nats.go"
@@ -214,7 +214,7 @@ type schemaPerDevices struct {
 	devsNameNs []string
 }
 
-func (s *ProtoTlmServer) handleTelemetryListRequest(msg *mir.Msg, clientId string, req *tlm_apiv1.SendListTelemetryRequest) ([]*tlm_apiv1.DevicesTelemetry, error) {
+func (s *ProtoTlmServer) handleTelemetryListRequest(msg *mir.Msg, clientId string, req *mir_apiv1.SendListTelemetryRequest) ([]*mir_apiv1.DevicesTelemetry, error) {
 	l.Info().Any("req", req).Msg("list telemetry request")
 	requestTotal.WithLabelValues("list").Inc()
 
@@ -225,7 +225,7 @@ func (s *ProtoTlmServer) handleTelemetryListRequest(msg *mir.Msg, clientId strin
 		return nil, fmt.Errorf("error listing device from db: %w", err)
 	}
 
-	devsTlm := []*tlm_apiv1.DevicesTelemetry{}
+	devsTlm := []*mir_apiv1.DevicesTelemetry{}
 	devSchemas := []*schemaPerDevices{}
 	for _, dev := range devs {
 		reg, _, err := s.schStore.GetDeviceSchema(dev.Spec.DeviceId, req.RefreshSchema)
@@ -238,7 +238,7 @@ func (s *ProtoTlmServer) handleTelemetryListRequest(msg *mir.Msg, clientId strin
 				}
 			}
 			if !found {
-				devsTlm = append(devsTlm, &tlm_apiv1.DevicesTelemetry{
+				devsTlm = append(devsTlm, &mir_apiv1.DevicesTelemetry{
 					DevicesNamens: []string{dev.GetNameNamespace()},
 					Error:         err.Error(),
 				})
@@ -266,7 +266,7 @@ func (s *ProtoTlmServer) handleTelemetryListRequest(msg *mir.Msg, clientId strin
 	for _, sch := range devSchemas {
 		tlms, err := sch.sch.GetTelemetryList(req.Measurements, req.Filters)
 		if err != nil {
-			devsTlm = append(devsTlm, &tlm_apiv1.DevicesTelemetry{
+			devsTlm = append(devsTlm, &mir_apiv1.DevicesTelemetry{
 				DevicesNamens: sch.devsNameNs,
 				Error:         err.Error(),
 			})
@@ -282,7 +282,7 @@ func (s *ProtoTlmServer) handleTelemetryListRequest(msg *mir.Msg, clientId strin
 			}
 			tlm.ExploreQuery = s.tlmStore.GetExploreQuery(sch.devsId, tlm.Name)
 		}
-		devsTlm = append(devsTlm, &tlm_apiv1.DevicesTelemetry{
+		devsTlm = append(devsTlm, &mir_apiv1.DevicesTelemetry{
 			DevicesNamens:  sch.devsNameNs,
 			TlmDescriptors: tlms,
 		})

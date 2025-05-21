@@ -20,7 +20,7 @@ import (
 	"github.com/maxthom/mir/internal/ui/tui/msgs"
 	"github.com/maxthom/mir/internal/ui/tui/store"
 	"github.com/maxthom/mir/internal/ui/tui/styles"
-	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
+	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -156,14 +156,14 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 			if !formInError {
-				req := &core_apiv1.CreateDeviceRequest{
-					Meta: &core_apiv1.Meta{
+				req := &mir_apiv1.CreateDeviceRequest{
+					Meta: &mir_apiv1.Meta{
 						Name:        m.inputs[name].GetValue(),
 						Namespace:   m.inputs[namespace].GetValue(),
 						Labels:      keyValueStringToMap(m.inputs[labels].GetValue()),
 						Annotations: keyValueStringToMap(m.inputs[annotations].GetValue()),
 					},
-					Spec: &core_apiv1.Spec{
+					Spec: &mir_apiv1.DeviceSpec{
 						DeviceId: m.inputs[deviceId].GetValue(),
 						Disabled: !boolStringToBool(m.inputs[disabled].GetValue()),
 					},

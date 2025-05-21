@@ -14,7 +14,7 @@ import (
 	"github.com/maxthom/mir/internal/clients/core_client"
 	"github.com/maxthom/mir/internal/clients/tlm_client"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
-	device_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/device_api"
+	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	"github.com/nats-io/nats.go"
 	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/proto"
@@ -297,8 +297,8 @@ func (m Mir) sendSchema() error {
 		return nil
 	}
 
-	return m.sendProtoMsg(core_client.SchemaDeviceStream.WithId(m.GetDeviceId()), &device_apiv1.SchemaRetrieveResponse{
-		Response: &device_apiv1.SchemaRetrieveResponse_Schema{
+	return m.sendProtoMsg(core_client.SchemaDeviceStream.WithId(m.GetDeviceId()), &mir_apiv1.SchemaRetrieveResponse{
+		Response: &mir_apiv1.SchemaRetrieveResponse_Schema{
 			Schema: bytes,
 		},
 	}, nil, true)

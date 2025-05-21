@@ -1,7 +1,7 @@
 
 syntax = "proto3";
 
-package common_api.v1;
+package mir_api.v1;
 
 // Represent a unique composable key for a resource
 message NameNamespace {
@@ -66,8 +66,8 @@ message Meta {
 message MetaUpdate {
   optional string name = 1; // Name of the object
   optional string namespace = 2; // Name of the object
-  map<string, common_api.v1.OptString> labels = 3; // set key to nil to remove it
-  map<string, common_api.v1.OptString> annotations = 4; // set key to nil to remove it
+  map<string, OptString> labels = 3; // set key to nil to remove it
+  map<string, OptString> annotations = 4; // set key to nil to remove it
 }
 
 /*

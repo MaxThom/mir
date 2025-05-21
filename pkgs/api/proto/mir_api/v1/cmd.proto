@@ -1,9 +1,9 @@
 syntax = "proto3";
 
-package cmd_api.v1;
+package mir_api.v1;
 
-import "v1/common_api/common.proto";
-import "v1/core_api/core.proto";
+import "mir_api/v1/common.proto";
+import "mir_api/v1/core.proto";
 
 // Send a command to a set of devices
 // Data payload can be encoded in json or protobuf.
@@ -17,10 +17,10 @@ import "v1/core_api/core.proto";
 // - NoValidation, Proto encoding and ForcePush is useless together. There will be no errors if
 // NoValidation is on
 message SendCommandRequest {
-	core_api.v1.DeviceTarget targets = 1; // To target a set of devices, search using ids, labels and annotations
+	DeviceTarget targets = 1; // To target a set of devices, search using ids, labels and annotations
 	string name = 2; // name of the command
 	bytes payload = 3; // payload of the command
-	common_api.v1.Encoding payload_encoding = 4; // Encoding type of payload
+	Encoding payload_encoding = 4; // Encoding type of payload
 	bool refresh_schema = 5; // Force a schema refresh from the device, else will only try refresh if cant deserialize
 	bool show_template = 6; // Show the json template of the command
 	bool dry_run = 7; // Do not execute the command, just validate it
@@ -37,7 +37,7 @@ message SendCommandResponse {
 
     message CommandResponses {
         map<string, CommandResponse> device_responses = 1; // response per device
-        common_api.v1.Encoding encoding = 2; // encoding of the response
+        Encoding encoding = 2; // encoding of the response
     }
 
     message CommandResponse {
@@ -58,7 +58,7 @@ enum CommandResponseStatus {
 }
 
 message SendListCommandsRequest {
-	core_api.v1.DeviceTarget targets = 1; // To target a set of devices, search using ids, labels and annotations
+	DeviceTarget targets = 1; // To target a set of devices, search using ids, labels and annotations
 	map<string, string> filter_labels = 2; // Filter commands by labels
 	bool refresh_schema = 3; // Force a schema refresh from the device
 }

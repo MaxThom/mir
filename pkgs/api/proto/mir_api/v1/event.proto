@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package event_api.v1;
+package mir_api.v1;
 
-import "v1/common_api/common.proto";
+import "mir_api/v1/common.proto";
 import "google/protobuf/struct.proto";
 
 message ListEventsRequest {
@@ -28,8 +28,8 @@ message CreateEventResponse {
 }
 
 message UpdateEventRequest {
-    common_api.v1.Targets targets = 1;
-    common_api.v1.MetaUpdate meta = 2;
+    Targets targets = 1;
+    MetaUpdate meta = 2;
     Spec spec = 3;
     Status status = 4;
 
@@ -38,12 +38,12 @@ message UpdateEventRequest {
         optional string reason = 2;
         optional string message = 3;
         optional bytes json_payload = 4;
-        optional common_api.v1.Object related_object = 5;
+        optional Object related_object = 5;
     }
     message Status {
         optional int32 count = 1;
-        optional common_api.v1.Timestamp first_at = 2;
-        optional common_api.v1.Timestamp last_at = 3;
+        optional Timestamp first_at = 2;
+        optional Timestamp last_at = 3;
     }
 }
 
@@ -55,11 +55,11 @@ message UpdateEventResponse {
 }
 
 message MergeEventRequest {
-    common_api.v1.Targets targets = 1;
+    Targets targets = 1;
     google.protobuf.Struct event = 2;
 }
 
-message MergeDeviceResponse {
+message MergeEventResponse {
   oneof response {
     Events ok = 1;
     string error = 2;
@@ -78,8 +78,8 @@ message DeleteEventReponse {
 }
 
 message EventTarget {
-    common_api.v1.Targets targets = 1;
-    common_api.v1.DateFilter filter_date = 2;
+    Targets targets = 1;
+    DateFilter filter_date = 2;
     int32 filter_limit = 3;
 }
 
@@ -88,7 +88,7 @@ message Events {
 }
 
 message Event {
-    common_api.v1.Object object = 1;
+    Object object = 1;
     EventSpec spec = 2;
     EventStatus status = 3;
 }
@@ -98,11 +98,11 @@ message EventSpec {
     string reason = 2;
     string message = 3;
     bytes json_payload = 4;
-    common_api.v1.Object related_object = 5;
+    Object related_object = 5;
 }
 
 message EventStatus {
     int32 count = 1;
-    common_api.v1.Timestamp first_at = 2;
-    common_api.v1.Timestamp last_at = 3;
+    Timestamp first_at = 2;
+    Timestamp last_at = 3;
 }

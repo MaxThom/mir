@@ -18,8 +18,7 @@ import (
 	core_testv1 "github.com/maxthom/mir/internal/servers/core_srv/proto_test/gen/core_test/v1"
 	"github.com/maxthom/mir/internal/servers/protocfg_srv"
 	"github.com/maxthom/mir/internal/services/schema_cache"
-	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
-	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
+	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	mirDev "github.com/maxthom/mir/pkgs/device/mir"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/maxthom/mir/pkgs/module/mir"
@@ -78,8 +77,8 @@ func TestMain(m *testing.M) {
 	test_utils.DeleteDevicesWithLabelsPanic(b, map[string]string{
 		"testing": "core",
 	})
-	core_client.PublishDeviceDeleteRequest(b, &core_apiv1.DeleteDeviceRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	core_client.PublishDeviceDeleteRequest(b, &mir_apiv1.DeleteDeviceRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Ids: []string{"device_auto_provision"},
 		},
 	})
@@ -102,8 +101,8 @@ func TestPublishDeviceCreate(t *testing.T) {
 	// Arrange
 	id := "device_create_raw"
 	publishStream := "client." + id + ".core.v1alpha.create"
-	reqCreate := &core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	reqCreate := &mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_core",
 			Labels: map[string]string{
@@ -116,7 +115,7 @@ func TestPublishDeviceCreate(t *testing.T) {
 				"mir/device/description": "hello world of devices !",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: id,
 		},
 	}
@@ -132,8 +131,8 @@ func TestPublishDeviceCreate(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	respList, err := core_client.PublishDeviceListRequest(b, &core_apiv1.ListDeviceRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	respList, err := core_client.PublishDeviceListRequest(b, &mir_apiv1.ListDeviceRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 	})
@@ -150,8 +149,8 @@ func TestPublishDeviceCreate(t *testing.T) {
 func TestPublishDeviceCreateClient(t *testing.T) {
 	// Arrange
 	id := "device_create"
-	reqCreate := &core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	reqCreate := &mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_core",
 			Labels: map[string]string{
@@ -164,7 +163,7 @@ func TestPublishDeviceCreateClient(t *testing.T) {
 				"mir/device/description": "hello world of devices !",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: id,
 		},
 	}
@@ -185,8 +184,8 @@ func TestPublishDeviceCreateClient(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	respList, err := core_client.PublishDeviceListRequest(b, &core_apiv1.ListDeviceRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	respList, err := core_client.PublishDeviceListRequest(b, &mir_apiv1.ListDeviceRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 	})
@@ -204,8 +203,8 @@ func TestPublishDeviceCreateClient(t *testing.T) {
 func TestPublishDeviceCreateClientNoID(t *testing.T) {
 	// Arrange
 	id := ""
-	reqCreate := &core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	reqCreate := &mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_core",
 			Labels: map[string]string{
@@ -218,7 +217,7 @@ func TestPublishDeviceCreateClientNoID(t *testing.T) {
 				"mir/device/description": "hello world of devices !",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: id,
 		},
 	}
@@ -234,8 +233,8 @@ func TestPublishDeviceCreateClientNoID(t *testing.T) {
 func TestPublishDeviceCreateClientNoNamespace(t *testing.T) {
 	// Arrange
 	id := "create_dev_no_namespace"
-	reqCreate := &core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	reqCreate := &mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "",
 			Labels: map[string]string{
@@ -244,7 +243,7 @@ func TestPublishDeviceCreateClientNoNamespace(t *testing.T) {
 				"model":   "xx021",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: id,
 		},
 	}
@@ -263,8 +262,8 @@ func TestPublishDeviceCreateClientNoNamespace(t *testing.T) {
 func TestPublishDeviceUpdateTargetIds(t *testing.T) {
 	// Arrange
 	id := "device_update_target_ids"
-	reqCreate := &core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	reqCreate := &mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_core",
 			Labels: map[string]string{
@@ -279,7 +278,7 @@ func TestPublishDeviceUpdateTargetIds(t *testing.T) {
 				"mir/device/description": "hello world of devices !",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: id,
 		},
 	}
@@ -293,12 +292,12 @@ func TestPublishDeviceUpdateTargetIds(t *testing.T) {
 			msg.Ack()
 		})
 
-	reqUpd := &core_apiv1.UpdateDeviceRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	reqUpd := &mir_apiv1.UpdateDeviceRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
-		Meta: &core_apiv1.UpdateDeviceRequest_Meta{
-			Labels: map[string]*common_apiv1.OptString{
+		Meta: &mir_apiv1.UpdateDeviceRequest_Meta{
+			Labels: map[string]*mir_apiv1.OptString{
 				"factory": {
 					Value: strRef("site_b"),
 				},
@@ -310,7 +309,7 @@ func TestPublishDeviceUpdateTargetIds(t *testing.T) {
 					Value: strRef("mazda3sport"),
 				},
 			},
-			Annotations: map[string]*common_apiv1.OptString{
+			Annotations: map[string]*mir_apiv1.OptString{
 				"utility": {
 					Value: strRef("major"),
 				},
@@ -351,8 +350,8 @@ func TestPublishDeviceUpdateTargetIds(t *testing.T) {
 func TestPublishDeviceUpdateTargetNames(t *testing.T) {
 	// Arrange
 	id := "device_update_target_names"
-	reqCreate := &core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	reqCreate := &mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_core",
 			Labels: map[string]string{
@@ -367,17 +366,17 @@ func TestPublishDeviceUpdateTargetNames(t *testing.T) {
 				"mir/device/description": "hello world of devices !",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: id,
 		},
 	}
 
-	reqUpd := &core_apiv1.UpdateDeviceRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	reqUpd := &mir_apiv1.UpdateDeviceRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Names: []string{id},
 		},
-		Meta: &core_apiv1.UpdateDeviceRequest_Meta{
-			Labels: map[string]*common_apiv1.OptString{
+		Meta: &mir_apiv1.UpdateDeviceRequest_Meta{
+			Labels: map[string]*mir_apiv1.OptString{
 				"factory": {
 					Value: strRef("site_b"),
 				},
@@ -389,7 +388,7 @@ func TestPublishDeviceUpdateTargetNames(t *testing.T) {
 					Value: strRef("mazda3sport"),
 				},
 			},
-			Annotations: map[string]*common_apiv1.OptString{
+			Annotations: map[string]*mir_apiv1.OptString{
 				"utility": {
 					Value: strRef("major"),
 				},
@@ -429,8 +428,8 @@ func TestPublishDeviceUpdateTargetNamespace(t *testing.T) {
 	// Arrange
 	id := "device_update_target_namespace"
 	ns := "testing_" + id
-	reqCreate := &core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	reqCreate := &mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: ns,
 			Labels: map[string]string{
@@ -445,17 +444,17 @@ func TestPublishDeviceUpdateTargetNamespace(t *testing.T) {
 				"mir/device/description": "hello world of devices !",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: id,
 		},
 	}
 
-	reqUpd := &core_apiv1.UpdateDeviceRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	reqUpd := &mir_apiv1.UpdateDeviceRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Namespaces: []string{ns},
 		},
-		Meta: &core_apiv1.UpdateDeviceRequest_Meta{
-			Labels: map[string]*common_apiv1.OptString{
+		Meta: &mir_apiv1.UpdateDeviceRequest_Meta{
+			Labels: map[string]*mir_apiv1.OptString{
 				"factory": {
 					Value: strRef("site_b"),
 				},
@@ -467,7 +466,7 @@ func TestPublishDeviceUpdateTargetNamespace(t *testing.T) {
 					Value: strRef("mazda3sport"),
 				},
 			},
-			Annotations: map[string]*common_apiv1.OptString{
+			Annotations: map[string]*mir_apiv1.OptString{
 				"utility": {
 					Value: strRef("major"),
 				},
@@ -506,15 +505,15 @@ func TestPublishDeviceUpdateTargetNamespace(t *testing.T) {
 func TestPublishDeviceUpdateTargetLabels(t *testing.T) {
 	// Arrange
 	deviceIds := []string{"device_update_target_labels_1", "device_update_target_labels_2", "device_update_target_labels_3"}
-	reqUpd := &core_apiv1.UpdateDeviceRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	reqUpd := &mir_apiv1.UpdateDeviceRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Labels: map[string]string{
 				"factory": "D",
 				"land":    "sheep",
 			},
 		},
-		Meta: &core_apiv1.UpdateDeviceRequest_Meta{
-			Labels: map[string]*common_apiv1.OptString{
+		Meta: &mir_apiv1.UpdateDeviceRequest_Meta{
+			Labels: map[string]*mir_apiv1.OptString{
 				"owner": {
 					Value: nil,
 				},
@@ -522,7 +521,7 @@ func TestPublishDeviceUpdateTargetLabels(t *testing.T) {
 					Value: strRef("mazda3sport"),
 				},
 			},
-			Annotations: map[string]*common_apiv1.OptString{
+			Annotations: map[string]*mir_apiv1.OptString{
 				"utility": {
 					Value: nil,
 				},
@@ -536,9 +535,9 @@ func TestPublishDeviceUpdateTargetLabels(t *testing.T) {
 			},
 		},
 	}
-	reqCreate := []*core_apiv1.CreateDeviceRequest{
+	reqCreate := []*mir_apiv1.CreateDeviceRequest{
 		{
-			Meta: &core_apiv1.Meta{
+			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[0],
 				Namespace: "testing_core",
 				Labels: map[string]string{
@@ -553,12 +552,12 @@ func TestPublishDeviceUpdateTargetLabels(t *testing.T) {
 					"mir/device/description": "hello world of devices !",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: deviceIds[0],
 			},
 		},
 		{
-			Meta: &core_apiv1.Meta{
+			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[1],
 				Namespace: "testing_core",
 				Labels: map[string]string{
@@ -573,12 +572,12 @@ func TestPublishDeviceUpdateTargetLabels(t *testing.T) {
 					"mir/device/description": "hello world of devices !",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: deviceIds[1],
 			},
 		},
 		{
-			Meta: &core_apiv1.Meta{
+			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[2],
 				Namespace: "testing_core",
 				Labels: map[string]string{
@@ -593,7 +592,7 @@ func TestPublishDeviceUpdateTargetLabels(t *testing.T) {
 					"mir/device/description": "hello world of devices !",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: deviceIds[2],
 			},
 		},
@@ -641,16 +640,16 @@ func TestPublishDeviceUpdateTargetLabels(t *testing.T) {
 func TestPublishDeviceUpdateTargetMixs(t *testing.T) {
 	// Arrange
 	deviceIds := []string{"device_update_target_mix_1", "device_update_target_mix_2", "device_update_target_mix_3"}
-	reqUpd := &core_apiv1.UpdateDeviceRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	reqUpd := &mir_apiv1.UpdateDeviceRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Ids: []string{deviceIds[2], deviceIds[0]},
 			Labels: map[string]string{
 				"factory": "D",
 				"land":    "sheep",
 			},
 		},
-		Meta: &core_apiv1.UpdateDeviceRequest_Meta{
-			Labels: map[string]*common_apiv1.OptString{
+		Meta: &mir_apiv1.UpdateDeviceRequest_Meta{
+			Labels: map[string]*mir_apiv1.OptString{
 				"owner": {
 					Value: nil,
 				},
@@ -658,7 +657,7 @@ func TestPublishDeviceUpdateTargetMixs(t *testing.T) {
 					Value: strRef("mazda3sport"),
 				},
 			},
-			Annotations: map[string]*common_apiv1.OptString{
+			Annotations: map[string]*mir_apiv1.OptString{
 				"utility": {
 					Value: nil,
 				},
@@ -669,9 +668,9 @@ func TestPublishDeviceUpdateTargetMixs(t *testing.T) {
 			},
 		},
 	}
-	reqCreate := []*core_apiv1.CreateDeviceRequest{
+	reqCreate := []*mir_apiv1.CreateDeviceRequest{
 		{
-			Meta: &core_apiv1.Meta{
+			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[0],
 				Namespace: "testing_core",
 				Labels: map[string]string{
@@ -686,12 +685,12 @@ func TestPublishDeviceUpdateTargetMixs(t *testing.T) {
 					"mir/device/description": "hello world of devices !",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: deviceIds[0],
 			},
 		},
 		{
-			Meta: &core_apiv1.Meta{
+			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[1],
 				Namespace: "testing_core",
 				Labels: map[string]string{
@@ -706,12 +705,12 @@ func TestPublishDeviceUpdateTargetMixs(t *testing.T) {
 					"mir/device/description": "hello world of devices !",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: deviceIds[1],
 			},
 		},
 		{
-			Meta: &core_apiv1.Meta{
+			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[2],
 				Namespace: "testing_core",
 				Labels: map[string]string{
@@ -726,7 +725,7 @@ func TestPublishDeviceUpdateTargetMixs(t *testing.T) {
 					"mir/device/description": "hello world of devices !",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: deviceIds[2],
 			},
 		},
@@ -745,7 +744,7 @@ func TestPublishDeviceUpdateTargetMixs(t *testing.T) {
 	// Wait for written to db
 	time.Sleep(1 * time.Second)
 
-	respDb := test_utils.ExecuteTestQueryForType[[]*core_apiv1.Device](t, db,
+	respDb := test_utils.ExecuteTestQueryForType[[]*mir_apiv1.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE device_id = $id1 OR device_id = $id2 OR device_id = $id3;",
 		map[string]string{
 			"tb":  "devices",
@@ -776,14 +775,14 @@ func TestPublishDeviceUpdateTargetMixs(t *testing.T) {
 func TestPublishDeviceDeleteTargetIds(t *testing.T) {
 	// Arrange
 	deviceIds := []string{"device_delete_target_ids_1", "device_delete_target_ids_2", "device_delete_target_ids_3"}
-	reqDel := &core_apiv1.DeleteDeviceRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	reqDel := &mir_apiv1.DeleteDeviceRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Ids: []string{deviceIds[0], deviceIds[1]},
 		},
 	}
-	reqCreate := []*core_apiv1.CreateDeviceRequest{
+	reqCreate := []*mir_apiv1.CreateDeviceRequest{
 		{
-			Meta: &core_apiv1.Meta{
+			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[0],
 				Namespace: "testing_core",
 				Labels: map[string]string{
@@ -798,12 +797,12 @@ func TestPublishDeviceDeleteTargetIds(t *testing.T) {
 					"mir/device/description": "hello world of devices !",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: deviceIds[0],
 			},
 		},
 		{
-			Meta: &core_apiv1.Meta{
+			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[1],
 				Namespace: "testing_core",
 				Labels: map[string]string{
@@ -818,12 +817,12 @@ func TestPublishDeviceDeleteTargetIds(t *testing.T) {
 					"mir/device/description": "hello world of devices !",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: deviceIds[1],
 			},
 		},
 		{
-			Meta: &core_apiv1.Meta{
+			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[2],
 				Namespace: "testing_core",
 				Labels: map[string]string{
@@ -838,7 +837,7 @@ func TestPublishDeviceDeleteTargetIds(t *testing.T) {
 					"mir/device/description": "hello world of devices !",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: deviceIds[2],
 			},
 		},
@@ -888,14 +887,14 @@ func TestPublishDeviceDeleteTargetIds(t *testing.T) {
 func TestPublishDeviceDeleteTargetNames(t *testing.T) {
 	// Arrange
 	deviceIds := []string{"device_delete_target_names_1", "device_delete_target_names_2", "device_delete_target_names_3"}
-	reqDel := &core_apiv1.DeleteDeviceRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	reqDel := &mir_apiv1.DeleteDeviceRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Names: []string{deviceIds[0], deviceIds[1]},
 		},
 	}
-	reqCreate := []*core_apiv1.CreateDeviceRequest{
+	reqCreate := []*mir_apiv1.CreateDeviceRequest{
 		{
-			Meta: &core_apiv1.Meta{
+			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[0],
 				Namespace: "testing_core",
 				Labels: map[string]string{
@@ -910,12 +909,12 @@ func TestPublishDeviceDeleteTargetNames(t *testing.T) {
 					"mir/device/description": "hello world of devices !",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: deviceIds[0],
 			},
 		},
 		{
-			Meta: &core_apiv1.Meta{
+			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[1],
 				Namespace: "testing_core",
 				Labels: map[string]string{
@@ -930,12 +929,12 @@ func TestPublishDeviceDeleteTargetNames(t *testing.T) {
 					"mir/device/description": "hello world of devices !",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: deviceIds[1],
 			},
 		},
 		{
-			Meta: &core_apiv1.Meta{
+			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[2],
 				Namespace: "testing_core",
 				Labels: map[string]string{
@@ -950,7 +949,7 @@ func TestPublishDeviceDeleteTargetNames(t *testing.T) {
 					"mir/device/description": "hello world of devices !",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: deviceIds[2],
 			},
 		},
@@ -990,14 +989,14 @@ func TestPublishDeviceDeleteTargetNamespace(t *testing.T) {
 	// Arrange
 	deviceIds := []string{"device_delete_target_ns_1", "device_delete_target_ns_2", "device_delete_target_ns_3"}
 	ns := "testing_" + strings.Join(deviceIds, "_")
-	reqDel := &core_apiv1.DeleteDeviceRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	reqDel := &mir_apiv1.DeleteDeviceRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Namespaces: []string{ns},
 		},
 	}
-	reqCreate := []*core_apiv1.CreateDeviceRequest{
+	reqCreate := []*mir_apiv1.CreateDeviceRequest{
 		{
-			Meta: &core_apiv1.Meta{
+			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[0],
 				Namespace: ns,
 				Labels: map[string]string{
@@ -1011,12 +1010,12 @@ func TestPublishDeviceDeleteTargetNamespace(t *testing.T) {
 					"utility": "air_quality",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: deviceIds[0],
 			},
 		},
 		{
-			Meta: &core_apiv1.Meta{
+			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[1],
 				Namespace: ns,
 				Labels: map[string]string{
@@ -1030,12 +1029,12 @@ func TestPublishDeviceDeleteTargetNamespace(t *testing.T) {
 					"utility": "air_quality",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: deviceIds[1],
 			},
 		},
 		{
-			Meta: &core_apiv1.Meta{
+			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[2],
 				Namespace: ns,
 				Labels: map[string]string{
@@ -1049,7 +1048,7 @@ func TestPublishDeviceDeleteTargetNamespace(t *testing.T) {
 					"utility": "air_quality",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: deviceIds[2],
 			},
 		},
@@ -1087,8 +1086,8 @@ func TestPublishDeviceDeleteTargetNamespace(t *testing.T) {
 
 func TestPublishDeviceDeleteTargetLabels(t *testing.T) {
 	// Arrange
-	reqDel := &core_apiv1.DeleteDeviceRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	reqDel := &mir_apiv1.DeleteDeviceRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Labels: map[string]string{
 				"factory": "D",
 				"land":    "plane",
@@ -1097,9 +1096,9 @@ func TestPublishDeviceDeleteTargetLabels(t *testing.T) {
 	}
 
 	deviceIds := []string{"device_delete_target_lbls_1", "device_delete_target_lbls_2", "device_delete_target_lbls_3"}
-	reqCreate := []*core_apiv1.CreateDeviceRequest{
+	reqCreate := []*mir_apiv1.CreateDeviceRequest{
 		{
-			Meta: &core_apiv1.Meta{
+			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[0],
 				Namespace: "testing_core",
 				Labels: map[string]string{
@@ -1113,12 +1112,12 @@ func TestPublishDeviceDeleteTargetLabels(t *testing.T) {
 					"utility": "air_quality",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: deviceIds[0],
 			},
 		},
 		{
-			Meta: &core_apiv1.Meta{
+			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[1],
 				Namespace: "testing_core",
 				Labels: map[string]string{
@@ -1132,12 +1131,12 @@ func TestPublishDeviceDeleteTargetLabels(t *testing.T) {
 					"utility": "air_quality",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: deviceIds[1],
 			},
 		},
 		{
-			Meta: &core_apiv1.Meta{
+			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[2],
 				Namespace: "testing_core",
 				Labels: map[string]string{
@@ -1151,7 +1150,7 @@ func TestPublishDeviceDeleteTargetLabels(t *testing.T) {
 					"utility": "air_quality",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: deviceIds[2],
 			},
 		},
@@ -1188,15 +1187,15 @@ func TestPublishDeviceDeleteTargetLabels(t *testing.T) {
 func TestPublishDeviceListTargetIds(t *testing.T) {
 	// Arrange
 	deviceIds := []string{"device_list_target_ids_1", "device_list_target_ids_2", "device_list_target_ids_3"}
-	reqList := &core_apiv1.ListDeviceRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	reqList := &mir_apiv1.ListDeviceRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Ids: []string{deviceIds[0], deviceIds[1]},
 		},
 	}
 
-	reqCreate := []*core_apiv1.CreateDeviceRequest{
+	reqCreate := []*mir_apiv1.CreateDeviceRequest{
 		{
-			Meta: &core_apiv1.Meta{
+			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[0],
 				Namespace: "testing_core",
 				Labels: map[string]string{
@@ -1211,12 +1210,12 @@ func TestPublishDeviceListTargetIds(t *testing.T) {
 					"mir/device/description": "hello world of devices !",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: deviceIds[0],
 			},
 		},
 		{
-			Meta: &core_apiv1.Meta{
+			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[1],
 				Namespace: "testing_core",
 				Labels: map[string]string{
@@ -1231,12 +1230,12 @@ func TestPublishDeviceListTargetIds(t *testing.T) {
 					"mir/device/description": "hello world of devices !",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: deviceIds[1],
 			},
 		},
 		{
-			Meta: &core_apiv1.Meta{
+			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[2],
 				Namespace: "testing_core",
 				Labels: map[string]string{
@@ -1251,7 +1250,7 @@ func TestPublishDeviceListTargetIds(t *testing.T) {
 					"mir/device/description": "hello world of devices !",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: deviceIds[2],
 			},
 		},
@@ -1288,15 +1287,15 @@ func TestPublishDeviceListTargetIds(t *testing.T) {
 func TestPublishDeviceListTargetNames(t *testing.T) {
 	// Arrange
 	deviceIds := []string{"device_list_target_names_1", "device_list_target_names_2", "device_list_target_names_3"}
-	reqList := &core_apiv1.ListDeviceRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	reqList := &mir_apiv1.ListDeviceRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Names: []string{deviceIds[0], deviceIds[1]},
 		},
 	}
 
-	reqCreate := []*core_apiv1.CreateDeviceRequest{
+	reqCreate := []*mir_apiv1.CreateDeviceRequest{
 		{
-			Meta: &core_apiv1.Meta{
+			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[0],
 				Namespace: "testing_core",
 				Labels: map[string]string{
@@ -1311,12 +1310,12 @@ func TestPublishDeviceListTargetNames(t *testing.T) {
 					"mir/device/description": "hello world of devices !",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: deviceIds[0],
 			},
 		},
 		{
-			Meta: &core_apiv1.Meta{
+			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[1],
 				Namespace: "testing_core",
 				Labels: map[string]string{
@@ -1331,12 +1330,12 @@ func TestPublishDeviceListTargetNames(t *testing.T) {
 					"mir/device/description": "hello world of devices !",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: deviceIds[1],
 			},
 		},
 		{
-			Meta: &core_apiv1.Meta{
+			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[2],
 				Namespace: "testing_core",
 				Labels: map[string]string{
@@ -1351,7 +1350,7 @@ func TestPublishDeviceListTargetNames(t *testing.T) {
 					"mir/device/description": "hello world of devices !",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: deviceIds[2],
 			},
 		},
@@ -1389,15 +1388,15 @@ func TestPublishDeviceListTargetNamespace(t *testing.T) {
 	// Arrange
 	deviceIds := []string{"device_list_target_ns_1", "device_list_target_ns_2", "device_list_target_ns_3"}
 	ns := "testing_" + strings.Join(deviceIds, "_")
-	reqList := &core_apiv1.ListDeviceRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	reqList := &mir_apiv1.ListDeviceRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Namespaces: []string{ns},
 		},
 	}
 
-	reqCreate := []*core_apiv1.CreateDeviceRequest{
+	reqCreate := []*mir_apiv1.CreateDeviceRequest{
 		{
-			Meta: &core_apiv1.Meta{
+			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[0],
 				Namespace: ns,
 				Labels: map[string]string{
@@ -1412,12 +1411,12 @@ func TestPublishDeviceListTargetNamespace(t *testing.T) {
 					"mir/device/description": "hello world of devices !",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: deviceIds[0],
 			},
 		},
 		{
-			Meta: &core_apiv1.Meta{
+			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[1],
 				Namespace: ns,
 				Labels: map[string]string{
@@ -1432,12 +1431,12 @@ func TestPublishDeviceListTargetNamespace(t *testing.T) {
 					"mir/device/description": "hello world of devices !",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: deviceIds[1],
 			},
 		},
 		{
-			Meta: &core_apiv1.Meta{
+			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[2],
 				Namespace: "testing_core",
 				Labels: map[string]string{
@@ -1452,7 +1451,7 @@ func TestPublishDeviceListTargetNamespace(t *testing.T) {
 					"mir/device/description": "hello world of devices !",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: deviceIds[2],
 			},
 		},
@@ -1488,8 +1487,8 @@ func TestPublishDeviceListTargetNamespace(t *testing.T) {
 
 func TestPublishDeviceListTargetLabels(t *testing.T) {
 	// Arrange
-	reqList := &core_apiv1.ListDeviceRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	reqList := &mir_apiv1.ListDeviceRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Labels: map[string]string{
 				"factory": "D",
 				"land":    "lamb",
@@ -1498,9 +1497,9 @@ func TestPublishDeviceListTargetLabels(t *testing.T) {
 	}
 
 	deviceIds := []string{"device_list_target_lbls_1", "device_list_target_lbls_2", "device_list_target_lbls_3"}
-	reqCreate := []*core_apiv1.CreateDeviceRequest{
+	reqCreate := []*mir_apiv1.CreateDeviceRequest{
 		{
-			Meta: &core_apiv1.Meta{
+			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[0],
 				Namespace: "testing_core",
 				Labels: map[string]string{
@@ -1515,12 +1514,12 @@ func TestPublishDeviceListTargetLabels(t *testing.T) {
 					"mir/device/description": "hello world of devices !",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: deviceIds[0],
 			},
 		},
 		{
-			Meta: &core_apiv1.Meta{
+			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[1],
 				Namespace: "testing_core",
 				Labels: map[string]string{
@@ -1535,12 +1534,12 @@ func TestPublishDeviceListTargetLabels(t *testing.T) {
 					"mir/device/description": "hello world of devices !",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: deviceIds[1],
 			},
 		},
 		{
-			Meta: &core_apiv1.Meta{
+			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[2],
 				Namespace: "testing_core",
 				Labels: map[string]string{
@@ -1555,7 +1554,7 @@ func TestPublishDeviceListTargetLabels(t *testing.T) {
 					"mir/device/description": "hello world of devices !",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: deviceIds[2],
 			},
 		},
@@ -1573,7 +1572,7 @@ func TestPublishDeviceListTargetLabels(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	respDb := test_utils.ExecuteTestQueryForType[[]core_apiv1.Device](t, db,
+	respDb := test_utils.ExecuteTestQueryForType[[]mir_apiv1.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE spec.deviceId = $id1 OR spec.deviceId = $id2 OR spec.deviceId = $id3;",
 		map[string]string{
 			"tb":  "devices",
@@ -1591,14 +1590,14 @@ func TestPublishDeviceListTargetLabels(t *testing.T) {
 
 func TestPublishDeviceListNoTarget(t *testing.T) {
 	// Arrange
-	reqList := &core_apiv1.ListDeviceRequest{
-		Targets: &core_apiv1.DeviceTarget{},
+	reqList := &mir_apiv1.ListDeviceRequest{
+		Targets: &mir_apiv1.DeviceTarget{},
 	}
 
 	deviceIds := []string{"device_list_target_no_1", "device_list_target_no_2", "device_list_target_no_3"}
-	reqCreate := []*core_apiv1.CreateDeviceRequest{
+	reqCreate := []*mir_apiv1.CreateDeviceRequest{
 		{
-			Meta: &core_apiv1.Meta{
+			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[0],
 				Namespace: "testing_core",
 				Labels: map[string]string{
@@ -1613,12 +1612,12 @@ func TestPublishDeviceListNoTarget(t *testing.T) {
 					"mir/device/description": "hello world of devices !",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: deviceIds[0],
 			},
 		},
 		{
-			Meta: &core_apiv1.Meta{
+			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[1],
 				Namespace: "testing_core",
 				Labels: map[string]string{
@@ -1633,12 +1632,12 @@ func TestPublishDeviceListNoTarget(t *testing.T) {
 					"mir/device/description": "hello world of devices !",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: deviceIds[1],
 			},
 		},
 		{
-			Meta: &core_apiv1.Meta{
+			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[2],
 				Namespace: "testing_core",
 				Labels: map[string]string{
@@ -1653,7 +1652,7 @@ func TestPublishDeviceListNoTarget(t *testing.T) {
 					"mir/device/description": "hello world of devices !",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: deviceIds[2],
 			},
 		},
@@ -1678,9 +1677,9 @@ func TestPublishDeviceListNoTarget(t *testing.T) {
 func TestCreatedDeviceAlreadyExist(t *testing.T) {
 	// Arrange
 	deviceIds := []string{"device_already_exist_1", "device_already_exist_1"}
-	reqCreate := []*core_apiv1.CreateDeviceRequest{
+	reqCreate := []*mir_apiv1.CreateDeviceRequest{
 		{
-			Meta: &core_apiv1.Meta{
+			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[0],
 				Namespace: "testing_core",
 				Labels: map[string]string{
@@ -1695,12 +1694,12 @@ func TestCreatedDeviceAlreadyExist(t *testing.T) {
 					"mir/device/description": "hello world of devices !",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: deviceIds[0],
 			},
 		},
 		{
-			Meta: &core_apiv1.Meta{
+			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[1],
 				Namespace: "testing_core",
 				Labels: map[string]string{
@@ -1715,7 +1714,7 @@ func TestCreatedDeviceAlreadyExist(t *testing.T) {
 					"mir/device/description": "hello world of devices !",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: deviceIds[1],
 			},
 		},
@@ -1749,7 +1748,7 @@ func TestCreatedDeviceAlreadyExist(t *testing.T) {
 
 func TestUpdateNoTargetMetafield(t *testing.T) {
 	// Arrange
-	reqUpd := &core_apiv1.UpdateDeviceRequest{}
+	reqUpd := &mir_apiv1.UpdateDeviceRequest{}
 
 	// Act
 	respUpd, err := core_client.PublishDeviceUpdateRequest(b, reqUpd)
@@ -1764,7 +1763,7 @@ func TestUpdateNoTargetMetafield(t *testing.T) {
 
 func TestDeleteNoTargetMetafield(t *testing.T) {
 	// Arrange
-	reqDel := &core_apiv1.DeleteDeviceRequest{}
+	reqDel := &mir_apiv1.DeleteDeviceRequest{}
 
 	// Act
 	respDel, err := core_client.PublishDeviceDeleteRequest(b, reqDel)
@@ -1780,8 +1779,8 @@ func TestDeleteNoTargetMetafield(t *testing.T) {
 func TestDeviceCreateDeviceIdAlreadyExist(t *testing.T) {
 	// Arrange
 	s := swarm.NewSwarm(b)
-	b := s.AddDevices(&core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	b := s.AddDevices(&mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      "create_dev_same_id_1",
 			Namespace: "testing_core",
 			Labels: map[string]string{
@@ -1789,11 +1788,11 @@ func TestDeviceCreateDeviceIdAlreadyExist(t *testing.T) {
 				"factory": "D",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: "0xf86cmd",
 		},
-	}, &core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	}, &mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      "create_dev_same_id_2",
 			Namespace: "testing_core",
 			Labels: map[string]string{
@@ -1801,7 +1800,7 @@ func TestDeviceCreateDeviceIdAlreadyExist(t *testing.T) {
 				"factory": "D",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: "0xf86cmd",
 		},
 	})
@@ -1819,8 +1818,8 @@ func TestDeviceCreateDeviceIdAlreadyExist(t *testing.T) {
 func TestDeviceCreateDeviceNameNsAlreadyExist(t *testing.T) {
 	// Arrange
 	s := swarm.NewSwarm(b)
-	b := s.AddDevices(&core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	b := s.AddDevices(&mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      "create_dev_same_id_3",
 			Namespace: "testing_core",
 			Labels: map[string]string{
@@ -1828,11 +1827,11 @@ func TestDeviceCreateDeviceNameNsAlreadyExist(t *testing.T) {
 				"factory": "D",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: "0xf86tlm",
 		},
-	}, &core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	}, &mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      "create_dev_same_id_3",
 			Namespace: "testing_core",
 			Labels: map[string]string{
@@ -1840,7 +1839,7 @@ func TestDeviceCreateDeviceNameNsAlreadyExist(t *testing.T) {
 				"factory": "D",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: "0xf86xyz",
 		},
 	})
@@ -1858,11 +1857,11 @@ func TestDeviceCreateDeviceNameNsAlreadyExist(t *testing.T) {
 func TestDeviceUpsertDevice(t *testing.T) {
 	// Arrange
 	id := "0x2312"
-	req := &core_apiv1.UpdateDeviceRequest{
-		Meta: &core_apiv1.UpdateDeviceRequest_Meta{
+	req := &mir_apiv1.UpdateDeviceRequest{
+		Meta: &mir_apiv1.UpdateDeviceRequest_Meta{
 			Name:      strRef("upsert_device"),
 			Namespace: strRef("testing_core"),
-			Labels: map[string]*common_apiv1.OptString{
+			Labels: map[string]*mir_apiv1.OptString{
 				"testing": {
 					Value: strRef("core"),
 				},
@@ -1871,10 +1870,10 @@ func TestDeviceUpsertDevice(t *testing.T) {
 				},
 			},
 		},
-		Spec: &core_apiv1.UpdateDeviceRequest_Spec{
+		Spec: &mir_apiv1.UpdateDeviceRequest_Spec{
 			DeviceId: strRef(id),
 		},
-		Targets: &core_apiv1.DeviceTarget{
+		Targets: &mir_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 	}
@@ -1901,8 +1900,8 @@ func TestDeviceUpsertDevice(t *testing.T) {
 func TestDeviceUpdateManyTargetSameDeviceId(t *testing.T) {
 	// Arrange
 	s := swarm.NewSwarm(b)
-	sb := s.AddDevices(&core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	sb := s.AddDevices(&mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      "update_dev_sameid_1",
 			Namespace: "testing_core",
 			Labels: map[string]string{
@@ -1910,11 +1909,11 @@ func TestDeviceUpdateManyTargetSameDeviceId(t *testing.T) {
 				"swarm":   "a",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: "0xf86tlm24",
 		},
-	}, &core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	}, &mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      "update_dev_sameid_2",
 			Namespace: "testing_core",
 			Labels: map[string]string{
@@ -1922,15 +1921,15 @@ func TestDeviceUpdateManyTargetSameDeviceId(t *testing.T) {
 				"swarm":   "a",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: "0xf86xyz24",
 		},
 	})
-	updReq := &core_apiv1.UpdateDeviceRequest{
-		Spec: &core_apiv1.UpdateDeviceRequest_Spec{
+	updReq := &mir_apiv1.UpdateDeviceRequest{
+		Spec: &mir_apiv1.UpdateDeviceRequest_Spec{
 			DeviceId: strRef("sameid"),
 		},
-		Targets: &core_apiv1.DeviceTarget{
+		Targets: &mir_apiv1.DeviceTarget{
 			Labels: map[string]string{
 				"swarm": "a",
 			},
@@ -1955,8 +1954,8 @@ func TestDeviceUpdateManyTargetSameDeviceId(t *testing.T) {
 func TestDeviceUpdateManyTargetSameNameNoExist(t *testing.T) {
 	// Arrange
 	s := swarm.NewSwarm(b)
-	sb := s.AddDevices(&core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	sb := s.AddDevices(&mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      "update_dev_samename_noexist_1",
 			Namespace: "testing_core",
 			Labels: map[string]string{
@@ -1964,11 +1963,11 @@ func TestDeviceUpdateManyTargetSameNameNoExist(t *testing.T) {
 				"swarm":   "b",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: "0xf86tlm21",
 		},
-	}, &core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	}, &mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      "update_dev_samename_noexist_2",
 			Namespace: "testing_core",
 			Labels: map[string]string{
@@ -1976,15 +1975,15 @@ func TestDeviceUpdateManyTargetSameNameNoExist(t *testing.T) {
 				"swarm":   "b",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: "0xf86xyz21",
 		},
 	})
-	updReq := &core_apiv1.UpdateDeviceRequest{
-		Meta: &core_apiv1.UpdateDeviceRequest_Meta{
+	updReq := &mir_apiv1.UpdateDeviceRequest{
+		Meta: &mir_apiv1.UpdateDeviceRequest_Meta{
 			Name: strRef("samebloodyname"),
 		},
-		Targets: &core_apiv1.DeviceTarget{
+		Targets: &mir_apiv1.DeviceTarget{
 			Labels: map[string]string{
 				"swarm": "b",
 			},
@@ -2008,8 +2007,8 @@ func TestDeviceUpdateManyTargetSameNameNoExist(t *testing.T) {
 func TestDeviceUpdateManyTargetSameNameOneExist(t *testing.T) {
 	// Arrange
 	s := swarm.NewSwarm(b)
-	sb := s.AddDevices(&core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	sb := s.AddDevices(&mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      "update_dev_samename_oneexist",
 			Namespace: "testing_core",
 			Labels: map[string]string{
@@ -2017,11 +2016,11 @@ func TestDeviceUpdateManyTargetSameNameOneExist(t *testing.T) {
 				"swarm":   "c",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: "0xf86tlm17",
 		},
-	}, &core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	}, &mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      "samebloodyname",
 			Namespace: "testing_core",
 			Labels: map[string]string{
@@ -2029,15 +2028,15 @@ func TestDeviceUpdateManyTargetSameNameOneExist(t *testing.T) {
 				"swarm":   "c",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: "0xf86xyz17",
 		},
 	})
-	updReq := &core_apiv1.UpdateDeviceRequest{
-		Meta: &core_apiv1.UpdateDeviceRequest_Meta{
+	updReq := &mir_apiv1.UpdateDeviceRequest{
+		Meta: &mir_apiv1.UpdateDeviceRequest_Meta{
 			Name: strRef("samebloodyname"),
 		},
-		Targets: &core_apiv1.DeviceTarget{
+		Targets: &mir_apiv1.DeviceTarget{
 			Labels: map[string]string{
 				"swarm": "c",
 			},
@@ -2061,8 +2060,8 @@ func TestDeviceUpdateManyTargetSameNameOneExist(t *testing.T) {
 func TestDeviceUpdateManyTargetSameNamespaceNoExist(t *testing.T) {
 	// Arrange
 	s := swarm.NewSwarm(b)
-	sb := s.AddDevices(&core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	sb := s.AddDevices(&mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      "update_dev_ns_no_exist",
 			Namespace: "testing_core",
 			Labels: map[string]string{
@@ -2070,11 +2069,11 @@ func TestDeviceUpdateManyTargetSameNamespaceNoExist(t *testing.T) {
 				"swarm":   "d",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: "0xf86tlm12",
 		},
-	}, &core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	}, &mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      "update_dev_ns_no_exist",
 			Namespace: "testing_core_2",
 			Labels: map[string]string{
@@ -2082,15 +2081,15 @@ func TestDeviceUpdateManyTargetSameNamespaceNoExist(t *testing.T) {
 				"swarm":   "d",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: "0xf86xyz12",
 		},
 	})
-	updReq := &core_apiv1.UpdateDeviceRequest{
-		Meta: &core_apiv1.UpdateDeviceRequest_Meta{
+	updReq := &mir_apiv1.UpdateDeviceRequest{
+		Meta: &mir_apiv1.UpdateDeviceRequest_Meta{
 			Namespace: strRef("samebloodynamespace"),
 		},
-		Targets: &core_apiv1.DeviceTarget{
+		Targets: &mir_apiv1.DeviceTarget{
 			Labels: map[string]string{
 				"swarm": "d",
 			},
@@ -2114,19 +2113,19 @@ func TestDeviceUpdateManyTargetSameNamespaceNoExist(t *testing.T) {
 func TestDeviceUpdateManyTargetSameNamespaceOneExist(t *testing.T) {
 	// Arrange
 	s := swarm.NewSwarm(b)
-	sb := s.AddDevices(&core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	sb := s.AddDevices(&mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      "update_dev_ns_one_exist",
 			Namespace: "samebloodynamespace",
 			Labels: map[string]string{
 				"testing": "core",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: "0xf86tlm7",
 		},
-	}, &core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	}, &mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      "update_dev_ns_one_exist",
 			Namespace: "testing_core_2",
 			Labels: map[string]string{
@@ -2134,15 +2133,15 @@ func TestDeviceUpdateManyTargetSameNamespaceOneExist(t *testing.T) {
 				"swarm":   "e",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: "0xf86xyz7",
 		},
 	})
-	updReq := &core_apiv1.UpdateDeviceRequest{
-		Meta: &core_apiv1.UpdateDeviceRequest_Meta{
+	updReq := &mir_apiv1.UpdateDeviceRequest{
+		Meta: &mir_apiv1.UpdateDeviceRequest_Meta{
 			Namespace: strRef("samebloodynamespace"),
 		},
-		Targets: &core_apiv1.DeviceTarget{
+		Targets: &mir_apiv1.DeviceTarget{
 			Labels: map[string]string{
 				"swarm": "e",
 			},
@@ -2166,8 +2165,8 @@ func TestDeviceUpdateManyTargetSameNamespaceOneExist(t *testing.T) {
 func TestDeviceUpdateManyTargetSameNameNamespaceNoExist(t *testing.T) {
 	// Arrange
 	s := swarm.NewSwarm(b)
-	sb := s.AddDevices(&core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	sb := s.AddDevices(&mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      "samebloodyname",
 			Namespace: "samebloodynamespace",
 			Labels: map[string]string{
@@ -2175,11 +2174,11 @@ func TestDeviceUpdateManyTargetSameNameNamespaceNoExist(t *testing.T) {
 				"swarm":   "f",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: "0xf86tlm14",
 		},
-	}, &core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	}, &mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      "update_dev_same_namens_2",
 			Namespace: "testing_core_2",
 			Labels: map[string]string{
@@ -2187,16 +2186,16 @@ func TestDeviceUpdateManyTargetSameNameNamespaceNoExist(t *testing.T) {
 				"swarm":   "f",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: "0xf86xyz14",
 		},
 	})
-	updReq := &core_apiv1.UpdateDeviceRequest{
-		Meta: &core_apiv1.UpdateDeviceRequest_Meta{
+	updReq := &mir_apiv1.UpdateDeviceRequest{
+		Meta: &mir_apiv1.UpdateDeviceRequest_Meta{
 			Name:      strRef("samebloodyname"),
 			Namespace: strRef("samebloodynamespace"),
 		},
-		Targets: &core_apiv1.DeviceTarget{
+		Targets: &mir_apiv1.DeviceTarget{
 			Labels: map[string]string{
 				"swarm": "f",
 			},
@@ -2220,8 +2219,8 @@ func TestDeviceUpdateManyTargetSameNameNamespaceNoExist(t *testing.T) {
 func TestDeviceUpdateManyTargetSameNameNamespaceOneExist(t *testing.T) {
 	// Arrange
 	s := swarm.NewSwarm(b)
-	sb := s.AddDevices(&core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	sb := s.AddDevices(&mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      "update_dev_same_namens_1",
 			Namespace: "testing_core",
 			Labels: map[string]string{
@@ -2229,11 +2228,11 @@ func TestDeviceUpdateManyTargetSameNameNamespaceOneExist(t *testing.T) {
 				"swarm":   "f",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: "0xf86tlm15",
 		},
-	}, &core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	}, &mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      "update_dev_same_namens_2",
 			Namespace: "testing_core_2",
 			Labels: map[string]string{
@@ -2241,16 +2240,16 @@ func TestDeviceUpdateManyTargetSameNameNamespaceOneExist(t *testing.T) {
 				"swarm":   "f",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: "0xf86xyz15",
 		},
 	})
-	updReq := &core_apiv1.UpdateDeviceRequest{
-		Meta: &core_apiv1.UpdateDeviceRequest_Meta{
+	updReq := &mir_apiv1.UpdateDeviceRequest{
+		Meta: &mir_apiv1.UpdateDeviceRequest_Meta{
 			Name:      strRef("samebloodyname"),
 			Namespace: strRef("samebloodynamespace"),
 		},
-		Targets: &core_apiv1.DeviceTarget{
+		Targets: &mir_apiv1.DeviceTarget{
 			Labels: map[string]string{
 				"swarm": "f",
 			},
@@ -2274,14 +2273,14 @@ func TestDeviceUpdateManyTargetSameNameNamespaceOneExist(t *testing.T) {
 func TestDeviceGoesOnline(t *testing.T) {
 	// Arrange
 	deviceIds := []string{"device_goes_online"}
-	reqList := &core_apiv1.ListDeviceRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	reqList := &mir_apiv1.ListDeviceRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Ids: deviceIds,
 		},
 	}
-	reqCreate := []*core_apiv1.CreateDeviceRequest{
+	reqCreate := []*mir_apiv1.CreateDeviceRequest{
 		{
-			Meta: &core_apiv1.Meta{
+			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[0],
 				Namespace: "testing_core",
 				Labels: map[string]string{
@@ -2295,7 +2294,7 @@ func TestDeviceGoesOnline(t *testing.T) {
 					"utility": "hvac",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: deviceIds[0],
 			},
 		},
@@ -2343,14 +2342,14 @@ func TestDeviceGoesOnline(t *testing.T) {
 func TestDeviceGoesOffline(t *testing.T) {
 	// Arrange
 	deviceIds := []string{"device_goes_offline"}
-	reqList := &core_apiv1.ListDeviceRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	reqList := &mir_apiv1.ListDeviceRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Ids: deviceIds,
 		},
 	}
-	reqCreate := []*core_apiv1.CreateDeviceRequest{
+	reqCreate := []*mir_apiv1.CreateDeviceRequest{
 		{
-			Meta: &core_apiv1.Meta{
+			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[0],
 				Namespace: "testing_core",
 				Labels: map[string]string{
@@ -2364,7 +2363,7 @@ func TestDeviceGoesOffline(t *testing.T) {
 					"utility": "hvac",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: deviceIds[0],
 			},
 		},
@@ -2430,8 +2429,8 @@ func TestDeviceGoesOffline(t *testing.T) {
 func TestDeviceAutoProvision(t *testing.T) {
 	// Arrange
 	deviceIds := []string{"device_auto_provision"}
-	reqList := &core_apiv1.ListDeviceRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	reqList := &mir_apiv1.ListDeviceRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Ids: deviceIds,
 		},
 	}
@@ -2487,15 +2486,15 @@ func TestDeviceUpdateDesiredProperties(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	s := swarm.NewSwarm(b)
 	id := "update_desired_props"
-	if _, err := s.AddDevice(&core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	if _, err := s.AddDevice(&mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_core",
 			Labels: map[string]string{
 				"testing": "core",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: id,
 		},
 	}).WithStoreOptions(mirDev.StoreOptions{InMemory: true}).
@@ -2551,15 +2550,15 @@ func TestDeviceUpdateDesiredPropertiesDoubleSameUpdate(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	s := swarm.NewSwarm(b)
 	id := "update_desired_props_double"
-	if _, err := s.AddDevice(&core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	if _, err := s.AddDevice(&mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_core",
 			Labels: map[string]string{
 				"testing": "core",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: id,
 		},
 	}).WithStoreOptions(mirDev.StoreOptions{InMemory: true}).
@@ -2619,15 +2618,15 @@ func TestDeviceUpdateDesiredPropertiesInvalid(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	s := swarm.NewSwarm(b)
 	id := "update_desired_props_invalid"
-	if _, err := s.AddDevice(&core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	if _, err := s.AddDevice(&mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_core",
 			Labels: map[string]string{
 				"testing": "core",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: id,
 		},
 	}).WithStoreOptions(mirDev.StoreOptions{InMemory: true}).
