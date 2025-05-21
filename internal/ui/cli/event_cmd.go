@@ -9,8 +9,7 @@ import (
 
 	"github.com/maxthom/mir/internal/clients/event_client"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
-	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
-	event_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/event_api"
+	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 )
 
@@ -79,14 +78,14 @@ func (d *EventListCmd) Run(c CLI) error {
 	}
 	defer msgBus.Close()
 
-	resp, err := event_client.PublishEventListRequest(msgBus, &event_apiv1.ListEventsRequest{
-		Target: &event_apiv1.EventTarget{
-			Targets: &common_apiv1.Targets{
+	resp, err := event_client.PublishEventListRequest(msgBus, &mir_apiv1.ListEventsRequest{
+		Target: &mir_apiv1.EventTarget{
+			Targets: &mir_apiv1.Targets{
 				Names:      d.Names,
 				Namespaces: d.Namespaces,
 				Labels:     d.Labels,
 			},
-			FilterDate: &common_apiv1.DateFilter{
+			FilterDate: &mir_apiv1.DateFilter{
 				From: mir_v1.AsProtoTimestamp(d.From),
 				To:   mir_v1.AsProtoTimestamp(d.To),
 			},
@@ -144,14 +143,14 @@ func (d *EventDeleteCmd) Run(c CLI) error {
 	}
 	defer msgBus.Close()
 
-	resp, err := event_client.PublishEventDeleteRequest(msgBus, &event_apiv1.DeleteEventRequest{
-		Target: &event_apiv1.EventTarget{
-			Targets: &common_apiv1.Targets{
+	resp, err := event_client.PublishEventDeleteRequest(msgBus, &mir_apiv1.DeleteEventRequest{
+		Target: &mir_apiv1.EventTarget{
+			Targets: &mir_apiv1.Targets{
 				Names:      d.Names,
 				Namespaces: d.Namespaces,
 				Labels:     d.Labels,
 			},
-			FilterDate: &common_apiv1.DateFilter{
+			FilterDate: &mir_apiv1.DateFilter{
 				From: mir_v1.AsProtoTimestamp(d.From),
 				To:   mir_v1.AsProtoTimestamp(d.To),
 			},

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
+	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 )
 
 type MirHttpError struct {
@@ -82,7 +82,7 @@ func (e MirProcessError) Error() string {
 }
 
 type MirDeviceNotFoundError struct {
-	Targets *core_apiv1.DeviceTarget
+	Targets *mir_apiv1.DeviceTarget
 }
 
 func (e MirDeviceNotFoundError) Error() string {

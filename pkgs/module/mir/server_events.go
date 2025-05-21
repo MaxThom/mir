@@ -3,7 +3,7 @@ package mir
 import (
 	"github.com/maxthom/mir/internal/clients"
 	"github.com/maxthom/mir/internal/clients/event_client"
-	event_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/event_api"
+	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
@@ -34,9 +34,9 @@ func (r *listEventsRoute) QueueSubscribe(queue string, f func(msg *Msg, clientId
 
 func (r *listEventsRoute) handlerWrapper(f func(msg *Msg, clientId string, req mir_v1.EventTarget) ([]mir_v1.Event, error)) nats.MsgHandler {
 	return func(msg *nats.Msg) {
-		req := &event_apiv1.ListEventsRequest{}
+		req := &mir_apiv1.ListEventsRequest{}
 		if err := proto.Unmarshal(msg.Data, req); err != nil {
-			_ = r.m.sendReplyOrAck(msg, &event_apiv1.ListEventsResponse{Response: &event_apiv1.ListEventsResponse_Error{
+			_ = r.m.sendReplyOrAck(msg, &mir_apiv1.ListEventsResponse{Response: &mir_apiv1.ListEventsResponse_Error{
 				Error: err.Error(),
 			}})
 			return
@@ -44,15 +44,15 @@ func (r *listEventsRoute) handlerWrapper(f func(msg *Msg, clientId string, req m
 
 		resp, err := f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), mir_v1.ProtoEventTargetToMirEventTarget(req.Target))
 		if err != nil {
-			_ = r.m.sendReplyOrAck(msg, &event_apiv1.ListEventsResponse{Response: &event_apiv1.ListEventsResponse_Error{
+			_ = r.m.sendReplyOrAck(msg, &mir_apiv1.ListEventsResponse{Response: &mir_apiv1.ListEventsResponse_Error{
 				Error: err.Error(),
 			}})
 			return
 		}
 
-		err = r.m.sendReplyOrAck(msg, &event_apiv1.ListEventsResponse{
-			Response: &event_apiv1.ListEventsResponse_Ok{
-				Ok: &event_apiv1.Events{
+		err = r.m.sendReplyOrAck(msg, &mir_apiv1.ListEventsResponse{
+			Response: &mir_apiv1.ListEventsResponse_Ok{
+				Ok: &mir_apiv1.Events{
 					Events: mir_v1.MirEventsToProtoEvents(resp),
 				},
 			},
@@ -64,7 +64,7 @@ func (r *listEventsRoute) handlerWrapper(f func(msg *Msg, clientId string, req m
 func (r *listEventsRoute) Request(t mir_v1.EventTarget) ([]mir_v1.Event, error) {
 	sbj := event_client.ListEventsRequest.WithId(r.m.GetInstanceName())
 
-	bReq, err := proto.Marshal(&event_apiv1.ListEventsRequest{
+	bReq, err := proto.Marshal(&mir_apiv1.ListEventsRequest{
 		Target: mir_v1.MirEventTargetToProtoEventTarget(t),
 	})
 	if err != nil {
@@ -77,7 +77,7 @@ func (r *listEventsRoute) Request(t mir_v1.EventTarget) ([]mir_v1.Event, error) 
 
 	}
 
-	resp := &event_apiv1.ListEventsResponse{}
+	resp := &mir_apiv1.ListEventsResponse{}
 	err = proto.Unmarshal(resMsg.Data, resp)
 	if err != nil {
 		return []mir_v1.Event{}, err
@@ -114,9 +114,9 @@ func (r *deleteEventsRoute) QueueSubscribe(queue string, f func(msg *Msg, client
 
 func (r *deleteEventsRoute) handlerWrapper(f func(msg *Msg, clientId string, req mir_v1.EventTarget) ([]mir_v1.Event, error)) nats.MsgHandler {
 	return func(msg *nats.Msg) {
-		req := &event_apiv1.DeleteEventRequest{}
+		req := &mir_apiv1.DeleteEventRequest{}
 		if err := proto.Unmarshal(msg.Data, req); err != nil {
-			_ = r.m.sendReplyOrAck(msg, &event_apiv1.DeleteEventReponse{Response: &event_apiv1.DeleteEventReponse_Error{
+			_ = r.m.sendReplyOrAck(msg, &mir_apiv1.DeleteEventReponse{Response: &mir_apiv1.DeleteEventReponse_Error{
 				Error: err.Error(),
 			}})
 			return
@@ -124,15 +124,15 @@ func (r *deleteEventsRoute) handlerWrapper(f func(msg *Msg, clientId string, req
 
 		resp, err := f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), mir_v1.ProtoEventTargetToMirEventTarget(req.Target))
 		if err != nil {
-			_ = r.m.sendReplyOrAck(msg, &event_apiv1.DeleteEventReponse{Response: &event_apiv1.DeleteEventReponse_Error{
+			_ = r.m.sendReplyOrAck(msg, &mir_apiv1.DeleteEventReponse{Response: &mir_apiv1.DeleteEventReponse_Error{
 				Error: err.Error(),
 			}})
 			return
 		}
 
-		err = r.m.sendReplyOrAck(msg, &event_apiv1.DeleteEventReponse{
-			Response: &event_apiv1.DeleteEventReponse_Ok{
-				Ok: &event_apiv1.Events{
+		err = r.m.sendReplyOrAck(msg, &mir_apiv1.DeleteEventReponse{
+			Response: &mir_apiv1.DeleteEventReponse_Ok{
+				Ok: &mir_apiv1.Events{
 					Events: mir_v1.MirEventsToProtoEvents(resp),
 				},
 			},
@@ -144,7 +144,7 @@ func (r *deleteEventsRoute) handlerWrapper(f func(msg *Msg, clientId string, req
 func (r *deleteEventsRoute) Request(t mir_v1.EventTarget) ([]mir_v1.Event, error) {
 	sbj := event_client.DeleteEventsRequest.WithId(r.m.GetInstanceName())
 
-	bReq, err := proto.Marshal(&event_apiv1.DeleteEventRequest{
+	bReq, err := proto.Marshal(&mir_apiv1.DeleteEventRequest{
 		Target: mir_v1.MirEventTargetToProtoEventTarget(t),
 	})
 	if err != nil {
@@ -156,7 +156,7 @@ func (r *deleteEventsRoute) Request(t mir_v1.EventTarget) ([]mir_v1.Event, error
 		return []mir_v1.Event{}, err
 	}
 
-	resp := &event_apiv1.DeleteEventReponse{}
+	resp := &mir_apiv1.DeleteEventReponse{}
 	err = proto.Unmarshal(resMsg.Data, resp)
 	if err != nil {
 		return []mir_v1.Event{}, err

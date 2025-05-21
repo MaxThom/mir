@@ -8,8 +8,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/boiler/mir_signals"
 
 	command_devicev1 "github.com/maxthom/mir/examples/command_device/gen/command_device/v1"
-	cmd_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cmd_api"
-	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
+	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	"github.com/maxthom/mir/pkgs/module/mir"
 )
 
@@ -23,7 +22,7 @@ func main() {
 	}
 
 	err = m.Event().Command().Subscribe(
-		func(msg *mir.Msg, serverId string, cmd *cmd_apiv1.SendCommandResponse_CommandResponse, err error) {
+		func(msg *mir.Msg, serverId string, cmd *mir_apiv1.SendCommandResponse_CommandResponse, err error) {
 			fmt.Println("---EVENT---")
 			msg.Ack()
 		})
@@ -32,8 +31,8 @@ func main() {
 	}
 
 	respList, e := m.Server().ListCommands().Request(
-		&cmd_apiv1.SendListCommandsRequest{
-			Targets: &core_apiv1.DeviceTarget{
+		&mir_apiv1.SendListCommandsRequest{
+			Targets: &mir_apiv1.DeviceTarget{
 				Ids: []string{"0xf86tlm", "0xf86cmd"},
 			},
 		})
@@ -47,7 +46,7 @@ func main() {
 	cmdPayload := &command_devicev1.ChangePower{}
 	respProto, e := m.Server().SendCommand().RequestProto(
 		&mir.SendDeviceCommandRequestProto{
-			Targets: &core_apiv1.DeviceTarget{
+			Targets: &mir_apiv1.DeviceTarget{
 				Ids: []string{"0xf86tlm", "0xf86cmd"},
 			},
 			Command: cmdPayload,

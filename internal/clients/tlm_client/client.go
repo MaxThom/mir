@@ -5,7 +5,7 @@ import (
 
 	"github.com/maxthom/mir/internal/clients"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
-	tlm_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/tlm_api"
+	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -40,7 +40,7 @@ func GetTelemetryStreamMsg(deviceId string, t protoreflect.ProtoMessage) (*nats.
 	}, nil
 }
 
-func PublishTelemetryListRequest(bus *bus.BusConn, req *tlm_apiv1.SendListTelemetryRequest) (*tlm_apiv1.SendListTelemetryResponse, error) {
+func PublishTelemetryListRequest(bus *bus.BusConn, req *mir_apiv1.SendListTelemetryRequest) (*mir_apiv1.SendListTelemetryResponse, error) {
 	b, err := proto.Marshal(req)
 	if err != nil {
 		return nil, err
@@ -52,7 +52,7 @@ func PublishTelemetryListRequest(bus *bus.BusConn, req *tlm_apiv1.SendListTeleme
 		return nil, err
 	}
 
-	resp := &tlm_apiv1.SendListTelemetryResponse{}
+	resp := &mir_apiv1.SendListTelemetryResponse{}
 	err = proto.Unmarshal(resMsg.Data, resp)
 	if err != nil {
 		return nil, err

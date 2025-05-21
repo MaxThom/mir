@@ -10,7 +10,7 @@ import (
 
 	"github.com/maxthom/mir/internal/clients/core_client"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
-	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
+	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	mirDevice "github.com/maxthom/mir/pkgs/device/mir"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/rs/zerolog"
@@ -57,7 +57,7 @@ type devicesBuilder struct {
 	s          *swarm
 	logLevel   mirDevice.LogLevel
 	logWriters []io.Writer
-	deviceReqs []*core_apiv1.CreateDeviceRequest
+	deviceReqs []*mir_apiv1.CreateDeviceRequest
 	deviceIds  []string
 	sch        []protoreflect.FileDescriptor
 	cmd        []commandHandler
@@ -69,7 +69,7 @@ type deviceBuilder struct {
 	s          *swarm
 	logLevel   mirDevice.LogLevel
 	logWriters []io.Writer
-	deviceReq  *core_apiv1.CreateDeviceRequest
+	deviceReq  *mir_apiv1.CreateDeviceRequest
 	sch        []protoreflect.FileDescriptor
 	cmd        []commandHandler
 	cfg        []configHandler
@@ -95,7 +95,7 @@ func (s *swarm) AddDeviceWithIds(ids []string) *devicesBuilder {
 		},
 	}
 }
-func (s *swarm) AddDevices(req ...*core_apiv1.CreateDeviceRequest) *devicesBuilder {
+func (s *swarm) AddDevices(req ...*mir_apiv1.CreateDeviceRequest) *devicesBuilder {
 	return &devicesBuilder{
 		deviceReqs: req,
 		s:          s,
@@ -106,7 +106,7 @@ func (s *swarm) AddDevices(req ...*core_apiv1.CreateDeviceRequest) *devicesBuild
 	}
 }
 
-func (s *swarm) AddDevice(req *core_apiv1.CreateDeviceRequest) *deviceBuilder {
+func (s *swarm) AddDevice(req *mir_apiv1.CreateDeviceRequest) *deviceBuilder {
 	return &deviceBuilder{
 		deviceReq: req,
 		s:         s,
@@ -156,7 +156,7 @@ func (b *devicesBuilder) WithStoreOptions(opts mirDevice.StoreOptions) *devicesB
 	return b
 }
 
-func (b *devicesBuilder) Incubate() ([]*core_apiv1.CreateDeviceResponse, error) {
+func (b *devicesBuilder) Incubate() ([]*mir_apiv1.CreateDeviceResponse, error) {
 	var errs error
 	for _, d := range b.deviceReqs {
 		dev, err := mirDevice.Builder().
@@ -201,7 +201,7 @@ func (b *devicesBuilder) Incubate() ([]*core_apiv1.CreateDeviceResponse, error) 
 		b.s.Devices = append(b.s.Devices, dev)
 	}
 
-	responses := []*core_apiv1.CreateDeviceResponse{}
+	responses := []*mir_apiv1.CreateDeviceResponse{}
 	for _, reqCreate := range b.deviceReqs {
 		resp, err := core_client.PublishDeviceCreateRequest(b.s.bus, reqCreate)
 		if err != nil {
@@ -252,7 +252,7 @@ func (b *deviceBuilder) WithStoreOptions(opts mirDevice.StoreOptions) *deviceBui
 	return b
 }
 
-func (b *deviceBuilder) Incubate() (*core_apiv1.CreateDeviceResponse, error) {
+func (b *deviceBuilder) Incubate() (*mir_apiv1.CreateDeviceResponse, error) {
 	dev, err := mirDevice.Builder().
 		DeviceId(b.deviceReq.Spec.DeviceId).
 		LogLevel(b.logLevel).

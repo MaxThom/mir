@@ -11,7 +11,7 @@ import (
 	"github.com/maxthom/mir/internal/clients/device_client"
 	"github.com/maxthom/mir/internal/clients/tlm_client"
 	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
-	device_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/device_api"
+	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
 )
@@ -160,7 +160,7 @@ func (r *schemaRoute) Request(deviceId string) (*mir_proto.MirProtoSchema, error
 		return nil, fmt.Errorf("error requesting device schema: %w", err)
 	}
 
-	sch := &device_apiv1.SchemaRetrieveResponse{}
+	sch := &mir_apiv1.SchemaRetrieveResponse{}
 	if err = proto.Unmarshal(resp.Data, sch); err != nil {
 		return nil, fmt.Errorf("error deserializing response: %w", err)
 	}
@@ -201,7 +201,7 @@ func (r *schemaRoute) handlerWrapper(f func(msg *Msg, deviceId string, schema *m
 			return
 		}
 
-		sch := &device_apiv1.SchemaRetrieveResponse{}
+		sch := &mir_apiv1.SchemaRetrieveResponse{}
 		if err = proto.Unmarshal(msg.Data, sch); err != nil {
 			f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), nil, fmt.Errorf("error deserializing schema: %w", err))
 			return
@@ -382,7 +382,7 @@ func (r *deviceRoutes) DesiredProperties() *desiredPropertiesRoute {
 // Subscribe to device reported properties
 // To listen to all devices, use deviceId = "" or deviceId = "*"
 // You are responsible of acknowledging the message
-func (r *desiredPropertiesRoute) Subscribe(deviceId string, h func(msg *Msg, deviceId string) (*device_apiv1.ReportedProperties, error)) error {
+func (r *desiredPropertiesRoute) Subscribe(deviceId string, h func(msg *Msg, deviceId string) (*mir_apiv1.DeviceEncodedReportedProperties, error)) error {
 	if deviceId == "" {
 		deviceId = "*"
 	}
@@ -393,7 +393,7 @@ func (r *desiredPropertiesRoute) Subscribe(deviceId string, h func(msg *Msg, dev
 // Subscribe to device reported properties as a worker queue
 // To listen to all devices, use deviceId = "" or deviceId = "*"
 // You are responsible of acknowledging the message
-func (r *desiredPropertiesRoute) QueueSubscribe(queue string, deviceId string, h func(msg *Msg, deviceId string) (*device_apiv1.ReportedProperties, error)) error {
+func (r *desiredPropertiesRoute) QueueSubscribe(queue string, deviceId string, h func(msg *Msg, deviceId string) (*mir_apiv1.DeviceEncodedReportedProperties, error)) error {
 	if deviceId == "" {
 		deviceId = "*"
 	}
@@ -401,19 +401,19 @@ func (r *desiredPropertiesRoute) QueueSubscribe(queue string, deviceId string, h
 	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(h))
 }
 
-func (r *desiredPropertiesRoute) handlerWrapper(f func(msg *Msg, deviceId string) (*device_apiv1.ReportedProperties, error)) nats.MsgHandler {
+func (r *desiredPropertiesRoute) handlerWrapper(f func(msg *Msg, deviceId string) (*mir_apiv1.DeviceEncodedReportedProperties, error)) nats.MsgHandler {
 	return func(msg *nats.Msg) {
 		resp, err := f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId())
 		if err != nil {
-			err = r.m.sendReplyOrAck(msg, &device_apiv1.ReportedPropertiesResponse{
-				Response: &device_apiv1.ReportedPropertiesResponse_Error{
+			err = r.m.sendReplyOrAck(msg, &mir_apiv1.DeviceReportedPropertiesResponse{
+				Response: &mir_apiv1.DeviceReportedPropertiesResponse_Error{
 					Error: err.Error(),
 				}})
 			return
 		}
 		// TODO log error here
-		err = r.m.sendReplyOrAck(msg, &device_apiv1.ReportedPropertiesResponse{
-			Response: &device_apiv1.ReportedPropertiesResponse_Ok{
+		err = r.m.sendReplyOrAck(msg, &mir_apiv1.DeviceReportedPropertiesResponse{
+			Response: &mir_apiv1.DeviceReportedPropertiesResponse_Ok{
 				Ok: resp,
 			},
 		})

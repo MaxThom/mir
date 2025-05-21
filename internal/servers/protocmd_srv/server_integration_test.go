@@ -24,9 +24,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 
 	protocmd_testv1 "github.com/maxthom/mir/internal/servers/protocmd_srv/proto_test/gen/protocmd_test/v1"
-	cmd_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cmd_api"
-	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
-	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
+	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	mirDevice "github.com/maxthom/mir/pkgs/device/mir"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/maxthom/mir/pkgs/module/mir"
@@ -129,8 +127,8 @@ func TestPublishCmdListRequest(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_list_cmd"
 	s := swarm.NewSwarm(b)
-	if _, err := s.AddDevice(&core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	if _, err := s.AddDevice(&mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_cmd",
 			Labels: map[string]string{
@@ -140,7 +138,7 @@ func TestPublishCmdListRequest(t *testing.T) {
 				"mir/device/description": "hello world of devices !",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: id,
 		},
 	}).WithSchema(protocmd_testv1.File_protocmd_test_v1_command_proto).Incubate(); err != nil {
@@ -153,7 +151,7 @@ func TestPublishCmdListRequest(t *testing.T) {
 		t.Error(err)
 	}
 
-	respListCmd, err := cmd_client.PublishListCommandsRequest(b, &cmd_apiv1.SendListCommandsRequest{
+	respListCmd, err := cmd_client.PublishListCommandsRequest(b, &mir_apiv1.SendListCommandsRequest{
 		Targets:       mir_v1.MirDeviceTargetToProtoDeviceTarget(s.ToTarget()),
 		FilterLabels:  map[string]string{},
 		RefreshSchema: false,
@@ -190,8 +188,8 @@ func TestPublishCmdListFiltersRequest(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_list_cmd_filters"
 	s := swarm.NewSwarm(b)
-	if _, err := s.AddDevice(&core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	if _, err := s.AddDevice(&mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_cmd",
 			Labels: map[string]string{
@@ -201,7 +199,7 @@ func TestPublishCmdListFiltersRequest(t *testing.T) {
 				"mir/device/description": "hello world of devices !",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: id,
 		},
 	}).WithSchema(protocmd_testv1.File_protocmd_test_v1_command_proto).Incubate(); err != nil {
@@ -214,7 +212,7 @@ func TestPublishCmdListFiltersRequest(t *testing.T) {
 		t.Error(err)
 	}
 
-	respListCmd, err := cmd_client.PublishListCommandsRequest(b, &cmd_apiv1.SendListCommandsRequest{
+	respListCmd, err := cmd_client.PublishListCommandsRequest(b, &mir_apiv1.SendListCommandsRequest{
 		Targets: mir_v1.MirDeviceTargetToProtoDeviceTarget(s.ToTarget()),
 		FilterLabels: map[string]string{
 			"building": "A",
@@ -246,8 +244,8 @@ func TestPublishCmdRequest(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_send_cmd"
-	reqCreate := &core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	reqCreate := &mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_cmd",
 			Labels: map[string]string{
@@ -257,7 +255,7 @@ func TestPublishCmdRequest(t *testing.T) {
 				"mir/device/description": "hello world of devices !",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: id,
 		},
 	}
@@ -286,12 +284,12 @@ func TestPublishCmdRequest(t *testing.T) {
 		t.Error(err)
 	}
 
-	reqCmd := &cmd_apiv1.SendCommandRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	reqCmd := &mir_apiv1.SendCommandRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 		Name:            string(reqPayload.ProtoReflect().Descriptor().FullName()),
-		PayloadEncoding: common_apiv1.Encoding_ENCODING_PROTOBUF,
+		PayloadEncoding: mir_apiv1.Encoding_ENCODING_PROTOBUF,
 		Payload:         payloadBytes,
 		RefreshSchema:   true,
 	}
@@ -320,7 +318,7 @@ func TestPublishCmdRequest(t *testing.T) {
 			t.Error(v.Error)
 		}
 		assert.Equal(t, string(msgResp.ProtoReflect().Descriptor().FullName()), v.Name)
-		assert.Equal(t, cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_SUCCESS, v.Status)
+		assert.Equal(t, mir_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_SUCCESS, v.Status)
 		if err = proto.Unmarshal(v.Payload, msgResp); err != nil {
 			t.Error(err)
 		}
@@ -329,19 +327,19 @@ func TestPublishCmdRequest(t *testing.T) {
 	// Assert
 	assert.Equal(t, true, msgResp.Success)
 	assert.Equal(t, int32(5), cmdHandled.Power)
-	assert.Equal(t, common_apiv1.Encoding_ENCODING_PROTOBUF, respCmd.GetOk().Encoding)
+	assert.Equal(t, mir_apiv1.Encoding_ENCODING_PROTOBUF, respCmd.GetOk().Encoding)
 	cancel()
 	wg.Wait()
 }
 
 func TestPublishCmdBadRequest(t *testing.T) {
 	// Arrange
-	reqCmd := &cmd_apiv1.SendCommandRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	reqCmd := &mir_apiv1.SendCommandRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Ids: []string{},
 		},
 		Name:            "",
-		PayloadEncoding: common_apiv1.Encoding_ENCODING_UNSPECIFIED,
+		PayloadEncoding: mir_apiv1.Encoding_ENCODING_UNSPECIFIED,
 		Payload:         []byte{},
 	}
 
@@ -360,8 +358,8 @@ func TestPublishCmdJsonRequest(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_send_cmd_json"
-	reqCreate := &core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	reqCreate := &mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_cmd",
 			Labels: map[string]string{
@@ -371,7 +369,7 @@ func TestPublishCmdJsonRequest(t *testing.T) {
 				"mir/device/description": "hello world of devices !",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: id,
 		},
 	}
@@ -399,12 +397,12 @@ func TestPublishCmdJsonRequest(t *testing.T) {
 		t.Error(err)
 	}
 
-	reqCmd := &cmd_apiv1.SendCommandRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	reqCmd := &mir_apiv1.SendCommandRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 		Name:            string(p.ProtoReflect().Descriptor().FullName()),
-		PayloadEncoding: common_apiv1.Encoding_ENCODING_JSON,
+		PayloadEncoding: mir_apiv1.Encoding_ENCODING_JSON,
 		Payload:         payloadBytes,
 		RefreshSchema:   true,
 	}
@@ -435,7 +433,7 @@ func TestPublishCmdJsonRequest(t *testing.T) {
 			t.Error(v.Error)
 		}
 		assert.Equal(t, string(msgResp.ProtoReflect().Descriptor().FullName()), v.Name)
-		assert.Equal(t, cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_SUCCESS, v.Status)
+		assert.Equal(t, mir_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_SUCCESS, v.Status)
 		if err = protojson.Unmarshal(v.Payload, msgResp); err != nil {
 			t.Error(err)
 		}
@@ -444,7 +442,7 @@ func TestPublishCmdJsonRequest(t *testing.T) {
 	// Assert
 	assert.Equal(t, true, msgResp.Success)
 	assert.Equal(t, int32(5), cmdHandled.Power)
-	assert.Equal(t, common_apiv1.Encoding_ENCODING_JSON, respCmd.GetOk().Encoding)
+	assert.Equal(t, mir_apiv1.Encoding_ENCODING_JSON, respCmd.GetOk().Encoding)
 	cancel()
 	wg.Wait()
 }
@@ -460,12 +458,12 @@ func TestPublishCmdNoDeviceFound(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	reqCmd := &cmd_apiv1.SendCommandRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	reqCmd := &mir_apiv1.SendCommandRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 		Name:            string(reqPayload.ProtoReflect().Descriptor().FullName()),
-		PayloadEncoding: common_apiv1.Encoding_ENCODING_PROTOBUF,
+		PayloadEncoding: mir_apiv1.Encoding_ENCODING_PROTOBUF,
 		Payload:         payloadBytes,
 	}
 
@@ -483,8 +481,8 @@ func TestPublishCmdNoDeviceFound(t *testing.T) {
 func TestPublishCmdProtoNoValidationDryRun(t *testing.T) {
 	// Arrange
 	id := "proto_novalidation_dryrun"
-	reqCreate := &core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	reqCreate := &mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_cmd",
 			Labels: map[string]string{
@@ -494,7 +492,7 @@ func TestPublishCmdProtoNoValidationDryRun(t *testing.T) {
 				"mir/device/description": "hello world of devices !",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: id,
 		},
 	}
@@ -507,12 +505,12 @@ func TestPublishCmdProtoNoValidationDryRun(t *testing.T) {
 		t.Error(err)
 	}
 
-	reqCmd := &cmd_apiv1.SendCommandRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	reqCmd := &mir_apiv1.SendCommandRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 		Name:            string(reqPayload.ProtoReflect().Descriptor().FullName()),
-		PayloadEncoding: common_apiv1.Encoding_ENCODING_PROTOBUF,
+		PayloadEncoding: mir_apiv1.Encoding_ENCODING_PROTOBUF,
 		Payload:         payloadBytes,
 		NoValidation:    true,
 		DryRun:          true,
@@ -537,7 +535,7 @@ func TestPublishCmdProtoNoValidationDryRun(t *testing.T) {
 		if v.Error != "" {
 			t.Error(v.Error)
 		}
-		assert.Equal(t, cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_PENDING, v.Status)
+		assert.Equal(t, mir_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_PENDING, v.Status)
 	}
 }
 
@@ -546,8 +544,8 @@ func TestPublishCmdProtoInvalidPayloadNoValidation(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_send_cmd_no_validation"
-	reqCreate := &core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	reqCreate := &mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_cmd",
 			Labels: map[string]string{
@@ -557,7 +555,7 @@ func TestPublishCmdProtoInvalidPayloadNoValidation(t *testing.T) {
 				"mir/device/description": "hello world of devices !",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: id,
 		},
 	}
@@ -591,12 +589,12 @@ func TestPublishCmdProtoInvalidPayloadNoValidation(t *testing.T) {
 		t.Error(err)
 	}
 
-	reqCmd := &cmd_apiv1.SendCommandRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	reqCmd := &mir_apiv1.SendCommandRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 		Name:            string(cmdHandled.ProtoReflect().Descriptor().FullName()),
-		PayloadEncoding: common_apiv1.Encoding_ENCODING_PROTOBUF,
+		PayloadEncoding: mir_apiv1.Encoding_ENCODING_PROTOBUF,
 		Payload:         payloadBytes,
 		RefreshSchema:   true,
 	}
@@ -623,7 +621,7 @@ func TestPublishCmdProtoInvalidPayloadNoValidation(t *testing.T) {
 
 	// Assert
 	for _, v := range respCmd.GetOk().DeviceResponses {
-		assert.Equal(t, cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_ERROR, v.Status)
+		assert.Equal(t, mir_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_ERROR, v.Status)
 		assert.Equal(t, "device error in command handler: error on purpose", v.Error)
 	}
 	cancel()
@@ -636,8 +634,8 @@ func TestPublishCmdRequestMultipleDevices(t *testing.T) {
 	cmdHandled := &protocmd_testv1.ChangePower{}
 	swarm := swarm.NewSwarm(b)
 	handlerCount := 0
-	_, err := swarm.AddDevices(&core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	_, err := swarm.AddDevices(&mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      "device_send_cmd_1",
 			Namespace: "testing_cmd",
 			Labels: map[string]string{
@@ -647,11 +645,11 @@ func TestPublishCmdRequestMultipleDevices(t *testing.T) {
 				"mir/device/description": "hello world of devices !",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: "device_send_cmd_1",
 		},
-	}, &core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	}, &mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      "device_send_cmd_2",
 			Namespace: "testing_cmd",
 			Labels: map[string]string{
@@ -661,7 +659,7 @@ func TestPublishCmdRequestMultipleDevices(t *testing.T) {
 				"mir/device/description": "hello world of devices !",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: "device_send_cmd_2",
 		},
 	}).
@@ -683,10 +681,10 @@ func TestPublishCmdRequestMultipleDevices(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	reqCmd := &cmd_apiv1.SendCommandRequest{
+	reqCmd := &mir_apiv1.SendCommandRequest{
 		Targets:         mir_v1.MirDeviceTargetToProtoDeviceTarget(swarm.ToTarget()),
 		Name:            string(reqPayload.ProtoReflect().Descriptor().FullName()),
-		PayloadEncoding: common_apiv1.Encoding_ENCODING_PROTOBUF,
+		PayloadEncoding: mir_apiv1.Encoding_ENCODING_PROTOBUF,
 		Payload:         payloadBytes,
 	}
 
@@ -708,13 +706,13 @@ func TestPublishCmdRequestMultipleDevices(t *testing.T) {
 			t.Error(v.Error)
 		}
 		assert.Equal(t, string(msgResp.ProtoReflect().Descriptor().FullName()), v.Name)
-		assert.Equal(t, cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_SUCCESS, v.Status)
+		assert.Equal(t, mir_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_SUCCESS, v.Status)
 		if err = proto.Unmarshal(v.Payload, msgResp); err != nil {
 			t.Error(err)
 		}
 		assert.Equal(t, true, msgResp.Success)
 		assert.Equal(t, int32(5), cmdHandled.Power)
-		assert.Equal(t, common_apiv1.Encoding_ENCODING_PROTOBUF, respCmd.GetOk().Encoding)
+		assert.Equal(t, mir_apiv1.Encoding_ENCODING_PROTOBUF, respCmd.GetOk().Encoding)
 	}
 
 	assert.Equal(t, len(swarm.Devices), handlerCount)
@@ -730,8 +728,8 @@ func TestPublishCmdRequestMultipleDevicesOneNoHandler(t *testing.T) {
 	cmdHandled := &protocmd_testv1.ChangePower{}
 	swarm := swarm.NewSwarm(b)
 	handlerCount := 0
-	_, err := swarm.AddDevices(&core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	_, err := swarm.AddDevices(&mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      "device_send_cmd_1_no_handler",
 			Namespace: "testing_cmd",
 			Labels: map[string]string{
@@ -741,11 +739,11 @@ func TestPublishCmdRequestMultipleDevicesOneNoHandler(t *testing.T) {
 				"mir/device/description": "hello world of devices !",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: "device_send_cmd_1_no_handler",
 		},
-	}, &core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	}, &mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      "device_send_cmd_2_no_handler",
 			Namespace: "testing_cmd",
 			Labels: map[string]string{
@@ -755,7 +753,7 @@ func TestPublishCmdRequestMultipleDevicesOneNoHandler(t *testing.T) {
 				"mir/device/description": "hello world of devices !",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: "device_send_cmd_2_no_handler",
 		},
 	}).
@@ -768,8 +766,8 @@ func TestPublishCmdRequestMultipleDevicesOneNoHandler(t *testing.T) {
 				return &protocmd_testv1.ChangePowerResp{Success: true}, nil
 			},
 		).Incubate()
-	swarm.AddDevice(&core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	swarm.AddDevice(&mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      "device_send_cmd_3_no_handler",
 			Namespace: "testing_cmd",
 			Labels: map[string]string{
@@ -779,7 +777,7 @@ func TestPublishCmdRequestMultipleDevicesOneNoHandler(t *testing.T) {
 				"mir/device/description": "hello world of devices !",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: "device_send_cmd_3_no_handler",
 		},
 	}).WithSchema(protocmd_testv1.File_protocmd_test_v1_command_proto).Incubate()
@@ -792,10 +790,10 @@ func TestPublishCmdRequestMultipleDevicesOneNoHandler(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	reqCmd := &cmd_apiv1.SendCommandRequest{
+	reqCmd := &mir_apiv1.SendCommandRequest{
 		Targets:         mir_v1.MirDeviceTargetToProtoDeviceTarget(swarm.ToTarget()),
 		Name:            string(reqPayload.ProtoReflect().Descriptor().FullName()),
-		PayloadEncoding: common_apiv1.Encoding_ENCODING_PROTOBUF,
+		PayloadEncoding: mir_apiv1.Encoding_ENCODING_PROTOBUF,
 		Payload:         payloadBytes,
 	}
 
@@ -819,15 +817,15 @@ func TestPublishCmdRequestMultipleDevicesOneNoHandler(t *testing.T) {
 				t.Error(v.Error)
 			}
 			assert.Equal(t, string(msgResp.ProtoReflect().Descriptor().FullName()), v.Name)
-			assert.Equal(t, cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_SUCCESS, v.Status)
+			assert.Equal(t, mir_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_SUCCESS, v.Status)
 			if err = proto.Unmarshal(v.Payload, msgResp); err != nil {
 				t.Error(err)
 			}
 			assert.Equal(t, true, msgResp.Success)
 			assert.Equal(t, int32(5), cmdHandled.Power)
-			assert.Equal(t, common_apiv1.Encoding_ENCODING_PROTOBUF, respCmd.GetOk().Encoding)
+			assert.Equal(t, mir_apiv1.Encoding_ENCODING_PROTOBUF, respCmd.GetOk().Encoding)
 		} else if k == "device_send_cmd_3/testing_cmd" {
-			assert.Equal(t, cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_ERROR, v.Status)
+			assert.Equal(t, mir_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_ERROR, v.Status)
 			assert.Equal(t, "device error: no handler for command protocmd_test.v1.ChangePower found", v.Error)
 		}
 	}
@@ -843,8 +841,8 @@ func TestPublishCmdRequestMultipleDevicesOneTimeout(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_send_cmd_multi_timeout"
-	reqCreate := &core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	reqCreate := &mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_cmd",
 			Labels: map[string]string{
@@ -854,7 +852,7 @@ func TestPublishCmdRequestMultipleDevicesOneTimeout(t *testing.T) {
 				"mir/device/description": "hello world of devices !",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: id,
 		},
 	}
@@ -867,8 +865,8 @@ func TestPublishCmdRequestMultipleDevicesOneTimeout(t *testing.T) {
 	}
 
 	id2 := "device_send_cmd_multi_timeout_2"
-	reqCreate2 := &core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	reqCreate2 := &mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      id2,
 			Namespace: "testing_cmd",
 			Labels: map[string]string{
@@ -878,7 +876,7 @@ func TestPublishCmdRequestMultipleDevicesOneTimeout(t *testing.T) {
 				"mir/device/description": "hello world of devices !",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: id2,
 		},
 	}
@@ -900,12 +898,12 @@ func TestPublishCmdRequestMultipleDevicesOneTimeout(t *testing.T) {
 		t.Error(err)
 	}
 
-	reqCmd := &cmd_apiv1.SendCommandRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	reqCmd := &mir_apiv1.SendCommandRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Ids: []string{id, id2},
 		},
 		Name:            string(reqPayload.ProtoReflect().Descriptor().FullName()),
-		PayloadEncoding: common_apiv1.Encoding_ENCODING_PROTOBUF,
+		PayloadEncoding: mir_apiv1.Encoding_ENCODING_PROTOBUF,
 		Payload:         payloadBytes,
 		NoValidation:    true,
 	}
@@ -938,20 +936,20 @@ func TestPublishCmdRequestMultipleDevicesOneTimeout(t *testing.T) {
 	msgResp := &protocmd_testv1.ChangePowerResp{}
 	for k, v := range respCmd.GetOk().DeviceResponses {
 		if k == id2+"/testing_cmd" {
-			assert.Equal(t, cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_ERROR, v.Status)
+			assert.Equal(t, mir_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_ERROR, v.Status)
 			assert.Equal(t, true, strings.Contains(v.Error, "no responders available for request"))
 		} else {
 			if v.Error != "" {
 				t.Error(v.Error)
 			}
 			assert.Equal(t, string(msgResp.ProtoReflect().Descriptor().FullName()), v.Name)
-			assert.Equal(t, cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_SUCCESS, v.Status)
+			assert.Equal(t, mir_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_SUCCESS, v.Status)
 			if err = proto.Unmarshal(v.Payload, msgResp); err != nil {
 				t.Error(err)
 			}
 			assert.Equal(t, true, msgResp.Success)
 			assert.Equal(t, int32(5), cmdHandled.Power)
-			assert.Equal(t, common_apiv1.Encoding_ENCODING_PROTOBUF, respCmd.GetOk().Encoding)
+			assert.Equal(t, mir_apiv1.Encoding_ENCODING_PROTOBUF, respCmd.GetOk().Encoding)
 		}
 	}
 
@@ -966,24 +964,24 @@ func TestPublishCmdRequestMultipleDevicesJson(t *testing.T) {
 	swarm := swarm.NewSwarm(b)
 	handlerCount := 0
 	_, err := swarm.AddDevices(
-		&core_apiv1.CreateDeviceRequest{
-			Meta: &core_apiv1.Meta{
+		&mir_apiv1.CreateDeviceRequest{
+			Meta: &mir_apiv1.Meta{
 				Namespace: "testing_cmd",
 				Labels: map[string]string{
 					"testing": "cmd",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: "device_send_cmd_multi_json_1",
 			},
-		}, &core_apiv1.CreateDeviceRequest{
-			Meta: &core_apiv1.Meta{
+		}, &mir_apiv1.CreateDeviceRequest{
+			Meta: &mir_apiv1.Meta{
 				Namespace: "testing_cmd",
 				Labels: map[string]string{
 					"testing": "cmd",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: "device_send_cmd_multi_json_2",
 			},
 		}).
@@ -1005,10 +1003,10 @@ func TestPublishCmdRequestMultipleDevicesJson(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	reqCmd := &cmd_apiv1.SendCommandRequest{
+	reqCmd := &mir_apiv1.SendCommandRequest{
 		Targets:         mir_v1.MirDeviceTargetToProtoDeviceTarget(swarm.ToTarget()),
 		Name:            payloadName,
-		PayloadEncoding: common_apiv1.Encoding_ENCODING_JSON,
+		PayloadEncoding: mir_apiv1.Encoding_ENCODING_JSON,
 		Payload:         payloadBytes,
 	}
 
@@ -1029,13 +1027,13 @@ func TestPublishCmdRequestMultipleDevicesJson(t *testing.T) {
 			t.Error(v.Error)
 		}
 		assert.Equal(t, string(msgResp.ProtoReflect().Descriptor().FullName()), v.Name)
-		assert.Equal(t, cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_SUCCESS, v.Status)
+		assert.Equal(t, mir_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_SUCCESS, v.Status)
 		if err = protojson.Unmarshal(v.Payload, msgResp); err != nil {
 			t.Error(err)
 		}
 		assert.Equal(t, true, msgResp.Success)
 		assert.Equal(t, reqPayload.Power, cmdHandled.Power)
-		assert.Equal(t, common_apiv1.Encoding_ENCODING_JSON, respCmd.GetOk().Encoding)
+		assert.Equal(t, mir_apiv1.Encoding_ENCODING_JSON, respCmd.GetOk().Encoding)
 	}
 
 	assert.Equal(t, len(swarm.Devices), handlerCount)
@@ -1052,24 +1050,24 @@ func TestPublishCmdRequestMultipleDevicesDescriptorNotFound(t *testing.T) {
 	swarm := swarm.NewSwarm(b)
 	handlerCount := 0
 	_, err := swarm.AddDevices(
-		&core_apiv1.CreateDeviceRequest{
-			Meta: &core_apiv1.Meta{
+		&mir_apiv1.CreateDeviceRequest{
+			Meta: &mir_apiv1.Meta{
 				Namespace: "testing_cmd",
 				Labels: map[string]string{
 					"testing": "cmd",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: "device_send_notfound_1",
 			},
-		}, &core_apiv1.CreateDeviceRequest{
-			Meta: &core_apiv1.Meta{
+		}, &mir_apiv1.CreateDeviceRequest{
+			Meta: &mir_apiv1.Meta{
 				Namespace: "testing_cmd",
 				Labels: map[string]string{
 					"testing": "cmd",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: "device_send_notfound_2",
 			},
 		}).
@@ -1091,10 +1089,10 @@ func TestPublishCmdRequestMultipleDevicesDescriptorNotFound(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	reqCmd := &cmd_apiv1.SendCommandRequest{
+	reqCmd := &mir_apiv1.SendCommandRequest{
 		Targets:         mir_v1.MirDeviceTargetToProtoDeviceTarget(swarm.ToTarget()),
 		Name:            "nothing",
-		PayloadEncoding: common_apiv1.Encoding_ENCODING_JSON,
+		PayloadEncoding: mir_apiv1.Encoding_ENCODING_JSON,
 		Payload:         payloadBytes,
 	}
 
@@ -1112,7 +1110,7 @@ func TestPublishCmdRequestMultipleDevicesDescriptorNotFound(t *testing.T) {
 	// msgResp := &protocmd_testv1.ChangePowerResp{}
 	for _, v := range respCmd.GetOk().DeviceResponses {
 		// assert.Equal(t, string(msgResp.ProtoReflect().Descriptor().FullName()), v.Name)
-		assert.Equal(t, cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_ERROR, v.Status)
+		assert.Equal(t, mir_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_ERROR, v.Status)
 		assert.Equal(t, true, v.Error != "")
 		// if err = protojson.Unmarshal(v.Payload, msgResp); err != nil {
 		// t.Error(err)
@@ -1121,7 +1119,7 @@ func TestPublishCmdRequestMultipleDevicesDescriptorNotFound(t *testing.T) {
 		// assert.Equal(t, reqPayload.Power, cmdHandled.Power)
 	}
 
-	assert.Equal(t, common_apiv1.Encoding_ENCODING_JSON, respCmd.GetOk().Encoding)
+	assert.Equal(t, mir_apiv1.Encoding_ENCODING_JSON, respCmd.GetOk().Encoding)
 	assert.Equal(t, 0, handlerCount)
 	cancel()
 	for _, v := range wg {
@@ -1136,14 +1134,14 @@ func TestPublishCmdRequestMultipleDevicesSingleDescriptorNotFoundForcePush(t *te
 	swarm := swarm.NewSwarm(b)
 	handlerCount := 0
 	_, err := swarm.AddDevice(
-		&core_apiv1.CreateDeviceRequest{
-			Meta: &core_apiv1.Meta{
+		&mir_apiv1.CreateDeviceRequest{
+			Meta: &mir_apiv1.Meta{
 				Namespace: "testing_cmd",
 				Labels: map[string]string{
 					"testing": "cmd",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: "device_valid_cmd",
 			},
 		}).
@@ -1157,14 +1155,14 @@ func TestPublishCmdRequestMultipleDevicesSingleDescriptorNotFoundForcePush(t *te
 			},
 		).Incubate()
 	_, err = swarm.AddDevice(
-		&core_apiv1.CreateDeviceRequest{
-			Meta: &core_apiv1.Meta{
+		&mir_apiv1.CreateDeviceRequest{
+			Meta: &mir_apiv1.Meta{
 				Namespace: "testing_cmd",
 				Labels: map[string]string{
 					"testing": "cmd",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: "device_invalid_cmd",
 			},
 		}).
@@ -1185,10 +1183,10 @@ func TestPublishCmdRequestMultipleDevicesSingleDescriptorNotFoundForcePush(t *te
 	if err != nil {
 		t.Error(err)
 	}
-	reqCmd := &cmd_apiv1.SendCommandRequest{
+	reqCmd := &mir_apiv1.SendCommandRequest{
 		Targets:         mir_v1.MirDeviceTargetToProtoDeviceTarget(swarm.ToTarget()),
 		Name:            payloadName,
-		PayloadEncoding: common_apiv1.Encoding_ENCODING_JSON,
+		PayloadEncoding: mir_apiv1.Encoding_ENCODING_JSON,
 		Payload:         payloadBytes,
 		ForcePush:       true,
 	}
@@ -1208,7 +1206,7 @@ func TestPublishCmdRequestMultipleDevicesSingleDescriptorNotFoundForcePush(t *te
 	devInvalid := respCmd.GetOk().DeviceResponses["device_invalid_cmd/testing_cmd"]
 
 	msgResp := &protocmd_testv1.ChangePowerResp{}
-	assert.Equal(t, cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_SUCCESS, devValid.Status)
+	assert.Equal(t, mir_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_SUCCESS, devValid.Status)
 	if err = protojson.Unmarshal(devValid.Payload, msgResp); err != nil {
 		t.Error(err)
 	}
@@ -1216,10 +1214,10 @@ func TestPublishCmdRequestMultipleDevicesSingleDescriptorNotFoundForcePush(t *te
 	assert.Equal(t, true, msgResp.Success)
 	assert.Equal(t, reqPayload.Power, cmdHandled.Power)
 
-	assert.Equal(t, cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_ERROR, devInvalid.Status)
+	assert.Equal(t, mir_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_ERROR, devInvalid.Status)
 	assert.Equal(t, true, devInvalid.Error != "")
 
-	assert.Equal(t, common_apiv1.Encoding_ENCODING_JSON, respCmd.GetOk().Encoding)
+	assert.Equal(t, mir_apiv1.Encoding_ENCODING_JSON, respCmd.GetOk().Encoding)
 	assert.Equal(t, 1, handlerCount)
 	cancel()
 	for _, v := range wg {
@@ -1232,8 +1230,8 @@ func TestPublishCmdRequestMultipleDevicesJsonTemplate(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	swarm := swarm.NewSwarm(b)
 	_, err := swarm.AddDevices(
-		&core_apiv1.CreateDeviceRequest{
-			Meta: &core_apiv1.Meta{
+		&mir_apiv1.CreateDeviceRequest{
+			Meta: &mir_apiv1.Meta{
 				Namespace: "testing_cmd",
 				Labels: map[string]string{
 					"testing": "cmd",
@@ -1242,11 +1240,11 @@ func TestPublishCmdRequestMultipleDevicesJsonTemplate(t *testing.T) {
 					"mir/device/description": "hello world of devices !",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: "device_send_cmd_multi_json_tlm_1",
 			},
-		}, &core_apiv1.CreateDeviceRequest{
-			Meta: &core_apiv1.Meta{
+		}, &mir_apiv1.CreateDeviceRequest{
+			Meta: &mir_apiv1.Meta{
 				Namespace: "testing_cmd",
 				Labels: map[string]string{
 					"testing": "cmd",
@@ -1255,7 +1253,7 @@ func TestPublishCmdRequestMultipleDevicesJsonTemplate(t *testing.T) {
 					"mir/device/description": "hello world of devices !",
 				},
 			},
-			Spec: &core_apiv1.Spec{
+			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: "device_send_cmd_multi_json_tlm_2",
 			},
 		}).
@@ -1265,7 +1263,7 @@ func TestPublishCmdRequestMultipleDevicesJsonTemplate(t *testing.T) {
 
 	reqPayload := protocmd_testv1.ChangePower{}
 	cmdName := string(reqPayload.ProtoReflect().Descriptor().FullName())
-	reqCmd := &cmd_apiv1.SendCommandRequest{
+	reqCmd := &mir_apiv1.SendCommandRequest{
 		Targets:      mir_v1.MirDeviceTargetToProtoDeviceTarget(swarm.ToTarget()),
 		Name:         cmdName,
 		ShowTemplate: true,
@@ -1285,10 +1283,10 @@ func TestPublishCmdRequestMultipleDevicesJsonTemplate(t *testing.T) {
 	resp := respCmd.GetOk()
 	dev1 := resp.DeviceResponses["device_send_cmd_multi_json_tlm_1/testing_cmd"]
 	dev2 := resp.DeviceResponses["device_send_cmd_multi_json_tlm_2/testing_cmd"]
-	assert.Equal(t, cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_SUCCESS, dev1.Status)
+	assert.Equal(t, mir_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_SUCCESS, dev1.Status)
 	assert.Equal(t, cmdName, dev1.Name)
 	assert.Equal(t, `{"power":0}`, string(dev1.Payload))
-	assert.Equal(t, cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_SUCCESS, dev2.Status)
+	assert.Equal(t, mir_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_SUCCESS, dev2.Status)
 	assert.Equal(t, cmdName, dev2.Name)
 	assert.Equal(t, `{"power":0}`, string(dev2.Payload))
 
@@ -1302,8 +1300,8 @@ func TestPublishCmdRequestMultipleDevicesOneTimeoutJsonTemplate(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_send_cmd_multi_timeout_json_template_1"
-	reqCreate := &core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	reqCreate := &mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_cmd",
 			Labels: map[string]string{
@@ -1313,7 +1311,7 @@ func TestPublishCmdRequestMultipleDevicesOneTimeoutJsonTemplate(t *testing.T) {
 				"mir/device/description": "hello world of devices !",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: id,
 		},
 	}
@@ -1326,8 +1324,8 @@ func TestPublishCmdRequestMultipleDevicesOneTimeoutJsonTemplate(t *testing.T) {
 	}
 
 	id2 := "device_send_cmd_multi_timeout_json_template_2"
-	reqCreate2 := &core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	reqCreate2 := &mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      id2,
 			Namespace: "testing_cmd",
 			Labels: map[string]string{
@@ -1337,15 +1335,15 @@ func TestPublishCmdRequestMultipleDevicesOneTimeoutJsonTemplate(t *testing.T) {
 				"mir/device/description": "hello world of devices !",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: id2,
 		},
 	}
 
 	reqCmdPayload := &protocmd_testv1.ChangePower{}
 	reqCmdName := string(reqCmdPayload.ProtoReflect().Descriptor().FullName())
-	reqCmd := &cmd_apiv1.SendCommandRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	reqCmd := &mir_apiv1.SendCommandRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Ids: []string{id, id2},
 		},
 		Name:         reqCmdName,
@@ -1379,10 +1377,10 @@ func TestPublishCmdRequestMultipleDevicesOneTimeoutJsonTemplate(t *testing.T) {
 	resp := respCmd.GetOk()
 	dev1 := resp.DeviceResponses[id+"/testing_cmd"]
 	dev2 := resp.DeviceResponses[id2+"/testing_cmd"]
-	assert.Equal(t, cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_SUCCESS, dev1.Status)
+	assert.Equal(t, mir_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_SUCCESS, dev1.Status)
 	assert.Equal(t, reqCmdName, dev1.Name)
 	assert.Equal(t, `{"power":0}`, string(dev1.Payload))
-	assert.Equal(t, cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_ERROR, dev2.Status)
+	assert.Equal(t, mir_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_ERROR, dev2.Status)
 	assert.Equal(t, "", dev2.Name)
 	assert.Equal(t, "", string(dev2.Payload))
 	assert.Equal(t, dev2.Error, "error retrieve command descriptor from device schema: cannot reconcile device schema: error requesting device schema: error publishing request message: nats: no responders available for request")
@@ -1395,8 +1393,8 @@ func TestPublishCmdJsonNameWithCurlyRequest(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_send_cmd_json_curly"
-	reqCreate := &core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	reqCreate := &mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_cmd",
 			Labels: map[string]string{
@@ -1406,7 +1404,7 @@ func TestPublishCmdJsonNameWithCurlyRequest(t *testing.T) {
 				"mir/device/description": "hello world of devices !",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: id,
 		},
 	}
@@ -1434,12 +1432,12 @@ func TestPublishCmdJsonNameWithCurlyRequest(t *testing.T) {
 		t.Error(err)
 	}
 
-	reqCmd := &cmd_apiv1.SendCommandRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	reqCmd := &mir_apiv1.SendCommandRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
 		Name:            string(p.ProtoReflect().Descriptor().FullName()) + "{x=y}",
-		PayloadEncoding: common_apiv1.Encoding_ENCODING_JSON,
+		PayloadEncoding: mir_apiv1.Encoding_ENCODING_JSON,
 		Payload:         payloadBytes,
 		RefreshSchema:   true,
 	}
@@ -1471,7 +1469,7 @@ func TestPublishCmdJsonNameWithCurlyRequest(t *testing.T) {
 			t.Error(v.Error)
 		}
 		assert.Equal(t, string(msgResp.ProtoReflect().Descriptor().FullName()), v.Name)
-		assert.Equal(t, cmd_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_SUCCESS, v.Status)
+		assert.Equal(t, mir_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_SUCCESS, v.Status)
 		if err = protojson.Unmarshal(v.Payload, msgResp); err != nil {
 			t.Error(err)
 		}
@@ -1480,21 +1478,21 @@ func TestPublishCmdJsonNameWithCurlyRequest(t *testing.T) {
 	// Assert
 	assert.Equal(t, true, msgResp.Success)
 	assert.Equal(t, int32(5), cmdHandled.Power)
-	assert.Equal(t, common_apiv1.Encoding_ENCODING_JSON, respCmd.GetOk().Encoding)
+	assert.Equal(t, mir_apiv1.Encoding_ENCODING_JSON, respCmd.GetOk().Encoding)
 	cancel()
 	wg.Wait()
 }
 
 func TestCommandEvent(t *testing.T) {
-	resp := cmd_apiv1.SendCommandResponse_CommandResponse{
+	resp := mir_apiv1.SendCommandResponse_CommandResponse{
 		DeviceId: "0xTest",
 	}
 
 	// Channel for test synchronization
-	received := make(chan *cmd_apiv1.SendCommandResponse_CommandResponse)
+	received := make(chan *mir_apiv1.SendCommandResponse_CommandResponse)
 
 	fmt.Println(mSdk)
-	err := mSdk.Event().Command().Subscribe(func(msg *mir.Msg, serverId string, cmd *cmd_apiv1.SendCommandResponse_CommandResponse, err error) {
+	err := mSdk.Event().Command().Subscribe(func(msg *mir.Msg, serverId string, cmd *mir_apiv1.SendCommandResponse_CommandResponse, err error) {
 		received <- cmd
 	})
 

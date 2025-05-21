@@ -1,17 +1,17 @@
 syntax = "proto3";
 
-package core_api.v1;
+package mir_api.v1;
 
 import "google/protobuf/struct.proto";
-import "v1/common_api/common.proto";
+import "mir_api/v1/common.proto";
 
 /*
   Send a request to create a new device in the system
 */
 message CreateDeviceRequest {
     Meta meta = 1; // Represent the specifications that can be updated
-    Spec spec = 2; // Represent device twin specific config from Mir
-    Properties properties = 3; // Represent set of device defined properties
+    DeviceSpec spec = 2; // Represent device twin specific config from Mir
+    DeviceProperties properties = 3; // Represent set of device defined properties
 }
 
 /*
@@ -42,8 +42,8 @@ message UpdateDeviceRequest {
   message Meta {
     optional string name = 1; // Name of the device
     optional string namespace = 2; // Name of the device
-    map<string, common_api.v1.OptString> labels = 3; // set key to nil to remove it
-    map<string, common_api.v1.OptString> annotations = 4; // set key to nil to remove it
+    map<string, OptString> labels = 3; // set key to nil to remove it
+    map<string, OptString> annotations = 4; // set key to nil to remove it
   }
   message Spec {
     optional string device_id = 1; // Change device id, caution can break device link
@@ -54,18 +54,18 @@ message UpdateDeviceRequest {
   }
   message Status {
     optional bool online = 1; // Is device online ?
-    optional common_api.v1.Timestamp last_hearthbeat = 2; // Last pulse received
+    optional Timestamp last_hearthbeat = 2; // Last pulse received
     Schema schema = 3; // Schema for telemetry and telecommands
     PropertiesTime properties = 4; // Time of last update for properties
   }
   message Schema {
 	optional bytes compressed_schema = 1; // Schema in bytes
 	repeated string package_names = 2; // Packages names in schema
-	optional common_api.v1.Timestamp last_schema_fetch = 3; // Last request for a schema update from device
+	optional Timestamp last_schema_fetch = 3; // Last request for a schema update from device
   }
   message PropertiesTime {
-      map<string, common_api.v1.Timestamp> desired = 1; // Each desired properties time of last update
-      map<string, common_api.v1.Timestamp> reported = 2; // Each reported properties time of last update
+      map<string, Timestamp> desired = 1; // Each desired properties time of last update
+      map<string, Timestamp> reported = 2; // Each reported properties time of last update
   }
 }
 
@@ -162,26 +162,15 @@ message Device {
   string api_version = 1; // Current version of the spec
   string kind = 2; // Name of the object
   Meta meta = 3; // Represent the specifications that can be updated
-  Spec spec = 4; // Represent device twin specific config from Mir
-  Properties properties = 5; // Represent set of device defined properties
-  Status status = 6; // Represent the status reported by the Mir
-}
-
-/*
-* Set of data from the Mir system to describe a device
-* or an entity in the system
-*/
-message Meta {
-    string name = 1; // Name of the device
-    string namespace = 2; // Name of the device
-    map<string, string> labels = 3; // Labels are used to uniquely identify the device
-    map<string, string> annotations = 4; // Annotations are used to add additional information
+  DeviceSpec spec = 4; // Represent device twin specific config from Mir
+  DeviceProperties properties = 5; // Represent set of device defined properties
+  DeviceStatus status = 6; // Represent the status reported by the Mir
 }
 
 /*
 * Represent configuration from Mir itself for the twin specifically
 */
-message Spec {
+message DeviceSpec {
     string device_id = 1; // Represent the Mir id of the device
     bool disabled = 2; // If disabled, device will be cut off from communication
 }
@@ -190,7 +179,7 @@ message Spec {
 * Devices desired properties from the users
 * and reported properties from the devices
 */
-message Properties {
+message DeviceProperties {
     google.protobuf.Struct desired = 1;
     google.protobuf.Struct reported = 2;
 }
@@ -198,8 +187,8 @@ message Properties {
 /*
 * Status fields describe the device conditions monitored by Mir
 */
-message Status {
-  common_api.v1.Timestamp last_hearthbeat = 1; // Represent the time when the last hearthbeat was received
+message DeviceStatus {
+  Timestamp last_hearthbeat = 1; // Represent the time when the last hearthbeat was received
   bool online = 2; // The device is online and sending heathbeath signal
   Schema schema = 3; // Telemetry and Commanding schema using protobuff
   PropertiesTime properties = 4; // Time of last update for properties
@@ -210,7 +199,7 @@ message DeviceStatusEvent {
     string type = 1;
     string reason = 2;
     string message = 3;
-    common_api.v1.Timestamp first_at = 4;
+    Timestamp first_at = 4;
 }
 
 
@@ -218,12 +207,12 @@ message DeviceStatusEvent {
 * Devices properties time of last update
 */
 message PropertiesTime {
-    map<string, common_api.v1.Timestamp> desired = 1; // Each desired properties time of last update
-    map<string, common_api.v1.Timestamp> reported = 2; // Each reported properties time of last update
+    map<string, Timestamp> desired = 1; // Each desired properties time of last update
+    map<string, Timestamp> reported = 2; // Each reported properties time of last update
 }
 
 message Schema {
 	bytes compressed_schema = 1; // Schema in bytes
 	repeated string package_names = 2; // Packages names in schema
-	common_api.v1.Timestamp last_schema_fetch = 3; // Last request for a schema update from device
+	Timestamp last_schema_fetch = 3; // Last request for a schema update from device
 }

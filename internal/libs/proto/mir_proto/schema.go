@@ -5,9 +5,7 @@ import (
 
 	"github.com/maxthom/mir/internal/libs/compression/zstd"
 	"github.com/maxthom/mir/internal/libs/proto/json_template"
-	cfg_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cfg_api"
-	cmd_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cmd_api"
-	tlm_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/tlm_api"
+	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	"gopkg.in/yaml.v3"
 
 	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
@@ -34,8 +32,8 @@ func NewMirProtoSchema(s ...protoreflect.FileDescriptor) (*MirProtoSchema, error
 	return &MirProtoSchema{Files: reg}, err
 }
 
-func (m *MirProtoSchema) GetTelemetryList(filterMeasurements []string, filterLabels map[string]string) ([]*tlm_apiv1.TelemetryDescriptor, error) {
-	telemetry := []*tlm_apiv1.TelemetryDescriptor{}
+func (m *MirProtoSchema) GetTelemetryList(filterMeasurements []string, filterLabels map[string]string) ([]*mir_apiv1.TelemetryDescriptor, error) {
+	telemetry := []*mir_apiv1.TelemetryDescriptor{}
 	m.RangeFiles(func(fd protoreflect.FileDescriptor) bool {
 		for i := 0; i < fd.Messages().Len(); i++ {
 			msgDesc := fd.Messages().Get(i)
@@ -50,7 +48,7 @@ func (m *MirProtoSchema) GetTelemetryList(filterMeasurements []string, filterLab
 					(len(filterMeasurements) > 0 && !slices.Contains(filterMeasurements, string(msgDesc.FullName()))) {
 					continue
 				}
-				tlm := tlm_apiv1.TelemetryDescriptor{
+				tlm := mir_apiv1.TelemetryDescriptor{
 					Name:   string(msgDesc.FullName()),
 					Labels: lbls,
 				}
@@ -62,8 +60,8 @@ func (m *MirProtoSchema) GetTelemetryList(filterMeasurements []string, filterLab
 	return telemetry, nil
 }
 
-func (m *MirProtoSchema) GetCommandsList(filterLabels map[string]string) ([]*cmd_apiv1.CommandDescriptor, error) {
-	commands := []*cmd_apiv1.CommandDescriptor{}
+func (m *MirProtoSchema) GetCommandsList(filterLabels map[string]string) ([]*mir_apiv1.CommandDescriptor, error) {
+	commands := []*mir_apiv1.CommandDescriptor{}
 	m.RangeFiles(func(fd protoreflect.FileDescriptor) bool {
 		for i := 0; i < fd.Messages().Len(); i++ {
 			msgDesc := fd.Messages().Get(i)
@@ -78,7 +76,7 @@ func (m *MirProtoSchema) GetCommandsList(filterLabels map[string]string) ([]*cmd
 					continue
 				}
 				boiler, err := json_template.GenerateTemplate(msgDesc, json_template.Options{})
-				cmd := cmd_apiv1.CommandDescriptor{
+				cmd := mir_apiv1.CommandDescriptor{
 					Name:     string(msgDesc.FullName()),
 					Labels:   lbls,
 					Template: string(boiler),
@@ -94,8 +92,8 @@ func (m *MirProtoSchema) GetCommandsList(filterLabels map[string]string) ([]*cmd
 	return commands, nil
 }
 
-func (m *MirProtoSchema) GetConfigList(filterLabels map[string]string) ([]*cfg_apiv1.ConfigDescriptor, error) {
-	cfgs := []*cfg_apiv1.ConfigDescriptor{}
+func (m *MirProtoSchema) GetConfigList(filterLabels map[string]string) ([]*mir_apiv1.ConfigDescriptor, error) {
+	cfgs := []*mir_apiv1.ConfigDescriptor{}
 	m.RangeFiles(func(fd protoreflect.FileDescriptor) bool {
 		for i := 0; i < fd.Messages().Len(); i++ {
 			msgDesc := fd.Messages().Get(i)
@@ -110,7 +108,7 @@ func (m *MirProtoSchema) GetConfigList(filterLabels map[string]string) ([]*cfg_a
 					continue
 				}
 				boiler, err := json_template.GenerateTemplate(msgDesc, json_template.Options{})
-				cfg := cfg_apiv1.ConfigDescriptor{
+				cfg := mir_apiv1.ConfigDescriptor{
 					Name:     string(msgDesc.FullName()),
 					Labels:   lbls,
 					Template: string(boiler),

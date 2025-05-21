@@ -9,9 +9,7 @@ import (
 	"github.com/maxthom/mir/internal/clients/cfg_client"
 	"github.com/maxthom/mir/internal/libs/editor"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
-	cfg_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cfg_api"
-	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
-	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
+	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	"github.com/pkg/errors"
 )
 
@@ -66,8 +64,8 @@ func (d *ConfigListCmd) Run(c CLI) error {
 	}
 	defer msgBus.Close()
 
-	req := &cfg_apiv1.SendListConfigRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	req := &mir_apiv1.SendListConfigRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Ids:        d.Target.Ids,
 			Names:      d.Target.Names,
 			Namespaces: d.Target.Namespaces,
@@ -184,8 +182,8 @@ func (d *ConfigSendCmd) Run(c CLI) error {
 		d.ShowCurrentValues = true
 	}
 
-	req := &cfg_apiv1.SendConfigRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	req := &mir_apiv1.SendConfigRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Ids:        d.Target.Ids,
 			Names:      d.Target.Names,
 			Namespaces: d.Target.Namespaces,
@@ -193,7 +191,7 @@ func (d *ConfigSendCmd) Run(c CLI) error {
 		},
 		Name:            d.Command,
 		Payload:         []byte(d.Payload),
-		PayloadEncoding: common_apiv1.Encoding_ENCODING_JSON,
+		PayloadEncoding: mir_apiv1.Encoding_ENCODING_JSON,
 		RefreshSchema:   d.RefreshSchema,
 		ShowTemplate:    d.ShowJsonTemplate,
 		ShowValues:      d.ShowCurrentValues,

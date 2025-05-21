@@ -9,9 +9,7 @@ import (
 	"github.com/maxthom/mir/internal/clients/cmd_client"
 	"github.com/maxthom/mir/internal/libs/editor"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
-	cmd_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cmd_api"
-	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
-	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
+	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	"github.com/pkg/errors"
 )
 
@@ -66,8 +64,8 @@ func (d *CommandListCmd) Run(c CLI) error {
 	}
 	defer msgBus.Close()
 
-	req := &cmd_apiv1.SendListCommandsRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	req := &mir_apiv1.SendListCommandsRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Ids:        d.Target.Ids,
 			Names:      d.Target.Names,
 			Namespaces: d.Target.Namespaces,
@@ -179,8 +177,8 @@ func (d *CommandSendCmd) Run(c CLI) error {
 		d.ShowJsonTemplate = true
 	}
 
-	req := &cmd_apiv1.SendCommandRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	req := &mir_apiv1.SendCommandRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Ids:        d.Target.Ids,
 			Names:      d.Target.Names,
 			Namespaces: d.Target.Namespaces,
@@ -188,7 +186,7 @@ func (d *CommandSendCmd) Run(c CLI) error {
 		},
 		Name:            d.Command,
 		Payload:         []byte(d.Payload),
-		PayloadEncoding: common_apiv1.Encoding_ENCODING_JSON,
+		PayloadEncoding: mir_apiv1.Encoding_ENCODING_JSON,
 		RefreshSchema:   d.RefreshSchema,
 		ShowTemplate:    d.ShowJsonTemplate,
 		DryRun:          d.DryRun,

@@ -1,12 +1,10 @@
 syntax = "proto3";
 
-package tlm_api.v1;
-
-import "v1/core_api/core.proto";
-
+package mir_api.v1;
+import "mir_api/v1/core.proto";
 
 message SendListTelemetryRequest {
-	core_api.v1.DeviceTarget targets = 1; // To target a set of devices, search using ids, labels and annotations
+	DeviceTarget targets = 1; // To target a set of devices, search using ids, labels and annotations
 	repeated string measurements = 2; // List of measurements to exapend
 	map<string, string> filters= 3; // Filter measurements by labels, if key has no value, expand to see all options
 	bool refresh_schema = 4; // Force a schema refresh from the device

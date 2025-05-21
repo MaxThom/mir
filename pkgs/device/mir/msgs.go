@@ -9,7 +9,7 @@ import (
 	"github.com/maxthom/mir/internal/clients/device_client"
 	"github.com/maxthom/mir/internal/libs/compression/zstd"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
-	device_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/device_api"
+	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
@@ -35,15 +35,15 @@ func SchemaRetrieveHandler(msg *nats.Msg, m *Mir) error {
 	}
 	bytes, err := proto.Marshal(m.schema)
 	if err != nil {
-		return sendReplyOrAck(m.b, msg, &device_apiv1.SchemaRetrieveResponse{
-			Response: &device_apiv1.SchemaRetrieveResponse_Error{
+		return sendReplyOrAck(m.b, msg, &mir_apiv1.SchemaRetrieveResponse{
+			Response: &mir_apiv1.SchemaRetrieveResponse_Error{
 				Error: fmt.Sprintf("error occure while marshaiing schema: %s", err.Error()),
 			},
 		}, nil, false)
 	}
 
-	return sendReplyOrAck(m.b, msg, &device_apiv1.SchemaRetrieveResponse{
-		Response: &device_apiv1.SchemaRetrieveResponse_Schema{
+	return sendReplyOrAck(m.b, msg, &mir_apiv1.SchemaRetrieveResponse{
+		Response: &mir_apiv1.SchemaRetrieveResponse_Schema{
 			Schema: bytes,
 		},
 	}, nil, shouldZstd)

@@ -14,7 +14,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/swarm"
 	"github.com/maxthom/mir/internal/libs/test_utils"
 	"github.com/maxthom/mir/internal/servers/core_srv"
-	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
+	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/nats-io/nats.go"
@@ -272,11 +272,11 @@ func TestPublishListDeviceRequestWithEvents(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	s := swarm.NewSwarm(b)
-	_, err := s.AddDevice(&core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	_, err := s.AddDevice(&mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Namespace: "event_testing",
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: "jam_n_butter",
 		},
 	}).Incubate()

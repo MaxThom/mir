@@ -14,13 +14,12 @@ import (
 	"github.com/maxthom/mir/internal/libs/test_utils"
 	"github.com/maxthom/mir/internal/servers/core_srv"
 	schemacache_testv1 "github.com/maxthom/mir/internal/services/schema_cache/proto_test/gen/schemacache_test/v1"
-	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
 	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"google.golang.org/protobuf/types/descriptorpb"
 	"gotest.tools/assert"
 
-	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
+	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	mirDevice "github.com/maxthom/mir/pkgs/device/mir"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/surrealdb/surrealdb.go"
@@ -114,15 +113,15 @@ func TestPublishDeviceUpdateCache(t *testing.T) {
 		}
 	})
 
-	reqCreate := &core_apiv1.CreateDeviceRequest{
-		Meta: &core_apiv1.Meta{
+	reqCreate := &mir_apiv1.CreateDeviceRequest{
+		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_cmd",
 			Labels: map[string]string{
 				"testing": "proto_cache",
 			},
 		},
-		Spec: &core_apiv1.Spec{
+		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: id,
 		},
 	}
@@ -154,12 +153,12 @@ func TestPublishDeviceUpdateCache(t *testing.T) {
 	)
 
 	str := "update"
-	if _, err = core_client.PublishDeviceUpdateRequest(b, &core_apiv1.UpdateDeviceRequest{
-		Targets: &core_apiv1.DeviceTarget{
+	if _, err = core_client.PublishDeviceUpdateRequest(b, &mir_apiv1.UpdateDeviceRequest{
+		Targets: &mir_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
-		Meta: &core_apiv1.UpdateDeviceRequest_Meta{
-			Labels: map[string]*common_apiv1.OptString{
+		Meta: &mir_apiv1.UpdateDeviceRequest_Meta{
+			Labels: map[string]*mir_apiv1.OptString{
 				"test": {
 					Value: &str,
 				},

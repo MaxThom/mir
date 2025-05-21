@@ -26,7 +26,7 @@ func (o *Object) Validate() error {
 		return ObjectNameMissing
 	}
 	// if o.Meta == nil {
-	// 	cdr.Meta = &common_apiv1.Meta{}
+	// 	cdr.Meta = &mir_apiv1.Meta{}
 	// }
 	if o.Meta.Namespace == "" {
 		o.Meta.Namespace = "default"
