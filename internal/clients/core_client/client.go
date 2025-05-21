@@ -6,7 +6,7 @@ import (
 	"github.com/maxthom/mir/internal/clients"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
-	"github.com/maxthom/mir/pkgs/mir_models"
+	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
 )
@@ -112,8 +112,8 @@ func PublishHearthbeatStream(bus *bus.BusConn, deviceId string) error {
 	return bus.Publish(HearthbeatDeviceStream.WithId(deviceId), []byte{})
 }
 
-func PublishDeviceDeletedEvent(bus *bus.BusConn, originalInstance string, deviceId string, d mir_models.Device) error {
-	b, err := proto.Marshal(mir_models.NewProtoDeviceFromDevice(d))
+func PublishDeviceDeletedEvent(bus *bus.BusConn, originalInstance string, deviceId string, d mir_v1.Device) error {
+	b, err := proto.Marshal(mir_v1.NewProtoDeviceFromDevice(d))
 	if err != nil {
 		return err
 	}
@@ -126,8 +126,8 @@ func PublishDeviceDeletedEvent(bus *bus.BusConn, originalInstance string, device
 	return bus.PublishMsg(msg)
 }
 
-func PublishDeviceCreatedEvent(bus *bus.BusConn, originalInstance string, deviceId string, d mir_models.Device) error {
-	b, err := proto.Marshal(mir_models.NewProtoDeviceFromDevice(d))
+func PublishDeviceCreatedEvent(bus *bus.BusConn, originalInstance string, deviceId string, d mir_v1.Device) error {
+	b, err := proto.Marshal(mir_v1.NewProtoDeviceFromDevice(d))
 	if err != nil {
 		return err
 	}
@@ -140,8 +140,8 @@ func PublishDeviceCreatedEvent(bus *bus.BusConn, originalInstance string, device
 	return bus.PublishMsg(msg)
 }
 
-func PublishDeviceUpdatedEvent(bus *bus.BusConn, originalInstance string, deviceId string, d mir_models.Device) error {
-	b, err := proto.Marshal(mir_models.NewProtoDeviceFromDevice(d))
+func PublishDeviceUpdatedEvent(bus *bus.BusConn, originalInstance string, deviceId string, d mir_v1.Device) error {
+	b, err := proto.Marshal(mir_v1.NewProtoDeviceFromDevice(d))
 	if err != nil {
 		return err
 	}

@@ -27,7 +27,7 @@ import (
 	tlm_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/tlm_api"
 	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
 	mirDevice "github.com/maxthom/mir/pkgs/device/mir"
-	"github.com/maxthom/mir/pkgs/mir_models"
+	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/surrealdb/surrealdb.go"
 	"google.golang.org/protobuf/types/descriptorpb"
@@ -234,7 +234,7 @@ func TestPublishDevicePushTelemetry(t *testing.T) {
 
 	assert.Equal(t, reqCreate.Spec.DeviceId, devDb.Spec.DeviceId)
 	assert.Equal(t, true, mir_proto.AreSchemaEqual(originalSchema, storedSchema))
-	lastFetch := mir_models.AsGoTime(devDb.Status.Schema.LastSchemaFetch)
+	lastFetch := mir_v1.AsGoTime(devDb.Status.Schema.LastSchemaFetch)
 	tspan := time.Now().UTC().Sub(lastFetch)
 	assert.Equal(t, true, tspan.Seconds() < 10)
 	assert.Equal(t, 24, dpCount)
@@ -276,7 +276,7 @@ func TestPublishDeviceSchemaAlreadyPresent(t *testing.T) {
 		Status: &core_apiv1.UpdateDeviceRequest_Status{
 			Schema: &core_apiv1.UpdateDeviceRequest_Schema{
 				CompressedSchema: compSchBytes,
-				LastSchemaFetch:  mir_models.AsProtoTimestamp(timeFetch),
+				LastSchemaFetch:  mir_v1.AsProtoTimestamp(timeFetch),
 			},
 		},
 	}
@@ -371,7 +371,7 @@ func TestPublishDeviceSchemaAlreadyPresent(t *testing.T) {
 
 	assert.Equal(t, reqCreate.Spec.DeviceId, devDb.Spec.DeviceId)
 	assert.Equal(t, true, mir_proto.AreSchemaEqual(decompSch, decompStoredSchema))
-	assert.Equal(t, timeFetch, mir_models.AsGoTime(devDb.Status.Schema.LastSchemaFetch))
+	assert.Equal(t, timeFetch, mir_v1.AsGoTime(devDb.Status.Schema.LastSchemaFetch))
 	assert.Equal(t, 24, dpCount)
 
 	cancel()
@@ -415,7 +415,7 @@ func TestPublishDeviceSchemaInvalid(t *testing.T) {
 		Status: &core_apiv1.UpdateDeviceRequest_Status{
 			Schema: &core_apiv1.UpdateDeviceRequest_Schema{
 				CompressedSchema: badSchBytes,
-				LastSchemaFetch:  mir_models.AsProtoTimestamp(timeFetch),
+				LastSchemaFetch:  mir_v1.AsProtoTimestamp(timeFetch),
 			},
 		},
 	}
@@ -512,7 +512,7 @@ func TestPublishDeviceSchemaInvalid(t *testing.T) {
 
 	assert.Equal(t, reqCreate.Spec.DeviceId, devDb.Spec.DeviceId)
 	assert.Equal(t, true, mir_proto.AreSchemaEqual(decompGoodSch, decompStoredSchema))
-	lastFetch := mir_models.AsGoTime(devDb.Status.Schema.LastSchemaFetch)
+	lastFetch := mir_v1.AsGoTime(devDb.Status.Schema.LastSchemaFetch)
 	tspan := time.Now().UTC().Sub(lastFetch)
 	assert.Equal(t, true, tspan.Seconds() < 10)
 	assert.Equal(t, 24, dpCount)

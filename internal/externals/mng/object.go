@@ -5,7 +5,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/maxthom/mir/pkgs/mir_models"
+	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/surrealdb/surrealdb.go"
 )
 
@@ -37,7 +37,7 @@ func executeQueryForType[T any](db *surrealdb.DB, query string, vars map[string]
 	return res, nil
 }
 
-func createListQueryForObjects(table string, t mir_models.ObjectTarget) (sql string, vars map[string]any) {
+func createListQueryForObjects(table string, t mir_v1.ObjectTarget) (sql string, vars map[string]any) {
 	var q strings.Builder
 	vars = map[string]any{}
 
@@ -53,7 +53,7 @@ func createListQueryForObjects(table string, t mir_models.ObjectTarget) (sql str
 	return
 }
 
-func createTargetStatementForObjects(t mir_models.ObjectTarget) string {
+func createTargetStatementForObjects(t mir_v1.ObjectTarget) string {
 	var q strings.Builder
 
 	cond := []string{}
@@ -83,7 +83,7 @@ func createTargetStatementForObjects(t mir_models.ObjectTarget) string {
 	return ti
 }
 
-func createDeleteQueryForObjects(table string, t mir_models.ObjectTarget) (sql string, vars map[string]any) {
+func createDeleteQueryForObjects(table string, t mir_v1.ObjectTarget) (sql string, vars map[string]any) {
 	var q strings.Builder
 	vars = map[string]any{}
 
@@ -94,14 +94,14 @@ func createDeleteQueryForObjects(table string, t mir_models.ObjectTarget) (sql s
 	return
 }
 
-func validateObjectMetaForUpdate(db *surrealdb.DB, table string, t mir_models.ObjectTarget, obj mir_models.Object) error {
+func validateObjectMetaForUpdate(db *surrealdb.DB, table string, t mir_v1.ObjectTarget, obj mir_v1.Object) error {
 	// if err := obj.Validate(); err != nil {
 	// 	return err
 	// }
 	q, v := createListQueryForObjects(table, t)
-	changingObjs, err := executeQueryForType[[]mir_models.Object](db, q, v)
+	changingObjs, err := executeQueryForType[[]mir_v1.Object](db, q, v)
 	if err != nil {
-		return fmt.Errorf("%w: %w", mir_models.ErrorDbExecutingQuery, err)
+		return fmt.Errorf("%w: %w", mir_v1.ErrorDbExecutingQuery, err)
 	}
 
 	if obj.Meta.Name != "" && obj.Meta.Namespace != "" {
@@ -110,21 +110,21 @@ func validateObjectMetaForUpdate(db *surrealdb.DB, table string, t mir_models.Ob
 		} else if len(changingObjs) == 1 {
 			// Check if name/ns is unique
 			q, v := createIsObjectUniqueQuery(table, obj.Meta.Name, obj.Meta.Namespace)
-			respCheck, err := executeQueryForType[[]mir_models.Object](db, q, v)
+			respCheck, err := executeQueryForType[[]mir_v1.Object](db, q, v)
 			if err != nil {
-				return fmt.Errorf("%w: %w", mir_models.ErrorDbExecutingQuery, err)
+				return fmt.Errorf("%w: %w", mir_v1.ErrorDbExecutingQuery, err)
 			}
 			if len(respCheck) > 0 && (respCheck[0].Meta.Name != changingObjs[0].Meta.Name || respCheck[0].Meta.Namespace != changingObjs[0].Meta.Namespace) {
 				return fmt.Errorf("cannot update object has '%s/%s' is already in use", obj.Meta.Name, obj.Meta.Namespace)
 			}
 		}
 	} else if obj.Meta.Namespace != "" {
-		q, v := createListQueryForObjects(table, mir_models.ObjectTarget{
+		q, v := createListQueryForObjects(table, mir_v1.ObjectTarget{
 			Namespaces: []string{obj.Meta.Namespace},
 		})
-		currentObjs, err := executeQueryForType[[]mir_models.Object](db, q, v)
+		currentObjs, err := executeQueryForType[[]mir_v1.Object](db, q, v)
 		if err != nil {
-			return fmt.Errorf("%w: %w", mir_models.ErrorDbExecutingQuery, err)
+			return fmt.Errorf("%w: %w", mir_v1.ErrorDbExecutingQuery, err)
 		}
 
 		names := []string{}
@@ -144,12 +144,12 @@ func validateObjectMetaForUpdate(db *surrealdb.DB, table string, t mir_models.Ob
 			}
 		}
 	} else if obj.Meta.Name != "" {
-		q, v := createListQueryForObjects(table, mir_models.ObjectTarget{
+		q, v := createListQueryForObjects(table, mir_v1.ObjectTarget{
 			Names: []string{obj.Meta.Name},
 		})
-		currentObjs, err := executeQueryForType[[]mir_models.Object](db, q, v)
+		currentObjs, err := executeQueryForType[[]mir_v1.Object](db, q, v)
 		if err != nil {
-			return fmt.Errorf("%w: %w", mir_models.ErrorDbExecutingQuery, err)
+			return fmt.Errorf("%w: %w", mir_v1.ErrorDbExecutingQuery, err)
 		}
 
 		namespaces := []string{}

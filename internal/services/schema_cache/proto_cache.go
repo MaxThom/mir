@@ -11,7 +11,7 @@ import (
 
 	"github.com/maxthom/mir/internal/libs/api/metrics"
 	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
-	"github.com/maxthom/mir/pkgs/mir_models"
+	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
@@ -47,7 +47,7 @@ type MirProtoCache struct {
 	m           *mir.Mir
 	cache       map[string]cacheEntry
 	cacheLock   sync.RWMutex
-	subscribers []func(deviceId string, device mir_models.Device, schema mir_proto.MirProtoSchema)
+	subscribers []func(deviceId string, device mir_v1.Device, schema mir_proto.MirProtoSchema)
 }
 
 func NewMirProtoCache(logger zerolog.Logger, m *mir.Mir) (*MirProtoCache, error) {
@@ -63,17 +63,17 @@ func NewMirProtoCache(logger zerolog.Logger, m *mir.Mir) (*MirProtoCache, error)
 }
 
 type cacheEntry struct {
-	dev mir_models.Device
+	dev mir_v1.Device
 	sch *mir_proto.MirProtoSchema
 }
 
-func (c *MirProtoCache) AddDeviceUpdateSub(fn func(deviceId string, device mir_models.Device, schema mir_proto.MirProtoSchema)) {
+func (c *MirProtoCache) AddDeviceUpdateSub(fn func(deviceId string, device mir_v1.Device, schema mir_proto.MirProtoSchema)) {
 	c.subscribers = append(c.subscribers, fn)
 }
 
 // Get the device schema from cache. If missing or refresh schema is true,
 // the cache will be invalidated and schema will be fetch from database or device
-func (c *MirProtoCache) GetDeviceSchema(deviceId string, refreshSchema bool) (*mir_proto.MirProtoSchema, mir_models.Device, error) {
+func (c *MirProtoCache) GetDeviceSchema(deviceId string, refreshSchema bool) (*mir_proto.MirProtoSchema, mir_v1.Device, error) {
 	c.cacheLock.RLock()
 	val, ok := c.cache[deviceId]
 	c.cacheLock.RUnlock()
@@ -89,7 +89,7 @@ func (c *MirProtoCache) GetDeviceSchema(deviceId string, refreshSchema bool) (*m
 		if err != nil {
 			l.Error().Err(err).Str("device_id", deviceId).Msg("cannot reconcile device schema")
 			schemaReconcileErrorTotal.Inc()
-			return nil, mir_models.Device{}, errors.Wrap(err, "cannot reconcile device schema")
+			return nil, mir_v1.Device{}, errors.Wrap(err, "cannot reconcile device schema")
 		}
 	} else {
 		schemaReconcileTotal.WithLabelValues("cache").Inc()
@@ -118,7 +118,7 @@ func (c *MirProtoCache) FindMessageDescriptor(deviceId string, sch *mir_proto.Mi
 // If schema missing, get from db.
 // If db missing, fetch from device.
 // If refreshSchema is true, force refresh from db
-func (c *MirProtoCache) GetDeviceSchemaAndDescriptor(deviceId string, descName string, refreshSchema bool) (protoreflect.Descriptor, *mir_proto.MirProtoSchema, mir_models.Device, error) {
+func (c *MirProtoCache) GetDeviceSchemaAndDescriptor(deviceId string, descName string, refreshSchema bool) (protoreflect.Descriptor, *mir_proto.MirProtoSchema, mir_v1.Device, error) {
 	sch, dev, err := c.GetDeviceSchema(deviceId, refreshSchema)
 	if err != nil {
 		return nil, nil, dev, err
@@ -139,7 +139,7 @@ func (c *MirProtoCache) GetDeviceSchemaAndDescriptor(deviceId string, descName s
 }
 
 // Get the proto schema from surrealdb, if missing fetch from device
-func (c *MirProtoCache) reconcileDeviceSchema(deviceId string, forceDeviceFetch bool) (mir_models.Device, *mir_proto.MirProtoSchema, error) {
+func (c *MirProtoCache) reconcileDeviceSchema(deviceId string, forceDeviceFetch bool) (mir_v1.Device, *mir_proto.MirProtoSchema, error) {
 	// 1. Go get schema in db
 	// 2. If not there, fetch from device
 	// 3. Update db
@@ -147,14 +147,14 @@ func (c *MirProtoCache) reconcileDeviceSchema(deviceId string, forceDeviceFetch 
 	if !forceDeviceFetch {
 		l.Debug().Str("device_id", deviceId).Msg("device schema not in cache, reconciling...")
 		devs, err := c.m.Server().ListDevice().Request(
-			mir_models.DeviceTarget{
+			mir_v1.DeviceTarget{
 				Ids: []string{deviceId},
 			}, false)
 		if err != nil {
-			return mir_models.Device{}, nil, fmt.Errorf("error listing devices: %s", err)
+			return mir_v1.Device{}, nil, fmt.Errorf("error listing devices: %s", err)
 		}
 		if len(devs) == 0 {
-			return mir_models.Device{}, nil, fmt.Errorf("device %s not found", deviceId)
+			return mir_v1.Device{}, nil, fmt.Errorf("device %s not found", deviceId)
 		}
 		if len(devs) > 0 {
 			if devs[0].Status.Schema.CompressedSchema != nil &&
@@ -173,21 +173,21 @@ func (c *MirProtoCache) reconcileDeviceSchema(deviceId string, forceDeviceFetch 
 	l.Debug().Str("device_id", deviceId).Msg("device schema not in db, fetching from device...")
 	sch, err := c.getProtoSchemaFromDevice(deviceId)
 	if err != nil {
-		return mir_models.Device{}, nil, err
+		return mir_v1.Device{}, nil, err
 	}
 	compressSch, err := sch.CompressSchema()
 	if err != nil {
-		return mir_models.Device{}, nil, err
+		return mir_v1.Device{}, nil, err
 	}
 
 	fmt.Println("SCHEMA3", deviceId)
 	timeNow := time.Now().UTC()
 	devResp, err := c.m.Server().UpdateDevice().Request(
-		mir_models.DeviceTarget{
+		mir_v1.DeviceTarget{
 			Ids: []string{deviceId},
 		},
-		mir_models.NewDevice().WithStatus(mir_models.DeviceStatus{
-			Schema: mir_models.Schema{
+		mir_v1.NewDevice().WithStatus(mir_v1.DeviceStatus{
+			Schema: mir_v1.Schema{
 				CompressedSchema: compressSch,
 				PackageNames:     sch.GetPackageList(),
 				LastSchemaFetch:  &timeNow,
@@ -196,10 +196,10 @@ func (c *MirProtoCache) reconcileDeviceSchema(deviceId string, forceDeviceFetch 
 	)
 	fmt.Println("SCHEMA4", deviceId, err)
 	if err != nil {
-		return mir_models.Device{}, nil, fmt.Errorf("error updating device: %w", err)
+		return mir_v1.Device{}, nil, fmt.Errorf("error updating device: %w", err)
 	}
 	if len(devResp) == 0 {
-		return mir_models.Device{}, nil, fmt.Errorf("no device found")
+		return mir_v1.Device{}, nil, fmt.Errorf("no device found")
 	}
 
 	schemaReconcileTotal.WithLabelValues("device").Inc()
@@ -218,7 +218,7 @@ func (c *MirProtoCache) getProtoSchemaFromDevice(deviceId string) (*mir_proto.Mi
 	return sch, nil
 }
 
-func (c *MirProtoCache) deviceUpdateSub(msg *mir.Msg, deviceId string, device mir_models.Device, err error) {
+func (c *MirProtoCache) deviceUpdateSub(msg *mir.Msg, deviceId string, device mir_v1.Device, err error) {
 	// TODO this wont work if one instance of Mir with many cache from flux or cmd. If we have single binary
 	// need a subcomponent header or something
 	// if slices.Contains(msg.GetTriggerChain(), c.m.GetInstanceName()) {

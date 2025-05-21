@@ -24,7 +24,7 @@ import (
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
 	mirDevice "github.com/maxthom/mir/pkgs/device/mir"
-	"github.com/maxthom/mir/pkgs/mir_models"
+	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/nats-io/nats.go"
 	"github.com/surrealdb/surrealdb.go"
@@ -127,7 +127,7 @@ func TestPublishCfgListRequest(t *testing.T) {
 	}
 
 	respListCfg, err := cfg_client.PublishListConfigRequest(b, &cfg_apiv1.SendListConfigRequest{
-		Targets:       mir_models.MirDeviceTargetToProtoDeviceTarget(s.ToTarget()),
+		Targets:       mir_v1.MirDeviceTargetToProtoDeviceTarget(s.ToTarget()),
 		FilterLabels:  map[string]string{},
 		RefreshSchema: false,
 	})
@@ -188,7 +188,7 @@ func TestPublishCfgListFiltersRequest(t *testing.T) {
 	}
 
 	respListCmd, err := cfg_client.PublishListConfigRequest(b, &cfg_apiv1.SendListConfigRequest{
-		Targets: mir_models.MirDeviceTargetToProtoDeviceTarget(s.ToTarget()),
+		Targets: mir_v1.MirDeviceTargetToProtoDeviceTarget(s.ToTarget()),
 		FilterLabels: map[string]string{
 			"building": "A",
 			"floor":    "2",
@@ -633,7 +633,7 @@ func TestPublishCfgRequestCheckTime(t *testing.T) {
 
 	// Assert
 	cfgTime := respUpd.GetOk().GetDevices()[0].Status.Properties.Desired[string(p.ProtoReflect().Descriptor().FullName())]
-	assert.Equal(t, true, mir_models.AsGoTime(cfgTime).Sub(time.Now()) < time.Second*10)
+	assert.Equal(t, true, mir_v1.AsGoTime(cfgTime).Sub(time.Now()) < time.Second*10)
 
 	msgResp := &protocfg_testv1.PowerLevel{}
 	for _, v := range respCmd.GetOk().DeviceResponses {
@@ -1261,7 +1261,7 @@ func TestPublishCfgRequestMultipleDevices(t *testing.T) {
 		t.Error(err)
 	}
 	reqCmd := &cfg_apiv1.SendConfigRequest{
-		Targets:         mir_models.MirDeviceTargetToProtoDeviceTarget(swarm.ToTarget()),
+		Targets:         mir_v1.MirDeviceTargetToProtoDeviceTarget(swarm.ToTarget()),
 		Name:            string(reqPayload.ProtoReflect().Descriptor().FullName()),
 		PayloadEncoding: common_apiv1.Encoding_ENCODING_PROTOBUF,
 		Payload:         payloadBytes,
@@ -1374,7 +1374,7 @@ func TestPublishCfgRequestMultipleDevicesOneNoHandler(t *testing.T) {
 		t.Error(err)
 	}
 	reqCmd := &cfg_apiv1.SendConfigRequest{
-		Targets:         mir_models.MirDeviceTargetToProtoDeviceTarget(swarm.ToTarget()),
+		Targets:         mir_v1.MirDeviceTargetToProtoDeviceTarget(swarm.ToTarget()),
 		Name:            string(reqPayload.ProtoReflect().Descriptor().FullName()),
 		PayloadEncoding: common_apiv1.Encoding_ENCODING_PROTOBUF,
 		Payload:         payloadBytes,
@@ -1464,7 +1464,7 @@ func TestPublishCfgRequestMultipleDevicesJson(t *testing.T) {
 		t.Error(err)
 	}
 	reqCfg := &cfg_apiv1.SendConfigRequest{
-		Targets:         mir_models.MirDeviceTargetToProtoDeviceTarget(swarm.ToTarget()),
+		Targets:         mir_v1.MirDeviceTargetToProtoDeviceTarget(swarm.ToTarget()),
 		Name:            payloadName,
 		PayloadEncoding: common_apiv1.Encoding_ENCODING_JSON,
 		Payload:         payloadBytes,
@@ -1549,7 +1549,7 @@ func TestPublishCfgRequestMultipleDevicesDescriptorNotFound(t *testing.T) {
 		t.Error(err)
 	}
 	reqCfg := &cfg_apiv1.SendConfigRequest{
-		Targets:         mir_models.MirDeviceTargetToProtoDeviceTarget(swarm.ToTarget()),
+		Targets:         mir_v1.MirDeviceTargetToProtoDeviceTarget(swarm.ToTarget()),
 		Name:            "nothing",
 		PayloadEncoding: common_apiv1.Encoding_ENCODING_JSON,
 		Payload:         payloadBytes,
@@ -1637,7 +1637,7 @@ func TestPublishCfgRequestMultipleDevicesSingleDescriptorNotFoundForcePush(t *te
 		t.Error(err)
 	}
 	reqCfg := &cfg_apiv1.SendConfigRequest{
-		Targets:         mir_models.MirDeviceTargetToProtoDeviceTarget(swarm.ToTarget()),
+		Targets:         mir_v1.MirDeviceTargetToProtoDeviceTarget(swarm.ToTarget()),
 		Name:            payloadName,
 		PayloadEncoding: common_apiv1.Encoding_ENCODING_JSON,
 		Payload:         payloadBytes,
@@ -1717,7 +1717,7 @@ func TestPublishCfgRequestMultipleDevicesJsonTemplate(t *testing.T) {
 	reqPayload := protocfg_testv1.PowerLevel{}
 	cmdName := string(reqPayload.ProtoReflect().Descriptor().FullName())
 	reqCfg := &cfg_apiv1.SendConfigRequest{
-		Targets:      mir_models.MirDeviceTargetToProtoDeviceTarget(swarm.ToTarget()),
+		Targets:      mir_v1.MirDeviceTargetToProtoDeviceTarget(swarm.ToTarget()),
 		Name:         cmdName,
 		ShowTemplate: true,
 	}
@@ -1970,7 +1970,7 @@ func TestPublishReportedProperties(t *testing.T) {
 		t.Error(listResp.GetError())
 	}
 
-	d := mir_models.NewDeviceFromProtoDevice(listResp.GetOk().Devices[0])
+	d := mir_v1.NewDeviceFromProtoDevice(listResp.GetOk().Devices[0])
 	// Assert
 	assert.Equal(t, float64(5), d.Properties.Reported["protocfg_test.v1.PowerLevel"].(map[string]any)["power"].(float64))
 	cancel()
@@ -2023,7 +2023,7 @@ func TestPublishReportedPropertiesEvent(t *testing.T) {
 		t.Error(listResp.GetError())
 	}
 
-	d := mir_models.NewDeviceFromProtoDevice(listResp.GetOk().Devices[0])
+	d := mir_v1.NewDeviceFromProtoDevice(listResp.GetOk().Devices[0])
 	// Assert
 	assert.Equal(t, float64(5), d.Properties.Reported["protocfg_test.v1.PowerLevel"].(map[string]any)["power"].(float64))
 	assert.Equal(t, 1, eventCount)

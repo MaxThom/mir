@@ -13,7 +13,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/api/metrics"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
-	"github.com/maxthom/mir/pkgs/mir_models"
+	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/nats-io/nats.go"
 	"github.com/prometheus/client_golang/prometheus"
@@ -92,7 +92,7 @@ func NewCore(logger zerolog.Logger, m *mir.Mir, store mng.MirStore) (*CoreServer
 	// Preload hearthbeat map. Required in case the
 	// app is down while a device is also, but report as online
 	// because it went offline when the app was down
-	devices, err := store.ListDevice(mir_models.DeviceTarget{}, false)
+	devices, err := store.ListDevice(mir_v1.DeviceTarget{}, false)
 	if err != nil {
 		l.Error().Err(err).Msg("error occure while executing list query")
 	}
@@ -156,7 +156,7 @@ func (s *CoreServer) Shutdown() error {
 	return nil
 }
 
-func (s *CoreServer) createDeviceSub(msg *mir.Msg, clientId string, d mir_models.Device) (mir_models.Device, error) {
+func (s *CoreServer) createDeviceSub(msg *mir.Msg, clientId string, d mir_v1.Device) (mir_v1.Device, error) {
 	l.Debug().Str("route", "create").Str("payload", fmt.Sprintf("%v", d)).Msg("new device request")
 	requestTotal.WithLabelValues("create").Inc()
 
@@ -164,7 +164,7 @@ func (s *CoreServer) createDeviceSub(msg *mir.Msg, clientId string, d mir_models
 	if err != nil {
 		l.Error().Err(err).Msg("error occure while creating device")
 		requestErrorTotal.WithLabelValues("create").Inc()
-		return mir_models.Device{}, fmt.Errorf("error creating device: %w", err)
+		return mir_v1.Device{}, fmt.Errorf("error creating device: %w", err)
 	}
 
 	// Publish created events
@@ -175,7 +175,7 @@ func (s *CoreServer) createDeviceSub(msg *mir.Msg, clientId string, d mir_models
 	return newDev, nil
 }
 
-func (s *CoreServer) updateDeviceSub(msg *mir.Msg, clientId string, t mir_models.DeviceTarget, d mir_models.Device) ([]mir_models.Device, error) {
+func (s *CoreServer) updateDeviceSub(msg *mir.Msg, clientId string, t mir_v1.DeviceTarget, d mir_v1.Device) ([]mir_v1.Device, error) {
 	l.Debug().Str("route", "update").Str("payload", fmt.Sprintf("%v", t)).Msg("update device request")
 	requestTotal.WithLabelValues("update").Inc()
 	// Send config to cfg module
@@ -190,7 +190,7 @@ func (s *CoreServer) updateDeviceSub(msg *mir.Msg, clientId string, t mir_models
 		var errs error
 		for k, v := range d.Properties.Desired {
 			cfgRespDryRun, err := s.m.Server().SendConfig().RequestJson(&mir.SendDeviceConfigRequestJson{
-				Targets:        mir_models.MirDeviceTargetToProtoDeviceTarget(t),
+				Targets:        mir_v1.MirDeviceTargetToProtoDeviceTarget(t),
 				CommandName:    k,
 				CommandPayload: v,
 				DryRun:         true,
@@ -215,7 +215,7 @@ func (s *CoreServer) updateDeviceSub(msg *mir.Msg, clientId string, t mir_models
 		// We know they were validated, so if error, it means its to the device
 		for k, v := range d.Properties.Desired {
 			s.m.Server().SendConfig().RequestJson(&mir.SendDeviceConfigRequestJson{
-				Targets:           mir_models.MirDeviceTargetToProtoDeviceTarget(t),
+				Targets:           mir_v1.MirDeviceTargetToProtoDeviceTarget(t),
 				CommandName:       k,
 				CommandPayload:    v,
 				SendOnlyDifferent: true,
@@ -233,8 +233,8 @@ func (s *CoreServer) updateDeviceSub(msg *mir.Msg, clientId string, t mir_models
 				return nil, fmt.Errorf("error creating device: %w", err)
 			}
 			l.Info().Str("route", "device_update").Str("device_id", resp.Spec.DeviceId).Msg("new device created from update (upsert)")
-			respDb = []mir_models.Device{resp}
-		} else if errors.Is(err, mir_models.ErrorNoDeviceTargetProvided) {
+			respDb = []mir_v1.Device{resp}
+		} else if errors.Is(err, mir_v1.ErrorNoDeviceTargetProvided) {
 			requestErrorTotal.WithLabelValues("update").Inc()
 			l.Error().Err(err).Msg("error no target found")
 			return nil, fmt.Errorf("error no target found: %w", err)
@@ -255,13 +255,13 @@ func (s *CoreServer) updateDeviceSub(msg *mir.Msg, clientId string, t mir_models
 	return respDb, nil
 }
 
-func (s *CoreServer) deleteDeviceSub(msg *mir.Msg, clientId string, t mir_models.DeviceTarget) ([]mir_models.Device, error) {
+func (s *CoreServer) deleteDeviceSub(msg *mir.Msg, clientId string, t mir_v1.DeviceTarget) ([]mir_v1.Device, error) {
 	l.Debug().Str("route", "delete").Str("payload", fmt.Sprintf("%v", t)).Msg("delete device request")
 	requestTotal.WithLabelValues("delete").Inc()
 
 	devList, err := s.store.DeleteDevice(t)
 	if err != nil {
-		if errors.Is(err, mir_models.ErrorNoDeviceTargetProvided) {
+		if errors.Is(err, mir_v1.ErrorNoDeviceTargetProvided) {
 			requestErrorTotal.WithLabelValues("delete").Inc()
 			return nil, fmt.Errorf("error no target found: %w", err)
 		}
@@ -278,7 +278,7 @@ func (s *CoreServer) deleteDeviceSub(msg *mir.Msg, clientId string, t mir_models
 	return devList, nil
 }
 
-func (s *CoreServer) listDeviceSub(msg *mir.Msg, clientId string, t mir_models.DeviceTarget, includeEvents bool) ([]mir_models.Device, error) {
+func (s *CoreServer) listDeviceSub(msg *mir.Msg, clientId string, t mir_v1.DeviceTarget, includeEvents bool) ([]mir_v1.Device, error) {
 	l.Debug().Str("route", "list").Str("payload", fmt.Sprintf("%v", t)).Msg("list device request")
 	requestTotal.WithLabelValues("list").Inc()
 
@@ -312,10 +312,10 @@ func (s *CoreServer) hearthbeatPulsor(ctx context.Context, interval time.Duratio
 				toBoolRef := func(b bool) *bool {
 					return &b
 				}
-				t := mir_models.DeviceTarget{
+				t := mir_v1.DeviceTarget{
 					Ids: newOffline,
 				}
-				d := mir_models.NewDevice().WithStatus(mir_models.DeviceStatus{
+				d := mir_v1.NewDevice().WithStatus(mir_v1.DeviceStatus{
 					Online: toBoolRef(false),
 				})
 				devs, err := s.store.UpdateDevice(t, d)
@@ -359,13 +359,13 @@ func (s *CoreServer) hearthbeatSub(msg *mir.Msg, deviceId string) {
 	// 	},
 	// 	Status: &core_apiv1.UpdateDeviceRequest_Status{
 	// 		Online:         toBoolRef(true),
-	// 		LastHearthbeat: mir_models.AsProtoTimestamp(timeNow),
+	// 		LastHearthbeat: mir_v1.AsProtoTimestamp(timeNow),
 	// 	},
 	// }
-	t := mir_models.DeviceTarget{
+	t := mir_v1.DeviceTarget{
 		Ids: []string{deviceId},
 	}
-	d := mir_models.NewDevice().WithStatus(mir_models.DeviceStatus{
+	d := mir_v1.NewDevice().WithStatus(mir_v1.DeviceStatus{
 		Online:         toBoolRef(true),
 		LastHearthbeat: &timeNow,
 	})
@@ -378,7 +378,7 @@ func (s *CoreServer) hearthbeatSub(msg *mir.Msg, deviceId string) {
 	}
 	// Means device is not in db, we provision it
 	if len(dev) == 0 {
-		_, err := s.m.Server().CreateDevice().Request(mir_models.NewDevice().WithSpec(mir_models.DeviceSpec{
+		_, err := s.m.Server().CreateDevice().Request(mir_v1.NewDevice().WithSpec(mir_v1.DeviceSpec{
 			DeviceId: deviceId,
 		}))
 		if err != nil {
@@ -426,11 +426,11 @@ func (s *CoreServer) schemaSub(msg *mir.Msg, deviceId string, sch *mir_proto.Mir
 
 	timeNow := time.Now().UTC()
 	_, err = s.m.Server().UpdateDevice().Request(
-		mir_models.DeviceTarget{
+		mir_v1.DeviceTarget{
 			Ids: []string{deviceId},
 		},
-		mir_models.NewDevice().WithStatus(mir_models.DeviceStatus{
-			Schema: mir_models.Schema{
+		mir_v1.NewDevice().WithStatus(mir_v1.DeviceStatus{
+			Schema: mir_v1.Schema{
 				CompressedSchema: compressSch,
 				PackageNames:     sch.GetPackageList(),
 				LastSchemaFetch:  &timeNow,
@@ -460,90 +460,90 @@ func sendReplyOrAck(bus *bus.BusConn, msg nats.Msg, m protoreflect.ProtoMessage)
 	}
 }
 
-func publishDeviceOnlineEvent(m *mir.Mir, msg *mir.Msg, d mir_models.Device) error {
+func publishDeviceOnlineEvent(m *mir.Mir, msg *mir.Msg, d mir_v1.Device) error {
 	payload, err := json.Marshal(d)
 	if err != nil {
 		return err
 	}
 	return m.Event().Publish(mir.NewEventSubjectString(core_client.DeviceOnlineEvent.WithId(d.Spec.DeviceId)),
-		mir_models.EventSpec{
-			Type:    mir_models.EventTypeNormal,
+		mir_v1.EventSpec{
+			Type:    mir_v1.EventTypeNormal,
 			Reason:  "DeviceOnline",
 			Message: "Device is now online",
 			Payload: payload,
-			RelatedObject: mir_models.NewDevice().WithMeta(mir_models.Meta{
+			RelatedObject: mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 				Name:      d.Meta.Name,
 				Namespace: d.Meta.Namespace,
 			}).Object,
 		}, msg)
 }
 
-func publishDeviceOfflineEvent(m *mir.Mir, msg *mir.Msg, d mir_models.Device) error {
+func publishDeviceOfflineEvent(m *mir.Mir, msg *mir.Msg, d mir_v1.Device) error {
 	payload, err := json.Marshal(d)
 	if err != nil {
 		return err
 	}
 	return m.Event().Publish(mir.NewEventSubjectString(core_client.DeviceOfflineEvent.WithId(d.Spec.DeviceId)),
-		mir_models.EventSpec{
-			Type:    mir_models.EventTypeNormal,
+		mir_v1.EventSpec{
+			Type:    mir_v1.EventTypeNormal,
 			Reason:  "DeviceOffline",
 			Message: "Device is now offline",
 			Payload: payload,
-			RelatedObject: mir_models.NewDevice().WithMeta(mir_models.Meta{
+			RelatedObject: mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 				Name:      d.Meta.Name,
 				Namespace: d.Meta.Namespace,
 			}).Object,
 		}, msg)
 }
 
-func publishDeviceCreateEvent(m *mir.Mir, msg *mir.Msg, d mir_models.Device) error {
+func publishDeviceCreateEvent(m *mir.Mir, msg *mir.Msg, d mir_v1.Device) error {
 	payload, err := json.Marshal(d)
 	if err != nil {
 		return err
 	}
 	return m.Event().Publish(mir.NewEventSubjectString(core_client.DeviceCreatedEvent.WithId(d.Spec.DeviceId)),
-		mir_models.EventSpec{
-			Type:    mir_models.EventTypeNormal,
+		mir_v1.EventSpec{
+			Type:    mir_v1.EventTypeNormal,
 			Reason:  "DeviceCreated",
 			Message: "A device has been created successfully",
 			Payload: payload,
-			RelatedObject: mir_models.NewDevice().WithMeta(mir_models.Meta{
+			RelatedObject: mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 				Name:      d.Meta.Name,
 				Namespace: d.Meta.Namespace,
 			}).Object,
 		}, msg)
 }
 
-func publishDeviceUpdateEvent(m *mir.Mir, msg *mir.Msg, d mir_models.Device) error {
+func publishDeviceUpdateEvent(m *mir.Mir, msg *mir.Msg, d mir_v1.Device) error {
 	payload, err := json.Marshal(d)
 	if err != nil {
 		return err
 	}
 	return m.Event().Publish(mir.NewEventSubjectString(core_client.DeviceUpdatedEvent.WithId(d.Spec.DeviceId)),
-		mir_models.EventSpec{
-			Type:    mir_models.EventTypeNormal,
+		mir_v1.EventSpec{
+			Type:    mir_v1.EventTypeNormal,
 			Reason:  "DeviceUpdated",
 			Message: "A device has been updated successfully",
 			Payload: payload,
-			RelatedObject: mir_models.NewDevice().WithMeta(mir_models.Meta{
+			RelatedObject: mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 				Name:      d.Meta.Name,
 				Namespace: d.Meta.Namespace,
 			}).Object,
 		}, msg)
 }
 
-func publishDeviceDeleteEvent(m *mir.Mir, msg *mir.Msg, d mir_models.Device) error {
+func publishDeviceDeleteEvent(m *mir.Mir, msg *mir.Msg, d mir_v1.Device) error {
 	payload, err := json.Marshal(d)
 	if err != nil {
 		return err
 	}
 	return m.Event().Publish(mir.NewEventSubjectString(core_client.DeviceDeletedEvent.WithId(d.Spec.DeviceId)),
-		mir_models.EventSpec{
-			Type:    mir_models.EventTypeNormal,
+		mir_v1.EventSpec{
+			Type:    mir_v1.EventTypeNormal,
 			Reason:  "DeviceDeleted",
 			Message: "A device has been deleted successfully",
 			Payload: payload,
-			RelatedObject: mir_models.NewDevice().WithMeta(mir_models.Meta{
+			RelatedObject: mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 				Name:      d.Meta.Name,
 				Namespace: d.Meta.Namespace,
 			}).Object,

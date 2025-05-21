@@ -15,7 +15,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/test_utils"
 	"github.com/maxthom/mir/internal/servers/core_srv"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
-	"github.com/maxthom/mir/pkgs/mir_models"
+	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/nats-io/nats.go"
 	"github.com/surrealdb/surrealdb.go"
@@ -54,8 +54,8 @@ func TestMain(m *testing.M) {
 	fmt.Println(" -> core")
 	time.Sleep(1 * time.Second)
 	// Clear data
-	if _, err = store.DeleteEvent(mir_models.EventTarget{
-		ObjectTarget: mir_models.ObjectTarget{
+	if _, err = store.DeleteEvent(mir_v1.EventTarget{
+		ObjectTarget: mir_v1.ObjectTarget{
 			Namespaces: []string{
 				"event_testing",
 			},
@@ -63,8 +63,8 @@ func TestMain(m *testing.M) {
 	}); err != nil {
 		panic(err)
 	}
-	if _, err = store.DeleteEvent(mir_models.EventTarget{
-		ObjectTarget: mir_models.ObjectTarget{
+	if _, err = store.DeleteEvent(mir_v1.EventTarget{
+		ObjectTarget: mir_v1.ObjectTarget{
 			Namespaces: []string{
 				"default",
 			},
@@ -72,7 +72,7 @@ func TestMain(m *testing.M) {
 	}); err != nil {
 		panic(err)
 	}
-	if _, err = store.DeleteDevice(mir_models.DeviceTarget{
+	if _, err = store.DeleteDevice(mir_v1.DeviceTarget{
 		Namespaces: []string{
 			"event_testing",
 		},
@@ -86,8 +86,8 @@ func TestMain(m *testing.M) {
 
 	// Teardown
 	fmt.Println("Test Teardown")
-	if _, err = store.DeleteEvent(mir_models.EventTarget{
-		ObjectTarget: mir_models.ObjectTarget{
+	if _, err = store.DeleteEvent(mir_v1.EventTarget{
+		ObjectTarget: mir_v1.ObjectTarget{
 			Namespaces: []string{
 				"event_testing",
 			},
@@ -95,8 +95,8 @@ func TestMain(m *testing.M) {
 	}); err != nil {
 		panic(err)
 	}
-	if _, err = store.DeleteEvent(mir_models.EventTarget{
-		ObjectTarget: mir_models.ObjectTarget{
+	if _, err = store.DeleteEvent(mir_v1.EventTarget{
+		ObjectTarget: mir_v1.ObjectTarget{
 			Namespaces: []string{
 				"default",
 			},
@@ -104,7 +104,7 @@ func TestMain(m *testing.M) {
 	}); err != nil {
 		panic(err)
 	}
-	if _, err = store.DeleteDevice(mir_models.DeviceTarget{
+	if _, err = store.DeleteDevice(mir_v1.DeviceTarget{
 		Namespaces: []string{
 			"event_testing",
 		},
@@ -144,15 +144,15 @@ func TestPublishEventStoreNormal(t *testing.T) {
 	triggerChain := []string{"pizza", "toppings"}
 	msg := mir.NewMsg(sbj.String())
 	msg.AddToTriggerChain(triggerChain...)
-	event := mir_models.EventSpec{
-		Type:    mir_models.EventTypeNormal,
+	event := mir_v1.EventSpec{
+		Type:    mir_v1.EventTypeNormal,
 		Reason:  "device_online",
 		Message: "device 'carrot' is online",
 		Payload: j,
-		RelatedObject: mir_models.Object{
+		RelatedObject: mir_v1.Object{
 			ApiVersion: "mir/v1alpha",
 			Kind:       "device",
-			Meta: mir_models.Meta{
+			Meta: mir_v1.Meta{
 				Name:      name,
 				Namespace: namespace,
 			},
@@ -168,8 +168,8 @@ func TestPublishEventStoreNormal(t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	events, err := mSdk.Server().ListEvents().Request(
-		mir_models.EventTarget{
-			ObjectTarget: mir_models.ObjectTarget{
+		mir_v1.EventTarget{
+			ObjectTarget: mir_v1.ObjectTarget{
 				Namespaces: []string{
 					namespace,
 				},
@@ -180,8 +180,8 @@ func TestPublishEventStoreNormal(t *testing.T) {
 		t.Error(err)
 	}
 
-	// TODO list with mir_models.events
-	testEvent := mir_models.Event{}
+	// TODO list with mir_v1.events
+	testEvent := mir_v1.Event{}
 	for _, event := range events {
 		if event.Spec.RelatedObject.Meta.Name == name {
 			testEvent = event
@@ -216,15 +216,15 @@ func TestPublishEventStoreNsDefault(t *testing.T) {
 	triggerChain := []string{"pizza", "toppings"}
 	msg := mir.NewMsg(sbj.String())
 	msg.AddToTriggerChain(triggerChain...)
-	event := mir_models.EventSpec{
-		Type:    mir_models.EventTypeNormal,
+	event := mir_v1.EventSpec{
+		Type:    mir_v1.EventTypeNormal,
 		Reason:  "device_online",
 		Message: "device 'carrot' is online",
 		Payload: j,
-		RelatedObject: mir_models.Object{
+		RelatedObject: mir_v1.Object{
 			ApiVersion: "mir/v1alpha",
 			Kind:       "device",
-			Meta: mir_models.Meta{
+			Meta: mir_v1.Meta{
 				Name: name,
 			},
 		},
@@ -239,8 +239,8 @@ func TestPublishEventStoreNsDefault(t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	events, err := mSdk.Server().ListEvents().Request(
-		mir_models.EventTarget{
-			ObjectTarget: mir_models.ObjectTarget{
+		mir_v1.EventTarget{
+			ObjectTarget: mir_v1.ObjectTarget{
 				Namespaces: []string{
 					namespace,
 				},
@@ -251,8 +251,8 @@ func TestPublishEventStoreNsDefault(t *testing.T) {
 		t.Error(err)
 	}
 
-	// TODO list with mir_models.events
-	testEvent := mir_models.Event{}
+	// TODO list with mir_v1.events
+	testEvent := mir_v1.Event{}
 	for _, event := range events {
 		if event.Spec.RelatedObject.Meta.Name == name {
 			testEvent = event
@@ -323,22 +323,22 @@ func TestPublishDeleteEventsRequest(t *testing.T) {
 	triggerChain := []string{"pizza", "toppings"}
 	msg := mir.NewMsg(sbj.String())
 	msg.AddToTriggerChain(triggerChain...)
-	event := mir_models.EventSpec{
-		Type:    mir_models.EventTypeNormal,
+	event := mir_v1.EventSpec{
+		Type:    mir_v1.EventTypeNormal,
 		Reason:  "device_online",
 		Message: "device 'carrot' is online",
 		Payload: j,
-		RelatedObject: mir_models.Object{
+		RelatedObject: mir_v1.Object{
 			ApiVersion: "mir/v1alpha",
 			Kind:       "device",
-			Meta: mir_models.Meta{
+			Meta: mir_v1.Meta{
 				Name:      name,
 				Namespace: namespace,
 			},
 		},
 	}
-	target := mir_models.EventTarget{
-		ObjectTarget: mir_models.ObjectTarget{
+	target := mir_v1.EventTarget{
+		ObjectTarget: mir_v1.ObjectTarget{
 			Names: []string{
 				name,
 			},

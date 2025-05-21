@@ -17,7 +17,7 @@ import (
 	"github.com/maxthom/mir/internal/ui/tui/msgs"
 	"github.com/maxthom/mir/internal/ui/tui/store"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
-	"github.com/maxthom/mir/pkgs/mir_models"
+	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -216,13 +216,13 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if !ok {
 					return m, msgs.ErrCmd(fmt.Errorf("no device selected"), 2*time.Second)
 				}
-				return m, msgs.RouteChangeWithDataCmd(menuOption_device_edit, mir_models.NewDeviceFromProtoDevice(device))
+				return m, msgs.RouteChangeWithDataCmd(menuOption_device_edit, mir_v1.NewDeviceFromProtoDevice(device))
 			} else if msg.String() == "s" {
 				device, ok := rowToDevice(m.table.SelectedRow())
 				if !ok {
 					return m, msgs.ErrCmd(fmt.Errorf("no device selected"), 2*time.Second)
 				}
-				return m, msgs.RouteChangeWithDataCmd(menuOption_device_schema, mir_models.NewDeviceFromProtoDevice(device))
+				return m, msgs.RouteChangeWithDataCmd(menuOption_device_schema, mir_v1.NewDeviceFromProtoDevice(device))
 			} else if msg.String() == "x" {
 				m.table.Blur()
 				m.deleteInput.SetValue("")

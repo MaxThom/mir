@@ -15,7 +15,7 @@ import (
 	cmd_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cmd_api"
 	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
 	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
-	"github.com/maxthom/mir/pkgs/mir_models"
+	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
@@ -106,22 +106,22 @@ func (s *ProtoCmdServer) sendCommandSub(msg *mir.Msg, clientId string, req *cmd_
 			len(req.Targets.Names) == 0 &&
 			len(req.Targets.Namespaces) == 0 &&
 			len(req.Targets.Labels) == 0 {
-		errs = append(errs, mir_models.ErrorNoDeviceTargetProvided.Error())
+		errs = append(errs, mir_v1.ErrorNoDeviceTargetProvided.Error())
 	}
 	if req.Name == "" {
-		errs = append(errs, mir_models.ErrorCommandNameNotProvided.Error())
+		errs = append(errs, mir_v1.ErrorCommandNameNotProvided.Error())
 	}
 	if req.PayloadEncoding == common_apiv1.Encoding_ENCODING_UNSPECIFIED && !req.ShowTemplate {
-		errs = append(errs, mir_models.ErrorCommandEncodingNotSpecified.Error())
+		errs = append(errs, mir_v1.ErrorCommandEncodingNotSpecified.Error())
 	}
 	if (req.Payload == nil || len(req.Payload) == 0) && !req.ShowTemplate && req.PayloadEncoding != common_apiv1.Encoding_ENCODING_PROTOBUF {
 		// Proto encoding can be empty if struct is empty, not json
-		errs = append(errs, mir_models.ErrorCommandPayloadNotProvided.Error())
+		errs = append(errs, mir_v1.ErrorCommandPayloadNotProvided.Error())
 	}
 	if len(errs) > 0 {
-		l.Error().Err(fmt.Errorf("%w: %s", mir_models.ErrorBadRequest, strings.Join(errs, ", "))).Msg("")
+		l.Error().Err(fmt.Errorf("%w: %s", mir_v1.ErrorBadRequest, strings.Join(errs, ", "))).Msg("")
 		requestErrorTotal.WithLabelValues("send").Inc()
-		return nil, fmt.Errorf("%w: %s", mir_models.ErrorBadRequest, errs)
+		return nil, fmt.Errorf("%w: %s", mir_v1.ErrorBadRequest, errs)
 	}
 	// If command was specified with labels
 	if index := strings.Index(req.Name, "{"); index != -1 {
@@ -148,7 +148,7 @@ type cmdDevicePayload struct {
 }
 
 func (s *ProtoCmdServer) sendCommandToDevices(msg *mir.Msg, req *cmd_apiv1.SendCommandRequest) (map[string]*cmd_apiv1.SendCommandResponse_CommandResponse, error) {
-	devs, err := s.devStore.ListDevice(mir_models.ProtoDeviceTargetToMirDeviceTarget(req.Targets), false)
+	devs, err := s.devStore.ListDevice(mir_v1.ProtoDeviceTargetToMirDeviceTarget(req.Targets), false)
 	if err != nil {
 		return nil, err
 	} else if len(devs) == 0 {
@@ -360,7 +360,7 @@ func (s *ProtoCmdServer) listCommandsSub(msg *mir.Msg, clientId string, req *cmd
 	// 2. for each device, get stored schema, if empty, fetch from device
 	// 3. return list of commands
 
-	devs, err := s.devStore.ListDevice(mir_models.ProtoDeviceTargetToMirDeviceTarget(req.Targets), false)
+	devs, err := s.devStore.ListDevice(mir_v1.ProtoDeviceTargetToMirDeviceTarget(req.Targets), false)
 	if err != nil {
 		l.Error().Err(err).Msg("error occure while listing devices")
 		requestErrorTotal.WithLabelValues("list").Inc()
@@ -404,12 +404,12 @@ func publishCommandEvent(m *mir.Mir, msg *mir.Msg, name, namespace string, cmd *
 		return err
 	}
 	return m.Event().Publish(mir.NewEventSubjectString(cmd_client.DeviceCommandEvent.WithId(cmd.DeviceId)),
-		mir_models.EventSpec{
-			Type:    mir_models.EventTypeNormal,
+		mir_v1.EventSpec{
+			Type:    mir_v1.EventTypeNormal,
 			Reason:  "DeviceCommand",
 			Message: "Device command executed successfully",
 			Payload: payload,
-			RelatedObject: mir_models.NewDevice().WithMeta(mir_models.Meta{
+			RelatedObject: mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 				Name:      name,
 				Namespace: namespace,
 			}).Object,

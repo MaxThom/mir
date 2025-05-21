@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/maxthom/mir/pkgs/mir_models"
+	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/nats-io/nats.go"
 	"gotest.tools/assert"
 )
@@ -74,7 +74,7 @@ func TestEventQueueSubscribe(t *testing.T) {
 	rCount2 := 0
 
 	// Subscribe both clients to the same queue group
-	err := m.Event().QueueSubscribe(queueName, func(msg *Msg, subjectId string, evt mir_models.EventSpec, err error) {
+	err := m.Event().QueueSubscribe(queueName, func(msg *Msg, subjectId string, evt mir_v1.EventSpec, err error) {
 		if subjectId == "test-queue-event" {
 			rCount1 += 1
 		}
@@ -83,7 +83,7 @@ func TestEventQueueSubscribe(t *testing.T) {
 		t.Error(err)
 	}
 
-	err = m.Event().QueueSubscribe(queueName, func(msg *Msg, subjectId string, evt mir_models.EventSpec, err error) {
+	err = m.Event().QueueSubscribe(queueName, func(msg *Msg, subjectId string, evt mir_v1.EventSpec, err error) {
 		if subjectId == "test-queue-event" {
 			rCount2 += 1
 		}
@@ -94,7 +94,7 @@ func TestEventQueueSubscribe(t *testing.T) {
 
 	// Publish messages
 	for i := 0; i < messageCount; i++ {
-		err := m.Event().Publish(subject, mir_models.EventSpec{}, nil)
+		err := m.Event().Publish(subject, mir_v1.EventSpec{}, nil)
 		if err != nil {
 			t.Error(err)
 		}
@@ -117,14 +117,14 @@ func TestEventQueueSubscribeSubject(t *testing.T) {
 	rCount2 := 0
 
 	// Subscribe both clients to the same queue group
-	err := m.Event().QueueSubscribeSubject(queueName, subject, func(msg *Msg, subjectId string, evt mir_models.EventSpec, err error) {
+	err := m.Event().QueueSubscribeSubject(queueName, subject, func(msg *Msg, subjectId string, evt mir_v1.EventSpec, err error) {
 		rCount1 += 1
 	})
 	if err != nil {
 		t.Error(err)
 	}
 
-	err = m.Event().QueueSubscribeSubject(queueName, subject, func(msg *Msg, subjectId string, evt mir_models.EventSpec, err error) {
+	err = m.Event().QueueSubscribeSubject(queueName, subject, func(msg *Msg, subjectId string, evt mir_v1.EventSpec, err error) {
 		rCount2 += 1
 	})
 	if err != nil {
@@ -133,7 +133,7 @@ func TestEventQueueSubscribeSubject(t *testing.T) {
 
 	// Publish messages
 	for i := 0; i < messageCount; i++ {
-		err := m.Event().Publish(subject, mir_models.EventSpec{}, nil)
+		err := m.Event().Publish(subject, mir_v1.EventSpec{}, nil)
 		if err != nil {
 			t.Error(err)
 		}

@@ -12,7 +12,7 @@ import (
 	"github.com/maxthom/mir/internal/clients/event_client"
 	cmd_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cmd_api"
 	event_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/event_api"
-	"github.com/maxthom/mir/pkgs/mir_models"
+	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
 )
@@ -49,12 +49,12 @@ func NewEventSubjectString(subject string) eventSubject {
 	return strings.Split(subject, ".")
 }
 
-func (r *eventRoutes) Publish(sbj eventSubject, event mir_models.EventSpec, msg *Msg) error {
+func (r *eventRoutes) Publish(sbj eventSubject, event mir_v1.EventSpec, msg *Msg) error {
 	h := nats.Header{}
 	if msg != nil && len(msg.GetTriggerChain()) > 0 {
 		h[HeaderTrigger] = msg.GetTriggerChain()
 	}
-	e := mir_models.MirEventSpecToProtoCreateEvent(event)
+	e := mir_v1.MirEventSpecToProtoCreateEvent(event)
 	b, err := proto.Marshal(e)
 	if err != nil {
 		return fmt.Errorf("error serializing data: %w", err)
@@ -64,37 +64,37 @@ func (r *eventRoutes) Publish(sbj eventSubject, event mir_models.EventSpec, msg 
 }
 
 // Subscribe to event stream
-func (r *eventRoutes) Subscribe(f func(msg *Msg, subjectId string, req mir_models.EventSpec, e error)) error {
+func (r *eventRoutes) Subscribe(f func(msg *Msg, subjectId string, req mir_v1.EventSpec, e error)) error {
 	sbj := event_client.EventsStream.WithId("*")
 	return r.m.subscribe(sbj, r.handlerWrapper(f))
 }
 
 // Queue subscribe to event stream
-func (r *eventRoutes) QueueSubscribe(queue string, f func(msg *Msg, subjectId string, req mir_models.EventSpec, e error)) error {
+func (r *eventRoutes) QueueSubscribe(queue string, f func(msg *Msg, subjectId string, req mir_v1.EventSpec, e error)) error {
 	sbj := event_client.EventsStream.WithId("*")
 	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
 }
 
 // Subscribe to event stream
-func (r *eventRoutes) SubscribeSubject(sbj eventSubject, f func(msg *Msg, subjectId string, req mir_models.EventSpec, e error)) error {
+func (r *eventRoutes) SubscribeSubject(sbj eventSubject, f func(msg *Msg, subjectId string, req mir_v1.EventSpec, e error)) error {
 	return r.m.subscribe(sbj.String(), r.handlerWrapper(f))
 }
 
 // Queue subscribe to event stream
-func (r *eventRoutes) QueueSubscribeSubject(queue string, sbj eventSubject, f func(msg *Msg, subjectId string, req mir_models.EventSpec, e error)) error {
+func (r *eventRoutes) QueueSubscribeSubject(queue string, sbj eventSubject, f func(msg *Msg, subjectId string, req mir_v1.EventSpec, e error)) error {
 	return r.m.queueSubscribe(queue, sbj.String(), r.handlerWrapper(f))
 }
 
-func (r *eventRoutes) handlerWrapper(f func(msg *Msg, subjectId string, req mir_models.EventSpec, e error)) nats.MsgHandler {
+func (r *eventRoutes) handlerWrapper(f func(msg *Msg, subjectId string, req mir_v1.EventSpec, e error)) nats.MsgHandler {
 	return func(msg *nats.Msg) {
 		subjectId := clients.ServerSubject(msg.Subject).GetId()
 		req := &event_apiv1.CreateEventRequest{}
 		if err := proto.Unmarshal(msg.Data, req); err != nil {
-			f(&Msg{msg}, subjectId, mir_models.EventSpec{}, err)
+			f(&Msg{msg}, subjectId, mir_v1.EventSpec{}, err)
 			return
 		}
 
-		f(&Msg{msg}, subjectId, mir_models.ProtoCreateEventReqToMirEventSpec(req), nil)
+		f(&Msg{msg}, subjectId, mir_v1.ProtoCreateEventReqToMirEventSpec(req), nil)
 	}
 }
 
@@ -110,20 +110,20 @@ func (r *eventRoutes) DeviceOnline() *deviceOnlineEventRoute {
 }
 
 // Subscribe to device online event routes
-func (r *deviceOnlineEventRoute) Subscribe(f func(msg *Msg, deviceId string, device mir_models.Device, err error)) error {
+func (r *deviceOnlineEventRoute) Subscribe(f func(msg *Msg, deviceId string, device mir_v1.Device, err error)) error {
 	sbj := core_client.DeviceOnlineEvent.WithId("*")
 	return r.m.subscribe(sbj, r.handlerWrapper(f))
 }
 
 // Queue subscribe to device online event routes
-func (r *deviceOnlineEventRoute) QueueSubscribe(queue string, f func(msg *Msg, deviceId string, device mir_models.Device, err error)) error {
+func (r *deviceOnlineEventRoute) QueueSubscribe(queue string, f func(msg *Msg, deviceId string, device mir_v1.Device, err error)) error {
 	sbj := core_client.DeviceOnlineEvent.WithId("*")
 	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
 }
 
-func (r *deviceOnlineEventRoute) handlerWrapper(f func(msg *Msg, deviceId string, device mir_models.Device, err error)) nats.MsgHandler {
+func (r *deviceOnlineEventRoute) handlerWrapper(f func(msg *Msg, deviceId string, device mir_v1.Device, err error)) nats.MsgHandler {
 	return func(msg *nats.Msg) {
-		dev := mir_models.NewDevice()
+		dev := mir_v1.NewDevice()
 		if err := eventMsgToObject(msg, &dev); err != nil {
 			f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), dev, err)
 			return
@@ -144,20 +144,20 @@ func (r *eventRoutes) DeviceOffline() *deviceOfflineEventRoute {
 }
 
 // Subscribe to device online event routes
-func (r *deviceOfflineEventRoute) Subscribe(f func(msg *Msg, deviceId string, device mir_models.Device, err error)) error {
+func (r *deviceOfflineEventRoute) Subscribe(f func(msg *Msg, deviceId string, device mir_v1.Device, err error)) error {
 	sbj := core_client.DeviceOfflineEvent.WithId("*")
 	return r.m.subscribe(sbj, r.handlerWrapper(f))
 }
 
 // Queue subscribe to device online event routes
-func (r *deviceOfflineEventRoute) QueueSubscribe(queue string, f func(msg *Msg, deviceId string, device mir_models.Device, err error)) error {
+func (r *deviceOfflineEventRoute) QueueSubscribe(queue string, f func(msg *Msg, deviceId string, device mir_v1.Device, err error)) error {
 	sbj := core_client.DeviceOfflineEvent.WithId("*")
 	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
 }
 
-func (r *deviceOfflineEventRoute) handlerWrapper(f func(msg *Msg, deviceId string, device mir_models.Device, err error)) nats.MsgHandler {
+func (r *deviceOfflineEventRoute) handlerWrapper(f func(msg *Msg, deviceId string, device mir_v1.Device, err error)) nats.MsgHandler {
 	return func(msg *nats.Msg) {
-		dev := mir_models.NewDevice()
+		dev := mir_v1.NewDevice()
 		if err := eventMsgToObject(msg, &dev); err != nil {
 			f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), dev, err)
 			return
@@ -178,20 +178,20 @@ func (r *eventRoutes) DeviceCreate() *deviceCreateEventRoute {
 }
 
 // Subscribe to device create event routes
-func (r *deviceCreateEventRoute) Subscribe(f func(msg *Msg, deviceId string, device mir_models.Device, err error)) error {
+func (r *deviceCreateEventRoute) Subscribe(f func(msg *Msg, deviceId string, device mir_v1.Device, err error)) error {
 	sbj := core_client.DeviceCreatedEvent.WithId("*")
 	return r.m.subscribe(sbj, r.handlerWrapper(f))
 }
 
 // Queue subscribe to device create event routes
-func (r *deviceCreateEventRoute) QueueSubscribe(queue string, f func(msg *Msg, deviceId string, device mir_models.Device, err error)) error {
+func (r *deviceCreateEventRoute) QueueSubscribe(queue string, f func(msg *Msg, deviceId string, device mir_v1.Device, err error)) error {
 	sbj := core_client.DeviceCreatedEvent.WithId("*")
 	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
 }
 
-func (r *deviceCreateEventRoute) handlerWrapper(f func(msg *Msg, deviceId string, device mir_models.Device, err error)) nats.MsgHandler {
+func (r *deviceCreateEventRoute) handlerWrapper(f func(msg *Msg, deviceId string, device mir_v1.Device, err error)) nats.MsgHandler {
 	return func(msg *nats.Msg) {
-		dev := mir_models.NewDevice()
+		dev := mir_v1.NewDevice()
 		if err := eventMsgToObject(msg, &dev); err != nil {
 			f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), dev, err)
 			return
@@ -212,20 +212,20 @@ func (r *eventRoutes) DeviceUpdate() *deviceUpdateEventRoute {
 }
 
 // Subscribe to device update event routes
-func (r *deviceUpdateEventRoute) Subscribe(f func(msg *Msg, deviceId string, device mir_models.Device, err error)) error {
+func (r *deviceUpdateEventRoute) Subscribe(f func(msg *Msg, deviceId string, device mir_v1.Device, err error)) error {
 	sbj := core_client.DeviceUpdatedEvent.WithId("*")
 	return r.m.subscribe(sbj, r.handlerWrapper(f))
 }
 
 // Queue subscribe to device update event routes
-func (r *deviceUpdateEventRoute) QueueSubscribe(queue string, f func(msg *Msg, deviceId string, device mir_models.Device, err error)) error {
+func (r *deviceUpdateEventRoute) QueueSubscribe(queue string, f func(msg *Msg, deviceId string, device mir_v1.Device, err error)) error {
 	sbj := core_client.DeviceUpdatedEvent.WithId("*")
 	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
 }
 
-func (r *deviceUpdateEventRoute) handlerWrapper(f func(msg *Msg, deviceId string, device mir_models.Device, err error)) nats.MsgHandler {
+func (r *deviceUpdateEventRoute) handlerWrapper(f func(msg *Msg, deviceId string, device mir_v1.Device, err error)) nats.MsgHandler {
 	return func(msg *nats.Msg) {
-		dev := mir_models.NewDevice()
+		dev := mir_v1.NewDevice()
 		if err := eventMsgToObject(msg, &dev); err != nil {
 			f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), dev, err)
 			return
@@ -268,20 +268,20 @@ func (r *eventRoutes) DeviceDelete() *deviceDeleteEventRoute {
 }
 
 // Subscribe to device delete event routes
-func (r *deviceDeleteEventRoute) Subscribe(f func(msg *Msg, serverId string, device mir_models.Device, err error)) error {
+func (r *deviceDeleteEventRoute) Subscribe(f func(msg *Msg, serverId string, device mir_v1.Device, err error)) error {
 	sbj := core_client.DeviceDeletedEvent.WithId("*")
 	return r.m.subscribe(sbj, r.handlerWrapper(f))
 }
 
 // Queue subscribe to device delete event routes
-func (r *deviceDeleteEventRoute) QueueSubscribe(queue string, f func(msg *Msg, deviceId string, device mir_models.Device, err error)) error {
+func (r *deviceDeleteEventRoute) QueueSubscribe(queue string, f func(msg *Msg, deviceId string, device mir_v1.Device, err error)) error {
 	sbj := core_client.DeviceDeletedEvent.WithId("*")
 	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
 }
 
-func (r *deviceDeleteEventRoute) handlerWrapper(f func(msg *Msg, serverId string, deviceId mir_models.Device, err error)) nats.MsgHandler {
+func (r *deviceDeleteEventRoute) handlerWrapper(f func(msg *Msg, serverId string, deviceId mir_v1.Device, err error)) nats.MsgHandler {
 	return func(msg *nats.Msg) {
-		dev := mir_models.NewDevice()
+		dev := mir_v1.NewDevice()
 		if err := eventMsgToObject(msg, &dev); err != nil {
 			f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), dev, err)
 			return

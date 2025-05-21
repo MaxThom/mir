@@ -10,7 +10,7 @@ import (
 
 	"github.com/maxthom/mir/internal/libs/jsonyaml"
 	"github.com/maxthom/mir/internal/libs/test_utils"
-	"github.com/maxthom/mir/pkgs/mir_models"
+	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/surrealdb/surrealdb.go"
 	"gotest.tools/assert"
 )
@@ -29,8 +29,8 @@ func TestMain(m *testing.M) {
 	fmt.Println(" -> db")
 	time.Sleep(1 * time.Second)
 	// Clear data
-	if _, err = mirStore.DeleteEvent(mir_models.EventTarget{
-		ObjectTarget: mir_models.ObjectTarget{
+	if _, err = mirStore.DeleteEvent(mir_v1.EventTarget{
+		ObjectTarget: mir_v1.ObjectTarget{
 			Labels: map[string]string{
 				"mirstore": "testing",
 			},
@@ -38,7 +38,7 @@ func TestMain(m *testing.M) {
 	}); err != nil {
 		panic(err)
 	}
-	if _, err = mirStore.DeleteDevice(mir_models.DeviceTarget{
+	if _, err = mirStore.DeleteDevice(mir_v1.DeviceTarget{
 		Labels: map[string]string{
 			"mirstore": "testing",
 		},
@@ -52,8 +52,8 @@ func TestMain(m *testing.M) {
 
 	// Teardown
 	fmt.Println("Test Teardown")
-	// if _, err = mirStore.DeleteEvent(mir_models.EventTarget{
-	// 	ObjectTarget: mir_models.ObjectTarget{
+	// if _, err = mirStore.DeleteEvent(mir_v1.EventTarget{
+	// 	ObjectTarget: mir_v1.ObjectTarget{
 	// 		Labels: map[string]string{
 	// 			"mirstore": "testing",
 	// 		},
@@ -61,8 +61,8 @@ func TestMain(m *testing.M) {
 	// }); err != nil {
 	// 	panic(err)
 	// }
-	// if _, err = mirStore.DeleteDevice(mir_models.DeviceTarget{
-	// 	ObjectTarget: mir_models.ObjectTarget{
+	// if _, err = mirStore.DeleteDevice(mir_v1.DeviceTarget{
+	// 	ObjectTarget: mir_v1.ObjectTarget{
 	// 		Labels: map[string]string{
 	// 			"mirstore": "testing",
 	// 		},
@@ -80,7 +80,7 @@ func TestMain(m *testing.M) {
 
 func TestPublishStoreDeviceCreate(t *testing.T) {
 	// Arrange
-	d := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	d := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Name:      "create_dev",
 		Namespace: "mirstore",
 		Labels: map[string]string{
@@ -89,7 +89,7 @@ func TestPublishStoreDeviceCreate(t *testing.T) {
 		Annotations: map[string]string{
 			"info": "supra",
 		},
-	}).WithSpec(mir_models.DeviceSpec{
+	}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: "create_dev",
 		Disabled: boolPtr(true),
 	})
@@ -112,11 +112,11 @@ func TestPublishStoreDeviceCreate(t *testing.T) {
 
 func TestPublishStoreDeviceCreateMissingNameNamespace(t *testing.T) {
 	// Arrange
-	d := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	d := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Labels: map[string]string{
 			"mirstore": "testing",
 		},
-	}).WithSpec(mir_models.DeviceSpec{
+	}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: "create_dev_missing_namens",
 	})
 	// Act
@@ -134,11 +134,11 @@ func TestPublishStoreDeviceCreateMissingNameNamespace(t *testing.T) {
 
 func TestPublishStoreDeviceCreateMissingId(t *testing.T) {
 	// Arrange
-	d := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	d := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Labels: map[string]string{
 			"mirstore": "testing",
 		},
-	}).WithSpec(mir_models.DeviceSpec{})
+	}).WithSpec(mir_v1.DeviceSpec{})
 	// Act
 	_, err := mirStore.CreateDevice(d)
 
@@ -148,20 +148,20 @@ func TestPublishStoreDeviceCreateMissingId(t *testing.T) {
 
 func TestPublishStoreDeviceCreateAlreadyExistId(t *testing.T) {
 	// Arrange
-	d0 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	d0 := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Namespace: "mirstore",
 		Labels: map[string]string{
 			"mirstore": "testing",
 		},
-	}).WithSpec(mir_models.DeviceSpec{
+	}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: "create_dev_already_exist_id",
 	})
-	d1 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	d1 := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Namespace: "mirstore2",
 		Labels: map[string]string{
 			"mirstore": "testing",
 		},
-	}).WithSpec(mir_models.DeviceSpec{
+	}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: "create_dev_already_exist_id",
 	})
 	// Act
@@ -177,22 +177,22 @@ func TestPublishStoreDeviceCreateAlreadyExistId(t *testing.T) {
 
 func TestPublishStoreDeviceCreateAlreadyExistNameNs(t *testing.T) {
 	// Arrange
-	d0 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	d0 := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Name:      "already_exist_name",
 		Namespace: "mirstore",
 		Labels: map[string]string{
 			"mirstore": "testing",
 		},
-	}).WithSpec(mir_models.DeviceSpec{
+	}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: "create_dev_already_exist_name_0",
 	})
-	d1 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	d1 := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Name:      "already_exist_name",
 		Namespace: "mirstore",
 		Labels: map[string]string{
 			"mirstore": "testing",
 		},
-	}).WithSpec(mir_models.DeviceSpec{
+	}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: "create_dev_already_exist_name_1",
 	})
 	// Act
@@ -208,22 +208,22 @@ func TestPublishStoreDeviceCreateAlreadyExistNameNs(t *testing.T) {
 
 func TestPublishStoreDeviceCreateSameNameDifferentNs(t *testing.T) {
 	// Arrange
-	d0 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	d0 := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Name:      "same_name_diff_ns",
 		Namespace: "mirstore",
 		Labels: map[string]string{
 			"mirstore": "testing",
 		},
-	}).WithSpec(mir_models.DeviceSpec{
+	}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: "same_name_diff_ns_0",
 	})
-	d1 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	d1 := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Name:      "same_name_diff_ns",
 		Namespace: "mirstore2",
 		Labels: map[string]string{
 			"mirstore": "testing",
 		},
-	}).WithSpec(mir_models.DeviceSpec{
+	}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: "same_name_diff_ns_1",
 	})
 	// Act
@@ -238,7 +238,7 @@ func TestPublishStoreDeviceCreateSameNameDifferentNs(t *testing.T) {
 func TestPublishStoreDeviceListByIds(t *testing.T) {
 	// Arrange
 	ids := []string{"list_dev_0", "list_dev_1"}
-	d0 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	d0 := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Namespace: "mirstore",
 		Labels: map[string]string{
 			"mirstore": "testing",
@@ -246,10 +246,10 @@ func TestPublishStoreDeviceListByIds(t *testing.T) {
 		Annotations: map[string]string{
 			"info": "supra",
 		},
-	}).WithSpec(mir_models.DeviceSpec{
+	}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: ids[0],
 	})
-	d1 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	d1 := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Namespace: "mirstore",
 		Labels: map[string]string{
 			"mirstore": "testing",
@@ -257,10 +257,10 @@ func TestPublishStoreDeviceListByIds(t *testing.T) {
 		Annotations: map[string]string{
 			"info": "supra",
 		},
-	}).WithSpec(mir_models.DeviceSpec{
+	}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: ids[1],
 	})
-	l := mir_models.DeviceTarget{
+	l := mir_v1.DeviceTarget{
 		Ids: ids,
 	}
 
@@ -285,7 +285,7 @@ func TestPublishStoreDeviceListByIds(t *testing.T) {
 func TestPublishStoreDeviceListByName(t *testing.T) {
 	// Arrange
 	ids := []string{"list_dev_0_name", "list_dev_1_name", "list_dev_2_name"}
-	d0 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	d0 := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Namespace: "mirstore",
 		Labels: map[string]string{
 			"mirstore": "testing",
@@ -293,10 +293,10 @@ func TestPublishStoreDeviceListByName(t *testing.T) {
 		Annotations: map[string]string{
 			"info": "supra",
 		},
-	}).WithSpec(mir_models.DeviceSpec{
+	}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: ids[0],
 	})
-	d1 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	d1 := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Namespace: "mirstore",
 		Labels: map[string]string{
 			"mirstore": "testing",
@@ -304,10 +304,10 @@ func TestPublishStoreDeviceListByName(t *testing.T) {
 		Annotations: map[string]string{
 			"info": "supra",
 		},
-	}).WithSpec(mir_models.DeviceSpec{
+	}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: ids[1],
 	})
-	d2 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	d2 := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Namespace: "mirstore",
 		Labels: map[string]string{
 			"mirstore": "testing",
@@ -315,10 +315,10 @@ func TestPublishStoreDeviceListByName(t *testing.T) {
 		Annotations: map[string]string{
 			"info": "supra",
 		},
-	}).WithSpec(mir_models.DeviceSpec{
+	}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: ids[2],
 	})
-	l := mir_models.DeviceTarget{
+	l := mir_v1.DeviceTarget{
 		Names: ids[:2],
 	}
 
@@ -347,7 +347,7 @@ func TestPublishStoreDeviceListByName(t *testing.T) {
 func TestPublishStoreDeviceListByLabel(t *testing.T) {
 	// Arrange
 	ids := []string{"list_dev_0_lbl", "list_dev_1_lbl", "list_dev_2_lbl"}
-	d0 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	d0 := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Namespace: "mirstore",
 		Labels: map[string]string{
 			"mirstore": "testing",
@@ -356,10 +356,10 @@ func TestPublishStoreDeviceListByLabel(t *testing.T) {
 		Annotations: map[string]string{
 			"info": "supra",
 		},
-	}).WithSpec(mir_models.DeviceSpec{
+	}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: ids[0],
 	})
-	d1 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	d1 := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Namespace: "mirstore",
 		Labels: map[string]string{
 			"mirstore": "testing",
@@ -368,10 +368,10 @@ func TestPublishStoreDeviceListByLabel(t *testing.T) {
 		Annotations: map[string]string{
 			"info": "supra",
 		},
-	}).WithSpec(mir_models.DeviceSpec{
+	}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: ids[1],
 	})
-	d2 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	d2 := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Namespace: "mirstore",
 		Labels: map[string]string{
 			"mirstore": "testing",
@@ -379,10 +379,10 @@ func TestPublishStoreDeviceListByLabel(t *testing.T) {
 		Annotations: map[string]string{
 			"info": "supra",
 		},
-	}).WithSpec(mir_models.DeviceSpec{
+	}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: ids[2],
 	})
-	l := mir_models.DeviceTarget{
+	l := mir_v1.DeviceTarget{
 		Labels: map[string]string{
 			"lbl": "yiha",
 		},
@@ -413,7 +413,7 @@ func TestPublishStoreDeviceListByLabel(t *testing.T) {
 func TestPublishStoreDeviceListByNamespace(t *testing.T) {
 	// Arrange
 	ids := []string{"list_dev_0_namespace", "list_dev_1_namespace"}
-	d0 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	d0 := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Namespace: "mirstore_list",
 		Labels: map[string]string{
 			"mirstore": "testing",
@@ -421,10 +421,10 @@ func TestPublishStoreDeviceListByNamespace(t *testing.T) {
 		Annotations: map[string]string{
 			"info": "supra",
 		},
-	}).WithSpec(mir_models.DeviceSpec{
+	}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: ids[0],
 	})
-	d1 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	d1 := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Namespace: "mirstore_list",
 		Labels: map[string]string{
 			"mirstore": "testing",
@@ -432,10 +432,10 @@ func TestPublishStoreDeviceListByNamespace(t *testing.T) {
 		Annotations: map[string]string{
 			"info": "supra",
 		},
-	}).WithSpec(mir_models.DeviceSpec{
+	}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: ids[1],
 	})
-	l := mir_models.DeviceTarget{
+	l := mir_v1.DeviceTarget{
 		Namespaces: []string{"mirstore_list"},
 	}
 
@@ -460,7 +460,7 @@ func TestPublishStoreDeviceListByNamespace(t *testing.T) {
 func TestPublishStoreDeviceDeleteByIds(t *testing.T) {
 	// Arrange
 	ids := []string{"del_dev_0", "del_dev_1"}
-	d0 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	d0 := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Namespace: "mirstore",
 		Labels: map[string]string{
 			"mirstore": "testing",
@@ -468,10 +468,10 @@ func TestPublishStoreDeviceDeleteByIds(t *testing.T) {
 		Annotations: map[string]string{
 			"info": "supra",
 		},
-	}).WithSpec(mir_models.DeviceSpec{
+	}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: ids[0],
 	})
-	d1 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	d1 := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Namespace: "mirstore",
 		Labels: map[string]string{
 			"mirstore": "testing",
@@ -479,10 +479,10 @@ func TestPublishStoreDeviceDeleteByIds(t *testing.T) {
 		Annotations: map[string]string{
 			"info": "supra",
 		},
-	}).WithSpec(mir_models.DeviceSpec{
+	}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: ids[1],
 	})
-	l := mir_models.DeviceTarget{
+	l := mir_v1.DeviceTarget{
 		Ids: ids,
 	}
 
@@ -512,7 +512,7 @@ func TestPublishStoreDeviceDeleteByIds(t *testing.T) {
 func TestPublishStoreDeviceDeleteByName(t *testing.T) {
 	// Arrange
 	ids := []string{"del_dev_0_name", "del_dev_1_name", "del_dev_2_name"}
-	d0 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	d0 := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Namespace: "mirstore",
 		Labels: map[string]string{
 			"mirstore": "testing",
@@ -520,10 +520,10 @@ func TestPublishStoreDeviceDeleteByName(t *testing.T) {
 		Annotations: map[string]string{
 			"info": "supra",
 		},
-	}).WithSpec(mir_models.DeviceSpec{
+	}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: ids[0],
 	})
-	d1 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	d1 := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Namespace: "mirstore",
 		Labels: map[string]string{
 			"mirstore": "testing",
@@ -531,10 +531,10 @@ func TestPublishStoreDeviceDeleteByName(t *testing.T) {
 		Annotations: map[string]string{
 			"info": "supra",
 		},
-	}).WithSpec(mir_models.DeviceSpec{
+	}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: ids[1],
 	})
-	d2 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	d2 := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Namespace: "mirstore",
 		Labels: map[string]string{
 			"mirstore": "testing",
@@ -542,10 +542,10 @@ func TestPublishStoreDeviceDeleteByName(t *testing.T) {
 		Annotations: map[string]string{
 			"info": "supra",
 		},
-	}).WithSpec(mir_models.DeviceSpec{
+	}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: ids[2],
 	})
-	l := mir_models.DeviceTarget{
+	l := mir_v1.DeviceTarget{
 		Names: ids[:2],
 	}
 
@@ -579,7 +579,7 @@ func TestPublishStoreDeviceDeleteByName(t *testing.T) {
 func TestPublishStoreDeviceDeleteByLabel(t *testing.T) {
 	// Arrange
 	ids := []string{"del_dev_0_lbl", "del_dev_1_lbl", "del_dev_2_lbl"}
-	d0 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	d0 := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Namespace: "mirstore",
 		Labels: map[string]string{
 			"mirstore": "testing",
@@ -588,10 +588,10 @@ func TestPublishStoreDeviceDeleteByLabel(t *testing.T) {
 		Annotations: map[string]string{
 			"info": "supra",
 		},
-	}).WithSpec(mir_models.DeviceSpec{
+	}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: ids[0],
 	})
-	d1 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	d1 := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Namespace: "mirstore",
 		Labels: map[string]string{
 			"mirstore": "testing",
@@ -600,10 +600,10 @@ func TestPublishStoreDeviceDeleteByLabel(t *testing.T) {
 		Annotations: map[string]string{
 			"info": "supra",
 		},
-	}).WithSpec(mir_models.DeviceSpec{
+	}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: ids[1],
 	})
-	d2 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	d2 := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Namespace: "mirstore",
 		Labels: map[string]string{
 			"mirstore": "testing",
@@ -611,10 +611,10 @@ func TestPublishStoreDeviceDeleteByLabel(t *testing.T) {
 		Annotations: map[string]string{
 			"info": "supra",
 		},
-	}).WithSpec(mir_models.DeviceSpec{
+	}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: ids[2],
 	})
-	l := mir_models.DeviceTarget{
+	l := mir_v1.DeviceTarget{
 		Labels: map[string]string{
 			"lbl": "yiha_del",
 		},
@@ -650,7 +650,7 @@ func TestPublishStoreDeviceDeleteByLabel(t *testing.T) {
 func TestPublishStoreDeviceDeleteByNamespace(t *testing.T) {
 	// Arrange
 	ids := []string{"del_dev_0_namespace", "del_dev_1_namespace"}
-	d0 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	d0 := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Namespace: "mirstore_del",
 		Labels: map[string]string{
 			"mirstore": "testing",
@@ -658,10 +658,10 @@ func TestPublishStoreDeviceDeleteByNamespace(t *testing.T) {
 		Annotations: map[string]string{
 			"info": "supra",
 		},
-	}).WithSpec(mir_models.DeviceSpec{
+	}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: ids[0],
 	})
-	d1 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	d1 := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Namespace: "mirstore_del",
 		Labels: map[string]string{
 			"mirstore": "testing",
@@ -669,10 +669,10 @@ func TestPublishStoreDeviceDeleteByNamespace(t *testing.T) {
 		Annotations: map[string]string{
 			"info": "supra",
 		},
-	}).WithSpec(mir_models.DeviceSpec{
+	}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: ids[1],
 	})
-	l := mir_models.DeviceTarget{
+	l := mir_v1.DeviceTarget{
 		Namespaces: []string{"mirstore_del"},
 	}
 
@@ -701,7 +701,7 @@ func TestPublishStoreDeviceDeleteByNamespace(t *testing.T) {
 
 func TestPublishStoreDeviceUpdateMeta(t *testing.T) {
 	// Arrange
-	d := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	d := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Name:      "update_dev",
 		Namespace: "mirstore",
 		Labels: map[string]string{
@@ -712,7 +712,7 @@ func TestPublishStoreDeviceUpdateMeta(t *testing.T) {
 		Annotations: map[string]string{
 			"info": "supra",
 		},
-	}).WithSpec(mir_models.DeviceSpec{
+	}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: "update_dev",
 		Disabled: boolPtr(true),
 	})
@@ -729,7 +729,7 @@ func TestPublishStoreDeviceUpdateMeta(t *testing.T) {
 	d.Meta.Labels["food"] = "gross"
 	d.Meta.Annotations["food"] = "gross"
 	d.Meta.Annotations["info"] = ""
-	uResp, err := mirStore.UpdateDevice(mir_models.DeviceTarget{Ids: []string{d.Spec.DeviceId}}, d)
+	uResp, err := mirStore.UpdateDevice(mir_v1.DeviceTarget{Ids: []string{d.Spec.DeviceId}}, d)
 	if err != nil {
 		t.Error(err)
 	}
@@ -751,7 +751,7 @@ func TestPublishStoreDeviceUpdateMeta(t *testing.T) {
 
 func TestPublishStoreDeviceUpdateSpec(t *testing.T) {
 	// Arrange
-	d := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	d := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Name:      "update_dev_spec",
 		Namespace: "mirstore",
 		Labels: map[string]string{
@@ -762,11 +762,11 @@ func TestPublishStoreDeviceUpdateSpec(t *testing.T) {
 		Annotations: map[string]string{
 			"info": "supra",
 		},
-	}).WithSpec(mir_models.DeviceSpec{
+	}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: "update_dev_spec",
 		Disabled: boolPtr(true),
 	})
-	dUpd := mir_models.NewDevice().WithSpec(mir_models.DeviceSpec{
+	dUpd := mir_v1.NewDevice().WithSpec(mir_v1.DeviceSpec{
 		DeviceId: "bob",
 		Disabled: boolPtr(false),
 	})
@@ -787,16 +787,16 @@ func TestPublishStoreDeviceUpdateSpec(t *testing.T) {
 
 func TestPublishStoreDeviceUpdateProps(t *testing.T) {
 	// Arrange
-	d := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	d := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Name:      "update_dev_props",
 		Namespace: "mirstore",
 		Labels: map[string]string{
 			"mirstore": "testing",
 		},
-	}).WithSpec(mir_models.DeviceSpec{
+	}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: "update_dev_props",
 	})
-	dUpd := mir_models.NewDevice()
+	dUpd := mir_v1.NewDevice()
 	dUpd.Properties.Desired = map[string]any{
 		"test": "pizza",
 		"test2": map[string]any{
@@ -809,7 +809,7 @@ func TestPublishStoreDeviceUpdateProps(t *testing.T) {
 			"inner": []int{1, 2, 3},
 		},
 	}
-	dUpd2 := mir_models.NewDevice()
+	dUpd2 := mir_v1.NewDevice()
 	dUpd2.Properties.Desired = map[string]any{
 		"test":  "bob",
 		"test2": nil,
@@ -854,24 +854,24 @@ func TestPublishStoreDeviceUpdateProps(t *testing.T) {
 
 func TestPublishStoreDeviceUpdateStatus(t *testing.T) {
 	// Arrange
-	d := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	d := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Name:      "update_dev_st",
 		Namespace: "mirstore",
 		Labels: map[string]string{
 			"mirstore": "testing",
 		},
-	}).WithSpec(mir_models.DeviceSpec{
+	}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: "update_dev_st",
 	})
-	dUpd := mir_models.NewDevice().WithStatus(mir_models.DeviceStatus{
+	dUpd := mir_v1.NewDevice().WithStatus(mir_v1.DeviceStatus{
 		Online:         boolPtr(true),
 		LastHearthbeat: timePtr(time.Date(1992, 10, 14, 14, 0, 0, 0, time.UTC)),
-		Schema: mir_models.Schema{
+		Schema: mir_v1.Schema{
 			CompressedSchema: []byte{0x12},
 			PackageNames:     []string{"bob"},
 			LastSchemaFetch:  timePtr(time.Date(1992, 10, 14, 14, 0, 0, 0, time.UTC)),
 		},
-		Properties: mir_models.PropertiesTime{
+		Properties: mir_v1.PropertiesTime{
 			Desired: map[string]time.Time{
 				"test": time.Date(1992, 10, 14, 14, 0, 0, 0, time.UTC),
 			},
@@ -880,8 +880,8 @@ func TestPublishStoreDeviceUpdateStatus(t *testing.T) {
 			},
 		},
 	})
-	dUpd2 := mir_models.NewDevice().WithStatus(mir_models.DeviceStatus{
-		Properties: mir_models.PropertiesTime{
+	dUpd2 := mir_v1.NewDevice().WithStatus(mir_v1.DeviceStatus{
+		Properties: mir_v1.PropertiesTime{
 			Desired: map[string]time.Time{
 				"test": {},
 			},
@@ -921,7 +921,7 @@ func TestPublishStoreDeviceUpdateStatus(t *testing.T) {
 
 func TestPublishStoreDeviceUpdateMetaNameAlreadyExist(t *testing.T) {
 	// Arrange
-	d0 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	d0 := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Name:      "update_dev_al0",
 		Namespace: "mirstore",
 		Labels: map[string]string{
@@ -932,11 +932,11 @@ func TestPublishStoreDeviceUpdateMetaNameAlreadyExist(t *testing.T) {
 		Annotations: map[string]string{
 			"info": "supra",
 		},
-	}).WithSpec(mir_models.DeviceSpec{
+	}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: "update_dev_al0",
 		Disabled: boolPtr(true),
 	})
-	d1 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	d1 := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Name:      "update_dev_al1",
 		Namespace: "mirstore",
 		Labels: map[string]string{
@@ -947,7 +947,7 @@ func TestPublishStoreDeviceUpdateMetaNameAlreadyExist(t *testing.T) {
 		Annotations: map[string]string{
 			"info": "supra",
 		},
-	}).WithSpec(mir_models.DeviceSpec{
+	}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: "update_dev_al1",
 		Disabled: boolPtr(true),
 	})
@@ -969,7 +969,7 @@ func TestPublishStoreDeviceUpdateMetaNameAlreadyExist(t *testing.T) {
 
 func TestPublishStoreDeviceUpdateMetaIdAlreadyExist(t *testing.T) {
 	// Arrange
-	d0 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	d0 := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Namespace: "mirstore",
 		Labels: map[string]string{
 			"mirstore": "testing",
@@ -979,11 +979,11 @@ func TestPublishStoreDeviceUpdateMetaIdAlreadyExist(t *testing.T) {
 		Annotations: map[string]string{
 			"info": "supra",
 		},
-	}).WithSpec(mir_models.DeviceSpec{
+	}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: "update_dev_id0",
 		Disabled: boolPtr(true),
 	})
-	d1 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	d1 := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Namespace: "mirstore",
 		Labels: map[string]string{
 			"mirstore": "testing",
@@ -993,7 +993,7 @@ func TestPublishStoreDeviceUpdateMetaIdAlreadyExist(t *testing.T) {
 		Annotations: map[string]string{
 			"info": "supra",
 		},
-	}).WithSpec(mir_models.DeviceSpec{
+	}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: "update_dev_id1",
 		Disabled: boolPtr(true),
 	})
@@ -1007,7 +1007,7 @@ func TestPublishStoreDeviceUpdateMetaIdAlreadyExist(t *testing.T) {
 		t.Error(err)
 	}
 	d0.Spec.DeviceId = d1.Spec.DeviceId
-	_, err = mirStore.UpdateDevice(mir_models.DeviceTarget{Ids: []string{d0.Spec.DeviceId}}, d0)
+	_, err = mirStore.UpdateDevice(mir_v1.DeviceTarget{Ids: []string{d0.Spec.DeviceId}}, d0)
 
 	// Assert
 	assert.ErrorContains(t, err, "")
@@ -1015,7 +1015,7 @@ func TestPublishStoreDeviceUpdateMetaIdAlreadyExist(t *testing.T) {
 
 func TestPublishStoreDeviceUpdateMetaMultipleOnlyNamespace(t *testing.T) {
 	// Arrange
-	d0 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	d0 := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Name:      "update_dev_id0_onlyname",
 		Namespace: "mirstore",
 		Labels: map[string]string{
@@ -1026,11 +1026,11 @@ func TestPublishStoreDeviceUpdateMetaMultipleOnlyNamespace(t *testing.T) {
 		Annotations: map[string]string{
 			"info": "supra",
 		},
-	}).WithSpec(mir_models.DeviceSpec{
+	}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: "update_dev_id0_onlyname_1",
 		Disabled: boolPtr(true),
 	})
-	d1 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	d1 := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Name:      "update_dev_id0_onlyname",
 		Namespace: "mirstore2",
 		Labels: map[string]string{
@@ -1041,11 +1041,11 @@ func TestPublishStoreDeviceUpdateMetaMultipleOnlyNamespace(t *testing.T) {
 		Annotations: map[string]string{
 			"info": "supra",
 		},
-	}).WithSpec(mir_models.DeviceSpec{
+	}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: "update_dev_id0_onlyname_2",
 		Disabled: boolPtr(true),
 	})
-	d2 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	d2 := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Namespace: "mirstore3",
 	}) // Act
 	_, err := mirStore.CreateDevice(d0)
@@ -1056,7 +1056,7 @@ func TestPublishStoreDeviceUpdateMetaMultipleOnlyNamespace(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	_, err = mirStore.UpdateDevice(mir_models.ToTargets(d0, d1), d2)
+	_, err = mirStore.UpdateDevice(mir_v1.ToTargets(d0, d1), d2)
 
 	// Assert
 	assert.ErrorContains(t, err, "cannot update device as multiple device will have the same name 'update_dev_id0_onlyname' in namespace 'mirstore3'")
@@ -1064,7 +1064,7 @@ func TestPublishStoreDeviceUpdateMetaMultipleOnlyNamespace(t *testing.T) {
 
 func TestPublishStoreDeviceUpdateMetaMultipleOnlyName(t *testing.T) {
 	// Arrange
-	d0 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	d0 := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Name:      "update_dev_id0_onlynamens",
 		Namespace: "mirstore",
 		Labels: map[string]string{
@@ -1075,11 +1075,11 @@ func TestPublishStoreDeviceUpdateMetaMultipleOnlyName(t *testing.T) {
 		Annotations: map[string]string{
 			"info": "supra",
 		},
-	}).WithSpec(mir_models.DeviceSpec{
+	}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: "update_dev_id0_onlynamens_1",
 		Disabled: boolPtr(true),
 	})
-	d1 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	d1 := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Name:      "update_dev_id1_onlynamens",
 		Namespace: "mirstore",
 		Labels: map[string]string{
@@ -1090,11 +1090,11 @@ func TestPublishStoreDeviceUpdateMetaMultipleOnlyName(t *testing.T) {
 		Annotations: map[string]string{
 			"info": "supra",
 		},
-	}).WithSpec(mir_models.DeviceSpec{
+	}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: "update_dev_id0_onlynamens_2",
 		Disabled: boolPtr(true),
 	})
-	d2 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	d2 := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Name: "clash_name_b",
 	}) // Act
 	_, err := mirStore.CreateDevice(d0)
@@ -1105,7 +1105,7 @@ func TestPublishStoreDeviceUpdateMetaMultipleOnlyName(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	_, err = mirStore.UpdateDevice(mir_models.ToTargets(d0, d1), d2)
+	_, err = mirStore.UpdateDevice(mir_v1.ToTargets(d0, d1), d2)
 
 	// Assert
 	assert.ErrorContains(t, err, "cannot update device as multiple device will have the same name 'clash_name_b' in namespace 'mirstore'")
@@ -1113,7 +1113,7 @@ func TestPublishStoreDeviceUpdateMetaMultipleOnlyName(t *testing.T) {
 
 func TestMergeDeviceBasic(t *testing.T) {
 	// Arrange
-	device := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	device := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Name:      "merge_device_basic",
 		Namespace: "mirstore",
 		Labels: map[string]string{
@@ -1122,7 +1122,7 @@ func TestMergeDeviceBasic(t *testing.T) {
 		Annotations: map[string]string{
 			"info": "original",
 		},
-	}).WithSpec(mir_models.DeviceSpec{
+	}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: "merge_device_basic",
 		Disabled: boolPtr(false),
 	})
@@ -1171,13 +1171,13 @@ func TestMergeDeviceBasic(t *testing.T) {
 
 func TestMergeDeviceSpec(t *testing.T) {
 	// Arrange
-	device := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	device := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Name:      "merge_device_spec",
 		Namespace: "mirstore",
 		Labels: map[string]string{
 			"mirstore": "testing",
 		},
-	}).WithSpec(mir_models.DeviceSpec{
+	}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: "merge_device_spec",
 		Disabled: boolPtr(false),
 	})
@@ -1213,17 +1213,17 @@ func TestMergeDeviceSpec(t *testing.T) {
 
 func TestMergeDeviceProperties(t *testing.T) {
 	// Arrange
-	device := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	device := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Name:      "merge_device_props",
 		Namespace: "mirstore",
 		Labels: map[string]string{
 			"mirstore": "testing",
 		},
-	}).WithSpec(mir_models.DeviceSpec{
+	}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: "merge_device_props",
 	})
 
-	initialProps := mir_models.DeviceProperties{
+	initialProps := mir_v1.DeviceProperties{
 		Desired: map[string]any{
 			"config": map[string]any{
 				"feature1": true,
@@ -1307,13 +1307,13 @@ func TestMergeDeviceProperties(t *testing.T) {
 
 func TestMergeDeviceInvalidJson(t *testing.T) {
 	// Arrange
-	device := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	device := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Name:      "merge_device_invalid",
 		Namespace: "mirstore",
 		Labels: map[string]string{
 			"mirstore": "testing",
 		},
-	}).WithSpec(mir_models.DeviceSpec{
+	}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: "merge_device_invalid",
 	})
 
@@ -1335,37 +1335,37 @@ func TestMergeDeviceInvalidJson(t *testing.T) {
 
 func TestMergeDeviceNoTarget(t *testing.T) {
 	// Arrange
-	emptyTarget := mir_models.DeviceTarget{}
+	emptyTarget := mir_v1.DeviceTarget{}
 	patch := []byte(`{"meta": {"labels": {"test": "value"}}}`)
 
 	// Act
 	_, err := mirStore.MergeDevice(emptyTarget, patch, MergePatch)
 
 	// Assert
-	assert.ErrorContains(t, err, mir_models.ErrorNoDeviceTargetProvided.Error())
+	assert.ErrorContains(t, err, mir_v1.ErrorNoDeviceTargetProvided.Error())
 }
 
 func TestMergeDeviceUniqueConstraintViolation(t *testing.T) {
 	// Arrange
 	// Create first device
-	device1 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	device1 := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Name:      "merge_device_unique1",
 		Namespace: "mirstore",
 		Labels: map[string]string{
 			"mirstore": "testing",
 		},
-	}).WithSpec(mir_models.DeviceSpec{
+	}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: "merge_device_unique1",
 	})
 
 	// Create second device
-	device2 := mir_models.NewDevice().WithMeta(mir_models.Meta{
+	device2 := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Name:      "merge_device_unique2",
 		Namespace: "mirstore",
 		Labels: map[string]string{
 			"mirstore": "testing",
 		},
-	}).WithSpec(mir_models.DeviceSpec{
+	}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: "merge_device_unique2",
 	})
 
@@ -1412,26 +1412,26 @@ func TestPublishEventStoreCreateRequest(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	m := mir_models.NewEvent().WithMeta(mir_models.Meta{
+	m := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "create_event",
 		Namespace: "store_test",
 		Labels: map[string]string{
 			"mirstore": "testing",
 		},
-	}).WithSpec(mir_models.EventSpec{
-		Type:    mir_models.EventTypeNormal,
+	}).WithSpec(mir_v1.EventSpec{
+		Type:    mir_v1.EventTypeNormal,
 		Reason:  "integration_test",
 		Message: "a simple test",
-		RelatedObject: mir_models.Object{
+		RelatedObject: mir_v1.Object{
 			ApiVersion: "mir/v1alpha",
 			Kind:       "device",
-			Meta: mir_models.Meta{
+			Meta: mir_v1.Meta{
 				Name:      "device1",
 				Namespace: "store_test",
 			},
 		},
 		Payload: j,
-	}).WithStatus(mir_models.EventStatus{
+	}).WithStatus(mir_v1.EventStatus{
 		Count:   1,
 		FirstAt: time.Now().UTC(),
 		LastAt:  time.Now().UTC(),
@@ -1449,14 +1449,14 @@ func TestPublishEventStoreCreateRequest(t *testing.T) {
 
 func TestPublishEventStoreNotUnique(t *testing.T) {
 	// Arrange
-	m := mir_models.NewEvent().WithMeta(mir_models.Meta{
+	m := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "create_event_unique",
 		Namespace: "store_test",
 		Labels: map[string]string{
 			"mirstore": "testing",
 		},
 	})
-	m2 := mir_models.NewEvent().WithMeta(mir_models.Meta{
+	m2 := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "create_event_unique",
 		Namespace: "store_test",
 		Labels: map[string]string{
@@ -1478,19 +1478,19 @@ func TestPublishEventStoreNotUnique(t *testing.T) {
 
 func TestPublishEventStoreListName(t *testing.T) {
 	// Arrange
-	tar := mir_models.EventTarget{
-		ObjectTarget: mir_models.ObjectTarget{
+	tar := mir_v1.EventTarget{
+		ObjectTarget: mir_v1.ObjectTarget{
 			Names: []string{"list_event_1", "list_event_2"},
 		},
 	}
-	m := mir_models.NewEvent().WithMeta(mir_models.Meta{
+	m := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "list_event_1",
 		Namespace: "store_test",
 		Labels: map[string]string{
 			"mirstore": "testing",
 		},
 	})
-	m2 := mir_models.NewEvent().WithMeta(mir_models.Meta{
+	m2 := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "list_event_2",
 		Namespace: "store_test",
 		Labels: map[string]string{
@@ -1521,19 +1521,19 @@ func TestPublishEventStoreListName(t *testing.T) {
 
 func TestPublishEventStoreListNamespace(t *testing.T) {
 	// Arrange
-	tar := mir_models.EventTarget{
-		ObjectTarget: mir_models.ObjectTarget{
+	tar := mir_v1.EventTarget{
+		ObjectTarget: mir_v1.ObjectTarget{
 			Namespaces: []string{"events_list_test"},
 		},
 	}
-	m := mir_models.NewEvent().WithMeta(mir_models.Meta{
+	m := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "list_event_1_ns",
 		Namespace: "events_list_test",
 		Labels: map[string]string{
 			"mirstore": "testing",
 		},
 	})
-	m2 := mir_models.NewEvent().WithMeta(mir_models.Meta{
+	m2 := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "list_event_2_ns",
 		Namespace: "events_list_test",
 		Labels: map[string]string{
@@ -1564,12 +1564,12 @@ func TestPublishEventStoreListNamespace(t *testing.T) {
 
 func TestPublishEventStoreListLabels(t *testing.T) {
 	// Arrange
-	tar := mir_models.EventTarget{
-		ObjectTarget: mir_models.ObjectTarget{
+	tar := mir_v1.EventTarget{
+		ObjectTarget: mir_v1.ObjectTarget{
 			Labels: map[string]string{"test": "list_labels"},
 		},
 	}
-	m := mir_models.NewEvent().WithMeta(mir_models.Meta{
+	m := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "list_event_1_lbl",
 		Namespace: "store_test",
 		Labels: map[string]string{
@@ -1577,7 +1577,7 @@ func TestPublishEventStoreListLabels(t *testing.T) {
 			"test":     "list_labels",
 		},
 	})
-	m2 := mir_models.NewEvent().WithMeta(mir_models.Meta{
+	m2 := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "list_event_2_lbl",
 		Namespace: "store_test",
 		Labels: map[string]string{
@@ -1609,13 +1609,13 @@ func TestPublishEventStoreListLabels(t *testing.T) {
 
 func TestPublishEventStoreListLimit(t *testing.T) {
 	// Arrange
-	tar := mir_models.EventTarget{
-		ObjectTarget: mir_models.ObjectTarget{
+	tar := mir_v1.EventTarget{
+		ObjectTarget: mir_v1.ObjectTarget{
 			Labels: map[string]string{"test": "list_limit"},
 		},
 		Limit: 2,
 	}
-	m := mir_models.NewEvent().WithMeta(mir_models.Meta{
+	m := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "list_event_1_limit",
 		Namespace: "store_test",
 		Labels: map[string]string{
@@ -1623,7 +1623,7 @@ func TestPublishEventStoreListLimit(t *testing.T) {
 			"test":     "list_limit",
 		},
 	})
-	m2 := mir_models.NewEvent().WithMeta(mir_models.Meta{
+	m2 := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "list_event_2_limit",
 		Namespace: "store_test",
 		Labels: map[string]string{
@@ -1631,7 +1631,7 @@ func TestPublishEventStoreListLimit(t *testing.T) {
 			"test":     "list_limit",
 		},
 	})
-	m3 := mir_models.NewEvent().WithMeta(mir_models.Meta{
+	m3 := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "list_event_3_limit",
 		Namespace: "store_test",
 		Labels: map[string]string{
@@ -1666,42 +1666,42 @@ func TestPublishEventStoreListLimit(t *testing.T) {
 
 func TestPublishEventStoreListDateNow(t *testing.T) {
 	// Arrange
-	tar := mir_models.EventTarget{
-		ObjectTarget: mir_models.ObjectTarget{
+	tar := mir_v1.EventTarget{
+		ObjectTarget: mir_v1.ObjectTarget{
 			Namespaces: []string{"store_test_time"},
 		},
-		DateFilter: mir_models.DateFilter{
+		DateFilter: mir_v1.DateFilter{
 			From: time.Date(2025, 05, 7, 0, 0, 0, 0, time.UTC),
 		},
 	}
-	m := mir_models.NewEvent().WithMeta(mir_models.Meta{
+	m := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "list_event_1_lbl",
 		Namespace: "store_test_time",
 		Labels: map[string]string{
 			"mirstore": "testing",
 			"test":     "list_limit",
 		},
-	}).WithStatus(mir_models.EventStatus{
+	}).WithStatus(mir_v1.EventStatus{
 		FirstAt: time.Date(2025, 05, 7, 13, 0, 0, 0, time.UTC),
 	})
-	m2 := mir_models.NewEvent().WithMeta(mir_models.Meta{
+	m2 := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "list_event_2_lbl",
 		Namespace: "store_test_time",
 		Labels: map[string]string{
 			"mirstore": "testing",
 			"test":     "list_limit",
 		},
-	}).WithStatus(mir_models.EventStatus{
+	}).WithStatus(mir_v1.EventStatus{
 		FirstAt: time.Date(2025, 05, 7, 12, 0, 0, 0, time.UTC),
 	})
-	m3 := mir_models.NewEvent().WithMeta(mir_models.Meta{
+	m3 := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "list_event_3_lbl",
 		Namespace: "store_test_time",
 		Labels: map[string]string{
 			"mirstore": "testing",
 			"test":     "list_limit",
 		},
-	}).WithStatus(mir_models.EventStatus{
+	}).WithStatus(mir_v1.EventStatus{
 		FirstAt: time.Date(2025, 05, 5, 0, 0, 0, 0, time.UTC),
 	})
 	// Act
@@ -1732,43 +1732,43 @@ func TestPublishEventStoreListDateNow(t *testing.T) {
 
 func TestPublishEventStoreListDateToFrom(t *testing.T) {
 	// Arrange
-	tar := mir_models.EventTarget{
-		ObjectTarget: mir_models.ObjectTarget{
+	tar := mir_v1.EventTarget{
+		ObjectTarget: mir_v1.ObjectTarget{
 			Namespaces: []string{"store_test_time_to_from"},
 		},
-		DateFilter: mir_models.DateFilter{
+		DateFilter: mir_v1.DateFilter{
 			From: time.Date(2025, 05, 7, 0, 0, 0, 0, time.UTC),
 			To:   time.Date(2025, 05, 7, 12, 0, 0, 0, time.UTC),
 		},
 	}
-	m := mir_models.NewEvent().WithMeta(mir_models.Meta{
+	m := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "list_event_1_lbl",
 		Namespace: "store_test_time_to_from",
 		Labels: map[string]string{
 			"mirstore": "testing",
 			"test":     "list_limit",
 		},
-	}).WithStatus(mir_models.EventStatus{
+	}).WithStatus(mir_v1.EventStatus{
 		FirstAt: time.Date(2025, 05, 7, 13, 0, 0, 0, time.UTC),
 	})
-	m2 := mir_models.NewEvent().WithMeta(mir_models.Meta{
+	m2 := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "list_event_2_lbl",
 		Namespace: "store_test_time_to_from",
 		Labels: map[string]string{
 			"mirstore": "testing",
 			"test":     "list_limit",
 		},
-	}).WithStatus(mir_models.EventStatus{
+	}).WithStatus(mir_v1.EventStatus{
 		FirstAt: time.Date(2025, 05, 7, 12, 0, 0, 0, time.UTC),
 	})
-	m3 := mir_models.NewEvent().WithMeta(mir_models.Meta{
+	m3 := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "list_event_3_lbl",
 		Namespace: "store_test_time_to_from",
 		Labels: map[string]string{
 			"mirstore": "testing",
 			"test":     "list_limit",
 		},
-	}).WithStatus(mir_models.EventStatus{
+	}).WithStatus(mir_v1.EventStatus{
 		FirstAt: time.Date(2025, 05, 5, 0, 0, 0, 0, time.UTC),
 	})
 	// Act
@@ -1799,19 +1799,19 @@ func TestPublishEventStoreListDateToFrom(t *testing.T) {
 
 func TestPublishEventStoreDeleteName(t *testing.T) {
 	// Arrange
-	tar := mir_models.EventTarget{
-		ObjectTarget: mir_models.ObjectTarget{
+	tar := mir_v1.EventTarget{
+		ObjectTarget: mir_v1.ObjectTarget{
 			Names: []string{"delete_event_1", "delete_event_2"},
 		},
 	}
-	m := mir_models.NewEvent().WithMeta(mir_models.Meta{
+	m := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "delete_event_1",
 		Namespace: "store_test",
 		Labels: map[string]string{
 			"mirstore": "testing",
 		},
 	})
-	m2 := mir_models.NewEvent().WithMeta(mir_models.Meta{
+	m2 := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "delete_event_2",
 		Namespace: "store_test",
 		Labels: map[string]string{
@@ -1846,19 +1846,19 @@ func TestPublishEventStoreDeleteName(t *testing.T) {
 
 func TestPublishEventStoreDeleteNamespace(t *testing.T) {
 	// Arrange
-	tar := mir_models.EventTarget{
-		ObjectTarget: mir_models.ObjectTarget{
+	tar := mir_v1.EventTarget{
+		ObjectTarget: mir_v1.ObjectTarget{
 			Namespaces: []string{"events_delete_test"},
 		},
 	}
-	m := mir_models.NewEvent().WithMeta(mir_models.Meta{
+	m := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "delete_event_1_ns",
 		Namespace: "events_delete_test",
 		Labels: map[string]string{
 			"mirstore": "testing",
 		},
 	})
-	m2 := mir_models.NewEvent().WithMeta(mir_models.Meta{
+	m2 := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "delete_event_2_ns",
 		Namespace: "events_delete_test",
 		Labels: map[string]string{
@@ -1893,12 +1893,12 @@ func TestPublishEventStoreDeleteNamespace(t *testing.T) {
 
 func TestPublishEventStoreDeleteLabels(t *testing.T) {
 	// Arrange
-	tar := mir_models.EventTarget{
-		ObjectTarget: mir_models.ObjectTarget{
+	tar := mir_v1.EventTarget{
+		ObjectTarget: mir_v1.ObjectTarget{
 			Labels: map[string]string{"test": "delete_labels"},
 		},
 	}
-	m := mir_models.NewEvent().WithMeta(mir_models.Meta{
+	m := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "delete_event_1_lbl",
 		Namespace: "store_test",
 		Labels: map[string]string{
@@ -1906,7 +1906,7 @@ func TestPublishEventStoreDeleteLabels(t *testing.T) {
 			"test":     "delete_labels",
 		},
 	})
-	m2 := mir_models.NewEvent().WithMeta(mir_models.Meta{
+	m2 := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "delete_event_2_lbl",
 		Namespace: "store_test",
 		Labels: map[string]string{
@@ -1953,10 +1953,10 @@ func TestPublishEventStoreUpdateMetaLblAnnoRequest(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	tar := mir_models.ObjectTarget{
+	tar := mir_v1.ObjectTarget{
 		Names: []string{"update_event_meta_lbl"},
 	}
-	m := mir_models.NewEvent().WithMeta(mir_models.Meta{
+	m := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "update_event_meta_lbl",
 		Namespace: "store_test",
 		Labels: map[string]string{
@@ -1967,26 +1967,26 @@ func TestPublishEventStoreUpdateMetaLblAnnoRequest(t *testing.T) {
 			"mirstore": "testing",
 			"key3":     "test",
 		},
-	}).WithSpec(mir_models.EventSpec{
-		Type:    mir_models.EventTypeNormal,
+	}).WithSpec(mir_v1.EventSpec{
+		Type:    mir_v1.EventTypeNormal,
 		Reason:  "integration_test",
 		Message: "a simple test",
-		RelatedObject: mir_models.Object{
+		RelatedObject: mir_v1.Object{
 			ApiVersion: "mir/v1alpha",
 			Kind:       "device",
-			Meta: mir_models.Meta{
+			Meta: mir_v1.Meta{
 				Name:      "device1",
 				Namespace: "store_test",
 			},
 		},
 		Payload: j,
-	}).WithStatus(mir_models.EventStatus{
+	}).WithStatus(mir_v1.EventStatus{
 		Count:   1,
 		FirstAt: time.Now().UTC(),
 		LastAt:  time.Now().UTC(),
 	})
-	upd := mir_models.EventUpdate{
-		Meta: &mir_models.MetaUpdate{
+	upd := mir_v1.EventUpdate{
+		Meta: &mir_v1.MetaUpdate{
 			Labels: map[string]*string{
 				"caca_mou": strPtr("bien_mou"),
 				"key3":     nil,
@@ -2034,35 +2034,35 @@ func TestPublishEventStoreUpdateNameRequest(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	tar := mir_models.ObjectTarget{
+	tar := mir_v1.ObjectTarget{
 		Names: []string{"update_event_meta_name"},
 	}
-	m := mir_models.NewEvent().WithMeta(mir_models.Meta{
+	m := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "update_event_meta_name",
 		Namespace: "store_test",
 		Labels: map[string]string{
 			"mirstore": "testing",
 		},
-	}).WithSpec(mir_models.EventSpec{
-		Type:    mir_models.EventTypeNormal,
+	}).WithSpec(mir_v1.EventSpec{
+		Type:    mir_v1.EventTypeNormal,
 		Reason:  "integration_test",
 		Message: "a simple test",
-		RelatedObject: mir_models.Object{
+		RelatedObject: mir_v1.Object{
 			ApiVersion: "mir/v1alpha",
 			Kind:       "device",
-			Meta: mir_models.Meta{
+			Meta: mir_v1.Meta{
 				Name:      "device1",
 				Namespace: "store_test",
 			},
 		},
 		Payload: j,
-	}).WithStatus(mir_models.EventStatus{
+	}).WithStatus(mir_v1.EventStatus{
 		Count:   1,
 		FirstAt: time.Now().UTC(),
 		LastAt:  time.Now().UTC(),
 	})
-	upd := mir_models.EventUpdate{
-		Meta: &mir_models.MetaUpdate{
+	upd := mir_v1.EventUpdate{
+		Meta: &mir_v1.MetaUpdate{
 			Name: strPtr("update_event_new_name"),
 		},
 	}
@@ -2085,25 +2085,25 @@ func TestPublishEventStoreUpdateNameRequest(t *testing.T) {
 
 func TestPublishEventStoreUpdateNameRequestDuplicate(t *testing.T) {
 	// Arrange
-	tar := mir_models.ObjectTarget{
+	tar := mir_v1.ObjectTarget{
 		Names: []string{"update_event_meta_name_1"},
 	}
-	m := mir_models.NewEvent().WithMeta(mir_models.Meta{
+	m := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "update_event_meta_name_1",
 		Namespace: "store_test",
 		Labels: map[string]string{
 			"mirstore": "testing",
 		},
 	})
-	m2 := mir_models.NewEvent().WithMeta(mir_models.Meta{
+	m2 := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "update_event_meta_name_2",
 		Namespace: "store_test",
 		Labels: map[string]string{
 			"mirstore": "testing",
 		},
 	})
-	upd := mir_models.EventUpdate{
-		Meta: &mir_models.MetaUpdate{
+	upd := mir_v1.EventUpdate{
+		Meta: &mir_v1.MetaUpdate{
 			Name: strPtr("update_event_meta_name_2"),
 		},
 	}
@@ -2128,25 +2128,25 @@ func TestPublishEventStoreUpdateNameRequestDuplicate(t *testing.T) {
 
 func TestPublishEventStoreUpdateNamespaceRequestDuplicate(t *testing.T) {
 	// Arrange
-	tar := mir_models.ObjectTarget{
+	tar := mir_v1.ObjectTarget{
 		Names: []string{"update_event_meta_namespace_1"},
 	}
-	m := mir_models.NewEvent().WithMeta(mir_models.Meta{
+	m := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "update_event_meta_namespace_1",
 		Namespace: "store_test",
 		Labels: map[string]string{
 			"mirstore": "testing",
 		},
 	})
-	m2 := mir_models.NewEvent().WithMeta(mir_models.Meta{
+	m2 := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "update_event_meta_namespace_1",
 		Namespace: "test_ns",
 		Labels: map[string]string{
 			"mirstore": "testing",
 		},
 	})
-	upd := mir_models.EventUpdate{
-		Meta: &mir_models.MetaUpdate{
+	upd := mir_v1.EventUpdate{
+		Meta: &mir_v1.MetaUpdate{
 			Namespace: strPtr("test_ns"),
 		},
 	}
@@ -2171,25 +2171,25 @@ func TestPublishEventStoreUpdateNamespaceRequestDuplicate(t *testing.T) {
 
 func TestPublishEventStoreUpdateNameNamespaceRequestDuplicate(t *testing.T) {
 	// Arrange
-	tar := mir_models.ObjectTarget{
+	tar := mir_v1.ObjectTarget{
 		Names: []string{"update_event_meta_namens_1"},
 	}
-	m := mir_models.NewEvent().WithMeta(mir_models.Meta{
+	m := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "update_event_meta_namens_1",
 		Namespace: "store_test",
 		Labels: map[string]string{
 			"mirstore": "testing",
 		},
 	})
-	m2 := mir_models.NewEvent().WithMeta(mir_models.Meta{
+	m2 := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "update_event_meta_namens_2",
 		Namespace: "test_ns",
 		Labels: map[string]string{
 			"mirstore": "testing",
 		},
 	})
-	upd := mir_models.EventUpdate{
-		Meta: &mir_models.MetaUpdate{
+	upd := mir_v1.EventUpdate{
+		Meta: &mir_v1.MetaUpdate{
 			Name:      strPtr("update_event_meta_namens_2"),
 			Namespace: strPtr("test_ns"),
 		},
@@ -2235,36 +2235,36 @@ func TestPublishEventStoreUpdateSpecRequest(t *testing.T) {
 		t.Error(err)
 	}
 	jRaw := jsonyaml.RawMessage(jUpd)
-	tar := mir_models.ObjectTarget{
+	tar := mir_v1.ObjectTarget{
 		Names: []string{"update_event_spec"},
 	}
-	m := mir_models.NewEvent().WithMeta(mir_models.Meta{
+	m := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "update_event_spec",
 		Namespace: "store_test",
 		Labels: map[string]string{
 			"mirstore": "testing",
 		},
-	}).WithSpec(mir_models.EventSpec{
-		Type:    mir_models.EventTypeNormal,
+	}).WithSpec(mir_v1.EventSpec{
+		Type:    mir_v1.EventTypeNormal,
 		Reason:  "integration_test",
 		Message: "a simple test",
-		RelatedObject: mir_models.Object{
+		RelatedObject: mir_v1.Object{
 			ApiVersion: "mir/v1alpha",
 			Kind:       "device",
-			Meta: mir_models.Meta{
+			Meta: mir_v1.Meta{
 				Name:      "device1",
 				Namespace: "store_test",
 			},
 		},
 		Payload: j,
-	}).WithStatus(mir_models.EventStatus{
+	}).WithStatus(mir_v1.EventStatus{
 		Count:   1,
 		FirstAt: time.Now().UTC(),
 		LastAt:  time.Now().UTC(),
 	})
-	upd := mir_models.EventUpdate{
-		Spec: &mir_models.EventUpdateSpec{
-			Type:    strPtr(mir_models.EventTypeWarning),
+	upd := mir_v1.EventUpdate{
+		Spec: &mir_v1.EventUpdateSpec{
+			Type:    strPtr(mir_v1.EventTypeWarning),
 			Reason:  strPtr("pizza"),
 			Message: strPtr("test_de_la_mort"),
 			Payload: &jRaw,
@@ -2311,35 +2311,35 @@ func TestPublishEventStoreUpdateStatusRequest(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	tar := mir_models.ObjectTarget{
+	tar := mir_v1.ObjectTarget{
 		Names: []string{"update_event_status"},
 	}
-	m := mir_models.NewEvent().WithMeta(mir_models.Meta{
+	m := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "update_event_status",
 		Namespace: "store_test",
 		Labels: map[string]string{
 			"mirstore": "testing",
 		},
-	}).WithSpec(mir_models.EventSpec{
-		Type:    mir_models.EventTypeNormal,
+	}).WithSpec(mir_v1.EventSpec{
+		Type:    mir_v1.EventTypeNormal,
 		Reason:  "integration_test",
 		Message: "a simple test",
-		RelatedObject: mir_models.Object{
+		RelatedObject: mir_v1.Object{
 			ApiVersion: "mir/v1alpha",
 			Kind:       "device",
-			Meta: mir_models.Meta{
+			Meta: mir_v1.Meta{
 				Name:      "device1",
 				Namespace: "store_test",
 			},
 		},
 		Payload: j,
-	}).WithStatus(mir_models.EventStatus{
+	}).WithStatus(mir_v1.EventStatus{
 		Count:   1,
 		FirstAt: time.Now().UTC(),
 		LastAt:  time.Now().UTC(),
 	})
-	upd := mir_models.EventUpdate{
-		Status: &mir_models.EventUpdateStatus{
+	upd := mir_v1.EventUpdate{
+		Status: &mir_v1.EventUpdateStatus{
 			Count:   intPtr(3),
 			FirstAt: timePtr(time.Date(2014, 10, 14, 5, 5, 5, 5, time.UTC)),
 			LastAt:  timePtr(time.Date(2014, 10, 14, 5, 5, 5, 5, time.UTC)),
@@ -2366,12 +2366,12 @@ func TestPublishEventStoreUpdateStatusRequest(t *testing.T) {
 
 func TestPbulishListDeviceWithEvents(t *testing.T) {
 	// Arrange
-	tar := mir_models.DeviceTarget{
+	tar := mir_v1.DeviceTarget{
 		Ids: []string{"peanut_butter"},
 	}
-	dev := mir_models.Device{
-		Object: mir_models.Object{
-			Meta: mir_models.Meta{
+	dev := mir_v1.Device{
+		Object: mir_v1.Object{
+			Meta: mir_v1.Meta{
 				Name:      "peanut_butter",
 				Namespace: "eventstore_testing",
 				Labels: map[string]string{
@@ -2379,37 +2379,37 @@ func TestPbulishListDeviceWithEvents(t *testing.T) {
 				},
 			},
 		},
-		Spec: mir_models.DeviceSpec{
+		Spec: mir_v1.DeviceSpec{
 			DeviceId: "peanut_butter",
 		},
 	}
-	m := mir_models.NewEvent().WithMeta(mir_models.Meta{
+	m := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "list_dev_with_event_1",
 		Namespace: "eventstore_testing",
 		Labels: map[string]string{
 			"mirstore": "testing",
 		},
-	}).WithSpec(mir_models.EventSpec{
-		Type:   mir_models.EventTypeNormal,
+	}).WithSpec(mir_v1.EventSpec{
+		Type:   mir_v1.EventTypeNormal,
 		Reason: "PEANUT",
-		RelatedObject: mir_models.Object{
-			Meta: mir_models.Meta{
+		RelatedObject: mir_v1.Object{
+			Meta: mir_v1.Meta{
 				Name:      "peanut_butter",
 				Namespace: "eventstore_testing",
 			},
 		},
 	})
-	m2 := mir_models.NewEvent().WithMeta(mir_models.Meta{
+	m2 := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "list_dev_with_event_2",
 		Namespace: "eventstore_testing",
 		Labels: map[string]string{
 			"mirstore": "testing",
 		},
-	}).WithSpec(mir_models.EventSpec{
-		Type:   mir_models.EventTypeNormal,
+	}).WithSpec(mir_v1.EventSpec{
+		Type:   mir_v1.EventTypeNormal,
 		Reason: "PEANUT",
-		RelatedObject: mir_models.Object{
-			Meta: mir_models.Meta{
+		RelatedObject: mir_v1.Object{
+			Meta: mir_v1.Meta{
 				Name:      "peanut_butter",
 				Namespace: "eventstore_testing",
 			},

@@ -10,7 +10,7 @@ import (
 	"github.com/maxthom/mir/internal/clients"
 	"github.com/maxthom/mir/internal/clients/core_client"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
-	"github.com/maxthom/mir/pkgs/mir_models"
+	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
 )
@@ -109,18 +109,18 @@ func (r *serverRoutes) CreateDevice() *createDeviceRoute {
 }
 
 // Subscribe to createDevice routes
-func (r *createDeviceRoute) Subscribe(f func(msg *Msg, clientId string, d mir_models.Device) (mir_models.Device, error)) error {
+func (r *createDeviceRoute) Subscribe(f func(msg *Msg, clientId string, d mir_v1.Device) (mir_v1.Device, error)) error {
 	sbj := core_client.CreateDeviceRequest.WithId("*")
 	return r.m.subscribe(sbj, r.handlerWrapper(f))
 }
 
 // Queue subscribe to createDevice routes
-func (r *createDeviceRoute) QueueSubscribe(queue string, f func(msg *Msg, clientId string, d mir_models.Device) (mir_models.Device, error)) error {
+func (r *createDeviceRoute) QueueSubscribe(queue string, f func(msg *Msg, clientId string, d mir_v1.Device) (mir_v1.Device, error)) error {
 	sbj := core_client.CreateDeviceRequest.WithId("*")
 	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
 }
 
-func (r *createDeviceRoute) handlerWrapper(f func(msg *Msg, clientId string, d mir_models.Device) (mir_models.Device, error)) nats.MsgHandler {
+func (r *createDeviceRoute) handlerWrapper(f func(msg *Msg, clientId string, d mir_v1.Device) (mir_v1.Device, error)) nats.MsgHandler {
 	return func(msg *nats.Msg) {
 		req := &core_apiv1.CreateDeviceRequest{}
 		if err := proto.Unmarshal(msg.Data, req); err != nil {
@@ -131,7 +131,7 @@ func (r *createDeviceRoute) handlerWrapper(f func(msg *Msg, clientId string, d m
 			return
 		}
 
-		resp, err := f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), mir_models.NewDeviceFromCreateDeviceReq(req))
+		resp, err := f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), mir_v1.NewDeviceFromCreateDeviceReq(req))
 		if err != nil {
 			err = r.m.sendReplyOrAck(msg, &core_apiv1.CreateDeviceResponse{Response: &core_apiv1.CreateDeviceResponse_Error{
 				Error: err.Error(),
@@ -141,36 +141,36 @@ func (r *createDeviceRoute) handlerWrapper(f func(msg *Msg, clientId string, d m
 
 		err = r.m.sendReplyOrAck(msg, &core_apiv1.CreateDeviceResponse{
 			Response: &core_apiv1.CreateDeviceResponse_Ok{
-				Ok: mir_models.NewProtoDeviceFromDevice(resp),
+				Ok: mir_v1.NewProtoDeviceFromDevice(resp),
 			},
 		})
 	}
 }
 
 // Request creation of a new device
-func (r *createDeviceRoute) Request(d mir_models.Device) (mir_models.Device, error) {
+func (r *createDeviceRoute) Request(d mir_v1.Device) (mir_v1.Device, error) {
 	sbj := core_client.CreateDeviceRequest.WithId(r.m.GetInstanceName())
-	req := mir_models.NewCreateDeviceReqFromDevice(d)
+	req := mir_v1.NewCreateDeviceReqFromDevice(d)
 	bReq, err := proto.Marshal(req)
 	if err != nil {
-		return mir_models.Device{}, err
+		return mir_v1.Device{}, err
 	}
 
 	resMsg, err := r.m.request(sbj, bReq, nil, defaultTimeout)
 	if err != nil {
-		return mir_models.Device{}, err
+		return mir_v1.Device{}, err
 	}
 
 	resp := &core_apiv1.CreateDeviceResponse{}
 	err = proto.Unmarshal(resMsg.Data, resp)
 	if err != nil {
-		return mir_models.Device{}, err
+		return mir_v1.Device{}, err
 	}
 	if resp.GetError() != "" {
-		return mir_models.Device{}, errors.New(resp.GetError())
+		return mir_v1.Device{}, errors.New(resp.GetError())
 	}
 
-	return mir_models.NewDeviceFromProtoDevice(resp.GetOk()), nil
+	return mir_v1.NewDeviceFromProtoDevice(resp.GetOk()), nil
 }
 
 /// UpdateDevice
@@ -185,18 +185,18 @@ func (r *serverRoutes) UpdateDevice() *updateDeviceRoute {
 }
 
 // Subscribe to update device routes
-func (r *updateDeviceRoute) Subscribe(f func(msg *Msg, clientId string, t mir_models.DeviceTarget, d mir_models.Device) ([]mir_models.Device, error)) error {
+func (r *updateDeviceRoute) Subscribe(f func(msg *Msg, clientId string, t mir_v1.DeviceTarget, d mir_v1.Device) ([]mir_v1.Device, error)) error {
 	sbj := core_client.UpdateDeviceRequest.WithId("*")
 	return r.m.subscribe(sbj, r.handlerWrapper(f))
 }
 
 // Queue subscribe to update device routes
-func (r *updateDeviceRoute) QueueSubscribe(queue string, f func(msg *Msg, clientId string, t mir_models.DeviceTarget, d mir_models.Device) ([]mir_models.Device, error)) error {
+func (r *updateDeviceRoute) QueueSubscribe(queue string, f func(msg *Msg, clientId string, t mir_v1.DeviceTarget, d mir_v1.Device) ([]mir_v1.Device, error)) error {
 	sbj := core_client.UpdateDeviceRequest.WithId("*")
 	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
 }
 
-func (r *updateDeviceRoute) handlerWrapper(f func(msg *Msg, clientId string, t mir_models.DeviceTarget, d mir_models.Device) ([]mir_models.Device, error)) nats.MsgHandler {
+func (r *updateDeviceRoute) handlerWrapper(f func(msg *Msg, clientId string, t mir_v1.DeviceTarget, d mir_v1.Device) ([]mir_v1.Device, error)) nats.MsgHandler {
 	return func(msg *nats.Msg) {
 		req := &core_apiv1.UpdateDeviceRequest{}
 		if err := proto.Unmarshal(msg.Data, req); err != nil {
@@ -206,7 +206,7 @@ func (r *updateDeviceRoute) handlerWrapper(f func(msg *Msg, clientId string, t m
 			return
 		}
 
-		resp, err := f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), mir_models.ProtoDeviceTargetToMirDeviceTarget(req.Targets), mir_models.NewDeviceFromUpdateDeviceReq(req))
+		resp, err := f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), mir_v1.ProtoDeviceTargetToMirDeviceTarget(req.Targets), mir_v1.NewDeviceFromUpdateDeviceReq(req))
 		if err != nil {
 			err = r.m.sendReplyOrAck(msg, &core_apiv1.UpdateDeviceResponse{Response: &core_apiv1.UpdateDeviceResponse_Error{
 				Error: err.Error(),
@@ -216,67 +216,67 @@ func (r *updateDeviceRoute) handlerWrapper(f func(msg *Msg, clientId string, t m
 		// TODO log error here
 		err = r.m.sendReplyOrAck(msg, &core_apiv1.UpdateDeviceResponse{
 			Response: &core_apiv1.UpdateDeviceResponse_Ok{
-				Ok: &core_apiv1.DeviceList{Devices: mir_models.NewProtoDeviceListFromDevices(resp)},
+				Ok: &core_apiv1.DeviceList{Devices: mir_v1.NewProtoDeviceListFromDevices(resp)},
 			},
 		})
 	}
 }
 
 // Request update of a device
-func (r *updateDeviceRoute) Request(t mir_models.DeviceTarget, d mir_models.Device) ([]mir_models.Device, error) {
+func (r *updateDeviceRoute) Request(t mir_v1.DeviceTarget, d mir_v1.Device) ([]mir_v1.Device, error) {
 	sbj := core_client.UpdateDeviceRequest.WithId(r.m.GetInstanceName())
-	req := mir_models.DeviceToUpdateDeviceRequest(d)
-	req.Targets = mir_models.MirDeviceTargetToProtoDeviceTarget(t)
+	req := mir_v1.DeviceToUpdateDeviceRequest(d)
+	req.Targets = mir_v1.MirDeviceTargetToProtoDeviceTarget(t)
 
 	bReq, err := proto.Marshal(req)
 	if err != nil {
-		return []mir_models.Device{}, err
+		return []mir_v1.Device{}, err
 	}
 
 	resMsg, err := r.m.request(sbj, bReq, nil, defaultTimeout)
 	if err != nil {
-		return []mir_models.Device{}, err
+		return []mir_v1.Device{}, err
 	}
 
 	resp := &core_apiv1.UpdateDeviceResponse{}
 	err = proto.Unmarshal(resMsg.Data, resp)
 	if err != nil {
-		return []mir_models.Device{}, err
+		return []mir_v1.Device{}, err
 	}
 	if resp.GetError() != "" {
-		return []mir_models.Device{}, errors.New(resp.GetError())
+		return []mir_v1.Device{}, errors.New(resp.GetError())
 	}
 
-	return mir_models.NewDeviceListFromProtoDevices(resp.GetOk().Devices), nil
+	return mir_v1.NewDeviceListFromProtoDevices(resp.GetOk().Devices), nil
 }
 
 // Request update of a device
 // Name/Namespace or deviceId must be present to  know which target
-func (r *updateDeviceRoute) RequestSingle(d mir_models.Device) ([]mir_models.Device, error) {
+func (r *updateDeviceRoute) RequestSingle(d mir_v1.Device) ([]mir_v1.Device, error) {
 	sbj := core_client.UpdateDeviceRequest.WithId(r.m.GetInstanceName())
-	req := mir_models.DeviceToUpdateDeviceRequest(d)
-	req.Targets = mir_models.MirDeviceTargetToProtoDeviceTarget(d.ToTarget())
+	req := mir_v1.DeviceToUpdateDeviceRequest(d)
+	req.Targets = mir_v1.MirDeviceTargetToProtoDeviceTarget(d.ToTarget())
 
 	bReq, err := proto.Marshal(req)
 	if err != nil {
-		return []mir_models.Device{}, err
+		return []mir_v1.Device{}, err
 	}
 
 	resMsg, err := r.m.request(sbj, bReq, nil, defaultTimeout)
 	if err != nil {
-		return []mir_models.Device{}, err
+		return []mir_v1.Device{}, err
 	}
 
 	resp := &core_apiv1.UpdateDeviceResponse{}
 	err = proto.Unmarshal(resMsg.Data, resp)
 	if err != nil {
-		return []mir_models.Device{}, err
+		return []mir_v1.Device{}, err
 	}
 	if resp.GetError() != "" {
-		return []mir_models.Device{}, errors.New(resp.GetError())
+		return []mir_v1.Device{}, errors.New(resp.GetError())
 	}
 
-	return mir_models.NewDeviceListFromProtoDevices(resp.GetOk().Devices), nil
+	return mir_v1.NewDeviceListFromProtoDevices(resp.GetOk().Devices), nil
 }
 
 /// DeleteDevice
@@ -291,18 +291,18 @@ func (r *serverRoutes) DeleteDevice() *deleteDeviceRoute {
 }
 
 // Subscribe to delete device routes
-func (r *deleteDeviceRoute) Subscribe(f func(msg *Msg, clientId string, t mir_models.DeviceTarget) ([]mir_models.Device, error)) error {
+func (r *deleteDeviceRoute) Subscribe(f func(msg *Msg, clientId string, t mir_v1.DeviceTarget) ([]mir_v1.Device, error)) error {
 	sbj := core_client.DeleteDeviceRequest.WithId("*")
 	return r.m.subscribe(sbj, r.handlerWrapper(f))
 }
 
 // Queue subscribe to delete device routes
-func (r *deleteDeviceRoute) QueueSubscribe(queue string, f func(msg *Msg, clientId string, t mir_models.DeviceTarget) ([]mir_models.Device, error)) error {
+func (r *deleteDeviceRoute) QueueSubscribe(queue string, f func(msg *Msg, clientId string, t mir_v1.DeviceTarget) ([]mir_v1.Device, error)) error {
 	sbj := core_client.DeleteDeviceRequest.WithId("*")
 	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
 }
 
-func (r *deleteDeviceRoute) handlerWrapper(f func(msg *Msg, clientId string, req mir_models.DeviceTarget) ([]mir_models.Device, error)) nats.MsgHandler {
+func (r *deleteDeviceRoute) handlerWrapper(f func(msg *Msg, clientId string, req mir_v1.DeviceTarget) ([]mir_v1.Device, error)) nats.MsgHandler {
 	return func(msg *nats.Msg) {
 		req := &core_apiv1.DeleteDeviceRequest{}
 		if err := proto.Unmarshal(msg.Data, req); err != nil {
@@ -313,7 +313,7 @@ func (r *deleteDeviceRoute) handlerWrapper(f func(msg *Msg, clientId string, req
 			return
 		}
 
-		resp, err := f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), mir_models.ProtoDeviceTargetToMirDeviceTarget(req.Targets))
+		resp, err := f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), mir_v1.ProtoDeviceTargetToMirDeviceTarget(req.Targets))
 		if err != nil {
 			err = r.m.sendReplyOrAck(msg, &core_apiv1.DeleteDeviceResponse{Response: &core_apiv1.DeleteDeviceResponse_Error{
 				Error: err.Error(),
@@ -323,38 +323,38 @@ func (r *deleteDeviceRoute) handlerWrapper(f func(msg *Msg, clientId string, req
 		// TODO log error here
 		err = r.m.sendReplyOrAck(msg, &core_apiv1.DeleteDeviceResponse{
 			Response: &core_apiv1.DeleteDeviceResponse_Ok{
-				Ok: &core_apiv1.DeviceList{Devices: mir_models.NewProtoDeviceListFromDevices(resp)},
+				Ok: &core_apiv1.DeviceList{Devices: mir_v1.NewProtoDeviceListFromDevices(resp)},
 			},
 		})
 	}
 }
 
 // Request delete of a device
-func (r *deleteDeviceRoute) Request(t mir_models.DeviceTarget) ([]mir_models.Device, error) {
+func (r *deleteDeviceRoute) Request(t mir_v1.DeviceTarget) ([]mir_v1.Device, error) {
 	sbj := core_client.DeleteDeviceRequest.WithId(r.m.GetInstanceName())
 	req := &core_apiv1.DeleteDeviceRequest{
-		Targets: mir_models.MirDeviceTargetToProtoDeviceTarget(t),
+		Targets: mir_v1.MirDeviceTargetToProtoDeviceTarget(t),
 	}
 	bReq, err := proto.Marshal(req)
 	if err != nil {
-		return []mir_models.Device{}, err
+		return []mir_v1.Device{}, err
 	}
 
 	resMsg, err := r.m.request(sbj, bReq, nil, defaultTimeout)
 	if err != nil {
-		return []mir_models.Device{}, err
+		return []mir_v1.Device{}, err
 	}
 
 	resp := &core_apiv1.DeleteDeviceResponse{}
 	err = proto.Unmarshal(resMsg.Data, resp)
 	if err != nil {
-		return []mir_models.Device{}, err
+		return []mir_v1.Device{}, err
 	}
 	if resp.GetError() != "" {
-		return []mir_models.Device{}, errors.New(resp.GetError())
+		return []mir_v1.Device{}, errors.New(resp.GetError())
 	}
 
-	return mir_models.NewDeviceListFromProtoDevices(resp.GetOk().Devices), nil
+	return mir_v1.NewDeviceListFromProtoDevices(resp.GetOk().Devices), nil
 }
 
 /// ListDevice
@@ -369,18 +369,18 @@ func (r *serverRoutes) ListDevice() *listDeviceRoute {
 }
 
 // Subscribe to list device routes
-func (r *listDeviceRoute) Subscribe(f func(msg *Msg, clientId string, t mir_models.DeviceTarget, includeEvents bool) ([]mir_models.Device, error)) error {
+func (r *listDeviceRoute) Subscribe(f func(msg *Msg, clientId string, t mir_v1.DeviceTarget, includeEvents bool) ([]mir_v1.Device, error)) error {
 	sbj := core_client.ListDeviceRequest.WithId("*")
 	return r.m.subscribe(sbj, r.handlerWrapper(f))
 }
 
 // Queue subscribe to list device routes
-func (r *listDeviceRoute) QueueSubscribe(queue string, f func(msg *Msg, clientId string, t mir_models.DeviceTarget, includeEvents bool) ([]mir_models.Device, error)) error {
+func (r *listDeviceRoute) QueueSubscribe(queue string, f func(msg *Msg, clientId string, t mir_v1.DeviceTarget, includeEvents bool) ([]mir_v1.Device, error)) error {
 	sbj := core_client.ListDeviceRequest.WithId("*")
 	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
 }
 
-func (r *listDeviceRoute) handlerWrapper(f func(msg *Msg, clientId string, t mir_models.DeviceTarget, includeEvents bool) ([]mir_models.Device, error)) nats.MsgHandler {
+func (r *listDeviceRoute) handlerWrapper(f func(msg *Msg, clientId string, t mir_v1.DeviceTarget, includeEvents bool) ([]mir_v1.Device, error)) nats.MsgHandler {
 	return func(msg *nats.Msg) {
 		req := &core_apiv1.ListDeviceRequest{}
 		if err := proto.Unmarshal(msg.Data, req); err != nil {
@@ -391,7 +391,7 @@ func (r *listDeviceRoute) handlerWrapper(f func(msg *Msg, clientId string, t mir
 			return
 		}
 
-		resp, err := f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), mir_models.ProtoDeviceTargetToMirDeviceTarget(req.Targets), req.IncludeEvents)
+		resp, err := f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), mir_v1.ProtoDeviceTargetToMirDeviceTarget(req.Targets), req.IncludeEvents)
 		if err != nil {
 			err = r.m.sendReplyOrAck(msg, &core_apiv1.ListDeviceResponse{Response: &core_apiv1.ListDeviceResponse_Error{
 				Error: err.Error(),
@@ -401,37 +401,37 @@ func (r *listDeviceRoute) handlerWrapper(f func(msg *Msg, clientId string, t mir
 		// TODO log error here
 		err = r.m.sendReplyOrAck(msg, &core_apiv1.ListDeviceResponse{
 			Response: &core_apiv1.ListDeviceResponse_Ok{
-				Ok: &core_apiv1.DeviceList{Devices: mir_models.NewProtoDeviceListFromDevices(resp)},
+				Ok: &core_apiv1.DeviceList{Devices: mir_v1.NewProtoDeviceListFromDevices(resp)},
 			},
 		})
 	}
 }
 
 // Request list of device
-func (r *listDeviceRoute) Request(t mir_models.DeviceTarget, includeEvents bool) ([]mir_models.Device, error) {
+func (r *listDeviceRoute) Request(t mir_v1.DeviceTarget, includeEvents bool) ([]mir_v1.Device, error) {
 	sbj := core_client.ListDeviceRequest.WithId(r.m.GetInstanceName())
 	req := &core_apiv1.ListDeviceRequest{
-		Targets:       mir_models.MirDeviceTargetToProtoDeviceTarget(t),
+		Targets:       mir_v1.MirDeviceTargetToProtoDeviceTarget(t),
 		IncludeEvents: includeEvents,
 	}
 	bReq, err := proto.Marshal(req)
 	if err != nil {
-		return []mir_models.Device{}, err
+		return []mir_v1.Device{}, err
 	}
 
 	resMsg, err := r.m.request(sbj, bReq, nil, defaultTimeout)
 	if err != nil {
-		return []mir_models.Device{}, err
+		return []mir_v1.Device{}, err
 	}
 
 	resp := &core_apiv1.ListDeviceResponse{}
 	err = proto.Unmarshal(resMsg.Data, resp)
 	if err != nil {
-		return []mir_models.Device{}, err
+		return []mir_v1.Device{}, err
 	}
 	if resp.GetError() != "" {
-		return []mir_models.Device{}, errors.New(resp.GetError())
+		return []mir_v1.Device{}, errors.New(resp.GetError())
 	}
 
-	return mir_models.NewDeviceListFromProtoDevices(resp.GetOk().Devices), nil
+	return mir_v1.NewDeviceListFromProtoDevices(resp.GetOk().Devices), nil
 }

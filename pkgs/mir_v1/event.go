@@ -1,4 +1,4 @@
-package mir_models
+package mir_v1
 
 import (
 	"time"

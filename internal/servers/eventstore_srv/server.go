@@ -12,7 +12,7 @@ import (
 	"github.com/maxthom/mir/internal/externals/mng"
 	"github.com/maxthom/mir/internal/libs/api/metrics"
 	"github.com/maxthom/mir/internal/services/schema_cache"
-	"github.com/maxthom/mir/pkgs/mir_models"
+	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
@@ -93,7 +93,7 @@ func (s *EventStoreServer) Shutdown() error {
 	return nil
 }
 
-func (s *EventStoreServer) listEventsSub(msg *mir.Msg, clientId string, req mir_models.EventTarget) ([]mir_models.Event, error) {
+func (s *EventStoreServer) listEventsSub(msg *mir.Msg, clientId string, req mir_v1.EventTarget) ([]mir_v1.Event, error) {
 	l.Info().Any("req", req).Msg("list events request")
 	requestTotal.WithLabelValues("list").Inc()
 
@@ -108,13 +108,13 @@ func (s *EventStoreServer) listEventsSub(msg *mir.Msg, clientId string, req mir_
 	return respDb, nil
 }
 
-func (s *EventStoreServer) deleteEventsSub(msg *mir.Msg, clientId string, req mir_models.EventTarget) ([]mir_models.Event, error) {
+func (s *EventStoreServer) deleteEventsSub(msg *mir.Msg, clientId string, req mir_v1.EventTarget) ([]mir_v1.Event, error) {
 	l.Info().Any("req", req).Msg("delete events request")
 	requestTotal.WithLabelValues("delete").Inc()
 
 	evList, err := s.store.DeleteEvent(req)
 	if err != nil {
-		if errors.Is(err, mir_models.ErrorNoDeviceTargetProvided) {
+		if errors.Is(err, mir_v1.ErrorNoDeviceTargetProvided) {
 			requestErrorTotal.WithLabelValues("delete").Inc()
 			return nil, fmt.Errorf("error no target found: %w", err)
 		}
@@ -125,7 +125,7 @@ func (s *EventStoreServer) deleteEventsSub(msg *mir.Msg, clientId string, req mi
 	return evList, nil
 }
 
-func (s *EventStoreServer) streamEventsSub(msg *mir.Msg, subjectId string, req mir_models.EventSpec, e error) {
+func (s *EventStoreServer) streamEventsSub(msg *mir.Msg, subjectId string, req mir_v1.EventSpec, e error) {
 	l.Info().Any("req", req).Str("subject", msg.Subject).Msg("event received")
 	eventCaptureTotal.Inc()
 	defer msg.Ack()
@@ -136,7 +136,7 @@ func (s *EventStoreServer) streamEventsSub(msg *mir.Msg, subjectId string, req m
 	}
 
 	// TODO name of events, tbd
-	event := mir_models.NewEvent()
+	event := mir_v1.NewEvent()
 	id, err := uuid.NewV7()
 	if err != nil {
 		l.Error().Err(err).Msg("error generating UUID")

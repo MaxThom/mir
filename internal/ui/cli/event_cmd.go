@@ -11,7 +11,7 @@ import (
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
 	event_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/event_api"
-	"github.com/maxthom/mir/pkgs/mir_models"
+	"github.com/maxthom/mir/pkgs/mir_v1"
 )
 
 // TODO get command which is ls but with -o yaml
@@ -87,8 +87,8 @@ func (d *EventListCmd) Run(c CLI) error {
 				Labels:     d.Labels,
 			},
 			FilterDate: &common_apiv1.DateFilter{
-				From: mir_models.AsProtoTimestamp(d.From),
-				To:   mir_models.AsProtoTimestamp(d.To),
+				From: mir_v1.AsProtoTimestamp(d.From),
+				To:   mir_v1.AsProtoTimestamp(d.To),
 			},
 			FilterLimit: int32(d.Limit),
 		},
@@ -99,7 +99,7 @@ func (d *EventListCmd) Run(c CLI) error {
 		return errors.New(resp.GetError())
 	}
 
-	list := mir_models.ProtoEventsToMirEvents(resp.GetOk().Events)
+	list := mir_v1.ProtoEventsToMirEvents(resp.GetOk().Events)
 	if d.Output == "pretty" && len(list) == 1 {
 		d.Output = "yaml"
 	}
@@ -152,8 +152,8 @@ func (d *EventDeleteCmd) Run(c CLI) error {
 				Labels:     d.Labels,
 			},
 			FilterDate: &common_apiv1.DateFilter{
-				From: mir_models.AsProtoTimestamp(d.From),
-				To:   mir_models.AsProtoTimestamp(d.To),
+				From: mir_v1.AsProtoTimestamp(d.From),
+				To:   mir_v1.AsProtoTimestamp(d.To),
 			},
 		},
 	})
@@ -163,7 +163,7 @@ func (d *EventDeleteCmd) Run(c CLI) error {
 		return errors.New(resp.GetError())
 	}
 
-	list := mir_models.ProtoEventsToMirEvents(resp.GetOk().Events)
+	list := mir_v1.ProtoEventsToMirEvents(resp.GetOk().Events)
 	if d.Output == "pretty" && len(list) == 1 {
 		d.Output = "yaml"
 	}
@@ -176,7 +176,7 @@ func (d *EventDeleteCmd) Run(c CLI) error {
 	return nil
 }
 
-func stringifyEvents(output string, events []mir_models.Event) (string, error) {
+func stringifyEvents(output string, events []mir_v1.Event) (string, error) {
 	switch output {
 	case "json":
 		return marshalResponse(output, events)
@@ -188,7 +188,7 @@ func stringifyEvents(output string, events []mir_models.Event) (string, error) {
 	return "", errors.New("invalid output format")
 }
 
-func prettyStringEvents(events []mir_models.Event) string {
+func prettyStringEvents(events []mir_v1.Event) string {
 	format := "%-16s %-30s %-8s %-20s %-60s\n"
 	var sb strings.Builder
 	sb.WriteString(fmt.Sprintf(format, "AGE", "NAMESPACE/NAME", "TYPE", "REASON", "MESSAGE"))
@@ -208,9 +208,9 @@ func prettyStringEvents(events []mir_models.Event) string {
 
 	for _, d := range events {
 		st := ""
-		if d.Spec.Type == mir_models.EventTypeNormal {
+		if d.Spec.Type == mir_v1.EventTypeNormal {
 			st = "normal"
-		} else if d.Spec.Type == mir_models.EventTypeWarning {
+		} else if d.Spec.Type == mir_v1.EventTypeWarning {
 			st = "warning"
 		} else {
 			st = "normal"

@@ -12,7 +12,7 @@ import (
 	"github.com/maxthom/mir/internal/ui/tui/msgs"
 	device_list "github.com/maxthom/mir/internal/ui/tui/pages/device/list"
 	"github.com/maxthom/mir/internal/ui/tui/store"
-	"github.com/maxthom/mir/pkgs/mir_models"
+	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
@@ -81,14 +81,14 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, msgs.RouteChangeWithDataCmd("/devices", device_list.InputData{SilentFetch: true}))
 		} else {
 			l.Debug().Str("edit", "after").Msg(fmt.Sprintf("%v", string(msg.Content)))
-			dev := mir_models.Device{}
+			dev := mir_v1.Device{}
 			if err := yaml.Unmarshal(msg.Content, &dev); err != nil {
 				l.Error().Err(err).Msg("can't unmarshal edited device")
 				cmds = append(cmds, msgs.ErrCmd(err, 2*time.Second))
 				cmds = append(cmds, msgs.RouteChangeWithDataCmd("/devices", device_list.InputData{SilentFetch: true}))
 			} else {
 				l.Debug().Str("edit", "unmarshalled").Msg(fmt.Sprintf("%v", dev))
-				cmds = append(cmds, msgs.UpdateMirDevice(store.Bus, mir_models.NewUpdateDeviceReqFromDevice(dev)))
+				cmds = append(cmds, msgs.UpdateMirDevice(store.Bus, mir_v1.NewUpdateDeviceReqFromDevice(dev)))
 			}
 		}
 		return m, tea.Batch(cmds...)

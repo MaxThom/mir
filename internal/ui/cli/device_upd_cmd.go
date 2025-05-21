@@ -9,7 +9,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/editor"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
-	"github.com/maxthom/mir/pkgs/mir_models"
+	"github.com/maxthom/mir/pkgs/mir_v1"
 )
 
 type DeviceEditCmd struct {
@@ -73,14 +73,14 @@ func (d *DeviceEditCmd) Run(c CLI) error {
 		return errors.New("No devices found for the given targets")
 	}
 
-	devs := mir_models.NewDeviceListFromProtoDevices(respList.GetOk().Devices)
+	devs := mir_v1.NewDeviceListFromProtoDevices(respList.GetOk().Devices)
 	header := []string{
 		"Edit the device below",
 		"To remove a field, you must explicitly set it to null",
 		"Only fields under meta, spec and properties.desired are editable",
 	}
 
-	targetNameNs := []mir_models.NameNs{}
+	targetNameNs := []mir_v1.NameNs{}
 	for _, d := range devs {
 		targetNameNs = append(targetNameNs, d.GetNameNs())
 	}
@@ -110,7 +110,7 @@ func (d *DeviceEditCmd) Run(c CLI) error {
 	var errs error
 	respDevs := []*core_apiv1.Device{}
 	for i, d := range devs {
-		req := mir_models.NewUpdateDeviceReqFromDeviceWithNameNs(targetNameNs[i], d)
+		req := mir_v1.NewUpdateDeviceReqFromDeviceWithNameNs(targetNameNs[i], d)
 		resp, err := core_client.PublishDeviceUpdateRequest(msgBus, req)
 		if err != nil {
 			errs = errors.Join(errs, errors.New("error sending update device request"))
@@ -124,7 +124,7 @@ func (d *DeviceEditCmd) Run(c CLI) error {
 	}
 
 	if len(respDevs) > 0 {
-		list := mir_models.NewDeviceListFromProtoDevices(respDevs)
+		list := mir_v1.NewDeviceListFromProtoDevices(respDevs)
 		if str, err := stringifyDevices(d.Output, list); err != nil {
 			return fmt.Errorf("error marshalling response: %w", err)
 		} else {
@@ -174,7 +174,7 @@ func (d *DeviceApplyCmd) Run(c CLI) error {
 	var errs error
 	respDevs := []*core_apiv1.Device{}
 	for _, d := range devs {
-		req := mir_models.NewUpdateDeviceReqFromProtoDevice(&core_apiv1.DeviceTarget{
+		req := mir_v1.NewUpdateDeviceReqFromProtoDevice(&core_apiv1.DeviceTarget{
 			Names:      []string{d.GetMeta().GetName()},
 			Namespaces: []string{d.GetMeta().GetNamespace()},
 		}, d)
@@ -191,7 +191,7 @@ func (d *DeviceApplyCmd) Run(c CLI) error {
 	}
 
 	if len(respDevs) > 0 {
-		list := mir_models.NewDeviceListFromProtoDevices(respDevs)
+		list := mir_v1.NewDeviceListFromProtoDevices(respDevs)
 		if str, err := stringifyDevices("yaml", list); err != nil {
 			return fmt.Errorf("error marshalling response: %w", err)
 		} else {
@@ -245,9 +245,9 @@ func (d *DeviceMergeCmd) Run(c CLI) error {
 	}
 	defer msgBus.Close()
 
-	devs := []*mir_models.Device{}
+	devs := []*mir_v1.Device{}
 	if isPipedStdIn() || d.Patch != "" {
-		devs, err = unmarshalTypeFromStdInOrString[mir_models.Device](d.Patch)
+		devs, err = unmarshalTypeFromStdInOrString[mir_v1.Device](d.Patch)
 		if err != nil {
 			return fmt.Errorf("error reading patch from stdin or string: %w", err)
 		}
@@ -256,7 +256,7 @@ func (d *DeviceMergeCmd) Run(c CLI) error {
 	var errs error
 	respDevs := []*core_apiv1.Device{}
 	for _, de := range devs {
-		req := mir_models.NewUpdateDeviceReqFromDeviceWithTarget(mir_models.DeviceTarget{
+		req := mir_v1.NewUpdateDeviceReqFromDeviceWithTarget(mir_v1.DeviceTarget{
 			Ids:        d.Ids,
 			Names:      d.Names,
 			Namespaces: d.Namespaces,
@@ -275,7 +275,7 @@ func (d *DeviceMergeCmd) Run(c CLI) error {
 	}
 
 	if len(respDevs) > 0 {
-		list := mir_models.NewDeviceListFromProtoDevices(respDevs)
+		list := mir_v1.NewDeviceListFromProtoDevices(respDevs)
 		if str, err := stringifyDevices("yaml", list); err != nil {
 			return fmt.Errorf("error marshalling response: %w", err)
 		} else {
