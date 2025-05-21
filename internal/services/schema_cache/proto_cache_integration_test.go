@@ -16,7 +16,7 @@ import (
 	schemacache_testv1 "github.com/maxthom/mir/internal/services/schema_cache/proto_test/gen/schemacache_test/v1"
 	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
 	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
-	"github.com/maxthom/mir/pkgs/mir_models"
+	"github.com/maxthom/mir/pkgs/mir_v1"
 	"google.golang.org/protobuf/types/descriptorpb"
 	"gotest.tools/assert"
 
@@ -108,7 +108,7 @@ func TestPublishDeviceUpdateCache(t *testing.T) {
 	}
 	id := "device_proto_cache"
 	count := 0
-	cache.AddDeviceUpdateSub(func(deviceId string, device mir_models.Device, schema mir_proto.MirProtoSchema) {
+	cache.AddDeviceUpdateSub(func(deviceId string, device mir_v1.Device, schema mir_proto.MirProtoSchema) {
 		if deviceId == id {
 			count++
 		}

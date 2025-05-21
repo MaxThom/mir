@@ -21,7 +21,7 @@ import (
 	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	mirDev "github.com/maxthom/mir/pkgs/device/mir"
-	"github.com/maxthom/mir/pkgs/mir_models"
+	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/nats-io/nats.go"
 	"github.com/surrealdb/surrealdb.go"
@@ -334,7 +334,7 @@ func TestPublishDeviceUpdateTargetIds(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	respDb := test_utils.ExecuteTestQueryForType[[]mir_models.Device](t, db,
+	respDb := test_utils.ExecuteTestQueryForType[[]mir_v1.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE spec.deviceId = $id;",
 		map[string]string{
 			"tb": "devices",
@@ -413,7 +413,7 @@ func TestPublishDeviceUpdateTargetNames(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	respDb := test_utils.ExecuteTestQueryForType[[]mir_models.Device](t, db,
+	respDb := test_utils.ExecuteTestQueryForType[[]mir_v1.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE spec.deviceId = $id;",
 		map[string]string{
 			"tb": "devices",
@@ -491,7 +491,7 @@ func TestPublishDeviceUpdateTargetNamespace(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	respDb := test_utils.ExecuteTestQueryForType[[]mir_models.Device](t, db,
+	respDb := test_utils.ExecuteTestQueryForType[[]mir_v1.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE spec.deviceId = $id;",
 		map[string]string{
 			"tb": "devices",
@@ -610,7 +610,7 @@ func TestPublishDeviceUpdateTargetLabels(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	respDb := test_utils.ExecuteTestQueryForType[[]mir_models.Device](t, db,
+	respDb := test_utils.ExecuteTestQueryForType[[]mir_v1.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE spec.deviceId = $id1 OR spec.deviceId = $id2 OR spec.deviceId = $id3;",
 		map[string]string{
 			"tb":  "devices",
@@ -869,7 +869,7 @@ func TestPublishDeviceDeleteTargetIds(t *testing.T) {
 	// Wait for written to db
 	time.Sleep(1 * time.Second)
 
-	respDb := test_utils.ExecuteTestQueryForType[[]mir_models.Device](t, db,
+	respDb := test_utils.ExecuteTestQueryForType[[]mir_v1.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE spec.deviceId = $id1 OR spec.deviceId = $id2 OR spec.deviceId = $id3;",
 		map[string]string{
 			"tb":  "devices",
@@ -970,7 +970,7 @@ func TestPublishDeviceDeleteTargetNames(t *testing.T) {
 	// Wait for written to db
 	time.Sleep(1 * time.Second)
 
-	respDb := test_utils.ExecuteTestQueryForType[[]mir_models.Device](t, db,
+	respDb := test_utils.ExecuteTestQueryForType[[]mir_v1.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE spec.deviceId = $id1 OR spec.deviceId = $id2 OR spec.deviceId = $id3;",
 		map[string]string{
 			"tb":  "devices",
@@ -1069,7 +1069,7 @@ func TestPublishDeviceDeleteTargetNamespace(t *testing.T) {
 	// Wait for written to db
 	time.Sleep(1 * time.Second)
 
-	dbResp := test_utils.ExecuteTestQueryForType[[]mir_models.Device](t, db,
+	dbResp := test_utils.ExecuteTestQueryForType[[]mir_v1.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE spec.deviceId = $id1 OR spec.deviceId = $id2 OR spec.deviceId = $id3;",
 		map[string]string{
 			"tb":  "devices",
@@ -1169,7 +1169,7 @@ func TestPublishDeviceDeleteTargetLabels(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	respDb := test_utils.ExecuteTestQueryForType[[]mir_models.Device](t, db,
+	respDb := test_utils.ExecuteTestQueryForType[[]mir_v1.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE spec.deviceId = $id1 OR spec.deviceId = $id2 OR spec.deviceId = $id3;",
 		map[string]string{
 			"tb":  "devices",
@@ -1269,7 +1269,7 @@ func TestPublishDeviceListTargetIds(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	respDb := test_utils.ExecuteTestQueryForType[[]mir_models.Device](t, db,
+	respDb := test_utils.ExecuteTestQueryForType[[]mir_v1.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE spec.deviceId = $id1 OR spec.deviceId = $id2 OR spec.deviceId = $id3;",
 		map[string]string{
 			"tb":  "devices",
@@ -1369,7 +1369,7 @@ func TestPublishDeviceListTargetNames(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	respDb := test_utils.ExecuteTestQueryForType[[]mir_models.Device](t, db,
+	respDb := test_utils.ExecuteTestQueryForType[[]mir_v1.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE spec.deviceId = $id1 OR spec.deviceId = $id2 OR spec.deviceId = $id3;",
 		map[string]string{
 			"tb":  "devices",
@@ -1470,7 +1470,7 @@ func TestPublishDeviceListTargetNamespace(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	respDb := test_utils.ExecuteTestQueryForType[[]mir_models.Device](t, db,
+	respDb := test_utils.ExecuteTestQueryForType[[]mir_v1.Device](t, db,
 		"SELECT * FROM type::table($tb) WHERE spec.deviceId = $id1 OR spec.deviceId = $id2 OR spec.deviceId = $id3;",
 		map[string]string{
 			"tb":  "devices",
@@ -2331,7 +2331,7 @@ func TestDeviceGoesOnline(t *testing.T) {
 		switch dev.Spec.DeviceId {
 		case deviceIds[0]:
 			assert.Equal(t, dev.Status.Online, true)
-			devTs := mir_models.AsGoTime(dev.Status.LastHearthbeat)
+			devTs := mir_v1.AsGoTime(dev.Status.LastHearthbeat)
 			assert.Equal(t, time.Now().UTC().Sub(devTs).Abs().Seconds() < 10, true)
 		}
 	}
@@ -2407,7 +2407,7 @@ func TestDeviceGoesOffline(t *testing.T) {
 		switch dev.Spec.DeviceId {
 		case deviceIds[0]:
 			assert.Equal(t, dev.Status.Online, true)
-			devTs := mir_models.AsGoTime(dev.Status.LastHearthbeat)
+			devTs := mir_v1.AsGoTime(dev.Status.LastHearthbeat)
 			assert.Equal(t, hbTime.Sub(devTs).Abs().Seconds() < 10, true)
 		}
 	}
@@ -2418,7 +2418,7 @@ func TestDeviceGoesOffline(t *testing.T) {
 	// 	switch dev.Spec.DeviceId {
 	// 	case deviceIds[0]:
 	// 		assert.Equal(t, dev.Status.Online, false)
-	// 		devTs := mir_models.AsGoTime(dev.Status.LastHearthbeat)
+	// 		devTs := mir_v1.AsGoTime(dev.Status.LastHearthbeat)
 	// 		assert.Equal(t, time.Now().UTC().Sub(devTs).Abs().Seconds() > 30, true)
 	// 	}
 	// }
@@ -2471,7 +2471,7 @@ func TestDeviceAutoProvision(t *testing.T) {
 		switch dev.Spec.DeviceId {
 		case deviceIds[0]:
 			assert.Equal(t, dev.Status.Online, true)
-			devTs := mir_models.AsGoTime(dev.Status.LastHearthbeat)
+			devTs := mir_v1.AsGoTime(dev.Status.LastHearthbeat)
 			assert.Equal(t, time.Now().UTC().Sub(devTs).Abs().Seconds() < 10, true)
 		}
 	}
@@ -2518,7 +2518,7 @@ func TestDeviceUpdateDesiredProperties(t *testing.T) {
 		t.Error(err)
 	}
 
-	devUpd := mir_models.NewDevice().WithProps(mir_models.DeviceProperties{
+	devUpd := mir_v1.NewDevice().WithProps(mir_v1.DeviceProperties{
 		Desired: st,
 	})
 
@@ -2581,7 +2581,7 @@ func TestDeviceUpdateDesiredPropertiesDoubleSameUpdate(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	updDev := mir_models.NewDevice().WithProps(mir_models.DeviceProperties{
+	updDev := mir_v1.NewDevice().WithProps(mir_v1.DeviceProperties{
 		Desired: st,
 	})
 
@@ -2650,7 +2650,7 @@ func TestDeviceUpdateDesiredPropertiesInvalid(t *testing.T) {
 	propMap = map[string]any{
 		propName: propMap,
 	}
-	devUpd := mir_models.NewDevice().WithProps(mir_models.DeviceProperties{
+	devUpd := mir_v1.NewDevice().WithProps(mir_v1.DeviceProperties{
 		Desired: propMap,
 	})
 
@@ -2674,22 +2674,22 @@ func TestDeviceUpdateDesiredPropertiesInvalid(t *testing.T) {
 
 func TestDeviceOnlineEvent(t *testing.T) {
 	deviceID := "test-event-online"
-	testDevice := mir_models.Device{
-		Object: mir_models.Object{
-			Meta: mir_models.Meta{
+	testDevice := mir_v1.Device{
+		Object: mir_v1.Object{
+			Meta: mir_v1.Meta{
 				Name:      "Test_Device",
 				Namespace: "default",
 			},
 		},
-		Spec: mir_models.DeviceSpec{
+		Spec: mir_v1.DeviceSpec{
 			DeviceId: deviceID,
 		},
 	}
 
 	// Channel for test synchronization
-	received := make(chan mir_models.Device)
+	received := make(chan mir_v1.Device)
 
-	err := mSdk.Event().DeviceOnline().Subscribe(func(msg *mir.Msg, serverId string, device mir_models.Device, err error) {
+	err := mSdk.Event().DeviceOnline().Subscribe(func(msg *mir.Msg, serverId string, device mir_v1.Device, err error) {
 		received <- device
 	})
 	if err != nil {
@@ -2711,22 +2711,22 @@ func TestDeviceOnlineEvent(t *testing.T) {
 
 func TestDeviceOfflineEvent(t *testing.T) {
 	deviceID := "test-event-offline"
-	testDevice := mir_models.Device{
-		Object: mir_models.Object{
-			Meta: mir_models.Meta{
+	testDevice := mir_v1.Device{
+		Object: mir_v1.Object{
+			Meta: mir_v1.Meta{
 				Name:      "Test_Device",
 				Namespace: "default",
 			},
 		},
-		Spec: mir_models.DeviceSpec{
+		Spec: mir_v1.DeviceSpec{
 			DeviceId: deviceID,
 		},
 	}
 
 	// Channel for test synchronization
-	received := make(chan mir_models.Device)
+	received := make(chan mir_v1.Device)
 
-	err := mSdk.Event().DeviceOffline().Subscribe(func(msg *mir.Msg, serverId string, device mir_models.Device, err error) {
+	err := mSdk.Event().DeviceOffline().Subscribe(func(msg *mir.Msg, serverId string, device mir_v1.Device, err error) {
 		received <- device
 	})
 
@@ -2745,22 +2745,22 @@ func TestDeviceOfflineEvent(t *testing.T) {
 
 func TestDeviceCreatedEvent(t *testing.T) {
 	deviceID := "test-event-created"
-	testDevice := mir_models.Device{
-		Object: mir_models.Object{
-			Meta: mir_models.Meta{
+	testDevice := mir_v1.Device{
+		Object: mir_v1.Object{
+			Meta: mir_v1.Meta{
 				Name:      "Test_Device",
 				Namespace: "default",
 			},
 		},
-		Spec: mir_models.DeviceSpec{
+		Spec: mir_v1.DeviceSpec{
 			DeviceId: deviceID,
 		},
 	}
 
 	// Channel for test synchronization
-	received := make(chan mir_models.Device)
+	received := make(chan mir_v1.Device)
 
-	err := mSdk.Event().DeviceCreate().Subscribe(func(msg *mir.Msg, serverId string, device mir_models.Device, err error) {
+	err := mSdk.Event().DeviceCreate().Subscribe(func(msg *mir.Msg, serverId string, device mir_v1.Device, err error) {
 		received <- device
 	})
 
@@ -2780,22 +2780,22 @@ func TestDeviceCreatedEvent(t *testing.T) {
 
 func TestDeviceUpdateEvent(t *testing.T) {
 	deviceID := "test-event-uodate"
-	testDevice := mir_models.Device{
-		Object: mir_models.Object{
-			Meta: mir_models.Meta{
+	testDevice := mir_v1.Device{
+		Object: mir_v1.Object{
+			Meta: mir_v1.Meta{
 				Name:      "Test_Device",
 				Namespace: "default",
 			},
 		},
-		Spec: mir_models.DeviceSpec{
+		Spec: mir_v1.DeviceSpec{
 			DeviceId: deviceID,
 		},
 	}
 
 	// Channel for test synchronization
-	received := make(chan mir_models.Device)
+	received := make(chan mir_v1.Device)
 
-	err := mSdk.Event().DeviceUpdate().Subscribe(func(msg *mir.Msg, serverId string, device mir_models.Device, err error) {
+	err := mSdk.Event().DeviceUpdate().Subscribe(func(msg *mir.Msg, serverId string, device mir_v1.Device, err error) {
 		received <- device
 	})
 
@@ -2815,22 +2815,22 @@ func TestDeviceUpdateEvent(t *testing.T) {
 
 func TestDeviceDeleteEvent(t *testing.T) {
 	deviceID := "test-event=delete"
-	testDevice := mir_models.Device{
-		Object: mir_models.Object{
-			Meta: mir_models.Meta{
+	testDevice := mir_v1.Device{
+		Object: mir_v1.Object{
+			Meta: mir_v1.Meta{
 				Name:      "Test_Device",
 				Namespace: "default",
 			},
 		},
-		Spec: mir_models.DeviceSpec{
+		Spec: mir_v1.DeviceSpec{
 			DeviceId: deviceID,
 		},
 	}
 
 	// Channel for test synchronization
-	received := make(chan mir_models.Device)
+	received := make(chan mir_v1.Device)
 
-	err := mSdk.Event().DeviceDelete().Subscribe(func(msg *mir.Msg, serverId string, device mir_models.Device, err error) {
+	err := mSdk.Event().DeviceDelete().Subscribe(func(msg *mir.Msg, serverId string, device mir_v1.Device, err error) {
 		received <- device
 	})
 

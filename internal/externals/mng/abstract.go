@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"regexp"
 
-	"github.com/maxthom/mir/pkgs/mir_models"
+	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/surrealdb/surrealdb.go"
 )
 
@@ -20,17 +20,17 @@ const (
 )
 
 type MirStore interface {
-	ListDevice(t mir_models.DeviceTarget, includeEvents bool) ([]mir_models.Device, error)
-	CreateDevice(d mir_models.Device) (mir_models.Device, error)
-	UpdateDevice(t mir_models.DeviceTarget, d mir_models.Device) ([]mir_models.Device, error)
-	MergeDevice(t mir_models.DeviceTarget, patch json.RawMessage, op UpdateType) ([]mir_models.Device, error)
-	DeleteDevice(t mir_models.DeviceTarget) ([]mir_models.Device, error)
+	ListDevice(t mir_v1.DeviceTarget, includeEvents bool) ([]mir_v1.Device, error)
+	CreateDevice(d mir_v1.Device) (mir_v1.Device, error)
+	UpdateDevice(t mir_v1.DeviceTarget, d mir_v1.Device) ([]mir_v1.Device, error)
+	MergeDevice(t mir_v1.DeviceTarget, patch json.RawMessage, op UpdateType) ([]mir_v1.Device, error)
+	DeleteDevice(t mir_v1.DeviceTarget) ([]mir_v1.Device, error)
 
-	ListEvent(t mir_models.EventTarget) ([]mir_models.Event, error)
-	CreateEvent(e mir_models.Event) (mir_models.Event, error)
-	UpdateEvent(t mir_models.ObjectTarget, upd mir_models.EventUpdate) ([]mir_models.Event, error)
-	MergeEvent(t mir_models.ObjectTarget, patch json.RawMessage, op UpdateType) ([]mir_models.Event, error)
-	DeleteEvent(t mir_models.EventTarget) ([]mir_models.Event, error)
+	ListEvent(t mir_v1.EventTarget) ([]mir_v1.Event, error)
+	CreateEvent(e mir_v1.Event) (mir_v1.Event, error)
+	UpdateEvent(t mir_v1.ObjectTarget, upd mir_v1.EventUpdate) ([]mir_v1.Event, error)
+	MergeEvent(t mir_v1.ObjectTarget, patch json.RawMessage, op UpdateType) ([]mir_v1.Event, error)
+	DeleteEvent(t mir_v1.EventTarget) ([]mir_v1.Event, error)
 }
 
 type surrealMirStore struct {

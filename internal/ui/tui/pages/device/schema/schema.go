@@ -12,7 +12,7 @@ import (
 	mir_help "github.com/maxthom/mir/internal/ui/tui/components/help"
 	"github.com/maxthom/mir/internal/ui/tui/msgs"
 	device_list "github.com/maxthom/mir/internal/ui/tui/pages/device/list"
-	"github.com/maxthom/mir/pkgs/mir_models"
+	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -36,7 +36,7 @@ func NewModel(ctx context.Context) *Model {
 }
 
 func (m *Model) InitWithData(d any) tea.Cmd {
-	dev, ok := d.(*mir_models.Device)
+	dev, ok := d.(*mir_v1.Device)
 	if !ok {
 		return tea.Batch(
 			msgs.ErrCmd(fmt.Errorf("no device specified"), 2*time.Second),

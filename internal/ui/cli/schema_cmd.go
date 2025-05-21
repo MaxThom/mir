@@ -10,7 +10,7 @@ import (
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
-	"github.com/maxthom/mir/pkgs/mir_models"
+	"github.com/maxthom/mir/pkgs/mir_v1"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
@@ -110,7 +110,7 @@ func (d *SchemaUploadCmd) Run(c CLI) error {
 	}
 
 	if resp.GetOk() != nil {
-		list := mir_models.NewDeviceListFromProtoDevices(resp.GetOk().Devices)
+		list := mir_v1.NewDeviceListFromProtoDevices(resp.GetOk().Devices)
 		if d.Output == "pretty" {
 			fmt.Println(prettyStringDevices(list))
 		} else {

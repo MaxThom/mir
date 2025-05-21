@@ -18,7 +18,7 @@ import (
 	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
 	device_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/device_api"
 	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
-	"github.com/maxthom/mir/pkgs/mir_models"
+	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
@@ -141,7 +141,7 @@ func (s *ProtoCfgServer) listCfgSub(msg *mir.Msg, clientId string, req *cfg_apiv
 	// 2. for each device, get stored schema, if empty, fetch from device
 	// 3. return list of config
 
-	devs, err := s.devStore.ListDevice(mir_models.ProtoDeviceTargetToMirDeviceTarget(req.Targets), false)
+	devs, err := s.devStore.ListDevice(mir_v1.ProtoDeviceTargetToMirDeviceTarget(req.Targets), false)
 	if err != nil {
 		l.Error().Err(err).Msg("error occure while listing devices")
 		requestErrorTotal.WithLabelValues("list").Inc()
@@ -197,22 +197,22 @@ func (s *ProtoCfgServer) sendConfigSub(msg *mir.Msg, clientId string, req *cfg_a
 			len(req.Targets.Names) == 0 &&
 			len(req.Targets.Namespaces) == 0 &&
 			len(req.Targets.Labels) == 0 {
-		errs = append(errs, mir_models.ErrorNoDeviceTargetProvided.Error())
+		errs = append(errs, mir_v1.ErrorNoDeviceTargetProvided.Error())
 	}
 	if req.Name == "" {
-		errs = append(errs, mir_models.ErrorCommandNameNotProvided.Error())
+		errs = append(errs, mir_v1.ErrorCommandNameNotProvided.Error())
 	}
 	if req.PayloadEncoding == common_apiv1.Encoding_ENCODING_UNSPECIFIED && !req.ShowTemplate {
-		errs = append(errs, mir_models.ErrorCommandEncodingNotSpecified.Error())
+		errs = append(errs, mir_v1.ErrorCommandEncodingNotSpecified.Error())
 	}
 	if (req.Payload == nil || len(req.Payload) == 0) && !req.ShowTemplate && !req.ShowValues && req.PayloadEncoding != common_apiv1.Encoding_ENCODING_PROTOBUF {
 		// Proto encoding can be empty if struct is empty, not json
-		errs = append(errs, mir_models.ErrorCommandPayloadNotProvided.Error())
+		errs = append(errs, mir_v1.ErrorCommandPayloadNotProvided.Error())
 	}
 	if len(errs) > 0 {
-		l.Error().Err(fmt.Errorf("%w: %s", mir_models.ErrorBadRequest, strings.Join(errs, ", "))).Msg("")
+		l.Error().Err(fmt.Errorf("%w: %s", mir_v1.ErrorBadRequest, strings.Join(errs, ", "))).Msg("")
 		requestErrorTotal.WithLabelValues("send").Inc()
-		return nil, fmt.Errorf("%w: %s", mir_models.ErrorBadRequest, errs)
+		return nil, fmt.Errorf("%w: %s", mir_v1.ErrorBadRequest, errs)
 	}
 	// If command was specified with labels
 	if index := strings.Index(req.Name, "{"); index != -1 {
@@ -242,7 +242,7 @@ type cmdDevicePayload struct {
 }
 
 func (s *ProtoCfgServer) sendConfigToDevices(msg *mir.Msg, req *cfg_apiv1.SendConfigRequest) (map[string]*cfg_apiv1.SendConfigResponse_ConfigResponse, error) {
-	devs, err := s.devStore.ListDevice(mir_models.ProtoDeviceTargetToMirDeviceTarget(req.Targets), false)
+	devs, err := s.devStore.ListDevice(mir_v1.ProtoDeviceTargetToMirDeviceTarget(req.Targets), false)
 	if err != nil {
 		return nil, err
 	} else if len(devs) == 0 {
@@ -444,14 +444,14 @@ func (s *ProtoCfgServer) sendConfigToDevices(msg *mir.Msg, req *cfg_apiv1.SendCo
 			for k := range p.mapPayload {
 				timeMap[k] = p.time
 			}
-			d := mir_models.NewDevice().WithProps(mir_models.DeviceProperties{
+			d := mir_v1.NewDevice().WithProps(mir_v1.DeviceProperties{
 				Desired: p.mapPayload,
-			}).WithStatus(mir_models.DeviceStatus{
-				Properties: mir_models.PropertiesTime{
+			}).WithStatus(mir_v1.DeviceStatus{
+				Properties: mir_v1.PropertiesTime{
 					Desired: timeMap,
 				},
 			})
-			dev, err := s.devStore.UpdateDevice(mir_models.DeviceTarget{
+			dev, err := s.devStore.UpdateDevice(mir_v1.DeviceTarget{
 				Ids: []string{p.deviceId},
 			}, d)
 			if err != nil {
@@ -579,7 +579,7 @@ func (s *ProtoCfgServer) reportedPropsSub(msg *mir.Msg, deviceId string, msgName
 	}
 
 	dev, err := s.devStore.MergeDevice(
-		mir_models.DeviceTarget{
+		mir_v1.DeviceTarget{
 			Ids: []string{deviceId},
 		},
 		jsonRaw,
@@ -600,7 +600,7 @@ func (s *ProtoCfgServer) reportedPropsSub(msg *mir.Msg, deviceId string, msgName
 func (s *ProtoCfgServer) desiredPropsSub(msg *mir.Msg, deviceId string) (*device_apiv1.ReportedProperties, error) {
 	deviceDesiredPropsRequestTotal.Inc()
 	devs, err := s.devStore.ListDevice(
-		mir_models.DeviceTarget{
+		mir_v1.DeviceTarget{
 			Ids: []string{deviceId},
 		}, false)
 	if err != nil {
@@ -712,14 +712,14 @@ func (s *ProtoCfgServer) desiredPropsSub(msg *mir.Msg, deviceId string) (*device
 			l.Error().Err(err).Str("device_id", deviceId).Msg("error marshalling properties to pbstruct")
 			deviceDesiredPropsRequestErrorTotal.Inc()
 		} else {
-			d := mir_models.NewDevice().WithProps(mir_models.DeviceProperties{
+			d := mir_v1.NewDevice().WithProps(mir_v1.DeviceProperties{
 				Desired: missingCfg,
-			}).WithStatus(mir_models.DeviceStatus{
-				Properties: mir_models.PropertiesTime{
+			}).WithStatus(mir_v1.DeviceStatus{
+				Properties: mir_v1.PropertiesTime{
 					Desired: missingTime,
 				},
 			})
-			devs, err := s.devStore.UpdateDevice(mir_models.DeviceTarget{
+			devs, err := s.devStore.UpdateDevice(mir_v1.DeviceTarget{
 				Ids: []string{deviceId},
 			}, d)
 			if err != nil {
@@ -750,12 +750,12 @@ func publishDesiredPropertiesEvent(m *mir.Mir, msg *mir.Msg, name, namespace, de
 		return err
 	}
 	return m.Event().Publish(mir.NewEventSubjectString(cfg_client.DesiredPropertiesEvent.WithId(deviceId)),
-		mir_models.EventSpec{
-			Type:    mir_models.EventTypeNormal,
+		mir_v1.EventSpec{
+			Type:    mir_v1.EventTypeNormal,
 			Reason:  "DeviceDesiredProps",
 			Message: "Device desired properties updated successfully",
 			Payload: payload,
-			RelatedObject: mir_models.NewDevice().WithMeta(mir_models.Meta{
+			RelatedObject: mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 				Name:      name,
 				Namespace: namespace,
 			}).Object,
@@ -768,12 +768,12 @@ func publishReportedPropertiesEvent(m *mir.Mir, msg *mir.Msg, name, namespace, d
 		return err
 	}
 	return m.Event().Publish(mir.NewEventSubjectString(cfg_client.ReportedPropertiesEvent.WithId(deviceId)),
-		mir_models.EventSpec{
-			Type:    mir_models.EventTypeNormal,
+		mir_v1.EventSpec{
+			Type:    mir_v1.EventTypeNormal,
 			Reason:  "DeviceReportedProps",
 			Message: "Device reported properties updated successfully",
 			Payload: payload,
-			RelatedObject: mir_models.NewDevice().WithMeta(mir_models.Meta{
+			RelatedObject: mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 				Name:      name,
 				Namespace: namespace,
 			}).Object,

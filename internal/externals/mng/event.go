@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/maxthom/mir/pkgs/mir_models"
+	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/pkg/errors"
 	"github.com/surrealdb/surrealdb.go"
 )
@@ -23,41 +23,41 @@ const (
 
 type eventWithId struct {
 	Id string `json:"id"`
-	mir_models.Event
+	mir_v1.Event
 }
 
-func (s *surrealMirStore) ListEvent(t mir_models.EventTarget) ([]mir_models.Event, error) {
+func (s *surrealMirStore) ListEvent(t mir_v1.EventTarget) ([]mir_v1.Event, error) {
 	q, v := createListQueryForEvents(t)
-	devs, err := executeQueryForType[[]mir_models.Event](s.db, q, v)
+	devs, err := executeQueryForType[[]mir_v1.Event](s.db, q, v)
 	if err != nil {
 		return nil, errors.Wrap(err, ErrorListingDevices.Error())
 	}
 	return devs, nil
 }
 
-func (s *surrealMirStore) CreateEvent(e mir_models.Event) (mir_models.Event, error) {
+func (s *surrealMirStore) CreateEvent(e mir_v1.Event) (mir_v1.Event, error) {
 	// Validate
 	if err := e.Validate(); err != nil {
-		return mir_models.Event{}, err
+		return mir_v1.Event{}, err
 	}
 	q, v := createIsObjectUniqueQuery(surrealEventTable, e.Meta.Name, e.Meta.Namespace)
-	respCheck, err := executeQueryForType[[]mir_models.Event](s.db, q, v)
+	respCheck, err := executeQueryForType[[]mir_v1.Event](s.db, q, v)
 	if err != nil {
-		return mir_models.Event{}, fmt.Errorf("%w for event %s/%s: %w", mir_models.ErrorDbExecutingQuery, e.Meta.Name, e.Meta.Namespace, err)
+		return mir_v1.Event{}, fmt.Errorf("%w for event %s/%s: %w", mir_v1.ErrorDbExecutingQuery, e.Meta.Name, e.Meta.Namespace, err)
 	}
 	if len(respCheck) > 0 {
-		return mir_models.Event{}, fmt.Errorf("event %s/%s already exist", e.Meta.Name, e.Meta.Namespace)
+		return mir_v1.Event{}, fmt.Errorf("event %s/%s already exist", e.Meta.Name, e.Meta.Namespace)
 	}
 
 	// Create
 	respDb, err := s.db.Create(surrealEventTable, e)
 	if err != nil {
-		return mir_models.Event{}, fmt.Errorf("%w: %w", mir_models.ErrorDbExecutingQuery, err)
+		return mir_v1.Event{}, fmt.Errorf("%w: %w", mir_v1.ErrorDbExecutingQuery, err)
 	}
-	new := []mir_models.Event{}
+	new := []mir_v1.Event{}
 	err = surrealdb.Unmarshal(respDb, &new)
 	if err != nil {
-		return mir_models.Event{}, fmt.Errorf("%w for event %s/%s: %w", mir_models.ErrorDbDeserializingResponse, e.Meta.Name, e.Meta.Namespace, err)
+		return mir_v1.Event{}, fmt.Errorf("%w for event %s/%s: %w", mir_v1.ErrorDbDeserializingResponse, e.Meta.Name, e.Meta.Namespace, err)
 	}
 	return new[0], nil
 }
@@ -66,13 +66,13 @@ func (s *surrealMirStore) CreateEvent(e mir_models.Event) (mir_models.Event, err
 // Maybe it need to be divided into Upsert and Patch
 // Upsert is for apply and edit
 // Patch is for patch
-func (s *surrealMirStore) UpdateEvent(t mir_models.ObjectTarget, upd mir_models.EventUpdate) ([]mir_models.Event, error) {
+func (s *surrealMirStore) UpdateEvent(t mir_v1.ObjectTarget, upd mir_v1.EventUpdate) ([]mir_v1.Event, error) {
 	if t.HasNoTarget() {
-		return nil, mir_models.ErrorNoDeviceTargetProvided
+		return nil, mir_v1.ErrorNoDeviceTargetProvided
 	}
 
-	obj := mir_models.Object{
-		Meta: mir_models.Meta{
+	obj := mir_v1.Object{
+		Meta: mir_v1.Meta{
 			Name:      "",
 			Namespace: "",
 		},
@@ -94,23 +94,23 @@ func (s *surrealMirStore) UpdateEvent(t mir_models.ObjectTarget, upd mir_models.
 	v := map[string]any{}
 	q, v = createUpdateQueryForEvents(t, upd)
 	if q == "" {
-		return s.ListEvent(mir_models.EventTarget{ObjectTarget: t})
+		return s.ListEvent(mir_v1.EventTarget{ObjectTarget: t})
 	}
-	respDb, err := executeQueryForType[[]mir_models.Event](s.db, q, v)
+	respDb, err := executeQueryForType[[]mir_v1.Event](s.db, q, v)
 	if err != nil {
-		return nil, errors.Wrap(err, mir_models.ErrorDbExecutingQuery.Error())
+		return nil, errors.Wrap(err, mir_v1.ErrorDbExecutingQuery.Error())
 	}
 
 	return respDb, nil
 }
 
-func (s *surrealMirStore) MergeEvent(t mir_models.ObjectTarget, patch json.RawMessage, op UpdateType) ([]mir_models.Event, error) {
+func (s *surrealMirStore) MergeEvent(t mir_v1.ObjectTarget, patch json.RawMessage, op UpdateType) ([]mir_v1.Event, error) {
 	if t.HasNoTarget() {
-		return nil, mir_models.ErrorNoDeviceTargetProvided
+		return nil, mir_v1.ErrorNoDeviceTargetProvided
 	}
 	if op == MergePatch {
 		// Validate json
-		event := mir_models.Event{}
+		event := mir_v1.Event{}
 		d := json.NewDecoder(bytes.NewReader(patch))
 		d.DisallowUnknownFields()
 		if err := d.Decode(&event); err != nil {
@@ -133,36 +133,36 @@ func (s *surrealMirStore) MergeEvent(t mir_models.ObjectTarget, patch json.RawMe
 		}
 		sql := qSb.String()
 
-		respDb, err := executeQueryForType[[]mir_models.Event](s.db, sql, map[string]any{})
+		respDb, err := executeQueryForType[[]mir_v1.Event](s.db, sql, map[string]any{})
 		if err != nil {
-			return nil, errors.Wrap(err, mir_models.ErrorDbExecutingQuery.Error())
+			return nil, errors.Wrap(err, mir_v1.ErrorDbExecutingQuery.Error())
 		}
 		return respDb, nil
 	}
 	return nil, errors.New("only MergePatch operation is implemented")
 }
 
-func (s *surrealMirStore) DeleteEvent(t mir_models.EventTarget) ([]mir_models.Event, error) {
+func (s *surrealMirStore) DeleteEvent(t mir_v1.EventTarget) ([]mir_v1.Event, error) {
 	if t.HasNoTarget() {
-		return nil, mir_models.ErrorNoDeviceTargetProvided
+		return nil, mir_v1.ErrorNoDeviceTargetProvided
 	}
 
 	qList, vList := createListQueryForEvents(t)
-	respDbList, err := executeQueryForType[[]mir_models.Event](s.db, qList, vList)
+	respDbList, err := executeQueryForType[[]mir_v1.Event](s.db, qList, vList)
 	if err != nil {
-		return nil, mir_models.ErrorDbExecutingQuery
+		return nil, mir_v1.ErrorDbExecutingQuery
 	}
 
 	q, v := createDeleteQueryForEvents(t)
-	_, err = executeQueryForType[[]mir_models.Event](s.db, q, v)
+	_, err = executeQueryForType[[]mir_v1.Event](s.db, q, v)
 	if err != nil {
-		return nil, mir_models.ErrorDbExecutingQuery
+		return nil, mir_v1.ErrorDbExecutingQuery
 	}
 
 	return respDbList, nil
 }
 
-func createUpdateQueryForEvents(t mir_models.ObjectTarget, upd mir_models.EventUpdate) (sql string, vars map[string]any) {
+func createUpdateQueryForEvents(t mir_v1.ObjectTarget, upd mir_v1.EventUpdate) (sql string, vars map[string]any) {
 	var q strings.Builder
 	vars = map[string]any{}
 	if upd.Meta != nil {
@@ -341,7 +341,7 @@ func createUpdateQueryForEvents(t mir_models.ObjectTarget, upd mir_models.EventU
 	return
 }
 
-func createListQueryForEvents(t mir_models.EventTarget) (sql string, vars map[string]any) {
+func createListQueryForEvents(t mir_v1.EventTarget) (sql string, vars map[string]any) {
 	var q strings.Builder
 	vars = map[string]any{}
 
@@ -361,7 +361,7 @@ func createListQueryForEvents(t mir_models.EventTarget) (sql string, vars map[st
 	return
 }
 
-func createTargetStatementForEvents(t mir_models.EventTarget) string {
+func createTargetStatementForEvents(t mir_v1.EventTarget) string {
 	whereSt := []string{}
 	whereObj := createTargetStatementForObjects(t.ObjectTarget)
 	if len(whereObj) > 0 {
@@ -386,7 +386,7 @@ func createTargetStatementForEvents(t mir_models.EventTarget) string {
 	return strings.Join(whereSt, " AND ")
 }
 
-func createDeleteQueryForEvents(t mir_models.EventTarget) (sql string, vars map[string]any) {
+func createDeleteQueryForEvents(t mir_v1.EventTarget) (sql string, vars map[string]any) {
 	var q strings.Builder
 	vars = map[string]any{}
 

@@ -13,7 +13,7 @@ import (
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	common_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/common_api"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
-	"github.com/maxthom/mir/pkgs/mir_models"
+	"github.com/maxthom/mir/pkgs/mir_v1"
 	"gopkg.in/yaml.v3"
 )
 
@@ -123,7 +123,7 @@ func (d *DeviceListCmd) Run(c CLI) error {
 		return errors.New(resp.GetError())
 	}
 
-	list := mir_models.NewDeviceListFromProtoDevices(resp.GetOk().Devices)
+	list := mir_v1.NewDeviceListFromProtoDevices(resp.GetOk().Devices)
 	if d.Output == "pretty" && len(list) == 1 {
 		d.Output = "yaml"
 	}
@@ -177,7 +177,7 @@ func (d *DeviceCreateCmd) Run(c CLI) error {
 		if d.Output == "pretty" {
 			d.Output = "yaml"
 		}
-		if out, e := marshalResponse(d.Output, mir_models.NewDevice()); e != nil {
+		if out, e := marshalResponse(d.Output, mir_v1.NewDevice()); e != nil {
 			return fmt.Errorf("error marshalling response: %w", e)
 		} else {
 			fmt.Println(out)
@@ -185,9 +185,9 @@ func (d *DeviceCreateCmd) Run(c CLI) error {
 		return nil
 	}
 
-	devs := []*mir_models.Device{}
+	devs := []*mir_v1.Device{}
 	if isPipedStdIn() || d.Path != "" {
-		devs, err = unmarshalTypeFromStdInOrFile[mir_models.Device](d.Path)
+		devs, err = unmarshalTypeFromStdInOrFile[mir_v1.Device](d.Path)
 		if err != nil {
 			return fmt.Errorf("error reading devices from file: %w", err)
 		}
@@ -209,7 +209,7 @@ func (d *DeviceCreateCmd) Run(c CLI) error {
 			d.Anno["mir/device/description"] = d.Desc
 		}
 
-		dev := mir_models.NewDevice()
+		dev := mir_v1.NewDevice()
 		dev.Meta.Name = d.Name
 		dev.Meta.Namespace = d.Namespace
 		dev.Meta.Labels = d.Labels
@@ -222,7 +222,7 @@ func (d *DeviceCreateCmd) Run(c CLI) error {
 	respDevs := []*core_apiv1.Device{}
 	var errs error
 	for _, d := range devs {
-		resp, err := core_client.PublishDeviceCreateRequest(msgBus, mir_models.NewCreateDeviceReqFromDevice(*d))
+		resp, err := core_client.PublishDeviceCreateRequest(msgBus, mir_v1.NewCreateDeviceReqFromDevice(*d))
 		if err != nil {
 			return fmt.Errorf("error publising device create request: %w", err)
 		}
@@ -234,7 +234,7 @@ func (d *DeviceCreateCmd) Run(c CLI) error {
 	}
 
 	if len(respDevs) > 0 {
-		list := mir_models.NewDeviceListFromProtoDevices(respDevs)
+		list := mir_v1.NewDeviceListFromProtoDevices(respDevs)
 		if str, err := stringifyDevices(d.Output, list); err != nil {
 			return fmt.Errorf("error marshalling response: %w", err)
 		} else {
@@ -344,7 +344,7 @@ func (d *DeviceUpdateCmd) Run(c CLI) error {
 	if resp.GetError() != "" {
 		return errors.New(resp.GetError())
 	} else {
-		list := mir_models.NewDeviceListFromProtoDevices(resp.GetOk().Devices)
+		list := mir_v1.NewDeviceListFromProtoDevices(resp.GetOk().Devices)
 		if str, err := stringifyDevices(d.Output, list); err != nil {
 			return fmt.Errorf("error marshalling response: %w", err)
 		} else {
@@ -406,7 +406,7 @@ func (d *DeviceDeleteCmd) Run(c CLI) error {
 	if resp.GetError() != "" {
 		return errors.New(resp.GetError())
 	} else {
-		list := mir_models.NewDeviceListFromProtoDevices(resp.GetOk().Devices)
+		list := mir_v1.NewDeviceListFromProtoDevices(resp.GetOk().Devices)
 		if str, err := stringifyDevices(d.Output, list); err != nil {
 			return fmt.Errorf("error marshalling response: %w", err)
 		} else {
@@ -416,7 +416,7 @@ func (d *DeviceDeleteCmd) Run(c CLI) error {
 	return nil
 }
 
-func stringifyDevices(output string, devices []mir_models.Device) (string, error) {
+func stringifyDevices(output string, devices []mir_v1.Device) (string, error) {
 	switch output {
 	case "json":
 		return marshalResponse(output, devices)
@@ -461,7 +461,7 @@ func marshalResponse(format string, v any) (string, error) {
 	return string(out), e
 }
 
-func prettyStringDevices(devs []mir_models.Device) string {
+func prettyStringDevices(devs []mir_v1.Device) string {
 	format := "%-45s %-16s %-10s %-20s %-20s %-60s\n"
 	timeFormat := "2006-01-02 15:04:05"
 	var sb strings.Builder

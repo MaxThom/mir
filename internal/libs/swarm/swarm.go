@@ -12,7 +12,7 @@ import (
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	mirDevice "github.com/maxthom/mir/pkgs/device/mir"
-	"github.com/maxthom/mir/pkgs/mir_models"
+	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -43,12 +43,12 @@ func (s *swarm) Deploy(ctx context.Context) ([]*sync.WaitGroup, error) {
 	return wgs, errs
 }
 
-func (s swarm) ToTarget() mir_models.DeviceTarget {
+func (s swarm) ToTarget() mir_v1.DeviceTarget {
 	devIds := make([]string, len(s.Devices))
 	for i, d := range s.Devices {
 		devIds[i] = d.GetDeviceId()
 	}
-	return mir_models.DeviceTarget{
+	return mir_v1.DeviceTarget{
 		Ids: devIds,
 	}
 }

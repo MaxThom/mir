@@ -19,7 +19,7 @@ import (
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
 	mir_device_testv1 "github.com/maxthom/mir/pkgs/device/mir/proto_test/gen/mir_device_test/v1"
-	"github.com/maxthom/mir/pkgs/mir_models"
+	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/nats-io/nats.go"
 	"github.com/surrealdb/surrealdb.go"
@@ -153,7 +153,7 @@ func TestLaunchHearthbeat(t *testing.T) {
 	// Check if online and has a hearthbeat
 	devTwin := resp.GetOk().Devices[0]
 	assert.Equal(t, devTwin.Status.Online, true)
-	devTs := mir_models.AsGoTime(devTwin.Status.LastHearthbeat)
+	devTs := mir_v1.AsGoTime(devTwin.Status.LastHearthbeat)
 	assert.Equal(t, time.Now().UTC().Sub(devTs).Abs().Seconds() < 60, true)
 
 	cancel()
@@ -633,7 +633,7 @@ func deleteDevicesDb(t *testing.T, db *surrealdb.DB, ids []string) error {
 	q := "DELETE FROM type::table($tb) WHERE meta.deviceId = \""
 	q += strings.Join(ids, "\" OR device_id = \"")
 	q += "\";"
-	executeTestQueryForType[[]mir_models.Device](t, db,
+	executeTestQueryForType[[]mir_v1.Device](t, db,
 		q, map[string]string{
 			"tb": "devices",
 		})

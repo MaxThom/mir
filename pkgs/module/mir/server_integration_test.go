@@ -8,7 +8,7 @@ import (
 	cmd_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/cmd_api"
 	core_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/core_api"
 	tlm_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/v1/tlm_api"
-	"github.com/maxthom/mir/pkgs/mir_models"
+	"github.com/maxthom/mir/pkgs/mir_v1"
 	"google.golang.org/protobuf/proto"
 	"gotest.tools/assert"
 )
@@ -95,23 +95,23 @@ func TestServerRoutes_QueueSubscribe(t *testing.T) {
 
 func TestServerRoutes_CreateDevice(t *testing.T) {
 	deviceID := "test-server-create"
-	testDevice := mir_models.NewDevice().WithMeta(
-		mir_models.Meta{
+	testDevice := mir_v1.NewDevice().WithMeta(
+		mir_v1.Meta{
 			Name:      "Test Device",
 			Namespace: "default",
 		}).WithSpec(
-		mir_models.DeviceSpec{
+		mir_v1.DeviceSpec{
 			DeviceId: deviceID,
 		})
 
 	err := m.Server().CreateDevice().Subscribe(
-		func(msg *Msg, clientId string, d mir_models.Device) (mir_models.Device, error) {
-			return mir_models.NewDevice().WithMeta(
-				mir_models.Meta{
+		func(msg *Msg, clientId string, d mir_v1.Device) (mir_v1.Device, error) {
+			return mir_v1.NewDevice().WithMeta(
+				mir_v1.Meta{
 					Name:      testDevice.Meta.Name,
 					Namespace: testDevice.Meta.Namespace,
 				}).WithSpec(
-				mir_models.DeviceSpec{
+				mir_v1.DeviceSpec{
 					DeviceId: testDevice.Spec.DeviceId,
 				},
 			), nil
@@ -119,12 +119,12 @@ func TestServerRoutes_CreateDevice(t *testing.T) {
 	assert.NilError(t, err)
 
 	// Test request
-	req := mir_models.NewDevice().WithMeta(
-		mir_models.Meta{
+	req := mir_v1.NewDevice().WithMeta(
+		mir_v1.Meta{
 			Name:      "Test Device",
 			Namespace: "default",
 		}).WithSpec(
-		mir_models.DeviceSpec{
+		mir_v1.DeviceSpec{
 			DeviceId: deviceID,
 		})
 
@@ -136,17 +136,17 @@ func TestServerRoutes_CreateDevice(t *testing.T) {
 
 func TestServerRoutes_UpdateDevice(t *testing.T) {
 	deviceID := "test-server-update"
-	testDevice := mir_models.NewDevice().WithMeta(
-		mir_models.Meta{
+	testDevice := mir_v1.NewDevice().WithMeta(
+		mir_v1.Meta{
 			Name:      "Test Device",
 			Namespace: "default",
-		}).WithSpec(mir_models.DeviceSpec{
+		}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: deviceID,
 	})
 
 	err := m.Server().UpdateDevice().Subscribe(
-		func(msg *Msg, clientId string, t mir_models.DeviceTarget, d mir_models.Device) ([]mir_models.Device, error) {
-			return []mir_models.Device{
+		func(msg *Msg, clientId string, t mir_v1.DeviceTarget, d mir_v1.Device) ([]mir_v1.Device, error) {
+			return []mir_v1.Device{
 				testDevice,
 			}, nil
 		})
@@ -162,17 +162,17 @@ func TestServerRoutes_UpdateDevice(t *testing.T) {
 
 func TestServerRoutes_DeleteDevice(t *testing.T) {
 	deviceID := "test-server-delete"
-	testDevice := mir_models.NewDevice().WithMeta(
-		mir_models.Meta{
+	testDevice := mir_v1.NewDevice().WithMeta(
+		mir_v1.Meta{
 			Name:      "Test Device",
 			Namespace: "default",
-		}).WithSpec(mir_models.DeviceSpec{
+		}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: deviceID,
 	})
 
 	err := m.Server().DeleteDevice().Subscribe(
-		func(msg *Msg, clientId string, req mir_models.DeviceTarget) ([]mir_models.Device, error) {
-			return []mir_models.Device{
+		func(msg *Msg, clientId string, req mir_v1.DeviceTarget) ([]mir_v1.Device, error) {
+			return []mir_v1.Device{
 				testDevice,
 			}, nil
 		})
@@ -188,17 +188,17 @@ func TestServerRoutes_DeleteDevice(t *testing.T) {
 
 func TestServerRoutes_ListDevice(t *testing.T) {
 	deviceID := "test-server-list"
-	testDevice := mir_models.NewDevice().WithMeta(
-		mir_models.Meta{
+	testDevice := mir_v1.NewDevice().WithMeta(
+		mir_v1.Meta{
 			Name:      "Test Device",
 			Namespace: "default",
-		}).WithSpec(mir_models.DeviceSpec{
+		}).WithSpec(mir_v1.DeviceSpec{
 		DeviceId: deviceID,
 	})
 
 	err := m.Server().ListDevice().Subscribe(
-		func(msg *Msg, clientId string, d mir_models.DeviceTarget, includeEvents bool) ([]mir_models.Device, error) {
-			return []mir_models.Device{testDevice}, nil
+		func(msg *Msg, clientId string, d mir_v1.DeviceTarget, includeEvents bool) ([]mir_v1.Device, error) {
+			return []mir_v1.Device{testDevice}, nil
 		})
 	assert.NilError(t, err)
 
@@ -275,21 +275,21 @@ func TestServerRoutes_PublishJson(t *testing.T) {
 	subject := m.Server().NewSubject("test", "v1", "json")
 	received := make(chan bool)
 
-	testData := mir_models.Device{
-		Object: mir_models.Object{
-			Meta: mir_models.Meta{
+	testData := mir_v1.Device{
+		Object: mir_v1.Object{
+			Meta: mir_v1.Meta{
 				Name:      "Test Device",
 				Namespace: "default",
 			},
 		},
-		Spec: mir_models.DeviceSpec{
+		Spec: mir_v1.DeviceSpec{
 			DeviceId: "test-server-publishjson",
 		},
 	}
 
 	// Subscribe
 	err := m.Server().Subscribe(subject, func(msg *Msg, clientId string) {
-		var device mir_models.Device
+		var device mir_v1.Device
 		err := json.Unmarshal(msg.Data, &device)
 		assert.NilError(t, err)
 		assert.Equal(t, testData.Meta.Name, device.Meta.Name)
