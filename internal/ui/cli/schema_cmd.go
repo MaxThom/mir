@@ -1,16 +1,15 @@
 package cli
 
 import (
-	"errors"
 	"fmt"
 	"os"
 
-	"github.com/maxthom/mir/internal/clients/core_client"
 	"github.com/maxthom/mir/internal/libs/compression/zstd"
-	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
 	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	"github.com/maxthom/mir/pkgs/mir_v1"
+	"github.com/maxthom/mir/pkgs/module/mir"
+	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
@@ -63,15 +62,7 @@ func (d *SchemaUploadCmd) Validate() error {
 	return nil
 }
 
-func (d *SchemaUploadCmd) Run(c CLI) error {
-	var err error
-	msgBus, err := bus.New(c.Target)
-	if err != nil {
-		e := MirConnectionError{Target: c.Target, e: err}
-		return e
-	}
-	defer msgBus.Close()
-
+func (d *SchemaUploadCmd) Run(log zerolog.Logger, m *mir.Mir, cfg Config) error {
 	schemaData, err := os.ReadFile(d.Path)
 	if err != nil {
 		return fmt.Errorf("error reading file: %w", err)
@@ -87,38 +78,28 @@ func (d *SchemaUploadCmd) Run(c CLI) error {
 	}
 	packNames := sch.GetPackageList()
 
-	req := &mir_apiv1.UpdateDeviceRequest{
-		Targets: &mir_apiv1.DeviceTarget{
-			Ids:        d.Target.Ids,
-			Names:      d.Target.Names,
-			Namespaces: d.Target.Namespaces,
-			Labels:     d.Target.Labels,
+	list, err := m.Server().UpdateDevice().Request(mir_v1.DeviceTarget{
+		Ids:        d.Target.Ids,
+		Names:      d.Target.Names,
+		Namespaces: d.Target.Namespaces,
+		Labels:     d.Target.Labels,
+	}, mir_v1.NewDevice().WithStatus(mir_v1.DeviceStatus{
+		Schema: mir_v1.Schema{
+			CompressedSchema: compSch,
+			PackageNames:     packNames,
 		},
-		Status: &mir_apiv1.UpdateDeviceRequest_Status{
-			Schema: &mir_apiv1.UpdateDeviceRequest_Schema{
-				CompressedSchema: compSch,
-				PackageNames:     packNames,
-			},
-		},
-	}
-	resp, err := core_client.PublishDeviceUpdateRequest(msgBus, req)
+	}))
 	if err != nil {
 		return fmt.Errorf("error publishing device update request: %w", err)
 	}
-	if resp.GetError() != "" {
-		return errors.New(resp.GetError())
-	}
 
-	if resp.GetOk() != nil {
-		list := mir_v1.NewDeviceListFromProtoDevices(resp.GetOk().Devices)
-		if d.Output == "pretty" {
-			fmt.Println(prettyStringDevices(list))
+	if d.Output == "pretty" {
+		fmt.Println(prettyStringDevices(list))
+	} else {
+		if out, e := marshalResponse(d.Output, list); e != nil {
+			return fmt.Errorf("error marshalling response: %w", e)
 		} else {
-			if out, e := marshalResponse(d.Output, list); e != nil {
-				return fmt.Errorf("error marshalling response: %w", e)
-			} else {
-				fmt.Println(out)
-			}
+			fmt.Println(out)
 		}
 	}
 	return nil
@@ -152,33 +133,18 @@ type schemaDevices struct {
 	PbSet     *descriptorpb.FileDescriptorSet
 }
 
-func (d *SchemaExploreCmd) Run(c CLI) error {
-	var err error
-	msgBus, err := bus.New(c.Target)
-	if err != nil {
-		e := MirConnectionError{Target: c.Target, e: err}
-		return e
-	}
-	defer msgBus.Close()
-
-	req := &mir_apiv1.ListDeviceRequest{
-		Targets: &mir_apiv1.DeviceTarget{
-			Ids:        d.Target.Ids,
-			Names:      d.Target.Names,
-			Namespaces: d.Target.Namespaces,
-			Labels:     d.Target.Labels,
-		},
-	}
-	resp, err := core_client.PublishDeviceListRequest(msgBus, req)
+func (d *SchemaExploreCmd) Run(log zerolog.Logger, m *mir.Mir, cfg Config) error {
+	list, err := m.Server().ListDevice().Request(mir_v1.DeviceTarget{
+		Ids:        d.Target.Ids,
+		Names:      d.Target.Names,
+		Namespaces: d.Target.Namespaces,
+		Labels:     d.Target.Labels,
+	}, false)
 	if err != nil {
 		return fmt.Errorf("error publishing device list request: %w", err)
 	}
-	if resp.GetError() != "" {
-		return errors.New(resp.GetError())
-	}
 
-	devs := resp.GetOk().GetDevices()
-	if len(devs) == 0 {
+	if len(list) == 0 {
 		e := MirDeviceNotFoundError{
 			Targets: &mir_apiv1.DeviceTarget{
 				Ids:        d.Target.Ids,
@@ -192,8 +158,8 @@ func (d *SchemaExploreCmd) Run(c CLI) error {
 
 	devSchemas := map[string]schemaDevices{}
 	errs := []MirProcessError{}
-	for _, dev := range devs {
-		if dev.Status.Schema == nil || dev.Status.Schema.CompressedSchema == nil {
+	for _, dev := range list {
+		if dev.Status.Schema.CompressedSchema == nil || len(dev.Status.Schema.CompressedSchema) == 0 {
 			continue
 		}
 

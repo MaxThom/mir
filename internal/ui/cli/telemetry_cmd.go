@@ -1,14 +1,13 @@
 package cli
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
-	"github.com/maxthom/mir/internal/clients/tlm_client"
 	"github.com/maxthom/mir/internal/libs/external/grafana"
-	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
+	"github.com/maxthom/mir/pkgs/module/mir"
+	"github.com/rs/zerolog"
 )
 
 // TODO find how to move output here instead of per command
@@ -47,15 +46,7 @@ func (d *TelemetryListCmd) Validate() error {
 	return nil
 }
 
-func (d *TelemetryListCmd) Run(c CLI) error {
-	var err error
-	msgBus, err := bus.New(c.Target)
-	if err != nil {
-		e := MirConnectionError{Target: c.Target, e: err}
-		return e
-	}
-	defer msgBus.Close()
-
+func (d *TelemetryListCmd) Run(log zerolog.Logger, m *mir.Mir, cfg Config) error {
 	req := &mir_apiv1.SendListTelemetryRequest{
 		Targets: &mir_apiv1.DeviceTarget{
 			Ids:        d.Target.Ids,
@@ -67,18 +58,15 @@ func (d *TelemetryListCmd) Run(c CLI) error {
 		Filters:       d.Filters,
 		RefreshSchema: d.RefreshSchema,
 	}
-	resp, err := tlm_client.PublishTelemetryListRequest(msgBus, req)
+	resp, err := m.Server().ListTelemetry().Request(req)
 	if err != nil {
 		return fmt.Errorf("error publishing telemtry list request: %w", err)
-	}
-	if resp.GetError() != "" {
-		return errors.New(resp.GetError())
 	}
 
 	var sb strings.Builder
 	i := 0
 	tlmsErr := []*mir_apiv1.DevicesTelemetry{}
-	for _, tlms := range resp.GetOk().DevicesTelemetry {
+	for _, tlms := range resp {
 		if tlms.Error != "" {
 			tlmsErr = append(tlmsErr, tlms)
 			continue

@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/maxthom/mir/internal/clients/core_client"
 	"github.com/maxthom/mir/internal/libs/editor"
-	bus "github.com/maxthom/mir/internal/libs/external/natsio"
-	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	"github.com/maxthom/mir/pkgs/mir_v1"
+	"github.com/maxthom/mir/pkgs/module/mir"
+	"github.com/rs/zerolog"
 )
 
 type DeviceEditCmd struct {
@@ -45,44 +44,21 @@ func (d *DeviceEditCmd) Validate() error {
 	return nil
 }
 
-func (d *DeviceEditCmd) Run(c CLI) error {
-	var err error
-	msgBus, err := bus.New(c.Target)
-	if err != nil {
-		e := MirConnectionError{Target: c.Target, e: err}
-		return e
-	}
-	defer msgBus.Close()
-
-	respList, err := core_client.PublishDeviceListRequest(msgBus, &mir_apiv1.ListDeviceRequest{
-		Targets: &mir_apiv1.DeviceTarget{
-			Ids:        d.Ids,
-			Names:      d.Names,
-			Namespaces: d.Namespaces,
-			Labels:     d.Labels,
-		},
-	})
+func (d *DeviceEditCmd) Run(log zerolog.Logger, m *mir.Mir, cfg Config) error {
+	devs, err := m.Server().ListDevice().Request(mir_v1.DeviceTarget{
+		Ids:        d.Ids,
+		Names:      d.Names,
+		Namespaces: d.Namespaces,
+		Labels:     d.Labels,
+	}, false)
 	if err != nil {
 		return fmt.Errorf("error publising device list request: %w", err)
 	}
-	if respList.GetError() != "" {
-		return errors.New(respList.GetError())
-	}
 
-	if len(respList.GetOk().Devices) == 0 {
-		return errors.New("No devices found for the given targets")
-	}
-
-	devs := mir_v1.NewDeviceListFromProtoDevices(respList.GetOk().Devices)
 	header := []string{
 		"Edit the device below",
 		"To remove a field, you must explicitly set it to null",
 		"Only fields under meta, spec and properties.desired are editable",
-	}
-
-	targetNameNs := []mir_v1.NameNs{}
-	for _, d := range devs {
-		targetNameNs = append(targetNameNs, d.GetNameNs())
 	}
 	if d.Output == "json" {
 		if len(devs) == 1 {
@@ -108,23 +84,14 @@ func (d *DeviceEditCmd) Run(c CLI) error {
 	}
 
 	var errs error
-	respDevs := []*mir_apiv1.Device{}
-	for i, d := range devs {
-		req := mir_v1.NewUpdateDeviceReqFromDeviceWithNameNs(targetNameNs[i], d)
-		resp, err := core_client.PublishDeviceUpdateRequest(msgBus, req)
+	list := []mir_v1.Device{}
+	for _, d := range devs {
+		list, err = m.Server().UpdateDevice().RequestSingle(d)
 		if err != nil {
 			errs = errors.Join(errs, errors.New("error sending update device request"))
 		}
-		if resp.GetError() != "" {
-			errs = errors.Join(errs, errors.New(resp.GetError()))
-		}
-		if resp.GetOk() != nil {
-			respDevs = append(respDevs, resp.GetOk().Devices...)
-		}
 	}
-
-	if len(respDevs) > 0 {
-		list := mir_v1.NewDeviceListFromProtoDevices(respDevs)
+	if len(list) > 0 {
 		if str, err := stringifyDevices(d.Output, list); err != nil {
 			return fmt.Errorf("error marshalling response: %w", err)
 		} else {
@@ -148,50 +115,38 @@ func (d *DeviceApplyCmd) Validate() error {
 		Details: []string{},
 	}
 
+	if d.Path == "" && !isPipedStdIn() {
+		err.Details = append(err.Details, "No device definition provided via pipe or file")
+	}
+
 	if len(err.Details) > 0 {
 		return err
 	}
 	return nil
 }
 
-func (d *DeviceApplyCmd) Run(c CLI) error {
+func (d *DeviceApplyCmd) Run(log zerolog.Logger, m *mir.Mir, cfg Config) error {
+	devs := []*mir_v1.Device{}
 	var err error
-	msgBus, err := bus.New(c.Target)
-	if err != nil {
-		e := MirConnectionError{Target: c.Target, e: err}
-		return e
-	}
-	defer msgBus.Close()
-
-	devs := []*mir_apiv1.Device{}
 	if isPipedStdIn() || d.Path != "" {
-		devs, err = unmarshalTypeFromStdInOrFile[mir_apiv1.Device](d.Path)
+		devs, err = unmarshalTypeFromStdInOrFile[mir_v1.Device](d.Path)
 		if err != nil {
 			return fmt.Errorf("error reading devices from file: %w", err)
 		}
 	}
 
 	var errs error
-	respDevs := []*mir_apiv1.Device{}
+	list := []mir_v1.Device{}
 	for _, d := range devs {
-		req := mir_v1.NewUpdateDeviceReqFromProtoDevice(&mir_apiv1.DeviceTarget{
-			Names:      []string{d.GetMeta().GetName()},
-			Namespaces: []string{d.GetMeta().GetNamespace()},
-		}, d)
-		resp, err := core_client.PublishDeviceUpdateRequest(msgBus, req)
+		resp, err := m.Server().UpdateDevice().RequestSingle(*d)
 		if err != nil {
 			errs = errors.Join(errs, errors.New("error sending update device request"))
+			continue
 		}
-		if resp.GetError() != "" {
-			return errors.New(resp.GetError())
-		}
-		if resp.GetOk() != nil {
-			respDevs = append(respDevs, resp.GetOk().Devices...)
-		}
+		list = append(list, resp...)
 	}
 
-	if len(respDevs) > 0 {
-		list := mir_v1.NewDeviceListFromProtoDevices(respDevs)
+	if len(list) > 0 {
 		if str, err := stringifyDevices("yaml", list); err != nil {
 			return fmt.Errorf("error marshalling response: %w", err)
 		} else {
@@ -230,22 +185,19 @@ func (d *DeviceMergeCmd) Validate() error {
 		d.Target = getTargetFromNameNs(d.NameNs)
 	}
 
+	if d.Patch == "" && !isPipedStdIn() {
+		err.Details = append(err.Details, "No device patch provided via pipe or file")
+	}
+
 	if len(err.Details) > 0 {
 		return err
 	}
 	return nil
 }
 
-func (d *DeviceMergeCmd) Run(c CLI) error {
-	var err error
-	msgBus, err := bus.New(c.Target)
-	if err != nil {
-		e := MirConnectionError{Target: c.Target, e: err}
-		return e
-	}
-	defer msgBus.Close()
-
+func (d *DeviceMergeCmd) Run(log zerolog.Logger, m *mir.Mir, cfg Config) error {
 	devs := []*mir_v1.Device{}
+	var err error
 	if isPipedStdIn() || d.Patch != "" {
 		devs, err = unmarshalTypeFromStdInOrString[mir_v1.Device](d.Patch)
 		if err != nil {
@@ -254,28 +206,23 @@ func (d *DeviceMergeCmd) Run(c CLI) error {
 	}
 
 	var errs error
-	respDevs := []*mir_apiv1.Device{}
-	for _, de := range devs {
-		req := mir_v1.NewUpdateDeviceReqFromDeviceWithTarget(mir_v1.DeviceTarget{
-			Ids:        d.Ids,
-			Names:      d.Names,
-			Namespaces: d.Namespaces,
-			Labels:     d.Labels,
-		}, *de)
-		resp, err := core_client.PublishDeviceUpdateRequest(msgBus, req)
+	list := []mir_v1.Device{}
+	for _, dev := range devs {
+		resp, err := m.Server().UpdateDevice().Request(
+			mir_v1.DeviceTarget{
+				Ids:        d.Ids,
+				Names:      d.Names,
+				Namespaces: d.Namespaces,
+				Labels:     d.Labels,
+			}, *dev)
 		if err != nil {
 			errs = errors.Join(errs, fmt.Errorf("error publishing device update request: %w", err))
+			continue
 		}
-		if resp.GetError() != "" {
-			errs = errors.Join(errs, errors.New(resp.GetError()))
-		}
-		if resp.GetOk() != nil {
-			respDevs = append(respDevs, resp.GetOk().Devices...)
-		}
+		list = append(list, resp...)
 	}
 
-	if len(respDevs) > 0 {
-		list := mir_v1.NewDeviceListFromProtoDevices(respDevs)
+	if len(list) > 0 {
 		if str, err := stringifyDevices("yaml", list); err != nil {
 			return fmt.Errorf("error marshalling response: %w", err)
 		} else {

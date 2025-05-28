@@ -9,10 +9,9 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/maxthom/mir/internal/clients/core_client"
-	bus "github.com/maxthom/mir/internal/libs/external/natsio"
-	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	"github.com/maxthom/mir/pkgs/mir_v1"
+	"github.com/maxthom/mir/pkgs/module/mir"
+	"github.com/rs/zerolog"
 	"gopkg.in/yaml.v3"
 )
 
@@ -25,6 +24,11 @@ type DeviceCmd struct {
 	Apply  DeviceApplyCmd  `cmd:"" help:"Update a device using a declarative format"`
 	Merge  DeviceMergeCmd  `cmd:"" help:"Update a device using a merge operation"`
 	Delete DeviceDeleteCmd `cmd:"" help:"Delete a device"`
+
+	Config    ConfigCmd    `cmd:"" aliases:"cfg" help:"Explore Mir devices configuration"`
+	Telemetry TelemetryCmd `cmd:"" aliases:"tlm" help:"Explore Mir devices telemetry"`
+	Command   CommandCmd   `cmd:"" aliases:"cmd" help:"Send and explore commands to devices"`
+	Schema    SchemaCmd    `cmd:"" aliases:"sch" help:"Upload and explore device proto schema"`
 }
 
 type DeviceListCmd struct {
@@ -56,7 +60,6 @@ type DeviceUpdateCmd struct {
 
 	Name      *string           `help:"Set device name"`
 	Namespace *string           `help:"Set device namespace"`
-	Desc      *string           `help:"Set device description"`
 	Id        *string           `help:"Set device id"`
 	Disabled  *bool             `help:"If not enabled, communication is cut"`
 	Labels    map[string]string `help:"Set labels to uniquely tag the device (set to null, none or nil to remove)"`
@@ -98,31 +101,18 @@ func (d *DeviceListCmd) Validate() error {
 	return nil
 }
 
-func (d *DeviceListCmd) Run(c CLI) error {
+func (d *DeviceListCmd) Run(log zerolog.Logger, m *mir.Mir, cfg Config) error {
 	var err error
-	msgBus, err := bus.New(c.Target)
-	if err != nil {
-		e := MirConnectionError{Target: c.Target, e: err}
-		return e
-	}
-	defer msgBus.Close()
-
-	resp, err := core_client.PublishDeviceListRequest(msgBus, &mir_apiv1.ListDeviceRequest{
-		Targets: &mir_apiv1.DeviceTarget{
+	list, err := m.Server().ListDevice().Request(
+		mir_v1.DeviceTarget{
 			Ids:        d.Ids,
 			Names:      d.Names,
 			Namespaces: d.Namespaces,
 			Labels:     d.Labels,
-		},
-		IncludeEvents: true,
-	})
+		}, true)
 	if err != nil {
 		return fmt.Errorf("error publising list device request: %w", err)
-	} else if resp.GetError() != "" {
-		return errors.New(resp.GetError())
 	}
-
-	list := mir_v1.NewDeviceListFromProtoDevices(resp.GetOk().Devices)
 	if d.Output == "pretty" && len(list) == 1 {
 		d.Output = "yaml"
 	}
@@ -163,15 +153,7 @@ func (d *DeviceCreateCmd) Validate() error {
 	return nil
 }
 
-func (d *DeviceCreateCmd) Run(c CLI) error {
-	var err error
-	msgBus, err := bus.New(c.Target)
-	if err != nil {
-		e := MirConnectionError{Target: c.Target, e: err}
-		return e
-	}
-	defer msgBus.Close()
-
+func (d *DeviceCreateCmd) Run(log zerolog.Logger, m *mir.Mir, cfg Config) error {
 	if d.ShowJsonTemplate {
 		if d.Output == "pretty" {
 			d.Output = "yaml"
@@ -185,6 +167,7 @@ func (d *DeviceCreateCmd) Run(c CLI) error {
 	}
 
 	devs := []*mir_v1.Device{}
+	var err error
 	if isPipedStdIn() || d.Path != "" {
 		devs, err = unmarshalTypeFromStdInOrFile[mir_v1.Device](d.Path)
 		if err != nil {
@@ -218,22 +201,18 @@ func (d *DeviceCreateCmd) Run(c CLI) error {
 		devs = append(devs, &dev)
 	}
 
-	respDevs := []*mir_apiv1.Device{}
+	list := []mir_v1.Device{}
 	var errs error
 	for _, d := range devs {
-		resp, err := core_client.PublishDeviceCreateRequest(msgBus, mir_v1.NewCreateDeviceReqFromDevice(*d))
+		respD, err := m.Server().CreateDevice().Request(*d)
 		if err != nil {
-			return fmt.Errorf("error publising device create request: %w", err)
-		}
-		if resp.GetError() != "" {
-			errs = errors.Join(errs, errors.New(resp.GetError()))
-		} else if resp.GetOk() != nil {
-			respDevs = append(respDevs, resp.GetOk())
+			errs = errors.Join(errs, err)
+		} else {
+			list = append(list, respD)
 		}
 	}
 
-	if len(respDevs) > 0 {
-		list := mir_v1.NewDeviceListFromProtoDevices(respDevs)
+	if len(list) > 0 {
 		if str, err := stringifyDevices(d.Output, list); err != nil {
 			return fmt.Errorf("error marshalling response: %w", err)
 		} else {
@@ -270,85 +249,66 @@ func (d *DeviceUpdateCmd) Validate() error {
 	return nil
 }
 
-func (d *DeviceUpdateCmd) Run(c CLI) error {
+func (d *DeviceUpdateCmd) Run(log zerolog.Logger, m *mir.Mir, cfg Config) error {
 	var err error
-	msgBus, err := bus.New(c.Target)
-	if err != nil {
-		e := MirConnectionError{Target: c.Target, e: err}
-		return e
+	// TODO check if label modification works
+	// labels := map[string]*mir_apiv1.OptString{}
+	// for k, v := range d.Labels {
+	// 	if strings.ToLower(v) == "null" || strings.ToLower(v) == "nil" || strings.ToLower(v) == "none" {
+	// 		labels[k] = &mir_apiv1.OptString{
+	// 			Value: nil,
+	// 		}
+	// 	} else {
+	// 		labels[k] = &mir_apiv1.OptString{
+	// 			Value: &v,
+	// 		}
+	// 	}
+	// }
+	// anno := map[string]*mir_apiv1.OptString{}
+	// for k, v := range d.Anno {
+	// 	if strings.ToLower(v) == "null" || strings.ToLower(v) == "nil" || strings.ToLower(v) == "none" {
+	// 		anno[k] = &mir_apiv1.OptString{
+	// 			Value: nil,
+	// 		}
+	// 	} else {
+	// 		anno[k] = &mir_apiv1.OptString{
+	// 			Value: &v,
+	// 		}
+	// 	}
+	// }
+	target := mir_v1.DeviceTarget{
+		Ids:        d.Target.Ids,
+		Names:      d.Target.Names,
+		Namespaces: d.Target.Namespaces,
+		Labels:     d.Target.Labels,
 	}
-	defer msgBus.Close()
-
-	labels := map[string]*mir_apiv1.OptString{}
-	for k, v := range d.Labels {
-		if strings.ToLower(v) == "null" || strings.ToLower(v) == "nil" || strings.ToLower(v) == "none" {
-			labels[k] = &mir_apiv1.OptString{
-				Value: nil,
-			}
-		} else {
-			labels[k] = &mir_apiv1.OptString{
-				Value: &v,
-			}
-		}
-	}
-	anno := map[string]*mir_apiv1.OptString{}
-	for k, v := range d.Anno {
-		if strings.ToLower(v) == "null" || strings.ToLower(v) == "nil" || strings.ToLower(v) == "none" {
-			anno[k] = &mir_apiv1.OptString{
-				Value: nil,
-			}
-		} else {
-			anno[k] = &mir_apiv1.OptString{
-				Value: &v,
-			}
-		}
-	}
-	if d.Desc != nil {
-		anno["mir/device/description"] = &mir_apiv1.OptString{
-			Value: d.Desc,
-		}
-	}
-	req := &mir_apiv1.UpdateDeviceRequest{
-		Targets: &mir_apiv1.DeviceTarget{
-			Ids:        d.Target.Ids,
-			Names:      d.Target.Names,
-			Namespaces: d.Target.Namespaces,
-			Labels:     d.Target.Labels,
-		},
-		Meta: &mir_apiv1.UpdateDeviceRequest_Meta{
-			Labels:      labels,
-			Annotations: anno,
-		},
-		Spec: &mir_apiv1.UpdateDeviceRequest_Spec{},
-	}
+	dev := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
+		Labels:      d.Labels,
+		Annotations: d.Anno,
+	})
 
 	if d.Name != nil {
-		req.Meta.Name = d.Name
+		dev.Meta.Name = *d.Name
 	}
 	if d.Namespace != nil {
-		req.Meta.Namespace = d.Namespace
+		dev.Meta.Namespace = *d.Namespace
 	}
 	if d.Disabled != nil {
-		req.Spec.Disabled = d.Disabled
+		dev.Spec.Disabled = d.Disabled
 	}
 	if d.Id != nil {
-		req.Spec.DeviceId = d.Id
+		dev.Spec.DeviceId = *d.Id
 	}
 
-	resp, err := core_client.PublishDeviceUpdateRequest(msgBus, req)
+	list, err := m.Server().UpdateDevice().Request(target, dev)
 	if err != nil {
 		return fmt.Errorf("error publising device update request: %w", err)
 	}
 
-	if resp.GetError() != "" {
-		return errors.New(resp.GetError())
+	if str, err := stringifyDevices(d.Output, list); err != nil {
+		return fmt.Errorf("error marshalling response: %w", err)
 	} else {
-		list := mir_v1.NewDeviceListFromProtoDevices(resp.GetOk().Devices)
-		if str, err := stringifyDevices(d.Output, list); err != nil {
-			return fmt.Errorf("error marshalling response: %w", err)
-		} else {
-			fmt.Println(str)
-		}
+		fmt.Println(str)
 	}
 
 	return nil
@@ -381,36 +341,21 @@ func (d *DeviceDeleteCmd) Validate() error {
 	return nil
 }
 
-func (d *DeviceDeleteCmd) Run(c CLI) error {
-	var err error
-	msgBus, err := bus.New(c.Target)
-	if err != nil {
-		e := MirConnectionError{Target: c.Target, e: err}
-		return e
-	}
-	defer msgBus.Close()
-
-	resp, err := core_client.PublishDeviceDeleteRequest(msgBus, &mir_apiv1.DeleteDeviceRequest{
-		Targets: &mir_apiv1.DeviceTarget{
-			Ids:        d.Target.Ids,
-			Names:      d.Target.Names,
-			Namespaces: d.Target.Namespaces,
-			Labels:     d.Target.Labels,
-		},
+func (d *DeviceDeleteCmd) Run(log zerolog.Logger, m *mir.Mir, cfg Config) error {
+	list, err := m.Server().DeleteDevice().Request(mir_v1.DeviceTarget{
+		Ids:        d.Target.Ids,
+		Names:      d.Target.Names,
+		Namespaces: d.Target.Namespaces,
+		Labels:     d.Target.Labels,
 	})
 	if err != nil {
 		return fmt.Errorf("error publising device delete request: %w", err)
 	}
 
-	if resp.GetError() != "" {
-		return errors.New(resp.GetError())
+	if str, err := stringifyDevices(d.Output, list); err != nil {
+		return fmt.Errorf("error marshalling response: %w", err)
 	} else {
-		list := mir_v1.NewDeviceListFromProtoDevices(resp.GetOk().Devices)
-		if str, err := stringifyDevices(d.Output, list); err != nil {
-			return fmt.Errorf("error marshalling response: %w", err)
-		} else {
-			fmt.Println(str)
-		}
+		fmt.Println(str)
 	}
 	return nil
 }

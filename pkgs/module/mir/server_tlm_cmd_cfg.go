@@ -324,28 +324,28 @@ func (r *listConfigurationRoute) handlerWrapper(f func(msg *Msg, clientId string
 }
 
 // Request listing of command per device
-func (r *listConfigurationRoute) Request(req *mir_apiv1.SendListCommandsRequest) (map[string]*mir_apiv1.Commands, error) {
+func (r *listConfigurationRoute) Request(req *mir_apiv1.SendListConfigRequest) (map[string]*mir_apiv1.Configs, error) {
 	sbj := cfg_client.ListConfigRequest.WithId(r.m.GetInstanceName())
 	bReq, err := proto.Marshal(req)
 	if err != nil {
-		return map[string]*mir_apiv1.Commands{}, err
+		return map[string]*mir_apiv1.Configs{}, err
 	}
 
 	resMsg, err := r.m.request(sbj, bReq, nil, defaultTimeout)
 	if err != nil {
-		return map[string]*mir_apiv1.Commands{}, err
+		return map[string]*mir_apiv1.Configs{}, err
 	}
 
-	resp := &mir_apiv1.SendListCommandsResponse{}
+	resp := &mir_apiv1.SendListConfigResponse{}
 	err = proto.Unmarshal(resMsg.Data, resp)
 	if err != nil {
-		return map[string]*mir_apiv1.Commands{}, err
+		return map[string]*mir_apiv1.Configs{}, err
 	}
 	if resp.GetError() != "" {
-		return map[string]*mir_apiv1.Commands{}, err
+		return map[string]*mir_apiv1.Configs{}, err
 	}
 
-	return resp.GetOk().DeviceCommands, nil
+	return resp.GetOk().DeviceConfigs, nil
 }
 
 /// SendConfig

@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/maxthom/mir/internal/clients/cfg_client"
 	"github.com/maxthom/mir/internal/libs/editor"
-	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
+	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 )
 
 type ConfigCmd struct {
@@ -30,7 +30,7 @@ type ConfigListCmd struct {
 type ConfigSendCmd struct {
 	Target            `embed:"" prefix:"target."`
 	NameNs            string `name:"name/namespace" arg:"" optional:"" help:"edit single device"`
-	Command           string `short:"n" help:"config name to send"`
+	Config            string `short:"n" help:"config name to send"`
 	ShowJsonTemplate  bool   `short:"j" help:"show json template for config"`
 	ShowCurrentValues bool   `short:"c" help:"show current values for config"`
 	Payload           string `short:"p" help:"payload to send in json. use single quote for easier writing. e.g. '{\"key\":\"value\"}'"`
@@ -55,15 +55,7 @@ func (d *ConfigListCmd) Validate() error {
 	return nil
 }
 
-func (d *ConfigListCmd) Run(c CLI) error {
-	var err error
-	msgBus, err := bus.New(c.Target)
-	if err != nil {
-		e := MirConnectionError{Target: c.Target, e: err}
-		return e
-	}
-	defer msgBus.Close()
-
+func (d *ConfigListCmd) Run(log zerolog.Logger, m *mir.Mir, cfg Config) error {
 	req := &mir_apiv1.SendListConfigRequest{
 		Targets: &mir_apiv1.DeviceTarget{
 			Ids:        d.Target.Ids,
@@ -74,17 +66,14 @@ func (d *ConfigListCmd) Run(c CLI) error {
 		FilterLabels:  d.FilterLabels,
 		RefreshSchema: d.RefreshSchema,
 	}
-	resp, err := cfg_client.PublishListConfigRequest(msgBus, req)
+	resp, err := m.Server().ListConfig().Request(req)
 	if err != nil {
 		return fmt.Errorf("error publising list config request: %w", err)
-	}
-	if resp.GetError() != "" {
-		return errors.New(resp.GetError())
 	}
 
 	tpls := map[string][]string{}
 	var sb strings.Builder
-	for devNameNs, cmds := range resp.GetOk().DeviceConfigs {
+	for devNameNs, cmds := range resp {
 		if cmds.Error != "" {
 			sb.WriteString(cmds.Error)
 		} else {
@@ -148,7 +137,7 @@ func (d *ConfigSendCmd) Validate() error {
 	if piped, ok := ReadFromPipedStdIn(); ok {
 		d.Payload = piped
 	}
-	if d.Command != "" && d.Payload == "" && !d.ShowJsonTemplate && !d.ShowCurrentValues && !d.Edit {
+	if d.Config != "" && d.Payload == "" && !d.ShowJsonTemplate && !d.ShowCurrentValues && !d.Edit {
 		err.Details = append(err.Details, "Must set payload. Use -j to see json template, -c for current values or -e for interactive edit.")
 	}
 
@@ -158,16 +147,8 @@ func (d *ConfigSendCmd) Validate() error {
 	return nil
 }
 
-func (d *ConfigSendCmd) Run(c CLI) error {
-	var err error
-	msgBus, err := bus.New(c.Target)
-	if err != nil {
-		e := MirConnectionError{Target: c.Target, e: err}
-		return e
-	}
-	defer msgBus.Close()
-
-	if d.Command == "" {
+func (d *ConfigSendCmd) Run(log zerolog.Logger, m *mir.Mir, cfg Config) error {
+	if d.Config == "" {
 		listCfg := ConfigListCmd{
 			Target:            d.Target,
 			NameNs:            d.NameNs,
@@ -175,7 +156,7 @@ func (d *ConfigSendCmd) Run(c CLI) error {
 			ShowJsonTemplate:  d.ShowJsonTemplate,
 			ShowCurrentValues: d.ShowCurrentValues,
 		}
-		return listCfg.Run(c)
+		return listCfg.Run(log, m, cfg)
 	}
 
 	if d.Edit {
@@ -189,7 +170,7 @@ func (d *ConfigSendCmd) Run(c CLI) error {
 			Namespaces: d.Target.Namespaces,
 			Labels:     d.Target.Labels,
 		},
-		Name:            d.Command,
+		Name:            d.Config,
 		Payload:         []byte(d.Payload),
 		PayloadEncoding: mir_apiv1.Encoding_ENCODING_JSON,
 		RefreshSchema:   d.RefreshSchema,
@@ -198,17 +179,14 @@ func (d *ConfigSendCmd) Run(c CLI) error {
 		DryRun:          d.DryRun,
 		ForcePush:       d.ForcePush,
 	}
-	resp, err := cfg_client.PublishSendConfigRequest(msgBus, req)
+	resp, err := m.Server().SendConfig().Request(req)
 	if err != nil {
 		return fmt.Errorf("error publising send config request: %w", err)
-	}
-	if resp.GetError() != "" {
-		return errors.New(resp.GetError())
 	}
 
 	if d.ShowJsonTemplate || d.ShowCurrentValues {
 		tpls := map[string][]string{}
-		for k, v := range resp.GetOk().DeviceResponses {
+		for k, v := range resp {
 			if v.Error != "" {
 				tpls[string(v.Error)] = append(tpls[string(v.Error)], k)
 				if d.Edit {
@@ -254,12 +232,9 @@ func (d *ConfigSendCmd) Run(c CLI) error {
 			req.ShowTemplate = false
 			req.ShowValues = false
 			req.Payload = payload
-			resp, err = cfg_client.PublishSendConfigRequest(msgBus, req)
+			resp, err = m.Server().SendConfig().Request(req)
 			if err != nil {
 				return fmt.Errorf("error publising send config request: %w", err)
-			}
-			if resp.GetError() != "" {
-				return errors.New(resp.GetError())
 			}
 		} else {
 			fmt.Println(sb.String())
@@ -269,7 +244,7 @@ func (d *ConfigSendCmd) Run(c CLI) error {
 
 	var sb strings.Builder
 	i := 1
-	for k, v := range resp.GetOk().DeviceResponses {
+	for k, v := range resp {
 		sb.WriteString(fmt.Sprintf("%d. ", i))
 		sb.WriteString(k)
 		sb.WriteString(" ")

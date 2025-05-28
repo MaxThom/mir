@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/maxthom/mir/internal/clients/cmd_client"
 	"github.com/maxthom/mir/internal/libs/editor"
-	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
+	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 )
 
 type CommandCmd struct {
@@ -55,15 +55,7 @@ func (d *CommandListCmd) Validate() error {
 	return nil
 }
 
-func (d *CommandListCmd) Run(c CLI) error {
-	var err error
-	msgBus, err := bus.New(c.Target)
-	if err != nil {
-		e := MirConnectionError{Target: c.Target, e: err}
-		return e
-	}
-	defer msgBus.Close()
-
+func (d *CommandListCmd) Run(log zerolog.Logger, m *mir.Mir, cfg Config) error {
 	req := &mir_apiv1.SendListCommandsRequest{
 		Targets: &mir_apiv1.DeviceTarget{
 			Ids:        d.Target.Ids,
@@ -74,17 +66,14 @@ func (d *CommandListCmd) Run(c CLI) error {
 		FilterLabels:  d.FilterLabels,
 		RefreshSchema: d.RefreshSchema,
 	}
-	resp, err := cmd_client.PublishListCommandsRequest(msgBus, req)
+	resp, err := m.Server().ListCommands().Request(req)
 	if err != nil {
 		return fmt.Errorf("error publising list command request: %w", err)
-	}
-	if resp.GetError() != "" {
-		return errors.New(resp.GetError())
 	}
 
 	tpls := map[string][]string{}
 	var sb strings.Builder
-	for devNameNs, cmds := range resp.GetOk().DeviceCommands {
+	for devNameNs, cmds := range resp {
 		if cmds.Error != "" {
 			sb.WriteString(cmds.Error)
 		} else {
@@ -154,15 +143,7 @@ func (d *CommandSendCmd) Validate() error {
 	return nil
 }
 
-func (d *CommandSendCmd) Run(c CLI) error {
-	var err error
-	msgBus, err := bus.New(c.Target)
-	if err != nil {
-		e := MirConnectionError{Target: c.Target, e: err}
-		return e
-	}
-	defer msgBus.Close()
-
+func (d *CommandSendCmd) Run(log zerolog.Logger, m *mir.Mir, cfg Config) error {
 	if d.Command == "" {
 		listCmd := CommandListCmd{
 			Target:           d.Target,
@@ -170,7 +151,7 @@ func (d *CommandSendCmd) Run(c CLI) error {
 			RefreshSchema:    d.RefreshSchema,
 			ShowJsonTemplate: d.ShowJsonTemplate,
 		}
-		return listCmd.Run(c)
+		return listCmd.Run(log, m, cfg)
 	}
 
 	if d.Edit {
@@ -194,17 +175,14 @@ func (d *CommandSendCmd) Run(c CLI) error {
 		ForcePush:       d.ForcePush,
 		TimeoutSec:      uint32(d.Timeout),
 	}
-	resp, err := cmd_client.PublishSendCommandRequest(msgBus, req)
+	resp, err := m.Server().SendCommand().Request(req)
 	if err != nil {
 		return fmt.Errorf("error publising send command request: %w", err)
-	}
-	if resp.GetError() != "" {
-		return errors.New(resp.GetError())
 	}
 
 	if req.ShowTemplate {
 		tpls := map[string][]string{}
-		for k, v := range resp.GetOk().DeviceResponses {
+		for k, v := range resp {
 			if v.Error != "" {
 				tpls[string(v.Error)] = append(tpls[string(v.Error)], k)
 				if d.Edit {
@@ -249,12 +227,9 @@ func (d *CommandSendCmd) Run(c CLI) error {
 			err = editor.EditRawDocument(&payload, header)
 			req.ShowTemplate = false
 			req.Payload = payload
-			resp, err = cmd_client.PublishSendCommandRequest(msgBus, req)
+			resp, err = m.Server().SendCommand().Request(req)
 			if err != nil {
 				return fmt.Errorf("error publising send command request: %w", err)
-			}
-			if resp.GetError() != "" {
-				return errors.New(resp.GetError())
 			}
 		} else {
 			fmt.Println(sb.String())
@@ -264,7 +239,7 @@ func (d *CommandSendCmd) Run(c CLI) error {
 
 	var sb strings.Builder
 	i := 1
-	for k, v := range resp.GetOk().DeviceResponses {
+	for k, v := range resp {
 		sb.WriteString(fmt.Sprintf("%d. ", i))
 		sb.WriteString(k)
 		sb.WriteString(" ")
