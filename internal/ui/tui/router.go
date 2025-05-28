@@ -3,7 +3,6 @@ package tui
 import (
 	"context"
 
-	"fmt"
 	"strings"
 	"time"
 
@@ -11,7 +10,6 @@ import (
 	"github.com/rs/zerolog"
 
 	"github.com/charmbracelet/bubbles/spinner"
-	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	"github.com/maxthom/mir/internal/ui/tui/components/labelspinner"
 	"github.com/maxthom/mir/internal/ui/tui/components/menu"
 	"github.com/maxthom/mir/internal/ui/tui/msgs"
@@ -22,7 +20,7 @@ import (
 	"github.com/maxthom/mir/internal/ui/tui/pages/mainmenu"
 	"github.com/maxthom/mir/internal/ui/tui/store"
 	"github.com/maxthom/mir/internal/ui/tui/styles"
-	"github.com/nats-io/nats.go"
+	"github.com/maxthom/mir/pkgs/module/mir"
 )
 
 var v strings.Builder
@@ -34,14 +32,14 @@ type MirTeaModel interface {
 
 type Model struct {
 	ctx          context.Context
-	bus          *bus.BusConn
-	mirUrl       string
+	m            *mir.Mir
+	cfg          Config
 	lblSpinner   labelspinner.Model
 	currentRoute menu.OptionValue
 	routes       map[string]MirTeaModel
 }
 
-func NewModel(ctx context.Context, log zerolog.Logger, mirUrl string) *Model {
+func NewModel(ctx context.Context, log zerolog.Logger, m *mir.Mir, cfg Config) *Model {
 	l = log.With().Str("page", "router").Logger()
 	s := labelspinner.New(" 🛰️ ", styles.Mir.Render("Mir"), spinner.Dot)
 	routes := map[string]MirTeaModel{
@@ -57,13 +55,14 @@ func NewModel(ctx context.Context, log zerolog.Logger, mirUrl string) *Model {
 		ctx:          ctx,
 		currentRoute: "/",
 		routes:       routes,
-		mirUrl:       mirUrl,
+		m:            m,
+		cfg:          cfg,
 		lblSpinner:   s,
 	}
 }
 
 func (m *Model) Init() tea.Cmd {
-	return tea.Batch(msgs.ReqMsgCmd("connecting to Mir ...standby"), m.connectToMir(m.mirUrl))
+	return tea.Batch(msgs.ReqMsgCmd("connecting to Mir ...standby"), m.connectToMir())
 }
 
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -137,24 +136,9 @@ func removeLastSegment(path string) string {
 	return path[:lastIndex]
 }
 
-func (m *Model) connectToMir(url string) tea.Cmd {
+func (m *Model) connectToMir() tea.Cmd {
 	return func() tea.Msg {
-		b, err := bus.New(url,
-			bus.WithReconnHandler(func(nc *nats.Conn) {
-				l.Warn().Msg("reconnected to " + nc.ConnectedUrl())
-			}),
-			bus.WithDisconnHandler(func(_ *nats.Conn, err error) {
-				l.Warn().Msg(fmt.Sprintf("disconnected due to %v, will attempt to reconnect ", err))
-			}),
-			bus.WithClosedHandler(func(nc *nats.Conn) {
-				l.Warn().Msg("connection to %v closed " + nc.ConnectedUrl())
-			}))
-		m.bus = b
-		store.Bus = b
-		if err != nil {
-			return msgs.ErrMsg{Err: err}
-		}
-
+		store.Bus = m.m
 		return msgs.ResMsg("connected to Mir")
 	}
 }

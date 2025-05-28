@@ -16,7 +16,6 @@ import (
 	mir_help "github.com/maxthom/mir/internal/ui/tui/components/help"
 	"github.com/maxthom/mir/internal/ui/tui/msgs"
 	"github.com/maxthom/mir/internal/ui/tui/store"
-	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -194,10 +193,8 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				return m, tea.Batch(
 					msgs.ReqMsgCmd("deleting device "+device.Spec.DeviceId+"..."),
-					msgs.DeleteMirDevice(store.Bus, &mir_apiv1.DeleteDeviceRequest{
-						Targets: &mir_apiv1.DeviceTarget{
-							Ids: []string{device.Spec.DeviceId},
-						},
+					msgs.DeleteMirDevice(store.Bus, mir_v1.DeviceTarget{
+						Ids: []string{device.Spec.DeviceId},
 					}))
 			} else {
 				m.deleteInput, cmd = m.deleteInput.Update(msg)
@@ -216,13 +213,13 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if !ok {
 					return m, msgs.ErrCmd(fmt.Errorf("no device selected"), 2*time.Second)
 				}
-				return m, msgs.RouteChangeWithDataCmd(menuOption_device_edit, mir_v1.NewDeviceFromProtoDevice(device))
+				return m, msgs.RouteChangeWithDataCmd(menuOption_device_edit, device)
 			} else if msg.String() == "s" {
 				device, ok := rowToDevice(m.table.SelectedRow())
 				if !ok {
 					return m, msgs.ErrCmd(fmt.Errorf("no device selected"), 2*time.Second)
 				}
-				return m, msgs.RouteChangeWithDataCmd(menuOption_device_schema, mir_v1.NewDeviceFromProtoDevice(device))
+				return m, msgs.RouteChangeWithDataCmd(menuOption_device_schema, device)
 			} else if msg.String() == "x" {
 				m.table.Blur()
 				m.deleteInput.SetValue("")
@@ -300,7 +297,7 @@ var keys = keyMap{
 	),
 }
 
-func devicesToRows(devices []*mir_apiv1.Device) ([]table.Row, []string) {
+func devicesToRows(devices []mir_v1.Device) ([]table.Row, []string) {
 	rows := []table.Row{}
 	suggestions := []string{}
 	for _, d := range devices {
@@ -315,9 +312,9 @@ func devicesToRows(devices []*mir_apiv1.Device) ([]table.Row, []string) {
 		}
 
 		status := "🟢"
-		if d.Spec.Disabled {
+		if *d.Spec.Disabled {
 			status = "⭕"
-		} else if !d.Status.Online {
+		} else if !*d.Status.Online {
 			status = "🔴"
 		}
 
@@ -385,9 +382,9 @@ func filterTableRows(rows []table.Row, filter string) []table.Row {
 	return filteredRows
 }
 
-func rowToDevice(r table.Row) (*mir_apiv1.Device, bool) {
+func rowToDevice(r table.Row) (mir_v1.Device, bool) {
 	if len(r) < 2 {
-		return nil, false
+		return mir_v1.Device{}, false
 	}
 	id := r[tableColDeviceID]
 	if store.Devices != nil {
@@ -397,5 +394,5 @@ func rowToDevice(r table.Row) (*mir_apiv1.Device, bool) {
 			}
 		}
 	}
-	return nil, false
+	return mir_v1.Device{}, false
 }

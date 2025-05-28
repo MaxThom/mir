@@ -4,15 +4,15 @@ import (
 	"sort"
 	"strings"
 
-	bus "github.com/maxthom/mir/internal/libs/external/natsio"
-	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
+	"github.com/maxthom/mir/pkgs/mir_v1"
+	"github.com/maxthom/mir/pkgs/module/mir"
 )
 
-var Bus *bus.BusConn
-var Devices []*mir_apiv1.Device
+var Bus *mir.Mir
+var Devices []mir_v1.Device
 var ScreenHeight, ScreenWidth int
 
-func GetAnnotationsSuggestions(devices []*mir_apiv1.Device) []string {
+func GetAnnotationsSuggestions(devices []mir_v1.Device) []string {
 	if devices == nil {
 		return []string{}
 	}
@@ -35,7 +35,7 @@ func GetAnnotationsSuggestions(devices []*mir_apiv1.Device) []string {
 }
 
 // TODO suggestion could be in any order, not just sorted
-func GetLabelsSuggestions(devices []*mir_apiv1.Device) []string {
+func GetLabelsSuggestions(devices []mir_v1.Device) []string {
 	if devices == nil {
 		return []string{}
 	}
@@ -57,7 +57,7 @@ func GetLabelsSuggestions(devices []*mir_apiv1.Device) []string {
 	return s
 }
 
-func GetDeviceIdSuggestions(devices []*mir_apiv1.Device) []string {
+func GetDeviceIdSuggestions(devices []mir_v1.Device) []string {
 	if devices == nil {
 		return []string{}
 	}
@@ -70,7 +70,7 @@ func GetDeviceIdSuggestions(devices []*mir_apiv1.Device) []string {
 	return s
 }
 
-func GetNamespaceSuggestions(devices []*mir_apiv1.Device) []string {
+func GetNamespaceSuggestions(devices []mir_v1.Device) []string {
 	if devices == nil {
 		return []string{}
 	}

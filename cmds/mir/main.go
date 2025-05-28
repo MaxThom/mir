@@ -135,9 +135,9 @@ func main() {
 	defer m.Disconnect()
 
 	err = kongCtx.Run(
-		log, m, cli.NewConfig(cfg.Target, cfg.Target),
-		// cli.New(log, m),
-		tui.New(log, cfg.Target),
+		log, m,
+		cli.NewConfig(cfg.LogLevel, cfg.Target),
+		tui.NewConfig(cfg.LogLevel, cfg.Target),
 	)
 	if err != nil {
 		log.Error().Err(err).Msg("")
