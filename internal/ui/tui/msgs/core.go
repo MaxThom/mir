@@ -1,125 +1,99 @@
 package msgs
 
 import (
-	"fmt"
-
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/maxthom/mir/internal/clients/core_client"
-	bus "github.com/maxthom/mir/internal/libs/external/natsio"
-	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
+	"github.com/maxthom/mir/pkgs/mir_v1"
+	"github.com/maxthom/mir/pkgs/module/mir"
 )
 
 type (
 	DeviceListedMsg struct {
-		Devices []*mir_apiv1.Device
+		Devices []mir_v1.Device
 		NoToast bool
 	}
 	DeviceCreatedMsg struct {
-		Devices []*mir_apiv1.Device
+		Devices []mir_v1.Device
 		NoToast bool
 	}
 	DeviceDeleteMsg struct {
-		Devices []*mir_apiv1.Device
+		Devices []mir_v1.Device
 		NoToast bool
 	}
 	DeviceUpdateMsg struct {
-		Devices []*mir_apiv1.Device
+		Devices []mir_v1.Device
 		NoToast bool
 	}
 )
 
-func ListMirDevicesSilently(bus *bus.BusConn) tea.Cmd {
-	return listMirDevicesCmd(bus, true)
+func ListMirDevicesSilently(m *mir.Mir) tea.Cmd {
+	return listMirDevicesCmd(m, true)
 }
 
-func ListMirDevices(bus *bus.BusConn) tea.Cmd {
-	return listMirDevicesCmd(bus, false)
+func ListMirDevices(m *mir.Mir) tea.Cmd {
+	return listMirDevicesCmd(m, false)
 }
 
-func listMirDevicesCmd(bus *bus.BusConn, noToast bool) func() tea.Msg {
+func listMirDevicesCmd(m *mir.Mir, noToast bool) func() tea.Msg {
 	return func() tea.Msg {
-		resp, err := core_client.PublishDeviceListRequest(bus, &mir_apiv1.ListDeviceRequest{
-			Targets: &mir_apiv1.DeviceTarget{},
-		})
+		list, err := m.Server().ListDevice().Request(mir_v1.DeviceTarget{}, true)
 		if err != nil {
-			// TODO move error from cli to next to core client and use it here as well
-			//l.Error().Err(err).Msg("")
 			return ErrMsg{Err: err}
 		}
-		if resp.GetError() != "" {
-			return ErrMsg{Err: fmt.Errorf("%s", resp.GetError())}
-		}
-		return DeviceListedMsg{Devices: resp.GetOk().Devices, NoToast: noToast}
+		return DeviceListedMsg{Devices: list, NoToast: noToast}
 	}
 }
 
-func CreateMirDeviceSilently(bus *bus.BusConn, req *mir_apiv1.CreateDeviceRequest) tea.Cmd {
-	return createMirDeviceCmd(bus, true, req)
+func CreateMirDeviceSilently(m *mir.Mir, d mir_v1.Device) tea.Cmd {
+	return createMirDeviceCmd(m, true, d)
 }
 
-func CreateMirDevice(bus *bus.BusConn, req *mir_apiv1.CreateDeviceRequest) tea.Cmd {
-	return createMirDeviceCmd(bus, false, req)
+func CreateMirDevice(m *mir.Mir, d mir_v1.Device) tea.Cmd {
+	return createMirDeviceCmd(m, false, d)
 }
 
-func createMirDeviceCmd(bus *bus.BusConn, noToast bool, req *mir_apiv1.CreateDeviceRequest) tea.Cmd {
+func createMirDeviceCmd(m *mir.Mir, noToast bool, d mir_v1.Device) tea.Cmd {
 	return func() tea.Msg {
-		resp, err := core_client.PublishDeviceCreateRequest(bus, req)
+		dev, err := m.Server().CreateDevice().Request(d)
 		if err != nil {
-			// TODO move error from cli to next to core client and use it here as well
-			//l.Error().Err(err).Msg("")
 			return ErrMsg{Err: err}
 		}
-		if resp.GetError() != "" {
-			return ErrMsg{Err: fmt.Errorf("%s", resp.GetError())}
-		}
-		devs := []*mir_apiv1.Device{resp.GetOk()}
-		return DeviceCreatedMsg{Devices: devs, NoToast: noToast}
+		return DeviceCreatedMsg{Devices: []mir_v1.Device{dev}, NoToast: noToast}
 	}
 }
 
-func DeleteMirDeviceSilently(bus *bus.BusConn, req *mir_apiv1.DeleteDeviceRequest) tea.Cmd {
-	return deleteMirDeviceCmd(bus, true, req)
+func DeleteMirDeviceSilently(m *mir.Mir, t mir_v1.DeviceTarget) tea.Cmd {
+	return deleteMirDeviceCmd(m, true, t)
 }
 
-func DeleteMirDevice(bus *bus.BusConn, req *mir_apiv1.DeleteDeviceRequest) tea.Cmd {
-	return deleteMirDeviceCmd(bus, false, req)
+func DeleteMirDevice(m *mir.Mir, t mir_v1.DeviceTarget) tea.Cmd {
+	return deleteMirDeviceCmd(m, false, t)
 }
 
-func deleteMirDeviceCmd(bus *bus.BusConn, noToast bool, req *mir_apiv1.DeleteDeviceRequest) tea.Cmd {
+func deleteMirDeviceCmd(m *mir.Mir, noToast bool, t mir_v1.DeviceTarget) tea.Cmd {
 	return func() tea.Msg {
-		resp, err := core_client.PublishDeviceDeleteRequest(bus, req)
+		devs, err := m.Server().DeleteDevice().Request(t)
 		if err != nil {
-			// TODO move error from cli to next to core client and use it here as well
-			//l.Error().Err(err).Msg("")
 			return ErrMsg{Err: err}
 		}
-		if resp.GetError() != "" {
-			return ErrMsg{Err: fmt.Errorf("%s", resp.GetError())}
-		}
-		return DeviceDeleteMsg{Devices: resp.GetOk().Devices, NoToast: noToast}
+		return DeviceDeleteMsg{Devices: devs, NoToast: noToast}
 	}
 }
 
-func UpdateMirDeviceSilently(bus *bus.BusConn, req *mir_apiv1.UpdateDeviceRequest) tea.Cmd {
-	return updateMirDeviceCmd(bus, true, req)
+func UpdateMirDeviceSilently(m *mir.Mir, d mir_v1.Device) tea.Cmd {
+	return updateMirDeviceCmd(m, true, d)
 }
 
-func UpdateMirDevice(bus *bus.BusConn, req *mir_apiv1.UpdateDeviceRequest) tea.Cmd {
-	return updateMirDeviceCmd(bus, false, req)
+func UpdateMirDevice(m *mir.Mir, d mir_v1.Device) tea.Cmd {
+	return updateMirDeviceCmd(m, false, d)
 }
 
-func updateMirDeviceCmd(bus *bus.BusConn, noToast bool, req *mir_apiv1.UpdateDeviceRequest) tea.Cmd {
+func updateMirDeviceCmd(m *mir.Mir, noToast bool, d mir_v1.Device) tea.Cmd {
 	return func() tea.Msg {
-		resp, err := core_client.PublishDeviceUpdateRequest(bus, req)
+		devs, err := m.Server().UpdateDevice().RequestSingle(d)
 		if err != nil {
-			// TODO move error from cli to next to core client and use it here as well
-			//l.Error().Err(err).Msg("")
 			return ErrMsg{Err: err}
 		}
-		if resp.GetError() != "" {
-			return ErrMsg{Err: fmt.Errorf("%s", resp.GetError())}
-		}
-		return DeviceUpdateMsg{Devices: resp.GetOk().Devices, NoToast: noToast}
+		return DeviceUpdateMsg{Devices: devs, NoToast: noToast}
 	}
 }

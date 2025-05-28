@@ -20,7 +20,7 @@ import (
 	"github.com/maxthom/mir/internal/ui/tui/msgs"
 	"github.com/maxthom/mir/internal/ui/tui/store"
 	"github.com/maxthom/mir/internal/ui/tui/styles"
-	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
+	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -156,18 +156,18 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 			if !formInError {
-				req := &mir_apiv1.CreateDeviceRequest{
-					Meta: &mir_apiv1.Meta{
+				dis := !boolStringToBool(m.inputs[disabled].GetValue())
+				req := mir_v1.NewDevice().WithMeta(
+					mir_v1.Meta{
 						Name:        m.inputs[name].GetValue(),
 						Namespace:   m.inputs[namespace].GetValue(),
 						Labels:      keyValueStringToMap(m.inputs[labels].GetValue()),
 						Annotations: keyValueStringToMap(m.inputs[annotations].GetValue()),
-					},
-					Spec: &mir_apiv1.DeviceSpec{
+					}).WithSpec(
+					mir_v1.DeviceSpec{
 						DeviceId: m.inputs[deviceId].GetValue(),
-						Disabled: !boolStringToBool(m.inputs[disabled].GetValue()),
-					},
-				}
+						Disabled: &dis,
+					})
 				req.Meta.Annotations["mir/device/description"] = m.inputs[description].GetValue()
 				return m, tea.Batch(msgs.ReqMsgCmd("creating device..."), msgs.CreateMirDevice(store.Bus, req))
 			}

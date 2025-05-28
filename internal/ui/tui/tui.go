@@ -4,30 +4,28 @@ import (
 	"context"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/rs/zerolog"
 )
 
 var l zerolog.Logger
 
-type TUI struct {
-	Target string
+type Config struct {
+	LogLevel string
+	Target   string
 }
 
-func New(log zerolog.Logger, mirUrl string) TUI {
-	l = log.With().Str("app", "tui").Logger()
-	return TUI{Target: mirUrl}
+func NewConfig(logLevel string, mirUrl string) Config {
+	return Config{Target: mirUrl, LogLevel: logLevel}
 }
 
 type Cmd struct{}
 
-func (c *Cmd) Run(tui TUI) error {
+func (c *Cmd) Run(log zerolog.Logger, m *mir.Mir, cfg Config) error {
 	ctx := context.Background()
-	tui.Launch(ctx)
-	return nil
-}
+	log = log.With().Str("module", "tui").Logger()
 
-func (s *TUI) Launch(ctx context.Context) error {
-	p := tea.NewProgram(NewModel(ctx, l, s.Target))
+	p := tea.NewProgram(NewModel(ctx, l, m, cfg))
 	if _, err := p.Run(); err != nil {
 		return err
 	}
