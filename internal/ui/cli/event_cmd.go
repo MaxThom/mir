@@ -7,10 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/maxthom/mir/internal/clients/event_client"
-	bus "github.com/maxthom/mir/internal/libs/external/natsio"
-	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	"github.com/maxthom/mir/pkgs/mir_v1"
+	"github.com/maxthom/mir/pkgs/module/mir"
+	"github.com/rs/zerolog"
 )
 
 // TODO get command which is ls but with -o yaml
@@ -69,36 +68,24 @@ func (d *EventListCmd) Validate() error {
 	return nil
 }
 
-func (d *EventListCmd) Run(c CLI) error {
-	var err error
-	msgBus, err := bus.New(c.Target)
-	if err != nil {
-		e := MirConnectionError{Target: c.Target, e: err}
-		return e
-	}
-	defer msgBus.Close()
-
-	resp, err := event_client.PublishEventListRequest(msgBus, &mir_apiv1.ListEventsRequest{
-		Target: &mir_apiv1.EventTarget{
-			Targets: &mir_apiv1.Targets{
+func (d *EventListCmd) Run(log zerolog.Logger, m *mir.Mir, cfg Config) error {
+	list, err := m.Server().ListEvents().Request(
+		mir_v1.EventTarget{
+			ObjectTarget: mir_v1.ObjectTarget{
 				Names:      d.Names,
 				Namespaces: d.Namespaces,
 				Labels:     d.Labels,
 			},
-			FilterDate: &mir_apiv1.DateFilter{
-				From: mir_v1.AsProtoTimestamp(d.From),
-				To:   mir_v1.AsProtoTimestamp(d.To),
+			DateFilter: mir_v1.DateFilter{
+				From: d.From,
+				To:   d.To,
 			},
-			FilterLimit: int32(d.Limit),
-		},
-	})
+			Limit: d.Limit,
+		})
 	if err != nil {
 		return fmt.Errorf("error publising list event request: %w", err)
-	} else if resp.GetError() != "" {
-		return errors.New(resp.GetError())
 	}
 
-	list := mir_v1.ProtoEventsToMirEvents(resp.GetOk().Events)
 	if d.Output == "pretty" && len(list) == 1 {
 		d.Output = "yaml"
 	}
@@ -134,35 +121,22 @@ func (d *EventDeleteCmd) Validate() error {
 	return nil
 }
 
-func (d *EventDeleteCmd) Run(c CLI) error {
-	var err error
-	msgBus, err := bus.New(c.Target)
-	if err != nil {
-		e := MirConnectionError{Target: c.Target, e: err}
-		return e
-	}
-	defer msgBus.Close()
-
-	resp, err := event_client.PublishEventDeleteRequest(msgBus, &mir_apiv1.DeleteEventRequest{
-		Target: &mir_apiv1.EventTarget{
-			Targets: &mir_apiv1.Targets{
-				Names:      d.Names,
-				Namespaces: d.Namespaces,
-				Labels:     d.Labels,
-			},
-			FilterDate: &mir_apiv1.DateFilter{
-				From: mir_v1.AsProtoTimestamp(d.From),
-				To:   mir_v1.AsProtoTimestamp(d.To),
-			},
+func (d *EventDeleteCmd) Run(log zerolog.Logger, m *mir.Mir, cfg Config) error {
+	list, err := m.Server().DeleteEvents().Request(mir_v1.EventTarget{
+		ObjectTarget: mir_v1.ObjectTarget{
+			Names:      d.Names,
+			Namespaces: d.Namespaces,
+			Labels:     d.Labels,
+		},
+		DateFilter: mir_v1.DateFilter{
+			From: d.From,
+			To:   d.To,
 		},
 	})
 	if err != nil {
 		return fmt.Errorf("error publising delete event request: %w", err)
-	} else if resp.GetError() != "" {
-		return errors.New(resp.GetError())
 	}
 
-	list := mir_v1.ProtoEventsToMirEvents(resp.GetOk().Events)
 	if d.Output == "pretty" && len(list) == 1 {
 		d.Output = "yaml"
 	}

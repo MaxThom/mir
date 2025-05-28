@@ -89,7 +89,7 @@ func (d *ServeCmd) Validate() error {
 	return nil
 }
 
-func (d *ServeCmd) Run(c CLI) error {
+func (d *ServeCmd) Run(log zerolog.Logger, m *mir.Mir, cfg Config) error {
 	if d.DisplayDefaultCfg {
 		out, err := yaml.Marshal(d.ServeConfig)
 		if err != nil {
@@ -117,7 +117,7 @@ func (d *ServeCmd) Run(c CLI) error {
 		return nil
 	}
 
-	log := mir_log.Setup(
+	log = mir_log.Setup(
 		mir_log.WithDevOnlyPrettyLogger(),
 		mir_log.WithFlagAndFileLogLevel(false, d.Mir.LogLevel, &d.Mir.LogLevel),
 		mir_log.WithAppName(AppName),
@@ -137,7 +137,7 @@ func (d *ServeCmd) Run(c CLI) error {
 	log.Info().Str("config", string(prettyCfg)).Msg("")
 	metrics.RegisterMirMetrics(AppName, build_meta.GetShortVersion(), map[string]string{}, string(prettyCfg))
 
-	if err := run(context.Background(), log, d.ServeConfig); err != nil {
+	if err := run(context.Background(), log, m, d.ServeConfig); err != nil {
 		log.Error().Err(err).Msg("")
 		return err
 	}
@@ -147,6 +147,7 @@ func (d *ServeCmd) Run(c CLI) error {
 func run(
 	ctx context.Context,
 	log zerolog.Logger,
+	m *mir.Mir,
 	cfg ServeConfig,
 ) error {
 	mir_signals.Notify(syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT)
@@ -164,11 +165,11 @@ func run(
 	}
 	log.Info().Str("url", cfg.Influx.Url).Msg("connected to puthost")
 
-	m, err := mir.Connect(AppName, cfg.Mir.Url, append(mir.WithDefaultReconnectOpts(), mir.WithDefaultConnectionLogging(log)...)...)
-	if err != nil {
-		return err
-	}
-	log.Info().Str("url", cfg.Mir.Url).Str("status", m.Bus.Status().String()).Msg("msg bus status")
+	// m, err := mir.Connect(AppName, cfg.Mir.Url, append(mir.WithDefaultReconnectOpts(), mir.WithDefaultConnectionLogging(log)...)...)
+	// if err != nil {
+	// 	return err
+	// }
+	// log.Info().Str("url", cfg.Mir.Url).Str("status", m.Bus.Status().String()).Msg("msg bus status")
 
 	// Services
 	coreSrv, err := core_srv.NewCore(log, m, mng.NewSurrealMirStore(db))

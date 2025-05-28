@@ -6,11 +6,11 @@ import (
 
 var l zerolog.Logger
 
-type CLI struct {
-	Target string
+type Config struct {
+	LogLevel string
+	Target   string
 }
 
-func New(log zerolog.Logger, mirUrl string) CLI {
-	l = log.With().Str("app", "cli").Logger()
-	return CLI{Target: mirUrl}
+func NewConfig(logLevel string, mirUrl string) Config {
+	return Config{Target: mirUrl, LogLevel: logLevel}
 }

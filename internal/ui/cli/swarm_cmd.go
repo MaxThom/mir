@@ -14,6 +14,7 @@ import (
 	swarmv1 "github.com/maxthom/mir/internal/ui/cli/gen/swarm/v1"
 	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
 	"github.com/maxthom/mir/pkgs/device/mir"
+	mSdk "github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/proto"
 )
@@ -41,14 +42,8 @@ func (c *SwarmCmd) Validate() error {
 	return nil
 }
 
-func (d *SwarmCmd) Run(c CLI) error {
+func (d *SwarmCmd) Run(log zerolog.Logger, m *mSdk.Mir, cfg Config) error {
 	mir_signals.Notify(syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT)
-	var err error
-	msgBus, err := bus.New(c.Target)
-	if err != nil {
-		return fmt.Errorf("error connecting to Mir: %w", err)
-	}
-	defer msgBus.Close()
 
 	logLvl := mir.LogLevelInfo
 	switch l.GetLevel() {
@@ -62,8 +57,8 @@ func (d *SwarmCmd) Run(c CLI) error {
 		logLvl = mir.LogLevelError
 	}
 
-	s := swarm.NewSwarm(msgBus)
-	_, err = s.AddDeviceWithIds(d.DeviceIds).
+	s := swarm.NewSwarm(bus.NewWithBus(m.Bus))
+	_, err := s.AddDeviceWithIds(d.DeviceIds).
 		WithSchema(swarmv1.File_swarm_v1_demo_proto).
 		WithLogLevel(logLvl).
 		WithPrettyLogger(false).
