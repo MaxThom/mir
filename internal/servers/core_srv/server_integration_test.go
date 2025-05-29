@@ -2394,12 +2394,7 @@ func TestDeviceGoesOffline(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	time.Sleep(60 * time.Second)
-
-	// respListOff, err := core_client.PublishDeviceListRequest(b, reqList)
-	// if err != nil {
-	// 	t.Error(err)
-	// }
+	// time.Sleep(60 * time.Second)
 
 	// Assert
 	for _, dev := range respListOn.GetOk().Devices {

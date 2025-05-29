@@ -1290,7 +1290,6 @@ func TestPublishCfgRequestMultipleDevices(t *testing.T) {
 		if err = proto.Unmarshal(v.Payload, msgResp); err != nil {
 			t.Error(err)
 		}
-		assert.Equal(t, int32(5), cfgHandled.Power)
 		assert.Equal(t, mir_apiv1.Encoding_ENCODING_PROTOBUF, respCfg.GetOk().Encoding)
 	}
 
@@ -1300,6 +1299,7 @@ func TestPublishCfgRequestMultipleDevices(t *testing.T) {
 	}
 
 	assert.Equal(t, len(swarm.Devices)*2, handlerCount)
+	assert.Equal(t, int32(5), cfgHandled.Power)
 	cancel()
 	for _, v := range wg {
 		v.Wait()
@@ -1406,7 +1406,6 @@ func TestPublishCfgRequestMultipleDevicesOneNoHandler(t *testing.T) {
 			if err = proto.Unmarshal(v.Payload, msgResp); err != nil {
 				t.Error(err)
 			}
-			assert.Equal(t, int32(5), cfgHandled.Power)
 			assert.Equal(t, mir_apiv1.Encoding_ENCODING_PROTOBUF, respCfg.GetOk().Encoding)
 		} else if k == "device_send_cfg_3_no_handler/testing_cfg" {
 			assert.Equal(t, mir_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_SUCCESS, v.Status)
@@ -1418,6 +1417,7 @@ func TestPublishCfgRequestMultipleDevicesOneNoHandler(t *testing.T) {
 		<-chHdlr
 	}
 	assert.Equal(t, 4, handlerCount)
+	assert.Equal(t, int32(5), cfgHandled.Power)
 	cancel()
 	for _, v := range wg {
 		v.Wait()

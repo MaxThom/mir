@@ -618,6 +618,7 @@ func TestStoreSwapMsgByBatch(t *testing.T) {
 		t.Error(err)
 	}
 }
+
 func deleteTableOrRecord(db *surrealdb.DB, thing string) error {
 	if _, err := db.Delete(thing); err != nil {
 		return err

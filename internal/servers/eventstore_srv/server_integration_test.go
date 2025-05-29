@@ -353,7 +353,9 @@ func TestPublishDeleteEventsRequest(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	time.Sleep(1 * time.Second)
+	// Here we need bigger timer has the event srv
+	// is processing so many events for the other tests
+	time.Sleep(5 * time.Second)
 
 	eventPresent, err := mSdk.Server().ListEvents().Request(target)
 	if err != nil {
