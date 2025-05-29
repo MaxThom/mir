@@ -299,13 +299,11 @@ func TestPublishCmdRequest(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	time.Sleep(1 * time.Second)
 
 	wg, err := dev.Launch(ctx)
 	if err != nil {
 		t.Error(err)
 	}
-	time.Sleep(1 * time.Second)
 
 	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
 	if err != nil {
@@ -412,13 +410,11 @@ func TestPublishCmdJsonRequest(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	time.Sleep(1 * time.Second)
 
 	wg, err := dev.Launch(ctx)
 	if err != nil {
 		t.Error(err)
 	}
-	time.Sleep(1 * time.Second)
 
 	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
 	if err != nil {
@@ -521,7 +517,6 @@ func TestPublishCmdProtoNoValidationDryRun(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	time.Sleep(1 * time.Second)
 
 	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
 	if err != nil {
@@ -604,13 +599,11 @@ func TestPublishCmdProtoInvalidPayloadNoValidation(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	time.Sleep(1 * time.Second)
 
 	wg, err := dev.Launch(ctx)
 	if err != nil {
 		t.Error(err)
 	}
-	time.Sleep(1 * time.Second)
 
 	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
 	if err != nil {
@@ -689,15 +682,12 @@ func TestPublishCmdRequestMultipleDevices(t *testing.T) {
 	}
 
 	// Act
-	time.Sleep(1 * time.Second)
-
 	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
 	if err != nil {
 		t.Error(err)
 	} else if respCmd.GetError() != "" {
 		t.Error(respCmd.GetError())
 	}
-	time.Sleep(1 * time.Second)
 
 	// Assert
 	msgResp := &protocmd_testv1.ChangePowerResp{}
@@ -798,15 +788,12 @@ func TestPublishCmdRequestMultipleDevicesOneNoHandler(t *testing.T) {
 	}
 
 	// Act
-	time.Sleep(1 * time.Second)
-
 	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
 	if err != nil {
 		t.Error(err)
 	} else if respCmd.GetError() != "" {
 		t.Error(respCmd.GetError())
 	}
-	time.Sleep(1 * time.Second)
 
 	// Assert
 	msgResp := &protocmd_testv1.ChangePowerResp{}
@@ -917,7 +904,6 @@ func TestPublishCmdRequestMultipleDevicesOneTimeout(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	time.Sleep(1 * time.Second)
 
 	wg, err := dev.Launch(ctx)
 	if err != nil {
@@ -930,7 +916,6 @@ func TestPublishCmdRequestMultipleDevicesOneTimeout(t *testing.T) {
 	} else if respCmd.GetError() != "" {
 		t.Error(respCmd.GetError())
 	}
-	time.Sleep(1 * time.Second)
 
 	// Assert
 	msgResp := &protocmd_testv1.ChangePowerResp{}
@@ -1011,14 +996,12 @@ func TestPublishCmdRequestMultipleDevicesJson(t *testing.T) {
 	}
 
 	// Act
-	time.Sleep(1 * time.Second)
 	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
 	if err != nil {
 		t.Error(err)
 	} else if respCmd.GetError() != "" {
 		t.Error(respCmd.GetError())
 	}
-	time.Sleep(1 * time.Second)
 
 	// Assert
 	msgResp := &protocmd_testv1.ChangePowerResp{}
@@ -1097,26 +1080,17 @@ func TestPublishCmdRequestMultipleDevicesDescriptorNotFound(t *testing.T) {
 	}
 
 	// Act
-	time.Sleep(1 * time.Second)
 	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
 	if err != nil {
 		t.Error(err)
 	} else if respCmd.GetError() != "" {
 		t.Error(respCmd.GetError())
 	}
-	time.Sleep(1 * time.Second)
 
 	// Assert
-	// msgResp := &protocmd_testv1.ChangePowerResp{}
 	for _, v := range respCmd.GetOk().DeviceResponses {
-		// assert.Equal(t, string(msgResp.ProtoReflect().Descriptor().FullName()), v.Name)
 		assert.Equal(t, mir_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_ERROR, v.Status)
 		assert.Equal(t, true, v.Error != "")
-		// if err = protojson.Unmarshal(v.Payload, msgResp); err != nil {
-		// t.Error(err)
-		// }
-		// assert.Equal(t, true, msgResp.Success)
-		// assert.Equal(t, reqPayload.Power, cmdHandled.Power)
 	}
 
 	assert.Equal(t, mir_apiv1.Encoding_ENCODING_JSON, respCmd.GetOk().Encoding)
@@ -1192,14 +1166,12 @@ func TestPublishCmdRequestMultipleDevicesSingleDescriptorNotFoundForcePush(t *te
 	}
 
 	// Act
-	time.Sleep(1 * time.Second)
 	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
 	if err != nil {
 		t.Error(err)
 	} else if respCmd.GetError() != "" {
 		t.Error(respCmd.GetError())
 	}
-	time.Sleep(1 * time.Second)
 
 	// Assert
 	devValid := respCmd.GetOk().DeviceResponses["device_valid_cmd/testing_cmd"]
@@ -1270,8 +1242,6 @@ func TestPublishCmdRequestMultipleDevicesJsonTemplate(t *testing.T) {
 	}
 
 	// Act
-	time.Sleep(1 * time.Second)
-
 	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
 	if err != nil {
 		t.Error(err)
@@ -1359,7 +1329,6 @@ func TestPublishCmdRequestMultipleDevicesOneTimeoutJsonTemplate(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	time.Sleep(1 * time.Second)
 
 	wg, err := dev.Launch(ctx)
 	if err != nil {
@@ -1447,21 +1416,18 @@ func TestPublishCmdJsonNameWithCurlyRequest(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	time.Sleep(1 * time.Second)
 
 	wg, err := dev.Launch(ctx)
 	if err != nil {
 		t.Error(err)
 	}
 
-	time.Sleep(1 * time.Second)
 	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
 	if err != nil {
 		t.Error(err)
 	} else if respCmd.GetError() != "" {
 		t.Error(respCmd.GetError())
 	}
-	time.Sleep(1 * time.Second)
 
 	msgResp := &protocmd_testv1.ChangePowerResp{}
 	for _, v := range respCmd.GetOk().DeviceResponses {
