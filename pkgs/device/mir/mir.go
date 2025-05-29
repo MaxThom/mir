@@ -349,7 +349,7 @@ func (m Mir) callAllCfgHandlers() {
 		}
 
 		for _, handler := range h.h {
-			handler(msg)
+			go handler(msg)
 		}
 	}
 }
