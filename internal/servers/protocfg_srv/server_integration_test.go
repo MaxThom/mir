@@ -240,11 +240,13 @@ func TestPublishCfgRequest(t *testing.T) {
 		t.Error(err)
 	}
 
+	chHdlr := make(chan struct{}, 2)
 	props := &protocfg_testv1.PowerLevel{}
 	dev.HandleProperties(
 		props,
 		func(m protoreflect.ProtoMessage) {
 			props = m.(*protocfg_testv1.PowerLevel)
+			chHdlr <- struct{}{}
 		},
 	)
 
@@ -271,13 +273,11 @@ func TestPublishCfgRequest(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	time.Sleep(1 * time.Second)
 
 	wg, err := dev.Launch(ctx)
 	if err != nil {
 		t.Error(err)
 	}
-	time.Sleep(1 * time.Second)
 
 	respCfg, err := cfg_client.PublishSendConfigRequest(b, reqCmd)
 	if err != nil {
@@ -295,7 +295,10 @@ func TestPublishCfgRequest(t *testing.T) {
 			t.Error(err)
 		}
 	}
-	time.Sleep(1 * time.Second)
+
+	// We wait twice here as handler is called twice (one on init, one on update)
+	<-chHdlr
+	<-chHdlr
 
 	// Assert
 	assert.Equal(t, int32(5), props.Power)
@@ -353,11 +356,13 @@ func TestPublishCfgJsonRequest(t *testing.T) {
 		t.Error(err)
 	}
 
+	chHdlr := make(chan struct{}, 2)
 	cfgHandled := &protocfg_testv1.PowerLevel{}
 	dev.HandleProperties(
 		cfgHandled,
 		func(m protoreflect.ProtoMessage) {
 			cfgHandled = m.(*protocfg_testv1.PowerLevel)
+			chHdlr <- struct{}{}
 		})
 
 	p := protocfg_testv1.PowerLevel{
@@ -383,13 +388,11 @@ func TestPublishCfgJsonRequest(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	time.Sleep(1 * time.Second)
 
 	wg, err := dev.Launch(ctx)
 	if err != nil {
 		t.Error(err)
 	}
-	time.Sleep(1 * time.Second)
 
 	respCmd, err := cfg_client.PublishSendConfigRequest(b, reqCmd)
 	if err != nil {
@@ -409,14 +412,16 @@ func TestPublishCfgJsonRequest(t *testing.T) {
 			t.Error(err)
 		}
 	}
-	time.Sleep(1 * time.Second)
+
+	// We wait twice here as handler is called twice (one on init, one on update)
+	<-chHdlr
+	<-chHdlr
 
 	// Assert
 	assert.Equal(t, int32(5), cfgHandled.Power)
 	assert.Equal(t, mir_apiv1.Encoding_ENCODING_JSON, respCmd.GetOk().Encoding)
 	cancel()
 	wg.Wait()
-	time.Sleep(1 * time.Second)
 }
 
 func TestPublishCfgCurrentValues(t *testing.T) {
@@ -447,11 +452,13 @@ func TestPublishCfgCurrentValues(t *testing.T) {
 		t.Error(err)
 	}
 
+	chHdlr := make(chan struct{}, 2)
 	cfgHandled := &protocfg_testv1.PowerLevel{}
 	dev.HandleProperties(
 		cfgHandled,
 		func(m protoreflect.ProtoMessage) {
 			cfgHandled = m.(*protocfg_testv1.PowerLevel)
+			chHdlr <- struct{}{}
 		})
 
 	p := protocfg_testv1.PowerLevel{
@@ -486,13 +493,11 @@ func TestPublishCfgCurrentValues(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	time.Sleep(1 * time.Second)
 
 	wg, err := dev.Launch(ctx)
 	if err != nil {
 		t.Error(err)
 	}
-	time.Sleep(1 * time.Second)
 
 	respCmd, err := cfg_client.PublishSendConfigRequest(b, reqCfg)
 	if err != nil {
@@ -500,7 +505,6 @@ func TestPublishCfgCurrentValues(t *testing.T) {
 	} else if respCmd.GetError() != "" {
 		t.Error(respCmd.GetError())
 	}
-	time.Sleep(1 * time.Second)
 
 	respCurrent, err := cfg_client.PublishSendConfigRequest(b, reqCurrent)
 	if err != nil {
@@ -533,13 +537,15 @@ func TestPublishCfgCurrentValues(t *testing.T) {
 			t.Error(err)
 		}
 	}
-	time.Sleep(1 * time.Second)
+
+	// We wait twice here as handler is called twice (one on init, one on update)
+	<-chHdlr
+	<-chHdlr
 
 	assert.Equal(t, int32(5), cfgHandled.Power)
 	assert.Equal(t, mir_apiv1.Encoding_ENCODING_JSON, respCmd.GetOk().Encoding)
 	cancel()
 	wg.Wait()
-	time.Sleep(1 * time.Second)
 }
 
 func TestPublishCfgRequestCheckTime(t *testing.T) {
@@ -569,11 +575,13 @@ func TestPublishCfgRequestCheckTime(t *testing.T) {
 		t.Error(err)
 	}
 
+	chHdlr := make(chan struct{}, 2)
 	cfgHandled := &protocfg_testv1.PowerLevel{}
 	dev.HandleProperties(
 		cfgHandled,
 		func(m protoreflect.ProtoMessage) {
 			cfgHandled = m.(*protocfg_testv1.PowerLevel)
+			chHdlr <- struct{}{}
 		})
 
 	p := protocfg_testv1.PowerLevel{
@@ -605,13 +613,11 @@ func TestPublishCfgRequestCheckTime(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	time.Sleep(1 * time.Second)
 
 	wg, err := dev.Launch(ctx)
 	if err != nil {
 		t.Error(err)
 	}
-	time.Sleep(1 * time.Second)
 
 	respCmd, err := cfg_client.PublishSendConfigRequest(b, reqCmd)
 	if err != nil {
@@ -619,7 +625,6 @@ func TestPublishCfgRequestCheckTime(t *testing.T) {
 	} else if respCmd.GetError() != "" {
 		t.Error(respCmd.GetError())
 	}
-	time.Sleep(1 * time.Second)
 
 	respUpd, err := core_client.PublishDeviceListRequest(b, reqDev)
 	if err != nil {
@@ -644,7 +649,10 @@ func TestPublishCfgRequestCheckTime(t *testing.T) {
 			t.Error(err)
 		}
 	}
-	time.Sleep(1 * time.Second)
+
+	// We wait twice here as handler is called twice (one on init, one on update)
+	<-chHdlr
+	<-chHdlr
 
 	assert.Equal(t, int32(5), cfgHandled.Power)
 	assert.Equal(t, mir_apiv1.Encoding_ENCODING_JSON, respCmd.GetOk().Encoding)
@@ -680,6 +688,7 @@ func TestPublishCfgDoubleUpdateSendIfDifferent(t *testing.T) {
 		t.Error(err)
 	}
 
+	chHdlr := make(chan struct{}, 2)
 	cfgHandled := &protocfg_testv1.PowerLevel{}
 	count := 0
 	dev.HandleProperties(
@@ -687,6 +696,7 @@ func TestPublishCfgDoubleUpdateSendIfDifferent(t *testing.T) {
 		func(m protoreflect.ProtoMessage) {
 			cfgHandled = m.(*protocfg_testv1.PowerLevel)
 			count += 1
+			chHdlr <- struct{}{}
 		})
 
 	p := protocfg_testv1.PowerLevel{
@@ -723,13 +733,11 @@ func TestPublishCfgDoubleUpdateSendIfDifferent(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	time.Sleep(1 * time.Second)
 
 	wg, err := dev.Launch(ctx)
 	if err != nil {
 		t.Error(err)
 	}
-	time.Sleep(1 * time.Second)
 
 	respCfg, err := cfg_client.PublishSendConfigRequest(b, reqCfg)
 	if err != nil {
@@ -738,14 +746,12 @@ func TestPublishCfgDoubleUpdateSendIfDifferent(t *testing.T) {
 		t.Error(respCfg.GetError())
 	}
 
-	time.Sleep(1 * time.Second)
 	respCfgSec, err := cfg_client.PublishSendConfigRequest(b, reqCfgSec)
 	if err != nil {
 		t.Error(err)
 	} else if respCfg.GetError() != "" {
 		t.Error(respCfg.GetError())
 	}
-	time.Sleep(1 * time.Second)
 
 	// Assert
 	msgResp := &protocfg_testv1.PowerLevel{}
@@ -759,7 +765,10 @@ func TestPublishCfgDoubleUpdateSendIfDifferent(t *testing.T) {
 			t.Error(err)
 		}
 	}
-	time.Sleep(1 * time.Second)
+
+	// We wait twice here as handler is called twice (one on init, one on update)
+	<-chHdlr
+	<-chHdlr
 
 	assert.Equal(t, int32(5), cfgHandled.Power)
 	assert.Equal(t, mir_apiv1.Encoding_ENCODING_JSON, respCfg.GetOk().Encoding)
@@ -767,7 +776,6 @@ func TestPublishCfgDoubleUpdateSendIfDifferent(t *testing.T) {
 	assert.Equal(t, 2, count)
 	cancel()
 	wg.Wait()
-	time.Sleep(1 * time.Second)
 }
 
 func TestPublishCfgDoubleUpdateSendAlways(t *testing.T) {
@@ -797,6 +805,7 @@ func TestPublishCfgDoubleUpdateSendAlways(t *testing.T) {
 		t.Error(err)
 	}
 
+	chHdlr := make(chan struct{}, 2)
 	cfgHandled := &protocfg_testv1.PowerLevel{}
 	count := 0
 	dev.HandleProperties(
@@ -804,6 +813,7 @@ func TestPublishCfgDoubleUpdateSendAlways(t *testing.T) {
 		func(m protoreflect.ProtoMessage) {
 			cfgHandled = m.(*protocfg_testv1.PowerLevel)
 			count += 1
+			chHdlr <- struct{}{}
 		})
 
 	p := protocfg_testv1.PowerLevel{
@@ -840,13 +850,11 @@ func TestPublishCfgDoubleUpdateSendAlways(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	time.Sleep(1 * time.Second)
 
 	wg, err := dev.Launch(ctx)
 	if err != nil {
 		t.Error(err)
 	}
-	time.Sleep(1 * time.Second)
 
 	respCfg, err := cfg_client.PublishSendConfigRequest(b, reqCfg)
 	if err != nil {
@@ -855,14 +863,12 @@ func TestPublishCfgDoubleUpdateSendAlways(t *testing.T) {
 		t.Error(respCfg.GetError())
 	}
 
-	time.Sleep(1 * time.Second)
 	respCfgSec, err := cfg_client.PublishSendConfigRequest(b, reqCfgSec)
 	if err != nil {
 		t.Error(err)
 	} else if respCfg.GetError() != "" {
 		t.Error(respCfg.GetError())
 	}
-	time.Sleep(1 * time.Second)
 
 	// Assert
 	msgResp := &protocfg_testv1.PowerLevel{}
@@ -876,7 +882,11 @@ func TestPublishCfgDoubleUpdateSendAlways(t *testing.T) {
 			t.Error(err)
 		}
 	}
-	time.Sleep(1 * time.Second)
+
+	// We wait twice here as handler is called twice (one on init, one on update)
+	<-chHdlr
+	<-chHdlr
+	<-chHdlr
 
 	assert.Equal(t, int32(5), cfgHandled.Power)
 	assert.Equal(t, mir_apiv1.Encoding_ENCODING_JSON, respCfg.GetOk().Encoding)
@@ -884,7 +894,6 @@ func TestPublishCfgDoubleUpdateSendAlways(t *testing.T) {
 	assert.Equal(t, 3, count)
 	cancel()
 	wg.Wait()
-	time.Sleep(1 * time.Second)
 }
 
 func TestPublishCfgDoubleUpdateIsDifferent(t *testing.T) {
@@ -914,6 +923,7 @@ func TestPublishCfgDoubleUpdateIsDifferent(t *testing.T) {
 		t.Error(err)
 	}
 
+	chHdlr := make(chan struct{}, 2)
 	cfgHandled := &protocfg_testv1.PowerLevel{}
 	count := 0
 	dev.HandleProperties(
@@ -921,6 +931,7 @@ func TestPublishCfgDoubleUpdateIsDifferent(t *testing.T) {
 		func(m protoreflect.ProtoMessage) {
 			cfgHandled = m.(*protocfg_testv1.PowerLevel)
 			count += 1
+			chHdlr <- struct{}{}
 		})
 
 	p := protocfg_testv1.PowerLevel{
@@ -965,13 +976,11 @@ func TestPublishCfgDoubleUpdateIsDifferent(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	time.Sleep(1 * time.Second)
 
 	wg, err := dev.Launch(ctx)
 	if err != nil {
 		t.Error(err)
 	}
-	time.Sleep(1 * time.Second)
 
 	respCfg, err := cfg_client.PublishSendConfigRequest(b, reqCfg)
 	if err != nil {
@@ -980,14 +989,12 @@ func TestPublishCfgDoubleUpdateIsDifferent(t *testing.T) {
 		t.Error(respCfg.GetError())
 	}
 
-	time.Sleep(1 * time.Second)
 	respCfgSec, err := cfg_client.PublishSendConfigRequest(b, reqCfgSec)
 	if err != nil {
 		t.Error(err)
 	} else if respCfg.GetError() != "" {
 		t.Error(respCfg.GetError())
 	}
-	time.Sleep(1 * time.Second)
 
 	// Assert
 	msgResp := &protocfg_testv1.PowerLevel{}
@@ -1001,7 +1008,11 @@ func TestPublishCfgDoubleUpdateIsDifferent(t *testing.T) {
 			t.Error(err)
 		}
 	}
-	time.Sleep(1 * time.Second)
+
+	// We wait twice here as handler is called twice (one on init, one on update)
+	<-chHdlr
+	<-chHdlr
+	<-chHdlr
 
 	assert.Equal(t, int32(10), cfgHandled.Power)
 	assert.Equal(t, mir_apiv1.Encoding_ENCODING_JSON, respCfg.GetOk().Encoding)
@@ -1009,7 +1020,6 @@ func TestPublishCfgDoubleUpdateIsDifferent(t *testing.T) {
 	assert.Equal(t, 3, count)
 	cancel()
 	wg.Wait()
-	time.Sleep(1 * time.Second)
 }
 
 func TestPublishCfgNoDeviceFound(t *testing.T) {
@@ -1070,8 +1080,6 @@ func TestPublishCfgProtoDryRun(t *testing.T) {
 		t.Error(err)
 	}
 
-	time.Sleep(1 * time.Second)
-
 	reqPayload := protocfg_testv1.PowerLevel{
 		Power: 5,
 	}
@@ -1095,13 +1103,11 @@ func TestPublishCfgProtoDryRun(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	time.Sleep(1 * time.Second)
 
 	wg, err := dev.Launch(ctx)
 	if err != nil {
 		t.Error(err)
 	}
-	time.Sleep(1 * time.Second)
 
 	respCmd, err := cfg_client.PublishSendConfigRequest(b, reqCmd)
 	if err != nil {
@@ -1184,13 +1190,11 @@ func TestPublishCfgProtoInvalidPayload(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	time.Sleep(1 * time.Second)
 
 	wg, err := dev.Launch(ctx)
 	if err != nil {
 		t.Error(err)
 	}
-	time.Sleep(1 * time.Second)
 
 	respCfg, err := cfg_client.PublishSendConfigRequest(b, reqCfg)
 	if err != nil {
@@ -1214,6 +1218,7 @@ func TestPublishCfgRequestMultipleDevices(t *testing.T) {
 	cfgHandled := &protocfg_testv1.PowerLevel{}
 	swarm := swarm.NewSwarm(b)
 	handlerCount := 0
+	chHdlr := make(chan struct{}, 4)
 	_, err := swarm.AddDevices(&mir_apiv1.CreateDeviceRequest{
 		Meta: &mir_apiv1.Meta{
 			Namespace: "testing_cfg",
@@ -1247,6 +1252,7 @@ func TestPublishCfgRequestMultipleDevices(t *testing.T) {
 			func(m protoreflect.ProtoMessage) {
 				cfgHandled = m.(*protocfg_testv1.PowerLevel)
 				handlerCount++
+				chHdlr <- struct{}{}
 			},
 		).Incubate()
 	wg, err := swarm.Deploy(ctx)
@@ -1266,15 +1272,12 @@ func TestPublishCfgRequestMultipleDevices(t *testing.T) {
 	}
 
 	// Act
-	time.Sleep(1 * time.Second)
-
 	respCfg, err := cfg_client.PublishSendConfigRequest(b, reqCmd)
 	if err != nil {
 		t.Error(err)
 	} else if respCfg.GetError() != "" {
 		t.Error(respCfg.GetError())
 	}
-	time.Sleep(1 * time.Second)
 
 	// Assert
 	msgResp := &protocfg_testv1.PowerLevel{}
@@ -1291,7 +1294,11 @@ func TestPublishCfgRequestMultipleDevices(t *testing.T) {
 		assert.Equal(t, mir_apiv1.Encoding_ENCODING_PROTOBUF, respCfg.GetOk().Encoding)
 	}
 
-	time.Sleep(1 * time.Second)
+	// We wait twice here as handler is called twice (one on init, one on update)
+	for i := 0; i < len(swarm.Devices)*2; i++ {
+		<-chHdlr
+	}
+
 	assert.Equal(t, len(swarm.Devices)*2, handlerCount)
 	cancel()
 	for _, v := range wg {
@@ -1305,6 +1312,7 @@ func TestPublishCfgRequestMultipleDevicesOneNoHandler(t *testing.T) {
 	cfgHandled := &protocfg_testv1.PowerLevel{}
 	swarm := swarm.NewSwarm(b)
 	handlerCount := 0
+	chHdlr := make(chan struct{}, 4)
 	if _, err := swarm.AddDevices(&mir_apiv1.CreateDeviceRequest{
 		Meta: &mir_apiv1.Meta{
 			Namespace: "testing_cfg",
@@ -1338,7 +1346,7 @@ func TestPublishCfgRequestMultipleDevicesOneNoHandler(t *testing.T) {
 			func(m protoreflect.ProtoMessage) {
 				cfgHandled = m.(*protocfg_testv1.PowerLevel)
 				handlerCount++
-				fmt.Println("The fuck")
+				chHdlr <- struct{}{}
 			},
 		).Incubate(); err != nil {
 		t.Error(err)
@@ -1379,15 +1387,12 @@ func TestPublishCfgRequestMultipleDevicesOneNoHandler(t *testing.T) {
 	}
 
 	// Act
-	time.Sleep(1 * time.Second)
-
 	respCfg, err := cfg_client.PublishSendConfigRequest(b, reqCmd)
 	if err != nil {
 		t.Error(err)
 	} else if respCfg.GetError() != "" {
 		t.Error(respCfg.GetError())
 	}
-	time.Sleep(1 * time.Second)
 
 	// Assert
 	msgResp := &protocfg_testv1.PowerLevel{}
@@ -1407,8 +1412,11 @@ func TestPublishCfgRequestMultipleDevicesOneNoHandler(t *testing.T) {
 			assert.Equal(t, mir_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_SUCCESS, v.Status)
 		}
 	}
-	time.Sleep(1 * time.Second)
 
+	// We wait twice here as handler is called twice (one on init, one on update)
+	for i := 0; i < 4; i++ {
+		<-chHdlr
+	}
 	assert.Equal(t, 4, handlerCount)
 	cancel()
 	for _, v := range wg {
@@ -1422,6 +1430,7 @@ func TestPublishCfgRequestMultipleDevicesJson(t *testing.T) {
 	cfgHandled := &protocfg_testv1.PowerLevel{}
 	swarm := swarm.NewSwarm(b)
 	handlerCount := 0
+	chHdlr := make(chan struct{}, 4)
 	_, err := swarm.AddDevices(
 		&mir_apiv1.CreateDeviceRequest{
 			Meta: &mir_apiv1.Meta{
@@ -1450,6 +1459,7 @@ func TestPublishCfgRequestMultipleDevicesJson(t *testing.T) {
 			func(m protoreflect.ProtoMessage) {
 				cfgHandled = m.(*protocfg_testv1.PowerLevel)
 				handlerCount++
+				chHdlr <- struct{}{}
 			},
 		).Incubate()
 	wg, err := swarm.Deploy(ctx)
@@ -1469,8 +1479,6 @@ func TestPublishCfgRequestMultipleDevicesJson(t *testing.T) {
 	}
 
 	// Act
-	time.Sleep(1 * time.Second)
-
 	respCfg, err := cfg_client.PublishSendConfigRequest(b, reqCfg)
 	if err != nil {
 		t.Error(err)
@@ -1491,7 +1499,11 @@ func TestPublishCfgRequestMultipleDevicesJson(t *testing.T) {
 		}
 		assert.Equal(t, mir_apiv1.Encoding_ENCODING_JSON, respCfg.GetOk().Encoding)
 	}
-	time.Sleep(1 * time.Second)
+
+	// We wait twice here as handler is called twice (one on init, one on update)
+	for i := 0; i < 4; i++ {
+		<-chHdlr
+	}
 
 	assert.Equal(t, reqPayload.Power, cfgHandled.Power)
 	assert.Equal(t, len(swarm.Devices)*2, handlerCount)
@@ -1507,6 +1519,7 @@ func TestPublishCfgRequestMultipleDevicesDescriptorNotFound(t *testing.T) {
 	cfgHandled := &protocfg_testv1.PowerLevel{}
 	swarm := swarm.NewSwarm(b)
 	handlerCount := 0
+	chHdlr := make(chan struct{}, 2)
 	_, err := swarm.AddDevices(
 		&mir_apiv1.CreateDeviceRequest{
 			Meta: &mir_apiv1.Meta{
@@ -1535,6 +1548,7 @@ func TestPublishCfgRequestMultipleDevicesDescriptorNotFound(t *testing.T) {
 			func(m protoreflect.ProtoMessage) {
 				cfgHandled = m.(*protocfg_testv1.PowerLevel)
 				handlerCount++
+				chHdlr <- struct{}{}
 			},
 		).Incubate()
 	wg, err := swarm.Deploy(ctx)
@@ -1554,8 +1568,6 @@ func TestPublishCfgRequestMultipleDevicesDescriptorNotFound(t *testing.T) {
 	}
 
 	// Act
-	time.Sleep(1 * time.Second)
-
 	respCfg, err := cfg_client.PublishSendConfigRequest(b, reqCfg)
 	if err != nil {
 		t.Error(err)
@@ -1564,13 +1576,14 @@ func TestPublishCfgRequestMultipleDevicesDescriptorNotFound(t *testing.T) {
 	}
 
 	// Assert
-	// msgResp := &protocfg_testv1.PowerLevelReport{}
 	for _, v := range respCfg.GetOk().DeviceResponses {
-		// assert.Equal(t, string(msgResp.ProtoReflect().Descriptor().FullName()), v.Name)
 		assert.Equal(t, mir_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_ERROR, v.Status)
 		assert.Equal(t, true, v.Error != "")
 	}
-	time.Sleep(1 * time.Second)
+
+	// We wait twice here as handler is called twice (one on init, one on update)
+	<-chHdlr
+	<-chHdlr
 
 	assert.Equal(t, mir_apiv1.Encoding_ENCODING_JSON, respCfg.GetOk().Encoding)
 	assert.Equal(t, 2, handlerCount)
@@ -1586,6 +1599,7 @@ func TestPublishCfgRequestMultipleDevicesSingleDescriptorNotFoundForcePush(t *te
 	cfgHandled := &protocfg_testv1.PowerLevel{}
 	swarm := swarm.NewSwarm(b)
 	handlerCount := 0
+	chHdlr := make(chan struct{}, 2)
 	_, err := swarm.AddDevice(
 		&mir_apiv1.CreateDeviceRequest{
 			Meta: &mir_apiv1.Meta{
@@ -1604,6 +1618,7 @@ func TestPublishCfgRequestMultipleDevicesSingleDescriptorNotFoundForcePush(t *te
 			func(m protoreflect.ProtoMessage) {
 				cfgHandled = m.(*protocfg_testv1.PowerLevel)
 				handlerCount++
+				chHdlr <- struct{}{}
 			},
 		).Incubate()
 	_, err = swarm.AddDevice(
@@ -1643,17 +1658,18 @@ func TestPublishCfgRequestMultipleDevicesSingleDescriptorNotFoundForcePush(t *te
 	}
 
 	// Act
-	time.Sleep(1 * time.Second)
-
 	respCfg, err := cfg_client.PublishSendConfigRequest(b, reqCfg)
 	if err != nil {
 		t.Error(err)
 	} else if respCfg.GetError() != "" {
 		t.Error(respCfg.GetError())
 	}
-	time.Sleep(1 * time.Second)
 
 	// Assert
+	// We wait twice here as handler is called twice (one on init, one on update)
+	<-chHdlr
+	<-chHdlr
+
 	devValid := respCfg.GetOk().DeviceResponses["device_valid_cfg/testing_cfg"]
 	devInvalid := respCfg.GetOk().DeviceResponses["device_invalid_cfg/testing_cfg"]
 
@@ -1721,8 +1737,6 @@ func TestPublishCfgRequestMultipleDevicesJsonTemplate(t *testing.T) {
 	}
 
 	// Act
-	time.Sleep(1 * time.Second)
-
 	respCfg, err := cfg_client.PublishSendConfigRequest(b, reqCfg)
 	if err != nil {
 		t.Error(err)
@@ -1867,11 +1881,13 @@ func TestPublishCfgJsonNameWithCurlyRequest(t *testing.T) {
 		t.Error(err)
 	}
 
+	chHdlr := make(chan struct{}, 2)
 	cfgHandled := &protocfg_testv1.PowerLevel{}
 	dev.HandleProperties(
 		cfgHandled,
 		func(m protoreflect.ProtoMessage) {
 			cfgHandled = m.(*protocfg_testv1.PowerLevel)
+			chHdlr <- struct{}{}
 		})
 
 	p := protocfg_testv1.PowerLevel{
@@ -1897,13 +1913,11 @@ func TestPublishCfgJsonNameWithCurlyRequest(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	time.Sleep(1 * time.Second)
 
 	wg, err := dev.Launch(ctx)
 	if err != nil {
 		t.Error(err)
 	}
-	time.Sleep(1 * time.Second)
 
 	respCfg, err := cfg_client.PublishSendConfigRequest(b, reqCfg)
 	if err != nil {
@@ -1923,7 +1937,10 @@ func TestPublishCfgJsonNameWithCurlyRequest(t *testing.T) {
 			t.Error(err)
 		}
 	}
-	time.Sleep(1 * time.Second)
+
+	// We wait twice here as handler is called twice (one on init, one on update)
+	<-chHdlr
+	<-chHdlr
 
 	// Assert
 	assert.Equal(t, int32(5), cfgHandled.Power)
@@ -1957,8 +1974,8 @@ func TestPublishReportedProperties(t *testing.T) {
 	if err = dev.SendProperties(&reqPayload); err != nil {
 		t.Error(err)
 	}
-
 	time.Sleep(1 * time.Second)
+
 	listResp, err := core_client.PublishDeviceListRequest(b, &mir_apiv1.ListDeviceRequest{
 		Targets: &mir_apiv1.DeviceTarget{Ids: []string{id}},
 	})
@@ -1988,10 +2005,12 @@ func TestPublishReportedPropertiesEvent(t *testing.T) {
 	}
 
 	eventCount := 0
+	chHdlr := make(chan struct{}, 1)
 	if err = mSdk.Event().ReportedProperties().Subscribe(
 		func(msg *mir.Msg, deviceId string, props map[string]any, err error) {
 			if deviceId == id {
 				eventCount += 1
+				chHdlr <- struct{}{}
 			}
 		}); err != nil {
 		t.Error(err)
@@ -2010,8 +2029,8 @@ func TestPublishReportedPropertiesEvent(t *testing.T) {
 	if err = dev.SendProperties(&reqPayload); err != nil {
 		t.Error(err)
 	}
-
 	time.Sleep(1 * time.Second)
+
 	listResp, err := core_client.PublishDeviceListRequest(b, &mir_apiv1.ListDeviceRequest{
 		Targets: &mir_apiv1.DeviceTarget{Ids: []string{id}},
 	})
@@ -2023,6 +2042,7 @@ func TestPublishReportedPropertiesEvent(t *testing.T) {
 
 	d := mir_v1.NewDeviceFromProtoDevice(listResp.GetOk().Devices[0])
 	// Assert
+	<-chHdlr
 	assert.Equal(t, float64(5), d.Properties.Reported["protocfg_test.v1.PowerLevel"].(map[string]any)["power"].(float64))
 	assert.Equal(t, 1, eventCount)
 	cancel()
@@ -2050,10 +2070,12 @@ func TestPublishDesiredPropertiesEvent(t *testing.T) {
 	}
 
 	eventCount := 0
+	chHdlr := make(chan struct{}, 3)
 	if err := mSdk.Event().DesiredProperties().Subscribe(
 		func(msg *mir.Msg, deviceId string, props map[string]any, err error) {
 			if deviceId == id {
 				eventCount += 1
+				chHdlr <- struct{}{}
 			}
 		}); err != nil {
 		t.Error(err)
@@ -2071,6 +2093,7 @@ func TestPublishDesiredPropertiesEvent(t *testing.T) {
 		props,
 		func(m protoreflect.ProtoMessage) {
 			props = m.(*protocfg_testv1.PowerLevel)
+			chHdlr <- struct{}{}
 		},
 	)
 
@@ -2097,13 +2120,11 @@ func TestPublishDesiredPropertiesEvent(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	time.Sleep(1 * time.Second)
 
 	wg, err := dev.Launch(ctx)
 	if err != nil {
 		t.Error(err)
 	}
-	time.Sleep(1 * time.Second)
 
 	respCfg, err := cfg_client.PublishSendConfigRequest(b, reqCmd)
 	if err != nil {
@@ -2121,9 +2142,12 @@ func TestPublishDesiredPropertiesEvent(t *testing.T) {
 			t.Error(err)
 		}
 	}
-	time.Sleep(1 * time.Second)
 
 	// Assert
+	<-chHdlr
+	<-chHdlr
+	<-chHdlr
+
 	assert.Equal(t, int32(5), props.Power)
 	assert.Equal(t, mir_apiv1.Encoding_ENCODING_PROTOBUF, respCfg.GetOk().Encoding)
 	assert.Equal(t, 1, eventCount)
@@ -2188,15 +2212,17 @@ func TestDesiredPropertiesDefaultWritten(t *testing.T) {
 	}
 
 	// This should be called after launch with reconciled properties
+	chHdlr := make(chan struct{}, 1)
 	propsConduit := &protocfg_testv1.Conduit{}
 	dev.HandleProperties(
 		propsConduit,
 		func(m protoreflect.ProtoMessage) {
 			propsConduit = m.(*protocfg_testv1.Conduit)
 			count += 1
+			chHdlr <- struct{}{}
 		},
 	)
-	time.Sleep(5 * time.Second)
+	<-chHdlr
 
 	devs, err := core_client.PublishDeviceListRequest(b, reqGet)
 	if err != nil {

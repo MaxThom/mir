@@ -180,7 +180,6 @@ func (c *MirProtoCache) reconcileDeviceSchema(deviceId string, forceDeviceFetch 
 		return mir_v1.Device{}, nil, err
 	}
 
-	fmt.Println("SCHEMA3", deviceId)
 	timeNow := time.Now().UTC()
 	devResp, err := c.m.Server().UpdateDevice().Request(
 		mir_v1.DeviceTarget{
@@ -194,7 +193,6 @@ func (c *MirProtoCache) reconcileDeviceSchema(deviceId string, forceDeviceFetch 
 			},
 		}),
 	)
-	fmt.Println("SCHEMA4", deviceId, err)
 	if err != nil {
 		return mir_v1.Device{}, nil, fmt.Errorf("error updating device: %w", err)
 	}
@@ -208,12 +206,10 @@ func (c *MirProtoCache) reconcileDeviceSchema(deviceId string, forceDeviceFetch 
 }
 
 func (c *MirProtoCache) getProtoSchemaFromDevice(deviceId string) (*mir_proto.MirProtoSchema, error) {
-	fmt.Println("SCHEMA", deviceId)
 	sch, err := c.m.Device().Schema().Request(deviceId)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("SCHEMA2", deviceId)
 
 	return sch, nil
 }
