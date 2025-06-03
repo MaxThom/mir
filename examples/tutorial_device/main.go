@@ -22,10 +22,8 @@ func main() {
 		LogPretty(true).
 		LogLevel(mir.LogLevelDebug).
 		Store(mir.StoreOptions{
-			InMemory: false,
-			Msgs: mir.StoreMsgOptions{
-				MsgStorageType: mir.StorageTypeOnlyIfOffline,
-			},
+			InMemory:        false,
+			PersistenceType: mir.PersistentTypeOnlyIfOffline,
 		}).
 		Build()
 	if err != nil {

@@ -3,6 +3,7 @@ package mir
 import (
 	"fmt"
 	"io"
+	"net"
 	"os"
 	"path/filepath"
 	"time"
@@ -10,6 +11,7 @@ import (
 	"github.com/adrg/xdg"
 	"github.com/maxthom/mir/internal/libs/boiler/mir_config"
 	"github.com/maxthom/mir/internal/libs/boiler/mir_log"
+	"github.com/maxthom/mir/internal/libs/systemid"
 	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
 	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/reflect/protodesc"
@@ -20,6 +22,7 @@ import (
 type builder struct {
 	fileOpts            []func(*mir_config.MirConfig)
 	deviceId            *string
+	deviceIdGenerator   *IdGeneratorConfig
 	target              *string
 	logLevel            *LogLevel
 	logWriters          []io.Writer
@@ -52,10 +55,8 @@ const (
 // device built and launched !
 // Configure logging, device authentication and config loading.
 func Builder() builder {
-	tar := "nats://127.0.0.1:4222"
 	return builder{
 		schema: new(descriptorpb.FileDescriptorSet),
-		target: &tar,
 	}
 }
 
@@ -65,6 +66,11 @@ func Builder() builder {
 // See b.DeviceProvisioner(p Provisioner)
 func (b builder) DeviceId(id string) builder {
 	b.deviceId = &id
+	return b
+}
+
+func (b builder) DeviceIdGenerator(t IdGeneratorConfig) builder {
+	b.deviceIdGenerator = &t
 	return b
 }
 
@@ -110,13 +116,17 @@ func (b builder) CustomConfigFile(fullPath string, f configFormat) builder {
 	return b
 }
 
-// Load config from environment variables following this nomenclature
-// - prefix with MIR
-// - __ to represent nesting
-// - They follow the json or yaml configuration layout
+// Load config from environment variables following this nomenclature:
+//   - __ to represent nesting
+//   - _ for multiple words where the first letter after it becomes capitalize
+//   - They follow the json or yaml configuration layout
+//   - Use index to represent array elements MIR__SENSORS__0__NAME
+//   - eg: MIR__DEVICE__ID for mir: device: id: <id>
+//   - eg: MIR__LOG_LEVEL for mir: logLevel: <level>
+//
 // These have priority over the config from files
 func (b builder) EnvVars() builder {
-	b.fileOpts = append(b.fileOpts, mir_config.WithEnvVars("MIR"))
+	b.fileOpts = append(b.fileOpts, mir_config.WithEnvVars(""))
 	return b
 }
 
@@ -192,30 +202,82 @@ func (b builder) Store(opts StoreOptions) builder {
 	return b
 }
 
+type MirCfg struct {
+	Mir  Config `json:"mir" yaml:"mir"`
+	User any    `json:"user" yaml:"user"`
+}
+
+func (b builder) BuildWithExtraConfig(extraCfg any) (*Mir, error) {
+	return b.build(extraCfg)
+}
+
+func (b builder) Build() (*Mir, error) {
+	return b.build(nil)
+}
+
 // Return the Mir device object to
 // be used to interact with the system
 // TODO returns errors instead of logs, use error.wrap and error.join
-func (b builder) Build() (*Mir, error) {
-	c := Cfg{}
-
+func (b builder) build(extraCfg any) (*Mir, error) {
+	cfg := MirCfg{
+		Mir:  Config{},
+		User: extraCfg,
+	}
 	var errs error
 	var lookupFiles, foundFiles []string
 	if len(b.fileOpts) > 0 {
-		errs, lookupFiles, foundFiles = mir_config.New("mir", b.fileOpts...).LoadAndUnmarshal(&c)
+		errs, lookupFiles, foundFiles = mir_config.New("mir", b.fileOpts...).LoadAndUnmarshal(&cfg)
 	}
-	if b.deviceId != nil {
-		c.DeviceId = *b.deviceId
-	}
+
+	// Top
 	if b.target != nil {
-		c.Target = *b.target
+		cfg.Mir.Target = *b.target
+	} else if cfg.Mir.Target == "" {
+		cfg.Mir.Target = "nats://127.0.0.1:4222"
 	}
 	if b.logLevel != nil {
-		c.LogLevel = b.logLevel.String()
-	} else {
-		c.LogLevel = "info"
+		cfg.Mir.LogLevel = b.logLevel.String()
+	} else if cfg.Mir.LogLevel == "" {
+		cfg.Mir.LogLevel = "info"
+	}
+
+	// Device
+	if b.deviceId != nil {
+		cfg.Mir.Device.Id = *b.deviceId
+	}
+	if b.deviceIdGenerator != nil {
+		cfg.Mir.Device.IdGenerator = b.deviceIdGenerator
+	}
+	if b.deviceIdGenerator != nil {
+		cfg.Mir.Device.IdGenerator = b.deviceIdGenerator
 	}
 	if b.noSchemaOnBoot != nil {
-		c.NoSchemaOnBoot = *b.noSchemaOnBoot
+		cfg.Mir.Device.NoSchemaOnBoot = *b.noSchemaOnBoot
+	}
+
+	// Store
+	if b.storeOpts.FolderPath != "" {
+		cfg.Mir.LocalStore.FolderPath = b.storeOpts.FolderPath
+	} else if cfg.Mir.LocalStore.FolderPath == "" {
+		cfg.Mir.LocalStore.FolderPath = filepath.Join(xdg.DataHome, "mir")
+	}
+	if b.storeOpts.InMemory {
+		cfg.Mir.LocalStore.InMemory = b.storeOpts.InMemory
+	}
+	if b.storeOpts.DiskSpaceLimit > 0 {
+		cfg.Mir.LocalStore.DiskSpaceLimit = b.storeOpts.DiskSpaceLimit
+	} else if cfg.Mir.LocalStore.DiskSpaceLimit == 0 {
+		cfg.Mir.LocalStore.DiskSpaceLimit = 85
+	}
+	if b.storeOpts.RetentionLimit > 0 {
+		cfg.Mir.LocalStore.RetentionLimit = b.storeOpts.RetentionLimit
+	} else if cfg.Mir.LocalStore.RetentionLimit == 0 {
+		cfg.Mir.LocalStore.RetentionLimit = time.Minute * 10080 // A week
+	}
+	if b.storeOpts.PersistenceType != "" {
+		cfg.Mir.LocalStore.PersistenceType = b.storeOpts.PersistenceType
+	} else if cfg.Mir.LocalStore.PersistenceType == "" {
+		cfg.Mir.LocalStore.PersistenceType = PersistentTypeOnlyIfOffline
 	}
 
 	if len(b.logWriters) == 0 {
@@ -223,7 +285,7 @@ func (b builder) Build() (*Mir, error) {
 	}
 
 	l := mir_log.Setup(
-		mir_log.WithLogLevel(c.LogLevel),
+		mir_log.WithLogLevel(cfg.Mir.LogLevel),
 		mir_log.WithTimeFormatUnix(),
 		mir_log.WithCustomWriters(b.logWriters),
 	)
@@ -238,46 +300,34 @@ func (b builder) Build() (*Mir, error) {
 		l.Info().Strs("lookup config", lookupFiles).Strs("found config", foundFiles).Msg("configuration loaded")
 	}
 
-	if b.storeOpts.FolderPath == "" {
-		c.Store.FolderPath = b.storeOpts.FolderPath
-	}
-	if b.storeOpts.InMemory {
-		c.Store.InMemory = b.storeOpts.InMemory
-	}
-	if b.storeOpts.Msgs.DiskSpaceLimit > 0 {
-		c.Store.Msgs.DiskSpaceLimit = b.storeOpts.Msgs.DiskSpaceLimit
-	}
-	if b.storeOpts.Msgs.RententionLimit > 0 {
-		c.Store.Msgs.RententionLimit = b.storeOpts.Msgs.RententionLimit
-	}
-	if b.storeOpts.Msgs.MsgStorageType != "" {
-		c.Store.Msgs.MsgStorageType = b.storeOpts.Msgs.MsgStorageType
-	}
-	if b.storeOpts.FolderPath == "" && c.Store.FolderPath == "" {
-		c.Store.FolderPath = filepath.Join(xdg.DataHome, "mir")
-	}
-	if b.storeOpts.Msgs.DiskSpaceLimit == 0 && c.Store.Msgs.DiskSpaceLimit == 0 {
-		c.Store.Msgs.DiskSpaceLimit = 85
-	}
-	if b.storeOpts.Msgs.RententionLimit == 0 && c.Store.Msgs.RententionLimit == 0 {
-		c.Store.Msgs.RententionLimit = JsonReadableDuration(time.Minute * 10080) // A week
-	}
-	if b.storeOpts.Msgs.MsgStorageType == "" && c.Store.Msgs.MsgStorageType == "" {
-		c.Store.Msgs.MsgStorageType = StorageTypeOnlyIfOffline
+	if cfg.Mir.Device.Id == "" && cfg.Mir.Device.IdGenerator.IsActive() {
+		structId, err := systemid.GenerateStructuredID(cfg.Mir.Device.IdGenerator.ToSystemIdOpts())
+		if err != nil {
+			return nil, fmt.Errorf("error generating device id: %w", err)
+		}
+		cfg.Mir.Device.Id = structId.ToString()
 	}
 
-	if prettyCfg, err := mir_config.JsonMarshalWithoutSecrets(c); err != nil {
+	if prettyCfg, err := mir_config.JsonMarshalWithoutSecrets(cfg); err != nil {
 		l.Error().Err(err).Msg("Error marshalling config")
 	} else {
 		l.Info().Str("config", string(prettyCfg)).Msg("")
 	}
 
 	fieldsErr := []string{}
-	if c.DeviceId == "" {
-		fieldsErr = append(fieldsErr, "DeviceId is required to identity the device")
+	if cfg.Mir.Device.Id == "" && !cfg.Mir.Device.IdGenerator.IsActive() {
+		fieldsErr = append(fieldsErr, "Device.Id or Device.IdGenerator is required to identify the device")
 	}
-	if c.Target == "" {
+	if cfg.Mir.Target == "" {
 		fieldsErr = append(fieldsErr, "Target is required to connect to the server")
+	}
+	if cfg.Mir.LocalStore.PersistenceType != PersistentTypeNoStorage &&
+		cfg.Mir.LocalStore.PersistenceType != PersistentTypeOnlyIfOffline &&
+		cfg.Mir.LocalStore.PersistenceType != PersistentTypeAlways {
+		fieldsErr = append(fieldsErr, "Invalid local store persistence type [nostorage|ifoffline|always]")
+	}
+	if cfg.Mir.LocalStore.DiskSpaceLimit < 0 || cfg.Mir.LocalStore.DiskSpaceLimit > 99 {
+		fieldsErr = append(fieldsErr, "Disk space limit must be a valid pourcentage between 0 and 99")
 	}
 	if len(fieldsErr) > 0 {
 		return nil, MirBuilderFieldsError{
@@ -304,18 +354,33 @@ func (b builder) Build() (*Mir, error) {
 		return nil, fmt.Errorf("error creating schema registry: %w", err)
 	}
 
-	store, err := NewStore(c.Store)
+	store, err := NewStore(cfg.Mir.LocalStore)
 	if err != nil {
 		return nil, fmt.Errorf("error creating store: %w", err)
 	}
 	return &Mir{
-		cfg:         c,
-		l:           l.With().Str("device_id", c.DeviceId).Logger(),
-		cleanLogger: cleanLogger.With().Str("device_id", c.DeviceId).Logger(),
+		cfg:         cfg.Mir,
+		l:           l.With().Str("device_id", cfg.Mir.Device.Id).Logger(),
+		cleanLogger: cleanLogger.With().Str("device_id", cfg.Mir.Device.Id).Logger(),
 		store:       store,
 		schema:      b.schema,
 		schemaReg:   reg,
 		cmdHandlers: make(map[string]cmdHandlerValue),
 		cfgHandlers: make(map[string]cfgHandlerValue),
 	}, nil
+}
+
+func getMacAddr() ([]string, error) {
+	ifas, err := net.Interfaces()
+	if err != nil {
+		return nil, err
+	}
+	var as []string
+	for _, ifa := range ifas {
+		a := ifa.HardwareAddr.String()
+		if a != "" {
+			as = append(as, a)
+		}
+	}
+	return as, nil
 }

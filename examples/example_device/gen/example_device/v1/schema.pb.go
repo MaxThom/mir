@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.6
 // 	protoc        (unknown)
-// source: tutorial_device/v1/schema.proto
+// source: example_device/v1/schema.proto
 
 package v1
 
@@ -34,7 +34,7 @@ type Env struct {
 
 func (x *Env) Reset() {
 	*x = Env{}
-	mi := &file_tutorial_device_v1_schema_proto_msgTypes[0]
+	mi := &file_example_device_v1_schema_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -46,7 +46,7 @@ func (x *Env) String() string {
 func (*Env) ProtoMessage() {}
 
 func (x *Env) ProtoReflect() protoreflect.Message {
-	mi := &file_tutorial_device_v1_schema_proto_msgTypes[0]
+	mi := &file_example_device_v1_schema_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -59,7 +59,7 @@ func (x *Env) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Env.ProtoReflect.Descriptor instead.
 func (*Env) Descriptor() ([]byte, []int) {
-	return file_tutorial_device_v1_schema_proto_rawDescGZIP(), []int{0}
+	return file_example_device_v1_schema_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *Env) GetTs() int64 {
@@ -99,7 +99,7 @@ type ActivateHVAC struct {
 
 func (x *ActivateHVAC) Reset() {
 	*x = ActivateHVAC{}
-	mi := &file_tutorial_device_v1_schema_proto_msgTypes[1]
+	mi := &file_example_device_v1_schema_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -111,7 +111,7 @@ func (x *ActivateHVAC) String() string {
 func (*ActivateHVAC) ProtoMessage() {}
 
 func (x *ActivateHVAC) ProtoReflect() protoreflect.Message {
-	mi := &file_tutorial_device_v1_schema_proto_msgTypes[1]
+	mi := &file_example_device_v1_schema_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -124,7 +124,7 @@ func (x *ActivateHVAC) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActivateHVAC.ProtoReflect.Descriptor instead.
 func (*ActivateHVAC) Descriptor() ([]byte, []int) {
-	return file_tutorial_device_v1_schema_proto_rawDescGZIP(), []int{1}
+	return file_example_device_v1_schema_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *ActivateHVAC) GetDurationSec() int32 {
@@ -143,7 +143,7 @@ type ActivateHVACResponse struct {
 
 func (x *ActivateHVACResponse) Reset() {
 	*x = ActivateHVACResponse{}
-	mi := &file_tutorial_device_v1_schema_proto_msgTypes[2]
+	mi := &file_example_device_v1_schema_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -155,7 +155,7 @@ func (x *ActivateHVACResponse) String() string {
 func (*ActivateHVACResponse) ProtoMessage() {}
 
 func (x *ActivateHVACResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_tutorial_device_v1_schema_proto_msgTypes[2]
+	mi := &file_example_device_v1_schema_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -168,7 +168,7 @@ func (x *ActivateHVACResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActivateHVACResponse.ProtoReflect.Descriptor instead.
 func (*ActivateHVACResponse) Descriptor() ([]byte, []int) {
-	return file_tutorial_device_v1_schema_proto_rawDescGZIP(), []int{2}
+	return file_example_device_v1_schema_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *ActivateHVACResponse) GetSuccess() bool {
@@ -187,7 +187,7 @@ type DataRateProp struct {
 
 func (x *DataRateProp) Reset() {
 	*x = DataRateProp{}
-	mi := &file_tutorial_device_v1_schema_proto_msgTypes[3]
+	mi := &file_example_device_v1_schema_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -199,7 +199,7 @@ func (x *DataRateProp) String() string {
 func (*DataRateProp) ProtoMessage() {}
 
 func (x *DataRateProp) ProtoReflect() protoreflect.Message {
-	mi := &file_tutorial_device_v1_schema_proto_msgTypes[3]
+	mi := &file_example_device_v1_schema_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -212,7 +212,7 @@ func (x *DataRateProp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DataRateProp.ProtoReflect.Descriptor instead.
 func (*DataRateProp) Descriptor() ([]byte, []int) {
-	return file_tutorial_device_v1_schema_proto_rawDescGZIP(), []int{3}
+	return file_example_device_v1_schema_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *DataRateProp) GetSec() int32 {
@@ -231,7 +231,7 @@ type DataRateStatus struct {
 
 func (x *DataRateStatus) Reset() {
 	*x = DataRateStatus{}
-	mi := &file_tutorial_device_v1_schema_proto_msgTypes[4]
+	mi := &file_example_device_v1_schema_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -243,7 +243,7 @@ func (x *DataRateStatus) String() string {
 func (*DataRateStatus) ProtoMessage() {}
 
 func (x *DataRateStatus) ProtoReflect() protoreflect.Message {
-	mi := &file_tutorial_device_v1_schema_proto_msgTypes[4]
+	mi := &file_example_device_v1_schema_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -256,7 +256,7 @@ func (x *DataRateStatus) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DataRateStatus.ProtoReflect.Descriptor instead.
 func (*DataRateStatus) Descriptor() ([]byte, []int) {
-	return file_tutorial_device_v1_schema_proto_rawDescGZIP(), []int{4}
+	return file_example_device_v1_schema_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *DataRateStatus) GetSec() int32 {
@@ -275,7 +275,7 @@ type HVACStatus struct {
 
 func (x *HVACStatus) Reset() {
 	*x = HVACStatus{}
-	mi := &file_tutorial_device_v1_schema_proto_msgTypes[5]
+	mi := &file_example_device_v1_schema_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -287,7 +287,7 @@ func (x *HVACStatus) String() string {
 func (*HVACStatus) ProtoMessage() {}
 
 func (x *HVACStatus) ProtoReflect() protoreflect.Message {
-	mi := &file_tutorial_device_v1_schema_proto_msgTypes[5]
+	mi := &file_example_device_v1_schema_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -300,7 +300,7 @@ func (x *HVACStatus) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HVACStatus.ProtoReflect.Descriptor instead.
 func (*HVACStatus) Descriptor() ([]byte, []int) {
-	return file_tutorial_device_v1_schema_proto_rawDescGZIP(), []int{5}
+	return file_example_device_v1_schema_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *HVACStatus) GetOnline() bool {
@@ -310,11 +310,11 @@ func (x *HVACStatus) GetOnline() bool {
 	return false
 }
 
-var File_tutorial_device_v1_schema_proto protoreflect.FileDescriptor
+var File_example_device_v1_schema_proto protoreflect.FileDescriptor
 
-const file_tutorial_device_v1_schema_proto_rawDesc = "" +
+const file_example_device_v1_schema_proto_rawDesc = "" +
 	"\n" +
-	"\x1ftutorial_device/v1/schema.proto\x12\x12tutorial_device.v1\x1a\x17mir/device/v1/mir.proto\"{\n" +
+	"\x1eexample_device/v1/schema.proto\x12\x11example_device.v1\x1a\x17mir/device/v1/mir.proto\"{\n" +
 	"\x03Env\x12\x14\n" +
 	"\x02ts\x18\x01 \x01(\x03B\x04\xa8\xbb\x18\x04R\x02ts\x12 \n" +
 	"\vtemperature\x18\x02 \x01(\x05R\vtemperature\x12\x1a\n" +
@@ -330,31 +330,31 @@ const file_tutorial_device_v1_schema_proto_rawDesc = "" +
 	"\x03sec\x18\x01 \x01(\x05R\x03sec\"$\n" +
 	"\n" +
 	"HVACStatus\x12\x16\n" +
-	"\x06online\x18\x01 \x01(\bR\x06onlineB\xc9\x01\n" +
-	"\x16com.tutorial_device.v1B\vSchemaProtoP\x01Z=github.com/maxthom/mir/examples/tutorial_device/gen/schema/v1\xa2\x02\x03TXX\xaa\x02\x11TutorialDevice.V1\xca\x02\x11TutorialDevice\\V1\xe2\x02\x1dTutorialDevice\\V1\\GPBMetadata\xea\x02\x12TutorialDevice::V1b\x06proto3"
+	"\x06online\x18\x01 \x01(\bR\x06onlineB\xc3\x01\n" +
+	"\x15com.example_device.v1B\vSchemaProtoP\x01Z<github.com/maxthom/mir/examples/example_device/gen/schema/v1\xa2\x02\x03EXX\xaa\x02\x10ExampleDevice.V1\xca\x02\x10ExampleDevice\\V1\xe2\x02\x1cExampleDevice\\V1\\GPBMetadata\xea\x02\x11ExampleDevice::V1b\x06proto3"
 
 var (
-	file_tutorial_device_v1_schema_proto_rawDescOnce sync.Once
-	file_tutorial_device_v1_schema_proto_rawDescData []byte
+	file_example_device_v1_schema_proto_rawDescOnce sync.Once
+	file_example_device_v1_schema_proto_rawDescData []byte
 )
 
-func file_tutorial_device_v1_schema_proto_rawDescGZIP() []byte {
-	file_tutorial_device_v1_schema_proto_rawDescOnce.Do(func() {
-		file_tutorial_device_v1_schema_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_tutorial_device_v1_schema_proto_rawDesc), len(file_tutorial_device_v1_schema_proto_rawDesc)))
+func file_example_device_v1_schema_proto_rawDescGZIP() []byte {
+	file_example_device_v1_schema_proto_rawDescOnce.Do(func() {
+		file_example_device_v1_schema_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_example_device_v1_schema_proto_rawDesc), len(file_example_device_v1_schema_proto_rawDesc)))
 	})
-	return file_tutorial_device_v1_schema_proto_rawDescData
+	return file_example_device_v1_schema_proto_rawDescData
 }
 
-var file_tutorial_device_v1_schema_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
-var file_tutorial_device_v1_schema_proto_goTypes = []any{
-	(*Env)(nil),                  // 0: tutorial_device.v1.Env
-	(*ActivateHVAC)(nil),         // 1: tutorial_device.v1.ActivateHVAC
-	(*ActivateHVACResponse)(nil), // 2: tutorial_device.v1.ActivateHVACResponse
-	(*DataRateProp)(nil),         // 3: tutorial_device.v1.DataRateProp
-	(*DataRateStatus)(nil),       // 4: tutorial_device.v1.DataRateStatus
-	(*HVACStatus)(nil),           // 5: tutorial_device.v1.HVACStatus
+var file_example_device_v1_schema_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_example_device_v1_schema_proto_goTypes = []any{
+	(*Env)(nil),                  // 0: example_device.v1.Env
+	(*ActivateHVAC)(nil),         // 1: example_device.v1.ActivateHVAC
+	(*ActivateHVACResponse)(nil), // 2: example_device.v1.ActivateHVACResponse
+	(*DataRateProp)(nil),         // 3: example_device.v1.DataRateProp
+	(*DataRateStatus)(nil),       // 4: example_device.v1.DataRateStatus
+	(*HVACStatus)(nil),           // 5: example_device.v1.HVACStatus
 }
-var file_tutorial_device_v1_schema_proto_depIdxs = []int32{
+var file_example_device_v1_schema_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
 	0, // [0:0] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
@@ -362,26 +362,26 @@ var file_tutorial_device_v1_schema_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for field type_name
 }
 
-func init() { file_tutorial_device_v1_schema_proto_init() }
-func file_tutorial_device_v1_schema_proto_init() {
-	if File_tutorial_device_v1_schema_proto != nil {
+func init() { file_example_device_v1_schema_proto_init() }
+func file_example_device_v1_schema_proto_init() {
+	if File_example_device_v1_schema_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_tutorial_device_v1_schema_proto_rawDesc), len(file_tutorial_device_v1_schema_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_example_device_v1_schema_proto_rawDesc), len(file_example_device_v1_schema_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_tutorial_device_v1_schema_proto_goTypes,
-		DependencyIndexes: file_tutorial_device_v1_schema_proto_depIdxs,
-		MessageInfos:      file_tutorial_device_v1_schema_proto_msgTypes,
+		GoTypes:           file_example_device_v1_schema_proto_goTypes,
+		DependencyIndexes: file_example_device_v1_schema_proto_depIdxs,
+		MessageInfos:      file_example_device_v1_schema_proto_msgTypes,
 	}.Build()
-	File_tutorial_device_v1_schema_proto = out.File
-	file_tutorial_device_v1_schema_proto_goTypes = nil
-	file_tutorial_device_v1_schema_proto_depIdxs = nil
+	File_example_device_v1_schema_proto = out.File
+	file_example_device_v1_schema_proto_goTypes = nil
+	file_example_device_v1_schema_proto_depIdxs = nil
 }

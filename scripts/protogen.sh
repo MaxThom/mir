@@ -9,6 +9,7 @@ buf generate --clean --template examples/telemetry_device/buf.gen.yaml
 buf generate --clean --template examples/command_device/buf.gen.yaml
 buf generate --clean --template examples/config_device/buf.gen.yaml
 buf generate --clean --template examples/tutorial_device/buf.gen.yaml
+buf generate --clean --template examples/example_device/buf.gen.yaml
 buf generate --clean --template internal/ui/cli/buf.gen.yaml
 # device
 buf generate --clean --template pkgs/device/mir/proto_test/buf.gen.yaml

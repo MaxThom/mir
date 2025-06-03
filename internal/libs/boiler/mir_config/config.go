@@ -134,7 +134,10 @@ func (s *MirConfig) Load() (errs error, lookupFiles, foundFiles []string) {
 	// - _ for multiple words where the first letter after it becomes capitalize
 	var err error
 	if s.envVars {
-		envPrefix := strings.ToUpper(s.envVarsPrefix) + "__"
+		envPrefix := ""
+		if s.envVarsPrefix != "" {
+			envPrefix = strings.ToUpper(s.envVarsPrefix) + "__"
+		}
 		err = s.k.Load(env.Provider(envPrefix, ".", func(s string) string {
 			return envVarsToYamlNomenclature(s, envPrefix)
 		}), nil)

@@ -21,7 +21,7 @@ func TestLoadCompileConfig(t *testing.T) {
 		panic(err)
 	}
 
-	assert.Equal(t, "0xf86ea", mir.GetConfig().DeviceId)
+	assert.Equal(t, "0xf86ea", mir.GetConfig().Device.Id)
 	assert.Equal(t, "nats://127.0.0.1:4222", mir.GetConfig().Target)
 	assert.Equal(t, string(LogLevelInfo), mir.GetConfig().LogLevel)
 }
@@ -29,9 +29,13 @@ func TestLoadCompileConfig(t *testing.T) {
 func TestLoadFileConfigJson(t *testing.T) {
 	// Marhal config struct instead
 	cfg := `{
-		"deviceId": "0xf86ea",
-		"target": "nats://127.0.0.1:4222",
-		"logLevel": "info"
+		"mir": {
+			"target": "nats://127.0.0.1:4222",
+			"logLevel": "info",
+			"device": {
+				"id": "0xf86ea"
+			}
+		}
 	}`
 	fileName, err := writeBytesToFile([]byte(cfg))
 	defer os.Remove(fileName)
@@ -44,7 +48,7 @@ func TestLoadFileConfigJson(t *testing.T) {
 		panic(err)
 	}
 
-	assert.Equal(t, "0xf86ea", mir.GetConfig().DeviceId)
+	assert.Equal(t, "0xf86ea", mir.GetConfig().Device.Id)
 	assert.Equal(t, "nats://127.0.0.1:4222", mir.GetConfig().Target)
 	assert.Equal(t, string(LogLevelInfo), mir.GetConfig().LogLevel)
 }
@@ -52,9 +56,11 @@ func TestLoadFileConfigJson(t *testing.T) {
 func TestLoadFileConfigYaml(t *testing.T) {
 	// Marhal config struct instead
 	cfg := `
-deviceId: "0xf86ea"
-target: "nats://127.0.0.1:4222"
-logLevel: "info"
+mir:
+    target: "nats://127.0.0.1:4222"
+    logLevel: "info"
+    device:
+        id: "0xf86ea"
 `
 	fileName, err := writeBytesToFile([]byte(cfg))
 	defer os.Remove(fileName)
@@ -68,7 +74,7 @@ logLevel: "info"
 		panic(err)
 	}
 
-	assert.Equal(t, "0xf86ea", mir.GetConfig().DeviceId)
+	assert.Equal(t, "0xf86ea", mir.GetConfig().Device.Id)
 	assert.Equal(t, "nats://127.0.0.1:4222", mir.GetConfig().Target)
 	assert.Equal(t, string(LogLevelInfo), mir.GetConfig().LogLevel)
 }
@@ -76,7 +82,9 @@ logLevel: "info"
 func TestLoadFileConfigMix(t *testing.T) {
 	// Marhal config struct instead
 	cfg := `
-deviceId: "0xf86ea"
+mir:
+    device:
+        id: "0xf86ea"
 `
 	fileName, err := writeBytesToFile([]byte(cfg))
 	defer os.Remove(fileName)
@@ -92,7 +100,7 @@ deviceId: "0xf86ea"
 		panic(err)
 	}
 
-	assert.Equal(t, "0xf86ea", mir.GetConfig().DeviceId)
+	assert.Equal(t, "0xf86ea", mir.GetConfig().Device.Id)
 	assert.Equal(t, "nats://127.0.0.1:4222", mir.GetConfig().Target)
 	assert.Equal(t, string(LogLevelInfo), mir.GetConfig().LogLevel)
 }
@@ -118,10 +126,10 @@ func TestLoadFileConfigMissingFields(t *testing.T) {
 // TODO one unit test with nested fields
 // TODO one unit test with arrays
 func TestLoadWithEnvVars(t *testing.T) {
-	os.Setenv("MIR__DEVICE_ID", "0xf86ea")
+	os.Setenv("MIR__DEVICE__ID", "0xf86ea")
 	os.Setenv("MIR__TARGET", "nats://127.0.0.1:4222")
 	os.Setenv("MIR__LOG_LEVEL", "info")
-	defer os.Unsetenv("MIR__DEVICE_ID")
+	defer os.Unsetenv("MIR__DEVICE__ID")
 	defer os.Unsetenv("MIR__TARGET")
 	defer os.Unsetenv("MIR__LOG_LEVEL")
 	mir, err := Builder().
@@ -132,18 +140,20 @@ func TestLoadWithEnvVars(t *testing.T) {
 		panic(err)
 	}
 
-	assert.Equal(t, "0xf86ea", mir.GetConfig().DeviceId)
+	assert.Equal(t, "0xf86ea", mir.GetConfig().Device.Id)
 	assert.Equal(t, "nats://127.0.0.1:4222", mir.GetConfig().Target)
 	assert.Equal(t, string(LogLevelInfo), mir.GetConfig().LogLevel)
 }
 
 func TestLoadConfigMix(t *testing.T) {
-	os.Setenv("MIR__DEVICE_ID", "0xf86ea")
-	defer os.Unsetenv("MIR__DEVICE_ID")
+	os.Setenv("MIR__DEVICE__ID", "0xf86ea")
+	defer os.Unsetenv("MIR__DEVICE__ID")
 
 	cfg := `{
+	"mir": {
 			"target": "nats://127.0.0.1:4222"
-		}`
+		}
+	}`
 	fileName, err := writeBytesToFile([]byte(cfg))
 	defer os.Remove(fileName)
 
@@ -157,7 +167,7 @@ func TestLoadConfigMix(t *testing.T) {
 		panic(err)
 	}
 
-	assert.Equal(t, "0xf86ea", mir.GetConfig().DeviceId)
+	assert.Equal(t, "0xf86ea", mir.GetConfig().Device.Id)
 	assert.Equal(t, "nats://127.0.0.1:4222", mir.GetConfig().Target)
 	assert.Equal(t, string(LogLevelDebug), mir.GetConfig().LogLevel)
 }

@@ -70,9 +70,6 @@ func (v VersionFlag) BeforeApply(app *kong.Kong, vars kong.Vars) error {
 	return nil
 }
 
-// TODO
-// - [ ] return mir error from client in services/core for Publish
-
 func main() {
 	var c CLI
 

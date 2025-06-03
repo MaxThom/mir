@@ -10,6 +10,7 @@ import (
 
 	badger "github.com/dgraph-io/badger/v4"
 	"github.com/nats-io/nats.go"
+	"gopkg.in/yaml.v3"
 )
 
 type Store struct {
@@ -19,23 +20,29 @@ type Store struct {
 }
 
 type StoreOptions struct {
-	FolderPath string
-	InMemory   bool
-	Msgs       StoreMsgOptions
+	FolderPath string `json:"folderPath" yaml:"folderPath"`
+	InMemory   bool   `json:"inMemory" yaml:"inMemory"`
+	// Timelimit to store messages. If over, will start cycling messages
+	// Default to 0 for infinite
+	RetentionLimit time.Duration `json:"retentionLimit" yaml:"retentionLimit"`
+	// Cannot write messages to store if disk space left is above the pourcentage limit
+	// Default to 85%, if disk space is at more then 85%, will start cycle the messages
+	DiskSpaceLimit  uint               `json:"diskSpaceLimit" yaml:"diskSpaceLimit"`
+	PersistenceType MsgPersistenceType `json:"persistenceType" yaml:"persistenceType"`
 }
 
-// MsgStorageType represents the storage mechanism
-type MsgStorageType string
+// MsgPersistenceType represents the storage mechanism
+type MsgPersistenceType string
 type StoreBucket string
 
 const (
-	StorageTypeNone MsgStorageType = "none"
-	// StorageTypeNoStorage will not store messages
-	StorageTypeNoStorage MsgStorageType = "nostorage"
-	// StorageTypeOnlyIfOffline will keep messages only if device is d/c
-	StorageTypeOnlyIfOffline MsgStorageType = "ifoffline"
-	// StorageTypePersistent will keep all msgs
-	StorageTypePersistent MsgStorageType = "persistent"
+	PersistentTypeNone MsgPersistenceType = "none"
+	// PersistentTypeNoStorage will not store messages
+	PersistentTypeNoStorage MsgPersistenceType = "nostorage"
+	// PersistentTypeOnlyIfOffline will keep messages only if device is d/c
+	PersistentTypeOnlyIfOffline MsgPersistenceType = "ifoffline"
+	// PersistentTypeAlways will keep all msgs
+	PersistentTypeAlways MsgPersistenceType = "always"
 
 	msgPendingBucket    StoreBucket = "msgs.pending"
 	msgPersistentBucket StoreBucket = "msgs.persistent"
@@ -54,20 +61,36 @@ func (b StoreBucket) ToKeyWithoutPrefix(key []byte) []byte {
 	return bytes.TrimPrefix(key, []byte(b+":"))
 }
 
-type StoreMsgOptions struct {
-	// Timelimit to store messages. If over, will start cycling messages
-	// Default to 0 for infinite
-	RententionLimit JsonReadableDuration
-	// Cannot write messages to store if disk space left is above the pourcentage limit
-	// Default to 85%, if disk space is at more then 85%, will start cycle the messages
-	DiskSpaceLimit uint
-	MsgStorageType MsgStorageType
-}
-
 type JsonReadableDuration time.Duration
 
 func (d JsonReadableDuration) MarshalJSON() ([]byte, error) {
 	return json.Marshal(time.Duration(d).String())
+}
+
+func (d *JsonReadableDuration) UnmarshalJSON(data []byte) error {
+	var s string
+	if err := json.Unmarshal(data, &s); err != nil {
+		return err
+	}
+	dur, err := time.ParseDuration(s)
+	if err != nil {
+		return err
+	}
+	*d = JsonReadableDuration(dur)
+	return nil
+}
+
+func (d *JsonReadableDuration) UnmarshalYAML(value *yaml.Node) error {
+	var s string
+	if err := value.Decode(&s); err != nil {
+		return err
+	}
+	duration, err := time.ParseDuration(s)
+	if err != nil {
+		return err
+	}
+	*d = JsonReadableDuration(duration)
+	return nil
 }
 
 type propsValue struct {
@@ -359,8 +382,8 @@ func (s *Store) saveMsg(bucket StoreBucket, msg nats.Msg) error {
 			return fmt.Errorf("failed to marshal message: %w", err)
 		}
 		var entry *badger.Entry
-		if s.opts.Msgs.RententionLimit > 0 {
-			entry = badger.NewEntry(key, msgData).WithTTL(time.Duration(s.opts.Msgs.RententionLimit))
+		if s.opts.RetentionLimit > 0 {
+			entry = badger.NewEntry(key, msgData).WithTTL(time.Duration(s.opts.RetentionLimit))
 		} else {
 			entry = badger.NewEntry(key, msgData)
 		}
