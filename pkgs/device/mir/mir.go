@@ -14,6 +14,7 @@ import (
 	"github.com/maxthom/mir/internal/clients/core_client"
 	"github.com/maxthom/mir/internal/clients/tlm_client"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
+	"github.com/maxthom/mir/internal/libs/systemid"
 	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	"github.com/nats-io/nats.go"
 	"github.com/rs/zerolog"
@@ -23,7 +24,7 @@ import (
 )
 
 type Mir struct {
-	cfg         Cfg
+	cfg         Config
 	b           *bus.BusConn
 	store       *Store
 	ctx         context.Context
@@ -37,12 +38,71 @@ type Mir struct {
 	initialized bool
 }
 
-type Cfg struct {
-	DeviceId       string       `json:"deviceId" yaml:"deviceId" cfg:""`
-	Target         string       `json:"target" yaml:"target"`
-	LogLevel       string       `json:"logLevel" yaml:"logLevel"`
-	NoSchemaOnBoot bool         `json:"noSchemaOnBoot" yaml:"noSchemaOnBoot"`
-	Store          StoreOptions `json:"store" yaml:"store"`
+type Config struct {
+	Target     string       `json:"target" yaml:"target"`
+	LogLevel   string       `json:"logLevel" yaml:"logLevel"`
+	Device     DeviceCfg    `json:"device" yaml:"device"`
+	LocalStore StoreOptions `json:"localStore" yaml:"localStore"`
+}
+
+type DeviceCfg struct {
+	Id             string             `json:"id" yaml:"id"`
+	IdGenerator    *IdGeneratorConfig `json:"idGenerator,omitempty" yaml:"idGenerator"`
+	NoSchemaOnBoot bool               `json:"noSchemaOnBoot" yaml:"noSchemaOnBoot"`
+}
+
+type IdGeneratorConfig struct {
+	Salt      string `json:"salt,omitempty" yaml:"salt"`
+	CPU       bool   `json:"cpu,omitempty" yaml:"cpu"`
+	Disk      bool   `json:"disk,omitempty" yaml:"disk"`
+	MAC       bool   `json:"mac,omitempty" yaml:"mac"`
+	MachineID bool   `json:"machineId,omitempty" yaml:"machineId"`
+	OS        bool   `json:"os,omitempty" yaml:"os"`
+	Hostname  bool   `json:"hostname,omitempty" yaml:"hostname"`
+	User      bool   `json:"user,omitempty" yaml:"user"`
+}
+
+func (i IdGeneratorConfig) ToSystemIdOpts() systemid.Options {
+	return systemid.Options{
+		IncludeCPU:       i.CPU,
+		IncludeDisk:      i.Disk,
+		IncludeMAC:       i.MAC,
+		IncludeMachineID: i.MachineID,
+		IncludeOS:        i.OS,
+		IncludeHostname:  i.Hostname,
+		IncludeUser:      i.User,
+	}
+}
+
+func (i IdGeneratorConfig) IsActive() bool {
+	if i.CPU {
+		return true
+	}
+	if i.Disk {
+		return true
+	}
+	if i.MAC {
+		return true
+	}
+	if i.MachineID {
+		return true
+	}
+	if i.OS {
+		return true
+	}
+	if i.Hostname {
+		return true
+	}
+	if i.User {
+		return true
+	}
+	if i.User {
+		return true
+	}
+	if i.Salt != "" {
+		return true
+	}
+	return false
 }
 
 type cmdHandlerValue struct {
@@ -55,16 +115,12 @@ type cfgHandlerValue struct {
 	h []func(proto.Message)
 }
 
-const ()
-
-var ()
-
-func (m Mir) GetConfig() Cfg {
+func (m Mir) GetConfig() Config {
 	return m.cfg
 }
 
 func (m Mir) GetDeviceId() string {
-	return m.cfg.DeviceId
+	return m.cfg.Device.Id
 }
 
 // Establish connection to the Mir server
@@ -94,7 +150,7 @@ func (m *Mir) Launch(ctx context.Context) (*sync.WaitGroup, error) {
 			m.l.Info().Msg("connected to Mir Server ")
 			m.setOnlineHandler()
 
-			if !m.cfg.NoSchemaOnBoot {
+			if !m.cfg.Device.NoSchemaOnBoot {
 				if err := m.sendSchema(); err != nil {
 					m.l.Error().Err(err).Msg("error sending schema on connect")
 				}
@@ -142,7 +198,7 @@ func (m *Mir) Launch(ctx context.Context) (*sync.WaitGroup, error) {
 		return &wg, err
 	}
 
-	sub, err := m.b.SubscribeSync(fmt.Sprintf("%s.>", m.cfg.DeviceId))
+	sub, err := m.b.SubscribeSync(fmt.Sprintf("%s.>", m.cfg.Device.Id))
 	if err != nil {
 		return &wg, err
 	}
@@ -199,7 +255,7 @@ func (m *Mir) Launch(ctx context.Context) (*sync.WaitGroup, error) {
 // Send hearthbeat to Mir on a based interval
 // Run in a routine for non blocking
 func (m *Mir) hearthbeat(ctx context.Context, interval time.Duration) {
-	if err := core_client.PublishHearthbeatStream(m.b, m.cfg.DeviceId); err != nil {
+	if err := core_client.PublishHearthbeatStream(m.b, m.cfg.Device.Id); err != nil {
 		m.l.Error().Err(err).Msg("error sending hearthbeat to Mir")
 	}
 	for {
@@ -208,7 +264,7 @@ func (m *Mir) hearthbeat(ctx context.Context, interval time.Duration) {
 			m.l.Debug().Msg("shutting down hearthbeat")
 			return
 		case <-time.After(interval):
-			if err := core_client.PublishHearthbeatStream(m.b, m.cfg.DeviceId); err != nil {
+			if err := core_client.PublishHearthbeatStream(m.b, m.cfg.Device.Id); err != nil {
 				m.l.Error().Err(err).Msg("error sending hearthbeat to Mir")
 			}
 		}
@@ -275,7 +331,7 @@ func (m Mir) marshalTelemetrySchema() ([]byte, error) {
 
 // Send proto telemetry to Mir Server
 func (m Mir) SendTelemetry(t proto.Message) error {
-	msg, err := tlm_client.GetTelemetryStreamMsg(m.cfg.DeviceId, t)
+	msg, err := tlm_client.GetTelemetryStreamMsg(m.cfg.Device.Id, t)
 	if err != nil {
 		return err
 	}
@@ -284,7 +340,7 @@ func (m Mir) SendTelemetry(t proto.Message) error {
 
 // Send proto reported properties to Mir Server
 func (m Mir) SendProperties(t proto.Message) error {
-	msg, err := cfg_client.GetReportedPropertiesStreamMsg(m.cfg.DeviceId, t)
+	msg, err := cfg_client.GetReportedPropertiesStreamMsg(m.cfg.Device.Id, t)
 	if err != nil {
 		return err
 	}
@@ -307,7 +363,7 @@ func (m Mir) sendSchema() error {
 // Fill the properties store with the latest properties from Mir server
 // Also write to the persistent store
 func (m Mir) requestDesiredProperties() error {
-	resp, err := cfg_client.PublishRequestDesiredPropertiesStream(m.b, m.cfg.DeviceId)
+	resp, err := cfg_client.PublishRequestDesiredPropertiesStream(m.b, m.cfg.Device.Id)
 	if err != nil {
 		return fmt.Errorf("error requesting desired properties: %v", err)
 	}
@@ -421,7 +477,7 @@ func (m Mir) HandleProperties(t proto.Message, handler ...func(proto.Message)) {
 type subject string
 
 func (m Mir) NewSubject(module, version, function string, extra ...string) subject {
-	extra = append([]string{"device", m.cfg.DeviceId, module, version, function}, extra...)
+	extra = append([]string{"device", m.cfg.Device.Id, module, version, function}, extra...)
 	return subject(strings.Join(extra, "."))
 }
 

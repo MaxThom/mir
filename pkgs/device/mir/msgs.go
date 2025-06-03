@@ -193,26 +193,26 @@ func (m Mir) sendProtoMsg(subject string, protoMsg protoreflect.ProtoMessage, h 
 }
 
 func (m Mir) setOnlineHandler() {
-	if m.store.opts.Msgs.MsgStorageType == StorageTypeNoStorage {
+	if m.store.opts.PersistenceType == PersistentTypeNoStorage {
 		msgSender = m.sendMsgOnly
 		m.l.Info().Msg("set online handler: no storage")
-	} else if m.store.opts.Msgs.MsgStorageType == StorageTypeOnlyIfOffline {
+	} else if m.store.opts.PersistenceType == PersistentTypeOnlyIfOffline {
 		msgSender = m.sendMsgOnly
 		m.l.Info().Msg("set online handler: no storage")
-	} else if m.store.opts.Msgs.MsgStorageType == StorageTypePersistent {
+	} else if m.store.opts.PersistenceType == PersistentTypeAlways {
 		msgSender = m.sendMsgWithStorage
 		m.l.Info().Msg("set online handler: persistent storage")
 	}
 }
 
 func (m Mir) setOfflineHandler() {
-	if m.store.opts.Msgs.MsgStorageType == StorageTypeNoStorage {
+	if m.store.opts.PersistenceType == PersistentTypeNoStorage {
 		msgSender = m.sendNothing
 		m.l.Info().Msg("set offline handler: no storage")
-	} else if m.store.opts.Msgs.MsgStorageType == StorageTypeOnlyIfOffline {
+	} else if m.store.opts.PersistenceType == PersistentTypeOnlyIfOffline {
 		msgSender = m.saveMsgInPending
 		m.l.Info().Msg("set offline handler: pending storage")
-	} else if m.store.opts.Msgs.MsgStorageType == StorageTypePersistent {
+	} else if m.store.opts.PersistenceType == PersistentTypeAlways {
 		msgSender = m.saveMsgInPending
 		m.l.Info().Msg("set offline handler: pending storage")
 	}
@@ -244,7 +244,7 @@ func (m Mir) sendMsgWithStorage(msg *nats.Msg) error {
 
 func (m Mir) sendPendingMsgs() {
 	batchSize := 100
-	if m.cfg.Store.Msgs.MsgStorageType == StorageTypePersistent {
+	if m.cfg.LocalStore.PersistenceType == PersistentTypeAlways {
 		count := 0
 		if err := m.store.SwapMsgByBatch(msgPendingBucket, msgPersistentBucket, batchSize, func(msgs []nats.Msg) error {
 			var errs error

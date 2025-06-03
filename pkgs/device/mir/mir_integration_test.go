@@ -371,10 +371,8 @@ func TestStoreSaveMsgWithTTL(t *testing.T) {
 	// Arrange
 	subject := "test_sub"
 	s, err := NewStore(StoreOptions{
-		InMemory: true,
-		Msgs: StoreMsgOptions{
-			RententionLimit: JsonReadableDuration(3 * time.Second),
-		},
+		InMemory:       true,
+		RetentionLimit: 3 * time.Second,
 	})
 	if err != nil {
 		t.Error(err)

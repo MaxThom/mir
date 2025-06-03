@@ -1,0 +1,40 @@
+mir:
+  target: "nats://127.0.0.1:4222"
+  logLevel: "debug"
+  device:
+    id: ""
+    idPrefix:
+      prefix: "dev_"
+      hostname: true
+      username: true
+    idGenerator:
+      cpu: false
+      disk: false
+      mac: false
+      machineId: false
+      os: false
+      hostname: true
+      user: false
+      random: false
+      salt: ""
+    noSchemaOnBoot: true
+  localStore:
+    folderPath: ""
+    inMemory: false
+    retentionLimit: 160h
+    diskSpaceLimit: 75
+    persistenceType: "always"
+user:
+  sensors:
+    - type: "temperature"
+      unit: "C"
+      interval: 10s
+      pass: "123"
+    - type: "humidity"
+      unit: "%"
+      interval: 10s
+      pass: "456"
+    - type: "pressure"
+      unit: "Pa"
+      interval: 10s
+      pass: "789"
