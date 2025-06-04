@@ -46,12 +46,19 @@ type Config struct {
 }
 
 type DeviceCfg struct {
-	Id             string             `json:"id" yaml:"id"`
-	IdGenerator    *IdGeneratorConfig `json:"idGenerator,omitempty" yaml:"idGenerator"`
-	NoSchemaOnBoot bool               `json:"noSchemaOnBoot" yaml:"noSchemaOnBoot"`
+	Id             string       `json:"id" yaml:"id"`
+	IdPrefix       *IdPrefix    `json:"idPrefix,omitempty" yaml:"idPrefix"`
+	IdGenerator    *IdGenerator `json:"idGenerator,omitempty" yaml:"idGenerator"`
+	NoSchemaOnBoot bool         `json:"noSchemaOnBoot" yaml:"noSchemaOnBoot"`
 }
 
-type IdGeneratorConfig struct {
+type IdPrefix struct {
+	Prefix   string `json:"prefix,omitempty" yaml:"prefix"`
+	Hostname bool   `json:"hostname,omitempty" yaml:"hostname"`
+	Username bool   `json:"username,omitempty" yaml:"username"`
+}
+
+type IdGenerator struct {
 	Salt      string `json:"salt,omitempty" yaml:"salt"`
 	CPU       bool   `json:"cpu,omitempty" yaml:"cpu"`
 	Disk      bool   `json:"disk,omitempty" yaml:"disk"`
@@ -60,9 +67,22 @@ type IdGeneratorConfig struct {
 	OS        bool   `json:"os,omitempty" yaml:"os"`
 	Hostname  bool   `json:"hostname,omitempty" yaml:"hostname"`
 	User      bool   `json:"user,omitempty" yaml:"user"`
+	Plain     bool   `json:"plain,omitempty" yaml:"plain"`
 }
 
-func (i IdGeneratorConfig) ToSystemIdOpts() systemid.Options {
+func (i IdPrefix) ToSystemIdPrefixOpts() systemid.PrefixOptions {
+	return systemid.PrefixOptions{
+		Prefix:   i.Prefix,
+		Hostname: i.Hostname,
+		Username: i.Username,
+	}
+}
+
+func (i IdPrefix) IsActive() bool {
+	return i.Prefix != "" || i.Hostname || i.Username
+}
+
+func (i IdGenerator) ToSystemIdOpts() systemid.Options {
 	return systemid.Options{
 		IncludeCPU:       i.CPU,
 		IncludeDisk:      i.Disk,
@@ -71,10 +91,11 @@ func (i IdGeneratorConfig) ToSystemIdOpts() systemid.Options {
 		IncludeOS:        i.OS,
 		IncludeHostname:  i.Hostname,
 		IncludeUser:      i.User,
+		Plain:            i.Plain,
 	}
 }
 
-func (i IdGeneratorConfig) IsActive() bool {
+func (i IdGenerator) IsActive() bool {
 	if i.CPU {
 		return true
 	}

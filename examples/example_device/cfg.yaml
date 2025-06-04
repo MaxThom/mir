@@ -4,19 +4,19 @@ mir:
   device:
     id: ""
     idPrefix:
-      prefix: "dev_"
-      hostname: true
-      username: true
+      prefix: ""
+      hostname: false
+      username: false
     idGenerator:
       cpu: false
       disk: false
       mac: false
       machineId: false
       os: false
-      hostname: true
+      hostname: false
       user: false
-      random: false
       salt: ""
+      plain: false
     noSchemaOnBoot: true
   localStore:
     folderPath: ""
