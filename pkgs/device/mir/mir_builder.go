@@ -22,7 +22,8 @@ import (
 type builder struct {
 	fileOpts            []func(*mir_config.MirConfig)
 	deviceId            *string
-	deviceIdGenerator   *IdGeneratorConfig
+	deviceIdGenerator   *IdGenerator
+	deviceIdPrefix      *IdPrefix
 	target              *string
 	logLevel            *LogLevel
 	logWriters          []io.Writer
@@ -69,8 +70,13 @@ func (b builder) DeviceId(id string) builder {
 	return b
 }
 
-func (b builder) DeviceIdGenerator(t IdGeneratorConfig) builder {
+func (b builder) DeviceIdGenerator(t IdGenerator) builder {
 	b.deviceIdGenerator = &t
+	return b
+}
+
+func (b builder) DeviceIdPrefix(p IdPrefix) builder {
+	b.deviceIdPrefix = &p
 	return b
 }
 
@@ -248,8 +254,8 @@ func (b builder) build(extraCfg any) (*Mir, error) {
 	if b.deviceIdGenerator != nil {
 		cfg.Mir.Device.IdGenerator = b.deviceIdGenerator
 	}
-	if b.deviceIdGenerator != nil {
-		cfg.Mir.Device.IdGenerator = b.deviceIdGenerator
+	if b.deviceIdPrefix != nil {
+		cfg.Mir.Device.IdPrefix = b.deviceIdPrefix
 	}
 	if b.noSchemaOnBoot != nil {
 		cfg.Mir.Device.NoSchemaOnBoot = *b.noSchemaOnBoot
@@ -300,23 +306,11 @@ func (b builder) build(extraCfg any) (*Mir, error) {
 		l.Info().Strs("lookup config", lookupFiles).Strs("found config", foundFiles).Msg("configuration loaded")
 	}
 
-	if cfg.Mir.Device.Id == "" && cfg.Mir.Device.IdGenerator.IsActive() {
-		structId, err := systemid.GenerateStructuredID(cfg.Mir.Device.IdGenerator.ToSystemIdOpts())
-		if err != nil {
-			return nil, fmt.Errorf("error generating device id: %w", err)
-		}
-		cfg.Mir.Device.Id = structId.ToString()
-	}
-
-	if prettyCfg, err := mir_config.JsonMarshalWithoutSecrets(cfg); err != nil {
-		l.Error().Err(err).Msg("Error marshalling config")
-	} else {
-		l.Info().Str("config", string(prettyCfg)).Msg("")
-	}
-
 	fieldsErr := []string{}
-	if cfg.Mir.Device.Id == "" && !cfg.Mir.Device.IdGenerator.IsActive() {
-		fieldsErr = append(fieldsErr, "Device.Id or Device.IdGenerator is required to identify the device")
+	if cfg.Mir.Device.Id == "" {
+		if cfg.Mir.Device.IdGenerator == nil || (cfg.Mir.Device.IdGenerator != nil && !cfg.Mir.Device.IdGenerator.IsActive()) {
+			fieldsErr = append(fieldsErr, "Device.Id or Device.IdGenerator is required to identify the device")
+		}
 	}
 	if cfg.Mir.Target == "" {
 		fieldsErr = append(fieldsErr, "Target is required to connect to the server")
@@ -329,6 +323,28 @@ func (b builder) build(extraCfg any) (*Mir, error) {
 	if cfg.Mir.LocalStore.DiskSpaceLimit < 0 || cfg.Mir.LocalStore.DiskSpaceLimit > 99 {
 		fieldsErr = append(fieldsErr, "Disk space limit must be a valid pourcentage between 0 and 99")
 	}
+
+	if cfg.Mir.Device.Id == "" && cfg.Mir.Device.IdGenerator != nil && cfg.Mir.Device.IdGenerator.IsActive() {
+		structId, err := systemid.GetShortDeviceID(cfg.Mir.Device.IdGenerator.ToSystemIdOpts())
+		if err != nil {
+			return nil, fmt.Errorf("error generating device id: %w", err)
+		}
+		cfg.Mir.Device.Id = structId
+	}
+	if cfg.Mir.Device.IdPrefix != nil && cfg.Mir.Device.IdPrefix.IsActive() {
+		prefix, err := systemid.GetPrefix(cfg.Mir.Device.IdPrefix.ToSystemIdPrefixOpts())
+		if err != nil {
+			return nil, fmt.Errorf("error generating device prefix: %w", err)
+		}
+		cfg.Mir.Device.Id = fmt.Sprintf("%s_%s", prefix, cfg.Mir.Device.Id)
+	}
+
+	if prettyCfg, err := mir_config.JsonMarshalWithoutSecrets(cfg); err != nil {
+		l.Error().Err(err).Msg("Error marshalling config")
+	} else {
+		l.Info().Str("config", string(prettyCfg)).Msg("")
+	}
+
 	if len(fieldsErr) > 0 {
 		return nil, MirBuilderFieldsError{
 			Fields: fieldsErr,
