@@ -465,7 +465,7 @@ func publishDeviceOnlineEvent(m *mir.Mir, msg *mir.Msg, d mir_v1.Device) error {
 	if err != nil {
 		return err
 	}
-	return m.Event().Publish(mir.NewEventSubjectString(core_client.DeviceOnlineEvent.WithId(d.Spec.DeviceId)),
+	return m.Event().Publish(m.Event().NewSubjectString(core_client.DeviceOnlineEvent.WithId(d.Spec.DeviceId)),
 		mir_v1.EventSpec{
 			Type:    mir_v1.EventTypeNormal,
 			Reason:  "DeviceOnline",
@@ -483,7 +483,7 @@ func publishDeviceOfflineEvent(m *mir.Mir, msg *mir.Msg, d mir_v1.Device) error 
 	if err != nil {
 		return err
 	}
-	return m.Event().Publish(mir.NewEventSubjectString(core_client.DeviceOfflineEvent.WithId(d.Spec.DeviceId)),
+	return m.Event().Publish(m.Event().NewSubjectString(core_client.DeviceOfflineEvent.WithId(d.Spec.DeviceId)),
 		mir_v1.EventSpec{
 			Type:    mir_v1.EventTypeNormal,
 			Reason:  "DeviceOffline",
@@ -501,7 +501,7 @@ func publishDeviceCreateEvent(m *mir.Mir, msg *mir.Msg, d mir_v1.Device) error {
 	if err != nil {
 		return err
 	}
-	return m.Event().Publish(mir.NewEventSubjectString(core_client.DeviceCreatedEvent.WithId(d.Spec.DeviceId)),
+	return m.Event().Publish(m.Event().NewSubjectString(core_client.DeviceCreatedEvent.WithId(d.Spec.DeviceId)),
 		mir_v1.EventSpec{
 			Type:    mir_v1.EventTypeNormal,
 			Reason:  "DeviceCreated",
@@ -519,7 +519,7 @@ func publishDeviceUpdateEvent(m *mir.Mir, msg *mir.Msg, d mir_v1.Device) error {
 	if err != nil {
 		return err
 	}
-	return m.Event().Publish(mir.NewEventSubjectString(core_client.DeviceUpdatedEvent.WithId(d.Spec.DeviceId)),
+	return m.Event().Publish(m.Event().NewSubjectString(core_client.DeviceUpdatedEvent.WithId(d.Spec.DeviceId)),
 		mir_v1.EventSpec{
 			Type:    mir_v1.EventTypeNormal,
 			Reason:  "DeviceUpdated",
@@ -537,7 +537,7 @@ func publishDeviceDeleteEvent(m *mir.Mir, msg *mir.Msg, d mir_v1.Device) error {
 	if err != nil {
 		return err
 	}
-	return m.Event().Publish(mir.NewEventSubjectString(core_client.DeviceDeletedEvent.WithId(d.Spec.DeviceId)),
+	return m.Event().Publish(m.Event().NewSubjectString(core_client.DeviceDeletedEvent.WithId(d.Spec.DeviceId)),
 		mir_v1.EventSpec{
 			Type:    mir_v1.EventTypeNormal,
 			Reason:  "DeviceDeleted",

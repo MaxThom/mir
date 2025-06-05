@@ -55,7 +55,7 @@ func TestDeviceRoutes_Subscribe(t *testing.T) {
 	received := make(chan bool)
 
 	devIdRecv := ""
-	err := m.Device().Subscribe(subject, func(msg *Msg, id string) {
+	err := m.Device().Subscribe(subject, func(msg *Msg, id string, data []byte) {
 		devIdRecv = id
 		received <- true
 	})
@@ -83,13 +83,13 @@ func TestDeviceRoutes_QueueSubscribe(t *testing.T) {
 	receivedCount2 := 0
 
 	// Create two queue subscribers
-	err := m.Device().QueueSubscribe(queueName, subject, func(msg *Msg, id string) {
+	err := m.Device().QueueSubscribe(queueName, subject, func(msg *Msg, id string, data []byte) {
 		assert.Equal(t, deviceID, id)
 		receivedCount1++
 	})
 	assert.NilError(t, err)
 
-	err = m.Device().QueueSubscribe(queueName, subject, func(msg *Msg, id string) {
+	err = m.Device().QueueSubscribe(queueName, subject, func(msg *Msg, id string, data []byte) {
 		assert.Equal(t, deviceID, id)
 		receivedCount2++
 	})
@@ -144,7 +144,7 @@ func TestDeviceRoutes_Telemetry(t *testing.T) {
 	assert.NilError(t, err)
 
 	msg := nats.NewMsg(tlm_client.TelemetryDeviceStream.WithId(deviceID))
-	msg.Header = nats.Header{"__msg": []string{protoMsgName}}
+	msg.Header = nats.Header{HeaderMsgName: []string{protoMsgName}}
 	msg.Data = testData
 	err = m.Bus.PublishMsg(msg)
 	assert.NilError(t, err)
@@ -202,11 +202,11 @@ func TestDeviceRoutes_Command(t *testing.T) {
 	// Setup mock response handler
 	sub, err := m.Bus.Subscribe(device_client.CommandRequest.WithId(deviceID),
 		func(msg *nats.Msg) {
-			assert.Equal(t, cmdName, msg.Header.Get("__msg"))
+			assert.Equal(t, cmdName, msg.Header.Get(HeaderMsgName))
 			assert.DeepEqual(t, cmdPayload, msg.Data)
 
 			responseMsg := nats.NewMsg(msg.Reply)
-			responseMsg.Header = nats.Header{"__msg": []string{"test.Response"}}
+			responseMsg.Header = nats.Header{HeaderMsgName: []string{"test.Response"}}
 			responseMsg.Data = []byte("test-response-payload")
 
 			err := m.Bus.PublishMsg(responseMsg)

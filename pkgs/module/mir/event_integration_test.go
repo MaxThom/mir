@@ -35,6 +35,7 @@ func TestMain(t *testing.M) {
 
 func TestEventRoutes_NewSubject(t *testing.T) {
 	tests := []struct {
+		id       string
 		module   string
 		version  string
 		function string
@@ -42,24 +43,26 @@ func TestEventRoutes_NewSubject(t *testing.T) {
 		expected string
 	}{
 		{
+			id:       "0xf86",
 			module:   "test",
 			version:  "v1",
 			function: "func1",
 			extra:    []string{},
-			expected: "event.*.test.v1.func1",
+			expected: "event.0xf86.test.v1.func1",
 		},
 		{
+			id:       "0xf86",
 			module:   "app",
 			version:  "v2",
 			function: "func2",
 			extra:    []string{"extra1", "extra2"},
-			expected: "event.*.app.v2.func2.extra1.extra2",
+			expected: "event.0xf86.app.v2.func2.extra1.extra2",
 		},
 	}
 
 	for _, tt := range tests {
-		t.Run(fmt.Sprintf("%s-%s-%s", tt.module, tt.version, tt.function), func(t *testing.T) {
-			subject := NewEventSubject(tt.module, tt.version, tt.function, tt.extra...)
+		t.Run(fmt.Sprintf("%s-%s-%s-%s", tt.id, tt.module, tt.version, tt.function), func(t *testing.T) {
+			subject := m.Event().NewSubject(tt.id, tt.module, tt.version, tt.function, tt.extra...)
 			assert.Equal(t, tt.expected, subject.String())
 		})
 	}
@@ -67,7 +70,7 @@ func TestEventRoutes_NewSubject(t *testing.T) {
 
 func TestEventQueueSubscribe(t *testing.T) {
 	// Test data
-	subject := NewEventSubject("test", "v1", "queue-test").WithId("test-queue-event")
+	subject := m.Event().NewSubject("test-queue-event", "test", "v1", "queue-test")
 	queueName := "test-queue"
 	messageCount := 10
 	rCount1 := 0
@@ -110,7 +113,7 @@ func TestEventQueueSubscribe(t *testing.T) {
 
 func TestEventQueueSubscribeSubject(t *testing.T) {
 	// Test data
-	subject := NewEventSubject("test", "v1", "queue-test").WithId("test-queue-event-sbj")
+	subject := m.Event().NewSubject("test-queue-event-sbj", "test", "v1", "queue-test")
 	queueName := "test-queue-sbj"
 	messageCount := 10
 	rCount1 := 0

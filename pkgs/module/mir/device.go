@@ -42,9 +42,9 @@ func (r deviceRoutes) NewSubject(module, version, function string, extra ...stri
 // <version>: version of the data in the stream (v1alpha, v1, etc)
 // <function>: refer to the exact function of the stream
 // <extra>: any extra token you want to add
-func (r *deviceRoutes) Subscribe(sbj deviceSubject, h func(msg *Msg, deviceId string)) error {
+func (r *deviceRoutes) Subscribe(sbj deviceSubject, h func(msg *Msg, deviceId string, data []byte)) error {
 	f := func(msg *nats.Msg) {
-		h(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId())
+		h(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), msg.Data)
 	}
 	return r.m.subscribe(sbj.String(), f)
 }
@@ -56,9 +56,9 @@ func (r *deviceRoutes) Subscribe(sbj deviceSubject, h func(msg *Msg, deviceId st
 // <version>: version of the data in the stream (v1alpha, v1, etc)
 // <function>: refer to the exact function of the stream
 // <extra>: any extra token you want to add
-func (r *deviceRoutes) QueueSubscribe(queue string, sbj deviceSubject, h func(msg *Msg, deviceId string)) error {
+func (r *deviceRoutes) QueueSubscribe(queue string, sbj deviceSubject, h func(msg *Msg, deviceId string, data []byte)) error {
 	f := func(msg *nats.Msg) {
-		h(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId())
+		h(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), msg.Data)
 	}
 	return r.m.queueSubscribe(queue, sbj.String(), f)
 }
@@ -122,7 +122,7 @@ func (r *telemetryRoute) Subscribe(deviceId string, f func(msg *Msg, deviceId st
 	}
 	sbj := tlm_client.TelemetryDeviceStream.WithId(deviceId)
 	h := func(msg *nats.Msg) {
-		f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), msg.Header.Get("__msg"), msg.Data)
+		f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), msg.Header.Get(HeaderMsgName), msg.Data)
 	}
 	return r.m.subscribe(sbj, h)
 }
@@ -136,7 +136,7 @@ func (r *telemetryRoute) QueueSubscribe(queue string, deviceId string, f func(ms
 	}
 	sbj := tlm_client.TelemetryDeviceStream.WithId(deviceId)
 	h := func(msg *nats.Msg) {
-		f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), msg.Header.Get("__msg"), msg.Data)
+		f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), msg.Header.Get(HeaderMsgName), msg.Data)
 	}
 	return r.m.queueSubscribe(queue, sbj, h)
 }
@@ -262,7 +262,7 @@ func (r *commandRoute) Request(deviceId string, cmd proto.Message, timeout time.
 func (r *commandRoute) RequestRaw(deviceId string, cmd ProtoCmdDesc, timeout time.Duration) (ProtoCmdDesc, error) {
 	sbj := device_client.CommandRequest.WithId(deviceId)
 	h := nats.Header{
-		"__msg": []string{cmd.Name},
+		HeaderMsgName: []string{cmd.Name},
 	}
 
 	resp, err := r.m.request(sbj, cmd.Payload, h, timeout)
@@ -271,7 +271,7 @@ func (r *commandRoute) RequestRaw(deviceId string, cmd ProtoCmdDesc, timeout tim
 	}
 
 	return ProtoCmdDesc{
-		Name:    resp.Header.Get("__msg"),
+		Name:    resp.Header.Get(HeaderMsgName),
 		Payload: resp.Data,
 	}, nil
 }
@@ -317,8 +317,8 @@ func (r *configRoute) Publish(deviceId string, cmd proto.Message, t time.Time) e
 func (r *configRoute) PublishRaw(deviceId string, cmd ProtoCmdDesc, t time.Time) error {
 	sbj := device_client.ConfigRequest.WithId(deviceId)
 	h := nats.Header{
-		"__msg":  []string{cmd.Name},
-		"__time": []string{t.Format(time.RFC3339Nano)},
+		HeaderMsgName: []string{cmd.Name},
+		HeaderTime:    []string{t.Format(time.RFC3339Nano)},
 	}
 
 	err := r.m.publish(sbj, cmd.Payload, h)
@@ -349,7 +349,7 @@ func (r *reportedPropertiesRoute) Subscribe(deviceId string, f func(msg *Msg, de
 	}
 	sbj := cfg_client.ReportedPropertiesStream.WithId(deviceId)
 	h := func(msg *nats.Msg) {
-		f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), msg.Header.Get("__msg"), msg.Data)
+		f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), msg.Header.Get(HeaderMsgName), msg.Data)
 	}
 	return r.m.subscribe(sbj, h)
 }
@@ -363,7 +363,7 @@ func (r *reportedPropertiesRoute) QueueSubscribe(queue string, deviceId string, 
 	}
 	sbj := cfg_client.ReportedPropertiesStream.WithId(deviceId)
 	h := func(msg *nats.Msg) {
-		f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), msg.Header.Get("__msg"), msg.Data)
+		f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), msg.Header.Get(HeaderMsgName), msg.Data)
 	}
 	return r.m.queueSubscribe(queue, sbj, h)
 }

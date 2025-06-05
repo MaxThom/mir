@@ -48,9 +48,9 @@ func (r serverRoutes) NewSubject(module, version, function string, extra ...stri
 // <version>: version of the data in the stream (v1alpha, v1, etc)
 // <function>: refer to the exact function of the stream
 // <extra>: any extra token you want to add
-func (r *serverRoutes) Subscribe(sbj serverSubject, h func(msg *Msg, clientId string)) error {
+func (r *serverRoutes) Subscribe(sbj serverSubject, h func(msg *Msg, clientId string, data []byte)) error {
 	f := func(msg *nats.Msg) {
-		h(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId())
+		h(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), msg.Data)
 	}
 	return r.m.subscribe(sbj.String(), f)
 }
@@ -62,9 +62,9 @@ func (r *serverRoutes) Subscribe(sbj serverSubject, h func(msg *Msg, clientId st
 // <version>: version of the data in the stream (v1alpha, v1, etc)
 // <function>: refer to the exact function of the stream
 // <extra>: any extra token you want to add
-func (r *serverRoutes) QueueSubscribe(queue string, sbj serverSubject, h func(msg *Msg, clientId string)) error {
+func (r *serverRoutes) QueueSubscribe(queue string, sbj serverSubject, h func(msg *Msg, clientId string, data []byte)) error {
 	f := func(msg *nats.Msg) {
-		h(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId())
+		h(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), msg.Data)
 	}
 	return r.m.queueSubscribe(queue, sbj.String(), f)
 }
@@ -77,7 +77,10 @@ func (r *serverRoutes) PublishProto(sbj serverSubject, data proto.Message) error
 		return fmt.Errorf("error serializing data: %w", err)
 
 	}
-	return r.m.publish(sbj.String(), b, nats.Header{})
+
+	h := nats.Header{}
+	h.Set(HeaderMsgName, string(data.ProtoReflect().Descriptor().FullName()))
+	return r.m.publish(sbj.String(), b, h)
 }
 
 // Publish json data to a custom event stream from serve
@@ -91,7 +94,7 @@ func (r *serverRoutes) PublishJson(sbj serverSubject, data any) error {
 	return r.m.publish(sbj.String(), b, nats.Header{})
 }
 
-// Publish data to a custom event stream from serve
+// Publish data to a custom server stream from serve
 func (r *serverRoutes) Publish(sbj serverSubject, data []byte) error {
 	sbj[1] = r.m.GetInstanceName()
 	return r.m.publish(sbj.String(), data, nats.Header{})

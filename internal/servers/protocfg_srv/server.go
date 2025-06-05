@@ -747,7 +747,7 @@ func publishDesiredPropertiesEvent(m *mir.Mir, msg *mir.Msg, name, namespace, de
 	if err != nil {
 		return err
 	}
-	return m.Event().Publish(mir.NewEventSubjectString(cfg_client.DesiredPropertiesEvent.WithId(deviceId)),
+	return m.Event().Publish(m.Event().NewSubjectString(cfg_client.DesiredPropertiesEvent.WithId(deviceId)),
 		mir_v1.EventSpec{
 			Type:    mir_v1.EventTypeNormal,
 			Reason:  "DeviceDesiredProps",
@@ -765,7 +765,7 @@ func publishReportedPropertiesEvent(m *mir.Mir, msg *mir.Msg, name, namespace, d
 	if err != nil {
 		return err
 	}
-	return m.Event().Publish(mir.NewEventSubjectString(cfg_client.ReportedPropertiesEvent.WithId(deviceId)),
+	return m.Event().Publish(m.Event().NewSubjectString(cfg_client.ReportedPropertiesEvent.WithId(deviceId)),
 		mir_v1.EventSpec{
 			Type:    mir_v1.EventTypeNormal,
 			Reason:  "DeviceReportedProps",

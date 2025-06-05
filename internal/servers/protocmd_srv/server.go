@@ -402,7 +402,7 @@ func publishCommandEvent(m *mir.Mir, msg *mir.Msg, name, namespace string, cmd *
 	if err != nil {
 		return err
 	}
-	return m.Event().Publish(mir.NewEventSubjectString(cmd_client.DeviceCommandEvent.WithId(cmd.DeviceId)),
+	return m.Event().Publish(m.Event().NewSubjectString(cmd_client.DeviceCommandEvent.WithId(cmd.DeviceId)),
 		mir_v1.EventSpec{
 			Type:    mir_v1.EventTypeNormal,
 			Reason:  "DeviceCommand",

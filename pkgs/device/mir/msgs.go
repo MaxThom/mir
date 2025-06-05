@@ -16,6 +16,11 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
+const (
+	HeaderMsgName = "mir-msg"
+	HeaderTime    = "mir-time"
+)
+
 var (
 	msgHandlers map[string]func(msg *nats.Msg, m *Mir) error
 	msgSender   func(msg *nats.Msg) error
@@ -54,7 +59,7 @@ func DefinedCommandHandler(msg *nats.Msg, m *Mir) error {
 	if msg.Header.Get("mir-request-encoding") == "mir-zstd" {
 		shouldZstd = true
 	}
-	descName := msg.Header.Get("__msg")
+	descName := msg.Header.Get(HeaderMsgName)
 	_, err := m.schemaReg.FindDescriptorByName(protoreflect.FullName(descName))
 	if err != nil {
 		return sendReplyOrAck(m.b, msg, &devicev1.Error{
@@ -92,13 +97,9 @@ func DefinedCommandHandler(msg *nats.Msg, m *Mir) error {
 }
 
 func DefinedConfigHandler(msg *nats.Msg, m *Mir) error {
-	descName := msg.Header.Get("__msg")
-	timeStr := msg.Header.Get("__time")
-	// _, err := m.schemaReg.FindDescriptorByName(protoreflect.FullName(descName))
-	// if err != nil {
-	// 	return fmt.Errorf("device error while looking for config descriptor: %w", err)
-	// }
-	updTime, err := time.Parse(time.RFC3339, timeStr)
+	descName := msg.Header.Get(HeaderMsgName)
+	timeStr := msg.Header.Get(HeaderTime)
+	updTime, err := time.Parse(time.RFC3339Nano, timeStr)
 	if err != nil {
 		return fmt.Errorf("device error while decoding time: %w", err)
 	}
@@ -141,7 +142,7 @@ func sendReplyOrAck(bus *bus.BusConn, msg *nats.Msg, m protoreflect.ProtoMessage
 		if err != nil {
 			return err
 		}
-		h.Add("__msg", string(m.ProtoReflect().Descriptor().FullName()))
+		h.Add(HeaderMsgName, string(m.ProtoReflect().Descriptor().FullName()))
 
 		data := bResp
 		if shouldZstdCompress {
@@ -174,7 +175,7 @@ func (m Mir) sendProtoMsg(subject string, protoMsg protoreflect.ProtoMessage, h 
 	if err != nil {
 		return err
 	}
-	h.Add("__msg", string(protoMsg.ProtoReflect().Descriptor().FullName()))
+	h.Add(HeaderMsgName, string(protoMsg.ProtoReflect().Descriptor().FullName()))
 
 	data := bResp
 	if shouldZstdCompress {

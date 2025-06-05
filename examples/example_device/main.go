@@ -39,6 +39,8 @@ func main() {
 		panic(err)
 	}
 
+	m.SendData(m.NewSubject("test", "v1", "send"), []byte("hello"), mir.Header{})
+
 	// Wait for interrupt signal
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)

@@ -345,7 +345,7 @@ func TestStoreSaveMsg(t *testing.T) {
 		Subject: subject,
 		Data:    tlmByte,
 		Header: nats.Header{
-			"_msg": []string{string(tlm.ProtoReflect().Descriptor().Name())},
+			HeaderMsgName: []string{string(tlm.ProtoReflect().Descriptor().Name())},
 		},
 	}
 
@@ -394,7 +394,7 @@ func TestStoreSaveMsgWithTTL(t *testing.T) {
 		Subject: subject,
 		Data:    tlmByte,
 		Header: nats.Header{
-			"_msg": []string{string(tlm.ProtoReflect().Descriptor().Name())},
+			HeaderMsgName: []string{string(tlm.ProtoReflect().Descriptor().Name())},
 		},
 	}
 
@@ -450,7 +450,7 @@ func TestStoreDeleteMsgByBatch(t *testing.T) {
 		Subject: subject,
 		Data:    tlmByte,
 		Header: nats.Header{
-			"_msg": []string{string(tlm.ProtoReflect().Descriptor().Name())},
+			HeaderMsgName: []string{string(tlm.ProtoReflect().Descriptor().Name())},
 		},
 	}
 	for i := 0; i < 10; i++ {
@@ -511,7 +511,7 @@ func TestStoreSwapMsgByBatchLimit(t *testing.T) {
 		Subject: subject,
 		Data:    tlmByte,
 		Header: nats.Header{
-			"_msg": []string{string(tlm.ProtoReflect().Descriptor().Name())},
+			HeaderMsgName: []string{string(tlm.ProtoReflect().Descriptor().Name())},
 		},
 	}
 	for i := 0; i < 10; i++ {
@@ -577,7 +577,7 @@ func TestStoreSwapMsgByBatch(t *testing.T) {
 		Subject: subject,
 		Data:    tlmByte,
 		Header: nats.Header{
-			"_msg": []string{string(tlm.ProtoReflect().Descriptor().Name())},
+			HeaderMsgName: []string{string(tlm.ProtoReflect().Descriptor().Name())},
 		},
 	}
 	for i := 0; i < 10; i++ {

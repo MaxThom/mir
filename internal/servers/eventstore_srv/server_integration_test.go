@@ -138,7 +138,7 @@ func TestPublishEventStoreNormal(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	sbj := mir.NewEventSubject("event_test", "v1", "list_req").WithId("0xf86")
+	sbj := mSdk.Event().NewSubject("0xf86", "event_test", "v1", "list_req")
 	name := "list_request_test"
 	namespace := "event_testing_store_normal"
 	triggerChain := []string{"pizza", "toppings"}
@@ -210,7 +210,7 @@ func TestPublishEventStoreNsDefault(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	sbj := mir.NewEventSubject("event_test", "v1", "list_req").WithId("0xf86")
+	sbj := mSdk.Event().NewSubject("0xf86", "event_test", "v1", "list_req")
 	name := "list_request_test_default"
 	namespace := "default"
 	triggerChain := []string{"pizza", "toppings"}
@@ -317,7 +317,7 @@ func TestPublishDeleteEventsRequest(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	sbj := mir.NewEventSubject("event_test", "v1", "list_req").WithId("0xf86")
+	sbj := mSdk.Event().NewSubject("0xf86", "event_test", "v1", "list_req")
 	name := "list_request_delete_test"
 	namespace := "event_testing"
 	triggerChain := []string{"pizza", "toppings"}

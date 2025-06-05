@@ -34,20 +34,32 @@ type eventRoutes struct {
 	m *Mir
 }
 
-// Access all server routes
+// Access all event routes
 func (m *Mir) Event() *eventRoutes {
 	return &eventRoutes{m: m}
 }
 
-// Create a Event Route subject to liscen data from a device stream
-func NewEventSubject(module, version, function string, extra ...string) eventSubject {
-	return append([]string{"event", "*", module, version, function}, extra...)
+// Create an Event Route subject to liscen data from a device stream.
+// Event have the following format:
+// event.<id>.<module>.<version>.<function>.<extra...>
+//
+// <id> is the subject identifier of the event for publishing or specific subscribing.
+// Use * for <id> to listen to all events.
+func (e eventRoutes) NewSubject(id, module, version, function string, extra ...string) eventSubject {
+	return append([]string{"event", id, module, version, function}, extra...)
 }
 
-func NewEventSubjectString(subject string) eventSubject {
+func (e eventRoutes) NewSubjectString(subject string) eventSubject {
 	return strings.Split(subject, ".")
 }
 
+// Publish an event to the event stream.
+// Parameters:
+//   - sbj: The event subject containing the routing information for the event
+//   - event: The event specification containing the event data to be published
+//   - msg: Optional message context for trigger chain propagation. Can be nil if no trigger chain is needed
+//
+// Returns an error if the event marshaling or publishing fails.
 func (r *eventRoutes) Publish(sbj eventSubject, event mir_v1.EventSpec, msg *Msg) error {
 	h := nats.Header{}
 	if msg != nil && len(msg.GetTriggerChain()) > 0 {
@@ -62,7 +74,7 @@ func (r *eventRoutes) Publish(sbj eventSubject, event mir_v1.EventSpec, msg *Msg
 	return r.m.publish(sbj.String(), b, h)
 }
 
-// Subscribe to event stream
+// Subscribe to all event stream
 func (r *eventRoutes) Subscribe(f func(msg *Msg, subjectId string, req mir_v1.EventSpec, e error)) error {
 	sbj := event_client.EventsStream.WithId("*")
 	return r.m.subscribe(sbj, r.handlerWrapper(f))
@@ -103,7 +115,7 @@ type deviceOnlineEventRoute struct {
 	m *Mir
 }
 
-// Create a new device online event
+// Subscribe to device online event routes
 func (r *eventRoutes) DeviceOnline() *deviceOnlineEventRoute {
 	return &deviceOnlineEventRoute{m: r.m}
 }
@@ -137,7 +149,7 @@ type deviceOfflineEventRoute struct {
 	m *Mir
 }
 
-// Create a new device offline event
+// Subscribe to device offline event routes
 func (r *eventRoutes) DeviceOffline() *deviceOfflineEventRoute {
 	return &deviceOfflineEventRoute{m: r.m}
 }
@@ -171,7 +183,7 @@ type deviceCreateEventRoute struct {
 	m *Mir
 }
 
-// Create a new device create event
+// Subscribe to device create event routes
 func (r *eventRoutes) DeviceCreate() *deviceCreateEventRoute {
 	return &deviceCreateEventRoute{m: r.m}
 }
@@ -205,7 +217,7 @@ type deviceUpdateEventRoute struct {
 	m *Mir
 }
 
-// Create a new device update event
+// Subscribe to device update event routes
 func (r *eventRoutes) DeviceUpdate() *deviceUpdateEventRoute {
 	return &deviceUpdateEventRoute{m: r.m}
 }
@@ -261,7 +273,7 @@ type deviceDeleteEventRoute struct {
 	m *Mir
 }
 
-// Create a new device delete event
+// Subscribe to device delete event routes
 func (r *eventRoutes) DeviceDelete() *deviceDeleteEventRoute {
 	return &deviceDeleteEventRoute{m: r.m}
 }
@@ -295,7 +307,7 @@ type commandEventRoute struct {
 	m *Mir
 }
 
-// Create a new device update event
+// Subscribe to device sent command event
 func (r *eventRoutes) Command() *commandEventRoute {
 	return &commandEventRoute{m: r.m}
 }
@@ -329,7 +341,7 @@ type desiredPropertiesEventRoute struct {
 	m *Mir
 }
 
-// Create a new device desired properties event
+// Subscribe to device desired properties event routes
 func (r *eventRoutes) DesiredProperties() *desiredPropertiesEventRoute {
 	return &desiredPropertiesEventRoute{m: r.m}
 }
@@ -364,7 +376,7 @@ type reportedPropertiesEventRoute struct {
 	m *Mir
 }
 
-// Create a new device reported properties event
+// Subscribe to device reported properties event routes
 func (r *eventRoutes) ReportedProperties() *reportedPropertiesEventRoute {
 	return &reportedPropertiesEventRoute{m: r.m}
 }

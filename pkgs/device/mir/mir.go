@@ -2,6 +2,7 @@ package mir
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"reflect"
@@ -18,6 +19,7 @@ import (
 	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	"github.com/nats-io/nats.go"
 	"github.com/rs/zerolog"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
@@ -497,18 +499,71 @@ func (m Mir) HandleProperties(t proto.Message, handler ...func(proto.Message)) {
 
 type subject string
 
+// Subject in Mir have the following format:
+// device.<device_id>.<module>.<version>.<function>.<extra...>
 func (m Mir) NewSubject(module, version, function string, extra ...string) subject {
 	extra = append([]string{"device", m.cfg.Device.Id, module, version, function}, extra...)
 	return subject(strings.Join(extra, "."))
 }
 
-// Send custom data on a custom route for your own integration
-// use `m.NewSubject` to create a subject
+type Header = nats.Header
+
+// Send custom data on a custom route for your own integration.
+//
+// Use `m.NewSubject` to create a subject.
 // Use the module sdk to subscribe to the subject and process the data
-func (m Mir) SendData(sbj subject, data []byte, h nats.Header) error {
+func (m Mir) SendData(sbj subject, data []byte, h Header) error {
 	return m.sendMsg(&nats.Msg{
 		Subject: string(sbj),
 		Header:  h,
 		Data:    data,
 	})
+}
+
+// Send custom json data on a custom route for your own integration.
+//
+// Use `m.NewSubject` to create a subject.
+// Use the module sdk to subscribe to the subject and process the data
+func (m Mir) SendJsonData(sbj subject, data any, h Header) error {
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	return m.SendData(sbj, jsonData, h)
+}
+
+// Send proto data on a custom route for your own integration.
+//
+// Use `m.NewSubject` to create a subject.
+// Use the module sdk to subscribe to the subject and process the data
+func (m Mir) SendProtoData(sbj subject, data proto.Message, h Header) error {
+	protoData, err := proto.Marshal(data)
+	if err != nil {
+		return err
+	}
+
+	if h == nil {
+		h = nats.Header{}
+	}
+	h.Set(HeaderMsgName, string(data.ProtoReflect().Descriptor().FullName()))
+
+	return m.SendData(sbj, protoData, h)
+}
+
+// Send proto as json data on a custom route for your own integration.
+//
+// Use `m.NewSubject` to create a subject.
+// Use the module sdk to subscribe to the subject and process the data
+func (m Mir) SendProtoJsonData(sbj subject, data proto.Message, h Header) error {
+	jsonData, err := protojson.Marshal(data)
+	if err != nil {
+		return err
+	}
+
+	if h == nil {
+		h = nats.Header{}
+	}
+	h.Set(HeaderMsgName, string(data.ProtoReflect().Descriptor().FullName()))
+
+	return m.SendJsonData(sbj, jsonData, h)
 }

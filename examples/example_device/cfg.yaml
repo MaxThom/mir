@@ -2,7 +2,7 @@ mir:
   target: "nats://127.0.0.1:4222"
   logLevel: "debug"
   device:
-    id: ""
+    id: "example_device"
     idPrefix:
       prefix: ""
       hostname: false
