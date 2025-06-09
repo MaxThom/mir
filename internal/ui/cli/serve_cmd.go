@@ -172,7 +172,7 @@ func run(
 	}
 
 	// Services
-	cc, err := schema_cache.NewMirProtoCache(log, m)
+	cc, err := schema_cache.NewMirSchemaCache(log, m)
 	if err != nil {
 		return err
 	}

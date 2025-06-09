@@ -30,7 +30,7 @@ type ProtoTlmServer struct {
 	devStore       mng.MirStore
 	devWriters     map[string]map[string]proto_lineprotocol.ProtoBytesToLpFn
 	devWritersLock sync.RWMutex
-	schStore       *schema_cache.MirProtoCache
+	schStore       *schema_cache.MirSchemaCache
 }
 
 // TODO prom metics
@@ -87,7 +87,7 @@ func init() {
 	requestErrorTotal.With(prometheus.Labels{"route": "list"}).Add(0)
 }
 
-func NewProtoTlm(logger zerolog.Logger, m *mir.Mir, devStore mng.MirStore, tlmStore ts.TelemetryStore, schemaCache *schema_cache.MirProtoCache) (*ProtoTlmServer, error) {
+func NewProtoTlm(logger zerolog.Logger, m *mir.Mir, devStore mng.MirStore, tlmStore ts.TelemetryStore, schemaCache *schema_cache.MirSchemaCache) (*ProtoTlmServer, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	l = logger.With().Str("srv", "prototlm_server").Logger()
 	srv := &ProtoTlmServer{

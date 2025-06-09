@@ -166,7 +166,7 @@ func run(
 	log.Info().Str("url", cfg.DataBusServer.Url).Str("status", m.Bus.Status().String()).Msg("msg bus status")
 
 	// Services
-	cc, err := schema_cache.NewMirProtoCache(log, m)
+	cc, err := schema_cache.NewMirSchemaCache(log, m)
 	if err != nil {
 		return err
 	}

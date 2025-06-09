@@ -84,6 +84,14 @@ func device(m *mir.Mir) {
 		}); err != nil {
 		fmt.Println("error subscribing to device data")
 	}
+
+	if err := m.Device().Telemetry().Subscribe(
+		"*", func(msg *mir.Msg, deviceId string, protoMsgName string, data []byte) {
+			fmt.Println("device telemetry:", deviceId, string(data))
+		}); err != nil {
+		fmt.Println("error subscribing to device telemetry")
+	}
+
 }
 
 func server(m *mir.Mir) {
