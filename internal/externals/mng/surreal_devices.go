@@ -13,11 +13,7 @@ import (
 	"github.com/surrealdb/surrealdb.go"
 )
 
-var (
-	ErrorListingDevices        = errors.New("error listing devices from database")
-	ErrorNoDeviceFound         = errors.New("no device found with current targets criteria")
-	ErrorDeviceShouldBeCreated = errors.New("device should be created")
-)
+var ()
 
 type deviceWithId struct {
 	Id string `json:"id"`
