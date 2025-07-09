@@ -119,9 +119,6 @@ func (i IdGenerator) IsActive() bool {
 	if i.User {
 		return true
 	}
-	if i.User {
-		return true
-	}
 	if i.Salt != "" {
 		return true
 	}
@@ -373,7 +370,7 @@ func (m Mir) SendProperties(t proto.Message) error {
 func (m Mir) sendSchema() error {
 	bytes, err := proto.Marshal(m.schema)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	return m.sendProtoMsg(core_client.SchemaDeviceStream.WithId(m.GetDeviceId()), &mir_apiv1.SchemaRetrieveResponse{
