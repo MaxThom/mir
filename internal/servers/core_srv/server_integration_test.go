@@ -51,7 +51,7 @@ func TestMain(m *testing.M) {
 	if err := coreSrv.Serve(); err != nil {
 		panic(err)
 	}
-	cc, err := schema_cache.NewMirProtoCache(log, mSdk)
+	cc, err := schema_cache.NewMirSchemaCache(log, mSdk)
 	if err != nil {
 		panic(err)
 	}

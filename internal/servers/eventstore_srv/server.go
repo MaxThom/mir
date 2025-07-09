@@ -24,7 +24,7 @@ type EventStoreServer struct {
 	wg        *sync.WaitGroup
 	m         *mir.Mir
 	store     mng.MirStore
-	schStore  *schema_cache.MirProtoCache
+	schStore  *schema_cache.MirSchemaCache
 }
 
 const (

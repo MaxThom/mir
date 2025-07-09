@@ -165,12 +165,6 @@ func run(
 	}
 	log.Info().Str("url", cfg.Influx.Url).Msg("connected to puthost")
 
-	// m, err := mir.Connect(AppName, cfg.Mir.Url, append(mir.WithDefaultReconnectOpts(), mir.WithDefaultConnectionLogging(log)...)...)
-	// if err != nil {
-	// 	return err
-	// }
-	// log.Info().Str("url", cfg.Mir.Url).Str("status", m.Bus.Status().String()).Msg("msg bus status")
-
 	// Services
 	coreSrv, err := core_srv.NewCore(log, m, mng.NewSurrealMirStore(db))
 	if err != nil {
@@ -178,7 +172,7 @@ func run(
 	}
 
 	// Services
-	cc, err := schema_cache.NewMirProtoCache(log, m)
+	cc, err := schema_cache.NewMirSchemaCache(log, m)
 	if err != nil {
 		return err
 	}

@@ -29,7 +29,7 @@ import (
 type ProtoCmdServer struct {
 	m        *mir.Mir
 	devStore mng.MirStore
-	schStore *schema_cache.MirProtoCache
+	schStore *schema_cache.MirSchemaCache
 }
 
 // TODO prom metics
@@ -72,7 +72,7 @@ func init() {
 	requestErrorTotal.With(prometheus.Labels{"route": "send"}).Add(0)
 }
 
-func NewProtoCmd(logger zerolog.Logger, m *mir.Mir, devStore mng.MirStore, schemaCache *schema_cache.MirProtoCache) (*ProtoCmdServer, error) {
+func NewProtoCmd(logger zerolog.Logger, m *mir.Mir, devStore mng.MirStore, schemaCache *schema_cache.MirSchemaCache) (*ProtoCmdServer, error) {
 	l = logger.With().Str("srv", "protocmd_server").Logger()
 	return &ProtoCmdServer{
 		m:        m,
@@ -402,7 +402,7 @@ func publishCommandEvent(m *mir.Mir, msg *mir.Msg, name, namespace string, cmd *
 	if err != nil {
 		return err
 	}
-	return m.Event().Publish(mir.NewEventSubjectString(cmd_client.DeviceCommandEvent.WithId(cmd.DeviceId)),
+	return m.Event().Publish(m.Event().NewSubjectString(cmd_client.DeviceCommandEvent.WithId(cmd.DeviceId)),
 		mir_v1.EventSpec{
 			Type:    mir_v1.EventTypeNormal,
 			Reason:  "DeviceCommand",

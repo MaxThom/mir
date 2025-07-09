@@ -39,6 +39,19 @@ func main() {
 		panic(err)
 	}
 
+	m.SendData(m.NewSubject("test", "v1", "send"), []byte("hello"), mir.Header{})
+
+	go func() {
+		for {
+			time.Sleep(time.Second * 3)
+			m.SendTelemetry(&example_devicev1.Env{
+				Temperature: int32(24),
+				Humidity:    int32(50),
+				Pressure:    int32(1013),
+			})
+		}
+	}()
+
 	// Wait for interrupt signal
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)

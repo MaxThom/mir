@@ -58,6 +58,32 @@ func (m Msg) GetTriggerChain() []string {
 	return m.Header.Values(HeaderTrigger)
 }
 
+func (m Msg) GetProtoMsgName() string {
+	return m.Header.Get(HeaderMsgName)
+}
+
+func (m *Msg) SetProtoMsgName(b string) {
+	if m.Header == nil {
+		m.Header = nats.Header{}
+	}
+	m.Header.Set(HeaderMsgName, b)
+}
+
+func (m *Msg) GetTime() time.Time {
+	t, err := time.Parse(time.RFC3339Nano, m.Header.Get(HeaderTime))
+	if err != nil {
+		return time.Time{}
+	}
+	return t
+}
+
+func (m *Msg) SetTime(t time.Time) {
+	if m.Header == nil {
+		m.Header = nats.Header{}
+	}
+	m.Header.Set(HeaderTime, t.Format(time.RFC3339Nano))
+}
+
 const (
 	HeaderRequestEnconding = "mir-request-encoding"
 	HeaderContentEncoding  = "mir-content-encoding"
@@ -66,6 +92,8 @@ const (
 	HeaderRoute            = "mir-route"
 	HeaderSubject          = "mir-subject"
 	HeaderZstdEncoding     = "mir-zstd"
+	HeaderMsgName          = "mir-msg"
+	HeaderTime             = "mir-time"
 )
 
 // Establish connection to the Mir server

@@ -34,7 +34,7 @@ func GetTelemetryStreamMsg(deviceId string, t protoreflect.ProtoMessage) (*nats.
 	return &nats.Msg{
 		Subject: TelemetryDeviceStream.WithId(deviceId),
 		Header: nats.Header{
-			"__msg": []string{string(t.ProtoReflect().Descriptor().FullName())},
+			"mir-msg": []string{string(t.ProtoReflect().Descriptor().FullName())},
 		},
 		Data: b,
 	}, nil

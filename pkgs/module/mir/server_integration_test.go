@@ -47,8 +47,8 @@ func TestServerRoutes_Subscribe(t *testing.T) {
 	subject := m.Server().NewSubject("test", "v1", "function")
 	received := make(chan bool)
 
-	err := m.Server().Subscribe(subject, func(msg *Msg, id string) {
-		assert.Equal(t, "test-data", string(msg.Data))
+	err := m.Server().Subscribe(subject, func(msg *Msg, id string, data []byte) {
+		assert.Equal(t, "test-data", string(data))
 		received <- true
 	})
 	assert.NilError(t, err)
@@ -71,12 +71,12 @@ func TestServerRoutes_QueueSubscribe(t *testing.T) {
 	receivedCount1 := 0
 	receivedCount2 := 0
 
-	err := m.Server().QueueSubscribe(queueName, subject, func(msg *Msg, id string) {
+	err := m.Server().QueueSubscribe(queueName, subject, func(msg *Msg, id string, data []byte) {
 		receivedCount1++
 	})
 	assert.NilError(t, err)
 
-	err = m.Server().QueueSubscribe(queueName, subject, func(msg *Msg, id string) {
+	err = m.Server().QueueSubscribe(queueName, subject, func(msg *Msg, id string, data []byte) {
 		receivedCount2++
 	})
 	assert.NilError(t, err)
@@ -214,8 +214,8 @@ func TestServerRoutes_PublishSubscribe(t *testing.T) {
 	received := make(chan bool)
 
 	// Subscribe
-	err := m.Server().Subscribe(subject, func(msg *Msg, clientId string) {
-		assert.Equal(t, "test-data", string(msg.Data))
+	err := m.Server().Subscribe(subject, func(msg *Msg, clientId string, data []byte) {
+		assert.Equal(t, "test-data", string(data))
 		received <- true
 	})
 	assert.NilError(t, err)
@@ -247,9 +247,9 @@ func TestServerRoutes_PublishProto(t *testing.T) {
 	}
 
 	// Subscribe
-	err := m.Server().Subscribe(subject, func(msg *Msg, clientId string) {
+	err := m.Server().Subscribe(subject, func(msg *Msg, clientId string, data []byte) {
 		device := &mir_apiv1.Device{}
-		err := proto.Unmarshal(msg.Data, device)
+		err := proto.Unmarshal(data, device)
 		assert.NilError(t, err)
 		assert.Equal(t, testDevice.Meta.Name, device.Meta.Name)
 		assert.Equal(t, testDevice.Spec.DeviceId, device.Spec.DeviceId)
@@ -286,9 +286,9 @@ func TestServerRoutes_PublishJson(t *testing.T) {
 	}
 
 	// Subscribe
-	err := m.Server().Subscribe(subject, func(msg *Msg, clientId string) {
+	err := m.Server().Subscribe(subject, func(msg *Msg, clientId string, data []byte) {
 		var device mir_v1.Device
-		err := json.Unmarshal(msg.Data, &device)
+		err := json.Unmarshal(data, &device)
 		assert.NilError(t, err)
 		assert.Equal(t, testData.Meta.Name, device.Meta.Name)
 		assert.Equal(t, testData.Spec.DeviceId, device.Spec.DeviceId)

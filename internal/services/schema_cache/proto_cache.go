@@ -13,7 +13,9 @@ import (
 	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/maxthom/mir/pkgs/module/mir"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/dynamicpb"
 )
 
 var (
@@ -43,16 +45,16 @@ func init() {
 	schemaReconcileTotal.With(prometheus.Labels{"source": "event"}).Add(0)
 }
 
-type MirProtoCache struct {
+type MirSchemaCache struct {
 	m           *mir.Mir
 	cache       map[string]cacheEntry
 	cacheLock   sync.RWMutex
 	subscribers []func(deviceId string, device mir_v1.Device, schema mir_proto.MirProtoSchema)
 }
 
-func NewMirProtoCache(logger zerolog.Logger, m *mir.Mir) (*MirProtoCache, error) {
+func NewMirSchemaCache(logger zerolog.Logger, m *mir.Mir) (*MirSchemaCache, error) {
 	l = logger.With().Str("sub", "proto_cache").Logger()
-	cache := &MirProtoCache{
+	cache := &MirSchemaCache{
 		m:     m,
 		cache: make(map[string]cacheEntry),
 	}
@@ -67,13 +69,13 @@ type cacheEntry struct {
 	sch *mir_proto.MirProtoSchema
 }
 
-func (c *MirProtoCache) AddDeviceUpdateSub(fn func(deviceId string, device mir_v1.Device, schema mir_proto.MirProtoSchema)) {
+func (c *MirSchemaCache) AddDeviceUpdateSub(fn func(deviceId string, device mir_v1.Device, schema mir_proto.MirProtoSchema)) {
 	c.subscribers = append(c.subscribers, fn)
 }
 
 // Get the device schema from cache. If missing or refresh schema is true,
 // the cache will be invalidated and schema will be fetch from database or device
-func (c *MirProtoCache) GetDeviceSchema(deviceId string, refreshSchema bool) (*mir_proto.MirProtoSchema, mir_v1.Device, error) {
+func (c *MirSchemaCache) GetDeviceSchema(deviceId string, refreshSchema bool) (*mir_proto.MirProtoSchema, mir_v1.Device, error) {
 	c.cacheLock.RLock()
 	val, ok := c.cache[deviceId]
 	c.cacheLock.RUnlock()
@@ -98,7 +100,7 @@ func (c *MirProtoCache) GetDeviceSchema(deviceId string, refreshSchema bool) (*m
 	return c.cache[deviceId].sch, c.cache[deviceId].dev, nil
 }
 
-func (c *MirProtoCache) FindMessageDescriptor(deviceId string, sch *mir_proto.MirProtoSchema, msgName string) (protoreflect.Descriptor, *mir_proto.MirProtoSchema, error) {
+func (c *MirSchemaCache) FindMessageDescriptor(deviceId string, sch *mir_proto.MirProtoSchema, msgName string) (protoreflect.Descriptor, *mir_proto.MirProtoSchema, error) {
 	desc, err := sch.FindDescriptorByName(protoreflect.FullName(msgName))
 	if err != nil {
 		// If error finding descriptor, we force a hard refresh
@@ -118,7 +120,7 @@ func (c *MirProtoCache) FindMessageDescriptor(deviceId string, sch *mir_proto.Mi
 // If schema missing, get from db.
 // If db missing, fetch from device.
 // If refreshSchema is true, force refresh from db
-func (c *MirProtoCache) GetDeviceSchemaAndDescriptor(deviceId string, descName string, refreshSchema bool) (protoreflect.Descriptor, *mir_proto.MirProtoSchema, mir_v1.Device, error) {
+func (c *MirSchemaCache) GetDeviceSchemaAndDescriptor(deviceId string, descName string, refreshSchema bool) (protoreflect.Descriptor, *mir_proto.MirProtoSchema, mir_v1.Device, error) {
 	sch, dev, err := c.GetDeviceSchema(deviceId, refreshSchema)
 	if err != nil {
 		return nil, nil, dev, err
@@ -139,7 +141,7 @@ func (c *MirProtoCache) GetDeviceSchemaAndDescriptor(deviceId string, descName s
 }
 
 // Get the proto schema from surrealdb, if missing fetch from device
-func (c *MirProtoCache) reconcileDeviceSchema(deviceId string, forceDeviceFetch bool) (mir_v1.Device, *mir_proto.MirProtoSchema, error) {
+func (c *MirSchemaCache) reconcileDeviceSchema(deviceId string, forceDeviceFetch bool) (mir_v1.Device, *mir_proto.MirProtoSchema, error) {
 	// 1. Go get schema in db
 	// 2. If not there, fetch from device
 	// 3. Update db
@@ -205,7 +207,7 @@ func (c *MirProtoCache) reconcileDeviceSchema(deviceId string, forceDeviceFetch 
 	return devResp[0], sch, err
 }
 
-func (c *MirProtoCache) getProtoSchemaFromDevice(deviceId string) (*mir_proto.MirProtoSchema, error) {
+func (c *MirSchemaCache) getProtoSchemaFromDevice(deviceId string) (*mir_proto.MirProtoSchema, error) {
 	sch, err := c.m.Device().Schema().Request(deviceId)
 	if err != nil {
 		return nil, err
@@ -214,7 +216,7 @@ func (c *MirProtoCache) getProtoSchemaFromDevice(deviceId string) (*mir_proto.Mi
 	return sch, nil
 }
 
-func (c *MirProtoCache) deviceUpdateSub(msg *mir.Msg, deviceId string, device mir_v1.Device, err error) {
+func (c *MirSchemaCache) deviceUpdateSub(msg *mir.Msg, deviceId string, device mir_v1.Device, err error) {
 	// TODO this wont work if one instance of Mir with many cache from flux or cmd. If we have single binary
 	// need a subcomponent header or something
 	// if slices.Contains(msg.GetTriggerChain(), c.m.GetInstanceName()) {
@@ -222,6 +224,14 @@ func (c *MirProtoCache) deviceUpdateSub(msg *mir.Msg, deviceId string, device mi
 	// 	msg.Ack()
 	// 	return
 	// }
+
+	// We dont update the cache with new elements.
+	// It has to be requested first
+	if _, ok := c.cache[deviceId]; !ok {
+		msg.Ack()
+		return
+	}
+
 	if err != nil {
 		l.Error().Str("device_id", deviceId).Err(err).Msg("error deserializing event")
 		return
@@ -246,4 +256,18 @@ func (c *MirProtoCache) deviceUpdateSub(msg *mir.Msg, deviceId string, device mi
 		fn(deviceId, device, *sch)
 	}
 	msg.Ack()
+}
+
+func (c *MirSchemaCache) GetDynamicMsg(deviceId string, protoMsgName string, data []byte) (*dynamicpb.Message, error) {
+	desc, _, _, err := c.GetDeviceSchemaAndDescriptor(deviceId, protoMsgName, false)
+	if err != nil {
+		return nil, err
+	}
+
+	m := dynamicpb.NewMessage(desc.(protoreflect.MessageDescriptor))
+	if err := proto.Unmarshal(data, m); err != nil {
+		return nil, err
+	}
+
+	return m, nil
 }

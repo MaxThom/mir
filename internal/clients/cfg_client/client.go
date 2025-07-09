@@ -81,7 +81,7 @@ func GetReportedPropertiesStreamMsg(deviceId string, t proto.Message) (*nats.Msg
 	return &nats.Msg{
 		Subject: ReportedPropertiesStream.WithId(deviceId),
 		Header: nats.Header{
-			"__msg": []string{string(t.ProtoReflect().Descriptor().FullName())},
+			"mir-msg": []string{string(t.ProtoReflect().Descriptor().FullName())},
 		},
 		Data: b,
 	}, nil

@@ -33,7 +33,7 @@ type ProtoCfgServer struct {
 	wg        *sync.WaitGroup
 	m         *mir.Mir
 	devStore  mng.MirStore
-	schStore  *schema_cache.MirProtoCache
+	schStore  *schema_cache.MirSchemaCache
 }
 
 const (
@@ -96,7 +96,7 @@ func init() {
 	requestErrorTotal.With(prometheus.Labels{"route": "send"}).Add(0)
 }
 
-func NewProtoCfg(logger zerolog.Logger, m *mir.Mir, store mng.MirStore, schemaCache *schema_cache.MirProtoCache) (*ProtoCfgServer, error) {
+func NewProtoCfg(logger zerolog.Logger, m *mir.Mir, store mng.MirStore, schemaCache *schema_cache.MirSchemaCache) (*ProtoCfgServer, error) {
 	l = logger.With().Str("srv", "protocfg_server").Logger()
 	ctx, cancelFn := context.WithCancel(context.Background())
 	return &ProtoCfgServer{
@@ -747,7 +747,7 @@ func publishDesiredPropertiesEvent(m *mir.Mir, msg *mir.Msg, name, namespace, de
 	if err != nil {
 		return err
 	}
-	return m.Event().Publish(mir.NewEventSubjectString(cfg_client.DesiredPropertiesEvent.WithId(deviceId)),
+	return m.Event().Publish(m.Event().NewSubjectString(cfg_client.DesiredPropertiesEvent.WithId(deviceId)),
 		mir_v1.EventSpec{
 			Type:    mir_v1.EventTypeNormal,
 			Reason:  "DeviceDesiredProps",
@@ -765,7 +765,7 @@ func publishReportedPropertiesEvent(m *mir.Mir, msg *mir.Msg, name, namespace, d
 	if err != nil {
 		return err
 	}
-	return m.Event().Publish(mir.NewEventSubjectString(cfg_client.ReportedPropertiesEvent.WithId(deviceId)),
+	return m.Event().Publish(m.Event().NewSubjectString(cfg_client.ReportedPropertiesEvent.WithId(deviceId)),
 		mir_v1.EventSpec{
 			Type:    mir_v1.EventTypeNormal,
 			Reason:  "DeviceReportedProps",
