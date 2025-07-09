@@ -1,0 +1,45 @@
+services:
+  postgresql:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgresql_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: mir
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: mir-operator
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root -d mir"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@mir.ca
+      PGADMIN_DEFAULT_PASSWORD: mir-operator
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      ALLOW_SPECIAL_EMAIL_DOMAINS: "local"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+    depends_on:
+      - postgresql
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+      - ./pgadmin_servers.json:/pgadmin4/servers.json
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    ports:
+      - "9187:9187"
+    environment:
+      DATA_SOURCE_NAME: "postgresql://admin:mir-operator@postgresql:5432/mir?sslmode=disable"
+    depends_on:
+      - postgresql
+
+volumes:
+  postgresql_data:
+  pgadmin_data:
