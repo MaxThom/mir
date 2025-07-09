@@ -12,10 +12,7 @@ import (
 	"github.com/surrealdb/surrealdb.go"
 )
 
-var (
-	ErrorListingEvents = errors.New("error listing events from database")
-	ErrorNoEventFound  = errors.New("no events found with current targets criteria")
-)
+var ()
 
 const (
 	surrealEventTable string = "events"
@@ -27,8 +24,8 @@ type eventWithId struct {
 }
 
 func (s *surrealMirStore) ListEvent(t mir_v1.EventTarget) ([]mir_v1.Event, error) {
-	q, v := createListQueryForEvents(t)
-	devs, err := executeQueryForType[[]mir_v1.Event](s.db, q, v)
+	q, v := createSurrealListQueryForEvents(t)
+	devs, err := executeSurrealQueryForType[[]mir_v1.Event](s.db, q, v)
 	if err != nil {
 		return nil, errors.Wrap(err, ErrorListingDevices.Error())
 	}
@@ -40,8 +37,8 @@ func (s *surrealMirStore) CreateEvent(e mir_v1.Event) (mir_v1.Event, error) {
 	if err := e.Validate(); err != nil {
 		return mir_v1.Event{}, err
 	}
-	q, v := createIsObjectUniqueQuery(surrealEventTable, e.Meta.Name, e.Meta.Namespace)
-	respCheck, err := executeQueryForType[[]mir_v1.Event](s.db, q, v)
+	q, v := createSurrealIsObjectUniqueQuery(surrealEventTable, e.Meta.Name, e.Meta.Namespace)
+	respCheck, err := executeSurrealQueryForType[[]mir_v1.Event](s.db, q, v)
 	if err != nil {
 		return mir_v1.Event{}, fmt.Errorf("%w for event %s/%s: %w", mir_v1.ErrorDbExecutingQuery, e.Meta.Name, e.Meta.Namespace, err)
 	}
@@ -83,7 +80,7 @@ func (s *surrealMirStore) UpdateEvent(t mir_v1.ObjectTarget, upd mir_v1.EventUpd
 	if upd.Meta != nil && upd.Meta.Namespace != nil {
 		obj.Meta.Namespace = *upd.Meta.Namespace
 	}
-	if err := validateObjectMetaForUpdate(s.db, surrealEventTable, t, obj); err != nil {
+	if err := s.validateObjectMetaForUpdate(surrealEventTable, t, obj); err != nil {
 		return nil, err
 	}
 
@@ -92,11 +89,11 @@ func (s *surrealMirStore) UpdateEvent(t mir_v1.ObjectTarget, upd mir_v1.EventUpd
 	// Modify is a patch
 	q := ""
 	v := map[string]any{}
-	q, v = createUpdateQueryForEvents(t, upd)
+	q, v = createSurrealUpdateQueryForEvents(t, upd)
 	if q == "" {
 		return s.ListEvent(mir_v1.EventTarget{ObjectTarget: t})
 	}
-	respDb, err := executeQueryForType[[]mir_v1.Event](s.db, q, v)
+	respDb, err := executeSurrealQueryForType[[]mir_v1.Event](s.db, q, v)
 	if err != nil {
 		return nil, errors.Wrap(err, mir_v1.ErrorDbExecutingQuery.Error())
 	}
@@ -117,7 +114,7 @@ func (s *surrealMirStore) MergeEvent(t mir_v1.ObjectTarget, patch json.RawMessag
 			return nil, fmt.Errorf("unknown fields in json patch: %w", err)
 		}
 
-		if err := validateObjectMetaForUpdate(s.db, surrealEventTable, t, event.Object); err != nil {
+		if err := s.validateObjectMetaForUpdate(surrealEventTable, t, event.Object); err != nil {
 			return nil, err
 		}
 
@@ -128,12 +125,12 @@ func (s *surrealMirStore) MergeEvent(t mir_v1.ObjectTarget, patch json.RawMessag
 			patch = nullRegEx.ReplaceAll(patch, []byte("${1}NONE"))
 			qSb.Write(patch)
 			qSb.WriteString(" WHERE ")
-			qSb.WriteString(createTargetStatementForObjects(t))
+			qSb.WriteString(createSurrealTargetStatementForObjects(t))
 			qSb.WriteString(";")
 		}
 		sql := qSb.String()
 
-		respDb, err := executeQueryForType[[]mir_v1.Event](s.db, sql, map[string]any{})
+		respDb, err := executeSurrealQueryForType[[]mir_v1.Event](s.db, sql, map[string]any{})
 		if err != nil {
 			return nil, errors.Wrap(err, mir_v1.ErrorDbExecutingQuery.Error())
 		}
@@ -147,14 +144,14 @@ func (s *surrealMirStore) DeleteEvent(t mir_v1.EventTarget) ([]mir_v1.Event, err
 		return nil, mir_v1.ErrorNoDeviceTargetProvided
 	}
 
-	qList, vList := createListQueryForEvents(t)
-	respDbList, err := executeQueryForType[[]mir_v1.Event](s.db, qList, vList)
+	qList, vList := createSurrealListQueryForEvents(t)
+	respDbList, err := executeSurrealQueryForType[[]mir_v1.Event](s.db, qList, vList)
 	if err != nil {
 		return nil, mir_v1.ErrorDbExecutingQuery
 	}
 
-	q, v := createDeleteQueryForEvents(t)
-	_, err = executeQueryForType[[]mir_v1.Event](s.db, q, v)
+	q, v := createSurrealDeleteQueryForEvents(t)
+	_, err = executeSurrealQueryForType[[]mir_v1.Event](s.db, q, v)
 	if err != nil {
 		return nil, mir_v1.ErrorDbExecutingQuery
 	}
@@ -162,7 +159,7 @@ func (s *surrealMirStore) DeleteEvent(t mir_v1.EventTarget) ([]mir_v1.Event, err
 	return respDbList, nil
 }
 
-func createUpdateQueryForEvents(t mir_v1.ObjectTarget, upd mir_v1.EventUpdate) (sql string, vars map[string]any) {
+func createSurrealUpdateQueryForEvents(t mir_v1.ObjectTarget, upd mir_v1.EventUpdate) (sql string, vars map[string]any) {
 	var q strings.Builder
 	vars = map[string]any{}
 	if upd.Meta != nil {
@@ -333,7 +330,7 @@ func createUpdateQueryForEvents(t mir_v1.ObjectTarget, upd mir_v1.EventUpdate) (
 		qSb.WriteString("UPDATE events MERGE {")
 		qSb.WriteString(q.String())
 		qSb.WriteString("} WHERE ")
-		qSb.WriteString(createTargetStatementForObjects(t))
+		qSb.WriteString(createSurrealTargetStatementForObjects(t))
 		qSb.WriteString(";")
 	}
 	sql = qSb.String()
@@ -341,12 +338,12 @@ func createUpdateQueryForEvents(t mir_v1.ObjectTarget, upd mir_v1.EventUpdate) (
 	return
 }
 
-func createListQueryForEvents(t mir_v1.EventTarget) (sql string, vars map[string]any) {
+func createSurrealListQueryForEvents(t mir_v1.EventTarget) (sql string, vars map[string]any) {
 	var q strings.Builder
 	vars = map[string]any{}
 
 	q.WriteString("SELECT * FROM events")
-	whereObj := createTargetStatementForEvents(t)
+	whereObj := createSurrealTargetStatementForEvents(t)
 
 	if len(whereObj) > 0 {
 		q.WriteString(" WHERE ")
@@ -361,9 +358,9 @@ func createListQueryForEvents(t mir_v1.EventTarget) (sql string, vars map[string
 	return
 }
 
-func createTargetStatementForEvents(t mir_v1.EventTarget) string {
+func createSurrealTargetStatementForEvents(t mir_v1.EventTarget) string {
 	whereSt := []string{}
-	whereObj := createTargetStatementForObjects(t.ObjectTarget)
+	whereObj := createSurrealTargetStatementForObjects(t.ObjectTarget)
 	if len(whereObj) > 0 {
 		whereSt = append(whereSt, whereObj)
 	}
@@ -386,12 +383,12 @@ func createTargetStatementForEvents(t mir_v1.EventTarget) string {
 	return strings.Join(whereSt, " AND ")
 }
 
-func createDeleteQueryForEvents(t mir_v1.EventTarget) (sql string, vars map[string]any) {
+func createSurrealDeleteQueryForEvents(t mir_v1.EventTarget) (sql string, vars map[string]any) {
 	var q strings.Builder
 	vars = map[string]any{}
 
 	q.WriteString("DELETE FROM events WHERE ")
-	q.WriteString(createTargetStatementForEvents(t))
+	q.WriteString(createSurrealTargetStatementForEvents(t))
 	q.WriteString(";")
 	sql = q.String()
 	return

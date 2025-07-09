@@ -9,7 +9,7 @@ import (
 	"github.com/surrealdb/surrealdb.go"
 )
 
-func createIsObjectUniqueQuery(table, name, ns string) (sql string, vars map[string]any) {
+func createSurrealIsObjectUniqueQuery(table, name, ns string) (sql string, vars map[string]any) {
 	var q strings.Builder
 	q.WriteString("SELECT * FROM " + table + " WHERE ")
 	if name != "" && ns != "" {
@@ -22,7 +22,7 @@ func createIsObjectUniqueQuery(table, name, ns string) (sql string, vars map[str
 	return
 }
 
-func executeQueryForType[T any](db *surrealdb.DB, query string, vars map[string]any) (T, error) {
+func executeSurrealQueryForType[T any](db *surrealdb.DB, query string, vars map[string]any) (T, error) {
 	var empty T
 	result, err := db.Query(query, vars)
 	if err != nil {
@@ -37,12 +37,12 @@ func executeQueryForType[T any](db *surrealdb.DB, query string, vars map[string]
 	return res, nil
 }
 
-func createListQueryForObjects(table string, t mir_v1.ObjectTarget) (sql string, vars map[string]any) {
+func createSurrealListQueryForObjects(table string, t mir_v1.ObjectTarget) (sql string, vars map[string]any) {
 	var q strings.Builder
 	vars = map[string]any{}
 
 	q.WriteString("SELECT * FROM " + table)
-	where := createTargetStatementForObjects(t)
+	where := createSurrealTargetStatementForObjects(t)
 
 	if len(where) > 0 {
 		q.WriteString(" WHERE ")
@@ -53,7 +53,7 @@ func createListQueryForObjects(table string, t mir_v1.ObjectTarget) (sql string,
 	return
 }
 
-func createTargetStatementForObjects(t mir_v1.ObjectTarget) string {
+func createSurrealTargetStatementForObjects(t mir_v1.ObjectTarget) string {
 	var q strings.Builder
 
 	cond := []string{}
@@ -83,23 +83,23 @@ func createTargetStatementForObjects(t mir_v1.ObjectTarget) string {
 	return ti
 }
 
-func createDeleteQueryForObjects(table string, t mir_v1.ObjectTarget) (sql string, vars map[string]any) {
+func createSurrealDeleteQueryForObjects(table string, t mir_v1.ObjectTarget) (sql string, vars map[string]any) {
 	var q strings.Builder
 	vars = map[string]any{}
 
 	q.WriteString("DELETE FROM " + table + " WHERE ")
-	q.WriteString(createTargetStatementForObjects(t))
+	q.WriteString(createSurrealTargetStatementForObjects(t))
 	q.WriteString(";")
 	sql = q.String()
 	return
 }
 
-func validateObjectMetaForUpdate(db *surrealdb.DB, table string, t mir_v1.ObjectTarget, obj mir_v1.Object) error {
+func (s *surrealMirStore) validateObjectMetaForUpdate(table string, t mir_v1.ObjectTarget, obj mir_v1.Object) error {
 	// if err := obj.Validate(); err != nil {
 	// 	return err
 	// }
-	q, v := createListQueryForObjects(table, t)
-	changingObjs, err := executeQueryForType[[]mir_v1.Object](db, q, v)
+	q, v := createSurrealListQueryForObjects(table, t)
+	changingObjs, err := executeSurrealQueryForType[[]mir_v1.Object](s.db, q, v)
 	if err != nil {
 		return fmt.Errorf("%w: %w", mir_v1.ErrorDbExecutingQuery, err)
 	}
@@ -109,8 +109,8 @@ func validateObjectMetaForUpdate(db *surrealdb.DB, table string, t mir_v1.Object
 			return fmt.Errorf("cannot update multiple object as name/namespace '%s/%s' must be unique", obj.Meta.Name, obj.Meta.Namespace)
 		} else if len(changingObjs) == 1 {
 			// Check if name/ns is unique
-			q, v := createIsObjectUniqueQuery(table, obj.Meta.Name, obj.Meta.Namespace)
-			respCheck, err := executeQueryForType[[]mir_v1.Object](db, q, v)
+			q, v := createSurrealIsObjectUniqueQuery(table, obj.Meta.Name, obj.Meta.Namespace)
+			respCheck, err := executeSurrealQueryForType[[]mir_v1.Object](s.db, q, v)
 			if err != nil {
 				return fmt.Errorf("%w: %w", mir_v1.ErrorDbExecutingQuery, err)
 			}
@@ -119,10 +119,10 @@ func validateObjectMetaForUpdate(db *surrealdb.DB, table string, t mir_v1.Object
 			}
 		}
 	} else if obj.Meta.Namespace != "" {
-		q, v := createListQueryForObjects(table, mir_v1.ObjectTarget{
+		q, v := createSurrealListQueryForObjects(table, mir_v1.ObjectTarget{
 			Namespaces: []string{obj.Meta.Namespace},
 		})
-		currentObjs, err := executeQueryForType[[]mir_v1.Object](db, q, v)
+		currentObjs, err := executeSurrealQueryForType[[]mir_v1.Object](s.db, q, v)
 		if err != nil {
 			return fmt.Errorf("%w: %w", mir_v1.ErrorDbExecutingQuery, err)
 		}
@@ -144,10 +144,10 @@ func validateObjectMetaForUpdate(db *surrealdb.DB, table string, t mir_v1.Object
 			}
 		}
 	} else if obj.Meta.Name != "" {
-		q, v := createListQueryForObjects(table, mir_v1.ObjectTarget{
+		q, v := createSurrealListQueryForObjects(table, mir_v1.ObjectTarget{
 			Names: []string{obj.Meta.Name},
 		})
-		currentObjs, err := executeQueryForType[[]mir_v1.Object](db, q, v)
+		currentObjs, err := executeSurrealQueryForType[[]mir_v1.Object](s.db, q, v)
 		if err != nil {
 			return fmt.Errorf("%w: %w", mir_v1.ErrorDbExecutingQuery, err)
 		}
