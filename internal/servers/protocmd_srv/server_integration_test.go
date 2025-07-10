@@ -28,7 +28,7 @@ import (
 	mirDevice "github.com/maxthom/mir/pkgs/device/mir"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/maxthom/mir/pkgs/module/mir"
-	"github.com/surrealdb/surrealdb.go"
+	"github.com/maxthom/surrealdb.go"
 	"gotest.tools/assert"
 )
 

@@ -9,14 +9,18 @@ import (
 	"time"
 
 	"github.com/maxthom/mir/pkgs/mir_v1"
+	"github.com/maxthom/surrealdb.go"
 	"github.com/pkg/errors"
-	"github.com/surrealdb/surrealdb.go"
 )
 
 var (
 	ErrorListingDevices        = errors.New("error listing devices from database")
 	ErrorNoDeviceFound         = errors.New("no device found with current targets criteria")
 	ErrorDeviceShouldBeCreated = errors.New("device should be created")
+)
+
+const (
+	surrealDeviceTable string = "devices"
 )
 
 type deviceWithId struct {
@@ -56,16 +60,11 @@ func (s *surrealMirStore) CreateDevice(d mir_v1.Device) (mir_v1.Device, error) {
 	}
 
 	// Create
-	respDb, err := s.db.Create("devices", d)
+	respDb, err := surrealdb.Create[mir_v1.Device](s.db, surrealDeviceTable, d)
 	if err != nil {
 		return mir_v1.Device{}, fmt.Errorf("%w: %w", mir_v1.ErrorDbExecutingQuery, err)
 	}
-	newDev := []mir_v1.Device{}
-	err = surrealdb.Unmarshal(respDb, &newDev)
-	if err != nil {
-		return mir_v1.Device{}, fmt.Errorf("%w for device %s/%s: %w", mir_v1.ErrorDbDeserializingResponse, d.Meta.Name, d.Meta.Namespace, err)
-	}
-	return newDev[0], nil
+	return *respDb, nil
 }
 
 // UpdateDevice This method is too OP
@@ -435,7 +434,7 @@ func createUpdateQueryForDevice(t mir_v1.DeviceTarget, d mir_v1.Device) (sql str
 			if v.IsZero() {
 				sbStatusProps.WriteString("NONE")
 			} else {
-				sbStatusProps.WriteString("\"")
+				sbStatusProps.WriteString("d\"")
 				sbStatusProps.WriteString(v.Format(time.RFC3339Nano))
 				sbStatusProps.WriteString("\"")
 			}
@@ -453,7 +452,7 @@ func createUpdateQueryForDevice(t mir_v1.DeviceTarget, d mir_v1.Device) (sql str
 			if v.IsZero() {
 				sbStatusProps.WriteString("NONE")
 			} else {
-				sbStatusProps.WriteString("\"")
+				sbStatusProps.WriteString("d\"")
 				sbStatusProps.WriteString(v.Format(time.RFC3339Nano))
 				sbStatusProps.WriteString("\"")
 			}

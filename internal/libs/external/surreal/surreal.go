@@ -1,6 +1,6 @@
 package surreal
 
-import "github.com/surrealdb/surrealdb.go"
+import "github.com/maxthom/surrealdb.go"
 
 func ConnectToDb(url, namespace, database, user, password string) (*surrealdb.DB, error) {
 	db, err := surrealdb.New(url)
@@ -8,14 +8,14 @@ func ConnectToDb(url, namespace, database, user, password string) (*surrealdb.DB
 		return nil, err
 	}
 
-	if _, err = db.Signin(map[string]any{
-		"user": user,
-		"pass": password,
+	if _, err = db.SignIn(&surrealdb.Auth{
+		Username: user,
+		Password: password,
 	}); err != nil {
 		return nil, err
 	}
 
-	if _, err = db.Use(namespace, database); err != nil {
+	if err = db.Use(namespace, database); err != nil {
 		return nil, err
 	}
 

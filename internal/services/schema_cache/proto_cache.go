@@ -16,6 +16,8 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/dynamicpb"
+
+	surrealdbModels "github.com/maxthom/surrealdb.go/pkg/models"
 )
 
 var (
@@ -191,7 +193,7 @@ func (c *MirSchemaCache) reconcileDeviceSchema(deviceId string, forceDeviceFetch
 			Schema: mir_v1.Schema{
 				CompressedSchema: compressSch,
 				PackageNames:     sch.GetPackageList(),
-				LastSchemaFetch:  &timeNow,
+				LastSchemaFetch:  &surrealdbModels.CustomDateTime{Time: timeNow},
 			},
 		}),
 	)

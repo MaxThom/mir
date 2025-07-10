@@ -5,7 +5,7 @@ import (
 	"regexp"
 
 	"github.com/maxthom/mir/pkgs/mir_v1"
-	"github.com/surrealdb/surrealdb.go"
+	"github.com/maxthom/surrealdb.go"
 )
 
 var (

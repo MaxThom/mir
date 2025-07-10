@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/maxthom/mir/pkgs/mir_v1"
+	"github.com/maxthom/surrealdb.go"
 	"github.com/pkg/errors"
-	"github.com/surrealdb/surrealdb.go"
 )
 
 var (
@@ -50,16 +50,17 @@ func (s *surrealMirStore) CreateEvent(e mir_v1.Event) (mir_v1.Event, error) {
 	}
 
 	// Create
-	respDb, err := s.db.Create(surrealEventTable, e)
+	respDb, err := surrealdb.Create[mir_v1.Event](s.db, surrealEventTable, e)
 	if err != nil {
 		return mir_v1.Event{}, fmt.Errorf("%w: %w", mir_v1.ErrorDbExecutingQuery, err)
 	}
-	new := []mir_v1.Event{}
-	err = surrealdb.Unmarshal(respDb, &new)
-	if err != nil {
-		return mir_v1.Event{}, fmt.Errorf("%w for event %s/%s: %w", mir_v1.ErrorDbDeserializingResponse, e.Meta.Name, e.Meta.Namespace, err)
-	}
-	return new[0], nil
+	// new := []mir_v1.Event{}
+	// err = surrealdb.Unmarshal(respDb, &new)
+	// if err != nil {
+	// 	return mir_v1.Event{}, fmt.Errorf("%w for event %s/%s: %w", mir_v1.ErrorDbDeserializingResponse, e.Meta.Name, e.Meta.Namespace, err)
+	// }
+	// return new[0], nil
+	return *respDb, nil
 }
 
 // This method is too OP
