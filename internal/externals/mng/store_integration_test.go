@@ -907,13 +907,13 @@ func TestPublishStoreDeviceUpdateStatus(t *testing.T) {
 	}
 
 	// Assert
-	assert.Equal(t, *dUpd.Status.LastHearthbeat, *uResp[0].Status.LastHearthbeat)
+	assert.Equal(t, dUpd.Status.LastHearthbeat.Time.UTC(), uResp[0].Status.LastHearthbeat.UTC())
 	assert.Equal(t, *dUpd.Status.Online, *uResp[0].Status.Online)
 	assert.Equal(t, len(dUpd.Status.Schema.CompressedSchema), len(uResp[0].Status.Schema.CompressedSchema))
 	assert.Equal(t, dUpd.Status.Schema.PackageNames[0], uResp[0].Status.Schema.PackageNames[0])
-	assert.Equal(t, *dUpd.Status.Schema.LastSchemaFetch, *uResp[0].Status.Schema.LastSchemaFetch)
-	assert.Equal(t, dUpd.Status.Properties.Desired["test"], uResp[0].Status.Properties.Desired["test"])
-	assert.Equal(t, dUpd.Status.Properties.Reported["test"], uResp[0].Status.Properties.Reported["test"])
+	assert.Equal(t, dUpd.Status.Schema.LastSchemaFetch.UTC(), uResp[0].Status.Schema.LastSchemaFetch.UTC())
+	assert.Equal(t, dUpd.Status.Properties.Desired["test"].UTC(), uResp[0].Status.Properties.Desired["test"].UTC())
+	assert.Equal(t, dUpd.Status.Properties.Reported["test"].UTC(), uResp[0].Status.Properties.Reported["test"].UTC())
 	_, ok := uResp1[0].Status.Properties.Desired["test"]
 	assert.Equal(t, false, ok)
 	_, ok = uResp1[0].Status.Properties.Reported["test"]
@@ -1293,7 +1293,7 @@ func TestMergeDeviceProperties(t *testing.T) {
 	assert.Equal(t, "new", config["feature3"])
 
 	nested := config["nested"].(map[string]any)
-	assert.Equal(t, float64(456), nested["setting1"])
+	assert.Equal(t, uint64(456), nested["setting1"])
 	assert.Equal(t, "value", nested["setting2"])
 	assert.Equal(t, "new", nested["setting3"])
 
@@ -1301,9 +1301,9 @@ func TestMergeDeviceProperties(t *testing.T) {
 	assert.Equal(t, "online", mergedDevices[0].Properties.Reported["status"])
 
 	metrics := mergedDevices[0].Properties.Reported["metrics"].(map[string]any)
-	assert.Equal(t, float64(2048), metrics["memory"])
+	assert.Equal(t, uint64(2048), metrics["memory"])
 	assert.Equal(t, float64(0.5), metrics["cpu"])
-	assert.Equal(t, float64(75), metrics["disk"])
+	assert.Equal(t, uint64(75), metrics["disk"])
 }
 
 func TestMergeDeviceInvalidJson(t *testing.T) {
@@ -1434,8 +1434,8 @@ func TestPublishEventStoreCreateRequest(t *testing.T) {
 		Payload: j,
 	}).WithStatus(mir_v1.EventStatus{
 		Count:   1,
-		FirstAt: surrealTime(time.Now().UTC()),
-		LastAt:  surrealTime(time.Now().UTC()),
+		FirstAt: surrealTimePtr(time.Now().UTC()),
+		LastAt:  surrealTimePtr(time.Now().UTC()),
 	})
 
 	// Act
@@ -1683,7 +1683,7 @@ func TestPublishEventStoreListDateNow(t *testing.T) {
 			"test":     "list_limit",
 		},
 	}).WithStatus(mir_v1.EventStatus{
-		FirstAt: surrealTime(time.Date(2025, 05, 7, 13, 0, 0, 0, time.UTC)),
+		FirstAt: surrealTimePtr(time.Date(2025, 05, 7, 13, 0, 0, 0, time.UTC)),
 	})
 	m2 := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "list_event_2_lbl",
@@ -1693,7 +1693,7 @@ func TestPublishEventStoreListDateNow(t *testing.T) {
 			"test":     "list_limit",
 		},
 	}).WithStatus(mir_v1.EventStatus{
-		FirstAt: surrealTime(time.Date(2025, 05, 7, 12, 0, 0, 0, time.UTC)),
+		FirstAt: surrealTimePtr(time.Date(2025, 05, 7, 12, 0, 0, 0, time.UTC)),
 	})
 	m3 := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "list_event_3_lbl",
@@ -1703,7 +1703,7 @@ func TestPublishEventStoreListDateNow(t *testing.T) {
 			"test":     "list_limit",
 		},
 	}).WithStatus(mir_v1.EventStatus{
-		FirstAt: surrealTime(time.Date(2025, 05, 5, 0, 0, 0, 0, time.UTC)),
+		FirstAt: surrealTimePtr(time.Date(2025, 05, 5, 0, 0, 0, 0, time.UTC)),
 	})
 	// Act
 	mResp, err := mirStore.CreateEvent(m)
@@ -1750,7 +1750,7 @@ func TestPublishEventStoreListDateToFrom(t *testing.T) {
 			"test":     "list_limit",
 		},
 	}).WithStatus(mir_v1.EventStatus{
-		FirstAt: surrealTime(time.Date(2025, 05, 7, 13, 0, 0, 0, time.UTC)),
+		FirstAt: surrealTimePtr(time.Date(2025, 05, 7, 13, 0, 0, 0, time.UTC)),
 	})
 	m2 := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "list_event_2_lbl",
@@ -1760,7 +1760,7 @@ func TestPublishEventStoreListDateToFrom(t *testing.T) {
 			"test":     "list_limit",
 		},
 	}).WithStatus(mir_v1.EventStatus{
-		FirstAt: surrealTime(time.Date(2025, 05, 7, 12, 0, 0, 0, time.UTC)),
+		FirstAt: surrealTimePtr(time.Date(2025, 05, 7, 12, 0, 0, 0, time.UTC)),
 	})
 	m3 := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "list_event_3_lbl",
@@ -1770,7 +1770,7 @@ func TestPublishEventStoreListDateToFrom(t *testing.T) {
 			"test":     "list_limit",
 		},
 	}).WithStatus(mir_v1.EventStatus{
-		FirstAt: surrealTime(time.Date(2025, 05, 5, 0, 0, 0, 0, time.UTC)),
+		FirstAt: surrealTimePtr(time.Date(2025, 05, 5, 0, 0, 0, 0, time.UTC)),
 	})
 	// Act
 	mResp, err := mirStore.CreateEvent(m)
@@ -1983,8 +1983,8 @@ func TestPublishEventStoreUpdateMetaLblAnnoRequest(t *testing.T) {
 		Payload: j,
 	}).WithStatus(mir_v1.EventStatus{
 		Count:   1,
-		FirstAt: surrealTime(time.Now().UTC()),
-		LastAt:  surrealTime(time.Now().UTC()),
+		FirstAt: surrealTimePtr(time.Now().UTC()),
+		LastAt:  surrealTimePtr(time.Now().UTC()),
 	})
 	upd := mir_v1.EventUpdate{
 		Meta: &mir_v1.MetaUpdate{
@@ -2059,8 +2059,8 @@ func TestPublishEventStoreUpdateNameRequest(t *testing.T) {
 		Payload: j,
 	}).WithStatus(mir_v1.EventStatus{
 		Count:   1,
-		FirstAt: surrealTime(time.Now().UTC()),
-		LastAt:  surrealTime(time.Now().UTC()),
+		FirstAt: surrealTimePtr(time.Now().UTC()),
+		LastAt:  surrealTimePtr(time.Now().UTC()),
 	})
 	upd := mir_v1.EventUpdate{
 		Meta: &mir_v1.MetaUpdate{
@@ -2229,7 +2229,6 @@ func TestPublishEventStoreUpdateSpecRequest(t *testing.T) {
 	}
 	jUpdMap := map[string]any{
 		"caca_mou": "bien_mou",
-		"key3":     nil,
 	}
 	jUpd, err := json.Marshal(jUpdMap)
 	if err != nil {
@@ -2260,8 +2259,8 @@ func TestPublishEventStoreUpdateSpecRequest(t *testing.T) {
 		Payload: j,
 	}).WithStatus(mir_v1.EventStatus{
 		Count:   1,
-		FirstAt: surrealTime(time.Now().UTC()),
-		LastAt:  surrealTime(time.Now().UTC()),
+		FirstAt: surrealTimePtr(time.Now().UTC()),
+		LastAt:  surrealTimePtr(time.Now().UTC()),
 	})
 	upd := mir_v1.EventUpdate{
 		Spec: &mir_v1.EventUpdateSpec{
@@ -2277,6 +2276,7 @@ func TestPublishEventStoreUpdateSpecRequest(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+	time.Sleep(2 * time.Second)
 
 	uResp, err := mirStore.UpdateEvent(tar, upd)
 	if err != nil {
@@ -2336,8 +2336,8 @@ func TestPublishEventStoreUpdateStatusRequest(t *testing.T) {
 		Payload: j,
 	}).WithStatus(mir_v1.EventStatus{
 		Count:   1,
-		FirstAt: surrealTime(time.Now().UTC()),
-		LastAt:  surrealTime(time.Now().UTC()),
+		FirstAt: surrealTimePtr(time.Now().UTC()),
+		LastAt:  surrealTimePtr(time.Now().UTC()),
 	})
 	upd := mir_v1.EventUpdate{
 		Status: &mir_v1.EventUpdateStatus{
@@ -2361,8 +2361,8 @@ func TestPublishEventStoreUpdateStatusRequest(t *testing.T) {
 	// Assert
 	assert.Equal(t, mResp.Meta.Name, m.Meta.Name)
 	assert.Equal(t, uResp[0].Status.Count, *upd.Status.Count)
-	assert.Equal(t, uResp[0].Status.LastAt, *upd.Status.LastAt)
-	assert.Equal(t, uResp[0].Status.FirstAt, *upd.Status.FirstAt)
+	assert.Equal(t, uResp[0].Status.LastAt.UTC(), upd.Status.LastAt.UTC())
+	assert.Equal(t, uResp[0].Status.FirstAt.UTC(), upd.Status.FirstAt.UTC())
 }
 
 func TestPbulishListDeviceWithEvents(t *testing.T) {

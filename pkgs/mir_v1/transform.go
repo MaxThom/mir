@@ -551,8 +551,8 @@ func MirEventToProtoEvent(e Event) *mir_apiv1.Event {
 		},
 		Status: &mir_apiv1.EventStatus{
 			Count:   int32(e.Status.Count),
-			FirstAt: AsProtoTimestampFromSurreal(&e.Status.FirstAt),
-			LastAt:  AsProtoTimestampFromSurreal(&e.Status.LastAt),
+			FirstAt: AsProtoTimestampFromSurreal(e.Status.FirstAt),
+			LastAt:  AsProtoTimestampFromSurreal(e.Status.LastAt),
 		},
 	}
 }
@@ -610,8 +610,8 @@ func ProtoEventToMirEvent(e *mir_apiv1.Event) Event {
 		},
 		Status: EventStatus{
 			Count:   int(e.Status.Count),
-			FirstAt: AsSurrealTime(e.Status.FirstAt),
-			LastAt:  AsSurrealTime(e.Status.LastAt),
+			FirstAt: AsSurrealTimePtr(e.Status.FirstAt),
+			LastAt:  AsSurrealTimePtr(e.Status.LastAt),
 		},
 	}
 }
@@ -700,6 +700,11 @@ func AsSurrealTime(ts *mir_apiv1.Timestamp) surrealdbModels.CustomDateTime {
 		return surrealdbModels.CustomDateTime{}
 	}
 	return surrealdbModels.CustomDateTime{Time: time.Unix(int64(ts.GetSeconds()), int64(ts.GetNanos())).UTC()}
+}
+
+func AsSurrealTimePtr(ts *mir_apiv1.Timestamp) *surrealdbModels.CustomDateTime {
+	t := AsSurrealTime(ts)
+	return &t
 }
 
 func mapToProtoTs(m map[string]surrealdbModels.CustomDateTime) map[string]*mir_apiv1.Timestamp {
