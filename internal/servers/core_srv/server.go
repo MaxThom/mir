@@ -182,7 +182,7 @@ func (s *CoreServer) updateDeviceSub(msg *mir.Msg, clientId string, t mir_v1.Dev
 	// Send config to cfg module
 	// We do it twice, one with dry run to validate the config
 	// It seems slow and redundant, but we must validate the config for all
-	if d.Properties.Desired != nil && len(d.Properties.Desired) > 0 {
+	if len(d.Properties.Desired) > 0 {
 		l.Debug().Str("route", "update").Msg("sending config to cfg module")
 		// props := req.GetProps().GetDesired().Fields
 

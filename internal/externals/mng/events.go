@@ -170,7 +170,7 @@ func createUpdateQueryForEvents(t mir_v1.ObjectTarget, upd mir_v1.EventUpdate) (
 			sb.WriteString("namespace: $NS,")
 			vars["NS"] = *upd.Meta.Namespace
 		}
-		if upd.Meta.Labels != nil && len(upd.Meta.Labels) > 0 {
+		if len(upd.Meta.Labels) > 0 {
 			sb.WriteString("labels: {")
 			for key, val := range upd.Meta.Labels {
 				sb.WriteString("\"")
@@ -186,7 +186,7 @@ func createUpdateQueryForEvents(t mir_v1.ObjectTarget, upd mir_v1.EventUpdate) (
 			}
 			sb.WriteString("},")
 		}
-		if upd.Meta.Annotations != nil && len(upd.Meta.Annotations) > 0 {
+		if len(upd.Meta.Annotations) > 0 {
 			sb.WriteString("annotations: {")
 			for key, val := range upd.Meta.Annotations {
 				sb.WriteString("\"")
@@ -247,7 +247,7 @@ func createUpdateQueryForEvents(t mir_v1.ObjectTarget, upd mir_v1.EventUpdate) (
 					sb.WriteString("namespace: $NSO,")
 					vars["NSO"] = *upd.Spec.RelatedObject.Meta.Namespace
 				}
-				if upd.Spec.RelatedObject.Meta.Labels != nil && len(upd.Spec.RelatedObject.Meta.Labels) > 0 {
+				if len(upd.Spec.RelatedObject.Meta.Labels) > 0 {
 					sb.WriteString("labels: {")
 					for key, val := range upd.Spec.RelatedObject.Meta.Labels {
 						sb.WriteString("\"")
@@ -263,7 +263,7 @@ func createUpdateQueryForEvents(t mir_v1.ObjectTarget, upd mir_v1.EventUpdate) (
 					}
 					sb.WriteString("},")
 				}
-				if upd.Spec.RelatedObject.Meta.Annotations != nil && len(upd.Spec.RelatedObject.Meta.Annotations) > 0 {
+				if len(upd.Spec.RelatedObject.Meta.Annotations) > 0 {
 					sb.WriteString("annotations: {")
 					for key, val := range upd.Spec.RelatedObject.Meta.Annotations {
 						sb.WriteString("\"")

@@ -161,8 +161,7 @@ func (c *MirSchemaCache) reconcileDeviceSchema(deviceId string, forceDeviceFetch
 			return mir_v1.Device{}, nil, fmt.Errorf("device %s not found", deviceId)
 		}
 		if len(devs) > 0 {
-			if devs[0].Status.Schema.CompressedSchema != nil &&
-				len(devs[0].Status.Schema.CompressedSchema) != 0 {
+			if len(devs[0].Status.Schema.CompressedSchema) != 0 {
 				sch, err := mir_proto.DecompressSchema(devs[0].Status.Schema.CompressedSchema)
 				if err == nil {
 					l.Info().Str("device_id", deviceId).Msgf("reconciled schema for %s from db", deviceId)
@@ -229,10 +228,13 @@ func (c *MirSchemaCache) deviceUpdateSub(msg *mir.Msg, deviceId string, device m
 
 	// We dont update the cache with new elements.
 	// It has to be requested first
+	c.cacheLock.RLock()
 	if _, ok := c.cache[deviceId]; !ok {
 		msg.Ack()
+		c.cacheLock.RUnlock()
 		return
 	}
+	c.cacheLock.RUnlock()
 
 	if err != nil {
 		l.Error().Str("device_id", deviceId).Err(err).Msg("error deserializing event")

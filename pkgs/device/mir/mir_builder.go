@@ -320,7 +320,7 @@ func (b builder) build(extraCfg any) (*Mir, error) {
 		cfg.Mir.LocalStore.PersistenceType != PersistentTypeAlways {
 		fieldsErr = append(fieldsErr, "Invalid local store persistence type [nostorage|ifoffline|always]")
 	}
-	if cfg.Mir.LocalStore.DiskSpaceLimit < 0 || cfg.Mir.LocalStore.DiskSpaceLimit > 99 {
+	if cfg.Mir.LocalStore.DiskSpaceLimit > 99 {
 		fieldsErr = append(fieldsErr, "Disk space limit must be a valid pourcentage between 0 and 99")
 	}
 

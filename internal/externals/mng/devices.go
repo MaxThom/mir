@@ -311,7 +311,7 @@ func createUpdateQueryForDevice(t mir_v1.DeviceTarget, d mir_v1.Device) (sql str
 		sbMeta.WriteString("namespace: $NS,")
 		vars["NS"] = d.Meta.Namespace
 	}
-	if d.Meta.Labels != nil && len(d.Meta.Labels) > 0 {
+	if len(d.Meta.Labels) > 0 {
 		sbMeta.WriteString("labels: {")
 		for key, val := range d.Meta.Labels {
 			sbMeta.WriteString("\"")
@@ -327,7 +327,7 @@ func createUpdateQueryForDevice(t mir_v1.DeviceTarget, d mir_v1.Device) (sql str
 		}
 		sbMeta.WriteString("},")
 	}
-	if d.Meta.Annotations != nil && len(d.Meta.Annotations) > 0 {
+	if len(d.Meta.Annotations) > 0 {
 		sbMeta.WriteString("annotations: {")
 		for key, val := range d.Meta.Annotations {
 			sbMeta.WriteString("\"")
@@ -367,7 +367,7 @@ func createUpdateQueryForDevice(t mir_v1.DeviceTarget, d mir_v1.Device) (sql str
 
 	// PROPS
 	var sbProps strings.Builder
-	if d.Properties.Desired != nil && len(d.Properties.Desired) > 0 {
+	if len(d.Properties.Desired) > 0 {
 		x, _ := json.Marshal(d.Properties.Desired)
 		if len(x) > 0 {
 			// Curlies are in the desired json already
@@ -376,7 +376,7 @@ func createUpdateQueryForDevice(t mir_v1.DeviceTarget, d mir_v1.Device) (sql str
 			sbProps.WriteString(",")
 		}
 	}
-	if d.Properties.Reported != nil && len(d.Properties.Reported) > 0 {
+	if len(d.Properties.Reported) > 0 {
 		x, _ := json.Marshal(d.Properties.Reported)
 		if len(x) > 0 {
 			// Curlies are in the desired json already
