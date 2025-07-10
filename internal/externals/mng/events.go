@@ -54,12 +54,6 @@ func (s *surrealMirStore) CreateEvent(e mir_v1.Event) (mir_v1.Event, error) {
 	if err != nil {
 		return mir_v1.Event{}, fmt.Errorf("%w: %w", mir_v1.ErrorDbExecutingQuery, err)
 	}
-	// new := []mir_v1.Event{}
-	// err = surrealdb.Unmarshal(respDb, &new)
-	// if err != nil {
-	// 	return mir_v1.Event{}, fmt.Errorf("%w for event %s/%s: %w", mir_v1.ErrorDbDeserializingResponse, e.Meta.Name, e.Meta.Namespace, err)
-	// }
-	// return new[0], nil
 	return *respDb, nil
 }
 

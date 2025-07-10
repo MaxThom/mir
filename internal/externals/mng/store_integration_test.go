@@ -12,6 +12,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/test_utils"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/maxthom/surrealdb.go"
+	surrealdbModels "github.com/maxthom/surrealdb.go/pkg/models"
 	"gotest.tools/assert"
 )
 
@@ -865,27 +866,27 @@ func TestPublishStoreDeviceUpdateStatus(t *testing.T) {
 	})
 	dUpd := mir_v1.NewDevice().WithStatus(mir_v1.DeviceStatus{
 		Online:         boolPtr(true),
-		LastHearthbeat: timePtr(time.Date(1992, 10, 14, 14, 0, 0, 0, time.UTC)),
+		LastHearthbeat: surrealTimePtr(time.Date(1992, 10, 14, 14, 0, 0, 0, time.UTC)),
 		Schema: mir_v1.Schema{
 			CompressedSchema: []byte{0x12},
 			PackageNames:     []string{"bob"},
-			LastSchemaFetch:  timePtr(time.Date(1992, 10, 14, 14, 0, 0, 0, time.UTC)),
+			LastSchemaFetch:  surrealTimePtr(time.Date(1992, 10, 14, 14, 0, 0, 0, time.UTC)),
 		},
 		Properties: mir_v1.PropertiesTime{
-			Desired: map[string]time.Time{
-				"test": time.Date(1992, 10, 14, 14, 0, 0, 0, time.UTC),
+			Desired: map[string]surrealdbModels.CustomDateTime{
+				"test": surrealdbModels.CustomDateTime{Time: time.Date(1992, 10, 14, 14, 0, 0, 0, time.UTC)},
 			},
-			Reported: map[string]time.Time{
-				"test": time.Date(1992, 10, 14, 14, 0, 0, 0, time.UTC),
+			Reported: map[string]surrealdbModels.CustomDateTime{
+				"test": surrealdbModels.CustomDateTime{Time: time.Date(1992, 10, 14, 14, 0, 0, 0, time.UTC)},
 			},
 		},
 	})
 	dUpd2 := mir_v1.NewDevice().WithStatus(mir_v1.DeviceStatus{
 		Properties: mir_v1.PropertiesTime{
-			Desired: map[string]time.Time{
+			Desired: map[string]surrealdbModels.CustomDateTime{
 				"test": {},
 			},
-			Reported: map[string]time.Time{
+			Reported: map[string]surrealdbModels.CustomDateTime{
 				"test": {},
 			},
 		},
@@ -2341,8 +2342,8 @@ func TestPublishEventStoreUpdateStatusRequest(t *testing.T) {
 	upd := mir_v1.EventUpdate{
 		Status: &mir_v1.EventUpdateStatus{
 			Count:   intPtr(3),
-			FirstAt: timePtr(time.Date(2014, 10, 14, 5, 5, 5, 5, time.UTC)),
-			LastAt:  timePtr(time.Date(2014, 10, 14, 5, 5, 5, 5, time.UTC)),
+			FirstAt: surrealTimePtr(time.Date(2014, 10, 14, 5, 5, 5, 5, time.UTC)),
+			LastAt:  surrealTimePtr(time.Date(2014, 10, 14, 5, 5, 5, 5, time.UTC)),
 		},
 	}
 
@@ -2448,8 +2449,8 @@ func strPtr(s string) *string {
 	return &s
 }
 
-func timePtr(s time.Time) *time.Time {
-	return &s
+func surrealTimePtr(s time.Time) *surrealdbModels.CustomDateTime {
+	return &surrealdbModels.CustomDateTime{Time: s}
 }
 
 func intPtr(s int) *int {

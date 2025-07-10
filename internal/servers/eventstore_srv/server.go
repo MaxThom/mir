@@ -14,6 +14,7 @@ import (
 	"github.com/maxthom/mir/internal/services/schema_cache"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/maxthom/mir/pkgs/module/mir"
+	surrealdbModels "github.com/maxthom/surrealdb.go/pkg/models"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
 )
@@ -168,9 +169,10 @@ func (s *EventStoreServer) streamEventsSub(msg *mir.Msg, subjectId string, req m
 	event.Spec = req
 
 	// TODO stack algo
+	now := surrealdbModels.CustomDateTime{Time: time.Now().UTC()}
 	event.Status.Count = 1
-	event.Status.FirstAt = time.Now().UTC()
-	event.Status.LastAt = time.Now().UTC()
+	event.Status.FirstAt = now
+	event.Status.LastAt = now
 
 	_, err = s.store.CreateEvent(event)
 	if err != nil {
