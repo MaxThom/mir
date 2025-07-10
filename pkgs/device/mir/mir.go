@@ -317,14 +317,9 @@ func (m *Mir) commands(ctx context.Context, sub *nats.Subscription) {
 }
 
 func (m *Mir) shutdown(ctx context.Context) {
-	// for {
-	select {
-	case <-ctx.Done():
-		m.l.Info().Msg("shutting down connection to Mir")
-		m.b.Conn.Close()
-		return
-	}
-	// }
+	<-ctx.Done()
+	m.l.Info().Msg("shutting down connection to Mir")
+	m.b.Conn.Close()
 }
 
 // Return a new context of the Mir SDK logger
