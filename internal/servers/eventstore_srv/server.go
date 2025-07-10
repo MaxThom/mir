@@ -171,8 +171,8 @@ func (s *EventStoreServer) streamEventsSub(msg *mir.Msg, subjectId string, req m
 	// TODO stack algo
 	now := surrealdbModels.CustomDateTime{Time: time.Now().UTC()}
 	event.Status.Count = 1
-	event.Status.FirstAt = now
-	event.Status.LastAt = now
+	event.Status.FirstAt = &now
+	event.Status.LastAt = &now
 
 	_, err = s.store.CreateEvent(event)
 	if err != nil {

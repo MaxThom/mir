@@ -223,13 +223,9 @@ func createUpdateQueryForEvents(t mir_v1.ObjectTarget, upd mir_v1.EventUpdate) (
 			sb.WriteString("message: $MSG,")
 			vars["MSG"] = *upd.Spec.Message
 		}
-		if upd.Spec.Payload != nil {
-			x, _ := json.Marshal(upd.Spec.Payload)
-			if len(x) > 0 {
-				// Curlies are in the desired json already
-				sb.WriteString("payload: ")
-				sb.Write(nullRegEx.ReplaceAll(x, []byte("${1}NONE")))
-			}
+		if upd.Spec.Payload != nil && len(*upd.Spec.Payload) > 0 {
+			sb.WriteString("payload: $PAY,")
+			vars["PAY"] = *upd.Spec.Payload
 		}
 		if upd.Spec.RelatedObject != nil {
 			var sbObj strings.Builder

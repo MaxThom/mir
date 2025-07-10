@@ -65,9 +65,9 @@ type EventSpec struct {
 }
 
 type EventStatus struct {
-	Count   int                            `json:"count,omitempty" yaml:"count"`
-	FirstAt surrealdbModels.CustomDateTime `json:"firstAt,omitempty" yaml:"firstAt"`
-	LastAt  surrealdbModels.CustomDateTime `json:"lastAt,omitempty" yaml:"lastAt"`
+	Count   int                             `json:"count,omitempty" yaml:"count"`
+	FirstAt *surrealdbModels.CustomDateTime `json:"firstAt,omitempty" yaml:"firstAt"`
+	LastAt  *surrealdbModels.CustomDateTime `json:"lastAt,omitempty" yaml:"lastAt"`
 }
 
 type EventUpdate struct {
