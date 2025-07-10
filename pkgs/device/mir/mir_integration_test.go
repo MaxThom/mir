@@ -618,7 +618,7 @@ func TestStoreSwapMsgByBatch(t *testing.T) {
 }
 
 func deleteTableOrRecord(db *surrealdb.DB, thing string) error {
-	if _, err := db.Delete(thing); err != nil {
+	if _, err := surrealdb.Delete[any](db, thing); err != nil {
 		return err
 	}
 	return nil
@@ -633,7 +633,7 @@ func deleteDevicesDb(t *testing.T, db *surrealdb.DB, ids []string) error {
 	q += strings.Join(ids, "\" OR device_id = \"")
 	q += "\";"
 	executeTestQueryForType[[]mir_v1.Device](t, db,
-		q, map[string]string{
+		q, map[string]any{
 			"tb": "devices",
 		})
 	return nil
@@ -659,18 +659,19 @@ func deleteDevices(bus *bus.BusConn, req *mir_apiv1.DeleteDeviceRequest) (*mir_a
 	return resp, nil
 }
 
-func executeTestQueryForType[T any](t *testing.T, db *surrealdb.DB, query string, vars map[string]string) T {
-	result, err := db.Query(query, vars)
+func executeTestQueryForType[T any](t *testing.T, db *surrealdb.DB, query string, vars map[string]any) T {
+	var empty T
+	result, err := surrealdb.Query[T](db, query, vars)
 	if err != nil {
 		t.Error(err)
 	}
 
-	res, err := surrealdb.SmartUnmarshal[T](result, err)
-	if err != nil {
-		t.Error(err)
+	res := *result
+	if len(res) == 0 {
+		return empty
 	}
 
-	return res
+	return res[0].Result
 }
 
 func marshalProtoFiles(files ...protoreflect.FileDescriptor) ([]byte, error) {
@@ -697,14 +698,14 @@ func setupConns() (*surrealdb.DB, *mir.Mir, *bus.BusConn, error) {
 		return db, nil, nil, err
 	}
 
-	if _, err = db.Signin(map[string]any{
-		"user": "root",
-		"pass": "root",
+	if _, err = db.SignIn(&surrealdb.Auth{
+		Username: "root",
+		Password: "root",
 	}); err != nil {
 		return db, nil, nil, err
 	}
 
-	if _, err = db.Use("global", "mir_testing"); err != nil {
+	if err = db.Use("global", "mir_testing"); err != nil {
 		return db, nil, nil, err
 	}
 

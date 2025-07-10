@@ -874,10 +874,10 @@ func TestPublishStoreDeviceUpdateStatus(t *testing.T) {
 		},
 		Properties: mir_v1.PropertiesTime{
 			Desired: map[string]surrealdbModels.CustomDateTime{
-				"test": surrealdbModels.CustomDateTime{Time: time.Date(1992, 10, 14, 14, 0, 0, 0, time.UTC)},
+				"test": {Time: time.Date(1992, 10, 14, 14, 0, 0, 0, time.UTC)},
 			},
 			Reported: map[string]surrealdbModels.CustomDateTime{
-				"test": surrealdbModels.CustomDateTime{Time: time.Date(1992, 10, 14, 14, 0, 0, 0, time.UTC)},
+				"test": {Time: time.Date(1992, 10, 14, 14, 0, 0, 0, time.UTC)},
 			},
 		},
 	})
@@ -1434,8 +1434,8 @@ func TestPublishEventStoreCreateRequest(t *testing.T) {
 		Payload: j,
 	}).WithStatus(mir_v1.EventStatus{
 		Count:   1,
-		FirstAt: time.Now().UTC(),
-		LastAt:  time.Now().UTC(),
+		FirstAt: surrealTime(time.Now().UTC()),
+		LastAt:  surrealTime(time.Now().UTC()),
 	})
 
 	// Act
@@ -1683,7 +1683,7 @@ func TestPublishEventStoreListDateNow(t *testing.T) {
 			"test":     "list_limit",
 		},
 	}).WithStatus(mir_v1.EventStatus{
-		FirstAt: time.Date(2025, 05, 7, 13, 0, 0, 0, time.UTC),
+		FirstAt: surrealTime(time.Date(2025, 05, 7, 13, 0, 0, 0, time.UTC)),
 	})
 	m2 := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "list_event_2_lbl",
@@ -1693,7 +1693,7 @@ func TestPublishEventStoreListDateNow(t *testing.T) {
 			"test":     "list_limit",
 		},
 	}).WithStatus(mir_v1.EventStatus{
-		FirstAt: time.Date(2025, 05, 7, 12, 0, 0, 0, time.UTC),
+		FirstAt: surrealTime(time.Date(2025, 05, 7, 12, 0, 0, 0, time.UTC)),
 	})
 	m3 := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "list_event_3_lbl",
@@ -1703,7 +1703,7 @@ func TestPublishEventStoreListDateNow(t *testing.T) {
 			"test":     "list_limit",
 		},
 	}).WithStatus(mir_v1.EventStatus{
-		FirstAt: time.Date(2025, 05, 5, 0, 0, 0, 0, time.UTC),
+		FirstAt: surrealTime(time.Date(2025, 05, 5, 0, 0, 0, 0, time.UTC)),
 	})
 	// Act
 	mResp, err := mirStore.CreateEvent(m)
@@ -1750,7 +1750,7 @@ func TestPublishEventStoreListDateToFrom(t *testing.T) {
 			"test":     "list_limit",
 		},
 	}).WithStatus(mir_v1.EventStatus{
-		FirstAt: time.Date(2025, 05, 7, 13, 0, 0, 0, time.UTC),
+		FirstAt: surrealTime(time.Date(2025, 05, 7, 13, 0, 0, 0, time.UTC)),
 	})
 	m2 := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "list_event_2_lbl",
@@ -1760,7 +1760,7 @@ func TestPublishEventStoreListDateToFrom(t *testing.T) {
 			"test":     "list_limit",
 		},
 	}).WithStatus(mir_v1.EventStatus{
-		FirstAt: time.Date(2025, 05, 7, 12, 0, 0, 0, time.UTC),
+		FirstAt: surrealTime(time.Date(2025, 05, 7, 12, 0, 0, 0, time.UTC)),
 	})
 	m3 := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "list_event_3_lbl",
@@ -1770,7 +1770,7 @@ func TestPublishEventStoreListDateToFrom(t *testing.T) {
 			"test":     "list_limit",
 		},
 	}).WithStatus(mir_v1.EventStatus{
-		FirstAt: time.Date(2025, 05, 5, 0, 0, 0, 0, time.UTC),
+		FirstAt: surrealTime(time.Date(2025, 05, 5, 0, 0, 0, 0, time.UTC)),
 	})
 	// Act
 	mResp, err := mirStore.CreateEvent(m)
@@ -1983,8 +1983,8 @@ func TestPublishEventStoreUpdateMetaLblAnnoRequest(t *testing.T) {
 		Payload: j,
 	}).WithStatus(mir_v1.EventStatus{
 		Count:   1,
-		FirstAt: time.Now().UTC(),
-		LastAt:  time.Now().UTC(),
+		FirstAt: surrealTime(time.Now().UTC()),
+		LastAt:  surrealTime(time.Now().UTC()),
 	})
 	upd := mir_v1.EventUpdate{
 		Meta: &mir_v1.MetaUpdate{
@@ -2059,8 +2059,8 @@ func TestPublishEventStoreUpdateNameRequest(t *testing.T) {
 		Payload: j,
 	}).WithStatus(mir_v1.EventStatus{
 		Count:   1,
-		FirstAt: time.Now().UTC(),
-		LastAt:  time.Now().UTC(),
+		FirstAt: surrealTime(time.Now().UTC()),
+		LastAt:  surrealTime(time.Now().UTC()),
 	})
 	upd := mir_v1.EventUpdate{
 		Meta: &mir_v1.MetaUpdate{
@@ -2260,8 +2260,8 @@ func TestPublishEventStoreUpdateSpecRequest(t *testing.T) {
 		Payload: j,
 	}).WithStatus(mir_v1.EventStatus{
 		Count:   1,
-		FirstAt: time.Now().UTC(),
-		LastAt:  time.Now().UTC(),
+		FirstAt: surrealTime(time.Now().UTC()),
+		LastAt:  surrealTime(time.Now().UTC()),
 	})
 	upd := mir_v1.EventUpdate{
 		Spec: &mir_v1.EventUpdateSpec{
@@ -2336,8 +2336,8 @@ func TestPublishEventStoreUpdateStatusRequest(t *testing.T) {
 		Payload: j,
 	}).WithStatus(mir_v1.EventStatus{
 		Count:   1,
-		FirstAt: time.Now().UTC(),
-		LastAt:  time.Now().UTC(),
+		FirstAt: surrealTime(time.Now().UTC()),
+		LastAt:  surrealTime(time.Now().UTC()),
 	})
 	upd := mir_v1.EventUpdate{
 		Status: &mir_v1.EventUpdateStatus{
@@ -2447,6 +2447,10 @@ func TestPbulishListDeviceWithEvents(t *testing.T) {
 
 func strPtr(s string) *string {
 	return &s
+}
+
+func surrealTime(s time.Time) surrealdbModels.CustomDateTime {
+	return surrealdbModels.CustomDateTime{Time: s}
 }
 
 func surrealTimePtr(s time.Time) *surrealdbModels.CustomDateTime {
