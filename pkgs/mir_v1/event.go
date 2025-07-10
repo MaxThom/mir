@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/maxthom/mir/internal/libs/jsonyaml"
+	surrealdbModels "github.com/maxthom/surrealdb.go/pkg/models"
 )
 
 type EventType = string
@@ -66,9 +67,9 @@ type EventSpec struct {
 }
 
 type EventStatus struct {
-	Count   int       `json:"count,omitempty" yaml:"count"`
-	FirstAt time.Time `json:"firstAt,omitempty" yaml:"firstAt"`
-	LastAt  time.Time `json:"lastAt,omitempty" yaml:"lastAt"`
+	Count   int                            `json:"count,omitempty" yaml:"count"`
+	FirstAt surrealdbModels.CustomDateTime `json:"firstAt,omitempty" yaml:"firstAt"`
+	LastAt  surrealdbModels.CustomDateTime `json:"lastAt,omitempty" yaml:"lastAt"`
 }
 
 type EventUpdate struct {
