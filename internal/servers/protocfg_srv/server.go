@@ -25,6 +25,8 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/dynamicpb"
+
+	surrealdbModels "github.com/maxthom/surrealdb.go/pkg/models"
 )
 
 type ProtoCfgServer struct {
@@ -438,9 +440,9 @@ func (s *ProtoCfgServer) sendConfigToDevices(msg *mir.Msg, req *mir_apiv1.SendCo
 		go func() {
 			defer wg.Done()
 
-			timeMap := map[string]time.Time{}
+			timeMap := map[string]surrealdbModels.CustomDateTime{}
 			for k := range p.mapPayload {
-				timeMap[k] = p.time
+				timeMap[k] = surrealdbModels.CustomDateTime{Time: p.time}
 			}
 			d := mir_v1.NewDevice().WithProps(mir_v1.DeviceProperties{
 				Desired: p.mapPayload,
@@ -553,36 +555,20 @@ func (s *ProtoCfgServer) reportedPropsSub(msg *mir.Msg, deviceId string, msgName
 		deviceReportedPropsRequestErrorTotal.Inc()
 		return
 	}
-	timeNow := time.Now().UTC()
-	msgMap = map[string]interface{}{
-		"properties": map[string]interface{}{
-			"reported": map[string]interface{}{
-				string(msgDesc.FullName()): msgMap,
+
+	d := mir_v1.NewDevice().WithProps(mir_v1.DeviceProperties{
+		Reported: map[string]interface{}{
+			string(msgDesc.FullName()): msgMap,
+		},
+	}).WithStatus(mir_v1.DeviceStatus{
+		Properties: mir_v1.PropertiesTime{
+			Reported: map[string]surrealdbModels.CustomDateTime{
+				string(msgDesc.FullName()): surrealdbModels.CustomDateTime{Time: time.Now().UTC()},
 			},
 		},
-		"status": map[string]interface{}{
-			"properties": map[string]interface{}{
-				"reported": map[string]interface{}{
-					string(msgDesc.FullName()): timeNow.Format(time.RFC3339Nano),
-				},
-			},
-		},
-	}
+	})
 
-	jsonRaw, err := json.Marshal(msgMap)
-	if err != nil {
-		l.Error().Err(err).Str("device_id", deviceId).Msg("error marshaling reported properties to JSON")
-		deviceReportedPropsRequestErrorTotal.Inc()
-		return
-	}
-
-	dev, err := s.devStore.MergeDevice(
-		mir_v1.DeviceTarget{
-			Ids: []string{deviceId},
-		},
-		jsonRaw,
-		mng.MergePatch,
-	)
+	dev, err := s.devStore.UpdateDevice(mir_v1.DeviceTarget{Ids: []string{deviceId}}, d)
 	if err != nil {
 		l.Error().Err(err).Str("device_id", deviceId).Msg("error updating device properties in store")
 		deviceReportedPropsRequestErrorTotal.Inc()
@@ -636,7 +622,7 @@ func (s *ProtoCfgServer) desiredPropsSub(msg *mir.Msg, deviceId string) (*mir_ap
 	// If not written in db, means we need to write empty config
 	// Then we return the config to the device
 	missingCfg := make(map[string]any)
-	missingTime := make(map[string]time.Time)
+	missingTime := make(map[string]surrealdbModels.CustomDateTime)
 	for _, cfgDesc := range cfgDescs {
 		var jsonRaw []byte
 		var updTime string
@@ -684,7 +670,7 @@ func (s *ProtoCfgServer) desiredPropsSub(msg *mir.Msg, deviceId string) (*mir_ap
 			timeNow := time.Now().UTC()
 			updTime = timeNow.Format(time.RFC3339Nano)
 			missingCfg[cfgDesc.Name] = msgMap
-			missingTime[cfgDesc.Name] = timeNow
+			missingTime[cfgDesc.Name] = surrealdbModels.CustomDateTime{Time: timeNow}
 		}
 
 		msg := dynamicpb.NewMessage(desc.(protoreflect.MessageDescriptor))

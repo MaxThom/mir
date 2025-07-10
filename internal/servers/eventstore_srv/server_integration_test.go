@@ -17,8 +17,8 @@ import (
 	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/maxthom/mir/pkgs/module/mir"
+	"github.com/maxthom/surrealdb.go"
 	"github.com/nats-io/nats.go"
-	"github.com/surrealdb/surrealdb.go"
 	"gotest.tools/assert"
 )
 

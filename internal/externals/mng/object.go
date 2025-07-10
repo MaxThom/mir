@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/maxthom/mir/pkgs/mir_v1"
-	"github.com/surrealdb/surrealdb.go"
+	"github.com/maxthom/surrealdb.go"
 )
 
 func createIsObjectUniqueQuery(table, name, ns string) (sql string, vars map[string]any) {
@@ -24,17 +24,17 @@ func createIsObjectUniqueQuery(table, name, ns string) (sql string, vars map[str
 
 func executeQueryForType[T any](db *surrealdb.DB, query string, vars map[string]any) (T, error) {
 	var empty T
-	result, err := db.Query(query, vars)
+	result, err := surrealdb.Query[T](db, query, vars)
 	if err != nil {
 		return empty, err
 	}
 
-	res, err := surrealdb.SmartUnmarshal[T](result, err)
-	if err != nil {
-		return empty, err
+	res := *result
+	if len(res) == 0 {
+		return empty, nil
 	}
 
-	return res, nil
+	return res[0].Result, nil
 }
 
 func createListQueryForObjects(table string, t mir_v1.ObjectTarget) (sql string, vars map[string]any) {

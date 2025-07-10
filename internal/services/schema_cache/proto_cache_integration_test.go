@@ -22,7 +22,7 @@ import (
 	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	mirDevice "github.com/maxthom/mir/pkgs/device/mir"
 	"github.com/maxthom/mir/pkgs/module/mir"
-	"github.com/surrealdb/surrealdb.go"
+	"github.com/maxthom/surrealdb.go"
 )
 
 var db *surrealdb.DB

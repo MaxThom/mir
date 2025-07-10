@@ -11,7 +11,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/jsonyaml"
 	"github.com/maxthom/mir/internal/libs/test_utils"
 	"github.com/maxthom/mir/pkgs/mir_v1"
-	"github.com/surrealdb/surrealdb.go"
+	"github.com/maxthom/surrealdb.go"
 	"gotest.tools/assert"
 )
 

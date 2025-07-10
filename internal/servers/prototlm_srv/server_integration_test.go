@@ -27,7 +27,7 @@ import (
 	mirDevice "github.com/maxthom/mir/pkgs/device/mir"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/maxthom/mir/pkgs/module/mir"
-	"github.com/surrealdb/surrealdb.go"
+	"github.com/maxthom/surrealdb.go"
 	"google.golang.org/protobuf/types/descriptorpb"
 	"gotest.tools/assert"
 )

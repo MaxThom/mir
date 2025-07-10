@@ -9,6 +9,8 @@ import (
 
 	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	"google.golang.org/protobuf/types/known/structpb"
+
+	surrealdbModels "github.com/maxthom/surrealdb.go/pkg/models"
 )
 
 // Devices
@@ -52,7 +54,7 @@ func NewDeviceFromProtoDevice(d *mir_apiv1.Device) Device {
 		}
 		dev.Status = DeviceStatus{
 			Online:         &d.Status.Online,
-			LastHearthbeat: &lastHeartbeatTime,
+			LastHearthbeat: &surrealdbModels.CustomDateTime{Time: lastHeartbeatTime},
 		}
 		if d.Status.Schema != nil {
 			var lastSchemaFetch time.Time
@@ -62,21 +64,21 @@ func NewDeviceFromProtoDevice(d *mir_apiv1.Device) Device {
 			dev.Status.Schema = Schema{
 				CompressedSchema: d.Status.Schema.CompressedSchema,
 				PackageNames:     d.Status.Schema.PackageNames,
-				LastSchemaFetch:  &lastSchemaFetch,
+				LastSchemaFetch:  &surrealdbModels.CustomDateTime{Time: lastSchemaFetch},
 			}
 		}
 		if d.Status.Properties != nil {
 			dev.Status.Properties = PropertiesTime{}
 			if d.Status.Properties.Desired != nil {
-				dev.Status.Properties.Desired = map[string]time.Time{}
+				dev.Status.Properties.Desired = map[string]surrealdbModels.CustomDateTime{}
 				for k, v := range d.Status.Properties.Desired {
-					dev.Status.Properties.Desired[k] = AsGoTime(v)
+					dev.Status.Properties.Desired[k] = surrealdbModels.CustomDateTime{Time: AsGoTime(v)}
 				}
 			}
 			if d.Status.Properties.Reported != nil {
-				dev.Status.Properties.Reported = map[string]time.Time{}
+				dev.Status.Properties.Reported = map[string]surrealdbModels.CustomDateTime{}
 				for k, v := range d.Status.Properties.Reported {
-					dev.Status.Properties.Reported[k] = AsGoTime(v)
+					dev.Status.Properties.Reported[k] = surrealdbModels.CustomDateTime{Time: AsGoTime(v)}
 				}
 			}
 		}
@@ -88,7 +90,7 @@ func NewDeviceFromProtoDevice(d *mir_apiv1.Device) Device {
 						Type:    e.Type,
 						Message: e.Message,
 						Reason:  e.Reason,
-						FirstAt: AsGoTime(e.FirstAt),
+						FirstAt: surrealdbModels.CustomDateTime{Time: AsGoTime(e.FirstAt)},
 					})
 				}
 			}
@@ -116,7 +118,7 @@ func NewProtoDeviceFromDevice(d Device) *mir_apiv1.Device {
 			Type:    e.Type,
 			Message: e.Message,
 			Reason:  e.Reason,
-			FirstAt: AsProtoTimestamp(e.FirstAt),
+			FirstAt: AsProtoTimestamp(e.FirstAt.Time),
 		})
 	}
 
@@ -139,11 +141,11 @@ func NewProtoDeviceFromDevice(d Device) *mir_apiv1.Device {
 		},
 		Status: &mir_apiv1.DeviceStatus{
 			Online:         asUnRefBool(d.Status.Online),
-			LastHearthbeat: AsRefProtoTimestamp(d.Status.LastHearthbeat),
+			LastHearthbeat: AsRefProtoSurrealTimestamp(d.Status.LastHearthbeat),
 			Schema: &mir_apiv1.Schema{
 				CompressedSchema: d.Status.Schema.CompressedSchema,
 				PackageNames:     d.Status.Schema.PackageNames,
-				LastSchemaFetch:  AsRefProtoTimestamp(d.Status.Schema.LastSchemaFetch),
+				LastSchemaFetch:  AsRefProtoSurrealTimestamp(d.Status.Schema.LastSchemaFetch),
 			},
 			Properties: &mir_apiv1.PropertiesTime{
 				Desired:  mapToProtoTs(d.Status.Properties.Desired),
@@ -314,7 +316,7 @@ func NewDeviceFromUpdateDeviceReq(d *mir_apiv1.UpdateDeviceRequest) Device {
 		}
 		if d.Status.LastHearthbeat != nil {
 			heartbeat := AsGoTime(d.Status.LastHearthbeat)
-			dev.Status.LastHearthbeat = &heartbeat
+			dev.Status.LastHearthbeat = &surrealdbModels.CustomDateTime{Time: heartbeat}
 		}
 		if d.Status.Schema != nil {
 			if d.Status.Schema.CompressedSchema != nil && len(d.Status.Schema.CompressedSchema) > 0 {
@@ -325,7 +327,7 @@ func NewDeviceFromUpdateDeviceReq(d *mir_apiv1.UpdateDeviceRequest) Device {
 			}
 			if d.Status.Schema.LastSchemaFetch != nil {
 				lastFetch := AsGoTime(d.Status.Schema.LastSchemaFetch)
-				dev.Status.Schema.LastSchemaFetch = &lastFetch
+				dev.Status.Schema.LastSchemaFetch = &surrealdbModels.CustomDateTime{Time: lastFetch}
 			}
 		}
 	}
@@ -393,14 +395,14 @@ func DeviceToUpdateDeviceRequest(d Device) *mir_apiv1.UpdateDeviceRequest {
 
 	devUpd.Status = &mir_apiv1.UpdateDeviceRequest_Status{
 		Online:         d.Status.Online,
-		LastHearthbeat: AsRefProtoTimestamp(d.Status.LastHearthbeat),
+		LastHearthbeat: AsRefProtoSurrealTimestamp(d.Status.LastHearthbeat),
 	}
 
 	if d.Status.Schema.CompressedSchema != nil || d.Status.Schema.PackageNames != nil || d.Status.Schema.LastSchemaFetch != nil {
 		devUpd.Status.Schema = &mir_apiv1.UpdateDeviceRequest_Schema{
 			CompressedSchema: d.Status.Schema.CompressedSchema,
 			PackageNames:     d.Status.Schema.PackageNames,
-			LastSchemaFetch:  AsRefProtoTimestamp(d.Status.Schema.LastSchemaFetch),
+			LastSchemaFetch:  AsRefProtoSurrealTimestamp(d.Status.Schema.LastSchemaFetch),
 		}
 	}
 
@@ -666,7 +668,7 @@ func AsProtoTimestamp(t time.Time) *mir_apiv1.Timestamp {
 	}
 }
 
-func AsRefProtoTimestamp(t *time.Time) *mir_apiv1.Timestamp {
+func AsRefProtoSurrealTimestamp(t *surrealdbModels.CustomDateTime) *mir_apiv1.Timestamp {
 	if t == nil || t.IsZero() {
 		return nil
 	}
@@ -683,10 +685,10 @@ func AsGoTime(ts *mir_apiv1.Timestamp) time.Time {
 	return time.Unix(int64(ts.GetSeconds()), int64(ts.GetNanos())).UTC()
 }
 
-func mapToProtoTs(m map[string]time.Time) map[string]*mir_apiv1.Timestamp {
+func mapToProtoTs(m map[string]surrealdbModels.CustomDateTime) map[string]*mir_apiv1.Timestamp {
 	ts := map[string]*mir_apiv1.Timestamp{}
 	for k, v := range m {
-		ts[k] = AsProtoTimestamp(v)
+		ts[k] = AsProtoTimestamp(v.Time)
 	}
 	return ts
 }

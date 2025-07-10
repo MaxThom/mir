@@ -15,6 +15,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/maxthom/mir/pkgs/module/mir"
+	surrealdbModels "github.com/maxthom/surrealdb.go/pkg/models"
 	"github.com/nats-io/nats.go"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
@@ -103,7 +104,7 @@ func NewCore(logger zerolog.Logger, m *mir.Mir, store mng.MirStore) (*CoreServer
 		// to the map.
 		// If a device becomes offline, it's removed from the map
 		if d.Status.Online != nil && *d.Status.Online {
-			hearbeats[d.Spec.DeviceId] = *d.Status.LastHearthbeat
+			hearbeats[d.Spec.DeviceId] = d.Status.LastHearthbeat.Time
 			deviceStatusCount.WithLabelValues("online").Inc()
 		} else {
 			deviceStatusCount.WithLabelValues("offline").Inc()
@@ -367,7 +368,7 @@ func (s *CoreServer) hearthbeatSub(msg *mir.Msg, deviceId string) {
 	}
 	d := mir_v1.NewDevice().WithStatus(mir_v1.DeviceStatus{
 		Online:         toBoolRef(true),
-		LastHearthbeat: &timeNow,
+		LastHearthbeat: &surrealdbModels.CustomDateTime{Time: timeNow},
 	})
 
 	dev, err := s.store.UpdateDevice(t, d)
@@ -433,7 +434,7 @@ func (s *CoreServer) schemaSub(msg *mir.Msg, deviceId string, sch *mir_proto.Mir
 			Schema: mir_v1.Schema{
 				CompressedSchema: compressSch,
 				PackageNames:     sch.GetPackageList(),
-				LastSchemaFetch:  &timeNow,
+				LastSchemaFetch:  &surrealdbModels.CustomDateTime{Time: timeNow},
 			},
 		}),
 	)
