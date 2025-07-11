@@ -23,6 +23,9 @@ jobs:
       - name: Set up test environment
         run: docker compose -f infra/ci/compose.yaml up -d --wait
 
+      - name: Set up test services
+        run: ./scripts/integration_tests.sh
+
       - name: Test
         run: go test -coverprofile coverage.out -count 1 ./...
 
@@ -31,3 +34,8 @@ jobs:
         with:
           name: coverage.out
           path: ./coverage.out
+
+      - name: Upload test artifacts
+        uses: actions/upload-artifact@v4.4.3
+        with:
+          path: ./.tmp

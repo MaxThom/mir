@@ -159,7 +159,7 @@ func (d *SchemaExploreCmd) Run(log zerolog.Logger, m *mir.Mir, cfg Config) error
 	devSchemas := map[string]schemaDevices{}
 	errs := []MirProcessError{}
 	for _, dev := range list {
-		if dev.Status.Schema.CompressedSchema == nil || len(dev.Status.Schema.CompressedSchema) == 0 {
+		if len(dev.Status.Schema.CompressedSchema) == 0 {
 			continue
 		}
 

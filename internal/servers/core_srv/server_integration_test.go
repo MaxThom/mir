@@ -11,13 +11,10 @@ import (
 
 	"github.com/maxthom/mir/internal/clients"
 	"github.com/maxthom/mir/internal/clients/core_client"
-	"github.com/maxthom/mir/internal/externals/mng"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	"github.com/maxthom/mir/internal/libs/swarm"
 	"github.com/maxthom/mir/internal/libs/test_utils"
 	core_testv1 "github.com/maxthom/mir/internal/servers/core_srv/proto_test/gen/core_test/v1"
-	"github.com/maxthom/mir/internal/servers/protocfg_srv"
-	"github.com/maxthom/mir/internal/services/schema_cache"
 	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	mirDev "github.com/maxthom/mir/pkgs/device/mir"
 	"github.com/maxthom/mir/pkgs/mir_v1"
@@ -29,69 +26,50 @@ import (
 	"gotest.tools/assert"
 )
 
-var log = test_utils.TestLogger("core")
-var db *surrealdb.DB
-var b *bus.BusConn
-var sub *nats.Subscription
 var mSdk *mir.Mir
 var busUrl = "nats://127.0.0.1:4222"
+var b *bus.BusConn
+var db *surrealdb.DB
 
 func TestMain(m *testing.M) {
 	// Setup
-	fmt.Println("Test Setup")
+	fmt.Println("> Test Setup")
 	var err error
-
-	db = test_utils.SetupSurrealDbConnsPanic("ws://127.0.0.1:8000/rpc", "root", "root", "global", "mir_testing")
 	b = test_utils.SetupNatsConPanic(busUrl)
+	db = test_utils.SetupSurrealDbConnsPanic("ws://127.0.0.1:8000/rpc", "root", "root", "global", "mir_testing")
 	mSdk, err = mir.Connect("test_coresrv", busUrl)
 	if err != nil {
 		panic(err)
 	}
-	coreSrv, err := NewCore(log, mSdk, mng.NewSurrealMirStore(db))
-	if err := coreSrv.Serve(); err != nil {
-		panic(err)
-	}
-	cc, err := schema_cache.NewMirSchemaCache(log, mSdk)
-	if err != nil {
-		panic(err)
-	}
-	cfgSrv, err := protocfg_srv.NewProtoCfg(log, mSdk, mng.NewSurrealMirStore(db), cc)
-	if err := cfgSrv.Serve(); err != nil {
-		panic(err)
-	}
-	fmt.Println(" -> bus")
-	fmt.Println(" -> db")
-	fmt.Println(" -> core")
 	time.Sleep(1 * time.Second)
 	// Clear data
-	test_utils.DeleteDevicesWithLabelsPanic(b, map[string]string{
-		"testing": "core",
-	})
+	if _, err := mSdk.Server().DeleteDevice().Request(mir_v1.DeviceTarget{
+		Labels: map[string]string{
+			"testing": "core",
+		},
+	}); err != nil {
+		panic(err)
+	}
 	fmt.Println(" -> ready")
 
 	// Tests
 	exitVal := m.Run()
 
 	// Teardown
-	fmt.Println("Test Teardown")
-	test_utils.DeleteDevicesWithLabelsPanic(b, map[string]string{
-		"testing": "core",
-	})
-	core_client.PublishDeviceDeleteRequest(b, &mir_apiv1.DeleteDeviceRequest{
-		Targets: &mir_apiv1.DeviceTarget{
-			Ids: []string{"device_auto_provision"},
+	fmt.Println("> Test Teardown")
+	if _, err := mSdk.Server().DeleteDevice().Request(mir_v1.DeviceTarget{
+		Labels: map[string]string{
+			"testing": "core",
 		},
-	})
-	fmt.Println(" -> cleaned up")
+	}); err != nil {
+		fmt.Println(err)
+	}
+	if _, err := mSdk.Server().DeleteDevice().Request(mir_v1.DeviceTarget{
+		Ids: []string{"device_auto_provision"},
+	}); err != nil {
+		fmt.Println(err)
+	}
 	time.Sleep(1 * time.Second)
-	b.Drain()
-	coreSrv.Shutdown()
-	cfgSrv.Shutdown()
-	b.Close()
-	db.Close()
-	fmt.Println(" -> core")
-	fmt.Println(" -> nats")
-	fmt.Println(" -> db")
 
 	os.Exit(exitVal)
 }
