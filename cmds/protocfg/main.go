@@ -48,9 +48,11 @@ type (
 	}
 
 	DatabaseSever struct {
-		Url      string
-		User     string
-		Password string `cfg:"secret"`
+		Url       string
+		User      string
+		Password  string `cfg:"secret"`
+		Namespace string
+		Database  string
 	}
 )
 
@@ -64,9 +66,11 @@ var (
 			Url: "nats://127.0.0.1:4222",
 		},
 		DatabaseServer: DatabaseSever{
-			Url:      "ws://127.0.0.1:8000/rpc",
-			User:     "root",
-			Password: "root",
+			Url:       "ws://127.0.0.1:8000/rpc",
+			User:      "root",
+			Password:  "root",
+			Namespace: "global",
+			Database:  "mir",
 		},
 	}
 )
@@ -152,11 +156,11 @@ func run(
 
 	// Setup
 	// Database
-	db, err := surreal.ConnectToDb(cfg.DatabaseServer.Url, "global", "mir", cfg.DatabaseServer.User, cfg.DatabaseServer.Password)
+	db, err := surreal.ConnectToDb(cfg.DatabaseServer.Url, cfg.DatabaseServer.Namespace, cfg.DatabaseServer.Database, cfg.DatabaseServer.User, cfg.DatabaseServer.Password)
 	if err != nil {
 		return err
 	}
-	log.Info().Str("url", cfg.DatabaseServer.Url).Str("namespace", "global").Str("database", "mir").Msg("connected to database")
+	log.Info().Str("url", cfg.DatabaseServer.Url).Str("namespace", cfg.DatabaseServer.Namespace).Str("database", cfg.DatabaseServer.Database).Msg("connected to database")
 
 	// Bus
 	m, err := mir.Connect(AppName, cfg.DataBusServer.Url, append(mir.WithDefaultReconnectOpts(), mir.WithDefaultConnectionLogging(log)...)...)
