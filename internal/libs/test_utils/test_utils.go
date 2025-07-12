@@ -14,6 +14,7 @@ import (
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	"github.com/maxthom/surrealdb.go"
+	"github.com/nats-io/nats.go"
 	"github.com/rs/zerolog"
 	logger "github.com/rs/zerolog/log"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -43,7 +44,7 @@ type InfluxInfo struct {
 	Bucket string
 }
 
-func SetupAllExternalsPanic(ctx context.Context, conns ConnsInfo) (*bus.BusConn, *surrealdb.DB, influxdb2.Client, api.WriteAPI, api.QueryAPI) {
+func SetupAllExternalsPanic(ctx context.Context, conns ConnsInfo) (*nats.Conn, *surrealdb.DB, influxdb2.Client, api.WriteAPI, api.QueryAPI) {
 	b := SetupNatsConPanic(conns.BusUrl)
 	s := SetupSurrealDbConnsPanic(conns.Surreal.Url, conns.Surreal.User, conns.Surreal.Pass, conns.Surreal.Ns, conns.Surreal.Db)
 	c, w, q := SetupInfluxConnsPanic(ctx, conns.Influx.Url, conns.Influx.Token, conns.Influx.Org, conns.Influx.Bucket)
@@ -82,15 +83,15 @@ func SetupSurrealDbConnsPanic(url, user, pass, ns, db string) *surrealdb.DB {
 	return d
 }
 
-func SetupNatsConPanic(url string) *bus.BusConn {
+func SetupNatsConPanic(url string) *nats.Conn {
 	b, err := bus.New(url)
 	if err != nil {
 		panic(err)
 	}
-	return b
+	return b.Conn
 }
 
-func DeleteDevicesWithLabelsPanic(b *bus.BusConn, lbl map[string]string) {
+func DeleteDevicesWithLabelsPanic(b *nats.Conn, lbl map[string]string) {
 	if _, err := core_client.PublishDeviceDeleteRequest(b, &mir_apiv1.DeleteDeviceRequest{
 		Targets: &mir_apiv1.DeviceTarget{
 			Labels: lbl,
@@ -100,7 +101,7 @@ func DeleteDevicesWithLabelsPanic(b *bus.BusConn, lbl map[string]string) {
 	}
 }
 
-func CreateDevices(bus *bus.BusConn, devices []*mir_apiv1.CreateDeviceRequest) ([]*mir_apiv1.CreateDeviceResponse, error) {
+func CreateDevices(bus *nats.Conn, devices []*mir_apiv1.CreateDeviceRequest) ([]*mir_apiv1.CreateDeviceResponse, error) {
 	responses := []*mir_apiv1.CreateDeviceResponse{}
 	for _, dev := range devices {
 		resp, err := core_client.PublishDeviceCreateRequest(bus, dev)

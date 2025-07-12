@@ -57,7 +57,7 @@ func (d *SwarmCmd) Run(log zerolog.Logger, m *mSdk.Mir, cfg Config) error {
 		logLvl = mir.LogLevelError
 	}
 
-	s := swarm.NewSwarm(bus.NewWithBus(m.Bus))
+	s := swarm.NewSwarm(bus.NewWithBus(m.Bus).Conn)
 	_, err := s.AddDeviceWithIds(d.DeviceIds).
 		WithSchema(swarmv1.File_swarm_v1_demo_proto).
 		WithLogLevel(logLvl).

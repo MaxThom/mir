@@ -8,11 +8,8 @@ import (
 	"time"
 
 	"github.com/maxthom/mir/internal/clients/core_client"
-	"github.com/maxthom/mir/internal/externals/mng"
-	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
 	"github.com/maxthom/mir/internal/libs/test_utils"
-	"github.com/maxthom/mir/internal/servers/core_srv"
 	schemacache_testv1 "github.com/maxthom/mir/internal/services/schema_cache/proto_test/gen/schemacache_test/v1"
 	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
 	"github.com/maxthom/mir/pkgs/mir_v1"
@@ -22,79 +19,49 @@ import (
 	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	mirDevice "github.com/maxthom/mir/pkgs/device/mir"
 	"github.com/maxthom/mir/pkgs/module/mir"
-	"github.com/maxthom/surrealdb.go"
 )
 
-var db *surrealdb.DB
 var mSdk *mir.Mir
 var busUrl = "nats://127.0.0.1:4222"
 var log = test_utils.TestLogger("schema_cache")
 
-var b *bus.BusConn
-
 func TestMain(m *testing.M) {
 	// Setup
-	ctx, cancel := context.WithCancel(context.Background())
-	fmt.Println("Test Setup")
-
-	b, db, _, _, _ = test_utils.SetupAllExternalsPanic(ctx, test_utils.ConnsInfo{
-		Name:   "test_prototlm",
-		BusUrl: busUrl,
-		Surreal: test_utils.SurrealInfo{
-			Url:  "ws://127.0.0.1:8000/rpc",
-			User: "root",
-			Pass: "root",
-			Ns:   "global",
-			Db:   "mir_testing",
-		},
-		Influx: test_utils.InfluxInfo{
-			Url:    "http://localhost:8086/",
-			Token:  "mir-operator-token",
-			Org:    "Mir",
-			Bucket: "mir_integration_test",
-		},
-	})
+	fmt.Println("> Test Setup")
 	var err error
 	mSdk, err = mir.Connect("test_protocache", busUrl)
 	if err != nil {
 		panic(err)
 	}
-	coreSrv, err := core_srv.NewCore(log, mSdk, mng.NewSurrealMirStore(db))
-	if err != nil {
+	if err := dataCleanUp(); err != nil {
 		panic(err)
 	}
-	if err = coreSrv.Serve(); err != nil {
-		panic(err)
-	}
-	fmt.Println(" -> bus")
-	fmt.Println(" -> db")
-	fmt.Println(" -> core")
 	time.Sleep(1 * time.Second)
-	// Clear data
-	test_utils.DeleteDevicesWithLabelsPanic(b, map[string]string{
-		"testing": "proto_cache",
-	})
-	time.Sleep(1 * time.Second)
-	fmt.Println(" -> ready")
 
 	// Tests
+	fmt.Println("> Test Run")
 	exitVal := m.Run()
+	time.Sleep(1 * time.Second)
 
 	// Teardown
-	fmt.Println("Test Teardown")
-	test_utils.DeleteDevicesWithLabelsPanic(b, map[string]string{
-		"testing": "proto_cache",
-	})
-	fmt.Println(" -> cleaned up")
+	fmt.Println("> Test Teardown")
+	if err := mSdk.Disconnect(); err != nil {
+		fmt.Println(err)
+	}
 	time.Sleep(1 * time.Second)
-	b.Drain()
-	cancel()
-	b.Close()
-	mSdk.Disconnect()
-	db.Close()
-	fmt.Println(" -> closed connections")
 
 	os.Exit(exitVal)
+}
+
+func dataCleanUp() error {
+	if _, err := mSdk.Server().DeleteDevice().Request(mir_v1.DeviceTarget{
+		Labels: map[string]string{
+			"testing": "proto_cache",
+		},
+	}); err != nil {
+		return err
+	}
+	return nil
 }
 
 func TestPublishDeviceUpdateCache(t *testing.T) {
@@ -134,7 +101,7 @@ func TestPublishDeviceUpdateCache(t *testing.T) {
 	}
 
 	// Act
-	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate)
+	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate)
 	if err != nil {
 		t.Error(err)
 	}
@@ -153,7 +120,7 @@ func TestPublishDeviceUpdateCache(t *testing.T) {
 	)
 
 	str := "update"
-	if _, err = core_client.PublishDeviceUpdateRequest(b, &mir_apiv1.UpdateDeviceRequest{
+	if _, err = core_client.PublishDeviceUpdateRequest(mSdk.Bus, &mir_apiv1.UpdateDeviceRequest{
 		Targets: &mir_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
@@ -174,7 +141,7 @@ func TestPublishDeviceUpdateCache(t *testing.T) {
 	// Assert
 	assert.Equal(t, true, mir_proto.AreSchemaEqual(ogSch, sch))
 	assert.Equal(t, devPostUpd.Meta.Labels["test"], str)
-	assert.Equal(t, 2, count)
+	assert.Equal(t, 1, count)
 	cancel()
 	wg.Wait()
 }

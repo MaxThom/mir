@@ -38,12 +38,12 @@ func CreateOrgAndBucket(ctx context.Context, lpClient influxdb2.Client, orgName,
 	org, err := orgApi.FindOrganizationByName(ctx, orgName)
 	if err != nil {
 		// TODO check if we can create org
-		// if strings.Contains(err.Error(), fmt.Sprintf("not found: organization name \"%s\" not found", orgName)) {
-		// 	org, err = orgApi.CreateOrganizationWithName(ctx, orgName)
-		// 	if err != nil {
-		// 		return err
-		// 	}
-		// }
+		if strings.Contains(err.Error(), fmt.Sprintf("not found: organization name \"%s\" not found", orgName)) {
+			org, err = orgApi.CreateOrganizationWithName(ctx, orgName)
+			if err != nil {
+				return err
+			}
+		}
 		return err
 	}
 

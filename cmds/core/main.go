@@ -57,7 +57,7 @@ type (
 
 var (
 	defaultCfg = CoreConfig{
-		LogLevel: "info",
+		LogLevel: "debug",
 		HttpServer: HttpServer{
 			Port: 3016,
 		},

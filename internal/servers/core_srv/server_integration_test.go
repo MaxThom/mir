@@ -11,7 +11,6 @@ import (
 
 	"github.com/maxthom/mir/internal/clients"
 	"github.com/maxthom/mir/internal/clients/core_client"
-	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	"github.com/maxthom/mir/internal/libs/swarm"
 	"github.com/maxthom/mir/internal/libs/test_utils"
 	core_testv1 "github.com/maxthom/mir/internal/servers/core_srv/proto_test/gen/core_test/v1"
@@ -28,50 +27,51 @@ import (
 
 var mSdk *mir.Mir
 var busUrl = "nats://127.0.0.1:4222"
-var b *bus.BusConn
 var db *surrealdb.DB
 
 func TestMain(m *testing.M) {
 	// Setup
 	fmt.Println("> Test Setup")
 	var err error
-	b = test_utils.SetupNatsConPanic(busUrl)
 	db = test_utils.SetupSurrealDbConnsPanic("ws://127.0.0.1:8000/rpc", "root", "root", "global", "mir_testing")
 	mSdk, err = mir.Connect("test_coresrv", busUrl)
 	if err != nil {
 		panic(err)
 	}
-	time.Sleep(1 * time.Second)
-	// Clear data
-	if _, err := mSdk.Server().DeleteDevice().Request(mir_v1.DeviceTarget{
-		Labels: map[string]string{
-			"testing": "core",
-		},
-	}); err != nil {
+	if err := dataCleanUp(); err != nil {
 		panic(err)
 	}
-	fmt.Println(" -> ready")
+	time.Sleep(1 * time.Second)
 
 	// Tests
+	fmt.Println("> Test Run")
 	exitVal := m.Run()
+	time.Sleep(1 * time.Second)
 
 	// Teardown
 	fmt.Println("> Test Teardown")
-	if _, err := mSdk.Server().DeleteDevice().Request(mir_v1.DeviceTarget{
-		Labels: map[string]string{
-			"testing": "core",
-		},
-	}); err != nil {
-		fmt.Println(err)
-	}
-	if _, err := mSdk.Server().DeleteDevice().Request(mir_v1.DeviceTarget{
-		Ids: []string{"device_auto_provision"},
-	}); err != nil {
+	if err := mSdk.Disconnect(); err != nil {
 		fmt.Println(err)
 	}
 	time.Sleep(1 * time.Second)
 
 	os.Exit(exitVal)
+}
+
+func dataCleanUp() error {
+	if _, err := mSdk.Server().DeleteDevice().Request(mir_v1.DeviceTarget{
+		Labels: map[string]string{
+			"testing": "core",
+		},
+	}); err != nil {
+		return err
+	}
+	if _, err := mSdk.Server().DeleteDevice().Request(mir_v1.DeviceTarget{
+		Ids: []string{"device_auto_provision"},
+	}); err != nil {
+		return err
+	}
+	return nil
 }
 
 // go test -v -timeout 30s -run ^TestPublishDeviceCreate\$ github.com/maxthom/mir/services/core
@@ -103,13 +103,13 @@ func TestPublishDeviceCreate(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	err = b.Publish(publishStream, bReq)
+	err = mSdk.Bus.Publish(publishStream, bReq)
 	if err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
 
-	respList, err := core_client.PublishDeviceListRequest(b, &mir_apiv1.ListDeviceRequest{
+	respList, err := core_client.PublishDeviceListRequest(mSdk.Bus, &mir_apiv1.ListDeviceRequest{
 		Targets: &mir_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
@@ -148,7 +148,7 @@ func TestPublishDeviceCreateClient(t *testing.T) {
 
 	// Subscribe to device created event
 	count := 0
-	s, err := b.Subscribe(
+	s, err := mSdk.Bus.Subscribe(
 		core_client.DeviceCreatedEvent.WithId(id),
 		func(msg *nats.Msg) {
 			count += 1
@@ -156,13 +156,13 @@ func TestPublishDeviceCreateClient(t *testing.T) {
 		})
 
 	// Act
-	respCreate, err := core_client.PublishDeviceCreateRequest(b, reqCreate)
+	respCreate, err := core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate)
 	if err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
 
-	respList, err := core_client.PublishDeviceListRequest(b, &mir_apiv1.ListDeviceRequest{
+	respList, err := core_client.PublishDeviceListRequest(mSdk.Bus, &mir_apiv1.ListDeviceRequest{
 		Targets: &mir_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
@@ -201,7 +201,7 @@ func TestPublishDeviceCreateClientNoID(t *testing.T) {
 	}
 
 	// Act
-	resp, _ := core_client.PublishDeviceCreateRequest(b, reqCreate)
+	resp, _ := core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate)
 
 	// Assert
 	assert.Equal(t, resp.GetError() != "", true)
@@ -227,7 +227,7 @@ func TestPublishDeviceCreateClientNoNamespace(t *testing.T) {
 	}
 
 	// Act
-	respCreate, err := core_client.PublishDeviceCreateRequest(b, reqCreate)
+	respCreate, err := core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate)
 	if err != nil {
 		t.Error(err)
 	}
@@ -263,7 +263,7 @@ func TestPublishDeviceUpdateTargetIds(t *testing.T) {
 
 	// Subscribe to device updated event
 	count := 0
-	s, err := b.Subscribe(
+	s, err := mSdk.Bus.Subscribe(
 		core_client.DeviceUpdatedEvent.WithId(id),
 		func(msg *nats.Msg) {
 			count += 1
@@ -300,12 +300,12 @@ func TestPublishDeviceUpdateTargetIds(t *testing.T) {
 	}
 
 	// Act
-	if _, err := core_client.PublishDeviceCreateRequest(b, reqCreate); err != nil {
+	if _, err := core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
 
-	respUpd, err := core_client.PublishDeviceUpdateRequest(b, reqUpd)
+	respUpd, err := core_client.PublishDeviceUpdateRequest(mSdk.Bus, reqUpd)
 	if err != nil {
 		t.Error(err)
 	}
@@ -379,12 +379,12 @@ func TestPublishDeviceUpdateTargetNames(t *testing.T) {
 	}
 
 	// Act
-	if _, err := core_client.PublishDeviceCreateRequest(b, reqCreate); err != nil {
+	if _, err := core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
 
-	respUpd, err := core_client.PublishDeviceUpdateRequest(b, reqUpd)
+	respUpd, err := core_client.PublishDeviceUpdateRequest(mSdk.Bus, reqUpd)
 	if err != nil {
 		t.Error(err)
 	}
@@ -457,12 +457,12 @@ func TestPublishDeviceUpdateTargetNamespace(t *testing.T) {
 	}
 
 	// Act
-	if _, err := core_client.PublishDeviceCreateRequest(b, reqCreate); err != nil {
+	if _, err := core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
 
-	respUpd, err := core_client.PublishDeviceUpdateRequest(b, reqUpd)
+	respUpd, err := core_client.PublishDeviceUpdateRequest(mSdk.Bus, reqUpd)
 	if err != nil {
 		t.Error(err)
 	}
@@ -577,12 +577,12 @@ func TestPublishDeviceUpdateTargetLabels(t *testing.T) {
 	}
 
 	// Act
-	if _, err := test_utils.CreateDevices(b, reqCreate); err != nil {
+	if _, err := test_utils.CreateDevices(mSdk.Bus, reqCreate); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
 
-	if _, err := core_client.PublishDeviceUpdateRequest(b, reqUpd); err != nil {
+	if _, err := core_client.PublishDeviceUpdateRequest(mSdk.Bus, reqUpd); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
@@ -710,12 +710,12 @@ func TestPublishDeviceUpdateTargetMixs(t *testing.T) {
 	}
 
 	// Act
-	if _, err := test_utils.CreateDevices(b, reqCreate); err != nil {
+	if _, err := test_utils.CreateDevices(mSdk.Bus, reqCreate); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
 
-	if _, err := core_client.PublishDeviceUpdateRequest(b, reqUpd); err != nil {
+	if _, err := core_client.PublishDeviceUpdateRequest(mSdk.Bus, reqUpd); err != nil {
 		t.Error(err)
 	}
 
@@ -823,7 +823,7 @@ func TestPublishDeviceDeleteTargetIds(t *testing.T) {
 
 	// Subscribe to device deleted event
 	count := 0
-	s, err := b.Subscribe(
+	s, err := mSdk.Bus.Subscribe(
 		core_client.DeviceDeletedEvent.WithId("*"),
 		func(msg *nats.Msg) {
 			if slices.Contains(deviceIds, clients.ServerSubject(msg.Subject).GetId()) {
@@ -833,12 +833,12 @@ func TestPublishDeviceDeleteTargetIds(t *testing.T) {
 		})
 
 	// Act
-	if _, err := test_utils.CreateDevices(b, reqCreate); err != nil {
+	if _, err := test_utils.CreateDevices(mSdk.Bus, reqCreate); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
 
-	_, err = core_client.PublishDeviceDeleteRequest(b, reqDel)
+	_, err = core_client.PublishDeviceDeleteRequest(mSdk.Bus, reqDel)
 	if err != nil {
 		t.Error(err)
 	}
@@ -934,12 +934,12 @@ func TestPublishDeviceDeleteTargetNames(t *testing.T) {
 	}
 
 	// Act
-	if _, err := test_utils.CreateDevices(b, reqCreate); err != nil {
+	if _, err := test_utils.CreateDevices(mSdk.Bus, reqCreate); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
 
-	_, err := core_client.PublishDeviceDeleteRequest(b, reqDel)
+	_, err := core_client.PublishDeviceDeleteRequest(mSdk.Bus, reqDel)
 	if err != nil {
 		t.Error(err)
 	}
@@ -1033,12 +1033,12 @@ func TestPublishDeviceDeleteTargetNamespace(t *testing.T) {
 	}
 
 	// Act
-	if _, err := test_utils.CreateDevices(b, reqCreate); err != nil {
+	if _, err := test_utils.CreateDevices(mSdk.Bus, reqCreate); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
 
-	_, err := core_client.PublishDeviceDeleteRequest(b, reqDel)
+	_, err := core_client.PublishDeviceDeleteRequest(mSdk.Bus, reqDel)
 	if err != nil {
 		t.Error(err)
 	}
@@ -1135,12 +1135,12 @@ func TestPublishDeviceDeleteTargetLabels(t *testing.T) {
 	}
 
 	// Act
-	if _, err := test_utils.CreateDevices(b, reqCreate); err != nil {
+	if _, err := test_utils.CreateDevices(mSdk.Bus, reqCreate); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
 
-	_, err := core_client.PublishDeviceDeleteRequest(b, reqDel)
+	_, err := core_client.PublishDeviceDeleteRequest(mSdk.Bus, reqDel)
 	if err != nil {
 		t.Error(err)
 	}
@@ -1235,12 +1235,12 @@ func TestPublishDeviceListTargetIds(t *testing.T) {
 	}
 
 	// Act
-	if _, err := test_utils.CreateDevices(b, reqCreate); err != nil {
+	if _, err := test_utils.CreateDevices(mSdk.Bus, reqCreate); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
 
-	respList, err := core_client.PublishDeviceListRequest(b, reqList)
+	respList, err := core_client.PublishDeviceListRequest(mSdk.Bus, reqList)
 	if err != nil {
 		t.Error(err)
 	}
@@ -1335,12 +1335,12 @@ func TestPublishDeviceListTargetNames(t *testing.T) {
 	}
 
 	// Act
-	if _, err := test_utils.CreateDevices(b, reqCreate); err != nil {
+	if _, err := test_utils.CreateDevices(mSdk.Bus, reqCreate); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
 
-	respList, err := core_client.PublishDeviceListRequest(b, reqList)
+	respList, err := core_client.PublishDeviceListRequest(mSdk.Bus, reqList)
 	if err != nil {
 		t.Error(err)
 	}
@@ -1436,12 +1436,12 @@ func TestPublishDeviceListTargetNamespace(t *testing.T) {
 	}
 
 	// Act
-	if _, err := test_utils.CreateDevices(b, reqCreate); err != nil {
+	if _, err := test_utils.CreateDevices(mSdk.Bus, reqCreate); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
 
-	respList, err := core_client.PublishDeviceListRequest(b, reqList)
+	respList, err := core_client.PublishDeviceListRequest(mSdk.Bus, reqList)
 	if err != nil {
 		t.Error(err)
 	}
@@ -1539,12 +1539,12 @@ func TestPublishDeviceListTargetLabels(t *testing.T) {
 	}
 
 	// Act
-	if _, err := test_utils.CreateDevices(b, reqCreate); err != nil {
+	if _, err := test_utils.CreateDevices(mSdk.Bus, reqCreate); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
 
-	respList, err := core_client.PublishDeviceListRequest(b, reqList)
+	respList, err := core_client.PublishDeviceListRequest(mSdk.Bus, reqList)
 	if err != nil {
 		t.Error(err)
 	}
@@ -1637,12 +1637,12 @@ func TestPublishDeviceListNoTarget(t *testing.T) {
 	}
 
 	// Act
-	if _, err := test_utils.CreateDevices(b, reqCreate); err != nil {
+	if _, err := test_utils.CreateDevices(mSdk.Bus, reqCreate); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
 
-	respList, err := core_client.PublishDeviceListRequest(b, reqList)
+	respList, err := core_client.PublishDeviceListRequest(mSdk.Bus, reqList)
 	if err != nil {
 		t.Error(err)
 	}
@@ -1700,7 +1700,7 @@ func TestCreatedDeviceAlreadyExist(t *testing.T) {
 
 	// Subscribe to device created event
 	count := 0
-	s, _ := b.Subscribe(
+	s, _ := mSdk.Bus.Subscribe(
 		core_client.DeviceCreatedEvent.WithId("*"),
 		func(msg *nats.Msg) {
 			if slices.Contains(deviceIds, clients.ServerSubject(msg.Subject).GetId()) {
@@ -1710,7 +1710,7 @@ func TestCreatedDeviceAlreadyExist(t *testing.T) {
 		})
 
 	// Act
-	respCreate, err := test_utils.CreateDevices(b, reqCreate)
+	respCreate, err := test_utils.CreateDevices(mSdk.Bus, reqCreate)
 	if err != nil {
 		t.Error(err)
 	}
@@ -1729,7 +1729,7 @@ func TestUpdateNoTargetMetafield(t *testing.T) {
 	reqUpd := &mir_apiv1.UpdateDeviceRequest{}
 
 	// Act
-	respUpd, err := core_client.PublishDeviceUpdateRequest(b, reqUpd)
+	respUpd, err := core_client.PublishDeviceUpdateRequest(mSdk.Bus, reqUpd)
 	if err != nil {
 		t.Error(err)
 	}
@@ -1744,7 +1744,7 @@ func TestDeleteNoTargetMetafield(t *testing.T) {
 	reqDel := &mir_apiv1.DeleteDeviceRequest{}
 
 	// Act
-	respDel, err := core_client.PublishDeviceDeleteRequest(b, reqDel)
+	respDel, err := core_client.PublishDeviceDeleteRequest(mSdk.Bus, reqDel)
 	if err != nil {
 		t.Error(err)
 	}
@@ -1756,8 +1756,8 @@ func TestDeleteNoTargetMetafield(t *testing.T) {
 
 func TestDeviceCreateDeviceIdAlreadyExist(t *testing.T) {
 	// Arrange
-	s := swarm.NewSwarm(b)
-	b := s.AddDevices(&mir_apiv1.CreateDeviceRequest{
+	s := swarm.NewSwarm(mSdk.Bus)
+	build := s.AddDevices(&mir_apiv1.CreateDeviceRequest{
 		Meta: &mir_apiv1.Meta{
 			Name:      "create_dev_same_id_1",
 			Namespace: "testing_core",
@@ -1784,7 +1784,7 @@ func TestDeviceCreateDeviceIdAlreadyExist(t *testing.T) {
 	})
 
 	// Act
-	resp, err := b.Incubate()
+	resp, err := build.Incubate()
 	if err != nil {
 		t.Error(err)
 	}
@@ -1795,8 +1795,8 @@ func TestDeviceCreateDeviceIdAlreadyExist(t *testing.T) {
 
 func TestDeviceCreateDeviceNameNsAlreadyExist(t *testing.T) {
 	// Arrange
-	s := swarm.NewSwarm(b)
-	b := s.AddDevices(&mir_apiv1.CreateDeviceRequest{
+	s := swarm.NewSwarm(mSdk.Bus)
+	build := s.AddDevices(&mir_apiv1.CreateDeviceRequest{
 		Meta: &mir_apiv1.Meta{
 			Name:      "create_dev_same_id_3",
 			Namespace: "testing_core",
@@ -1823,7 +1823,7 @@ func TestDeviceCreateDeviceNameNsAlreadyExist(t *testing.T) {
 	})
 
 	// Act
-	resp, err := b.Incubate()
+	resp, err := build.Incubate()
 	if err != nil {
 		t.Error(err)
 	}
@@ -1857,7 +1857,7 @@ func TestDeviceUpsertDevice(t *testing.T) {
 	}
 
 	count := 0
-	_, err := b.Subscribe(
+	_, err := mSdk.Bus.Subscribe(
 		core_client.DeviceCreatedEvent.WithId(id),
 		func(msg *nats.Msg) {
 			count += 1
@@ -1865,7 +1865,7 @@ func TestDeviceUpsertDevice(t *testing.T) {
 		})
 
 	// Act
-	resp, err := core_client.PublishDeviceUpdateRequest(b, req)
+	resp, err := core_client.PublishDeviceUpdateRequest(mSdk.Bus, req)
 	if err != nil {
 		t.Error(err)
 	}
@@ -1877,7 +1877,7 @@ func TestDeviceUpsertDevice(t *testing.T) {
 
 func TestDeviceUpdateManyTargetSameDeviceId(t *testing.T) {
 	// Arrange
-	s := swarm.NewSwarm(b)
+	s := swarm.NewSwarm(mSdk.Bus)
 	sb := s.AddDevices(&mir_apiv1.CreateDeviceRequest{
 		Meta: &mir_apiv1.Meta{
 			Name:      "update_dev_sameid_1",
@@ -1920,7 +1920,7 @@ func TestDeviceUpdateManyTargetSameDeviceId(t *testing.T) {
 		t.Error(err)
 	}
 	time.Sleep(2 * time.Second)
-	updResp, err := core_client.PublishDeviceUpdateRequest(b, updReq)
+	updResp, err := core_client.PublishDeviceUpdateRequest(mSdk.Bus, updReq)
 	if err != nil {
 		t.Error(err)
 	}
@@ -1931,14 +1931,14 @@ func TestDeviceUpdateManyTargetSameDeviceId(t *testing.T) {
 
 func TestDeviceUpdateManyTargetSameNameNoExist(t *testing.T) {
 	// Arrange
-	s := swarm.NewSwarm(b)
+	s := swarm.NewSwarm(mSdk.Bus)
 	sb := s.AddDevices(&mir_apiv1.CreateDeviceRequest{
 		Meta: &mir_apiv1.Meta{
 			Name:      "update_dev_samename_noexist_1",
 			Namespace: "testing_core",
 			Labels: map[string]string{
 				"testing": "core",
-				"swarm":   "b",
+				"swarm":   "mSdk.Bus",
 			},
 		},
 		Spec: &mir_apiv1.DeviceSpec{
@@ -1950,7 +1950,7 @@ func TestDeviceUpdateManyTargetSameNameNoExist(t *testing.T) {
 			Namespace: "testing_core",
 			Labels: map[string]string{
 				"testing": "core",
-				"swarm":   "b",
+				"swarm":   "mSdk.Bus",
 			},
 		},
 		Spec: &mir_apiv1.DeviceSpec{
@@ -1963,7 +1963,7 @@ func TestDeviceUpdateManyTargetSameNameNoExist(t *testing.T) {
 		},
 		Targets: &mir_apiv1.DeviceTarget{
 			Labels: map[string]string{
-				"swarm": "b",
+				"swarm": "mSdk.Bus",
 			},
 		},
 	}
@@ -1973,7 +1973,7 @@ func TestDeviceUpdateManyTargetSameNameNoExist(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	updResp, err := core_client.PublishDeviceUpdateRequest(b, updReq)
+	updResp, err := core_client.PublishDeviceUpdateRequest(mSdk.Bus, updReq)
 	if err != nil {
 		t.Error(err)
 	}
@@ -1984,7 +1984,7 @@ func TestDeviceUpdateManyTargetSameNameNoExist(t *testing.T) {
 
 func TestDeviceUpdateManyTargetSameNameOneExist(t *testing.T) {
 	// Arrange
-	s := swarm.NewSwarm(b)
+	s := swarm.NewSwarm(mSdk.Bus)
 	sb := s.AddDevices(&mir_apiv1.CreateDeviceRequest{
 		Meta: &mir_apiv1.Meta{
 			Name:      "update_dev_samename_oneexist",
@@ -2026,7 +2026,7 @@ func TestDeviceUpdateManyTargetSameNameOneExist(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	updResp, err := core_client.PublishDeviceUpdateRequest(b, updReq)
+	updResp, err := core_client.PublishDeviceUpdateRequest(mSdk.Bus, updReq)
 	if err != nil {
 		t.Error(err)
 	}
@@ -2037,7 +2037,7 @@ func TestDeviceUpdateManyTargetSameNameOneExist(t *testing.T) {
 
 func TestDeviceUpdateManyTargetSameNamespaceNoExist(t *testing.T) {
 	// Arrange
-	s := swarm.NewSwarm(b)
+	s := swarm.NewSwarm(mSdk.Bus)
 	sb := s.AddDevices(&mir_apiv1.CreateDeviceRequest{
 		Meta: &mir_apiv1.Meta{
 			Name:      "update_dev_ns_no_exist",
@@ -2079,7 +2079,7 @@ func TestDeviceUpdateManyTargetSameNamespaceNoExist(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	updResp, err := core_client.PublishDeviceUpdateRequest(b, updReq)
+	updResp, err := core_client.PublishDeviceUpdateRequest(mSdk.Bus, updReq)
 	if err != nil {
 		t.Error(err)
 	}
@@ -2090,7 +2090,7 @@ func TestDeviceUpdateManyTargetSameNamespaceNoExist(t *testing.T) {
 
 func TestDeviceUpdateManyTargetSameNamespaceOneExist(t *testing.T) {
 	// Arrange
-	s := swarm.NewSwarm(b)
+	s := swarm.NewSwarm(mSdk.Bus)
 	sb := s.AddDevices(&mir_apiv1.CreateDeviceRequest{
 		Meta: &mir_apiv1.Meta{
 			Name:      "update_dev_ns_one_exist",
@@ -2131,7 +2131,7 @@ func TestDeviceUpdateManyTargetSameNamespaceOneExist(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	updResp, err := core_client.PublishDeviceUpdateRequest(b, updReq)
+	updResp, err := core_client.PublishDeviceUpdateRequest(mSdk.Bus, updReq)
 	if err != nil {
 		t.Error(err)
 	}
@@ -2142,7 +2142,7 @@ func TestDeviceUpdateManyTargetSameNamespaceOneExist(t *testing.T) {
 
 func TestDeviceUpdateManyTargetSameNameNamespaceNoExist(t *testing.T) {
 	// Arrange
-	s := swarm.NewSwarm(b)
+	s := swarm.NewSwarm(mSdk.Bus)
 	sb := s.AddDevices(&mir_apiv1.CreateDeviceRequest{
 		Meta: &mir_apiv1.Meta{
 			Name:      "samebloodyname",
@@ -2185,7 +2185,7 @@ func TestDeviceUpdateManyTargetSameNameNamespaceNoExist(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	updResp, err := core_client.PublishDeviceUpdateRequest(b, updReq)
+	updResp, err := core_client.PublishDeviceUpdateRequest(mSdk.Bus, updReq)
 	if err != nil {
 		t.Error(err)
 	}
@@ -2196,7 +2196,7 @@ func TestDeviceUpdateManyTargetSameNameNamespaceNoExist(t *testing.T) {
 
 func TestDeviceUpdateManyTargetSameNameNamespaceOneExist(t *testing.T) {
 	// Arrange
-	s := swarm.NewSwarm(b)
+	s := swarm.NewSwarm(mSdk.Bus)
 	sb := s.AddDevices(&mir_apiv1.CreateDeviceRequest{
 		Meta: &mir_apiv1.Meta{
 			Name:      "update_dev_same_namens_1",
@@ -2239,7 +2239,7 @@ func TestDeviceUpdateManyTargetSameNameNamespaceOneExist(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	updResp, err := core_client.PublishDeviceUpdateRequest(b, updReq)
+	updResp, err := core_client.PublishDeviceUpdateRequest(mSdk.Bus, updReq)
 	if err != nil {
 		t.Error(err)
 	}
@@ -2280,7 +2280,7 @@ func TestDeviceGoesOnline(t *testing.T) {
 
 	// Subscribe to device online event
 	onlineEventCount := 0
-	s, err := b.Subscribe(
+	s, err := mSdk.Bus.Subscribe(
 		core_client.DeviceOnlineEvent.WithId(deviceIds[0]),
 		func(msg *nats.Msg) {
 			onlineEventCount += 1
@@ -2288,17 +2288,17 @@ func TestDeviceGoesOnline(t *testing.T) {
 		})
 
 	// Act
-	if _, err := test_utils.CreateDevices(b, reqCreate); err != nil {
+	if _, err := test_utils.CreateDevices(mSdk.Bus, reqCreate); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
 
-	if err := core_client.PublishHearthbeatStream(b, deviceIds[0]); err != nil {
+	if err := core_client.PublishHearthbeatStream(mSdk.Bus, deviceIds[0]); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
 
-	respList, err := core_client.PublishDeviceListRequest(b, reqList)
+	respList, err := core_client.PublishDeviceListRequest(mSdk.Bus, reqList)
 	if err != nil {
 		t.Error(err)
 	}
@@ -2349,7 +2349,7 @@ func TestDeviceGoesOffline(t *testing.T) {
 
 	// Subscribe to device offline event
 	offlineEventCount := 0
-	s, err := b.Subscribe(
+	s, err := mSdk.Bus.Subscribe(
 		core_client.DeviceOfflineEvent.WithId(mSdk.GetInstanceName()),
 		func(msg *nats.Msg) {
 			offlineEventCount += 1
@@ -2357,18 +2357,18 @@ func TestDeviceGoesOffline(t *testing.T) {
 		})
 
 	// Act
-	if _, err := test_utils.CreateDevices(b, reqCreate); err != nil {
+	if _, err := test_utils.CreateDevices(mSdk.Bus, reqCreate); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
 
 	hbTime := time.Now().UTC()
-	if err := core_client.PublishHearthbeatStream(b, deviceIds[0]); err != nil {
+	if err := core_client.PublishHearthbeatStream(mSdk.Bus, deviceIds[0]); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
 
-	respListOn, err := core_client.PublishDeviceListRequest(b, reqList)
+	respListOn, err := core_client.PublishDeviceListRequest(mSdk.Bus, reqList)
 	if err != nil {
 		t.Error(err)
 	}
@@ -2410,14 +2410,14 @@ func TestDeviceAutoProvision(t *testing.T) {
 
 	// Subscribe to device online event
 	onlineEventCount := 0
-	s, err := b.Subscribe(
+	s, err := mSdk.Bus.Subscribe(
 		core_client.DeviceOnlineEvent.WithId(deviceIds[0]),
 		func(msg *nats.Msg) {
 			onlineEventCount += 1
 			msg.Ack()
 		})
 	createEventCount := 0
-	c, err := b.Subscribe(
+	c, err := mSdk.Bus.Subscribe(
 		core_client.DeviceCreatedEvent.WithId("*"),
 		func(msg *nats.Msg) {
 			if clients.ServerSubject(msg.Subject).GetId() == deviceIds[0] {
@@ -2427,12 +2427,12 @@ func TestDeviceAutoProvision(t *testing.T) {
 		})
 
 	// Act
-	if err := core_client.PublishHearthbeatStream(b, deviceIds[0]); err != nil {
+	if err := core_client.PublishHearthbeatStream(mSdk.Bus, deviceIds[0]); err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
 
-	respList, err := core_client.PublishDeviceListRequest(b, reqList)
+	respList, err := core_client.PublishDeviceListRequest(mSdk.Bus, reqList)
 	if err != nil {
 		t.Error(err)
 	}
@@ -2457,7 +2457,7 @@ func TestDeviceUpdateDesiredProperties(t *testing.T) {
 	// Arrange
 	count := 0
 	ctx, cancel := context.WithCancel(context.Background())
-	s := swarm.NewSwarm(b)
+	s := swarm.NewSwarm(mSdk.Bus)
 	id := "update_desired_props"
 	if _, err := s.AddDevice(&mir_apiv1.CreateDeviceRequest{
 		Meta: &mir_apiv1.Meta{
@@ -2521,7 +2521,7 @@ func TestDeviceUpdateDesiredPropertiesDoubleSameUpdate(t *testing.T) {
 	// Arrange
 	count := 0
 	ctx, cancel := context.WithCancel(context.Background())
-	s := swarm.NewSwarm(b)
+	s := swarm.NewSwarm(mSdk.Bus)
 	id := "update_desired_props_double"
 	if _, err := s.AddDevice(&mir_apiv1.CreateDeviceRequest{
 		Meta: &mir_apiv1.Meta{
@@ -2589,7 +2589,7 @@ func TestDeviceUpdateDesiredPropertiesInvalid(t *testing.T) {
 	// Arrange
 	count := 0
 	ctx, cancel := context.WithCancel(context.Background())
-	s := swarm.NewSwarm(b)
+	s := swarm.NewSwarm(mSdk.Bus)
 	id := "update_desired_props_invalid"
 	if _, err := s.AddDevice(&mir_apiv1.CreateDeviceRequest{
 		Meta: &mir_apiv1.Meta{

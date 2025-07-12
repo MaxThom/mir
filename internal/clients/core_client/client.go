@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/maxthom/mir/internal/clients"
-	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/nats-io/nats.go"
@@ -29,7 +28,7 @@ const (
 
 // Core Builder
 
-func PublishDeviceCreateRequest(bus *bus.BusConn, req *mir_apiv1.CreateDeviceRequest) (*mir_apiv1.CreateDeviceResponse, error) {
+func PublishDeviceCreateRequest(bus *nats.Conn, req *mir_apiv1.CreateDeviceRequest) (*mir_apiv1.CreateDeviceResponse, error) {
 	bReq, err := proto.Marshal(req)
 	if err != nil {
 		return &mir_apiv1.CreateDeviceResponse{}, err
@@ -49,7 +48,7 @@ func PublishDeviceCreateRequest(bus *bus.BusConn, req *mir_apiv1.CreateDeviceReq
 	return resp, nil
 }
 
-func PublishDeviceUpdateRequest(bus *bus.BusConn, req *mir_apiv1.UpdateDeviceRequest) (*mir_apiv1.UpdateDeviceResponse, error) {
+func PublishDeviceUpdateRequest(bus *nats.Conn, req *mir_apiv1.UpdateDeviceRequest) (*mir_apiv1.UpdateDeviceResponse, error) {
 	bReq, err := proto.Marshal(req)
 	if err != nil {
 		return &mir_apiv1.UpdateDeviceResponse{}, err
@@ -69,7 +68,7 @@ func PublishDeviceUpdateRequest(bus *bus.BusConn, req *mir_apiv1.UpdateDeviceReq
 	return resp, nil
 }
 
-func PublishDeviceDeleteRequest(bus *bus.BusConn, req *mir_apiv1.DeleteDeviceRequest) (*mir_apiv1.DeleteDeviceResponse, error) {
+func PublishDeviceDeleteRequest(bus *nats.Conn, req *mir_apiv1.DeleteDeviceRequest) (*mir_apiv1.DeleteDeviceResponse, error) {
 	bReq, err := proto.Marshal(req)
 	if err != nil {
 		return &mir_apiv1.DeleteDeviceResponse{}, err
@@ -89,7 +88,7 @@ func PublishDeviceDeleteRequest(bus *bus.BusConn, req *mir_apiv1.DeleteDeviceReq
 	return resp, nil
 }
 
-func PublishDeviceListRequest(bus *bus.BusConn, req *mir_apiv1.ListDeviceRequest) (*mir_apiv1.ListDeviceResponse, error) {
+func PublishDeviceListRequest(bus *nats.Conn, req *mir_apiv1.ListDeviceRequest) (*mir_apiv1.ListDeviceResponse, error) {
 	bReq, err := proto.Marshal(req)
 	if err != nil {
 		return &mir_apiv1.ListDeviceResponse{}, err
@@ -108,11 +107,11 @@ func PublishDeviceListRequest(bus *bus.BusConn, req *mir_apiv1.ListDeviceRequest
 	return resp, nil
 }
 
-func PublishHearthbeatStream(bus *bus.BusConn, deviceId string) error {
+func PublishHearthbeatStream(bus *nats.Conn, deviceId string) error {
 	return bus.Publish(HearthbeatDeviceStream.WithId(deviceId), []byte{})
 }
 
-func PublishDeviceDeletedEvent(bus *bus.BusConn, originalInstance string, deviceId string, d mir_v1.Device) error {
+func PublishDeviceDeletedEvent(bus *nats.Conn, originalInstance string, deviceId string, d mir_v1.Device) error {
 	b, err := proto.Marshal(mir_v1.NewProtoDeviceFromDevice(d))
 	if err != nil {
 		return err
@@ -126,7 +125,7 @@ func PublishDeviceDeletedEvent(bus *bus.BusConn, originalInstance string, device
 	return bus.PublishMsg(msg)
 }
 
-func PublishDeviceCreatedEvent(bus *bus.BusConn, originalInstance string, deviceId string, d mir_v1.Device) error {
+func PublishDeviceCreatedEvent(bus *nats.Conn, originalInstance string, deviceId string, d mir_v1.Device) error {
 	b, err := proto.Marshal(mir_v1.NewProtoDeviceFromDevice(d))
 	if err != nil {
 		return err
@@ -140,7 +139,7 @@ func PublishDeviceCreatedEvent(bus *bus.BusConn, originalInstance string, device
 	return bus.PublishMsg(msg)
 }
 
-func PublishDeviceUpdatedEvent(bus *bus.BusConn, originalInstance string, deviceId string, d mir_v1.Device) error {
+func PublishDeviceUpdatedEvent(bus *nats.Conn, originalInstance string, deviceId string, d mir_v1.Device) error {
 	b, err := proto.Marshal(mir_v1.NewProtoDeviceFromDevice(d))
 	if err != nil {
 		return err

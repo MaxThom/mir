@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/maxthom/mir/internal/clients"
-	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
@@ -21,7 +20,7 @@ const (
 	RequestDesiredPropertiesStream clients.ServerSubject = "device.%s.cfg.v1alpha.desiredproperties"
 )
 
-func PublishSendConfigRequest(bus *bus.BusConn, req *mir_apiv1.SendConfigRequest) (*mir_apiv1.SendConfigResponse, error) {
+func PublishSendConfigRequest(bus *nats.Conn, req *mir_apiv1.SendConfigRequest) (*mir_apiv1.SendConfigResponse, error) {
 	b, err := proto.Marshal(req)
 	if err != nil {
 		return &mir_apiv1.SendConfigResponse{}, err
@@ -42,7 +41,7 @@ func PublishSendConfigRequest(bus *bus.BusConn, req *mir_apiv1.SendConfigRequest
 	return resp, nil
 }
 
-func PublishListConfigRequest(bus *bus.BusConn, req *mir_apiv1.SendListConfigRequest) (*mir_apiv1.SendListConfigResponse, error) {
+func PublishListConfigRequest(bus *nats.Conn, req *mir_apiv1.SendListConfigRequest) (*mir_apiv1.SendListConfigResponse, error) {
 	b, err := proto.Marshal(req)
 	if err != nil {
 		return &mir_apiv1.SendListConfigResponse{}, err
@@ -63,7 +62,7 @@ func PublishListConfigRequest(bus *bus.BusConn, req *mir_apiv1.SendListConfigReq
 	return resp, nil
 }
 
-func PublishReportedPropertiesStream(bus *bus.BusConn, deviceId string, t proto.Message) error {
+func PublishReportedPropertiesStream(bus *nats.Conn, deviceId string, t proto.Message) error {
 	msg, err := GetReportedPropertiesStreamMsg(deviceId, t)
 	if err != nil {
 		return err
@@ -87,7 +86,7 @@ func GetReportedPropertiesStreamMsg(deviceId string, t proto.Message) (*nats.Msg
 	}, nil
 }
 
-func PublishRequestDesiredPropertiesStream(bus *bus.BusConn, deviceId string) (*mir_apiv1.DeviceReportedPropertiesResponse, error) {
+func PublishRequestDesiredPropertiesStream(bus *nats.Conn, deviceId string) (*mir_apiv1.DeviceReportedPropertiesResponse, error) {
 	resMsg, err := bus.Request(RequestDesiredPropertiesStream.WithId(deviceId), []byte{}, 7*time.Second)
 	if err != nil {
 		return &mir_apiv1.DeviceReportedPropertiesResponse{}, err

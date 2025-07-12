@@ -205,7 +205,7 @@ func (s *ProtoCfgServer) sendConfigSub(msg *mir.Msg, clientId string, req *mir_a
 	if req.PayloadEncoding == mir_apiv1.Encoding_ENCODING_UNSPECIFIED && !req.ShowTemplate {
 		errs = append(errs, mir_v1.ErrorCommandEncodingNotSpecified.Error())
 	}
-	if (req.Payload == nil || len(req.Payload) == 0) && !req.ShowTemplate && !req.ShowValues && req.PayloadEncoding != mir_apiv1.Encoding_ENCODING_PROTOBUF {
+	if (len(req.Payload) == 0) && !req.ShowTemplate && !req.ShowValues && req.PayloadEncoding != mir_apiv1.Encoding_ENCODING_PROTOBUF {
 		// Proto encoding can be empty if struct is empty, not json
 		errs = append(errs, mir_v1.ErrorCommandPayloadNotProvided.Error())
 	}

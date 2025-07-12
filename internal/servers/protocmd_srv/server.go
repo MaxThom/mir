@@ -113,7 +113,7 @@ func (s *ProtoCmdServer) sendCommandSub(msg *mir.Msg, clientId string, req *mir_
 	if req.PayloadEncoding == mir_apiv1.Encoding_ENCODING_UNSPECIFIED && !req.ShowTemplate {
 		errs = append(errs, mir_v1.ErrorCommandEncodingNotSpecified.Error())
 	}
-	if (req.Payload == nil || len(req.Payload) == 0) && !req.ShowTemplate && req.PayloadEncoding != mir_apiv1.Encoding_ENCODING_PROTOBUF {
+	if (len(req.Payload) == 0) && !req.ShowTemplate && req.PayloadEncoding != mir_apiv1.Encoding_ENCODING_PROTOBUF {
 		// Proto encoding can be empty if struct is empty, not json
 		errs = append(errs, mir_v1.ErrorCommandPayloadNotProvided.Error())
 	}

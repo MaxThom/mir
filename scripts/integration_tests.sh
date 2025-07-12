@@ -166,20 +166,52 @@ EOF
     log_info "- Started prototlm service (.tmp/prototlm.log) with PID: $PROTOTLM_PID"
 }
 
-# Start all services
-log_success "Starting all Mir services for testing..."
-mkdir -p .tmp
-start_core
-start_eventstore
-start_protocfg
-start_protocmd
-start_prototlm
+# Check if services are still running
+check_services() {
+    local failed=false
 
-# Wait for OS signal to shutdown
-log_success "All services started. Press Ctrl+C to shutdown..."
+    if ! kill -0 $CORE_PID 2>/dev/null; then
+        log_error "- Core service (PID: $CORE_PID) has died!"
+        log_error "- Core service logs:"
+        cat .tmp/core.log
+        failed=true
+    fi
 
-# Trap signals for graceful shutdown
-#
+    if ! kill -0 $EVENTSTORE_PID 2>/dev/null; then
+        log_error "- EventStore service (PID: $EVENTSTORE_PID) has died!"
+        log_error "- EventStore service logs:"
+        cat .tmp/eventstore.log
+        failed=true
+    fi
+
+    if ! kill -0 $PROTOCFG_PID 2>/dev/null; then
+        log_error "- ProtoCfg service (PID: $PROTOCFG_PID) has died!"
+        log_error "- ProtoCfg service logs:"
+        cat .tmp/protocfg.log
+        failed=true
+    fi
+
+    if ! kill -0 $PROTOCMD_PID 2>/dev/null; then
+        log_error "- ProtoCmd service (PID: $PROTOCMD_PID) has died!"
+        log_error "- ProtoCmd service logs:"
+        cat .tmp/protocmd.log
+        failed=true
+    fi
+
+    if ! kill -0 $PROTOTLM_PID 2>/dev/null; then
+        log_error "- ProtoTlm service (PID: $PROTOTLM_PID) has died!"
+        log_error "- ProtoTlm service logs:"
+        cat .tmp/prototlm.log
+        failed=true
+    fi
+
+    if [ "$failed" = true ]; then
+        cleanup
+        exit 1
+    fi
+
+    log_info "- All services are running successfully!"
+}
 
 cleanup() {
     if [ "$CLEANUP_DONE" = "true" ]; then
@@ -201,18 +233,36 @@ cleanup() {
     log_info "- Stopped prototlm with PID: $PROTOTLM_PID"
 }
 
-trap cleanup INT TERM EXIT
+# Check if surreal CLI exists
+log_success "Cleaning databases data..."
+if command -v surreal &> /dev/null; then
+    log_info "- Surreal"
+    echo "DELETE devices;DELETE events;" | surreal sql -u root -p root --ns global --db mir_testing --hide-welcome
+else
+    log_warn "- Surreal CLI not found"
+fi
 
-# Wait indefinitely until a signal is received
+# Start all services
+log_info "- Influx"
+
+log_success "Starting all Mir services for testing..."
+mkdir -p .tmp
+start_core
+start_eventstore
+start_protocfg
+start_protocmd
+start_prototlm
+
+# Wait 5 seconds and check if services are still running
+log_success "Waiting 5 seconds for services to stabilize..."
+sleep 5
+check_services
+
+# Wait for OS signal to shutdown
+log_success "All services started and verified. Press Ctrl+C to shutdown..."
+
+# Wait for exit
+trap cleanup INT TERM EXIT
 while true; do
     sleep 1
 done
-
-# sleep 1
-# log_success "Running all integration tests..."
-# go test -coverprofile ./.tmp/coverage.out $TEST_PATH
-# sleep 1
-
-
-# TODO
-# Clean surreal and influx data

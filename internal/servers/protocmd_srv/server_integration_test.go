@@ -9,16 +9,10 @@ import (
 	"testing"
 	"time"
 
-	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
-	"github.com/influxdata/influxdb-client-go/v2/api"
 	"github.com/maxthom/mir/internal/clients/cmd_client"
 	"github.com/maxthom/mir/internal/clients/core_client"
-	"github.com/maxthom/mir/internal/externals/mng"
-	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	"github.com/maxthom/mir/internal/libs/swarm"
 	"github.com/maxthom/mir/internal/libs/test_utils"
-	"github.com/maxthom/mir/internal/servers/core_srv"
-	"github.com/maxthom/mir/internal/services/schema_cache"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -28,105 +22,56 @@ import (
 	mirDevice "github.com/maxthom/mir/pkgs/device/mir"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/maxthom/mir/pkgs/module/mir"
-	"github.com/maxthom/surrealdb.go"
 	"gotest.tools/assert"
 )
 
-var db *surrealdb.DB
 var mSdk *mir.Mir
 var busUrl = "nats://127.0.0.1:4222"
-var log = test_utils.TestLogger("protocmd")
-var lpClient influxdb2.Client
-var lpWriter api.WriteAPI
-var lpQuery api.QueryAPI
-
-var b *bus.BusConn
 
 func TestMain(m *testing.M) {
 	// Setup
-	ctx, cancel := context.WithCancel(context.Background())
-	fmt.Println("Test Setup")
-
-	b, db, _, _, _ = test_utils.SetupAllExternalsPanic(ctx, test_utils.ConnsInfo{
-		Name:   "test_prototlm",
-		BusUrl: busUrl,
-		Surreal: test_utils.SurrealInfo{
-			Url:  "ws://127.0.0.1:8000/rpc",
-			User: "root",
-			Pass: "root",
-			Ns:   "global",
-			Db:   "mir_testing",
-		},
-		Influx: test_utils.InfluxInfo{
-			Url:    "http://localhost:8086/",
-			Token:  "mir-operator-token",
-			Org:    "Mir",
-			Bucket: "mir_integration_test",
-		},
-	})
+	fmt.Println("> Test Setup")
 	var err error
 	mSdk, err = mir.Connect("test_protocmd", busUrl)
 	if err != nil {
 		panic(err)
 	}
-	cc, err := schema_cache.NewMirSchemaCache(log, mSdk)
-	if err != nil {
+	if err := dataCleanUp(); err != nil {
 		panic(err)
 	}
-	protocmdSrv, err := NewProtoCmd(log, mSdk, mng.NewSurrealMirStore(db), cc)
-	if err != nil {
-		panic(err)
-	}
-	if err = protocmdSrv.Serve(); err != nil {
-		panic(err)
-	}
-
-	coreSrv, err := core_srv.NewCore(log, mSdk, mng.NewSurrealMirStore(db))
-	if err != nil {
-		panic(err)
-	}
-	if err = coreSrv.Serve(); err != nil {
-		panic(err)
-	}
-	fmt.Println(" -> bus")
-	fmt.Println(" -> db")
-	fmt.Println(" -> core")
-	fmt.Println(" -> protocmd")
 	time.Sleep(1 * time.Second)
-	// Clear data
-	test_utils.DeleteDevicesWithLabelsPanic(b, map[string]string{
-		"testing": "cmd",
-	})
-	time.Sleep(1 * time.Second)
-	fmt.Println(" -> ready")
 
 	// Tests
+	fmt.Println("> Test Run")
 	exitVal := m.Run()
+	time.Sleep(1 * time.Second)
 
 	// Teardown
-	fmt.Println("Test Teardown")
-	test_utils.DeleteDevicesWithLabelsPanic(b, map[string]string{
-		"testing": "cmd",
-	})
-	fmt.Println(" -> cleaned up")
+	fmt.Println("> Test Teardown")
+	if err := mSdk.Disconnect(); err != nil {
+		fmt.Println(err)
+	}
 	time.Sleep(1 * time.Second)
-	b.Drain()
-	cancel()
-	coreSrv.Shutdown()
-	protocmdSrv.Shutdown()
-	b.Close()
-	mSdk.Disconnect()
-	db.Close()
-	fmt.Println(" -> closed connections")
 
 	os.Exit(exitVal)
+}
+
+func dataCleanUp() error {
+	if _, err := mSdk.Server().DeleteDevice().Request(mir_v1.DeviceTarget{
+		Labels: map[string]string{
+			"testing": "cmd",
+		},
+	}); err != nil {
+		return err
+	}
+	return nil
 }
 
 func TestPublishCmdListRequest(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_list_cmd"
-	s := swarm.NewSwarm(b)
+	s := swarm.NewSwarm(mSdk.Bus)
 	if _, err := s.AddDevice(&mir_apiv1.CreateDeviceRequest{
 		Meta: &mir_apiv1.Meta{
 			Name:      id,
@@ -151,7 +96,7 @@ func TestPublishCmdListRequest(t *testing.T) {
 		t.Error(err)
 	}
 
-	respListCmd, err := cmd_client.PublishListCommandsRequest(b, &mir_apiv1.SendListCommandsRequest{
+	respListCmd, err := cmd_client.PublishListCommandsRequest(mSdk.Bus, &mir_apiv1.SendListCommandsRequest{
 		Targets:       mir_v1.MirDeviceTargetToProtoDeviceTarget(s.ToTarget()),
 		FilterLabels:  map[string]string{},
 		RefreshSchema: false,
@@ -187,7 +132,7 @@ func TestPublishCmdListFiltersRequest(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_list_cmd_filters"
-	s := swarm.NewSwarm(b)
+	s := swarm.NewSwarm(mSdk.Bus)
 	if _, err := s.AddDevice(&mir_apiv1.CreateDeviceRequest{
 		Meta: &mir_apiv1.Meta{
 			Name:      id,
@@ -212,7 +157,7 @@ func TestPublishCmdListFiltersRequest(t *testing.T) {
 		t.Error(err)
 	}
 
-	respListCmd, err := cmd_client.PublishListCommandsRequest(b, &mir_apiv1.SendListCommandsRequest{
+	respListCmd, err := cmd_client.PublishListCommandsRequest(mSdk.Bus, &mir_apiv1.SendListCommandsRequest{
 		Targets: mir_v1.MirDeviceTargetToProtoDeviceTarget(s.ToTarget()),
 		FilterLabels: map[string]string{
 			"building": "A",
@@ -295,7 +240,7 @@ func TestPublishCmdRequest(t *testing.T) {
 	}
 
 	// Act
-	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate)
+	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate)
 	if err != nil {
 		t.Error(err)
 	}
@@ -305,7 +250,7 @@ func TestPublishCmdRequest(t *testing.T) {
 		t.Error(err)
 	}
 
-	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
+	respCmd, err := cmd_client.PublishSendCommandRequest(mSdk.Bus, reqCmd)
 	if err != nil {
 		t.Error(err)
 	}
@@ -342,7 +287,7 @@ func TestPublishCmdBadRequest(t *testing.T) {
 	}
 
 	// Act
-	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
+	respCmd, err := cmd_client.PublishSendCommandRequest(mSdk.Bus, reqCmd)
 	if err != nil {
 		t.Error(err)
 	}
@@ -406,7 +351,7 @@ func TestPublishCmdJsonRequest(t *testing.T) {
 	}
 
 	// Act
-	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate)
+	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate)
 	if err != nil {
 		t.Error(err)
 	}
@@ -416,7 +361,7 @@ func TestPublishCmdJsonRequest(t *testing.T) {
 		t.Error(err)
 	}
 
-	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
+	respCmd, err := cmd_client.PublishSendCommandRequest(mSdk.Bus, reqCmd)
 	if err != nil {
 		t.Error(err)
 	} else if respCmd.GetError() != "" {
@@ -464,7 +409,7 @@ func TestPublishCmdNoDeviceFound(t *testing.T) {
 	}
 
 	// Act
-	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
+	respCmd, err := cmd_client.PublishSendCommandRequest(mSdk.Bus, reqCmd)
 	if err != nil {
 		t.Error(err)
 	}
@@ -513,12 +458,12 @@ func TestPublishCmdProtoNoValidationDryRun(t *testing.T) {
 	}
 
 	// Act
-	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate)
+	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate)
 	if err != nil {
 		t.Error(err)
 	}
 
-	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
+	respCmd, err := cmd_client.PublishSendCommandRequest(mSdk.Bus, reqCmd)
 	if err != nil {
 		t.Error(err)
 	} else if respCmd.GetError() != "" {
@@ -595,7 +540,7 @@ func TestPublishCmdProtoInvalidPayloadNoValidation(t *testing.T) {
 	}
 
 	// Act
-	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate)
+	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate)
 	if err != nil {
 		t.Error(err)
 	}
@@ -605,7 +550,7 @@ func TestPublishCmdProtoInvalidPayloadNoValidation(t *testing.T) {
 		t.Error(err)
 	}
 
-	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
+	respCmd, err := cmd_client.PublishSendCommandRequest(mSdk.Bus, reqCmd)
 	if err != nil {
 		t.Error(err)
 	} else if respCmd.GetError() != "" {
@@ -625,7 +570,7 @@ func TestPublishCmdRequestMultipleDevices(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	cmdHandled := &protocmd_testv1.ChangePower{}
-	swarm := swarm.NewSwarm(b)
+	swarm := swarm.NewSwarm(mSdk.Bus)
 	handlerCount := 0
 	_, err := swarm.AddDevices(&mir_apiv1.CreateDeviceRequest{
 		Meta: &mir_apiv1.Meta{
@@ -682,7 +627,7 @@ func TestPublishCmdRequestMultipleDevices(t *testing.T) {
 	}
 
 	// Act
-	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
+	respCmd, err := cmd_client.PublishSendCommandRequest(mSdk.Bus, reqCmd)
 	if err != nil {
 		t.Error(err)
 	} else if respCmd.GetError() != "" {
@@ -716,7 +661,7 @@ func TestPublishCmdRequestMultipleDevicesOneNoHandler(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	cmdHandled := &protocmd_testv1.ChangePower{}
-	swarm := swarm.NewSwarm(b)
+	swarm := swarm.NewSwarm(mSdk.Bus)
 	handlerCount := 0
 	_, err := swarm.AddDevices(&mir_apiv1.CreateDeviceRequest{
 		Meta: &mir_apiv1.Meta{
@@ -788,7 +733,7 @@ func TestPublishCmdRequestMultipleDevicesOneNoHandler(t *testing.T) {
 	}
 
 	// Act
-	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
+	respCmd, err := cmd_client.PublishSendCommandRequest(mSdk.Bus, reqCmd)
 	if err != nil {
 		t.Error(err)
 	} else if respCmd.GetError() != "" {
@@ -896,11 +841,11 @@ func TestPublishCmdRequestMultipleDevicesOneTimeout(t *testing.T) {
 	}
 
 	// Act
-	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate)
+	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate)
 	if err != nil {
 		t.Error(err)
 	}
-	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate2)
+	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate2)
 	if err != nil {
 		t.Error(err)
 	}
@@ -910,7 +855,7 @@ func TestPublishCmdRequestMultipleDevicesOneTimeout(t *testing.T) {
 		t.Error(err)
 	}
 
-	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
+	respCmd, err := cmd_client.PublishSendCommandRequest(mSdk.Bus, reqCmd)
 	if err != nil {
 		t.Error(err)
 	} else if respCmd.GetError() != "" {
@@ -946,7 +891,7 @@ func TestPublishCmdRequestMultipleDevicesJson(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	cmdHandled := &protocmd_testv1.ChangePower{}
-	swarm := swarm.NewSwarm(b)
+	swarm := swarm.NewSwarm(mSdk.Bus)
 	handlerCount := 0
 	_, err := swarm.AddDevices(
 		&mir_apiv1.CreateDeviceRequest{
@@ -996,7 +941,7 @@ func TestPublishCmdRequestMultipleDevicesJson(t *testing.T) {
 	}
 
 	// Act
-	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
+	respCmd, err := cmd_client.PublishSendCommandRequest(mSdk.Bus, reqCmd)
 	if err != nil {
 		t.Error(err)
 	} else if respCmd.GetError() != "" {
@@ -1030,7 +975,7 @@ func TestPublishCmdRequestMultipleDevicesDescriptorNotFound(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	cmdHandled := &protocmd_testv1.ChangePower{}
-	swarm := swarm.NewSwarm(b)
+	swarm := swarm.NewSwarm(mSdk.Bus)
 	handlerCount := 0
 	_, err := swarm.AddDevices(
 		&mir_apiv1.CreateDeviceRequest{
@@ -1080,7 +1025,7 @@ func TestPublishCmdRequestMultipleDevicesDescriptorNotFound(t *testing.T) {
 	}
 
 	// Act
-	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
+	respCmd, err := cmd_client.PublishSendCommandRequest(mSdk.Bus, reqCmd)
 	if err != nil {
 		t.Error(err)
 	} else if respCmd.GetError() != "" {
@@ -1105,7 +1050,7 @@ func TestPublishCmdRequestMultipleDevicesSingleDescriptorNotFoundForcePush(t *te
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	cmdHandled := &protocmd_testv1.ChangePower{}
-	swarm := swarm.NewSwarm(b)
+	swarm := swarm.NewSwarm(mSdk.Bus)
 	handlerCount := 0
 	_, err := swarm.AddDevice(
 		&mir_apiv1.CreateDeviceRequest{
@@ -1166,7 +1111,7 @@ func TestPublishCmdRequestMultipleDevicesSingleDescriptorNotFoundForcePush(t *te
 	}
 
 	// Act
-	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
+	respCmd, err := cmd_client.PublishSendCommandRequest(mSdk.Bus, reqCmd)
 	if err != nil {
 		t.Error(err)
 	} else if respCmd.GetError() != "" {
@@ -1200,7 +1145,7 @@ func TestPublishCmdRequestMultipleDevicesSingleDescriptorNotFoundForcePush(t *te
 func TestPublishCmdRequestMultipleDevicesJsonTemplate(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
-	swarm := swarm.NewSwarm(b)
+	swarm := swarm.NewSwarm(mSdk.Bus)
 	_, err := swarm.AddDevices(
 		&mir_apiv1.CreateDeviceRequest{
 			Meta: &mir_apiv1.Meta{
@@ -1242,7 +1187,7 @@ func TestPublishCmdRequestMultipleDevicesJsonTemplate(t *testing.T) {
 	}
 
 	// Act
-	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
+	respCmd, err := cmd_client.PublishSendCommandRequest(mSdk.Bus, reqCmd)
 	if err != nil {
 		t.Error(err)
 	} else if respCmd.GetError() != "" {
@@ -1321,11 +1266,11 @@ func TestPublishCmdRequestMultipleDevicesOneTimeoutJsonTemplate(t *testing.T) {
 	}
 
 	// Act
-	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate)
+	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate)
 	if err != nil {
 		t.Error(err)
 	}
-	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate2)
+	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate2)
 	if err != nil {
 		t.Error(err)
 	}
@@ -1335,7 +1280,7 @@ func TestPublishCmdRequestMultipleDevicesOneTimeoutJsonTemplate(t *testing.T) {
 		t.Error(err)
 	}
 
-	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
+	respCmd, err := cmd_client.PublishSendCommandRequest(mSdk.Bus, reqCmd)
 	if err != nil {
 		t.Error(err)
 	} else if respCmd.GetError() != "" {
@@ -1412,7 +1357,7 @@ func TestPublishCmdJsonNameWithCurlyRequest(t *testing.T) {
 	}
 
 	// Act
-	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate)
+	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate)
 	if err != nil {
 		t.Error(err)
 	}
@@ -1422,7 +1367,7 @@ func TestPublishCmdJsonNameWithCurlyRequest(t *testing.T) {
 		t.Error(err)
 	}
 
-	respCmd, err := cmd_client.PublishSendCommandRequest(b, reqCmd)
+	respCmd, err := cmd_client.PublishSendCommandRequest(mSdk.Bus, reqCmd)
 	if err != nil {
 		t.Error(err)
 	} else if respCmd.GetError() != "" {

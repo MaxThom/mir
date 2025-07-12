@@ -11,21 +11,15 @@ import (
 
 	"github.com/maxthom/mir/internal/clients/cfg_client"
 	"github.com/maxthom/mir/internal/clients/core_client"
-	"github.com/maxthom/mir/internal/externals/mng"
-	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
 	"github.com/maxthom/mir/internal/libs/swarm"
 	"github.com/maxthom/mir/internal/libs/test_utils"
-	"github.com/maxthom/mir/internal/servers/core_srv"
 	protocfg_testv1 "github.com/maxthom/mir/internal/servers/protocfg_srv/proto_test/gen/protocfg_test/v1"
-	"github.com/maxthom/mir/internal/services/schema_cache"
 	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
 	mirDevice "github.com/maxthom/mir/pkgs/device/mir"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/maxthom/mir/pkgs/module/mir"
-	"github.com/maxthom/surrealdb.go"
-	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -34,72 +28,54 @@ import (
 )
 
 var log = test_utils.TestLogger("cfg")
-var db *surrealdb.DB
-var b *bus.BusConn
-var sub *nats.Subscription
 var mSdk *mir.Mir
 var busUrl = "nats://127.0.0.1:4222"
 
 func TestMain(m *testing.M) {
 	// Setup
-	fmt.Println("Test Setup")
+	fmt.Println("> Test Setup")
 	var err error
 
-	db = test_utils.SetupSurrealDbConnsPanic("ws://127.0.0.1:8000/rpc", "root", "root", "global", "mir_testing")
-	b = test_utils.SetupNatsConPanic(busUrl)
 	mSdk, err = mir.Connect("test_cfg", busUrl)
 	if err != nil {
 		panic(err)
 	}
-	coreSrv, err := core_srv.NewCore(log, mSdk, mng.NewSurrealMirStore(db))
-	if err := coreSrv.Serve(); err != nil {
-		panic(err)
-	}
-	cc, err := schema_cache.NewMirSchemaCache(log, mSdk)
-	if err != nil {
-		panic(err)
-	}
-	cfgSrv, err := NewProtoCfg(log, mSdk, mng.NewSurrealMirStore(db), cc)
-	if err := cfgSrv.Serve(); err != nil {
-		panic(err)
-	}
-	fmt.Println(" -> bus")
-	fmt.Println(" -> db")
-	fmt.Println(" -> core")
 	time.Sleep(1 * time.Second)
-	// Clear data
-	test_utils.DeleteDevicesWithLabelsPanic(b, map[string]string{
-		"testing": "cfg",
-	})
-	fmt.Println(" -> ready")
+	if err := dataCleanUp(); err != nil {
+		panic(err)
+	}
 
 	// Tests
+	fmt.Println("> Test Run")
 	exitVal := m.Run()
+	time.Sleep(1 * time.Second)
 
 	// Teardown
-	fmt.Println("Test Teardown")
-	test_utils.DeleteDevicesWithLabelsPanic(b, map[string]string{
-		"testing": "cfg",
-	})
-	fmt.Println(" -> cleaned up")
+	fmt.Println("> Test Teardown")
+	if err := mSdk.Disconnect(); err != nil {
+		fmt.Println(err)
+	}
 	time.Sleep(1 * time.Second)
-	b.Drain()
-	coreSrv.Shutdown()
-	cfgSrv.Shutdown()
-	b.Close()
-	db.Close()
-	fmt.Println(" -> core")
-	fmt.Println(" -> nats")
-	fmt.Println(" -> db")
-
 	os.Exit(exitVal)
+}
+
+func dataCleanUp() error {
+	// Clear data
+	if _, err := mSdk.Server().DeleteDevice().Request(mir_v1.DeviceTarget{
+		Labels: map[string]string{
+			"testing": "cfg",
+		},
+	}); err != nil {
+		return err
+	}
+	return nil
 }
 
 func TestPublishCfgListRequest(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_list_cfg"
-	s := swarm.NewSwarm(b)
+	s := swarm.NewSwarm(mSdk.Bus)
 	if _, err := s.AddDevice(&mir_apiv1.CreateDeviceRequest{
 		Meta: &mir_apiv1.Meta{
 			Name:      id,
@@ -124,7 +100,7 @@ func TestPublishCfgListRequest(t *testing.T) {
 		t.Error(err)
 	}
 
-	respListCfg, err := cfg_client.PublishListConfigRequest(b, &mir_apiv1.SendListConfigRequest{
+	respListCfg, err := cfg_client.PublishListConfigRequest(mSdk.Bus, &mir_apiv1.SendListConfigRequest{
 		Targets:       mir_v1.MirDeviceTargetToProtoDeviceTarget(s.ToTarget()),
 		FilterLabels:  map[string]string{},
 		RefreshSchema: false,
@@ -160,7 +136,7 @@ func TestPublishCfgListFiltersRequest(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_list_cfg_filters"
-	s := swarm.NewSwarm(b)
+	s := swarm.NewSwarm(mSdk.Bus)
 	if _, err := s.AddDevice(&mir_apiv1.CreateDeviceRequest{
 		Meta: &mir_apiv1.Meta{
 			Name:      id,
@@ -185,7 +161,7 @@ func TestPublishCfgListFiltersRequest(t *testing.T) {
 		t.Error(err)
 	}
 
-	respListCmd, err := cfg_client.PublishListConfigRequest(b, &mir_apiv1.SendListConfigRequest{
+	respListCmd, err := cfg_client.PublishListConfigRequest(mSdk.Bus, &mir_apiv1.SendListConfigRequest{
 		Targets: mir_v1.MirDeviceTargetToProtoDeviceTarget(s.ToTarget()),
 		FilterLabels: map[string]string{
 			"building": "A",
@@ -200,6 +176,7 @@ func TestPublishCfgListFiltersRequest(t *testing.T) {
 	}
 
 	// Assert
+	fmt.Println(respListCmd)
 	dev := respListCmd.GetOk().DeviceConfigs[id+"/testing_cfg"]
 	assert.Equal(t, dev.Error, "")
 	assert.Equal(t, len(dev.Configs), 1)
@@ -269,7 +246,7 @@ func TestPublishCfgRequest(t *testing.T) {
 	}
 
 	// Act
-	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate)
+	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate)
 	if err != nil {
 		t.Error(err)
 	}
@@ -279,7 +256,7 @@ func TestPublishCfgRequest(t *testing.T) {
 		t.Error(err)
 	}
 
-	respCfg, err := cfg_client.PublishSendConfigRequest(b, reqCmd)
+	respCfg, err := cfg_client.PublishSendConfigRequest(mSdk.Bus, reqCmd)
 	if err != nil {
 		t.Error(err)
 	}
@@ -319,7 +296,7 @@ func TestPublishCfgBadRequest(t *testing.T) {
 	}
 
 	// Act
-	respCmd, err := cfg_client.PublishSendConfigRequest(b, reqCmd)
+	respCmd, err := cfg_client.PublishSendConfigRequest(mSdk.Bus, reqCmd)
 	if err != nil {
 		t.Error(err)
 	}
@@ -384,7 +361,7 @@ func TestPublishCfgJsonRequest(t *testing.T) {
 	}
 
 	// Act
-	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate)
+	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate)
 	if err != nil {
 		t.Error(err)
 	}
@@ -394,7 +371,7 @@ func TestPublishCfgJsonRequest(t *testing.T) {
 		t.Error(err)
 	}
 
-	respCmd, err := cfg_client.PublishSendConfigRequest(b, reqCmd)
+	respCmd, err := cfg_client.PublishSendConfigRequest(mSdk.Bus, reqCmd)
 	if err != nil {
 		t.Error(err)
 	} else if respCmd.GetError() != "" {
@@ -489,7 +466,7 @@ func TestPublishCfgCurrentValues(t *testing.T) {
 	}
 
 	// Act
-	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate)
+	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate)
 	if err != nil {
 		t.Error(err)
 	}
@@ -499,14 +476,14 @@ func TestPublishCfgCurrentValues(t *testing.T) {
 		t.Error(err)
 	}
 
-	respCmd, err := cfg_client.PublishSendConfigRequest(b, reqCfg)
+	respCmd, err := cfg_client.PublishSendConfigRequest(mSdk.Bus, reqCfg)
 	if err != nil {
 		t.Error(err)
 	} else if respCmd.GetError() != "" {
 		t.Error(respCmd.GetError())
 	}
 
-	respCurrent, err := cfg_client.PublishSendConfigRequest(b, reqCurrent)
+	respCurrent, err := cfg_client.PublishSendConfigRequest(mSdk.Bus, reqCurrent)
 	if err != nil {
 		t.Error(err)
 	} else if respCmd.GetError() != "" {
@@ -609,7 +586,7 @@ func TestPublishCfgRequestCheckTime(t *testing.T) {
 	}
 
 	// Act
-	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate)
+	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate)
 	if err != nil {
 		t.Error(err)
 	}
@@ -619,14 +596,14 @@ func TestPublishCfgRequestCheckTime(t *testing.T) {
 		t.Error(err)
 	}
 
-	respCmd, err := cfg_client.PublishSendConfigRequest(b, reqCmd)
+	respCmd, err := cfg_client.PublishSendConfigRequest(mSdk.Bus, reqCmd)
 	if err != nil {
 		t.Error(err)
 	} else if respCmd.GetError() != "" {
 		t.Error(respCmd.GetError())
 	}
 
-	respUpd, err := core_client.PublishDeviceListRequest(b, reqDev)
+	respUpd, err := core_client.PublishDeviceListRequest(mSdk.Bus, reqDev)
 	if err != nil {
 		t.Error(err)
 	}
@@ -636,7 +613,7 @@ func TestPublishCfgRequestCheckTime(t *testing.T) {
 
 	// Assert
 	cfgTime := respUpd.GetOk().GetDevices()[0].Status.Properties.Desired[string(p.ProtoReflect().Descriptor().FullName())]
-	assert.Equal(t, true, mir_v1.AsGoTime(cfgTime).Sub(time.Now()) < time.Second*10)
+	assert.Equal(t, true, time.Until(mir_v1.AsGoTime(cfgTime)) < time.Second*10)
 
 	msgResp := &protocfg_testv1.PowerLevel{}
 	for _, v := range respCmd.GetOk().DeviceResponses {
@@ -729,7 +706,7 @@ func TestPublishCfgDoubleUpdateSendIfDifferent(t *testing.T) {
 	}
 
 	// Act
-	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate)
+	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate)
 	if err != nil {
 		t.Error(err)
 	}
@@ -739,14 +716,14 @@ func TestPublishCfgDoubleUpdateSendIfDifferent(t *testing.T) {
 		t.Error(err)
 	}
 
-	respCfg, err := cfg_client.PublishSendConfigRequest(b, reqCfg)
+	respCfg, err := cfg_client.PublishSendConfigRequest(mSdk.Bus, reqCfg)
 	if err != nil {
 		t.Error(err)
 	} else if respCfg.GetError() != "" {
 		t.Error(respCfg.GetError())
 	}
 
-	respCfgSec, err := cfg_client.PublishSendConfigRequest(b, reqCfgSec)
+	respCfgSec, err := cfg_client.PublishSendConfigRequest(mSdk.Bus, reqCfgSec)
 	if err != nil {
 		t.Error(err)
 	} else if respCfg.GetError() != "" {
@@ -846,7 +823,7 @@ func TestPublishCfgDoubleUpdateSendAlways(t *testing.T) {
 	}
 
 	// Act
-	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate)
+	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate)
 	if err != nil {
 		t.Error(err)
 	}
@@ -856,14 +833,14 @@ func TestPublishCfgDoubleUpdateSendAlways(t *testing.T) {
 		t.Error(err)
 	}
 
-	respCfg, err := cfg_client.PublishSendConfigRequest(b, reqCfg)
+	respCfg, err := cfg_client.PublishSendConfigRequest(mSdk.Bus, reqCfg)
 	if err != nil {
 		t.Error(err)
 	} else if respCfg.GetError() != "" {
 		t.Error(respCfg.GetError())
 	}
 
-	respCfgSec, err := cfg_client.PublishSendConfigRequest(b, reqCfgSec)
+	respCfgSec, err := cfg_client.PublishSendConfigRequest(mSdk.Bus, reqCfgSec)
 	if err != nil {
 		t.Error(err)
 	} else if respCfg.GetError() != "" {
@@ -972,7 +949,7 @@ func TestPublishCfgDoubleUpdateIsDifferent(t *testing.T) {
 	}
 
 	// Act
-	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate)
+	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate)
 	if err != nil {
 		t.Error(err)
 	}
@@ -982,14 +959,14 @@ func TestPublishCfgDoubleUpdateIsDifferent(t *testing.T) {
 		t.Error(err)
 	}
 
-	respCfg, err := cfg_client.PublishSendConfigRequest(b, reqCfg)
+	respCfg, err := cfg_client.PublishSendConfigRequest(mSdk.Bus, reqCfg)
 	if err != nil {
 		t.Error(err)
 	} else if respCfg.GetError() != "" {
 		t.Error(respCfg.GetError())
 	}
 
-	respCfgSec, err := cfg_client.PublishSendConfigRequest(b, reqCfgSec)
+	respCfgSec, err := cfg_client.PublishSendConfigRequest(mSdk.Bus, reqCfgSec)
 	if err != nil {
 		t.Error(err)
 	} else if respCfg.GetError() != "" {
@@ -1043,7 +1020,7 @@ func TestPublishCfgNoDeviceFound(t *testing.T) {
 	}
 
 	// Act
-	respCmd, err := cfg_client.PublishSendConfigRequest(b, reqCmd)
+	respCmd, err := cfg_client.PublishSendConfigRequest(mSdk.Bus, reqCmd)
 	if err != nil {
 		t.Error(err)
 	}
@@ -1099,7 +1076,7 @@ func TestPublishCfgProtoDryRun(t *testing.T) {
 	}
 
 	// Act
-	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate)
+	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate)
 	if err != nil {
 		t.Error(err)
 	}
@@ -1109,7 +1086,7 @@ func TestPublishCfgProtoDryRun(t *testing.T) {
 		t.Error(err)
 	}
 
-	respCmd, err := cfg_client.PublishSendConfigRequest(b, reqCmd)
+	respCmd, err := cfg_client.PublishSendConfigRequest(mSdk.Bus, reqCmd)
 	if err != nil {
 		t.Error(err)
 	} else if respCmd.GetError() != "" {
@@ -1186,7 +1163,7 @@ func TestPublishCfgProtoInvalidPayload(t *testing.T) {
 	}
 
 	// Act
-	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate)
+	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate)
 	if err != nil {
 		t.Error(err)
 	}
@@ -1196,7 +1173,7 @@ func TestPublishCfgProtoInvalidPayload(t *testing.T) {
 		t.Error(err)
 	}
 
-	respCfg, err := cfg_client.PublishSendConfigRequest(b, reqCfg)
+	respCfg, err := cfg_client.PublishSendConfigRequest(mSdk.Bus, reqCfg)
 	if err != nil {
 		t.Error(err)
 	} else if respCfg.GetError() != "" {
@@ -1216,7 +1193,7 @@ func TestPublishCfgRequestMultipleDevices(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	cfgHandled := &protocfg_testv1.PowerLevel{}
-	swarm := swarm.NewSwarm(b)
+	swarm := swarm.NewSwarm(mSdk.Bus)
 	handlerCount := 0
 	chHdlr := make(chan struct{}, 4)
 	_, err := swarm.AddDevices(&mir_apiv1.CreateDeviceRequest{
@@ -1272,7 +1249,7 @@ func TestPublishCfgRequestMultipleDevices(t *testing.T) {
 	}
 
 	// Act
-	respCfg, err := cfg_client.PublishSendConfigRequest(b, reqCmd)
+	respCfg, err := cfg_client.PublishSendConfigRequest(mSdk.Bus, reqCmd)
 	if err != nil {
 		t.Error(err)
 	} else if respCfg.GetError() != "" {
@@ -1310,7 +1287,7 @@ func TestPublishCfgRequestMultipleDevicesOneNoHandler(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	cfgHandled := &protocfg_testv1.PowerLevel{}
-	swarm := swarm.NewSwarm(b)
+	swarm := swarm.NewSwarm(mSdk.Bus)
 	handlerCount := 0
 	chHdlr := make(chan struct{}, 4)
 	if _, err := swarm.AddDevices(&mir_apiv1.CreateDeviceRequest{
@@ -1387,7 +1364,7 @@ func TestPublishCfgRequestMultipleDevicesOneNoHandler(t *testing.T) {
 	}
 
 	// Act
-	respCfg, err := cfg_client.PublishSendConfigRequest(b, reqCmd)
+	respCfg, err := cfg_client.PublishSendConfigRequest(mSdk.Bus, reqCmd)
 	if err != nil {
 		t.Error(err)
 	} else if respCfg.GetError() != "" {
@@ -1428,7 +1405,7 @@ func TestPublishCfgRequestMultipleDevicesJson(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	cfgHandled := &protocfg_testv1.PowerLevel{}
-	swarm := swarm.NewSwarm(b)
+	swarm := swarm.NewSwarm(mSdk.Bus)
 	handlerCount := 0
 	chHdlr := make(chan struct{}, 4)
 	_, err := swarm.AddDevices(
@@ -1479,7 +1456,7 @@ func TestPublishCfgRequestMultipleDevicesJson(t *testing.T) {
 	}
 
 	// Act
-	respCfg, err := cfg_client.PublishSendConfigRequest(b, reqCfg)
+	respCfg, err := cfg_client.PublishSendConfigRequest(mSdk.Bus, reqCfg)
 	if err != nil {
 		t.Error(err)
 	} else if respCfg.GetError() != "" {
@@ -1517,7 +1494,7 @@ func TestPublishCfgRequestMultipleDevicesDescriptorNotFound(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	cfgHandled := &protocfg_testv1.PowerLevel{}
-	swarm := swarm.NewSwarm(b)
+	swarm := swarm.NewSwarm(mSdk.Bus)
 	handlerCount := 0
 	chHdlr := make(chan struct{}, 2)
 	_, err := swarm.AddDevices(
@@ -1568,7 +1545,7 @@ func TestPublishCfgRequestMultipleDevicesDescriptorNotFound(t *testing.T) {
 	}
 
 	// Act
-	respCfg, err := cfg_client.PublishSendConfigRequest(b, reqCfg)
+	respCfg, err := cfg_client.PublishSendConfigRequest(mSdk.Bus, reqCfg)
 	if err != nil {
 		t.Error(err)
 	} else if respCfg.GetError() != "" {
@@ -1597,7 +1574,7 @@ func TestPublishCfgRequestMultipleDevicesSingleDescriptorNotFoundForcePush(t *te
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	cfgHandled := &protocfg_testv1.PowerLevel{}
-	swarm := swarm.NewSwarm(b)
+	swarm := swarm.NewSwarm(mSdk.Bus)
 	handlerCount := 0
 	chHdlr := make(chan struct{}, 2)
 	_, err := swarm.AddDevice(
@@ -1658,7 +1635,7 @@ func TestPublishCfgRequestMultipleDevicesSingleDescriptorNotFoundForcePush(t *te
 	}
 
 	// Act
-	respCfg, err := cfg_client.PublishSendConfigRequest(b, reqCfg)
+	respCfg, err := cfg_client.PublishSendConfigRequest(mSdk.Bus, reqCfg)
 	if err != nil {
 		t.Error(err)
 	} else if respCfg.GetError() != "" {
@@ -1695,7 +1672,7 @@ func TestPublishCfgRequestMultipleDevicesSingleDescriptorNotFoundForcePush(t *te
 func TestPublishCfgRequestMultipleDevicesJsonTemplate(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
-	swarm := swarm.NewSwarm(b)
+	swarm := swarm.NewSwarm(mSdk.Bus)
 	_, err := swarm.AddDevices(
 		&mir_apiv1.CreateDeviceRequest{
 			Meta: &mir_apiv1.Meta{
@@ -1737,7 +1714,7 @@ func TestPublishCfgRequestMultipleDevicesJsonTemplate(t *testing.T) {
 	}
 
 	// Act
-	respCfg, err := cfg_client.PublishSendConfigRequest(b, reqCfg)
+	respCfg, err := cfg_client.PublishSendConfigRequest(mSdk.Bus, reqCfg)
 	if err != nil {
 		t.Error(err)
 	} else if respCfg.GetError() != "" {
@@ -1816,11 +1793,11 @@ func TestPublishCfgRequestMultipleDevicesOneTimeoutJsonTemplate(t *testing.T) {
 	}
 
 	// Act
-	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate)
+	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate)
 	if err != nil {
 		t.Error(err)
 	}
-	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate2)
+	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate2)
 	if err != nil {
 		t.Error(err)
 	}
@@ -1831,7 +1808,7 @@ func TestPublishCfgRequestMultipleDevicesOneTimeoutJsonTemplate(t *testing.T) {
 		t.Error(err)
 	}
 
-	respCmd, err := cfg_client.PublishSendConfigRequest(b, reqCfg)
+	respCmd, err := cfg_client.PublishSendConfigRequest(mSdk.Bus, reqCfg)
 	if err != nil {
 		t.Error(err)
 	} else if respCmd.GetError() != "" {
@@ -1909,7 +1886,7 @@ func TestPublishCfgJsonNameWithCurlyRequest(t *testing.T) {
 	}
 
 	// Act
-	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate)
+	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate)
 	if err != nil {
 		t.Error(err)
 	}
@@ -1919,7 +1896,7 @@ func TestPublishCfgJsonNameWithCurlyRequest(t *testing.T) {
 		t.Error(err)
 	}
 
-	respCfg, err := cfg_client.PublishSendConfigRequest(b, reqCfg)
+	respCfg, err := cfg_client.PublishSendConfigRequest(mSdk.Bus, reqCfg)
 	if err != nil {
 		t.Error(err)
 	} else if respCfg.GetError() != "" {
@@ -1976,7 +1953,7 @@ func TestPublishReportedProperties(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	listResp, err := core_client.PublishDeviceListRequest(b, &mir_apiv1.ListDeviceRequest{
+	listResp, err := core_client.PublishDeviceListRequest(mSdk.Bus, &mir_apiv1.ListDeviceRequest{
 		Targets: &mir_apiv1.DeviceTarget{Ids: []string{id}},
 	})
 	if err != nil {
@@ -2031,7 +2008,7 @@ func TestPublishReportedPropertiesEvent(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	listResp, err := core_client.PublishDeviceListRequest(b, &mir_apiv1.ListDeviceRequest{
+	listResp, err := core_client.PublishDeviceListRequest(mSdk.Bus, &mir_apiv1.ListDeviceRequest{
 		Targets: &mir_apiv1.DeviceTarget{Ids: []string{id}},
 	})
 	if err != nil {
@@ -2116,7 +2093,7 @@ func TestPublishDesiredPropertiesEvent(t *testing.T) {
 	}
 
 	// Act
-	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate)
+	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate)
 	if err != nil {
 		t.Error(err)
 	}
@@ -2126,7 +2103,7 @@ func TestPublishDesiredPropertiesEvent(t *testing.T) {
 		t.Error(err)
 	}
 
-	respCfg, err := cfg_client.PublishSendConfigRequest(b, reqCmd)
+	respCfg, err := cfg_client.PublishSendConfigRequest(mSdk.Bus, reqCmd)
 	if err != nil {
 		t.Error(err)
 	}
@@ -2189,7 +2166,7 @@ func TestDesiredPropertiesDefaultWritten(t *testing.T) {
 	}
 
 	// Act
-	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate)
+	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate)
 	if err != nil {
 		t.Error(err)
 	}
@@ -2224,7 +2201,7 @@ func TestDesiredPropertiesDefaultWritten(t *testing.T) {
 	)
 	<-chHdlr
 
-	devs, err := core_client.PublishDeviceListRequest(b, reqGet)
+	devs, err := core_client.PublishDeviceListRequest(mSdk.Bus, reqGet)
 	if err != nil {
 		t.Error(err)
 	}
@@ -2342,13 +2319,13 @@ func TestDesiredPropertiesRequestFromDeviceOnBoot(t *testing.T) {
 	}
 
 	// Act
-	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate)
+	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate)
 	if err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
 
-	resp, err := core_client.PublishDeviceUpdateRequest(b, updateSchReq)
+	resp, err := core_client.PublishDeviceUpdateRequest(mSdk.Bus, updateSchReq)
 	if err != nil {
 		t.Error(err)
 	}
@@ -2357,11 +2334,11 @@ func TestDesiredPropertiesRequestFromDeviceOnBoot(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	_, err = cfg_client.PublishSendConfigRequest(b, reqPowerLevel)
+	_, err = cfg_client.PublishSendConfigRequest(mSdk.Bus, reqPowerLevel)
 	if err != nil {
 		t.Error(err)
 	}
-	_, err = cfg_client.PublishSendConfigRequest(b, reqConduit)
+	_, err = cfg_client.PublishSendConfigRequest(mSdk.Bus, reqConduit)
 	if err != nil {
 		t.Error(err)
 	}
