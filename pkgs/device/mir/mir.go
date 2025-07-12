@@ -170,6 +170,7 @@ func (m *Mir) Launch(ctx context.Context) (*sync.WaitGroup, error) {
 			m.l.Info().Msg("connected to Mir Server ")
 			m.setOnlineHandler()
 
+			time.Sleep(1 * time.Second)
 			if !m.cfg.Device.NoSchemaOnBoot {
 				if err := m.sendSchema(); err != nil {
 					m.l.Error().Err(err).Msg("error sending schema on connect")
@@ -275,7 +276,7 @@ func (m *Mir) Launch(ctx context.Context) (*sync.WaitGroup, error) {
 // Send hearthbeat to Mir on a based interval
 // Run in a routine for non blocking
 func (m *Mir) hearthbeat(ctx context.Context, interval time.Duration) {
-	if err := core_client.PublishHearthbeatStream(m.b, m.cfg.Device.Id); err != nil {
+	if err := core_client.PublishHearthbeatStream(m.b.Conn, m.cfg.Device.Id); err != nil {
 		m.l.Error().Err(err).Msg("error sending hearthbeat to Mir")
 	}
 	for {
@@ -284,7 +285,7 @@ func (m *Mir) hearthbeat(ctx context.Context, interval time.Duration) {
 			m.l.Debug().Msg("shutting down hearthbeat")
 			return
 		case <-time.After(interval):
-			if err := core_client.PublishHearthbeatStream(m.b, m.cfg.Device.Id); err != nil {
+			if err := core_client.PublishHearthbeatStream(m.b.Conn, m.cfg.Device.Id); err != nil {
 				m.l.Error().Err(err).Msg("error sending hearthbeat to Mir")
 			}
 		}
@@ -378,7 +379,7 @@ func (m Mir) sendSchema() error {
 // Fill the properties store with the latest properties from Mir server
 // Also write to the persistent store
 func (m Mir) requestDesiredProperties() error {
-	resp, err := cfg_client.PublishRequestDesiredPropertiesStream(m.b, m.cfg.Device.Id)
+	resp, err := cfg_client.PublishRequestDesiredPropertiesStream(m.b.Conn, m.cfg.Device.Id)
 	if err != nil {
 		return fmt.Errorf("error requesting desired properties: %v", err)
 	}

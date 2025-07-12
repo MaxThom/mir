@@ -13,116 +13,65 @@ import (
 	"github.com/influxdata/influxdb-client-go/v2/api"
 	"github.com/maxthom/mir/internal/clients/core_client"
 	"github.com/maxthom/mir/internal/clients/tlm_client"
-	"github.com/maxthom/mir/internal/externals/mng"
-	"github.com/maxthom/mir/internal/externals/ts"
-	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
 	"github.com/maxthom/mir/internal/libs/swarm"
 	"github.com/maxthom/mir/internal/libs/test_utils"
-	"github.com/maxthom/mir/internal/servers/core_srv"
 	prototlm_testv1 "github.com/maxthom/mir/internal/servers/prototlm_srv/proto_test/gen/prototlm_test/v1"
-	"github.com/maxthom/mir/internal/services/schema_cache"
 	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
 	mirDevice "github.com/maxthom/mir/pkgs/device/mir"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/maxthom/mir/pkgs/module/mir"
-	"github.com/maxthom/surrealdb.go"
 	"google.golang.org/protobuf/types/descriptorpb"
 	"gotest.tools/assert"
 )
 
-var db *surrealdb.DB
 var mSdk *mir.Mir
 var busUrl = "nats://127.0.0.1:4222"
-var log = test_utils.TestLogger("prototlm")
 var lpClient influxdb2.Client
 var lpWriter api.WriteAPI
 var lpQuery api.QueryAPI
 
-var b *bus.BusConn
-
-// TODO fix bug if device not started
-
 func TestMain(m *testing.M) {
 	// Setup
+	fmt.Println("> Test Setup")
 	ctx, cancel := context.WithCancel(context.Background())
-	fmt.Println("Test Setup")
-
-	b, db, lpClient, lpWriter, lpQuery = test_utils.SetupAllExternalsPanic(ctx, test_utils.ConnsInfo{
-		Name:   "test_prototlm",
-		BusUrl: busUrl,
-		Surreal: test_utils.SurrealInfo{
-			Url:  "ws://127.0.0.1:8000/rpc",
-			User: "root",
-			Pass: "root",
-			Ns:   "global",
-			Db:   "mir_testing",
-		},
-		Influx: test_utils.InfluxInfo{
-			Url:    "http://localhost:8086/",
-			Token:  "mir-operator-token",
-			Org:    "Mir",
-			Bucket: "mir_integration_test",
-		},
-	})
+	lpClient, lpWriter, lpQuery = test_utils.SetupInfluxConnsPanic(ctx, "http://localhost:8086/", "mir-operator-token", "mir", "mir_testing")
 	var err error
 	mSdk, err = mir.Connect("test_prototlm", busUrl)
 	if err != nil {
 		panic(err)
 	}
-	cc, err := schema_cache.NewMirSchemaCache(log, mSdk)
-	if err != nil {
+	if err := dataCleanUp(); err != nil {
 		panic(err)
 	}
-	protoTlmSrv, err := NewProtoTlm(log, mSdk, mng.NewSurrealMirStore(db), ts.NewInfluxTelemetryStore("Mir", "mir_integration_test", lpClient), cc)
-	if err != nil {
-		panic(err)
-	}
-	if err := protoTlmSrv.Serve(); err != nil {
-		panic(err)
-	}
-
-	coreSrv, err := core_srv.NewCore(log, mSdk, mng.NewSurrealMirStore(db))
-	if err != nil {
-		panic(err)
-	}
-	if err = coreSrv.Serve(); err != nil {
-		panic(err)
-	}
-	fmt.Println(" -> bus")
-	fmt.Println(" -> db")
-	fmt.Println(" -> ts")
-	fmt.Println(" -> core")
-	fmt.Println(" -> prototlm")
 	time.Sleep(1 * time.Second)
-	// Clear data
-	test_utils.DeleteDevicesWithLabelsPanic(b, map[string]string{
-		"testing": "tlm",
-	})
-	time.Sleep(1 * time.Second)
-	fmt.Println(" -> ready")
 
 	// Tests
+	fmt.Println("> Test Run")
 	exitVal := m.Run()
+	time.Sleep(1 * time.Second)
 
 	// Teardown
-	fmt.Println("Test Teardown")
-	test_utils.DeleteDevicesWithLabelsPanic(b, map[string]string{
-		"testing": "tlm",
-	})
-	fmt.Println(" -> cleaned up")
-	time.Sleep(1 * time.Second)
-	b.Drain()
+	fmt.Println("> Test Teardown")
 	cancel()
-	coreSrv.Shutdown()
-	protoTlmSrv.Shutdown()
-	b.Close()
-	mSdk.Disconnect()
-	db.Close()
-	fmt.Println(" -> closed connections")
+	if err := mSdk.Disconnect(); err != nil {
+		fmt.Println(err)
+	}
+	time.Sleep(1 * time.Second)
 
 	os.Exit(exitVal)
+}
+
+func dataCleanUp() error {
+	if _, err := mSdk.Server().DeleteDevice().Request(mir_v1.DeviceTarget{
+		Labels: map[string]string{
+			"testing": "tlm",
+		},
+	}); err != nil {
+		return err
+	}
+	return nil
 }
 
 func TestPublishDevicePushTelemetry(t *testing.T) {
@@ -150,7 +99,7 @@ func TestPublishDevicePushTelemetry(t *testing.T) {
 	}
 
 	// Act
-	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate)
+	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate)
 	if err != nil {
 		t.Error(err)
 	}
@@ -195,7 +144,7 @@ func TestPublishDevicePushTelemetry(t *testing.T) {
 	wgTlm.Wait()
 
 	// Assert
-	respList, err := core_client.PublishDeviceListRequest(b, &mir_apiv1.ListDeviceRequest{
+	respList, err := core_client.PublishDeviceListRequest(mSdk.Bus, &mir_apiv1.ListDeviceRequest{
 		Targets: &mir_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
@@ -217,7 +166,7 @@ func TestPublishDevicePushTelemetry(t *testing.T) {
 		t.Error(err)
 	}
 
-	dpResult, err := lpQuery.Query(ctx, `from(bucket: "mir_integration_test") |> range(start: -7s) |> filter(fn: (r) => r["_measurement"] == "prototlm_test.v1.EnvTlm" or r["_measurement"] == "prototlm_test.v1.PowerTlm") |> filter(fn: (r) => r["__id"] == "device_push_tlm")`)
+	dpResult, err := lpQuery.Query(ctx, `from(bucket: "mir_testing") |> range(start: -7s) |> filter(fn: (r) => r["_measurement"] == "prototlm_test.v1.EnvTlm" or r["_measurement"] == "prototlm_test.v1.PowerTlm") |> filter(fn: (r) => r["__id"] == "device_push_tlm")`)
 	if err != nil {
 		t.Error(err)
 	}
@@ -287,12 +236,12 @@ func TestPublishDeviceSchemaAlreadyPresent(t *testing.T) {
 	}
 
 	// Act
-	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate)
+	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate)
 	if err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
-	_, err = core_client.PublishDeviceUpdateRequest(b, reqUpd)
+	_, err = core_client.PublishDeviceUpdateRequest(mSdk.Bus, reqUpd)
 	if err != nil {
 		t.Error(err)
 	}
@@ -338,7 +287,7 @@ func TestPublishDeviceSchemaAlreadyPresent(t *testing.T) {
 	wgTlm.Wait()
 
 	// Assert
-	respList, err := core_client.PublishDeviceListRequest(b, &mir_apiv1.ListDeviceRequest{
+	respList, err := core_client.PublishDeviceListRequest(mSdk.Bus, &mir_apiv1.ListDeviceRequest{
 		Targets: &mir_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
@@ -355,7 +304,7 @@ func TestPublishDeviceSchemaAlreadyPresent(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	dpResult, err := lpQuery.Query(ctx, `from(bucket: "mir_integration_test") |> range(start: -7s) |> filter(fn: (r) => r["_measurement"] == "prototlm_test.v1.EnvTlm" or r["_measurement"] == "prototlm_test.v1.PowerTlm") |> filter(fn: (r) => r["__id"] == "device_schema_present")`)
+	dpResult, err := lpQuery.Query(ctx, `from(bucket: "mir_testing") |> range(start: -7s) |> filter(fn: (r) => r["_measurement"] == "prototlm_test.v1.EnvTlm" or r["_measurement"] == "prototlm_test.v1.PowerTlm") |> filter(fn: (r) => r["__id"] == "device_schema_present")`)
 	if err != nil {
 		t.Error(err)
 	}
@@ -426,12 +375,12 @@ func TestPublishDeviceSchemaInvalid(t *testing.T) {
 	}
 
 	// Act
-	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate)
+	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate)
 	if err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
-	_, err = core_client.PublishDeviceUpdateRequest(b, reqUpd)
+	_, err = core_client.PublishDeviceUpdateRequest(mSdk.Bus, reqUpd)
 	if err != nil {
 		t.Error(err)
 	}
@@ -477,7 +426,7 @@ func TestPublishDeviceSchemaInvalid(t *testing.T) {
 	wgTlm.Wait()
 
 	// Assert
-	respList, err := core_client.PublishDeviceListRequest(b, &mir_apiv1.ListDeviceRequest{
+	respList, err := core_client.PublishDeviceListRequest(mSdk.Bus, &mir_apiv1.ListDeviceRequest{
 		Targets: &mir_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
@@ -496,7 +445,7 @@ func TestPublishDeviceSchemaInvalid(t *testing.T) {
 		t.Error(err)
 	}
 
-	dpResult, err := lpQuery.Query(ctx, `from(bucket: "mir_integration_test") |> range(start: -7s) |> filter(fn: (r) => r["_measurement"] == "prototlm_test.v1.EnvTlm" or r["_measurement"] == "prototlm_test.v1.PowerTlm") |> filter(fn: (r) => r["__id"] == "device_invalid_schema")`)
+	dpResult, err := lpQuery.Query(ctx, `from(bucket: "mir_testing") |> range(start: -7s) |> filter(fn: (r) => r["_measurement"] == "prototlm_test.v1.EnvTlm" or r["_measurement"] == "prototlm_test.v1.PowerTlm") |> filter(fn: (r) => r["__id"] == "device_invalid_schema")`)
 	if err != nil {
 		t.Error(err)
 	}
@@ -544,7 +493,7 @@ func TestPublishDevicePushTelemetryDeviceUpdate(t *testing.T) {
 	}
 
 	// Act
-	_, err = core_client.PublishDeviceCreateRequest(b, reqCreate)
+	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate)
 	if err != nil {
 		t.Error(err)
 	}
@@ -588,7 +537,7 @@ func TestPublishDevicePushTelemetryDeviceUpdate(t *testing.T) {
 	}()
 	time.Sleep(2 * time.Second)
 	str := "update"
-	if _, err = core_client.PublishDeviceUpdateRequest(b, &mir_apiv1.UpdateDeviceRequest{
+	if _, err = core_client.PublishDeviceUpdateRequest(mSdk.Bus, &mir_apiv1.UpdateDeviceRequest{
 		Targets: &mir_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
@@ -605,7 +554,7 @@ func TestPublishDevicePushTelemetryDeviceUpdate(t *testing.T) {
 	wgTlm.Wait()
 
 	// Assert
-	dpResult, err := lpQuery.Query(ctx, `from(bucket: "mir_integration_test") |> range(start: -7s) |> filter(fn: (r) => r["_measurement"] == "prototlm_test.v1.EnvTlm" or r["_measurement"] == "prototlm_test.v1.PowerTlm") |> filter(fn: (r) => r["__id"] == "device_push_tlm_upd") |> filter(fn: (r) => r["__label_test"] == "update")`)
+	dpResult, err := lpQuery.Query(ctx, `from(bucket: "mir_testing") |> range(start: -7s) |> filter(fn: (r) => r["_measurement"] == "prototlm_test.v1.EnvTlm" or r["_measurement"] == "prototlm_test.v1.PowerTlm") |> filter(fn: (r) => r["__id"] == "device_push_tlm_upd") |> filter(fn: (r) => r["__label_test"] == "update")`)
 	if err != nil {
 		t.Error(err)
 	} else if dpResult.Err() != nil {
@@ -628,7 +577,7 @@ func TestPublishDevicePushTelemetryDeviceUpdate(t *testing.T) {
 func TestPublishTelemetryListPairs(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
-	s := swarm.NewSwarm(b)
+	s := swarm.NewSwarm(mSdk.Bus)
 	_, err := s.AddDevices(
 		&mir_apiv1.CreateDeviceRequest{
 			Meta: &mir_apiv1.Meta{
@@ -721,7 +670,7 @@ func TestPublishTelemetryListPairs(t *testing.T) {
 		t.Error(err)
 	}
 
-	resp, err := tlm_client.PublishTelemetryListRequest(b, &mir_apiv1.SendListTelemetryRequest{
+	resp, err := tlm_client.PublishTelemetryListRequest(mSdk.Bus, &mir_apiv1.SendListTelemetryRequest{
 		Targets: &mir_apiv1.DeviceTarget{
 			Ids: s.ToTarget().Ids,
 		},
@@ -759,7 +708,7 @@ func TestPublishTelemetryListPairs(t *testing.T) {
 func TestPublishTelemetryList(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
-	s := swarm.NewSwarm(b)
+	s := swarm.NewSwarm(mSdk.Bus)
 	_, err := s.AddDevices(
 		&mir_apiv1.CreateDeviceRequest{
 			Meta: &mir_apiv1.Meta{
@@ -785,7 +734,7 @@ func TestPublishTelemetryList(t *testing.T) {
 		t.Error(err)
 	}
 
-	resp, err := tlm_client.PublishTelemetryListRequest(b, &mir_apiv1.SendListTelemetryRequest{
+	resp, err := tlm_client.PublishTelemetryListRequest(mSdk.Bus, &mir_apiv1.SendListTelemetryRequest{
 		Targets: &mir_apiv1.DeviceTarget{
 			Ids: s.ToTarget().Ids,
 		},
@@ -833,7 +782,7 @@ func TestPublishTelemetryList(t *testing.T) {
 
 func TestPublishTelemetryListError(t *testing.T) {
 	// Arrange
-	s := swarm.NewSwarm(b)
+	s := swarm.NewSwarm(mSdk.Bus)
 	_, err := s.AddDevices(
 		&mir_apiv1.CreateDeviceRequest{
 			Meta: &mir_apiv1.Meta{
@@ -854,7 +803,7 @@ func TestPublishTelemetryListError(t *testing.T) {
 	}
 
 	// Act
-	resp, err := tlm_client.PublishTelemetryListRequest(b, &mir_apiv1.SendListTelemetryRequest{
+	resp, err := tlm_client.PublishTelemetryListRequest(mSdk.Bus, &mir_apiv1.SendListTelemetryRequest{
 		Targets: &mir_apiv1.DeviceTarget{
 			Ids: []string{"dev_tlm_list_offline"},
 		},

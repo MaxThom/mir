@@ -11,11 +11,7 @@ import (
 
 	"github.com/maxthom/mir/internal/clients/core_client"
 	"github.com/maxthom/mir/internal/clients/device_client"
-	"github.com/maxthom/mir/internal/externals/mng"
-	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
-	"github.com/maxthom/mir/internal/libs/test_utils"
-	"github.com/maxthom/mir/internal/servers/core_srv"
 	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
 	mir_device_testv1 "github.com/maxthom/mir/pkgs/device/mir/proto_test/gen/mir_device_test/v1"
@@ -30,93 +26,69 @@ import (
 	"gotest.tools/assert"
 )
 
-var log = test_utils.TestLogger("device_sdk")
-var db *surrealdb.DB
-var b *bus.BusConn
 var mSdk *mir.Mir
+var busUrl = "nats://127.0.0.1:4222"
 
 func TestMain(m *testing.M) {
 	// Setup
-	fmt.Println("Test Setup")
+	fmt.Println("> Test Setup")
 	var err error
-	db, mSdk, b, err = setupConns()
+	mSdk, err = mir.Connect("test_devicesdk", busUrl)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(" -> bus")
-	fmt.Println(" -> db")
-	fmt.Println(" -> cleaning db")
-
-	coreSrv, err := core_srv.NewCore(log, mSdk, mng.NewSurrealMirStore(db))
-	if err != nil {
-		panic(err)
-	}
-	if err = coreSrv.Serve(); err != nil {
-		panic(err)
-	}
-	fmt.Println(" -> core")
-	time.Sleep(1 * time.Second)
-
-	// Prepare test data
-	if _, err := deleteDevices(b, &mir_apiv1.DeleteDeviceRequest{
-		Targets: &mir_apiv1.DeviceTarget{
-			Labels: map[string]string{
-				"test": "mir_device",
-			},
-		},
-	}); err != nil {
-		panic(err)
-	}
-	devReq := &mir_apiv1.CreateDeviceRequest{
-		Meta: &mir_apiv1.Meta{
-			Labels: map[string]string{
-				"factory": "B",
-				"model":   "xx021",
-				"test":    "mir_device",
-			},
-			Annotations: map[string]string{
-				"utility":                "air_quality",
-				"mir/device/description": "hello world of devices !",
-			},
-		},
-		Spec: &mir_apiv1.DeviceSpec{
-			DeviceId: "TestLaunchHearthbeat",
-		},
-	}
-
-	if _, err := createDevices(b, []*mir_apiv1.CreateDeviceRequest{devReq}); err != nil {
+	if err := dataCleanUp(); err != nil {
 		panic(err)
 	}
 	time.Sleep(1 * time.Second)
-
-	fmt.Println(" -> test data prepared")
-	fmt.Println(" -> ready")
 
 	// Tests
-	fmt.Println("Test Executing")
+	fmt.Println("> Test Run")
 	exitVal := m.Run()
+	time.Sleep(1 * time.Second)
 
 	// Teardown
 	fmt.Println("Test Teardown")
-	if _, err := deleteDevices(b, &mir_apiv1.DeleteDeviceRequest{
-		Targets: &mir_apiv1.DeviceTarget{
-			Labels: map[string]string{
-				"test": "mir_device",
-			},
-		},
-	}); err != nil {
-		panic(err)
+	if err := mSdk.Disconnect(); err != nil {
+		fmt.Println(err)
 	}
-	fmt.Println(" -> cleaned up")
 	time.Sleep(1 * time.Second)
-	b.Drain()
-	b.Close()
-	db.Close()
-	fmt.Println(" -> core")
-	fmt.Println(" -> nats")
-	fmt.Println(" -> db")
 
 	os.Exit(exitVal)
+}
+
+func dataCleanUp() error {
+	if _, err := mSdk.Server().DeleteDevice().Request(mir_v1.DeviceTarget{
+		Labels: map[string]string{
+			"test": "mir_device",
+		},
+	}); err != nil {
+		return err
+	}
+
+	devReq := mir_v1.Device{
+		Object: mir_v1.Object{
+			Meta: mir_v1.Meta{
+				Labels: map[string]string{
+					"factory": "B",
+					"model":   "xx021",
+					"test":    "mir_device",
+				},
+				Annotations: map[string]string{
+					"utility":                "air_quality",
+					"mir/device/description": "hello world of devices !",
+				},
+			},
+		},
+		Spec: mir_v1.DeviceSpec{
+			DeviceId: "TestLaunchHearthbeat",
+		},
+	}
+	if _, err := mSdk.Server().CreateDevice().Request(devReq); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func TestLaunchHearthbeat(t *testing.T) {
@@ -140,7 +112,7 @@ func TestLaunchHearthbeat(t *testing.T) {
 
 	// Takes some time for the hearthbeat to be sent
 	time.Sleep(15 * time.Second)
-	resp, err := core_client.PublishDeviceListRequest(b, &mir_apiv1.ListDeviceRequest{
+	resp, err := core_client.PublishDeviceListRequest(mSdk.Bus, &mir_apiv1.ListDeviceRequest{
 		Targets: &mir_apiv1.DeviceTarget{
 			Ids: []string{"TestLaunchHearthbeat"},
 		},
@@ -195,7 +167,7 @@ func TestRequestTelemetrySchema(t *testing.T) {
 	}
 
 	time.Sleep(1 * time.Second)
-	resp, err := device_client.PublishSchemaRetrieveRequest(b, "TestTelemetrySchema")
+	resp, err := device_client.PublishSchemaRetrieveRequest(mSdk.Bus, "TestTelemetrySchema")
 	if err != nil {
 		t.Error(err)
 	}
@@ -246,9 +218,9 @@ func TestSendSchema(t *testing.T) {
 		t.Error(err)
 	}
 
-	time.Sleep(1 * time.Second)
+	time.Sleep(3 * time.Second)
 
-	resp, err := core_client.PublishDeviceListRequest(b, &mir_apiv1.ListDeviceRequest{
+	resp, err := core_client.PublishDeviceListRequest(mSdk.Bus, &mir_apiv1.ListDeviceRequest{
 		Targets: &mir_apiv1.DeviceTarget{
 			Ids: []string{id},
 		},
@@ -639,26 +611,6 @@ func deleteDevicesDb(t *testing.T, db *surrealdb.DB, ids []string) error {
 	return nil
 }
 
-func createDevices(bus *bus.BusConn, devices []*mir_apiv1.CreateDeviceRequest) ([]*mir_apiv1.CreateDeviceResponse, error) {
-	responses := []*mir_apiv1.CreateDeviceResponse{}
-	for _, dev := range devices {
-		resp, err := core_client.PublishDeviceCreateRequest(bus, dev)
-		responses = append(responses, resp)
-		if err != nil {
-			return responses, err
-		}
-	}
-	return responses, nil
-}
-
-func deleteDevices(bus *bus.BusConn, req *mir_apiv1.DeleteDeviceRequest) (*mir_apiv1.DeleteDeviceResponse, error) {
-	resp, err := core_client.PublishDeviceDeleteRequest(bus, req)
-	if err != nil {
-		return nil, err
-	}
-	return resp, nil
-}
-
 func executeTestQueryForType[T any](t *testing.T, db *surrealdb.DB, query string, vars map[string]any) T {
 	var empty T
 	result, err := surrealdb.Query[T](db, query, vars)
@@ -689,37 +641,6 @@ func marshalProtoFiles(files ...protoreflect.FileDescriptor) ([]byte, error) {
 		return []byte{}, err
 	}
 	return bytes, nil
-}
-
-func setupConns() (*surrealdb.DB, *mir.Mir, *bus.BusConn, error) {
-	// Database
-	db, err := surrealdb.New("ws://127.0.0.1:8000/rpc")
-	if err != nil {
-		return db, nil, nil, err
-	}
-
-	if _, err = db.SignIn(&surrealdb.Auth{
-		Username: "root",
-		Password: "root",
-	}); err != nil {
-		return db, nil, nil, err
-	}
-
-	if err = db.Use("global", "mir_testing"); err != nil {
-		return db, nil, nil, err
-	}
-
-	// Bus
-	b, err := bus.New("nats://127.0.0.1:4222")
-	if err != nil {
-		return db, nil, nil, err
-	}
-	m, err := mir.Connect("test_device_sdk", "nats://127.0.0.1:4222")
-	if err != nil {
-		return db, nil, b, err
-	}
-
-	return db, m, b, nil
 }
 
 func strRef(s string) *string {

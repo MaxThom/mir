@@ -425,6 +425,7 @@ func (s *CoreServer) schemaSub(msg *mir.Msg, deviceId string, sch *mir_proto.Mir
 		return
 	}
 
+	l.Debug().Str("route", "schema").Str("device_id", deviceId).Msg("schema device request")
 	timeNow := time.Now().UTC()
 	_, err = s.m.Server().UpdateDevice().Request(
 		mir_v1.DeviceTarget{

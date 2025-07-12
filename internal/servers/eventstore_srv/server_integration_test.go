@@ -9,120 +9,66 @@ import (
 	"testing"
 	"time"
 
-	"github.com/maxthom/mir/internal/externals/mng"
-	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	"github.com/maxthom/mir/internal/libs/swarm"
-	"github.com/maxthom/mir/internal/libs/test_utils"
-	"github.com/maxthom/mir/internal/servers/core_srv"
 	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/maxthom/mir/pkgs/module/mir"
-	"github.com/maxthom/surrealdb.go"
-	"github.com/nats-io/nats.go"
 	"gotest.tools/assert"
 )
 
-var log = test_utils.TestLogger("eventstore")
-var db *surrealdb.DB
-var b *bus.BusConn
-var sub *nats.Subscription
 var mSdk *mir.Mir
 var busUrl = "nats://127.0.0.1:4222"
 
 func TestMain(m *testing.M) {
 	// Setup
-	fmt.Println("Test Setup")
+	fmt.Println("> Test Setup")
 	var err error
 
-	db = test_utils.SetupSurrealDbConnsPanic("ws://127.0.0.1:8000/rpc", "root", "root", "global", "mir_testing")
-	b = test_utils.SetupNatsConPanic(busUrl)
 	mSdk, err = mir.Connect("test_eventstore", busUrl)
 	if err != nil {
 		panic(err)
 	}
-	store := mng.NewSurrealMirStore(db)
-	coreSrv, err := core_srv.NewCore(log, mSdk, store)
-	if err := coreSrv.Serve(); err != nil {
-		panic(err)
-	}
-	eventSrv, err := NewEventStore(log, mSdk, store)
-	if err := eventSrv.Serve(); err != nil {
-		panic(err)
-	}
-	fmt.Println(" -> bus")
-	fmt.Println(" -> db")
-	fmt.Println(" -> core")
 	time.Sleep(1 * time.Second)
-	// Clear data
-	if _, err = store.DeleteEvent(mir_v1.EventTarget{
-		ObjectTarget: mir_v1.ObjectTarget{
-			Namespaces: []string{
-				"event_testing",
-			},
-		},
-	}); err != nil {
+	if err := dataCleanUp(); err != nil {
 		panic(err)
 	}
-	if _, err = store.DeleteEvent(mir_v1.EventTarget{
-		ObjectTarget: mir_v1.ObjectTarget{
-			Namespaces: []string{
-				"default",
-			},
-		},
-	}); err != nil {
-		panic(err)
-	}
-	if _, err = store.DeleteDevice(mir_v1.DeviceTarget{
-		Namespaces: []string{
-			"event_testing",
-		},
-	}); err != nil {
-		panic(err)
-	}
-	fmt.Println(" -> ready")
-
 	// Tests
+	fmt.Println("> Test Run")
 	exitVal := m.Run()
+	time.Sleep(1 * time.Second)
 
 	// Teardown
-	fmt.Println("Test Teardown")
-	if _, err = store.DeleteEvent(mir_v1.EventTarget{
-		ObjectTarget: mir_v1.ObjectTarget{
-			Namespaces: []string{
-				"event_testing",
-			},
-		},
-	}); err != nil {
-		panic(err)
+	fmt.Println("> Test Teardown")
+	if err := mSdk.Disconnect(); err != nil {
+		fmt.Println(err)
 	}
-	if _, err = store.DeleteEvent(mir_v1.EventTarget{
-		ObjectTarget: mir_v1.ObjectTarget{
-			Namespaces: []string{
-				"default",
-			},
-		},
-	}); err != nil {
-		panic(err)
-	}
-	if _, err = store.DeleteDevice(mir_v1.DeviceTarget{
-		Namespaces: []string{
-			"event_testing",
-		},
-	}); err != nil {
-		panic(err)
-	}
-	fmt.Println(" -> cleaned up")
 	time.Sleep(1 * time.Second)
-	b.Drain()
-	coreSrv.Shutdown()
-	eventSrv.Shutdown()
-	b.Close()
-	db.Close()
-	fmt.Println(" -> core")
-	fmt.Println(" -> nats")
-	fmt.Println(" -> db")
 
 	os.Exit(exitVal)
+}
+
+func dataCleanUp() error {
+	// Clear data
+	if _, err := mSdk.Server().DeleteEvents().Request(mir_v1.EventTarget{
+		ObjectTarget: mir_v1.ObjectTarget{
+			Namespaces: []string{"event_testing"},
+		},
+	}); err != nil {
+		return err
+	}
+	if _, err := mSdk.Server().DeleteEvents().Request(mir_v1.EventTarget{
+		ObjectTarget: mir_v1.ObjectTarget{
+			Namespaces: []string{"default"},
+		},
+	}); err != nil {
+		return err
+	}
+	if _, err := mSdk.Server().DeleteDevice().Request(mir_v1.DeviceTarget{
+		Namespaces: []string{"event_testing"},
+	}); err != nil {
+		return err
+	}
+	return nil
 }
 
 func TestPublishEventStoreNormal(t *testing.T) {
@@ -271,7 +217,7 @@ func TestPublishEventStoreNsDefault(t *testing.T) {
 func TestPublishListDeviceRequestWithEvents(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
-	s := swarm.NewSwarm(b)
+	s := swarm.NewSwarm(mSdk.Bus)
 	_, err := s.AddDevice(&mir_apiv1.CreateDeviceRequest{
 		Meta: &mir_apiv1.Meta{
 			Namespace: "event_testing",

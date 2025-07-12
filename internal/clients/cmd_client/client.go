@@ -4,8 +4,8 @@ import (
 	"time"
 
 	"github.com/maxthom/mir/internal/clients"
-	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
+	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -16,7 +16,7 @@ const (
 	DeviceCommandEvent clients.ServerSubject = "event.%s.cmd.v1alpha.devicecommand"
 )
 
-func PublishSendCommandRequest(bus *bus.BusConn, req *mir_apiv1.SendCommandRequest) (*mir_apiv1.SendCommandResponse, error) {
+func PublishSendCommandRequest(bus *nats.Conn, req *mir_apiv1.SendCommandRequest) (*mir_apiv1.SendCommandResponse, error) {
 	b, err := proto.Marshal(req)
 	if err != nil {
 		return &mir_apiv1.SendCommandResponse{}, err
@@ -37,7 +37,7 @@ func PublishSendCommandRequest(bus *bus.BusConn, req *mir_apiv1.SendCommandReque
 	return resp, nil
 }
 
-func PublishListCommandsRequest(bus *bus.BusConn, req *mir_apiv1.SendListCommandsRequest) (*mir_apiv1.SendListCommandsResponse, error) {
+func PublishListCommandsRequest(bus *nats.Conn, req *mir_apiv1.SendListCommandsRequest) (*mir_apiv1.SendListCommandsResponse, error) {
 	b, err := proto.Marshal(req)
 	if err != nil {
 		return &mir_apiv1.SendListCommandsResponse{}, err

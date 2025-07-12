@@ -22,61 +22,46 @@ var mirStore *surrealMirStore
 
 func TestMain(m *testing.M) {
 	// Setup
-	fmt.Println("Test Setup")
-	var err error
-
+	fmt.Println("> Test Setup")
 	db = test_utils.SetupSurrealDbConnsPanic("ws://127.0.0.1:8000/rpc", "root", "root", "global", "mir_testing")
 	mirStore = NewSurrealMirStore(db)
-	fmt.Println(" -> db")
+	if err := dataCleanUp(); err != nil {
+		panic(err)
+	}
 	time.Sleep(1 * time.Second)
-	// Clear data
-	if _, err = mirStore.DeleteEvent(mir_v1.EventTarget{
+
+	// Tests
+	fmt.Println("> Test Run")
+	exitVal := m.Run()
+	time.Sleep(1 * time.Second)
+
+	// Teardown
+	fmt.Println("> Test Teardown")
+	db.Close()
+	time.Sleep(1 * time.Second)
+
+	os.Exit(exitVal)
+}
+
+func dataCleanUp() error {
+	if _, err := mirStore.DeleteEvent(mir_v1.EventTarget{
 		ObjectTarget: mir_v1.ObjectTarget{
 			Labels: map[string]string{
 				"mirstore": "testing",
 			},
 		},
 	}); err != nil {
-		panic(err)
+		return err
 	}
-	if _, err = mirStore.DeleteDevice(mir_v1.DeviceTarget{
+	if _, err := mirStore.DeleteDevice(mir_v1.DeviceTarget{
 		Labels: map[string]string{
 			"mirstore": "testing",
 		},
 	}); err != nil {
-		panic(err)
+		return err
 	}
-	fmt.Println(" -> ready")
 
-	// Tests
-	exitVal := m.Run()
-
-	// Teardown
-	fmt.Println("Test Teardown")
-	// if _, err = mirStore.DeleteEvent(mir_v1.EventTarget{
-	// 	ObjectTarget: mir_v1.ObjectTarget{
-	// 		Labels: map[string]string{
-	// 			"mirstore": "testing",
-	// 		},
-	// 	},
-	// }); err != nil {
-	// 	panic(err)
-	// }
-	// if _, err = mirStore.DeleteDevice(mir_v1.DeviceTarget{
-	// 	ObjectTarget: mir_v1.ObjectTarget{
-	// 		Labels: map[string]string{
-	// 			"mirstore": "testing",
-	// 		},
-	// 	},
-	// }); err != nil {
-	// 	panic(err)
-	// }
-	fmt.Println(" -> cleaned up")
-	time.Sleep(1 * time.Second)
-	db.Close()
-	fmt.Println(" -> db")
-
-	os.Exit(exitVal)
+	return nil
 }
 
 func TestPublishStoreDeviceCreate(t *testing.T) {

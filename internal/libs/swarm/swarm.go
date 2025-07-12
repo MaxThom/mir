@@ -9,21 +9,21 @@ import (
 	"time"
 
 	"github.com/maxthom/mir/internal/clients/core_client"
-	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	mirDevice "github.com/maxthom/mir/pkgs/device/mir"
 	"github.com/maxthom/mir/pkgs/mir_v1"
+	"github.com/nats-io/nats.go"
 	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 type swarm struct {
-	bus     *bus.BusConn
+	bus     *nats.Conn
 	Devices []*mirDevice.Mir
 }
 
-func NewSwarm(bus *bus.BusConn) swarm {
+func NewSwarm(bus *nats.Conn) swarm {
 	return swarm{
 		bus: bus,
 	}

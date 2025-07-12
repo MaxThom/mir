@@ -194,7 +194,7 @@ func WithOsFlag(fn func()) func(*mirCli) {
 
 func WithLogLevel(out *LogLevel) func(*mirCli) {
 	return func(cli *mirCli) {
-		flag.StringVar(out, "loglevel", LogLevelInfo, fmt.Sprintf("[%s|%s|%s|%s|%s|%s]",
+		flag.StringVar(out, "loglevel", "", fmt.Sprintf("[%s|%s|%s|%s|%s|%s]",
 			LogLevelTrace,
 			LogLevelDebug,
 			LogLevelInfo,
