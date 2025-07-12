@@ -2,6 +2,7 @@
 
 # Parse command line arguments
 TEST_PATH="${1:-./...}"
+ARTIFACT_FOLDER="./.artifacts"
 
 # In go test ./..., the ./... means:
 #  - ./ - Start from the current directory
@@ -50,7 +51,7 @@ log_build() {
 start_core() {
     go build -o bin/core cmds/core/main.go
 
-    cat > .tmp/core_config.yaml << 'EOF'
+    cat > $ARTIFACT_FOLDER/core_config.yaml << 'EOF'
 logLevel: "debug"
 httpServer:
   port: 3026
@@ -64,16 +65,16 @@ databaseServer:
   database: "mir_testing"
 EOF
 
-    ./bin/core -config .tmp/core_config.yaml > .tmp/core.log 2>&1 &
+    ./bin/core -config $ARTIFACT_FOLDER/core_config.yaml > $ARTIFACT_FOLDER/core.log 2>&1 &
     CORE_PID=$!
-    log_info "- Started core service (.tmp/core.log) with PID: $CORE_PID"
+    log_info "- Started core service ($ARTIFACT_FOLDER/core.log) with PID: $CORE_PID"
 }
 
 # Function to start eventstore service
 start_eventstore() {
     go build -o bin/eventstore cmds/eventstore/main.go
 
-    cat > .tmp/eventstore_config.yaml << 'EOF'
+    cat > $ARTIFACT_FOLDER/eventstore_config.yaml << 'EOF'
 logLevel: "debug"
 httpServer:
   port: 3030
@@ -87,16 +88,16 @@ databaseServer:
   database: "mir_testing"
 EOF
 
-    ./bin/eventstore -config .tmp/eventstore_config.yaml > .tmp/eventstore.log 2>&1 &
+    ./bin/eventstore -config $ARTIFACT_FOLDER/eventstore_config.yaml > $ARTIFACT_FOLDER/eventstore.log 2>&1 &
     EVENTSTORE_PID=$!
-    log_info "- Started eventstore service (.tmp/eventstore.log) with PID: $EVENTSTORE_PID"
+    log_info "- Started eventstore service ($ARTIFACT_FOLDER/eventstore.log) with PID: $EVENTSTORE_PID"
 }
 
 # Function to start protocfg service
 start_protocfg() {
     go build -o bin/protocfg cmds/protocfg/main.go
 
-    cat > .tmp/protocfg_config.yaml << 'EOF'
+    cat > $ARTIFACT_FOLDER/protocfg_config.yaml << 'EOF'
 logLevel: "debug"
 httpServer:
   port: 3029
@@ -110,16 +111,16 @@ databaseServer:
   database: "mir_testing"
 EOF
 
-    ./bin/protocfg -config .tmp/protocfg_config.yaml > .tmp/protocfg.log 2>&1 &
+    ./bin/protocfg -config $ARTIFACT_FOLDER/protocfg_config.yaml > $ARTIFACT_FOLDER/protocfg.log 2>&1 &
     PROTOCFG_PID=$!
-    log_info "- Started protocfg service (.tmp/protocfg.log) with PID: $PROTOCFG_PID"
+    log_info "- Started protocfg service ($ARTIFACT_FOLDER/protocfg.log) with PID: $PROTOCFG_PID"
 }
 
 # Function to start protocmd service
 start_protocmd() {
     go build -o bin/protocmd cmds/protocmd/main.go
 
-    cat > .tmp/protocmd_config.yaml << 'EOF'
+    cat > $ARTIFACT_FOLDER/protocmd_config.yaml << 'EOF'
 logLevel: "debug"
 httpServer:
   port: 3028
@@ -133,16 +134,16 @@ databaseServer:
   database: "mir_testing"
 EOF
 
-    ./bin/protocmd -config .tmp/protocmd_config.yaml > .tmp/protocmd.log 2>&1 &
+    ./bin/protocmd -config $ARTIFACT_FOLDER/protocmd_config.yaml > $ARTIFACT_FOLDER/protocmd.log 2>&1 &
     PROTOCMD_PID=$!
-    log_info "- Started protocmd service (.tmp/protocmd.log) with PID: $PROTOCMD_PID"
+    log_info "- Started protocmd service ($ARTIFACT_FOLDER/protocmd.log) with PID: $PROTOCMD_PID"
 }
 
 # Function to start prototlm service
 start_prototlm() {
     go build -o bin/prototlm cmds/prototlm/main.go
 
-    cat > .tmp/prototlm_config.yaml << 'EOF'
+    cat > $ARTIFACT_FOLDER/prototlm_config.yaml << 'EOF'
 logLevel: "debug"
 httpServer:
   port: 3027
@@ -161,9 +162,9 @@ telemetryServer:
   bucket: "mir_testing"
 EOF
 
-    ./bin/prototlm -config .tmp/prototlm_config.yaml > .tmp/prototlm.log 2>&1 &
+    ./bin/prototlm -config $ARTIFACT_FOLDER/prototlm_config.yaml > $ARTIFACT_FOLDER/prototlm.log 2>&1 &
     PROTOTLM_PID=$!
-    log_info "- Started prototlm service (.tmp/prototlm.log) with PID: $PROTOTLM_PID"
+    log_info "- Started prototlm service ($ARTIFACT_FOLDER/prototlm.log) with PID: $PROTOTLM_PID"
 }
 
 # Check if services are still running
@@ -173,35 +174,35 @@ check_services() {
     if ! kill -0 $CORE_PID 2>/dev/null; then
         log_error "- Core service (PID: $CORE_PID) has died!"
         log_error "- Core service logs:"
-        cat .tmp/core.log
+        cat $ARTIFACT_FOLDER/core.log
         failed=true
     fi
 
     if ! kill -0 $EVENTSTORE_PID 2>/dev/null; then
         log_error "- EventStore service (PID: $EVENTSTORE_PID) has died!"
         log_error "- EventStore service logs:"
-        cat .tmp/eventstore.log
+        cat $ARTIFACT_FOLDER/eventstore.log
         failed=true
     fi
 
     if ! kill -0 $PROTOCFG_PID 2>/dev/null; then
         log_error "- ProtoCfg service (PID: $PROTOCFG_PID) has died!"
         log_error "- ProtoCfg service logs:"
-        cat .tmp/protocfg.log
+        cat $ARTIFACT_FOLDER/protocfg.log
         failed=true
     fi
 
     if ! kill -0 $PROTOCMD_PID 2>/dev/null; then
         log_error "- ProtoCmd service (PID: $PROTOCMD_PID) has died!"
         log_error "- ProtoCmd service logs:"
-        cat .tmp/protocmd.log
+        cat $ARTIFACT_FOLDER/protocmd.log
         failed=true
     fi
 
     if ! kill -0 $PROTOTLM_PID 2>/dev/null; then
         log_error "- ProtoTlm service (PID: $PROTOTLM_PID) has died!"
         log_error "- ProtoTlm service logs:"
-        cat .tmp/prototlm.log
+        cat $ARTIFACT_FOLDER/prototlm.log
         failed=true
     fi
 
@@ -233,15 +234,9 @@ cleanup() {
     log_info "- Stopped prototlm with PID: $PROTOTLM_PID"
 }
 
-# Cleaning databases data
-log_success "Cleaning databases data..."
-log_info "- Surreal"
-echo "DELETE devices;DELETE events;" | surreal sql -u root -p root --ns global --db mir_testing --hide-welcome
-log_info "- Influx"
-
 # Start all services
 log_success "Starting all Mir services for testing..."
-mkdir -p .tmp
+mkdir -p $ARTIFACT_FOLDER
 start_core
 start_eventstore
 start_protocfg
@@ -254,10 +249,4 @@ sleep 5
 check_services
 
 # Wait for OS signal to shutdown
-log_success "All services started and verified. Press Ctrl+C to shutdown..."
-
-# Wait for exit
-trap cleanup INT TERM EXIT
-while true; do
-    sleep 1
-done
+log_success "All services started and verified."
