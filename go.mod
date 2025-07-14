@@ -14,10 +14,10 @@ require (
 	github.com/knadh/koanf/providers/env v0.1.0
 	github.com/knadh/koanf/providers/file v0.1.0
 	github.com/knadh/koanf/v2 v2.0.1
-	github.com/maxthom/surrealdb.go v0.0.0-20250710115316-163807822ca5
 	github.com/nats-io/nats.go v1.31.0
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.31.0
+	github.com/surrealdb/surrealdb.go v0.3.3
 	golang.org/x/net v0.38.0
 	google.golang.org/protobuf v1.36.6
 )

@@ -2,7 +2,7 @@ package mir_v1
 
 import (
 	"github.com/maxthom/mir/internal/libs/jsonyaml"
-	surrealdbModels "github.com/maxthom/surrealdb.go/pkg/models"
+	surrealdbModels "github.com/surrealdb/surrealdb.go/pkg/models"
 )
 
 type EventType = string

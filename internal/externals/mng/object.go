@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/maxthom/mir/pkgs/mir_v1"
-	"github.com/maxthom/surrealdb.go"
+	"github.com/surrealdb/surrealdb.go"
 )
 
 func createIsObjectUniqueQuery(table, name, ns string) (sql string, vars map[string]any) {

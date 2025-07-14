@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
-	surrealdbModels "github.com/maxthom/surrealdb.go/pkg/models"
+	surrealdbModels "github.com/surrealdb/surrealdb.go/pkg/models"
 )
 
 type Device struct {
