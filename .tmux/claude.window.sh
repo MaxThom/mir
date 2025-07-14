@@ -13,7 +13,7 @@ new_window "claude"
 # Run commands.
 #run_cmd "top"     # runs in active pane
 #run_cmd  "~/code/zed/target/release/Zed" #"nvim ." 1 # runs in pane 1
-run_cmd "claude"
+run_cmd "claude \"read and do what is in the CLAUDE.md, after provide a resume of the immediate tasks divided in their sections\""
 
 # Paste text
 #send_keys "top"    # paste into active pane
