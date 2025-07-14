@@ -10,7 +10,7 @@ import (
 	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	surrealdbModels "github.com/maxthom/surrealdb.go/pkg/models"
+	surrealdbModels "github.com/surrealdb/surrealdb.go/pkg/models"
 )
 
 // Devices
@@ -319,10 +319,10 @@ func NewDeviceFromUpdateDeviceReq(d *mir_apiv1.UpdateDeviceRequest) Device {
 			dev.Status.LastHearthbeat = &surrealdbModels.CustomDateTime{Time: heartbeat}
 		}
 		if d.Status.Schema != nil {
-			if d.Status.Schema.CompressedSchema != nil && len(d.Status.Schema.CompressedSchema) > 0 {
+			if len(d.Status.Schema.CompressedSchema) > 0 {
 				dev.Status.Schema.CompressedSchema = d.Status.Schema.CompressedSchema
 			}
-			if d.Status.Schema.PackageNames != nil && len(d.Status.Schema.PackageNames) > 0 {
+			if len(d.Status.Schema.PackageNames) > 0 {
 				dev.Status.Schema.PackageNames = d.Status.Schema.PackageNames
 			}
 			if d.Status.Schema.LastSchemaFetch != nil {

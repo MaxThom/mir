@@ -14,9 +14,9 @@ import (
 	"github.com/maxthom/mir/internal/services/schema_cache"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/maxthom/mir/pkgs/module/mir"
-	surrealdbModels "github.com/maxthom/surrealdb.go/pkg/models"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
+	surrealdbModels "github.com/surrealdb/surrealdb.go/pkg/models"
 )
 
 type EventStoreServer struct {

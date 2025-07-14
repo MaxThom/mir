@@ -1,6 +1,6 @@
 package surreal
 
-import "github.com/maxthom/surrealdb.go"
+import "github.com/surrealdb/surrealdb.go"
 
 func ConnectToDb(url, namespace, database, user, password string) (*surrealdb.DB, error) {
 	db, err := surrealdb.New(url)

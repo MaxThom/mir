@@ -17,7 +17,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/dynamicpb"
 
-	surrealdbModels "github.com/maxthom/surrealdb.go/pkg/models"
+	surrealdbModels "github.com/surrealdb/surrealdb.go/pkg/models"
 )
 
 var (
