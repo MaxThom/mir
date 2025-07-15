@@ -1,0 +1,9 @@
+mir:
+  target: "nats://127.0.0.1:4222" # Mir server URL
+  logLevel: "info" # [trace|debug|info|warn|error|fatal]
+  device:
+    id: "example_device" # Must be unique per instance
+  localStore:
+    folderPath: ".store/" # Device storage location. Default to $HOME/.local/share/mir/mir.db
+    retentionLimit: 160h # Retention of saved messages. Default to 1 week.
+    persistenceType: "ifoffline" # [nostorage, ifoffline, always]

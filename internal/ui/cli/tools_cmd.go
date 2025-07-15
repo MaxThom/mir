@@ -39,15 +39,8 @@ func (d *InstallCmd) Validate() error {
 func (d *InstallCmd) Run() error {
 	var errs error
 
-	fmt.Println("installing air...")
-	cmd := exec.Command("go", "install", "github.com/air-verse/air@latest")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		errs = errors.Join(errs, fmt.Errorf("failed to install buf: %v", err))
-	}
 	fmt.Println("installing buf...")
-	cmd = exec.Command("go", "install", "github.com/bufbuild/buf/cmd/buf@latest")
+	cmd := exec.Command("go", "install", "github.com/bufbuild/buf/cmd/buf@latest")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
@@ -87,6 +80,7 @@ func (d *MirSchemaCmd) Run() error {
 
 type DeviceTemplateCmd struct {
 	ContextPath string `short:"p" help:"Context path to generate schema structure" default:"."`
+	Proto       string `enum:"protoc,buf" help:"Protofiles management [protoc|buf]. Buf (recommended)." default:"buf"`
 	ModulePath  string `arg:"" help:"Go project module path. eg: github.com/<user|org>/<project>"`
 }
 
@@ -124,12 +118,22 @@ func (d *DeviceTemplateCmd) Run() error {
 		return fmt.Errorf("failed to add mir dependency: %v", err)
 	}
 
-	subFS, err := fs.Sub(examples.DeviceTemplateFS, "device_template")
-	if err != nil {
-		return fmt.Errorf("failed to create sub filesystem: %w", err)
-	}
-	if err = RecreateFS(subFS, d.ContextPath, true); err != nil {
-		return fmt.Errorf("failed to create device template project: %w", err)
+	if d.Proto == "buf" {
+		subFS, err := fs.Sub(examples.DeviceTemplateFS, "templates/go_device_buf")
+		if err != nil {
+			return fmt.Errorf("failed to create sub filesystem: %w", err)
+		}
+		if err = RecreateFS(subFS, d.ContextPath, true); err != nil {
+			return fmt.Errorf("failed to create device template project: %w", err)
+		}
+	} else if d.Proto == "protoc" {
+		subFS, err := fs.Sub(examples.DeviceTemplateFS, "templates/go_device_protoc")
+		if err != nil {
+			return fmt.Errorf("failed to create sub filesystem: %w", err)
+		}
+		if err = RecreateFS(subFS, d.ContextPath, true); err != nil {
+			return fmt.Errorf("failed to create device template project: %w", err)
+		}
 	}
 
 	cmd = exec.Command("go", "mod", "tidy")
