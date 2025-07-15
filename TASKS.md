@@ -4,6 +4,8 @@
 
 ### Bug
 
+- [ ] Add deviceid to badger
+
 ### Features
 
 - [ ] Search by wildcard

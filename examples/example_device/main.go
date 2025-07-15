@@ -25,7 +25,7 @@ type Sensor struct {
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	b := mir.Builder().
-		CustomConfigFile("./cfg.yaml", mir.Yaml).
+		ConfigFile("./cfg.yaml", mir.Yaml).
 		Schema(example_devicev1.File_example_device_v1_schema_proto).
 		LogPretty(true)
 	cfg := ExtraConfig{}

@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"os"
 	"os/exec"
+	"path"
 
 	"github.com/maxthom/mir/examples"
 	"github.com/maxthom/mir/pkgs/device/proto"
@@ -81,7 +82,7 @@ func (d *MirSchemaCmd) Validate() error {
 }
 
 func (d *MirSchemaCmd) Run() error {
-	return RecreateFS(proto.SchemaFS, d.ContextPath)
+	return RecreateFS(proto.SchemaFS, d.ContextPath, true)
 }
 
 type DeviceTemplateCmd struct {
@@ -104,15 +105,18 @@ func (d *DeviceTemplateCmd) Run() error {
 	if err := os.MkdirAll(d.ContextPath, 0755); err != nil {
 		return fmt.Errorf("failed to create target directory: %w", err)
 	}
-	cmd := exec.Command("go", "mod", "init", d.ModulePath)
-	cmd.Dir = d.ContextPath
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to init go module: %v", err)
+
+	if _, err := os.Stat(path.Join(d.ContextPath, "go.mod")); os.IsNotExist(err) {
+		cmd := exec.Command("go", "mod", "init", d.ModulePath)
+		cmd.Dir = d.ContextPath
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("failed to init go module: %v", err)
+		}
 	}
 
-	cmd = exec.Command("go", "get", "github.com/maxthom/mir/")
+	cmd := exec.Command("go", "get", "github.com/maxthom/mir/")
 	cmd.Dir = d.ContextPath
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -124,7 +128,7 @@ func (d *DeviceTemplateCmd) Run() error {
 	if err != nil {
 		return fmt.Errorf("failed to create sub filesystem: %w", err)
 	}
-	if err = RecreateFS(subFS, d.ContextPath); err != nil {
+	if err = RecreateFS(subFS, d.ContextPath, true); err != nil {
 		return fmt.Errorf("failed to create device template project: %w", err)
 	}
 

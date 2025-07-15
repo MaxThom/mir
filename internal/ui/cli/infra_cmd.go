@@ -61,7 +61,7 @@ func (d *UpCmd) Run() error {
 	}
 	filePath += "/.cache/mir/infra"
 
-	if err := RecreateFS(infra.LocalInfraFS, filePath); err != nil {
+	if err := RecreateFS(infra.LocalInfraFS, filePath, true); err != nil {
 		return fmt.Errorf("canno't write Mir compose files to %s: %w", filePath, err)
 	}
 
@@ -99,7 +99,7 @@ func (d *DownCmd) Run() error {
 	}
 	filePath += "/.cache/mir/infra"
 
-	if err := RecreateFS(infra.LocalInfraFS, filePath); err != nil {
+	if err := RecreateFS(infra.LocalInfraFS, filePath, true); err != nil {
 		return fmt.Errorf("unable to write Mir compose files to %s: %w", filePath, err)
 	}
 
@@ -126,7 +126,7 @@ func (d *PrintCmd) Validate() error {
 }
 
 func (d *PrintCmd) Run() error {
-	if err := RecreateFS(infra.LocalInfraFS, path.Join(d.Path, "infra")); err != nil {
+	if err := RecreateFS(infra.LocalInfraFS, path.Join(d.Path, "infra"), true); err != nil {
 		return fmt.Errorf("unable to write Mir compose files to %s: %w", d.Path, err)
 	}
 	return nil
@@ -155,7 +155,7 @@ func (d *PsCmd) Run() error {
 	}
 	filePath += "/.cache/mir/infra"
 
-	if err := RecreateFS(infra.LocalInfraFS, filePath); err != nil {
+	if err := RecreateFS(infra.LocalInfraFS, filePath, true); err != nil {
 		return fmt.Errorf("canno't write Mir compose files to %s: %w", filePath, err)
 	}
 
@@ -193,7 +193,7 @@ func (d *RmCmd) Run() error {
 	}
 	filePath += "/.cache/mir/infra"
 
-	if err := RecreateFS(infra.LocalInfraFS, filePath); err != nil {
+	if err := RecreateFS(infra.LocalInfraFS, filePath, true); err != nil {
 		return fmt.Errorf("canno't write Mir compose files to %s: %w", filePath, err)
 	}
 

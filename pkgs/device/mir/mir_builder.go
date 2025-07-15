@@ -112,7 +112,7 @@ func (b builder) DefaultConfigFile(f configFormat) builder {
 // device_id and the target. Specifying those configs
 // in the builder pattern have greater priority
 // then loading from the config file.
-func (b builder) CustomConfigFile(fullPath string, f configFormat) builder {
+func (b builder) ConfigFile(fullPath string, f configFormat) builder {
 	format := mir_config.Yaml
 	if f == Json {
 		format = mir_config.Json
