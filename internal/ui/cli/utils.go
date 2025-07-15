@@ -202,10 +202,48 @@ func getTargetFromNameNs(n string) Target {
 	return Target{}
 }
 
-func RecreateFS(embedFS fs.FS, targetDir string) error {
-	if err := os.RemoveAll(targetDir); err != nil {
-		return fmt.Errorf("failed to remove target directory: %w", err)
+func RecreateFS(embedFS fs.FS, targetDir string, deleteExisting bool) error {
+	if deleteExisting {
+		var filesToDelete []string
+		var dirsToDelete []string
+
+		err := fs.WalkDir(embedFS, ".", func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+
+			targetPath := filepath.Join(targetDir, path)
+
+			if d.IsDir() {
+				if path != "." { // Don't delete the root directory
+					dirsToDelete = append(dirsToDelete, targetPath)
+				}
+			} else {
+				filesToDelete = append(filesToDelete, targetPath)
+			}
+
+			return nil
+		})
+
+		if err != nil {
+			return fmt.Errorf("failed to walk embedded filesystem: %w", err)
+		}
+
+		// Delete files first
+		for _, file := range filesToDelete {
+			if err := os.Remove(file); err != nil && !os.IsNotExist(err) {
+				return fmt.Errorf("failed to remove file %s: %w", file, err)
+			}
+		}
+
+		// Delete directories in reverse order (deepest first)
+		for i := len(dirsToDelete) - 1; i >= 0; i-- {
+			if err := os.RemoveAll(dirsToDelete[i]); err != nil && !os.IsNotExist(err) {
+				return fmt.Errorf("failed to remove directory %s: %w", dirsToDelete[i], err)
+			}
+		}
 	}
+
 	if err := os.MkdirAll(targetDir, 0755); err != nil {
 		return fmt.Errorf("failed to create target directory: %w", err)
 	}

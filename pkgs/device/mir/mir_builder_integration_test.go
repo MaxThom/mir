@@ -41,7 +41,7 @@ func TestLoadFileConfigJson(t *testing.T) {
 	defer os.Remove(fileName)
 
 	mir, err := Builder().
-		CustomConfigFile(fileName, Json).
+		ConfigFile(fileName, Json).
 		Store(StoreOptions{InMemory: true}).
 		Build()
 	if err != nil {
@@ -67,7 +67,7 @@ mir:
 	fmt.Println(fileName)
 
 	mir, err := Builder().
-		CustomConfigFile(fileName, Yaml).
+		ConfigFile(fileName, Yaml).
 		Store(StoreOptions{InMemory: true}).
 		Build()
 	if err != nil {
@@ -94,7 +94,7 @@ mir:
 		LogLevel(LogLevelInfo).
 		Target("nats://127.0.0.1:4222").
 		Store(StoreOptions{InMemory: true}).
-		CustomConfigFile(fileName, Yaml).
+		ConfigFile(fileName, Yaml).
 		Build()
 	if err != nil {
 		panic(err)
@@ -116,7 +116,7 @@ func TestLoadFileConfigMissingFields(t *testing.T) {
 		LogLevel(LogLevelInfo).
 		Target("nats://127.0.0.1:4222").
 		Store(StoreOptions{InMemory: true}).
-		CustomConfigFile(fileName, Yaml).
+		ConfigFile(fileName, Yaml).
 		Build()
 
 	assert.ErrorType(t, err, MirBuilderFieldsError{})
@@ -161,7 +161,7 @@ func TestLoadConfigMix(t *testing.T) {
 		LogLevel(LogLevelDebug).
 		EnvVars().
 		Store(StoreOptions{InMemory: true}).
-		CustomConfigFile(fileName, Json).
+		ConfigFile(fileName, Json).
 		Build()
 	if err != nil {
 		panic(err)
