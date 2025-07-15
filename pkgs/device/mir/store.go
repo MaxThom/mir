@@ -23,7 +23,7 @@ type StoreOptions struct {
 	FolderPath string `json:"folderPath" yaml:"folderPath"`
 	InMemory   bool   `json:"inMemory" yaml:"inMemory"`
 	// Timelimit to store messages. If over, will start cycling messages
-	// Default to 0 for infinite
+	// Default to one week, 0 for infinite
 	RetentionLimit time.Duration `json:"retentionLimit" yaml:"retentionLimit"`
 	// Cannot write messages to store if disk space left is above the pourcentage limit
 	// Default to 85%, if disk space is at more then 85%, will start cycle the messages

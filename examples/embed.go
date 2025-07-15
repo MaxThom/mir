@@ -2,5 +2,5 @@ package examples
 
 import "embed"
 
-//go:embed device_template
+//go:embed templates
 var DeviceTemplateFS embed.FS

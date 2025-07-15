@@ -1,9 +1,0 @@
-version: v2
-managed:
-  enabled: true
-plugins:
-  - local: protoc-gen-go
-    out: examples/command_device/gen
-    opt: paths=source_relative
-inputs:
-  - directory: examples/command_device/proto

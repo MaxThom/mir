@@ -1,0 +1,11 @@
+.PHONY: proto build run
+
+proto:
+	buf generate
+	buf lint
+
+build:
+	go build -o bin/device cmd/main.go
+
+run:
+	go run cmd/main.go
