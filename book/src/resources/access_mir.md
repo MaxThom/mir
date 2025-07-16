@@ -40,4 +40,4 @@ go install github.com/maxthom/mir/cmds/mir@latest
 go get github.com/maxthom/mir/
 ```
 
-Ready to roll 🚀!
+You are now ready to access the Mir repository.

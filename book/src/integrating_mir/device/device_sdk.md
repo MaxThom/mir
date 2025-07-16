@@ -31,4 +31,4 @@ Coming soon:
 - C/C++
 - Additional languages based on community needs
 
-Let's begin building your first Mir device! 🚀
+Let's begin building your first Mir device.
