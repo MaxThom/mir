@@ -4,17 +4,17 @@ The CLI is both a CLI and a TUI. The CLI offers all interaction with the system 
 
 To get the Mir CLI, visit [Running Mir with Binary](../running_mir/binary.md)
 
-To launch in TUI mode, simply runs `mir` without arguments.
+To launch in TUI mode, simply run `mir` without arguments.
 
-The CLI is a powerful low level tool to interact with the Mir ecosystem.
-Use it to manage devices, explore telemetry, send commands,  serve the ecosystem, and more.
+The CLI is a powerful low-level tool to interact with the Mir ecosystem.
+Use it to manage devices, explore telemetry, send commands, serve the ecosystem, and more.
 Use it as your companion to develop and operate your IoT devices.
-Use shell script, create powerful automation and integration with other tools.
+Use shell scripts to create powerful automation and integration with other tools.
 
 ## CLI
 
-Let's start with a tour of the CLI `mir -h`. Mir CLI act as both the client and the server
-giving a united tool to do all that is required. Moreover, it provices a set of tools
+Let's start with a tour of the CLI `mir -h`. The Mir CLI acts as both the client and the server,
+giving a unified tool to do all that is required. Moreover, it provides a set of tools
 to enhance development and operation.
 
 ```
@@ -65,9 +65,9 @@ The default configuration is made to work in par with the supporting infrastruct
 
 If we want to bring an external infrastructure, flags can be passed to modify connections or by using a configuration file.
 To help with the configuration, run `mir serve --display-default-cfg`. This will print the default configuration in yaml.
-By default, Mir load its configuration from `/etc/mir/mir.yaml` or `/home/<USER>/.config/mir/mir.yaml`
+By default, Mir loads its configuration from `/etc/mir/mir.yaml` or `/home/<USER>/.config/mir/mir.yaml`
 
-*! Tips: use `mir serve --display-default-cfg > /etc/mir/mir.yaml` and then edit this file to adjust your configuration needs.*
+**Tip:** Use `mir serve --display-default-cfg > /etc/mir/mir.yaml` and then edit this file to adjust your configuration needs.
 
 With both `infra` and `serve` commands, you have a full Mir setup running!
 
@@ -87,8 +87,8 @@ mir device list <name/namespace>
 mir device list power/default -o yaml
 ```
 
-*! Tips: all commands that interact with devices can be filtered by name/namespace as first positional arguments or with --target flag.*
-*Use /namespace for all device in that namespace*
+**Tip:** All commands that interact with devices can be filtered by name/namespace as first positional arguments or with the --target flag.
+Use `/namespace` for all devices in that namespace.
 
 To create a device, you can use the different flags to pass the initial configuration:
 
@@ -135,7 +135,7 @@ mir telemetry list <name/namespace>
 This command will output the list of outgoing telemetry from devices.
 It will also print a url that you can open to see your data in Grafana.
 
-*! Tips: if you dont see all telemetry, use `-r` to refresh the schema*
+**Tip:** If you don't see all telemetry, use `-r` to refresh the schema.
 
 The explore panel in Grafana is a great way to see telemetry as well as
 offering an example of the query to see that data. Use the query as a starting point
@@ -163,7 +163,7 @@ mir cmd send <name/namespace> -n <command_name> -e
 Each command will return a response from each devices that the command targeted.
 Moreover, you can use the flag `--dry-run`to validate the command without sending it.
 
-*! Tips: if you dont see all commands, use `-r` to refresh the schema*
+**Tip:** If you don't see all commands, use `-r` to refresh the schema.
 
 #### Device configuration
 
@@ -190,7 +190,7 @@ As configuration is async, the server response does not validate if the device r
 but indicate if it was successfully sent and written to store.
 Moreover, you can use the flag `--dry-run`to validate the config without sending it.
 
-*! Tips: if you dont see all commands, use `-r` to refresh the schema*
+**Tip:** If you don't see all commands, use `-r` to refresh the schema.
 
 ### Tools
 

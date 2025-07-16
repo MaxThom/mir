@@ -71,7 +71,7 @@ spec:
 properties: {}
 status:
     online: false
-    lastHearthbeat: 2024-11-15T20:01:19.296494766Z
+    lastHeartbeat: 2024-11-15T20:01:19.296494766Z
     schema:
         packageNames:
             - google.protobuf

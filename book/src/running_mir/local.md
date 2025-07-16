@@ -51,16 +51,23 @@ Mir infra dev
 ```
 
 ```bash
-# Grafana       <user>///<password>
-localhost:3000 # admin///mir-operator
-# InfluxDB
-localhost:8086 # admin///mir-operator
-# SurrealDB
-localhost:8000 # root///root
-# Prometheus
-localhost:9090
-# NatsIO
-localhost:8222
+# Service: Grafana
+# URL: http://localhost:3000
+# Username: admin / Password: mir-operator
+
+# Service: InfluxDB
+# URL: http://localhost:8086
+# Username: admin / Password: mir-operator
+
+# Service: SurrealDB  
+# URL: http://localhost:8000
+# Username: root / Password: root
+
+# Service: Prometheus
+# URL: http://localhost:9090
+
+# Service: NATS
+# URL: http://localhost:8222
 ```
 
 To build Mir binary, run the following command:
@@ -71,9 +78,9 @@ just build
 go build -o bin/mir cmds/mir/main.go
 ```
 
-Mir binary come with a powerful CLI and TUI. It act as both the client and the server.
-Once started as the server, open another terminal and you can use the CLI to interact with the system..
-Use the `swarm` command to simulate a device connecting to the server to explore Mir ecosystem.
+The Mir binary comes with a powerful CLI and TUI. It acts as both the client and the server.
+Once started as the server, open another terminal and you can use the CLI to interact with the system.
+Use the `swarm` command to simulate a device connecting to the server to explore the Mir ecosystem.
 
 ```bash
 # Server
@@ -94,7 +101,7 @@ mir schema
 mir swarm
 ```
 
-Tips (Linux), you can run `just install` to install the binary to your system path.
+**Tip:** On Linux, you can run `just install` to install the binary to your system path.
 
 To integrate your own device to the system, visit the [device tutorial](../integrating_mir/device/device_sdk.html).
 

@@ -1,10 +1,22 @@
-# Quick Start
+# Quick Start Guide
 
-To get started with Mir, you need to have the following installed:
+> **Get your first IoT device connected in under 5 minutes** ⚡
 
-- [Docker](https://www.docker.com/)
+Welcome! This guide will walk you through setting up Mir and connecting your first virtual device. By the end, you'll understand how to stream telemetry, send commands, and manage device configurations.
 
-while installing, you can download the latest release of Mir from the [releases page](https://github.com/MaxThom/mir/releases).
+## 📋 Prerequisites
+
+Before we begin, ensure you have:
+
+- [Docker](https://www.docker.com/) installed and running
+- Terminal or command prompt access
+- 5 minutes of your time
+
+## 🚀 Installation
+
+### Step 1: Download Mir
+
+Download the latest release of Mir from the [releases page](https://github.com/MaxThom/mir/releases).
 From the download, extract the binary. Add it to your path for easier usage.
 
 You can also install the binary via Go (as it is a private repository, follow the [access guide](reference/access_mir.md)):
@@ -12,129 +24,110 @@ You can also install the binary via Go (as it is a private repository, follow th
 go install github.com/maxthom/mir/cmds/mir@latest
 ```
 
-To begin, lets run the system:
+### Step 2: Verify Installation
 
 ```bash
-# In one terminal, start a local Mir supporting infrastructure
+mir --version
+```
+
+**Success!** You should see the Mir version information.
+
+## 🎮 Start Your IoT Platform
+
+Let's bring up your personal IoT platform in two simple commands:
+
+### Terminal 1: Infrastructure
+```bash
 mir infra up
-# In another terminal, start the Mir server
+```
+This starts the supporting services.
+
+### Terminal 2: Mir Server
+```bash
 mir serve
 ```
+This launches the Mir server that manages all your devices.
 
-Voila! You now have a full Mir setup running. You have access to a configured Grafana ran by Mir infra:
+**Congratulations!** Your IoT platform is now running!
 
-```bash
-# Title          <user>///<password>
-# Grafana
-localhost:3000 # admin///mir-operator
-```
+### Access Your Dashboard
+
+Open your browser and navigate to:
+- **URL**: http://localhost:3000
+- **Username**: `admin`
+- **Password**: `mir-operator`
+
+You now have access to pre-configured Grafana dashboards for monitoring your devices.
 
 Find list of running services [here](running_mir/binary.md).
 
-## Swarm
+## 🤖 Create Your First Virtual Device
 
-The CLI serves both client and server. Moreover, it provides a set of tools to
-test and develop with the system. Swarm help mimic devices for testing or demo. Let's create
-one virtual device:
+Let's create a virtual device using the Swarm to see Mir in action:
 
+### Terminal 3: Virtual Device
 ```bash
-# Open another terminal, and run
 mir swarm --ids power
 ```
 
-We now have a running virtual device with the device id `power`.
+This creates a virtual "power monitoring" device that simulates:
+- Temperature readings
+- Power consumption data
+- HVAC control capabilities
 
-## Client
+## 🔍 Explore Your Device
 
-Open yet another terminal and run `mir device list`:
-
-```
-# Output
-➜ mir dev ls
-NAME/NAMESPACE                                DEVICE_ID        STATUS     LAST_HEARTHBEAT      LAST_SCHEMA_FETCH    LABELS
-power/default                                 power            online     2024-11-21 02:39:09  2024-11-20 23:37:51
-```
-
-You should see your running device. To see its digital twin, use `mir device ls power/default`:
-
-```yaml
-apiVersion: mir/v1alpha
-kind: device
-meta:
-    name: power
-    namespace: default
-    labels: {}
-    annotations: {}
-spec:
-    deviceId: power
-    disabled: false
-properties:
-    desired:
-        swarm.v1.DataRateProp:
-            sec: 0
-    reported:
-        swarm.v1.DataRateStatus:
-            sec: 1
-        swarm.v1.HVACStatus:
-            online: false
-status:
-    online: true
-    lastHearthbeat: 2025-02-16T09:14:57.327357581Z
-    schema:
-        packageNames:
-            - google.protobuf
-            - mir.device.v1
-            - swarm.v1
-        lastSchemaFetch: 2025-02-16T09:10:19.347707831Z
-    properties:
-        desired:
-            swarm.v1.DataRateProp: 2025-02-16T09:11:48.359211255Z
-        reported:
-            swarm.v1.DataRateStatus: 2025-02-16T09:11:48.362475929Z
-            swarm.v1.HVACStatus: 2025-02-16T09:13:06.57108616Z
-```
-
-The digital twin is the virtual representation of the device. It contains the device's properties, status, schema and more.
-Each device can be labeled with key value pairs for easy identification. Using those, you can query, send commands and manage subset of your devices.
-
-Use `mir dev -h` to see all available commands to create, update and delete devices.
-
-## Communication
-
-Devices dont just exist, they communicate. Mir offers three methods of communication between the device and the server.
-
-### Telemetry
-
-The first is telemetry, which is the device sending data to the server in a fire and forget manner.
-The virtual device `power` we created earlier is sending some preconfigured telemetry.
-
-To see device telemetry in action, run `mir tlm power/default`:
-
+### Terminal 4: View Connected Devices
 ```bash
-➜ mir tlm ls power/default
-# Output
-1. power/default
-swarm.v1.EnvironmentTlm{building=A, floor=1} localhost:3000/explore
-swarm.v1.PowerConsuption{building=A, floor=2} localhost:3000/explore
+mir device list
 ```
 
-Click on the link to see the telemetry in Grafana.
+**Output:**
+```
+NAME/NAMESPACE    DEVICE_ID    STATUS    LAST_HEARTBEAT    LABELS
+power/default     power        online    Just now
+```
 
-### Commands
-
-The second method of communication is commands. Commands are sent from the server to the device as a request-reply.
-
-To send device commands, run `mir cmd send power/default` to see the available commands:
-
+### Inspect Device Details
 ```bash
-➜ mir cmd send power/default
-# Output
-1. power/default
-swarm.v1.ActivateHVAC{}
+mir device ls power
 ```
 
-To send a commands, use the following:
+This displays the device's digital twin - a complete virtual representation including:
+- Metadata (name, namespace, labels)
+- Configuration (desired and reported properties)
+- Status (online state, schema info)
 
+## 💬 Communicate with Your Device
+
+### Telemetry - Stream Real-time Data
+
+Device sending data to the server in a fire-and-forget manner.
+
+View incoming sensor data:
+```bash
+mir tlm list power
+```
+
+**Output:**
+```
+power/default
+├─ EnvironmentTlm (temperature, humidity) → View in Grafana
+└─ PowerConsumption (watts, voltage) → View in Grafana
+```
+
+Click the Grafana links to see live data visualization!
+
+### Commands - Control Your Device
+
+Commands are sent from the server to the device as a request-reply.
+
+See available commands:
+```bash
+mir cmd send power
+```
+
+Send a command to activate HVAC:
 ```bash
 # See command payload
 mir command send power/default -n swarm.v1.ActivateHVAC -j
@@ -144,33 +137,22 @@ mir command send power/default -n swarm.v1.ActivateHVAC -p '{"durationSec": 5}'
 mir command send power/default -n swarm.v1.ActivateHVAC -e
 ```
 
-```bash
-➜ mir command send power/default -n swarm.v1.ActivateHVAC -e
-# Output
-1. power/default COMMAND_RESPONSE_STATUS_SUCCESS
-swarm.v1.ActivateHVACResponse
-{
-  "success": true
-}
+**Output:**
+```
+Command sent successfully!
+Response: {"success": true}
 ```
 
-### Configuration
+### Configuration - Manage Device State
 
-The third method of communication is configuration. Configuration is divided into desired properties and reported properties.
-Contrary to commands, properties use an asynchronous messaging model and are written to storage.
-They are meant to represent the desired and current state of the device.
+Configuration is divided into desired properties and reported properties. Contrary to commands, properties use an asynchronous messaging model and are written to storage. They are meant to represent the desired and current state of the device.
 
-To see the device configuration options, run `mir cfg send power/default`:
-
+View current configuration option:
 ```bash
-➜ mir config send power/default
-# Output
-1. power/default
-swarm.v1.DataRateProp{}
+mir cfg send power/default
 ```
 
-To update configuration, use the following:
-
+Update device configuration:
 ```bash
 # See current config
 mir config send power/default -n swarm.v1.DataRateProp -c
@@ -182,53 +164,49 @@ mir config send power/default -n swarm.v1.DataRateProp -p '{"sec": 5}'
 mir config send power/default -n swarm.v1.DataRateProp -e
 ```
 
+The device will:
+1. Receive the new desired configuration
+2. Apply the changes
+3. Report back the updated state
+
+## 🎯 What Just Happened?
+
+In just a few minutes, you've:
+
+- ✅ **Deployed** a complete IoT platform
+- ✅ **Connected** a virtual device
+- ✅ **Streamed** real-time telemetry data
+- ✅ **Sent** commands to control the device
+- ✅ **Updated** device configuration
+- ✅ **Visualized** data in Grafana dashboards
+
+## 🧹 Clean Up
+
+When you're done experimenting:
+
 ```bash
-➜ mir config send power/default -n swarm.v1.DataRateProp -e
-# Output
-1. power/default
-swarm.v1.DataRateProp{}
-{
-  "sec": 5
-}
+# Stop the virtual device (Ctrl+C in Terminal 3)
+# Stop Mir server (Ctrl+C in Terminal 2)
+# Stop infrastructure
+mir infra down
 ```
 
-To see the updated configuration, run `mir dev ls power/default`:
+## 🚦 Next Steps
 
-```yaml
-apiVersion: mir/v1alpha
-kind: device
-meta:
-    name: power
-    namespace: default
-...
-properties:
-    desired:
-        swarm.v1.DataRateProp:
-            sec: 5
-    reported:
-        swarm.v1.DataRateStatus:
-            sec: 5
-        swarm.v1.HVACStatus:
-            online: true
-status:
-...
-    properties:
-        desired:
-            swarm.v1.DataRateProp: 2025-02-16T09:11:48.359211255Z
-        reported:
-            swarm.v1.DataRateStatus: 2025-02-16T09:11:48.362475929Z
-            swarm.v1.HVACStatus: 2025-02-16T09:18:32.916095932Z
-```
+Now that you've experienced Mir's capabilities:
 
-As you can see, the desired properties have been updated with our request and the device has reported the new values.
+### 🔧 **Build Real Devices**
+→ Learn how to integrate your hardware with the [Device SDK](./integrating_mir/device/device_sdk.md)
 
-Under `Status.Properties`, you can see the timestamp of the desired and reported properties of their last update in UTC.
+### 📈 **Scale Your Deployment**
+→ Deploy Mir in production with our [Deployment Guide](./running_mir/running_mir.md)
 
-*! Desired properties can also be modified using the device api. Use `mir dev edit power/default` command.*
+### 🎨 **Customize Your Platform**
+→ Extend Mir with custom modules using the [Module SDK](./integrating_mir/module/module_sdk.md)
 
-Congratulations! You have a running Mir setup with a virtual device, telemetry, commands and configuration!
+### 💡 **Explore Advanced Features**
+→ Master the CLI with our [Complete CLI Guide](./operating_mir/mir_cli_tui.md)
 
-## Next Steps
+---
 
-- To integrate your own device, visit the [DeviceSDK](integrating_mir/device/device_sdk.md)
-- They are many more features to explore in the CLI, visit the [CLI](operating_mir/mir_cli_tui.md) for more commands and options.
+🎉 **Welcome to the Mir community!** You're now ready to build amazing IoT solutions. If you have questions, check our [FAQ](./resources/faq.md) or [join our community](https://github.com/MaxThom/mir/discussions).

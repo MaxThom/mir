@@ -48,7 +48,7 @@ is much incertainties about the feasibility of that one
   - [ ] Add search by any json fields
   - [x] Add custom set of Mir errors for nice and consistent error handling
   - [x] Comment the protofile
-  - [x] Added hearthbeat functionality
+  - [x] Added heartbeat functionality
 
 
 - MirCLI, the Command Line Interface to easy interact with the system and with scripts
@@ -72,7 +72,7 @@ is much incertainties about the feasibility of that one
 -  MirGoSdk, device sdk in Go
 
   - [x] Create builder or Option patterns for sdk
-  - [x] Have Hearthbeat functionality implemented
+  - [x] Have Heartbeat functionality implemented
   - [x] Config and Logging setup
   - [x] Design the event system
     - [x] How to publish new event

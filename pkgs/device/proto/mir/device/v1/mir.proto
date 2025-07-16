@@ -37,7 +37,7 @@ enum TimestampType {
   TIMESTAMP_TYPE_MICRO = 2; // Represents microseconds of UTC time since Unix epoch (int64)
   TIMESTAMP_TYPE_MILLI = 3; // Represents milliseconds of UTC time since Unix epoch (int64)
   TIMESTAMP_TYPE_NANO = 4; // Represents nanoseconds of UTC time since Unix epoch (int64)
-  TIMESTAMP_TYPE_FRACTION = 5; // Represents seconds of UTC time since Unix epoch (int64) and non-negative fractions of a second at nanosecond resolution (int32
+  TIMESTAMP_TYPE_FRACTION = 5; // Represents seconds of UTC time since Unix epoch (int64) and non-negative fractions of a second at nanosecond resolution (int32)
 }
 
 message Timestamp {
