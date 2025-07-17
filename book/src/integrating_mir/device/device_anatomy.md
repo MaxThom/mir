@@ -1,12 +1,8 @@
 # Anatomy of a Mir Device
 
-At the core of the devices, it is the device unique identifier or `deviceId`.
+At the core of a device, it is the device unique identifier or `deviceId`. It is the responsibility of the developers and operators to manage those ids as each deployments or instance must have a unique id.
 
-It is the responsibility of the dev/user to manage those ids. In a near future, the system will provide different generation methods and helpers such as UUID, MAC address, load from files, etc.
-In the mean time, it is yours to implement. We can have many deployments of the same device code as long as each device have a unique id.
-
-In this example, the deviceId will be hardcoded to `weather`.
-The SDK use a builder pattern to get started:
+To begins, lets change the deviceId from `example_device` to `weather` in the builder pattern:
 
 ```go
 package main
@@ -21,27 +17,23 @@ import (
 )
 
 func main() {
-	// Build device with different options
-	// For deviceId, you can hardcode, use flags, use configuration files, etc
+	ctx, cancel := context.WithCancel(context.Background())
 	m, err := mir.Builder().
 		DeviceId("weather").
 		Target("nats://127.0.0.1:4222").
-		LogPretty(false).
+		LogLevel(mir.LogLevelInfo).
+		//ConfigFile("./config.yaml", mir.Yaml).
+		//Schema(schemav1.File_schema_v1_schema_proto).
 		Build()
 	if err != nil {
 		panic(err)
 	}
 
-	// When ready, connect to the Mir server
-	ctx, cancel := context.WithCancel(context.Background())
 	wg, err := m.Launch(ctx)
 	if err != nil {
 		panic(err)
 	}
 
-	// We will add here...
-
-	// Wait for system signal to stop the device
 	osSignal := make(chan os.Signal, 1)
 	signal.Notify(osSignal, syscall.SIGINT, syscall.SIGTERM)
 	<-osSignal
@@ -51,7 +43,7 @@ func main() {
 }
 ```
 
-Congratulation, running this code will register a new device to the Mir Server and your journey begins 🚀.
+Congratulation, running this code with `make run` or `go run cmd/main.go` will register a new device to the Mir Server and your journey begins 🚀.
 
 In a seperation terminal, run `mir device list` to see your online device.
 
@@ -90,7 +82,7 @@ status:
 
 *! Note: Name and Namespace form a composable unique key while deviceId is unique.*
 
-*! Note: When creating a device by the SDK, the device is automatically set in the `default` namespace and use deviceId for name.*
+*! Note: When autoprovisionning a device, meaning the device was not created beforehand in the system, the device is automatically set in the `default` namespace and use the deviceId for name.*
 
 You can use `mir device edit weather/default` to interactively edit the device twin.
 Rename it, change its namespace, add labels, etc. Only the Meta, Spec and Properties can be edited. Status is reserved for the system or extensions.
