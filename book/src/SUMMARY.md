@@ -10,6 +10,7 @@
 
 - [Concepts](./concepts/concepts.md)
 	- [Digital Twin](./concepts/digital_twin.md)
+	- [Protocol Buffers](./concepts/protobuf.md)
 	- [Communication Patterns](./concepts/communication_patterns.md)
 	  - [Telemetry](./concepts/communication_telemetry.md)
 	  - [Command](./concepts/communication_command.md)
@@ -19,6 +20,7 @@
 - [Integrating Mir](./integrating_mir/integrating_mir.md)
 	- [Device SDK](./integrating_mir/device/device_sdk.md)
 		- [Prerequisites](./integrating_mir/device/device_prerequisites.md)
+		- [Project Template](./integrating_mir/device/device_template.md)
 		- [Anatomy](./integrating_mir/device/device_anatomy.md)
 		- [Communication](./integrating_mir/device/device_communication.md)
 		- [Telemetry](./integrating_mir/device/device_telemetry.md)

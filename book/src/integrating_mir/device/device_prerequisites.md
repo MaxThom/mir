@@ -4,9 +4,44 @@ In this section, we will initialize the project and access the Mir Device SDK.
 
 Make sure you have the Mir Server up & running and the Mir CLI ready to be used. Follow the [Running Mir Setup](../../running_mir/binary.md).
 
+## Mir tooling
+
+Mir requires a set of utility tools to properly create devices:
+
+- [protoc](https://protobuf.dev/installation/): Protocol buffer compiler.
+
+It must be manually installed via your package manager:
+
+```sh
+# Debian, Ubuntu, Raspian
+sudo apt install protobuf-compiler
+# Arch based
+sudo pacman -S protobuf
+# Mac
+brew install protobuf
+# Windows
+winget install protobuf
+```
+
+The following can be installed via `go install` or using Mir CLI:
+
+- [buf](https://github.com/bufbuild/buf/): Modern, fast and efficient Protobuf management
+- [protoc-go-gen](https://github.com/bufbuild/buf/): Go bindings for protobuf compiler
+
+```sh
+# Mir CLI
+mir tools install
+
+# Manually
+go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+go install github.com/bufbuild/buf/cmd/buf@latest
+```
+
+
 ## Initialize Go project
 
 ```bash
+mkdir <project_name> && cd <project_name>
 go mod init github.com/<user/org>/<project>
 ```
 
@@ -45,32 +80,3 @@ go get github.com/maxthom/mir/
 ```
 
 Ready to roll!
-
-## Mir tooling
-
-Mir requires a set of utility tools to properly create devices:
-
-- [protoc](https://grpc.io/docs/protoc-installation/): Protocol buffer compiler.
-
-It must be manually installed via your package manager:
-
-```bash
-# Debian, Ubuntu, Raspian
-sudo apt install protobuf-compiler
-# Arch based
-sudo pacman -S protobuf
-```
-
-The following can be installed via `go install` or using Mir CLI:
-
-- [buf](https://github.com/bufbuild/buf/): Go bindings for protobuf compiler.
-- [protoc-go-gen](https://github.com/bufbuild/buf/): Go bindings for protobuf compiler.
-
-```bash
-# Mir CLI
-mir tools install
-
-# Manually
-go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
-go install github.com/bufbuild/buf/cmd/buf@latest
-```
