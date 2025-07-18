@@ -6,7 +6,7 @@ managed:
   #     value: <module_path>/proto
 plugins:
   - local: protoc-gen-go
-    out: proto
+    out: proto/gen
     opt: paths=source_relative
 inputs:
   - directory: proto
