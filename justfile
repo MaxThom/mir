@@ -54,6 +54,23 @@ tx:
 infra:
 	docker compose -f infra/local/compose.yaml up --force-recreate
 
+# Build docker image
+docker-build tag="latest" version="0.0.0" user="$(id -u -n)" time="$(date -u)":
+    docker build -t mir:{{tag}} --build-arg VERSION={{version}} --build-arg USER="{{user}}" --build-arg TIME="{{time}}" .
+
+# Run docker Mir
+docker-run entry="serve":
+    docker run --network host mir:latest {{entry}}
+
+# Run docker Mir with a config file
+docker-run-config entry="serve":
+    docker run -v $(pwd)/infra/mir/local-config.yaml:/home/mir/.config/mir/mir.yaml --network host mir:latest {{entry}}
+
+# Run docker Mir and enter the container
+docker-run-exec:
+    docker run -v $(pwd)/infra/mir/local-config.yaml:/home/mir/.config/mir/mir.yaml --network host -it --entrypoint /bin/sh mir:latest
+
+
 # Run Mir book for local documentation
 book:
 	cd book && mdbook serve -p 5001
