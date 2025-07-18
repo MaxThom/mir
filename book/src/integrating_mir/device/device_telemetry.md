@@ -8,15 +8,10 @@ The Mir telemetry module will ingest and store it in [InfluxDB](https://www.infl
 > InfluxDB is a time series database designed to handle high write and query loads.
 > InfluxDB is meant to be used as a backing store for any use case involving large amounts of timestamped data, including DevOps monitoring, application metrics, IoT sensor data, and real-time analytics.
 
+## Editing the Schema
+
 First, lets define a telemetry message in your schema:
 ```proto
-syntax = "proto3";
-
-package schemav1;
-option go_package = "github.com/maxthom/mir-device/schemav1";
-
-import "mir/device/v1/mir.proto";
-
 message Env {
 	option (mir.device.v1.message_type) = MESSAGE_TYPE_TELEMETRY;
 
@@ -35,11 +30,12 @@ Here we define a message `Env` that will be used. The options are used to annota
 Lets regenerate the schema:
 
 ```bash
-protoc --proto_path=schemav1/ \
-       --go_out=schemav1 \
-       --go_opt=paths=source_relative \
-       schemav1/schema.proto
+just proto
+#or
+make proto
 ```
+
+## Send Telemetry to Mir
 
 Let's create a function that send telemetry data to the server every 3 seconds.
 To do so, we use the `m.SendTelemetry` function that take any proto message:
@@ -75,17 +71,18 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	dataRate := 3
 
   // Start go routine for not to block main thread
 	go func() {
 		for {
 			select {
 			case <-ctx.Done():
-			  // If context get cancelled, stop sending telemetry and
+				// If context get cancelled, stop sending telemetry and
 				// decrease the wait group for graceful shutdown
 				wg.Done()
 				return
-			case <-time.After(3 * time.Second):
+			case <-time.After(time.Duration(dataRate) * time.Second):
 				if err := m.SendTelemetry(&schemav1.Env{
 					Ts:          time.Now().UTC().UnixNano(),
 					Temperature: rand.Int32N(101),
@@ -107,15 +104,35 @@ func main() {
 }
 ```
 
-And just like that, we now have telemetry that his stored server side
+Run the project:
 ```bash
-mir tlm list weather
-
-1. weather/default
-schemav1.Env{} localhost:3000/explore
+just run
+#or
+make run
 ```
 
-Click on the link to open Grafana and visualize the data.
+### Visualize the Data
+
+Just like that, we now have telemetry that is stored server side
+```bash
+mir dev tlm list weather
+
+1. weather/default
+schema.v1.Env{} localhost:3000/explore
+```
+
+Click on the link to open Grafana and visualize the data. The default user/password is:
+```
+user: admin
+password: mir-operator
+```
+
+You can also see the data in InfluxDB:
+```bash
+localhost:8086
+user: admin
+password: mir-operator
+```
 
 Voila! You have successfully sent telemetry data to the server. Add more message to the schema and send more data!
 Use the CLI to quickly get link to the telemetry data in Grafana and use the generated query to create powerful dashboard.

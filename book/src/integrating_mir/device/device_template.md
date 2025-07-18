@@ -29,18 +29,18 @@ project/
 ├── buf.yaml                  # Buf configuration for proto management
 ├── buf.gen.yaml              # Buf code generation configuration
 ├── config.yaml               # Device configuration example
-├── makefile                  # Common tasks
+├── makefile/justfile         # Common tasks
 ├── USAGE.md                  # Usage documentation and getting started guide
 └── go.mod
 ```
 
-#### makefile
+#### makefile/justfile
 
 Common commands to help develop your device
 
-- **`make proto`**: Generates Go code from Protocol Buffer definitions (using buf or protoc)
-- **`make build`**: Compiles the device binary
-- **`make run`**: Runs the device application for development
+- **`make/just proto`**: Generates Go code from Protocol Buffer definitions (using buf or protoc)
+- **`make/just build`**: Compiles the device binary
+- **`make/just run`**: Runs the device application for development
 
 #### schema.proto
 

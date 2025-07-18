@@ -43,7 +43,7 @@ func main() {
 }
 ```
 
-Congratulation, running this code with `make run` or `go run cmd/main.go` will register a new device to the Mir Server and your journey begins 🚀.
+Congratulation, running this code with `make/just run` or `go run cmd/main.go` will register a new device to the Mir Server and your journey begins 🚀.
 
 In a seperation terminal, run `mir device list` to see your online device.
 
