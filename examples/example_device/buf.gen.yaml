@@ -3,7 +3,7 @@ managed:
   enabled: true
 plugins:
   - local: protoc-gen-go
-    out: examples/example_device/gen
+    out: examples/example_device/proto/gen
     opt: paths=source_relative
 inputs:
   - directory: examples/example_device/proto

@@ -82,7 +82,7 @@ const (
 	TimestampType_TIMESTAMP_TYPE_MICRO       TimestampType = 2 // Represents microseconds of UTC time since Unix epoch (int64)
 	TimestampType_TIMESTAMP_TYPE_MILLI       TimestampType = 3 // Represents milliseconds of UTC time since Unix epoch (int64)
 	TimestampType_TIMESTAMP_TYPE_NANO        TimestampType = 4 // Represents nanoseconds of UTC time since Unix epoch (int64)
-	TimestampType_TIMESTAMP_TYPE_FRACTION    TimestampType = 5 // Represents seconds of UTC time since Unix epoch (int64) and non-negative fractions of a second at nanosecond resolution (int32
+	TimestampType_TIMESTAMP_TYPE_FRACTION    TimestampType = 5 // Represents seconds of UTC time since Unix epoch (int64) and non-negative fractions of a second at nanosecond resolution (int32)
 )
 
 // Enum value maps for TimestampType.

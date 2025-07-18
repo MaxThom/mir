@@ -7,7 +7,7 @@ import (
 	"syscall"
 	"time"
 
-	example_devicev1 "github.com/maxthom/mir/examples/example_device/gen/example_device/v1"
+	example_devicev1 "github.com/maxthom/mir/examples/example_device/proto/gen/example_device/v1"
 	"github.com/maxthom/mir/pkgs/device/mir"
 )
 

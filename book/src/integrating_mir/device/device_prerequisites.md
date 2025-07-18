@@ -37,6 +37,12 @@ go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 go install github.com/bufbuild/buf/cmd/buf@latest
 ```
 
+Mir utilizes a task runner to run common commands, either `justfile` or `makefile`. They are optionnal, but greatly improve the development experience:
+
+- [justfile](https://github.com/casey/just) **(Preferred)**: Modern task runner with simpler syntax.
+- [makefile](https://www.gnu.org/software/make/): Traditional build automation tool.
+
+Yours to install depending on your platform.
 
 ## Initialize Go project
 

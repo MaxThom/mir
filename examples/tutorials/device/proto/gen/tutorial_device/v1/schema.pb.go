@@ -90,27 +90,27 @@ func (x *Env) GetHumidity() int32 {
 	return 0
 }
 
-type ActivateHVAC struct {
+type ActivateHVACCmd struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	DurationSec   int32                  `protobuf:"varint,1,opt,name=duration_sec,json=durationSec,proto3" json:"duration_sec,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ActivateHVAC) Reset() {
-	*x = ActivateHVAC{}
+func (x *ActivateHVACCmd) Reset() {
+	*x = ActivateHVACCmd{}
 	mi := &file_tutorial_device_v1_schema_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ActivateHVAC) String() string {
+func (x *ActivateHVACCmd) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ActivateHVAC) ProtoMessage() {}
+func (*ActivateHVACCmd) ProtoMessage() {}
 
-func (x *ActivateHVAC) ProtoReflect() protoreflect.Message {
+func (x *ActivateHVACCmd) ProtoReflect() protoreflect.Message {
 	mi := &file_tutorial_device_v1_schema_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -122,39 +122,39 @@ func (x *ActivateHVAC) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ActivateHVAC.ProtoReflect.Descriptor instead.
-func (*ActivateHVAC) Descriptor() ([]byte, []int) {
+// Deprecated: Use ActivateHVACCmd.ProtoReflect.Descriptor instead.
+func (*ActivateHVACCmd) Descriptor() ([]byte, []int) {
 	return file_tutorial_device_v1_schema_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *ActivateHVAC) GetDurationSec() int32 {
+func (x *ActivateHVACCmd) GetDurationSec() int32 {
 	if x != nil {
 		return x.DurationSec
 	}
 	return 0
 }
 
-type ActivateHVACResponse struct {
+type ActivateHVACResp struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ActivateHVACResponse) Reset() {
-	*x = ActivateHVACResponse{}
+func (x *ActivateHVACResp) Reset() {
+	*x = ActivateHVACResp{}
 	mi := &file_tutorial_device_v1_schema_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ActivateHVACResponse) String() string {
+func (x *ActivateHVACResp) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ActivateHVACResponse) ProtoMessage() {}
+func (*ActivateHVACResp) ProtoMessage() {}
 
-func (x *ActivateHVACResponse) ProtoReflect() protoreflect.Message {
+func (x *ActivateHVACResp) ProtoReflect() protoreflect.Message {
 	mi := &file_tutorial_device_v1_schema_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -166,12 +166,12 @@ func (x *ActivateHVACResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ActivateHVACResponse.ProtoReflect.Descriptor instead.
-func (*ActivateHVACResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use ActivateHVACResp.ProtoReflect.Descriptor instead.
+func (*ActivateHVACResp) Descriptor() ([]byte, []int) {
 	return file_tutorial_device_v1_schema_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *ActivateHVACResponse) GetSuccess() bool {
+func (x *ActivateHVACResp) GetSuccess() bool {
 	if x != nil {
 		return x.Success
 	}
@@ -319,10 +319,10 @@ const file_tutorial_device_v1_schema_proto_rawDesc = "" +
 	"\x02ts\x18\x01 \x01(\x03B\x04\xa8\xbb\x18\x04R\x02ts\x12 \n" +
 	"\vtemperature\x18\x02 \x01(\x05R\vtemperature\x12\x1a\n" +
 	"\bpressure\x18\x03 \x01(\x05R\bpressure\x12\x1a\n" +
-	"\bhumidity\x18\x04 \x01(\x05R\bhumidity:\x04\x88\xb5\x18\x01\"7\n" +
-	"\fActivateHVAC\x12!\n" +
-	"\fduration_sec\x18\x01 \x01(\x05R\vdurationSec:\x04\x88\xb5\x18\x02\"0\n" +
-	"\x14ActivateHVACResponse\x12\x18\n" +
+	"\bhumidity\x18\x04 \x01(\x05R\bhumidity:\x04\x88\xb5\x18\x01\":\n" +
+	"\x0fActivateHVACCmd\x12!\n" +
+	"\fduration_sec\x18\x01 \x01(\x05R\vdurationSec:\x04\x88\xb5\x18\x02\",\n" +
+	"\x10ActivateHVACResp\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\"&\n" +
 	"\fDataRateProp\x12\x10\n" +
 	"\x03sec\x18\x01 \x01(\x05R\x03sec:\x04\x88\xb5\x18\x03\"\"\n" +
@@ -347,12 +347,12 @@ func file_tutorial_device_v1_schema_proto_rawDescGZIP() []byte {
 
 var file_tutorial_device_v1_schema_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_tutorial_device_v1_schema_proto_goTypes = []any{
-	(*Env)(nil),                  // 0: tutorial_device.v1.Env
-	(*ActivateHVAC)(nil),         // 1: tutorial_device.v1.ActivateHVAC
-	(*ActivateHVACResponse)(nil), // 2: tutorial_device.v1.ActivateHVACResponse
-	(*DataRateProp)(nil),         // 3: tutorial_device.v1.DataRateProp
-	(*DataRateStatus)(nil),       // 4: tutorial_device.v1.DataRateStatus
-	(*HVACStatus)(nil),           // 5: tutorial_device.v1.HVACStatus
+	(*Env)(nil),              // 0: tutorial_device.v1.Env
+	(*ActivateHVACCmd)(nil),  // 1: tutorial_device.v1.ActivateHVACCmd
+	(*ActivateHVACResp)(nil), // 2: tutorial_device.v1.ActivateHVACResp
+	(*DataRateProp)(nil),     // 3: tutorial_device.v1.DataRateProp
+	(*DataRateStatus)(nil),   // 4: tutorial_device.v1.DataRateStatus
+	(*HVACStatus)(nil),       // 5: tutorial_device.v1.HVACStatus
 }
 var file_tutorial_device_v1_schema_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
