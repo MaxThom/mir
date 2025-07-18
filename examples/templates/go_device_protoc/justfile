@@ -1,4 +1,5 @@
-.PHONY: proto build run
+default:
+    just -l --unsorted
 
 proto:
 	mkdir -p proto/gen
