@@ -45,12 +45,13 @@ func (d *DeviceEditCmd) Validate() error {
 }
 
 func (d *DeviceEditCmd) Run(log zerolog.Logger, m *mir.Mir, cfg Config) error {
-	devs, err := m.Server().ListDevice().Request(mir_v1.DeviceTarget{
+	tar := mir_v1.DeviceTarget{
 		Ids:        d.Ids,
 		Names:      d.Names,
 		Namespaces: d.Namespaces,
 		Labels:     d.Labels,
-	}, false)
+	}
+	devs, err := m.Server().ListDevice().Request(tar, false)
 	if err != nil {
 		return fmt.Errorf("error publising device list request: %w", err)
 	}
@@ -86,7 +87,7 @@ func (d *DeviceEditCmd) Run(log zerolog.Logger, m *mir.Mir, cfg Config) error {
 	var errs error
 	list := []mir_v1.Device{}
 	for _, d := range devs {
-		list, err = m.Server().UpdateDevice().RequestSingle(d)
+		list, err = m.Server().UpdateDevice().Request(tar, d)
 		if err != nil {
 			errs = errors.Join(errs, errors.New("error sending update device request"))
 		}

@@ -15,6 +15,7 @@
 	  - [Telemetry](./concepts/communication_telemetry.md)
 	  - [Command](./concepts/communication_command.md)
 	  - [Configuration](./concepts/communication_configuration.md)
+	- [Event and Audit System](./concepts/event_audit_system.md)
 	- [Security]()
 
 - [Integrating Mir](./integrating_mir/integrating_mir.md)
