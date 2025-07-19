@@ -65,7 +65,7 @@ func (d *UpCmd) Run() error {
 		return fmt.Errorf("canno't write Mir compose files to %s: %w", filePath, err)
 	}
 
-	d.Args = append([]string{"compose", "-f", filePath + "/local/compose.yaml", "up"}, d.Args...)
+	d.Args = append([]string{"compose", "-f", filePath + "/local_infra/compose.yaml", "up"}, d.Args...)
 	cmd := exec.Command("docker", d.Args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -103,7 +103,7 @@ func (d *DownCmd) Run() error {
 		return fmt.Errorf("unable to write Mir compose files to %s: %w", filePath, err)
 	}
 
-	d.Args = append([]string{"compose", "-f", filePath + "/local/compose.yaml", "down"}, d.Args...)
+	d.Args = append([]string{"compose", "-f", filePath + "/local_infra/compose.yaml", "down"}, d.Args...)
 	cmd := exec.Command("docker", d.Args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -159,7 +159,7 @@ func (d *PsCmd) Run() error {
 		return fmt.Errorf("canno't write Mir compose files to %s: %w", filePath, err)
 	}
 
-	d.Args = append([]string{"compose", "-f", filePath + "/local/compose.yaml", "ps"}, d.Args...)
+	d.Args = append([]string{"compose", "-f", filePath + "/local_infra/compose.yaml", "ps"}, d.Args...)
 	cmd := exec.Command("docker", d.Args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -197,7 +197,7 @@ func (d *RmCmd) Run() error {
 		return fmt.Errorf("canno't write Mir compose files to %s: %w", filePath, err)
 	}
 
-	d.Args = append([]string{"compose", "-f", filePath + "/local/compose.yaml", "rm"}, d.Args...)
+	d.Args = append([]string{"compose", "-f", filePath + "/local_infra/compose.yaml", "rm"}, d.Args...)
 	cmd := exec.Command("docker", d.Args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
