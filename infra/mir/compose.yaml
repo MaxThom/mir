@@ -1,0 +1,8 @@
+services:
+  mir:
+    image: mir:latest
+    ports:
+      - "3015:3015"
+    volumes:
+      - ./local-config.yaml:/home/mir/.config/mir/config.yaml
+    command: serve

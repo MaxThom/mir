@@ -40,12 +40,12 @@ Mir relies on a number of services to run:
 - Grafana: A visualization tool for monitoring data
 - NatsIO: A message broker for communication between device and services
 
-These services are defined in the [docker compose](./infra/local/compose.yaml) file. To start the services, run the following command:
+These services are defined in the [docker compose](./infra/local_infra/compose.yaml) file. To start the services, run the following command:
 
 ```bash
 just infra
 # or
-docker compose -f infra/local/compose.yaml up --force-recreate
+docker compose -f infra/local_infra/compose.yaml up --force-recreate
 # or VsCode/Zed task
 Mir infra dev
 ```
@@ -59,7 +59,7 @@ Mir infra dev
 # URL: http://localhost:8086
 # Username: admin / Password: mir-operator
 
-# Service: SurrealDB  
+# Service: SurrealDB
 # URL: http://localhost:8000
 # Username: root / Password: root
 

@@ -1,7 +1,6 @@
 services:
   grafana:
     image: grafana/grafana:latest
-    container_name: grafana
     network_mode: "host"
     ports:
       - "3000:3000"
@@ -13,7 +12,6 @@ services:
       - ./grafana_provisioning:/etc/grafana
   prometheus:
     image: prom/prometheus:latest
-    container_name: prometheus
     network_mode: "host"
     volumes:
       - prometheus_data:/prometheus
@@ -24,7 +22,6 @@ services:
       - "9090:9090"
   alertmanager:
     image: prom/alertmanager:latest
-    container_name: alertmanager
     network_mode: "host"
     ports:
       - "9093:9093"
@@ -36,7 +33,6 @@ services:
       - "--storage.path=/alertmanager"
   node-exporter:
     image: prom/node-exporter:latest
-    container_name: node-exporter
     ports:
       - "9100:9100"
 

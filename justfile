@@ -52,7 +52,19 @@ tx:
 
 # Run supporting infra with docker
 infra:
+	docker compose -f infra/local_infra/compose.yaml up --force-recreate
+
+infra-down:
+	docker compose -f infra/local/compose.yaml down
+
+# Run infra with docker
+local:
 	docker compose -f infra/local/compose.yaml up --force-recreate
+
+local-down:
+	docker compose -f infra/local/compose.yaml down
+
+
 
 # Build docker image
 docker-build tag="latest" version="0.0.0" user="$(id -u -n)" time="$(date -u)":

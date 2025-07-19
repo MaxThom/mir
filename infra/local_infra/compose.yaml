@@ -3,4 +3,3 @@ include:
   - ../promstack/compose.yaml
   - ../influxdb/compose.yaml
   - ../surrealdb/compose.yaml
-  - ../mir/compose.yaml
