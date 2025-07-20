@@ -11,18 +11,33 @@
 - [ ] Search by wildcard
 - [ ] Grafana Dashboard for eventstore
 - [ ] CLI Tool template
-  - [ ] new command to generate config of device
+  - [x] new command to generate config of device
+  - [x] serve up with Mir
 - [ ] MCP Server for Mir
-
+- [ ] autoreconnect
+  - [ ] nats
+    - [ ] Check if Mir is running with a command reply
+      - [ ] Check for tlm
+      - [ ] Check for core
+      - [ ] Check for cfg
+  - [x] on startup
+    - [x] surreal
+    - [x] influx
+  - [ ] during
+    - [ ] surreal
+    - [ ] influx
+      - [ ] already reconnect and has a buffer
+            - can we increase it?
+            - add better status log
 ### Refactoring
 
 ### Documentation
 
 - [ ] ModuleSDK
-- [ ] DeviceSDK new features
-- [ ] DeviceSDK with buf
+- [x] DeviceSDK new features
+- [x] DeviceSDK with buf
 - [ ] Update MdBook to latest version
-- [ ] Mir Concepts
+- [x] Mir Concepts
 
 ### Ergonomics
 

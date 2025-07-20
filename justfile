@@ -52,17 +52,17 @@ tx:
 
 # Run supporting infra with docker
 infra:
-	docker compose -f infra/local_infra/compose.yaml up --force-recreate
+	docker compose -f infra/local_support/compose.yaml up --force-recreate
 
 infra-down:
-	docker compose -f infra/local/compose.yaml down
+	docker compose -f infra/local_support/compose.yaml down
 
 # Run infra with docker
 local:
-	docker compose -f infra/local/compose.yaml up --force-recreate
+	docker compose -f infra/local_mir_support/compose.yaml up --force-recreate
 
 local-down:
-	docker compose -f infra/local/compose.yaml down
+	docker compose -f infra/local_mir_support/compose.yaml down
 
 docker-kill:
     docker stop "$(docker ps -a -q)"
