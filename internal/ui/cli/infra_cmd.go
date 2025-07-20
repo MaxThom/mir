@@ -11,11 +11,12 @@ import (
 )
 
 type InfraCmd struct {
-	Up    UpCmd    `cmd:"" passthrough:"" help:"Run infra docker compose up"`
-	Down  DownCmd  `cmd:"" passthrough:"" help:"Run infra docker compose down"`
-	Ps    PsCmd    `cmd:"" passthrough:"" help:"Run infra docker compose ps"`
-	Rm    RmCmd    `cmd:"" passthrough:"" help:"Run infra docker compose rm"`
-	Print PrintCmd `cmd:"" help:"Write to disk Mir set of docker compose"`
+	IncludeMir bool     `short:"m" help:"Include Mir server"`
+	Up         UpCmd    `cmd:"" passthrough:"" help:"Run infra docker compose up"`
+	Down       DownCmd  `cmd:"" passthrough:"" help:"Run infra docker compose down"`
+	Ps         PsCmd    `cmd:"" passthrough:"" help:"Run infra docker compose ps"`
+	Rm         RmCmd    `cmd:"" passthrough:"" help:"Run infra docker compose rm"`
+	Print      PrintCmd `cmd:"" help:"Write to disk Mir set of docker compose"`
 }
 
 type UpCmd struct {
@@ -38,6 +39,11 @@ type PrintCmd struct {
 	Path string `short:"p" help:"Write path for compose files" default:"."`
 }
 
+const (
+	composeInfraPath        = "/local_support/compose.yaml"
+	composeInfraWithMirPath = "/local_mir_support/compose.yaml"
+)
+
 func (d *UpCmd) Validate() error {
 	err := MirInvalidInputError{
 		Details: []string{},
@@ -49,7 +55,12 @@ func (d *UpCmd) Validate() error {
 	return nil
 }
 
-func (d *UpCmd) Run() error {
+func (d *UpCmd) Run(infraCmd *InfraCmd) error {
+	composePath := composeInfraPath
+	if infraCmd.IncludeMir {
+		composePath = composeInfraWithMirPath
+	}
+
 	var errs error
 	filePath := os.Getenv("XDG_CACHE_HOME")
 	if filePath == "" {
@@ -65,7 +76,7 @@ func (d *UpCmd) Run() error {
 		return fmt.Errorf("canno't write Mir compose files to %s: %w", filePath, err)
 	}
 
-	d.Args = append([]string{"compose", "-f", filePath + "/local_infra/compose.yaml", "up"}, d.Args...)
+	d.Args = append([]string{"compose", "-f", path.Join(filePath, composePath), "up"}, d.Args...)
 	cmd := exec.Command("docker", d.Args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -87,7 +98,11 @@ func (d *DownCmd) Validate() error {
 	return nil
 }
 
-func (d *DownCmd) Run() error {
+func (d *DownCmd) Run(infraCmd *InfraCmd) error {
+	composePath := composeInfraPath
+	if infraCmd.IncludeMir {
+		composePath = composeInfraWithMirPath
+	}
 	var errs error
 	filePath := os.Getenv("XDG_CACHE_HOME")
 	if filePath == "" {
@@ -103,7 +118,7 @@ func (d *DownCmd) Run() error {
 		return fmt.Errorf("unable to write Mir compose files to %s: %w", filePath, err)
 	}
 
-	d.Args = append([]string{"compose", "-f", filePath + "/local_infra/compose.yaml", "down"}, d.Args...)
+	d.Args = append([]string{"compose", "-f", filePath + composePath, "down"}, d.Args...)
 	cmd := exec.Command("docker", d.Args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -143,7 +158,11 @@ func (d *PsCmd) Validate() error {
 	return nil
 }
 
-func (d *PsCmd) Run() error {
+func (d *PsCmd) Run(infraCmd *InfraCmd) error {
+	composePath := composeInfraPath
+	if infraCmd.IncludeMir {
+		composePath = composeInfraWithMirPath
+	}
 	var errs error
 	filePath := os.Getenv("XDG_CACHE_HOME")
 	if filePath == "" {
@@ -159,7 +178,7 @@ func (d *PsCmd) Run() error {
 		return fmt.Errorf("canno't write Mir compose files to %s: %w", filePath, err)
 	}
 
-	d.Args = append([]string{"compose", "-f", filePath + "/local_infra/compose.yaml", "ps"}, d.Args...)
+	d.Args = append([]string{"compose", "-f", filePath + composePath, "ps"}, d.Args...)
 	cmd := exec.Command("docker", d.Args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -181,7 +200,12 @@ func (d *RmCmd) Validate() error {
 	return nil
 }
 
-func (d *RmCmd) Run() error {
+func (d *RmCmd) Run(infraCmd *InfraCmd) error {
+	composePath := composeInfraPath
+	if infraCmd.IncludeMir {
+		composePath = composeInfraWithMirPath
+	}
+
 	var errs error
 	filePath := os.Getenv("XDG_CACHE_HOME")
 	if filePath == "" {
@@ -197,7 +221,7 @@ func (d *RmCmd) Run() error {
 		return fmt.Errorf("canno't write Mir compose files to %s: %w", filePath, err)
 	}
 
-	d.Args = append([]string{"compose", "-f", filePath + "/local_infra/compose.yaml", "rm"}, d.Args...)
+	d.Args = append([]string{"compose", "-f", filePath + composePath, "rm"}, d.Args...)
 	cmd := exec.Command("docker", d.Args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

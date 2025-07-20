@@ -48,7 +48,7 @@
   },
   {
     "label": "Mir infra run",
-    "command": "docker compose -f infra/local_infra/compose.yaml up --force-recreate",
+    "command": "docker compose -f infra/local_support/compose.yaml up --force-recreate",
     "use_new_terminal": true,
     "allow_concurrent_runs": false,
     "reveal": "always",

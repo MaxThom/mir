@@ -111,15 +111,6 @@ func main() {
 	}
 	log.Info().Str("config", string(prettyCfg)).Msg("")
 
-	// m, err := mir.Connect(AppName, cfg.Target, append(mir.WithDefaultReconnectOpts(), mir.WithDefaultConnectionLogging(log)...)...)
-	// if err != nil {
-	// 	log.Err(err).Msg("error connection to Mir server")
-	// 	os.Exit(1)
-	// }
-	// log.Info().Str("url", cfg.Target).Str("status", m.Bus.Status().String()).Msg("msg bus status")
-
-	//defer m.Disconnect()
-
 	// CLI
 	kongCtx := kong.Parse(&c,
 		kong.Name("mir"),
