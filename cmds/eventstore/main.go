@@ -18,10 +18,12 @@ import (
 	"github.com/maxthom/mir/internal/libs/boiler/mir_log"
 	"github.com/maxthom/mir/internal/libs/boiler/mir_signals"
 	"github.com/maxthom/mir/internal/libs/build_meta"
+	"github.com/maxthom/mir/internal/libs/external"
 	"github.com/maxthom/mir/internal/libs/external/surreal"
 	"github.com/maxthom/mir/internal/servers/eventstore_srv"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/rs/zerolog"
+	"github.com/surrealdb/surrealdb.go"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 )
@@ -147,16 +149,21 @@ func main() {
 }
 
 func run(
-	_ context.Context,
+	ctx context.Context,
 	log zerolog.Logger,
 	cfg CoreConfig,
 ) error {
-	mir_signals.Notify(syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT)
+	ctx, cancel := mir_signals.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGINT)
 
 	// Setup
 	// Database
-	db, err := surreal.ConnectToDb(cfg.DatabaseServer.Url, cfg.DatabaseServer.Namespace, cfg.DatabaseServer.Database, cfg.DatabaseServer.User, cfg.DatabaseServer.Password)
-	if err != nil {
+
+	var db *surrealdb.DB
+	if err := external.BackOffRetry(ctx, log, 30*time.Minute, func() error {
+		var err error
+		db, err = surreal.ConnectToDb(cfg.DatabaseServer.Url, cfg.DatabaseServer.Namespace, cfg.DatabaseServer.Database, cfg.DatabaseServer.User, cfg.DatabaseServer.Password)
+		return err
+	}); err != nil {
 		return err
 	}
 	log.Info().Str("url", cfg.DatabaseServer.Url).Str("namespace", cfg.DatabaseServer.Namespace).Str("database", cfg.DatabaseServer.Database).Msg("connected to database")
@@ -205,6 +212,7 @@ func run(
 	log.Info().Msg(fmt.Sprintf("%s initialized", AppName))
 	health.SetReady()
 	mir_signals.WaitForOsSignals(func() {
+		cancel()
 		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 1*time.Second)
 		if err := server.Shutdown(shutdownCtx); err != nil {
 			log.Error().Err(err).Msg("failed to gracefully shutdown http server")

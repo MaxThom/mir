@@ -29,5 +29,10 @@ func (c *Cmd) Run(log zerolog.Logger, m *mir.Mir, cfg Config) error {
 	if _, err := p.Run(); err != nil {
 		return err
 	}
+
+	if err := m.Disconnect(); err != nil {
+		log.Error().Err(err).Msg("error disconnecting from Mir server")
+	}
+	log.Info().Msg("disconnected from Mir server")
 	return nil
 }

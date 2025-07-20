@@ -1,6 +1,7 @@
 package mir_signals
 
 import (
+	"context"
 	"os"
 	"os/signal"
 	"syscall"
@@ -9,23 +10,42 @@ import (
 )
 
 var signalChan chan os.Signal
+var sigCtx context.Context
+var cancel context.CancelFunc
 
 const (
 	PRGSHUTDOWN = CodeSignal(0x20)
 )
 
+func NotifyContext(ctx context.Context, sig ...os.Signal) (context.Context, context.CancelFunc) {
+	signalChan = make(chan os.Signal, 1)
+	sigCtx, cancel = signal.NotifyContext(ctx, sig...)
+	return sigCtx, cancel
+}
+
 func Notify(sig ...os.Signal) {
+	sigCtx, cancel = context.WithCancel(context.Background())
 	signalChan = make(chan os.Signal, 1)
 	signal.Notify(signalChan, sig...)
 }
 
 func Shutdown() {
+	cancel()
 	signalChan <- CodeSignal(0x20)
+}
+
+func WaitForOsSignalsContext(ctx, shutdownFn func()) {
+	select {}
 }
 
 // IDEA add context that can be cancelled ? or the cancel func
 func WaitForOsSignals(shutdownFn func()) {
-	for {
+	select {
+	case <-sigCtx.Done():
+		log.Info().Msg("received interrupt signal, shutting down...")
+		shutdownFn()
+		return
+	case <-signalChan:
 		s := <-signalChan
 		switch s {
 		case syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT:

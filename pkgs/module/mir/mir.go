@@ -130,17 +130,20 @@ func WithDefaultReconnectOpts() []nats.Option {
 
 func WithDefaultConnectionLogging(l zerolog.Logger) []nats.Option {
 	return []nats.Option{
+		nats.ErrorHandler(func(c *nats.Conn, s *nats.Subscription, err error) {
+			l.Error().Str("url", c.ConnectedUrl()).Str("status", c.Status().String()).Err(err).Msg("connected to Mir Server ")
+		}),
 		nats.ConnectHandler(func(c *nats.Conn) {
-			l.Info().Msg("connected to Mir Server ")
+			l.Info().Str("url", c.ConnectedUrl()).Str("status", c.Status().String()).Msg("connected to Mir Server ")
 		}),
 		nats.DisconnectErrHandler(func(c *nats.Conn, err error) {
-			l.Warn().Err(err).Msg("disconnected from Mir Server")
+			l.Warn().Str("url", c.ConnectedUrl()).Str("status", c.Status().String()).Err(err).Msg("disconnected from Mir Server")
 		}),
 		nats.ReconnectHandler(func(c *nats.Conn) {
-			l.Info().Msg("reconnected to Mir Server ")
+			l.Info().Str("url", c.ConnectedUrl()).Str("status", c.Status().String()).Msg("reconnected to Mir Server ")
 		}),
 		nats.ClosedHandler(func(c *nats.Conn) {
-			l.Warn().Msg("closed connection from Mir Server")
+			l.Warn().Str("url", c.ConnectedUrl()).Str("status", c.Status().String()).Msg("closed connection from Mir Server")
 		}),
 	}
 }

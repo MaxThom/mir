@@ -79,7 +79,11 @@ type Target struct {
 	Labels     map[string]string `help:"Set of labels to filter devices"`
 }
 
-func (d *DeviceCmd) Run() error {
+func (d *DeviceCmd) Run(log zerolog.Logger, cfg Config, m *mir.Mir) error {
+	if err := m.Disconnect(); err != nil {
+		log.Error().Err(err).Msg("error disconnecting from Mir server")
+	}
+	log.Info().Msg("disconnected from Mir server")
 	return nil
 }
 

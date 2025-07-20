@@ -1,6 +1,8 @@
 package surreal
 
-import "github.com/surrealdb/surrealdb.go"
+import (
+	"github.com/surrealdb/surrealdb.go"
+)
 
 func ConnectToDb(url, namespace, database, user, password string) (*surrealdb.DB, error) {
 	db, err := surrealdb.New(url)
@@ -22,7 +24,7 @@ func ConnectToDb(url, namespace, database, user, password string) (*surrealdb.DB
 	return db, nil
 }
 
-func CreateUpdateQuery(fields map[string]interface{}) error {
+func CreateUpdateQuery(fields map[string]any) error {
 	return nil
 }
 

@@ -1,15 +1,15 @@
 mir:
-  url: "nats://127.0.0.1:4222"
+  url: "nats://local-nats-1:4222"
   logLevel: "info"
   httpPort: 3015
 surreal:
-  url: "ws://127.0.0.1:8000/rpc"
+  url: "ws://local-surrealdb-1:8000/rpc"
   namespace: "global"
   database: "mir"
   user: "root"
   password: "root"
 influx:
-  url: "http://localhost:8086/"
+  url: "http://local-influxdb-1:8086/"
   token: "mir-operator-token"
   org: "Mir"
   bucket: "mir"
