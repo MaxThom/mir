@@ -4,5 +4,5 @@ services:
     ports:
       - "3015:3015"
     volumes:
-      - ./local-config.yaml:/home/mir/.config/mir/config.yaml
+      - ./local-config.yaml:/home/mir/.config/mir/mir.yaml
     command: serve

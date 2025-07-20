@@ -10,7 +10,6 @@ services:
       - 8222:8222
   nats-exporter:
     image: natsio/prometheus-nats-exporter:latest
-    container_name: nats-exporter
     ports:
       - "7777:7777"
     command: -varz -connz_detailed -routez -subz -jsz all "http://nats:8222"

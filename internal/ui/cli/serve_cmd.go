@@ -18,6 +18,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/boiler/mir_log"
 	"github.com/maxthom/mir/internal/libs/boiler/mir_signals"
 	"github.com/maxthom/mir/internal/libs/build_meta"
+	"github.com/maxthom/mir/internal/libs/external"
 	"github.com/maxthom/mir/internal/libs/external/influx"
 	"github.com/maxthom/mir/internal/libs/external/surreal"
 	"github.com/maxthom/mir/internal/servers/core_srv"
@@ -28,6 +29,7 @@ import (
 	"github.com/maxthom/mir/internal/services/schema_cache"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/rs/zerolog"
+	"github.com/surrealdb/surrealdb.go"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	"gopkg.in/yaml.v3"
@@ -150,20 +152,41 @@ func run(
 	m *mir.Mir,
 	cfg ServeConfig,
 ) error {
-	mir_signals.Notify(syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT)
+	ctx, cancel := mir_signals.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGINT)
 
 	// Setup
-	db, err := surreal.ConnectToDb(cfg.Surreal.Url, cfg.Surreal.Namespace, cfg.Surreal.Database, cfg.Surreal.User, cfg.Surreal.Password)
-	if err != nil {
+	var db *surrealdb.DB
+	if err := external.BackOffRetry(ctx, log, 30*time.Minute, func() error {
+		var err error
+		db, err = surreal.ConnectToDb(cfg.Surreal.Url, cfg.Surreal.Namespace, cfg.Surreal.Database, cfg.Surreal.User, cfg.Surreal.Password)
+		return err
+	}); err != nil {
 		return err
 	}
 	log.Info().Str("url", cfg.Surreal.Url).Str("namespace", cfg.Surreal.Namespace).Str("database", cfg.Surreal.Database).Msg("connected to database")
 
-	lpClient := influxdb2.NewClient(cfg.Influx.Url, cfg.Influx.Token)
+	var lpClient influxdb2.Client
+	if err := external.BackOffRetry(ctx, log, 30*time.Minute, func() error {
+		var err error
+		lpClient, err = influx.NewConnectedClient(ctx, cfg.Influx.Url, cfg.Influx.Token)
+		return err
+	}); err != nil {
+		db.Close()
+		return err
+	}
 	if err := influx.CreateOrgAndBucket(ctx, lpClient, cfg.Influx.Org, cfg.Influx.Bucket); err != nil {
 		return err
 	}
 	log.Info().Str("url", cfg.Influx.Url).Msg("connected to puthost")
+
+	m, err := mir.Connect(AppName, cfg.Mir.Url, append(mir.WithDefaultReconnectOpts(), mir.WithDefaultConnectionLogging(log)...)...)
+	if err != nil {
+		log.Err(err).Msg("error connecting to Mir server")
+		fmt.Println("error connecting to Mir server")
+		os.Exit(1)
+	} else if !m.Bus.IsConnected() {
+		log.Error().Str("url", cfg.Mir.Url).Str("status", m.Bus.Status().String()).Msg("cannot connect to Mir msg bus")
+	}
 
 	// Services
 	coreSrv, err := core_srv.NewCore(log, m, mng.NewSurrealMirStore(db))
@@ -240,6 +263,7 @@ func run(
 	log.Info().Msg(fmt.Sprintf("%s initialized", AppName))
 	health.SetReady()
 	mir_signals.WaitForOsSignals(func() {
+		cancel()
 		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 3*time.Second)
 		if err := server.Shutdown(shutdownCtx); err != nil {
 			log.Fatal().Err(err).Msg("failed to gracefully shutdown server")

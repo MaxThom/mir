@@ -64,7 +64,10 @@ local:
 local-down:
 	docker compose -f infra/local/compose.yaml down
 
-
+docker-kill:
+    docker stop "$(docker ps -a -q)"
+    docker rm "$(docker ps -a -q)"
+    docker ps --all
 
 # Build docker image
 docker-build tag="latest" version="0.0.0" user="$(id -u -n)" time="$(date -u)":
@@ -89,7 +92,7 @@ book:
 
 # Follow logs written to file from Tui
 log:
-    tail ~/.config/mir/mir.log -f
+    tail ~/.config/mir/cli.log -f
 
 # Seed the database with test data
 seed:

@@ -4,33 +4,17 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/influxdata/influxdb-client-go/v2/domain"
-	"github.com/rs/zerolog"
 )
 
-func NewConnectedClient(ctx context.Context, l zerolog.Logger, url string, token string) influxdb2.Client {
+func NewConnectedClient(ctx context.Context, url string, token string) (influxdb2.Client, error) {
 	lpClient := influxdb2.NewClient(url, token)
-
-	ticker := time.NewTicker(3 * time.Second)
-	defer ticker.Stop()
-
-	for {
-		if b, _ := lpClient.Ping(ctx); b {
-			break
-		}
-
-		select {
-		case <-ctx.Done():
-			return nil
-		case <-ticker.C:
-			l.Warn().Msg("InfluxDB connection failed, attempting to reconnect...")
-		}
+	if b, err := lpClient.Ping(ctx); !b || err != nil {
+		return lpClient, err
 	}
-
-	return lpClient
+	return lpClient, nil
 }
 
 func CreateOrgAndBucket(ctx context.Context, lpClient influxdb2.Client, orgName, bucketName string) error {

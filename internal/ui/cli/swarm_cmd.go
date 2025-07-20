@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand/v2"
+	"os"
 	"sync"
 	"syscall"
 	"time"
@@ -43,7 +44,7 @@ func (c *SwarmCmd) Validate() error {
 }
 
 func (d *SwarmCmd) Run(log zerolog.Logger, m *mSdk.Mir, cfg Config) error {
-	mir_signals.Notify(syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT)
+	ctx, cancel := mir_signals.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGINT)
 
 	logLvl := mir.LogLevelInfo
 	switch l.GetLevel() {
@@ -67,7 +68,6 @@ func (d *SwarmCmd) Run(log zerolog.Logger, m *mSdk.Mir, cfg Config) error {
 		return fmt.Errorf("error incubating swarm: %w", err)
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
 	wgs, err := s.Deploy(ctx)
 	if err != nil {
 		cancel()
@@ -114,6 +114,11 @@ func (d *SwarmCmd) Run(log zerolog.Logger, m *mSdk.Mir, cfg Config) error {
 			wg.Wait()
 		}
 	})
+
+	if err := m.Disconnect(); err != nil {
+		log.Error().Err(err).Msg("error disconnecting from Mir server")
+	}
+	log.Info().Msg("disconnected from Mir server")
 
 	return nil
 }
