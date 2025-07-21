@@ -10,7 +10,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: maxthom/mir
 
 jobs:
   build:
@@ -29,13 +29,6 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      # Optional: Log in to Docker Hub
-      # - name: Log in to Docker Hub
-      #   uses: docker/login-action@v3
-      #   with:
-      #     username: ${{ secrets.DOCKER_USERNAME }}
-      #     password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Set up Docker tags
         id: tags
@@ -56,7 +49,7 @@ jobs:
             # Replace slashes with double underscores
             BRANCH_NAME=${BRANCH_NAME//\//__}
             SHORT_SHA=${GITHUB_SHA::7}
-            TAGS="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${BRANCH_NAME}-${SHORT_SHA}"
+            TAGS="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${BRANCH_NAME}--${SHORT_SHA}"
           fi
 
           echo "tags=${TAGS}" >> $GITHUB_OUTPUT
@@ -88,7 +81,6 @@ jobs:
             --build-arg TIME=${{ steps.buildinfo.outputs.time }} \
             --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:build \
             .
-
       - name: Tag Docker image
         run: |
           IFS=',' read -ra TAG_ARRAY <<< "${{ steps.tags.outputs.tags }}"
@@ -102,17 +94,6 @@ jobs:
           for tag in "${TAG_ARRAY[@]}"; do
             docker push $tag
           done
-
-      # Optional: Push to Docker Hub
-      # - name: Tag and push to Docker Hub
-      #   run: |
-      #     docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:build ${{ secrets.DOCKER_USERNAME }}/mir:${{ steps.buildinfo.outputs.version }}
-      #     docker push ${{ secrets.DOCKER_USERNAME }}/mir:${{ steps.buildinfo.outputs.version }}
-      #     # Also push latest tag for releases
-      #     if [[ "${{ github.event_name }}" == "release" ]]; then
-      #       docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:build ${{ secrets.DOCKER_USERNAME }}/mir:latest
-      #       docker push ${{ secrets.DOCKER_USERNAME }}/mir:latest
-      #     fi
 
       - name: Image summary
         run: |
