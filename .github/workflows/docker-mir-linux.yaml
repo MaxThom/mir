@@ -1,4 +1,4 @@
-name: Build Docker Image
+name: Build Mir Image
 
 on:
   # push:
@@ -72,6 +72,9 @@ jobs:
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
           echo "time=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> $GITHUB_OUTPUT
           echo "user=${{ github.actor }}" >> $GITHUB_OUTPUT
+          echo "Version: ${VERSION}"
+          echo "Time: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          echo "User: ${{ github.actor }}"
 
       - name: Build Docker image
         run: |

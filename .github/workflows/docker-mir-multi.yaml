@@ -1,4 +1,4 @@
-name: Build Multi-Platform Docker Image
+name: Build Mir Multi-Platform Image
 
 on:
   release:
@@ -16,6 +16,7 @@ jobs:
       contents: read
       packages: write
       id-token: write
+      attestations: write
 
     steps:
       - name: Checkout repository
@@ -76,8 +77,12 @@ jobs:
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
           echo "time=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> $GITHUB_OUTPUT
           echo "user=${{ github.actor }}" >> $GITHUB_OUTPUT
+          echo "Version: ${VERSION}"
+          echo "Time: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          echo "User: ${{ github.actor }}"
 
       - name: Build and push multi-platform Docker image
+        id: build
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -92,12 +97,15 @@ jobs:
             USER=${{ steps.buildinfo.outputs.user }}
             TIME=${{ steps.buildinfo.outputs.time }}
 
-      - name: Generate artifact attestation
-        uses: actions/attest-build-provenance@v1
-        with:
-          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          subject-digest: ${{ steps.push.outputs.digest }}
-          push-to-registry: true
+      # :(
+      # Not supported for private repository if not enterprise
+      #
+      # - name: Generate artifact attestation
+      #   uses: actions/attest-build-provenance@v1
+      #   with:
+      #     subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+      #     subject-digest: ${{ steps.build.outputs.digest }}
+      #     push-to-registry: true
 
       - name: Image summary
         run: |
