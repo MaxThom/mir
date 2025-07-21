@@ -17,7 +17,8 @@ COPY . .
 # Build the binary
 ARG VERSION=0.0.0
 ARG USER=docker
-ARG TIME=
+ARG TIME
+
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
     -ldflags="-X 'github.com/maxthom/mir/internal/libs/build_meta.Version=${VERSION}' \
     -X 'github.com/maxthom/mir/internal/libs/build_meta.User=${USER}' \
