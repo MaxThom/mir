@@ -30,6 +30,15 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
 # Runtime stage
 FROM alpine:3.19
 
+# Add metadata labels
+LABEL org.opencontainers.image.title="Mir IoT Hub"
+LABEL org.opencontainers.image.description="Comprehensive IoT platform for secure device communication, telemetry collection, and command execution"
+LABEL org.opencontainers.image.authors="maxthom"
+LABEL org.opencontainers.image.source="https://github.com/maxthom/mir"
+LABEL org.opencontainers.image.documentation="https://book.mirhub.io"
+LABEL org.opencontainers.image.licenses="Apache-2.0"
+LABEL org.opencontainers.image.vendor="maxthom"
+
 # Install runtime dependencies
 RUN apk add --no-cache \
     ca-certificates \
