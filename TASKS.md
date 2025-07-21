@@ -10,7 +10,11 @@
 
 - [ ] Search by wildcard
 - [ ] Grafana Dashboard for eventstore
-- [ ] CLI Tool template
+- [x] Docker container
+  - [x] Multibuild
+  - [x] Simple
+- [x] Pipeline for each
+- [x] CLI Tool template
   - [x] new command to generate config of device
   - [x] serve up with Mir
 - [ ] MCP Server for Mir

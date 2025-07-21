@@ -81,6 +81,18 @@ jobs:
           echo "Time: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
           echo "User: ${{ github.actor }}"
 
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          labels: |
+            org.opencontainers.image.title=Mir IoT Hub
+            org.opencontainers.image.description=Comprehensive IoT platform for secure device communication, telemetry collection, and command execution
+            org.opencontainers.image.vendor=maxthom
+            org.opencontainers.image.documentation=https://book.mirhub.io
+            org.opencontainers.image.licenses=Apache-2.0
+
       - name: Build and push multi-platform Docker image
         id: build
         uses: docker/build-push-action@v6
@@ -90,6 +102,7 @@ jobs:
           platforms: linux/amd64,linux/arm64,linux/arm/v7
           push: true
           tags: ${{ steps.tags.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
