@@ -1,0 +1,115 @@
+name: Build Multi-Platform Docker Image
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: maxthom/mir
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker tags
+        id: tags
+        run: |
+          TAGS=""
+
+          # For tags/releases, use the tag name
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            TAG_NAME=${GITHUB_REF#refs/tags/}
+            TAGS="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${TAG_NAME}"
+            # Also tag as latest if it's a release
+            if [[ "${{ github.event_name }}" == "release" ]]; then
+              TAGS="${TAGS},${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+            fi
+          # For manual triggers, use branch-commitid
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            BRANCH_NAME=${GITHUB_REF#refs/heads/}
+            # Replace slashes with double underscores
+            BRANCH_NAME=${BRANCH_NAME//\//__}
+            SHORT_SHA=${GITHUB_SHA::7}
+            TAGS="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${BRANCH_NAME}--${SHORT_SHA}"
+          fi
+
+          echo "tags=${TAGS}" >> $GITHUB_OUTPUT
+          echo "Docker tags: ${TAGS}"
+
+      - name: Get build info
+        id: buildinfo
+        run: |
+          # Extract version from tag or use branch-commit
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            VERSION=${GITHUB_REF#refs/tags/}
+          else
+            BRANCH_NAME=${GITHUB_REF#refs/heads/}
+            # Replace slashes with double underscores
+            BRANCH_NAME=${BRANCH_NAME//\//__}
+            SHORT_SHA=${GITHUB_SHA::7}
+            VERSION="${BRANCH_NAME}-${SHORT_SHA}"
+          fi
+
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "time=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> $GITHUB_OUTPUT
+          echo "user=${{ github.actor }}" >> $GITHUB_OUTPUT
+
+      - name: Build and push multi-platform Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile.multi
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          push: true
+          tags: ${{ steps.tags.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            VERSION=${{ steps.buildinfo.outputs.version }}
+            USER=${{ steps.buildinfo.outputs.user }}
+            TIME=${{ steps.buildinfo.outputs.time }}
+
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
+
+      - name: Image summary
+        run: |
+          echo "### Multi-Platform Docker Image Published! 🐳" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ steps.buildinfo.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Built by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Build time:** ${{ steps.buildinfo.outputs.time }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Platforms:** linux/amd64, linux/arm64, linux/arm/v7" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Images:**" >> $GITHUB_STEP_SUMMARY
+          IFS=',' read -ra TAG_ARRAY <<< "${{ steps.tags.outputs.tags }}"
+          for tag in "${TAG_ARRAY[@]}"; do
+            echo "- \`$tag\`" >> $GITHUB_STEP_SUMMARY
+          done
