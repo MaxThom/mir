@@ -61,6 +61,11 @@ type (
 		Token  string `help:"Influx db token" default:"mir-operator-token" cfg:"secret" yaml:"token"`
 		Org    string `help:"Influx db organisation" default:"Mir" yaml:"org"`
 		Bucket string `help:"Influx db telemetry bucket" default:"mir" yaml:"bucket"`
+
+		BatchSize        uint `help:"Maximum telemetry batch size. Default 1000 datapoints." default:"1000" yaml:"batchSize"`
+		FlushInterval    uint `help:"Maximum telemetry send interval. Default 1 second." default:"1000" yaml:"flushInterval"`
+		RetryBufferLimit uint `help:"Size of buffer in case of database access failure. Default 1GB." default:"1048576000" yaml:"retryBufferLimit"`
+		Gzip             bool `help:"Use gZip compression" default:"false" yaml:"gzip"`
 	}
 )
 
@@ -168,7 +173,12 @@ func run(
 	var lpClient influxdb2.Client
 	if err := external.BackOffRetry(ctx, log, 30*time.Minute, func() error {
 		var err error
-		lpClient, err = influx.NewConnectedClient(ctx, cfg.Influx.Url, cfg.Influx.Token)
+		lpClient, err = influx.NewConnectedClientWithOptions(ctx, cfg.Influx.Url, cfg.Influx.Token, influx.Options{
+			BatchSize:        cfg.Influx.BatchSize,
+			FlushInterval:    cfg.Influx.FlushInterval,
+			RetryBufferLimit: cfg.Influx.RetryBufferLimit,
+			UseGZip:          cfg.Influx.Gzip,
+		})
 		return err
 	}); err != nil {
 		db.Close()

@@ -1,5 +1,5 @@
 include:
   - ../natsio/compose.yaml
   - ../promstack/compose.yaml
-  - ../influxdb/compose.yaml
+  #- ../influxdb/compose.yaml
   - ../surrealdb/compose.yaml

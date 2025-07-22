@@ -67,6 +67,11 @@ type (
 		Password string `cfg:"secret"`
 		Org      string
 		Bucket   string
+
+		BatchSize        uint
+		FlushInterval    uint
+		RetryBufferLimit uint
+		GZip             bool
 	}
 )
 
@@ -91,6 +96,11 @@ var (
 			Org:    "Mir",
 			Bucket: "mir",
 			Token:  "mir-operator-token",
+
+			BatchSize:        1000,               // Number of datapoints
+			FlushInterval:    1000,               // 1sec
+			RetryBufferLimit: 1000 * 1024 * 1024, // 1GB
+			GZip:             false,              // Much slower if compressed and not needed
 		},
 	}
 )
@@ -190,7 +200,12 @@ func run(
 	var lpClient influxdb2.Client
 	if err := external.BackOffRetry(ctx, log, 30*time.Minute, func() error {
 		var err error
-		lpClient, err = influx.NewConnectedClient(ctx, cfg.TelemetryServer.Url, cfg.TelemetryServer.Token)
+		lpClient, err = influx.NewConnectedClientWithOptions(ctx, cfg.TelemetryServer.Url, cfg.TelemetryServer.Token, influx.Options{
+			BatchSize:        cfg.TelemetryServer.BatchSize,
+			FlushInterval:    cfg.TelemetryServer.FlushInterval,
+			RetryBufferLimit: cfg.TelemetryServer.RetryBufferLimit,
+			UseGZip:          cfg.TelemetryServer.GZip,
+		})
 		return err
 	}); err != nil {
 		db.Close()
