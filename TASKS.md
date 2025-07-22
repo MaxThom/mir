@@ -9,36 +9,42 @@
 ### Features
 
 - [ ] Search by wildcard
-- [ ] Grafana Dashboard for eventstore
-- [x] Docker container
-  - [x] Multibuild
-  - [x] Simple
-- [x] Pipeline for each
-- [x] CLI Tool template
-  - [x] new command to generate config of device
-  - [x] serve up with Mir
 - [ ] MCP Server for Mir
-- [ ] autoreconnect
-  - [ ] nats
-    - [ ] Check if Mir is running with a command reply
-      - [ ] Check for tlm
-      - [ ] Check for core
-      - [ ] Check for cfg
-  - [x] on startup
-    - [x] surreal
-    - [x] influx
-  - [ ] during
-    - [ ] surreal
-      - [ ] running in degraded state
-      - [ ] core, doesnt work anymore
-      - [ ] cfg, doesnt work anymore
-      - [ ] cmd, can work if same schema
-      - [ ] tlm, can work if same schema
-    - [x] influx
-      - [x] recreate org/bucket
-      - [x] already reconnect and has a buffer
-            - can we increase it?
-            - add better status log
+- [ ] Road to Production
+  - [ ] Grafana Dashboard for eventstore
+  - [ ] HelmChart
+  - [ ] GrafanaLoki
+  - [x] Docker container
+    - [ ] Simple/Multi for device
+    - [x] Multibuild
+    - [x] Simple
+  - [ ] Pipeline for each
+    - [ ] For device
+    - [x] For server
+  - [x] CLI Tool template
+    - [x] new command to generate config of device
+    - [x] serve up with Mir
+  - [ ] autoreconnect
+    - [ ] nats
+      - [ ] Check if Mir is running with a command reply
+        - [ ] Check for tlm
+        - [ ] Check for core
+        - [ ] Check for cfg
+    - [x] on startup
+      - [x] surreal
+      - [x] influx
+    - [ ] during
+      - [ ] surreal
+        - [ ] running in degraded state
+        - [ ] core, doesnt work anymore
+        - [ ] cfg, doesnt work anymore
+        - [ ] cmd, can work if same schema
+        - [ ] tlm, can work if same schema
+      - [x] influx
+        - [x] recreate org/bucket
+        - [x] already reconnect and has a buffer
+              - can we increase it?
+              - add better status log
 ### Refactoring
 
 ### Documentation
@@ -49,6 +55,7 @@
 - [ ] Update MdBook to latest version
 - [x] Mir Concepts
 - [ ] DeviceConfiguration
+- [ ] Talk about reconnection and network loss
 
 ### Ergonomics
 
@@ -77,7 +84,7 @@
 - [ ] DeviceSDK
   - [x] Msg store
   - [ ] Host metrics https://github.com/shirou/gopsutil
-  - [ ] Buf documentation/template
+  - [x] Buf documentation/template
   - [x] DeviceID (MAC, random, etc [save to kv store])
   - [x] Custom Routes
 - [ ] ModuleSDK
