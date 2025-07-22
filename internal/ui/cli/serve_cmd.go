@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
 
-	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/maxthom/mir/internal/externals/mng"
 	"github.com/maxthom/mir/internal/externals/ts"
 	"github.com/maxthom/mir/internal/libs/api/health"
@@ -64,7 +64,7 @@ type (
 
 		BatchSize        uint `help:"Maximum telemetry batch size. Default 1000 datapoints." default:"1000" yaml:"batchSize"`
 		FlushInterval    uint `help:"Maximum telemetry send interval. Default 1 second." default:"1000" yaml:"flushInterval"`
-		RetryBufferLimit uint `help:"Size of buffer in case of database access failure. Default 1GB." default:"1048576000" yaml:"retryBufferLimit"`
+		RetryBufferLimit uint `help:"Size of buffer in case of database access failure. Default 1GB." default:"1073741824" yaml:"retryBufferLimit"`
 		Gzip             bool `help:"Use gZip compression" default:"false" yaml:"gzip"`
 	}
 )
@@ -144,14 +144,14 @@ func (d *ServeCmd) Run(log zerolog.Logger, m *mir.Mir, cfg Config) error {
 	log.Info().Str("config", string(prettyCfg)).Msg("")
 	metrics.RegisterMirMetrics(AppName, build_meta.GetShortVersion(), map[string]string{}, string(prettyCfg))
 
-	if err := run(context.Background(), log, m, d.ServeConfig); err != nil {
+	if err := d.run(context.Background(), log, m, d.ServeConfig); err != nil {
 		log.Error().Err(err).Msg("")
 		return err
 	}
 	return nil
 }
 
-func run(
+func (d *ServeCmd) run(
 	ctx context.Context,
 	log zerolog.Logger,
 	m *mir.Mir,
@@ -170,26 +170,29 @@ func run(
 	}
 	log.Info().Str("url", cfg.Surreal.Url).Str("namespace", cfg.Surreal.Namespace).Str("database", cfg.Surreal.Database).Msg("connected to database")
 
-	var lpClient influxdb2.Client
-	if err := external.BackOffRetry(ctx, log, 30*time.Minute, func() error {
-		var err error
-		lpClient, err = influx.NewConnectedClientWithOptions(ctx, cfg.Influx.Url, cfg.Influx.Token, influx.Options{
-			BatchSize:        cfg.Influx.BatchSize,
-			FlushInterval:    cfg.Influx.FlushInterval,
-			RetryBufferLimit: cfg.Influx.RetryBufferLimit,
-			UseGZip:          cfg.Influx.Gzip,
-		})
-		return err
-	}); err != nil {
-		db.Close()
-		return err
+	influxRdy := true
+	lpClient, err := influx.NewConnectedClientWithOptions(ctx, cfg.Influx.Url, cfg.Influx.Token, influx.Options{
+		BatchSize:        cfg.Influx.BatchSize,
+		FlushInterval:    cfg.Influx.FlushInterval,
+		RetryBufferLimit: cfg.Influx.RetryBufferLimit,
+		UseGZip:          cfg.Influx.Gzip,
+	})
+	if err != nil {
+		influxRdy = false
+		if strings.Contains(err.Error(), "connect: connection refused") {
+			log.Warn().Err(err).Str("buffer size (GB)", fmt.Sprintf("%.2f", float64(cfg.Influx.RetryBufferLimit)/1_073_741_824)).Msg("cannot connect to telemetry db, telemetry will be capture and rotated in buffer until connected")
+		} else {
+			return err
+		}
 	}
-	if err := influx.CreateOrgAndBucket(ctx, lpClient, cfg.Influx.Org, cfg.Influx.Bucket); err != nil {
-		return err
+	if influxRdy {
+		if err := influx.CreateOrgAndBucket(ctx, lpClient, cfg.Influx.Org, cfg.Influx.Bucket); err != nil {
+			return err
+		}
+		log.Info().Str("url", cfg.Influx.Url).Msg("connected to puthost")
 	}
-	log.Info().Str("url", cfg.Influx.Url).Msg("connected to puthost")
 
-	m, err := mir.Connect(AppName, cfg.Mir.Url, append(mir.WithDefaultReconnectOpts(), mir.WithDefaultConnectionLogging(log)...)...)
+	m, err = mir.Connect(AppName, cfg.Mir.Url, append(mir.WithDefaultReconnectOpts(), mir.WithDefaultConnectionLogging(log)...)...)
 	if err != nil {
 		log.Err(err).Msg("error connecting to Mir server")
 		fmt.Println("error connecting to Mir server")

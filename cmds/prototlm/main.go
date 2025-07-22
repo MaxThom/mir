@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
 
-	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/maxthom/mir/internal/externals/mng"
 	"github.com/maxthom/mir/internal/externals/ts"
 	"github.com/maxthom/mir/internal/libs/api/health"
@@ -99,7 +99,7 @@ var (
 
 			BatchSize:        1000,               // Number of datapoints
 			FlushInterval:    1000,               // 1sec
-			RetryBufferLimit: 1000 * 1024 * 1024, // 1GB
+			RetryBufferLimit: 1024 * 1024 * 1024, // 1GB
 			GZip:             false,              // Much slower if compressed and not needed
 		},
 	}
@@ -197,24 +197,27 @@ func run(
 	log.Info().Str("url", cfg.DatabaseServer.Url).Str("namespace", cfg.DatabaseServer.Namespace).Str("database", cfg.DatabaseServer.Database).Msg("connected to database")
 
 	// Timeseries Database
-	var lpClient influxdb2.Client
-	if err := external.BackOffRetry(ctx, log, 30*time.Minute, func() error {
-		var err error
-		lpClient, err = influx.NewConnectedClientWithOptions(ctx, cfg.TelemetryServer.Url, cfg.TelemetryServer.Token, influx.Options{
-			BatchSize:        cfg.TelemetryServer.BatchSize,
-			FlushInterval:    cfg.TelemetryServer.FlushInterval,
-			RetryBufferLimit: cfg.TelemetryServer.RetryBufferLimit,
-			UseGZip:          cfg.TelemetryServer.GZip,
-		})
-		return err
-	}); err != nil {
-		db.Close()
-		return err
+	influxRdy := true
+	lpClient, err := influx.NewConnectedClientWithOptions(ctx, cfg.TelemetryServer.Url, cfg.TelemetryServer.Token, influx.Options{
+		BatchSize:        cfg.TelemetryServer.BatchSize,
+		FlushInterval:    cfg.TelemetryServer.FlushInterval,
+		RetryBufferLimit: cfg.TelemetryServer.RetryBufferLimit,
+		UseGZip:          cfg.TelemetryServer.GZip,
+	})
+	if err != nil {
+		influxRdy = false
+		if strings.Contains(err.Error(), "connect: connection refused") {
+			log.Warn().Err(err).Str("buffer size (GB)", fmt.Sprintf("%.2f", float64(cfg.TelemetryServer.RetryBufferLimit)/1_073_741_824)).Msg("cannot connect to telemetry db, telemetry will be capture and rotated in buffer until connected")
+		} else {
+			return err
+		}
 	}
-	if err := influx.CreateOrgAndBucket(ctx, lpClient, cfg.TelemetryServer.Org, cfg.TelemetryServer.Bucket); err != nil {
-		return err
+	if influxRdy {
+		if err := influx.CreateOrgAndBucket(ctx, lpClient, cfg.TelemetryServer.Org, cfg.TelemetryServer.Bucket); err != nil {
+			return err
+		}
+		log.Info().Str("url", cfg.TelemetryServer.Url).Msg("connected to puthost")
 	}
-	log.Info().Str("url", cfg.TelemetryServer.Url).Msg("connected to puthost")
 
 	// Bus
 	m, err := mir.Connect(AppName, cfg.DataBusServer.Url, append(mir.WithDefaultReconnectOpts(), mir.WithDefaultConnectionLogging(log)...)...)
