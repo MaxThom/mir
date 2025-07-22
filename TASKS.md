@@ -29,8 +29,14 @@
     - [x] influx
   - [ ] during
     - [ ] surreal
-    - [ ] influx
-      - [ ] already reconnect and has a buffer
+      - [ ] running in degraded state
+      - [ ] core, doesnt work anymore
+      - [ ] cfg, doesnt work anymore
+      - [ ] cmd, can work if same schema
+      - [ ] tlm, can work if same schema
+    - [x] influx
+      - [x] recreate org/bucket
+      - [x] already reconnect and has a buffer
             - can we increase it?
             - add better status log
 ### Refactoring
@@ -42,6 +48,7 @@
 - [x] DeviceSDK with buf
 - [ ] Update MdBook to latest version
 - [x] Mir Concepts
+- [ ] DeviceConfiguration
 
 ### Ergonomics
 
@@ -54,6 +61,7 @@
   - [x] Dashboards
   - [ ] Alerts & Alarm with Grafana and Influx
   - [x] Dashboards with influx/surreal/grafana data
+  - [ ] Grafana Loki for logs
 - [ ] Productions
   - [ ] Docker
   - [ ] Template container for device sdk

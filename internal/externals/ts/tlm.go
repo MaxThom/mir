@@ -7,6 +7,7 @@ import (
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/influxdata/influxdb-client-go/v2/api"
+	"github.com/maxthom/mir/internal/libs/external/influx"
 )
 
 type TelemetryStore interface {
@@ -22,16 +23,23 @@ type influxTelemetryStore struct {
 	client  influxdb2.Client
 	writer  api.WriteAPI
 	querier api.QueryAPI
+	errors  chan error
 }
 
 func NewInfluxTelemetryStore(org, bucket string, client influxdb2.Client) *influxTelemetryStore {
-	return &influxTelemetryStore{
+	s := &influxTelemetryStore{
 		org:     org,
 		bucket:  bucket,
 		client:  client,
 		writer:  client.WriteAPI(org, bucket),
 		querier: client.QueryAPI(org),
+		errors:  make(chan error),
 	}
+
+	// Start monitoring writer errors
+	go s.monitorErrors()
+
+	return s
 }
 
 func (s *influxTelemetryStore) WriteDatapoint(line string) {
@@ -39,7 +47,28 @@ func (s *influxTelemetryStore) WriteDatapoint(line string) {
 }
 
 func (s *influxTelemetryStore) Errors() <-chan error {
-	return s.writer.Errors()
+	return s.errors
+}
+
+func (s *influxTelemetryStore) monitorErrors() {
+	for err := range s.writer.Errors() {
+		if err != nil && strings.Contains(err.Error(), "not found: organization") {
+			if err := influx.CreateOrgAndBucket(context.TODO(), s.client, s.org, s.bucket); err != nil {
+				s.errors <- err
+			} else {
+				s.errors <- fmt.Errorf("influx org '%s' and bucket '%s' not found, creating...", s.org, s.bucket)
+			}
+		} else if err != nil && strings.Contains(err.Error(), "not found: bucket") {
+			if err := influx.CreateOrgAndBucket(context.TODO(), s.client, s.org, s.bucket); err != nil {
+				s.errors <- err
+			} else {
+				s.errors <- fmt.Errorf("influx bucket '%s' not found, creating...", s.bucket)
+			}
+		} else {
+			s.errors <- err
+		}
+	}
+	close(s.errors)
 }
 
 type TagInfo struct {
