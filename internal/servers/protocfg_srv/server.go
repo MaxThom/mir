@@ -12,6 +12,7 @@ import (
 	"github.com/maxthom/mir/internal/clients/cfg_client"
 	"github.com/maxthom/mir/internal/externals/mng"
 	"github.com/maxthom/mir/internal/libs/api/metrics"
+	"github.com/maxthom/mir/internal/libs/external/surreal"
 	"github.com/maxthom/mir/internal/libs/proto/json_template"
 	"github.com/maxthom/mir/internal/services/schema_cache"
 	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
@@ -137,22 +138,39 @@ func (s *ProtoCfgServer) Shutdown() error {
 func (s *ProtoCfgServer) listCfgSub(msg *mir.Msg, clientId string, req *mir_apiv1.SendListConfigRequest) (map[string]*mir_apiv1.Configs, error) {
 	l.Info().Any("req", req).Msg("list config request")
 	requestTotal.WithLabelValues("list").Inc()
+	degradedMode := false
 	// 1. get device list
 	// 2. for each device, get stored schema, if empty, fetch from device
 	// 3. return list of config
 
-	devs, err := s.devStore.ListDevice(mir_v1.ProtoDeviceTargetToMirDeviceTarget(req.Targets), false)
+	t := mir_v1.ProtoDeviceTargetToMirDeviceTarget(req.Targets)
+	devs, err := s.devStore.ListDevice(t, false)
 	if err != nil {
-		l.Error().Err(err).Msg("error occure while listing devices")
-		requestErrorTotal.WithLabelValues("list").Inc()
-		return nil, fmt.Errorf("error listing devices from db: %w", err)
+		if strings.Contains(err.Error(), surreal.ErrDatabaseDisconnected.Error()) {
+			degradedMode = true
+			if !t.HasOnlyIdsTarget() {
+				return nil, fmt.Errorf("running in degraded mode as database is disconnected, only device ids can be used")
+			}
+			devs = []mir_v1.Device{}
+			for _, i := range t.Ids {
+				devs = append(devs, mir_v1.NewDevice().WithId(i))
+			}
+		} else {
+			l.Error().Err(err).Msg("error occure while listing devices")
+			requestErrorTotal.WithLabelValues("list").Inc()
+			return nil, fmt.Errorf("error listing devices from db: %w", err)
+		}
 	}
 
 	devsCmds := make(map[string]*mir_apiv1.Configs)
 	for _, dev := range devs {
+		nameNs := dev.GetNameNamespace()
+		if degradedMode {
+			nameNs = dev.Spec.DeviceId
+		}
 		reg, _, err := s.schStore.GetDeviceSchema(dev.Spec.DeviceId, req.RefreshSchema)
 		if err != nil {
-			devsCmds[dev.GetNameNamespace()] = &mir_apiv1.Configs{
+			devsCmds[nameNs] = &mir_apiv1.Configs{
 				Error: err.Error(),
 			}
 			continue
@@ -160,7 +178,7 @@ func (s *ProtoCfgServer) listCfgSub(msg *mir.Msg, clientId string, req *mir_apiv
 
 		cfgs, err := reg.GetConfigList(req.FilterLabels)
 		if err != nil {
-			devsCmds[dev.GetNameNamespace()] = &mir_apiv1.Configs{
+			devsCmds[nameNs] = &mir_apiv1.Configs{
 				Error: err.Error(),
 			}
 			continue
@@ -172,13 +190,17 @@ func (s *ProtoCfgServer) listCfgSub(msg *mir.Msg, clientId string, req *mir_apiv
 				b, err := json.Marshal(v)
 				if err != nil {
 					cfg.Error = err.Error()
-					continue
+				} else {
+					cfg.Values = string(b)
 				}
-				cfg.Values = string(b)
+			} else {
+				if degradedMode {
+					cfg.Values = errors.New("{\"err\": \"can't retrieve config in degraded mode\"}").Error()
+				}
 			}
 			cfgList = append(cfgList, cfg)
 		}
-		devsCmds[dev.GetNameNamespace()] = &mir_apiv1.Configs{
+		devsCmds[nameNs] = &mir_apiv1.Configs{
 			Configs: cfgList,
 		}
 	}

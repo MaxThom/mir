@@ -175,12 +175,12 @@ func (m *Mir) Launch(ctx context.Context) (*sync.WaitGroup, error) {
 				if err := m.sendSchema(); err != nil {
 					m.l.Error().Err(err).Msg("error sending schema on connect")
 				}
-				m.l.Debug().Msg("schema updated")
+				m.l.Debug().Msg("schema sent")
 			}
 
 			// Call config handler
 			if err := m.requestDesiredProperties(); err != nil {
-				m.l.Error().Err(err).Msg("error requesting desired properties")
+				m.l.Error().Err(err).Msg("error requesting desired properties, using local")
 			}
 
 			go func() {
@@ -197,7 +197,7 @@ func (m *Mir) Launch(ctx context.Context) (*sync.WaitGroup, error) {
 			time.Sleep(1 * time.Second)
 			m.setOnlineHandler()
 			if err := m.requestDesiredProperties(); err != nil {
-				m.l.Error().Err(err).Msg("error requesting desired properties")
+				m.l.Error().Err(err).Msg("error requesting desired properties, using local")
 			}
 			m.callAllCfgHandlers()
 			m.l.Debug().Msg("desired properties propagated")
@@ -381,10 +381,10 @@ func (m Mir) sendSchema() error {
 func (m Mir) requestDesiredProperties() error {
 	resp, err := cfg_client.PublishRequestDesiredPropertiesStream(m.b.Conn, m.cfg.Device.Id)
 	if err != nil {
-		return fmt.Errorf("error requesting desired properties: %v", err)
+		return err
 	}
 	if resp.GetError() != "" {
-		return fmt.Errorf("error requesting desired properties: %v", resp.GetError())
+		return fmt.Errorf("%s", resp.GetError())
 	}
 
 	props := resp.GetOk()

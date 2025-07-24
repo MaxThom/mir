@@ -165,7 +165,7 @@ func (r *schemaRoute) Request(deviceId string) (*mir_proto.MirProtoSchema, error
 		return nil, fmt.Errorf("error deserializing response: %w", err)
 	}
 	if sch.GetError() != "" {
-		return nil, fmt.Errorf("error in device response: %s", sch.GetError())
+		return nil, fmt.Errorf(sch.GetError())
 	}
 
 	return mir_proto.UnmarshalSchema(sch.GetSchema())
@@ -182,7 +182,7 @@ func (r *schemaRoute) Subscribe(deviceId string, h func(msg *Msg, deviceId strin
 	return r.m.subscribe(sbj, r.handlerWrapper(h))
 }
 
-// Subscribe to device reported properties as a worker queue
+// Subscribe to device schema stream
 // To listen to all devices, use deviceId = "" or deviceId = "*"
 // You are responsible of acknowledging the message
 func (r *schemaRoute) QueueSubscribe(queue string, deviceId string, h func(msg *Msg, deviceId string, schema *mir_proto.MirProtoSchema, err error)) error {

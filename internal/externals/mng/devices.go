@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/maxthom/mir/internal/libs/external/surreal"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/pkg/errors"
-	"github.com/surrealdb/surrealdb.go"
 )
 
 var (
@@ -30,7 +30,7 @@ type deviceWithId struct {
 
 func (s *surrealMirStore) ListDevice(t mir_v1.DeviceTarget, includeEvents bool) ([]mir_v1.Device, error) {
 	q, v := createListQueryForDevice(t, includeEvents)
-	devs, err := executeQueryForType[[]mir_v1.Device](s.db, q, v)
+	devs, err := surreal.Query[[]mir_v1.Device](s.db, q, v)
 	if err != nil {
 		return nil, errors.Wrap(err, ErrorListingDevices.Error())
 	}
@@ -51,7 +51,7 @@ func (s *surrealMirStore) CreateDevice(d mir_v1.Device) (mir_v1.Device, error) {
 	// Device status is readonly and set by the system
 	d.Status = mir_v1.DeviceStatus{}
 	q, v := createIsDeviceUniqueQuery(d.Meta.Name, d.Meta.Namespace, d.Spec.DeviceId)
-	respCheck, err := executeQueryForType[[]mir_v1.Device](s.db, q, v)
+	respCheck, err := surreal.Query[[]mir_v1.Device](s.db, q, v)
 	if err != nil {
 		return mir_v1.Device{}, fmt.Errorf("%w for device %s/%s: %w", mir_v1.ErrorDbExecutingQuery, d.Meta.Name, d.Meta.Namespace, err)
 	}
@@ -60,7 +60,7 @@ func (s *surrealMirStore) CreateDevice(d mir_v1.Device) (mir_v1.Device, error) {
 	}
 
 	// Create
-	respDb, err := surrealdb.Create[mir_v1.Device](s.db, surrealDeviceTable, d)
+	respDb, err := surreal.Create[mir_v1.Device](s.db, surrealDeviceTable, d)
 	if err != nil {
 		return mir_v1.Device{}, fmt.Errorf("%w: %w", mir_v1.ErrorDbExecutingQuery, err)
 	}
@@ -89,7 +89,7 @@ func (s *surrealMirStore) UpdateDevice(t mir_v1.DeviceTarget, d mir_v1.Device) (
 	if q == "" {
 		return s.ListDevice(t, false)
 	}
-	respDb, err := executeQueryForType[[]mir_v1.Device](s.db, q, v)
+	respDb, err := surreal.Query[[]mir_v1.Device](s.db, q, v)
 	if err != nil {
 		return nil, errors.Wrap(err, mir_v1.ErrorDbExecutingQuery.Error())
 	}
@@ -126,7 +126,7 @@ func (s *surrealMirStore) MergeDevice(t mir_v1.DeviceTarget, patch json.RawMessa
 		}
 		sql := qSb.String()
 
-		respDb, err := executeQueryForType[[]mir_v1.Device](s.db, sql, map[string]any{})
+		respDb, err := surreal.Query[[]mir_v1.Device](s.db, sql, map[string]any{})
 		if err != nil {
 			return nil, errors.Wrap(err, mir_v1.ErrorDbExecutingQuery.Error())
 		}
@@ -141,13 +141,13 @@ func (s *surrealMirStore) DeleteDevice(t mir_v1.DeviceTarget) ([]mir_v1.Device, 
 	}
 
 	qList, vList := createListQueryForDevice(t, false)
-	respDbList, err := executeQueryForType[[]mir_v1.Device](s.db, qList, vList)
+	respDbList, err := surreal.Query[[]mir_v1.Device](s.db, qList, vList)
 	if err != nil {
 		return nil, mir_v1.ErrorDbExecutingQuery
 	}
 
 	q, v := createDeleteQueryForDevice(t)
-	_, err = executeQueryForType[[]mir_v1.Device](s.db, q, v)
+	_, err = surreal.Query[[]mir_v1.Device](s.db, q, v)
 	if err != nil {
 		return nil, mir_v1.ErrorDbExecutingQuery
 	}
@@ -176,7 +176,7 @@ func (s *surrealMirStore) validateDeviceUniqueness(targets mir_v1.DeviceTarget, 
 			} else if len(changingDevs) == 1 {
 				// Check if deviceId is unique
 				q, v := createIsDeviceUniqueQuery("", "", deviceId)
-				respCheck, err := executeQueryForType[[]mir_v1.Device](s.db, q, v)
+				respCheck, err := surreal.Query[[]mir_v1.Device](s.db, q, v)
 				if err != nil {
 					return fmt.Errorf("device unique check: %w: %w", mir_v1.ErrorDbExecutingQuery, err)
 				}
@@ -191,7 +191,7 @@ func (s *surrealMirStore) validateDeviceUniqueness(targets mir_v1.DeviceTarget, 
 			} else if len(changingDevs) == 1 {
 				// Check if name/ns is unique
 				q, v := createIsDeviceUniqueQuery(name, ns, "")
-				respCheck, err := executeQueryForType[[]mir_v1.Device](s.db, q, v)
+				respCheck, err := surreal.Query[[]mir_v1.Device](s.db, q, v)
 				if err != nil {
 					return fmt.Errorf("%w: %w", mir_v1.ErrorDbExecutingQuery, err)
 				}

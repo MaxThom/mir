@@ -2,6 +2,7 @@ package schema_cache
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/rs/zerolog"
 
 	"github.com/maxthom/mir/internal/libs/api/metrics"
+	"github.com/maxthom/mir/internal/libs/external/surreal"
 	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/maxthom/mir/pkgs/module/mir"
@@ -155,10 +157,16 @@ func (c *MirSchemaCache) reconcileDeviceSchema(deviceId string, forceDeviceFetch
 				Ids: []string{deviceId},
 			}, false)
 		if err != nil {
-			return mir_v1.Device{}, nil, fmt.Errorf("error listing devices: %s", err)
+			// If error, we fetch from device
+			if !strings.Contains(err.Error(), surreal.ErrDatabaseDisconnected.Error()) {
+				return mir_v1.Device{}, nil, fmt.Errorf("error listing devices: %s", err)
+			}
 		}
 		if len(devs) == 0 {
-			return mir_v1.Device{}, nil, fmt.Errorf("device %s not found", deviceId)
+			// If error, we fetch from device
+			if !strings.Contains(err.Error(), surreal.ErrDatabaseDisconnected.Error()) {
+				return mir_v1.Device{}, nil, fmt.Errorf("device %s not found", deviceId)
+			}
 		}
 		if len(devs) > 0 {
 			if len(devs[0].Status.Schema.CompressedSchema) != 0 {
@@ -197,6 +205,11 @@ func (c *MirSchemaCache) reconcileDeviceSchema(deviceId string, forceDeviceFetch
 		}),
 	)
 	if err != nil {
+		if strings.Contains(err.Error(), surreal.ErrDatabaseDisconnected.Error()) {
+			schemaReconcileTotal.WithLabelValues("device").Inc()
+			l.Info().Str("device_id", deviceId).Msgf("reconciled schema for %s from device", deviceId)
+			return mir_v1.NewDevice().WithId(deviceId), sch, nil
+		}
 		return mir_v1.Device{}, nil, fmt.Errorf("error updating device: %w", err)
 	}
 	if len(devResp) == 0 {

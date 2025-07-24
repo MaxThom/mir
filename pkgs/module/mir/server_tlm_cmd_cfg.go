@@ -2,6 +2,7 @@ package mir
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/maxthom/mir/internal/clients"
@@ -84,7 +85,7 @@ func (r *listTelemetryRoute) Request(req *mir_apiv1.SendListTelemetryRequest) ([
 		return []*mir_apiv1.DevicesTelemetry{}, err
 	}
 	if resp.GetError() != "" {
-		return []*mir_apiv1.DevicesTelemetry{}, err
+		return []*mir_apiv1.DevicesTelemetry{}, errors.New(resp.GetError())
 	}
 
 	return resp.GetOk().DevicesTelemetry, nil
@@ -162,7 +163,7 @@ func (r *listCommandRoute) Request(req *mir_apiv1.SendListCommandsRequest) (map[
 		return map[string]*mir_apiv1.Commands{}, err
 	}
 	if resp.GetError() != "" {
-		return map[string]*mir_apiv1.Commands{}, err
+		return map[string]*mir_apiv1.Commands{}, errors.New(resp.GetError())
 	}
 
 	return resp.GetOk().DeviceCommands, nil
@@ -238,7 +239,7 @@ func (r *sendCommandRoute) Request(req *mir_apiv1.SendCommandRequest) (map[strin
 		return map[string]*mir_apiv1.SendCommandResponse_CommandResponse{}, err
 	}
 	if resp.GetError() != "" {
-		return map[string]*mir_apiv1.SendCommandResponse_CommandResponse{}, err
+		return map[string]*mir_apiv1.SendCommandResponse_CommandResponse{}, errors.New(resp.GetError())
 	}
 
 	return resp.GetOk().DeviceResponses, nil
@@ -342,7 +343,7 @@ func (r *listConfigurationRoute) Request(req *mir_apiv1.SendListConfigRequest) (
 		return map[string]*mir_apiv1.Configs{}, err
 	}
 	if resp.GetError() != "" {
-		return map[string]*mir_apiv1.Configs{}, err
+		return map[string]*mir_apiv1.Configs{}, errors.New(resp.GetError())
 	}
 
 	return resp.GetOk().DeviceConfigs, nil
@@ -418,7 +419,7 @@ func (r *sendConfigRoute) Request(req *mir_apiv1.SendConfigRequest) (map[string]
 		return map[string]*mir_apiv1.SendConfigResponse_ConfigResponse{}, err
 	}
 	if resp.GetError() != "" {
-		return map[string]*mir_apiv1.SendConfigResponse_ConfigResponse{}, err
+		return map[string]*mir_apiv1.SendConfigResponse_ConfigResponse{}, errors.New(resp.GetError())
 	}
 
 	return resp.GetOk().DeviceResponses, nil

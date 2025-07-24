@@ -12,11 +12,11 @@ import (
 	"github.com/maxthom/mir/internal/clients/core_client"
 	"github.com/maxthom/mir/internal/libs/external/influx"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
+	"github.com/maxthom/mir/internal/libs/external/surreal"
 	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	"github.com/nats-io/nats.go"
 	"github.com/rs/zerolog"
 	logger "github.com/rs/zerolog/log"
-	"github.com/surrealdb/surrealdb.go"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -44,7 +44,7 @@ type InfluxInfo struct {
 	Bucket string
 }
 
-func SetupAllExternalsPanic(ctx context.Context, conns ConnsInfo) (*nats.Conn, *surrealdb.DB, influxdb2.Client, api.WriteAPI, api.QueryAPI) {
+func SetupAllExternalsPanic(ctx context.Context, conns ConnsInfo) (*nats.Conn, *surreal.AutoReconnDB, influxdb2.Client, api.WriteAPI, api.QueryAPI) {
 	b := SetupNatsConPanic(conns.BusUrl)
 	s := SetupSurrealDbConnsPanic(conns.Surreal.Url, conns.Surreal.User, conns.Surreal.Pass, conns.Surreal.Ns, conns.Surreal.Db)
 	c, w, q := SetupInfluxConnsPanic(ctx, conns.Influx.Url, conns.Influx.Token, conns.Influx.Org, conns.Influx.Bucket)
@@ -63,23 +63,11 @@ func SetupInfluxConnsPanic(ctx context.Context, url, token, org, bucket string) 
 	return c, w, q
 }
 
-func SetupSurrealDbConnsPanic(url, user, pass, ns, db string) *surrealdb.DB {
-	d, err := surrealdb.New(url)
+func SetupSurrealDbConnsPanic(url, user, pass, ns, db string) *surreal.AutoReconnDB {
+	d, err := surreal.Connect(context.Background(), url, ns, db, user, pass, surreal.ConnHandler{})
 	if err != nil {
 		panic(err)
 	}
-
-	if _, err = d.SignIn(&surrealdb.Auth{
-		Username: user,
-		Password: pass,
-	}); err != nil {
-		panic(err)
-	}
-
-	if err = d.Use(ns, db); err != nil {
-		panic(err)
-	}
-
 	return d
 }
 
@@ -113,19 +101,12 @@ func CreateDevices(bus *nats.Conn, devices []*mir_apiv1.CreateDeviceRequest) ([]
 	return responses, nil
 }
 
-func ExecuteTestQueryForType[T any](t *testing.T, db *surrealdb.DB, query string, vars map[string]any) T {
-	var empty T
-	result, err := surrealdb.Query[T](db, query, vars)
+func ExecuteTestQueryForType[T any](t *testing.T, db *surreal.AutoReconnDB, query string, vars map[string]any) T {
+	result, err := surreal.Query[T](db, query, vars)
 	if err != nil {
 		t.Error(err)
 	}
-
-	res := *result
-	if len(res) == 0 {
-		return empty
-	}
-
-	return res[0].Result
+	return result
 }
 
 func strRef(s string) *string {

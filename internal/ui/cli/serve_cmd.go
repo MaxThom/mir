@@ -18,7 +18,6 @@ import (
 	"github.com/maxthom/mir/internal/libs/boiler/mir_log"
 	"github.com/maxthom/mir/internal/libs/boiler/mir_signals"
 	"github.com/maxthom/mir/internal/libs/build_meta"
-	"github.com/maxthom/mir/internal/libs/external"
 	"github.com/maxthom/mir/internal/libs/external/influx"
 	"github.com/maxthom/mir/internal/libs/external/surreal"
 	"github.com/maxthom/mir/internal/servers/core_srv"
@@ -29,7 +28,6 @@ import (
 	"github.com/maxthom/mir/internal/services/schema_cache"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/rs/zerolog"
-	"github.com/surrealdb/surrealdb.go"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	"gopkg.in/yaml.v3"
@@ -160,15 +158,24 @@ func (d *ServeCmd) run(
 	ctx, cancel := mir_signals.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGINT)
 
 	// Setup
-	var db *surrealdb.DB
-	if err := external.BackOffRetry(ctx, log, 30*time.Minute, func() error {
-		var err error
-		db, err = surreal.ConnectToDb(cfg.Surreal.Url, cfg.Surreal.Namespace, cfg.Surreal.Database, cfg.Surreal.User, cfg.Surreal.Password)
-		return err
-	}); err != nil {
-		return err
-	}
-	log.Info().Str("url", cfg.Surreal.Url).Str("namespace", cfg.Surreal.Namespace).Str("database", cfg.Surreal.Database).Msg("connected to database")
+	var db *surreal.AutoReconnDB
+	var err error
+	db, err = surreal.Connect(ctx, cfg.Surreal.Url,
+		cfg.Surreal.Namespace,
+		cfg.Surreal.Database,
+		cfg.Surreal.User,
+		cfg.Surreal.Password,
+		surreal.ConnHandler{
+			FnConnected: func(url string) {
+				log.Info().Str("url", cfg.Surreal.Url).Str("namespace", cfg.Surreal.Namespace).Str("database", cfg.Surreal.Database).Msg("connected to database")
+			},
+			FnDisconnected: func(url string) {
+				log.Error().Str("url", cfg.Surreal.Url).Str("namespace", cfg.Surreal.Namespace).Str("database", cfg.Surreal.Database).Msg("disconnected from database")
+			},
+			FnFailedReconnect: func(url string, nextAttempt time.Duration) {
+				log.Warn().Str("url", cfg.Surreal.Url).Str("namespace", cfg.Surreal.Namespace).Str("database", cfg.Surreal.Database).Msgf("reconnection failed, attempting to reconnect in %0.2f seconds", nextAttempt.Seconds())
+			},
+		})
 
 	influxRdy := true
 	lpClient, err := influx.NewConnectedClientWithOptions(ctx, cfg.Influx.Url, cfg.Influx.Token, influx.Options{

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/maxthom/mir/internal/externals/mng"
 	"github.com/maxthom/mir/internal/libs/api/metrics"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
+	"github.com/maxthom/mir/internal/libs/external/surreal"
 	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/maxthom/mir/pkgs/module/mir"
@@ -321,7 +323,9 @@ func (s *CoreServer) hearthbeatPulsor(ctx context.Context, interval time.Duratio
 				})
 				devs, err := s.store.UpdateDevice(t, d)
 				if err != nil {
-					l.Error().Err(err).Msg("error occure while executing hearthbeat db query")
+					if !strings.Contains(err.Error(), surreal.ErrDatabaseDisconnected.Error()) {
+						l.Error().Err(err).Msg("error occure while executing hearthbeat db query")
+					}
 					continue
 				}
 				l.Info().Str("route", "hearthbeat_pulsor").Str("event", "device_offline").Strs("new devices", newOffline).Msg("offline devices")
@@ -354,15 +358,6 @@ func (s *CoreServer) hearthbeatSub(msg *mir.Msg, deviceId string) {
 		return &b
 	}
 	// Since this update is only for hearthbeat and often, we dont want to have a device update event
-	// updReq := &mir_apiv1.UpdateDeviceRequest{
-	// 	Targets: &mir_apiv1.DeviceTarget{
-	// 		Ids: []string{deviceId},
-	// 	},
-	// 	Status: &mir_apiv1.UpdateDeviceRequest_Status{
-	// 		Online:         toBoolRef(true),
-	// 		LastHearthbeat: mir_v1.AsProtoTimestamp(timeNow),
-	// 	},
-	// }
 	t := mir_v1.DeviceTarget{
 		Ids: []string{deviceId},
 	}
@@ -373,7 +368,9 @@ func (s *CoreServer) hearthbeatSub(msg *mir.Msg, deviceId string) {
 
 	dev, err := s.store.UpdateDevice(t, d)
 	if err != nil {
-		l.Error().Err(err).Msg("error occure while executing hearthbeat db query")
+		if !strings.Contains(err.Error(), surreal.ErrDatabaseDisconnected.Error()) {
+			l.Error().Err(err).Msg("error occure while executing hearthbeat db query")
+		}
 		msg.Ack()
 		return
 	}
@@ -389,7 +386,9 @@ func (s *CoreServer) hearthbeatSub(msg *mir.Msg, deviceId string) {
 		}
 		dev, err = s.store.UpdateDevice(t, d)
 		if err != nil {
-			l.Error().Err(err).Msg("error occure while executing hearthbeat db query")
+			if !strings.Contains(err.Error(), surreal.ErrDatabaseDisconnected.Error()) {
+				l.Error().Err(err).Msg("error occure while executing hearthbeat db query")
+			}
 			msg.Ack()
 			return
 		}

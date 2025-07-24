@@ -5,8 +5,8 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/maxthom/mir/internal/libs/external/surreal"
 	"github.com/maxthom/mir/pkgs/mir_v1"
-	"github.com/surrealdb/surrealdb.go"
 )
 
 func createIsObjectUniqueQuery(table, name, ns string) (sql string, vars map[string]any) {
@@ -20,21 +20,6 @@ func createIsObjectUniqueQuery(table, name, ns string) (sql string, vars map[str
 	q.WriteString(";")
 	sql = q.String()
 	return
-}
-
-func executeQueryForType[T any](db *surrealdb.DB, query string, vars map[string]any) (T, error) {
-	var empty T
-	result, err := surrealdb.Query[T](db, query, vars)
-	if err != nil {
-		return empty, err
-	}
-
-	res := *result
-	if len(res) == 0 {
-		return empty, nil
-	}
-
-	return res[0].Result, nil
 }
 
 func createListQueryForObjects(table string, t mir_v1.ObjectTarget) (sql string, vars map[string]any) {
@@ -94,12 +79,12 @@ func createDeleteQueryForObjects(table string, t mir_v1.ObjectTarget) (sql strin
 	return
 }
 
-func validateObjectMetaForUpdate(db *surrealdb.DB, table string, t mir_v1.ObjectTarget, obj mir_v1.Object) error {
+func validateObjectMetaForUpdate(db *surreal.AutoReconnDB, table string, t mir_v1.ObjectTarget, obj mir_v1.Object) error {
 	// if err := obj.Validate(); err != nil {
 	// 	return err
 	// }
 	q, v := createListQueryForObjects(table, t)
-	changingObjs, err := executeQueryForType[[]mir_v1.Object](db, q, v)
+	changingObjs, err := surreal.Query[[]mir_v1.Object](db, q, v)
 	if err != nil {
 		return fmt.Errorf("%w: %w", mir_v1.ErrorDbExecutingQuery, err)
 	}
@@ -110,7 +95,7 @@ func validateObjectMetaForUpdate(db *surrealdb.DB, table string, t mir_v1.Object
 		} else if len(changingObjs) == 1 {
 			// Check if name/ns is unique
 			q, v := createIsObjectUniqueQuery(table, obj.Meta.Name, obj.Meta.Namespace)
-			respCheck, err := executeQueryForType[[]mir_v1.Object](db, q, v)
+			respCheck, err := surreal.Query[[]mir_v1.Object](db, q, v)
 			if err != nil {
 				return fmt.Errorf("%w: %w", mir_v1.ErrorDbExecutingQuery, err)
 			}
@@ -122,7 +107,7 @@ func validateObjectMetaForUpdate(db *surrealdb.DB, table string, t mir_v1.Object
 		q, v := createListQueryForObjects(table, mir_v1.ObjectTarget{
 			Namespaces: []string{obj.Meta.Namespace},
 		})
-		currentObjs, err := executeQueryForType[[]mir_v1.Object](db, q, v)
+		currentObjs, err := surreal.Query[[]mir_v1.Object](db, q, v)
 		if err != nil {
 			return fmt.Errorf("%w: %w", mir_v1.ErrorDbExecutingQuery, err)
 		}
@@ -147,7 +132,7 @@ func validateObjectMetaForUpdate(db *surrealdb.DB, table string, t mir_v1.Object
 		q, v := createListQueryForObjects(table, mir_v1.ObjectTarget{
 			Names: []string{obj.Meta.Name},
 		})
-		currentObjs, err := executeQueryForType[[]mir_v1.Object](db, q, v)
+		currentObjs, err := surreal.Query[[]mir_v1.Object](db, q, v)
 		if err != nil {
 			return fmt.Errorf("%w: %w", mir_v1.ErrorDbExecutingQuery, err)
 		}

@@ -51,6 +51,11 @@ func (d Device) WithSpec(s DeviceSpec) Device {
 	return d
 }
 
+func (d Device) WithId(id string) Device {
+	d.Spec.DeviceId = id
+	return d
+}
+
 func (d Device) WithProps(p DeviceProperties) Device {
 	d.Properties = p
 	return d
@@ -81,6 +86,16 @@ func (o DeviceTarget) HasNoTarget() bool {
 		len(o.Namespaces) == 0 &&
 		len(o.Labels) == 0 &&
 		len(o.Ids) == 0
+}
+
+func (o DeviceTarget) HasOnlyIdsTarget() bool {
+	if len(o.Names) > 0 || len(o.Namespaces) > 0 || len(o.Labels) > 0 {
+		return false
+	}
+	if len(o.Ids) == 0 {
+		return false
+	}
+	return true
 }
 
 type NameNs struct {

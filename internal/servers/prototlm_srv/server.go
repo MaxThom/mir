@@ -3,11 +3,13 @@ package prototlm_srv
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/maxthom/mir/internal/externals/mng"
 	"github.com/maxthom/mir/internal/externals/ts"
 	"github.com/maxthom/mir/internal/libs/api/metrics"
+	"github.com/maxthom/mir/internal/libs/external/surreal"
 	proto_lineprotocol "github.com/maxthom/mir/internal/libs/proto/line_protocol"
 	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
 	"github.com/maxthom/mir/internal/services/schema_cache"
@@ -217,29 +219,46 @@ type schemaPerDevices struct {
 func (s *ProtoTlmServer) handleTelemetryListRequest(msg *mir.Msg, clientId string, req *mir_apiv1.SendListTelemetryRequest) ([]*mir_apiv1.DevicesTelemetry, error) {
 	l.Info().Any("req", req).Msg("list telemetry request")
 	requestTotal.WithLabelValues("list").Inc()
+	degradedMode := false
 
-	devs, err := s.devStore.ListDevice(mir_v1.ProtoDeviceTargetToMirDeviceTarget(req.Targets), false)
+	t := mir_v1.ProtoDeviceTargetToMirDeviceTarget(req.Targets)
+	devs, err := s.devStore.ListDevice(t, false)
 	if err != nil {
-		requestErrorTotal.WithLabelValues("list").Inc()
-		l.Error().Err(err).Msg("error occure while listing devices")
-		return nil, fmt.Errorf("error listing device from db: %w", err)
+		if strings.Contains(err.Error(), surreal.ErrDatabaseDisconnected.Error()) {
+			degradedMode = true
+			if !t.HasOnlyIdsTarget() {
+				return nil, fmt.Errorf("running in degraded mode as database is disconnected, only device ids can be used")
+			}
+			devs = []mir_v1.Device{}
+			for _, i := range t.Ids {
+				devs = append(devs, mir_v1.NewDevice().WithId(i))
+			}
+		} else {
+			requestErrorTotal.WithLabelValues("list").Inc()
+			l.Error().Err(err).Msg("error occure while listing devices")
+			return nil, fmt.Errorf("error listing device from db: %w", err)
+		}
 	}
 
 	devsTlm := []*mir_apiv1.DevicesTelemetry{}
 	devSchemas := []*schemaPerDevices{}
 	for _, dev := range devs {
+		nameNs := dev.GetNameNamespace()
+		if degradedMode {
+			nameNs = dev.Spec.DeviceId
+		}
 		reg, _, err := s.schStore.GetDeviceSchema(dev.Spec.DeviceId, req.RefreshSchema)
 		if err != nil {
 			found := false
 			for _, d := range devsTlm {
 				if d.Error == err.Error() {
-					d.DevicesNamens = append(d.DevicesNamens, dev.GetNameNamespace())
+					d.DevicesNamens = append(d.DevicesNamens, nameNs)
 					found = true
 				}
 			}
 			if !found {
 				devsTlm = append(devsTlm, &mir_apiv1.DevicesTelemetry{
-					DevicesNamens: []string{dev.GetNameNamespace()},
+					DevicesNamens: []string{nameNs},
 					Error:         err.Error(),
 				})
 			}
@@ -249,7 +268,7 @@ func (s *ProtoTlmServer) handleTelemetryListRequest(msg *mir.Msg, clientId strin
 		for _, sch := range devSchemas {
 			if mir_proto.AreSchemaEqual(sch.sch, reg) {
 				sch.devsId = append(sch.devsId, dev.Spec.DeviceId)
-				sch.devsNameNs = append(sch.devsNameNs, dev.GetNameNamespace())
+				sch.devsNameNs = append(sch.devsNameNs, nameNs)
 				found = true
 			}
 
@@ -258,7 +277,7 @@ func (s *ProtoTlmServer) handleTelemetryListRequest(msg *mir.Msg, clientId strin
 			devSchemas = append(devSchemas, &schemaPerDevices{
 				sch:        reg,
 				devsId:     []string{dev.Spec.DeviceId},
-				devsNameNs: []string{dev.GetNameNamespace()},
+				devsNameNs: []string{nameNs},
 			})
 		}
 	}

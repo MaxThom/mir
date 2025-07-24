@@ -8,16 +8,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/maxthom/mir/internal/libs/external/surreal"
 	"github.com/maxthom/mir/internal/libs/jsonyaml"
 	"github.com/maxthom/mir/internal/libs/test_utils"
 	"github.com/maxthom/mir/pkgs/mir_v1"
-	"github.com/surrealdb/surrealdb.go"
 	surrealdbModels "github.com/surrealdb/surrealdb.go/pkg/models"
 	"gotest.tools/assert"
 )
 
 var log = test_utils.TestLogger("mirstore")
-var db *surrealdb.DB
+var db *surreal.AutoReconnDB
 var mirStore *surrealMirStore
 
 func TestMain(m *testing.M) {
