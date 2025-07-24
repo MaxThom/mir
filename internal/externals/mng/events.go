@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/maxthom/mir/internal/libs/external/surreal"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/pkg/errors"
-	"github.com/surrealdb/surrealdb.go"
 )
 
 var (
@@ -28,7 +28,7 @@ type eventWithId struct {
 
 func (s *surrealMirStore) ListEvent(t mir_v1.EventTarget) ([]mir_v1.Event, error) {
 	q, v := createListQueryForEvents(t)
-	devs, err := executeQueryForType[[]mir_v1.Event](s.db, q, v)
+	devs, err := surreal.Query[[]mir_v1.Event](s.db, q, v)
 	if err != nil {
 		return nil, errors.Wrap(err, ErrorListingDevices.Error())
 	}
@@ -41,7 +41,7 @@ func (s *surrealMirStore) CreateEvent(e mir_v1.Event) (mir_v1.Event, error) {
 		return mir_v1.Event{}, err
 	}
 	q, v := createIsObjectUniqueQuery(surrealEventTable, e.Meta.Name, e.Meta.Namespace)
-	respCheck, err := executeQueryForType[[]mir_v1.Event](s.db, q, v)
+	respCheck, err := surreal.Query[[]mir_v1.Event](s.db, q, v)
 	if err != nil {
 		return mir_v1.Event{}, fmt.Errorf("%w for event %s/%s: %w", mir_v1.ErrorDbExecutingQuery, e.Meta.Name, e.Meta.Namespace, err)
 	}
@@ -50,7 +50,7 @@ func (s *surrealMirStore) CreateEvent(e mir_v1.Event) (mir_v1.Event, error) {
 	}
 
 	// Create
-	respDb, err := surrealdb.Create[mir_v1.Event](s.db, surrealEventTable, e)
+	respDb, err := surreal.Create[mir_v1.Event](s.db, surrealEventTable, e)
 	if err != nil {
 		return mir_v1.Event{}, fmt.Errorf("%w: %w", mir_v1.ErrorDbExecutingQuery, err)
 	}
@@ -91,7 +91,7 @@ func (s *surrealMirStore) UpdateEvent(t mir_v1.ObjectTarget, upd mir_v1.EventUpd
 	if q == "" {
 		return s.ListEvent(mir_v1.EventTarget{ObjectTarget: t})
 	}
-	respDb, err := executeQueryForType[[]mir_v1.Event](s.db, q, v)
+	respDb, err := surreal.Query[[]mir_v1.Event](s.db, q, v)
 	if err != nil {
 		return nil, errors.Wrap(err, mir_v1.ErrorDbExecutingQuery.Error())
 	}
@@ -128,7 +128,7 @@ func (s *surrealMirStore) MergeEvent(t mir_v1.ObjectTarget, patch json.RawMessag
 		}
 		sql := qSb.String()
 
-		respDb, err := executeQueryForType[[]mir_v1.Event](s.db, sql, map[string]any{})
+		respDb, err := surreal.Query[[]mir_v1.Event](s.db, sql, map[string]any{})
 		if err != nil {
 			return nil, errors.Wrap(err, mir_v1.ErrorDbExecutingQuery.Error())
 		}
@@ -143,13 +143,13 @@ func (s *surrealMirStore) DeleteEvent(t mir_v1.EventTarget) ([]mir_v1.Event, err
 	}
 
 	qList, vList := createListQueryForEvents(t)
-	respDbList, err := executeQueryForType[[]mir_v1.Event](s.db, qList, vList)
+	respDbList, err := surreal.Query[[]mir_v1.Event](s.db, qList, vList)
 	if err != nil {
 		return nil, mir_v1.ErrorDbExecutingQuery
 	}
 
 	q, v := createDeleteQueryForEvents(t)
-	_, err = executeQueryForType[[]mir_v1.Event](s.db, q, v)
+	_, err = surreal.Query[[]mir_v1.Event](s.db, q, v)
 	if err != nil {
 		return nil, mir_v1.ErrorDbExecutingQuery
 	}

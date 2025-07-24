@@ -590,7 +590,7 @@ func TestStoreSwapMsgByBatch(t *testing.T) {
 }
 
 func deleteTableOrRecord(db *surrealdb.DB, thing string) error {
-	if _, err := surrealdb.Delete[any](db, thing); err != nil {
+	if _, err := surrealdb.Delete[any](context.Background(), db, thing); err != nil {
 		return err
 	}
 	return nil
@@ -613,7 +613,7 @@ func deleteDevicesDb(t *testing.T, db *surrealdb.DB, ids []string) error {
 
 func executeTestQueryForType[T any](t *testing.T, db *surrealdb.DB, query string, vars map[string]any) T {
 	var empty T
-	result, err := surrealdb.Query[T](db, query, vars)
+	result, err := surrealdb.Query[T](context.Background(), db, query, vars)
 	if err != nil {
 		t.Error(err)
 	}

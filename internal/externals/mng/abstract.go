@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"regexp"
 
+	"github.com/maxthom/mir/internal/libs/external/surreal"
 	"github.com/maxthom/mir/pkgs/mir_v1"
-	"github.com/surrealdb/surrealdb.go"
 )
 
 var (
@@ -34,10 +34,10 @@ type MirStore interface {
 }
 
 type surrealMirStore struct {
-	db *surrealdb.DB
+	db *surreal.AutoReconnDB
 }
 
-func NewSurrealMirStore(db *surrealdb.DB) *surrealMirStore {
+func NewSurrealMirStore(db *surreal.AutoReconnDB) *surrealMirStore {
 	return &surrealMirStore{
 		db: db,
 	}

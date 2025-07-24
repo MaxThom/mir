@@ -136,7 +136,6 @@ func (s *EventStoreServer) streamEventsSub(msg *mir.Msg, subjectId string, req m
 		return
 	}
 
-	// TODO name of events, tbd
 	event := mir_v1.NewEvent()
 	id, err := uuid.NewV7()
 	if err != nil {

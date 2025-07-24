@@ -1,6 +1,8 @@
 package mir
 
 import (
+	"errors"
+
 	"github.com/maxthom/mir/internal/clients"
 	"github.com/maxthom/mir/internal/clients/event_client"
 	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
@@ -83,7 +85,7 @@ func (r *listEventsRoute) Request(t mir_v1.EventTarget) ([]mir_v1.Event, error) 
 		return []mir_v1.Event{}, err
 	}
 	if resp.GetError() != "" {
-		return []mir_v1.Event{}, err
+		return []mir_v1.Event{}, errors.New(resp.GetError())
 	}
 
 	return mir_v1.ProtoEventsToMirEvents(resp.GetOk().Events), nil
@@ -162,7 +164,7 @@ func (r *deleteEventsRoute) Request(t mir_v1.EventTarget) ([]mir_v1.Event, error
 		return []mir_v1.Event{}, err
 	}
 	if resp.GetError() != "" {
-		return []mir_v1.Event{}, err
+		return []mir_v1.Event{}, errors.New(resp.GetError())
 	}
 
 	return mir_v1.ProtoEventsToMirEvents(resp.GetOk().Events), nil

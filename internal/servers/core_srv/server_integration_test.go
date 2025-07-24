@@ -11,6 +11,7 @@ import (
 
 	"github.com/maxthom/mir/internal/clients"
 	"github.com/maxthom/mir/internal/clients/core_client"
+	"github.com/maxthom/mir/internal/libs/external/surreal"
 	"github.com/maxthom/mir/internal/libs/swarm"
 	"github.com/maxthom/mir/internal/libs/test_utils"
 	core_testv1 "github.com/maxthom/mir/internal/servers/core_srv/proto_test/gen/core_test/v1"
@@ -19,7 +20,6 @@ import (
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/nats-io/nats.go"
-	"github.com/surrealdb/surrealdb.go"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"gotest.tools/assert"
@@ -27,7 +27,7 @@ import (
 
 var mSdk *mir.Mir
 var busUrl = "nats://127.0.0.1:4222"
-var db *surrealdb.DB
+var db *surreal.AutoReconnDB
 
 func TestMain(m *testing.M) {
 	// Setup

@@ -68,7 +68,7 @@ func (d *CommandListCmd) Run(log zerolog.Logger, m *mir.Mir, cfg Config) error {
 	}
 	resp, err := m.Server().ListCommands().Request(req)
 	if err != nil {
-		return fmt.Errorf("error publising list command request: %w", err)
+		return err
 	}
 
 	tpls := map[string][]string{}
@@ -127,6 +127,7 @@ func (d *CommandSendCmd) Validate() error {
 	}
 
 	if d.NameNs != "" {
+		fmt.Println(d.NameNs)
 		d.Target = getTargetFromNameNs(d.NameNs)
 	}
 
