@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/maxthom/mir/internal/libs/resync"
@@ -23,7 +24,7 @@ const (
 	// Connection is attempting to reconnect
 	StatusReconnecting
 	// Connection cannot authentified itself to the db
-	StatusNotAuthentified
+	StatusNotAuthenticated
 	// Connection is purposfully closed
 	StatusClosed
 )
@@ -34,8 +35,8 @@ func (s ConnectionStatus) String() string {
 		return "Disconnected"
 	case StatusConnected:
 		return "Connected"
-	case StatusNotAuthentified:
-		return "NotAuthentified"
+	case StatusNotAuthenticated:
+		return "NotAuthenticated"
 	case StatusClosed:
 		return "Closed"
 	default:
@@ -45,6 +46,7 @@ func (s ConnectionStatus) String() string {
 
 type AutoReconnDB struct {
 	*surrealdb.DB
+	dbMu        sync.RWMutex
 	ctx         context.Context
 	log         zerolog.Logger
 	ConnStatus  ConnectionStatus
@@ -100,7 +102,7 @@ func connect(ctx context.Context, url, namespace, database, user, password strin
 		d := &AutoReconnDB{
 			DB:          db,
 			ctx:         ctx,
-			ConnStatus:  StatusNotAuthentified,
+			ConnStatus:  StatusNotAuthenticated,
 			connHandler: h,
 			Url:         url,
 			User:        user,
@@ -141,6 +143,8 @@ func connect(ctx context.Context, url, namespace, database, user, password strin
 }
 
 func (db *AutoReconnDB) Close() error {
+	db.dbMu.RLock()
+	defer db.dbMu.RUnlock()
 	if db.DB == nil {
 		return nil
 	}
@@ -169,10 +173,13 @@ func (db *AutoReconnDB) monitorAndReconnect() {
 			for {
 				select {
 				case <-db.ctx.Done():
+					return
 				case <-ticker.C:
 					d, err := connect(db.ctx, db.Url, db.Namespace, db.Database, db.User, db.Password, db.connHandler)
+					db.dbMu.Lock()
 					db.DB = d.DB
 					db.ConnStatus = d.ConnStatus
+					db.dbMu.Unlock()
 					if err != nil {
 						// Mean still trying to connect
 						if db.connHandler.FnFailedReconnect != nil {
@@ -199,7 +206,9 @@ func Create[T any, TWhat surrealdb.TableOrRecord](db *AutoReconnDB, what TWhat, 
 	}
 	ctxT, cancel := context.WithTimeout(db.ctx, 5*time.Second)
 	defer cancel()
+	db.dbMu.RLock()
 	respDb, err := surrealdb.Create[T](ctxT, db.DB, what, data)
+	db.dbMu.RUnlock()
 	if err != nil {
 		// Check for connection errors
 		if strings.Contains(err.Error(), "connection refused") || strings.Contains(err.Error(), "broken pipe") || strings.Contains(err.Error(), "context deadline exceeded") {
@@ -219,7 +228,9 @@ func Query[T any](db *AutoReconnDB, query string, vars map[string]any) (T, error
 
 	ctxT, cancel := context.WithTimeout(db.ctx, 5*time.Second)
 	defer cancel()
+	db.dbMu.RLock()
 	result, err := surrealdb.Query[T](ctxT, db.DB, query, vars)
+	db.dbMu.RUnlock()
 	if err != nil {
 		// Check for connection errors
 		if strings.Contains(err.Error(), "connection refused") || strings.Contains(err.Error(), "broken pipe") || strings.Contains(err.Error(), "context deadline exceeded") {
