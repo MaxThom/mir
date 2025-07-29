@@ -164,7 +164,7 @@ func (c *MirSchemaCache) reconcileDeviceSchema(deviceId string, forceDeviceFetch
 		}
 		if len(devs) == 0 {
 			// If error, we fetch from device
-			if !strings.Contains(err.Error(), surreal.ErrDatabaseDisconnected.Error()) {
+			if err != nil && !strings.Contains(err.Error(), surreal.ErrDatabaseDisconnected.Error()) {
 				return mir_v1.Device{}, nil, fmt.Errorf("device %s not found", deviceId)
 			}
 		}

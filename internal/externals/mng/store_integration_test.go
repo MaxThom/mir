@@ -2350,25 +2350,19 @@ func TestPublishEventStoreUpdateStatusRequest(t *testing.T) {
 	assert.Equal(t, uResp[0].Status.FirstAt.UTC(), upd.Status.FirstAt.UTC())
 }
 
-func TestPbulishListDeviceWithEvents(t *testing.T) {
+func TestPulishListDeviceWithEvents(t *testing.T) {
 	// Arrange
 	tar := mir_v1.DeviceTarget{
 		Ids: []string{"peanut_butter"},
 	}
-	dev := mir_v1.Device{
-		Object: mir_v1.Object{
-			Meta: mir_v1.Meta{
-				Name:      "peanut_butter",
-				Namespace: "eventstore_testing",
-				Labels: map[string]string{
-					"mirstore": "testing",
-				},
-			},
+	dev := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
+		Name:      "peanut_butter",
+		Namespace: "eventstore_testing",
+		Labels: map[string]string{
+			"mirstore": "testing",
 		},
-		Spec: mir_v1.DeviceSpec{
-			DeviceId: "peanut_butter",
-		},
-	}
+	}).WithId("peanut_butter")
+
 	m := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "list_dev_with_event_1",
 		Namespace: "eventstore_testing",

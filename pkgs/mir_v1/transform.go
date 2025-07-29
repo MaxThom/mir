@@ -90,7 +90,7 @@ func NewDeviceFromProtoDevice(d *mir_apiv1.Device) Device {
 						Type:    e.Type,
 						Message: e.Message,
 						Reason:  e.Reason,
-						FirstAt: surrealdbModels.CustomDateTime{Time: AsGoTime(e.FirstAt)},
+						FirstAt: &surrealdbModels.CustomDateTime{Time: AsGoTime(e.FirstAt)},
 					})
 				}
 			}

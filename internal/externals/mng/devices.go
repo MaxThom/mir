@@ -280,7 +280,7 @@ func createListQueryForDevice(t mir_v1.DeviceTarget, includeEvents bool) (sql st
 	if includeEvents {
 		q.WriteString("SELECT *, ")
 		q.WriteString("(")
-		q.WriteString("SELECT spec.type as type, spec.message as message, spec.reason as reason, status.firstAt as firstAt FROM events")
+		q.WriteString("SELECT spec.type as type, spec.message ?? '' as message, spec.reason as reason, status.firstAt ?? NULL as firstAt FROM events")
 		q.WriteString(" WHERE $parent.meta.name = spec.relatedObject.meta.name AND $parent.meta.namespace = spec.relatedObject.meta.namespace ORDER firstAt DESC LIMIT 5")
 		q.WriteString(") as status.events")
 		q.WriteString(" FROM devices")

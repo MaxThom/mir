@@ -133,8 +133,8 @@ type DeviceSpec struct {
 }
 
 type DeviceProperties struct {
-	Desired  map[string]interface{} `json:"desired,omitempty" yaml:"desired"`
-	Reported map[string]interface{} `json:"reported,omitempty" yaml:"reported"`
+	Desired  map[string]any `json:"desired,omitempty" yaml:"desired"`
+	Reported map[string]any `json:"reported,omitempty" yaml:"reported"`
 }
 
 type PropertiesTime struct {
@@ -151,10 +151,10 @@ type DeviceStatus struct {
 }
 
 type DeviceStatusEvent struct {
-	Type    EventType                      `json:"type,omitempty" yaml:"type"`
-	Reason  string                         `json:"reason,omitempty" yaml:"reason"`
-	Message string                         `json:"message,omitempty" yaml:"message"`
-	FirstAt surrealdbModels.CustomDateTime `json:"firstAt,omitempty" yaml:"firstAt"`
+	Type    EventType                       `json:"type,omitempty" yaml:"type"`
+	Reason  string                          `json:"reason,omitempty" yaml:"reason"`
+	Message string                          `json:"message,omitempty" yaml:"message"`
+	FirstAt *surrealdbModels.CustomDateTime `json:"firstAt,omitempty" yaml:"firstAt"`
 }
 
 type Schema struct {
