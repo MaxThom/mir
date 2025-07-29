@@ -35,6 +35,10 @@ test:
 	go test -coverprofile ./.tmp/coverage.out ./...
 	go tool cover -html ./.tmp/coverage.out
 
+# Start test infra
+test-infra:
+    ./scripts/integration_tests.sh
+
 # Install Mir to path
 install: build-mir
     sudo cp bin/mir /usr/local/bin/mir
