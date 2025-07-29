@@ -194,7 +194,7 @@ func run(
 				log.Info().Str("url", cfg.DatabaseServer.Url).Str("namespace", cfg.DatabaseServer.Namespace).Str("database", cfg.DatabaseServer.Database).Msg("connected to database")
 			},
 			FnDisconnected: func(url string) {
-				log.Warn().Str("url", cfg.DatabaseServer.Url).Str("namespace", cfg.DatabaseServer.Namespace).Str("database", cfg.DatabaseServer.Database).Msg("disconnected from database, running in degraded state")
+				log.Error().Str("url", cfg.DatabaseServer.Url).Str("namespace", cfg.DatabaseServer.Namespace).Str("database", cfg.DatabaseServer.Database).Msg("disconnected from database, running in degraded state")
 			},
 			FnFailedReconnect: func(url string, nextAttempt time.Duration) {
 				log.Warn().Str("url", cfg.DatabaseServer.Url).Str("namespace", cfg.DatabaseServer.Namespace).Str("database", cfg.DatabaseServer.Database).Msgf("reconnection failed, attempting to reconnect in %0.2f seconds", nextAttempt.Seconds())
@@ -265,7 +265,7 @@ func run(
 	}()
 
 	if err := prototlmSrv.Serve(); err != nil {
-		panic(err)
+		return err
 	}
 
 	// Handle shutdown
