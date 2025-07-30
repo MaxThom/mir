@@ -35,10 +35,10 @@ scrape_configs:
           ["__meta_docker_container_label_com_docker_compose_service"]
         target_label: "compose_service"
 
-      # Keep compose service version, tag
-      - source_labels:
-          ["__meta_docker_container_label_com_docker_compose_version"]
-        target_label: "compose_version"
+      # Keep compose service version, this is the docker version, useless
+      # - source_labels:
+      #     ["__meta_docker_container_label_com_docker_compose_version"]
+      #   target_label: "compose_version"
 
       # Set the __path__ to the container logs
       - source_labels: ["__meta_docker_container_id"]
@@ -48,9 +48,28 @@ scrape_configs:
     pipeline_stages:
       - docker: {}
 
+      - json:
+          expressions:
+            device_id: device_id
+            cmd: cmd
+            srv: srv
+            sub: sub
+            time: time
+
+      - timestamp:
+          source: time
+          format: Unix
+
+      - static_labels:
+          system: mir
+
       - labels:
           service_id:
           service_name:
           compose_service:
           compose_project:
           compose_version:
+          device_id:
+          cmd:
+          srv:
+          sub:

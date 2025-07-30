@@ -161,7 +161,7 @@ func (s *ProtoTlmServer) handleTelemetryStream(msg *mir.Msg, deviceId string, pr
 	if !ok {
 		desc, _, dev, err := s.schStore.GetDeviceSchemaAndDescriptor(deviceId, protoMsgName, false)
 		if err != nil {
-			l.Error().Err(err).Str("deviceId", deviceId).Msg("Failed to retrieve schema from device")
+			l.Error().Err(err).Str("device_id", deviceId).Msg("Failed to retrieve schema from device")
 			datapointErrorCount.Inc()
 			return
 		}
@@ -169,11 +169,11 @@ func (s *ProtoTlmServer) handleTelemetryStream(msg *mir.Msg, deviceId string, pr
 		// If error, means schema is invalid so request new from device
 		if err != nil {
 			// TODO possibly different flow depending on error type
-			l.Warn().Err(err).Str("deviceId", deviceId).Str("protoMsg", protoMsgName).Msg("Failed to generate ingester function, requesting schema from device")
+			l.Warn().Err(err).Str("device_id", deviceId).Str("protoMsg", protoMsgName).Msg("Failed to generate ingester function, requesting schema from device")
 			desc, _, dev, err := s.schStore.GetDeviceSchemaAndDescriptor(deviceId, protoMsgName, true)
 			if err != nil {
 				datapointErrorCount.Inc()
-				l.Error().Err(err).Str("deviceId", deviceId).Msg("Failed to retrieve schema from device")
+				l.Error().Err(err).Str("device_id", deviceId).Msg("Failed to retrieve schema from device")
 				return
 			}
 			fn, err = generateIngesters(desc, deviceId, dev)
@@ -184,7 +184,7 @@ func (s *ProtoTlmServer) handleTelemetryStream(msg *mir.Msg, deviceId string, pr
 			// forever if fail, we need maybe a retry of 2-3 times and else
 			// it creates an alert in prometheus
 		}
-		l.Info().Str("deviceId", deviceId).Msg("Generated ingesters functions from proto schema")
+		l.Info().Str("device_id", deviceId).Msg("Generated ingesters functions from proto schema")
 		s.devWritersLock.Lock()
 		if _, ok := s.devWriters[deviceId]; !ok {
 			s.devWriters[deviceId] = make(map[string]proto_lineprotocol.ProtoBytesToLpFn)

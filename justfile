@@ -54,6 +54,10 @@ install-scp host arch="arm64" os="linux":
 tx:
 	tmuxifier s ./.tmux/mir.session.sh
 
+# Start tmux layouts with mir in docker
+tx-full:
+	tmuxifier s ./.tmux/mir-full.session.sh
+
 # Run supporting infra with docker
 infra:
 	docker compose -f infra/local_support/compose.yaml up --force-recreate
@@ -61,7 +65,7 @@ infra:
 infra-down:
 	docker compose -f infra/local_support/compose.yaml down
 
-# Run infra with docker
+# Run mir and supporting infra with docker
 local:
 	docker compose -f infra/local_mir_support/compose.yaml up --force-recreate
 

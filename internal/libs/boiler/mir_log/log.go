@@ -12,7 +12,7 @@ import (
 
 type LogLevel = string
 
-var isNotPidZero = os.Getpid() != 0
+var isDevPid = os.Getpid() != 0 && os.Getpid() != 1
 
 func LowestLogLevel(a LogLevel, b LogLevel) bool {
 	logLevels := map[LogLevel]int{
@@ -206,7 +206,7 @@ func WithCustomWriters(writers []io.Writer) func(*mirLog) {
 // aka not running in container
 func WithDevOnlyPrettyLogger() func(*mirLog) {
 	return func(l *mirLog) {
-		if isNotPidZero {
+		if isDevPid {
 			out := log.Output(zerolog.ConsoleWriter{
 				Out:     os.Stdout,
 				NoColor: false,

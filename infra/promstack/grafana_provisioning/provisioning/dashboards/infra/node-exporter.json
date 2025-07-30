@@ -23264,7 +23264,7 @@
           },
           "direction": "backward",
           "editorMode": "builder",
-          "expr": "{compose_service=\"node-exporter\"} | label_format level=detected_level",
+          "expr": "{system=\"mir\", compose_service=\"node-exporter\"} | label_format level=detected_level",
           "queryType": "range",
           "refId": "A"
         }
