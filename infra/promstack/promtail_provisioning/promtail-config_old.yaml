@@ -1,0 +1,116 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+  log_level: info
+  # Metrics endpoint available at http://localhost:9080/metrics
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://localhost:3100/loki/api/v1/push
+
+scrape_configs:
+  # Scrape system logs
+  - job_name: system
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: varlogs
+          __path__: /var/log/*log
+
+  - job_name: containers
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: containerlogs
+          __path__: /var/lib/docker/containers/*/*log
+
+    pipeline_stages:
+      - json:
+          expressions:
+            output: log
+            stream: stream
+            attrs:
+      - json:
+          expressions:
+            tag:
+          source: attrs
+      - regex:
+          expression: (?P<image_name>(?:[^|]*[^|])).(?P<container_name>(?:[^|]*[^|])).(?P<image_id>(?:[^|]*[^|])).(?P<container_id>(?:[^|]*[^|]))
+          source: tag
+      - timestamp:
+          format: RFC3339Nano
+          source: time
+      - labels:
+          tag:
+          stream:
+          image_name:
+          container_name:
+          image_id:
+          container_id:
+      - output:
+          source: output
+
+  # Scrape Docker container logs
+  # - job_name: containers
+  #   static_configs:
+  #     - targets:
+  #         - localhost
+  #       labels:
+  #         job: containerlogs
+  #         __path__: /var/lib/docker/containers/*/*log
+
+  #   # Extract container name from the log file path
+  #   relabel_configs:
+  #     - source_labels: ['__path__']
+  #       regex: '/var/lib/docker/containers/([a-z0-9]+)/.*'
+  #       target_label: 'container_id'
+
+  #   # Process Docker JSON logs and extract metadata
+  #   pipeline_stages:
+  #     # Parse the Docker JSON log format
+  #     - json:
+  #         expressions:
+  #           output: log
+  #           stream: stream
+  #           time: time
+  #           attrs:
+
+  #     # Extract container metadata from attrs if present
+  #     - json:
+  #         source: attrs
+  #         expressions:
+  #           tag:
+
+  #     # Parse container name and image from tag
+  #     - regex:
+  #         source: tag
+  #         expression: '(?P<container_name>[^|]+)\|(?P<image_name>[^|]+)'
+
+  #     # Use timestamp from Docker logs
+  #     - timestamp:
+  #         format: RFC3339Nano
+  #         source: time
+
+  #     # Add labels for filtering
+  #     - labels:
+  #         stream:
+  #         container_name:
+  #         image_name:
+  #         container_id:
+
+  #     # Output the actual log message
+  #     - output:
+  #         source: output
+
+  # Scrape Mir services logs if they're logging to files
+  - job_name: mir_services
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: mir
+          __path__: /var/log/mir/*log

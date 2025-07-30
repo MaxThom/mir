@@ -30,6 +30,12 @@ scrape_configs:
   - job_name: "influxdb"
     static_configs:
       - targets: ["localhost:8086"]
+  - job_name: "loki"
+    static_configs:
+      - targets: ["localhost:3100"]
+  - job_name: "promtail"
+    static_configs:
+      - targets: ["localhost:9080"]
   - job_name: "natsio"
     static_configs:
       - targets: ["localhost:7777"]

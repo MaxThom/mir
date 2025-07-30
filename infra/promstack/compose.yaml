@@ -35,8 +35,29 @@ services:
     image: prom/node-exporter:latest
     ports:
       - "9100:9100"
+  loki:
+    image: grafana/loki:latest
+    network_mode: "host"
+    ports:
+      - "3100:3100"
+    volumes:
+      - loki_data:/loki
+      - ./loki_provisioning:/etc/loki
+    command: -config.file=/etc/loki/loki-config.yaml
+  promtail:
+    image: grafana/promtail:latest
+    network_mode: "host"
+    ports:
+      - "9080:9080"
+    volumes:
+      - ./promtail_provisioning:/etc/promtail
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: -config.file=/etc/promtail/promtail-config.yaml
 
 volumes:
   grafana_data:
   prometheus_data:
   alertmanager_data:
+  loki_data:

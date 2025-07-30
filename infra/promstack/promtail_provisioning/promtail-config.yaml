@@ -1,0 +1,56 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+  log_level: info
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://localhost:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+
+    relabel_configs:
+      # Keep container ID, big hash
+      - source_labels: ["__meta_docker_container_id"]
+        target_label: "service_id"
+
+      # Keep container name, full container name
+      - source_labels: ["__meta_docker_container_name"]
+        regex: "/(.*)"
+        target_label: "service_name"
+
+      # Keep compose project name, eg: local_support
+      - source_labels:
+          ["__meta_docker_container_label_com_docker_compose_project"]
+        target_label: "compose_project"
+
+      # Keep compose service name, eg: alertmanager
+      - source_labels:
+          ["__meta_docker_container_label_com_docker_compose_service"]
+        target_label: "compose_service"
+
+      # Keep compose service version, tag
+      - source_labels:
+          ["__meta_docker_container_label_com_docker_compose_version"]
+        target_label: "compose_version"
+
+      # Set the __path__ to the container logs
+      - source_labels: ["__meta_docker_container_id"]
+        target_label: "__path__"
+        replacement: "/var/lib/docker/containers/$1/$1-json.log"
+
+    pipeline_stages:
+      - docker: {}
+
+      - labels:
+          service_id:
+          service_name:
+          compose_service:
+          compose_project:
+          compose_version:
