@@ -27,7 +27,7 @@
         "type": "prometheus",
         "uid": "mir-prometheus"
       },
-      "description": "Shows if Loki is up and running",
+      "description": "Shows if Promtail is up and running",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -95,14 +95,14 @@
             "uid": "mir-prometheus"
           },
           "editorMode": "code",
-          "expr": "up{job=\"loki\"}",
+          "expr": "up{job=\"promtail\"}",
           "instant": false,
           "legendFormat": "{{instance}}",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Loki Status",
+      "title": "Promtail Status",
       "type": "stat"
     },
     {
@@ -110,7 +110,7 @@
         "type": "prometheus",
         "uid": "mir-prometheus"
       },
-      "description": "Rate of log lines ingested per second",
+      "description": "Number of log entries sent per second",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -187,14 +187,14 @@
             "uid": "mir-prometheus"
           },
           "editorMode": "code",
-          "expr": "rate(loki_ingester_lines_received_total[$__rate_interval])",
+          "expr": "rate(promtail_sent_entries_total[$__rate_interval])",
           "instant": false,
           "legendFormat": "{{job}}",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Ingestion Rate (lines/sec)",
+      "title": "Log Entries Sent/sec",
       "type": "timeseries"
     },
     {
@@ -202,7 +202,7 @@
         "type": "prometheus",
         "uid": "mir-prometheus"
       },
-      "description": "Number of active streams",
+      "description": "Number of active targets being scraped",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -215,14 +215,6 @@
               {
                 "color": "green",
                 "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 1000
-              },
-              {
-                "color": "red",
-                "value": 5000
               }
             ]
           },
@@ -238,7 +230,7 @@
       },
       "id": 3,
       "options": {
-        "colorMode": "background",
+        "colorMode": "value",
         "graphMode": "area",
         "justifyMode": "center",
         "orientation": "auto",
@@ -258,14 +250,14 @@
             "uid": "mir-prometheus"
           },
           "editorMode": "code",
-          "expr": "loki_ingester_memory_streams",
+          "expr": "promtail_targets_active_total",
           "instant": false,
-          "legendFormat": "Active Streams",
+          "legendFormat": "Active Targets",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Active Streams",
+      "title": "Active Targets",
       "type": "stat"
     },
     {
@@ -273,7 +265,7 @@
         "type": "prometheus",
         "uid": "mir-prometheus"
       },
-      "description": "Total bytes ingested",
+      "description": "Total bytes sent to Loki",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -321,14 +313,14 @@
             "uid": "mir-prometheus"
           },
           "editorMode": "code",
-          "expr": "loki_ingester_bytes_received_total",
+          "expr": "promtail_sent_bytes_total",
           "instant": false,
           "legendFormat": "Total Bytes",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Total Bytes Ingested",
+      "title": "Total Bytes Sent",
       "type": "stat"
     },
     {
@@ -336,7 +328,7 @@
         "type": "prometheus",
         "uid": "mir-prometheus"
       },
-      "description": "Number of chunks in memory",
+      "description": "Number of streams currently active",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -352,11 +344,11 @@
               },
               {
                 "color": "yellow",
-                "value": 1000
+                "value": 100
               },
               {
                 "color": "red",
-                "value": 5000
+                "value": 500
               }
             ]
           },
@@ -392,14 +384,14 @@
             "uid": "mir-prometheus"
           },
           "editorMode": "code",
-          "expr": "loki_ingester_chunks_memory",
+          "expr": "promtail_stream_lag_seconds_count",
           "instant": false,
-          "legendFormat": "Chunks",
+          "legendFormat": "Streams",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Chunks in Memory",
+      "title": "Active Streams",
       "type": "stat"
     },
     {
@@ -407,7 +399,112 @@
         "type": "prometheus",
         "uid": "mir-prometheus"
       },
-      "description": "Loki query performance",
+      "description": "Bytes read vs bytes sent per second",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "tooltip": false,
+              "viz": false,
+              "legend": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "binBps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "id": 6,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "mir-prometheus"
+          },
+          "editorMode": "code",
+          "expr": "rate(promtail_read_bytes_total[$__rate_interval])",
+          "instant": false,
+          "legendFormat": "Bytes Read",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "mir-prometheus"
+          },
+          "editorMode": "code",
+          "expr": "rate(promtail_sent_bytes_total[$__rate_interval])",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "Bytes Sent",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "Throughput (bytes/sec)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "mir-prometheus"
+      },
+      "description": "HTTP request duration to Loki",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -461,111 +558,6 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 8
-      },
-      "id": 6,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "mir-prometheus"
-          },
-          "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum(rate(loki_request_duration_seconds_bucket{job=\"loki\",route=~\"loki_api_v1_series|loki_api_v1_query|loki_api_v1_query_range|loki_api_v1_labels|loki_api_v1_label_values\"}[$__rate_interval])) by (le, route))",
-          "instant": false,
-          "legendFormat": "{{route}} p99",
-          "range": true,
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "mir-prometheus"
-          },
-          "editorMode": "code",
-          "expr": "histogram_quantile(0.50, sum(rate(loki_request_duration_seconds_bucket{job=\"loki\",route=~\"loki_api_v1_series|loki_api_v1_query|loki_api_v1_query_range|loki_api_v1_labels|loki_api_v1_label_values\"}[$__rate_interval])) by (le, route))",
-          "hide": false,
-          "instant": false,
-          "legendFormat": "{{route}} p50",
-          "range": true,
-          "refId": "B"
-        }
-      ],
-      "title": "Query Latency",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "mir-prometheus"
-      },
-      "description": "HTTP request rate by status code",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "tooltip": false,
-              "viz": false,
-              "legend": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "normal"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "reqps"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
         "x": 12,
         "y": 8
       },
@@ -589,21 +581,132 @@
             "uid": "mir-prometheus"
           },
           "editorMode": "code",
-          "expr": "sum by (status_code) (rate(loki_request_duration_seconds_count{job=\"loki\"}[$__rate_interval]))",
+          "expr": "histogram_quantile(0.99, sum(rate(promtail_request_duration_seconds_bucket[$__rate_interval])) by (le, status_code))",
           "instant": false,
-          "legendFormat": "{{status_code}}",
+          "legendFormat": "p99 {{status_code}}",
           "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "mir-prometheus"
+          },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.50, sum(rate(promtail_request_duration_seconds_bucket[$__rate_interval])) by (le, status_code))",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "p50 {{status_code}}",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "Request Duration to Loki",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "mir-prometheus"
+      },
+      "description": "Files being tailed by path",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Path"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 600
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      },
+      "id": 8,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": ["sum"],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "10.2.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "mir-prometheus"
+          },
+          "editorMode": "code",
+          "expr": "promtail_file_bytes_total",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "__auto",
+          "range": false,
           "refId": "A"
         }
       ],
-      "title": "Request Rate by Status",
-      "type": "timeseries"
+      "title": "Files Being Tailed",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "job": true,
+              "__name__": true,
+              "instance": true
+            },
+            "indexByName": {},
+            "renameByName": {
+              "Value": "Bytes Read",
+              "path": "Path"
+            }
+          }
+        }
+      ],
+      "type": "table"
     }
   ],
   "refresh": "10s",
   "schemaVersion": 38,
   "style": "dark",
-  "tags": ["mir", "mir-infra", "loki"],
+  "tags": ["mir", "mir-infra", "promtail"],
   "templating": {
     "list": []
   },
@@ -613,8 +716,8 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "Loki",
-  "uid": "loki-metrics",
+  "title": "Promtail",
+  "uid": "promtail-metrics",
   "version": 1,
   "weekStart": ""
 }
