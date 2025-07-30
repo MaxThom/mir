@@ -23227,6 +23227,51 @@
       ],
       "title": "Node Exporter",
       "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "mir-loki"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 34
+      },
+      "id": 800,
+      "options": {
+        "dedupStrategy": "none",
+        "enableInfiniteScrolling": true,
+        "enableLogDetails": true,
+        "prettifyLogMessage": true,
+        "showCommonLabels": true,
+        "showLabels": false,
+        "showTime": false,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      },
+      "pluginVersion": "12.1.0-16509090662",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "mir-loki"
+          },
+          "direction": "backward",
+          "editorMode": "builder",
+          "expr": "{compose_service=\"node-exporter\"} | label_format level=detected_level",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Logs",
+      "transparent": true,
+      "type": "logs"
     }
   ],
   "refresh": "1m",
