@@ -13,6 +13,7 @@
 - [ ] Road to Production
   - [ ] Grafana Dashboard for eventstore
   - [ ] HelmChart
+  - [ ] Compose release
   - [ ] GrafanaLoki
   - [x] Docker container
     - [ ] Simple/Multi for device
@@ -25,14 +26,15 @@
     - [x] new command to generate config of device
     - [x] serve up with Mir
   - [ ] autoreconnect
-    - [ ] nats
+    - [x] nats
       - [x] nats
+      - [ ] switch to jetstream for tlm
     - [x] on startup
       - [x] surreal
       - [x] influx
     - [ ] during
       - [ ] surreal
-        - [ ] running in degraded state
+        - [x] running in degraded state
         - [x] core, doesnt work anymore
         - [x] cfg, list can work
         - [x] cmd, can work if same schema
