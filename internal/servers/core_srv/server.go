@@ -172,7 +172,7 @@ func (s *CoreServer) createDeviceSub(msg *mir.Msg, clientId string, d mir_v1.Dev
 
 	// Publish created events
 	if err := publishDeviceCreateEvent(s.m, msg, newDev); err != nil {
-		l.Warn().Err(err).Str("deviceId", newDev.Spec.DeviceId).Msg("error occure while publishing device created event")
+		l.Warn().Err(err).Str("device_id", newDev.Spec.DeviceId).Msg("error occure while publishing device created event")
 	}
 
 	return newDev, nil
@@ -251,7 +251,7 @@ func (s *CoreServer) updateDeviceSub(msg *mir.Msg, clientId string, t mir_v1.Dev
 	// Publish update events
 	for _, d := range respDb {
 		if err := publishDeviceUpdateEvent(s.m, msg, d); err != nil {
-			l.Warn().Err(err).Str("deviceId", d.Spec.DeviceId).Msg("error occure while publishing device updated event")
+			l.Warn().Err(err).Str("device_id", d.Spec.DeviceId).Msg("error occure while publishing device updated event")
 		}
 	}
 
@@ -275,7 +275,7 @@ func (s *CoreServer) deleteDeviceSub(msg *mir.Msg, clientId string, t mir_v1.Dev
 	// Publish delete events
 	for _, d := range devList {
 		if err := publishDeviceDeleteEvent(s.m, msg, d); err != nil {
-			l.Warn().Err(err).Str("deviceId", d.Spec.DeviceId).Msg("error occure while publishing device deleted event")
+			l.Warn().Err(err).Str("device_id", d.Spec.DeviceId).Msg("error occure while publishing device deleted event")
 		}
 	}
 	return devList, nil
@@ -380,7 +380,7 @@ func (s *CoreServer) hearthbeatSub(msg *mir.Msg, deviceId string) {
 			DeviceId: deviceId,
 		}))
 		if err != nil {
-			l.Error().Err(err).Str("deviceId", deviceId).Msg("could not automaticly provision new device")
+			l.Error().Err(err).Str("device_id", deviceId).Msg("could not automaticly provision new device")
 			msg.Ack()
 			return
 		}
