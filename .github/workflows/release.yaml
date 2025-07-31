@@ -10,11 +10,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build Assets
+      - name: Build Binary Assets
         run: ./scripts/release_bundle.sh ${{ github.event.release.tag_name }}
+
+      - name: Build Compose Bundle
+        run: ./scripts/release_compose.sh ${{ github.event.release.tag_name }}
 
       - name: Upload Assets
         uses: softprops/action-gh-release@v1
         with:
           files: |
             .release/*
+            .release-compose/*
