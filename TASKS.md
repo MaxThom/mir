@@ -11,9 +11,10 @@
 - [ ] Search by wildcard
 - [ ] MCP Server for Mir
 - [ ] Road to Production
+  - [ ] device security with nats
   - [x] Grafana Dashboard for eventstore
   - [ ] HelmChart
-  - [ ] Compose release
+  - [x] Compose release
   - [x] GrafanaLoki
   - [x] Docker container
     - [ ] Simple/Multi for device
@@ -74,9 +75,9 @@
   - [x] Dashboards
   - [ ] Alerts & Alarm with Grafana and Influx
   - [x] Dashboards with influx/surreal/grafana data
-  - [ ] Grafana Loki for logs
+  - [x] Grafana Loki for logs
 - [ ] Productions
-  - [ ] Docker
+  - [x] Docker
   - [ ] Template container for device sdk
   - [ ] Kubernetes/Helm, helm in the code and pushing chart to a registry
   - [ ] One deployment in private cluster
@@ -86,7 +87,7 @@
   - [x] Tests
   - [x] CLI
   - [x] watch events
-  - [ ] dashboard
+  - [x] dashboard
 - [ ] DeviceSDK
   - [x] Msg store
   - [ ] Host metrics https://github.com/shirou/gopsutil

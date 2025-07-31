@@ -6,6 +6,7 @@ tmp/
 .tmp/
 book/book/
 .release/
+.release-compose/
 .idea/
 scratch/
 history.txt
