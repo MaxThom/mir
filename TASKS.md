@@ -11,10 +11,10 @@
 - [ ] Search by wildcard
 - [ ] MCP Server for Mir
 - [ ] Road to Production
-  - [ ] Grafana Dashboard for eventstore
+  - [x] Grafana Dashboard for eventstore
   - [ ] HelmChart
   - [ ] Compose release
-  - [ ] GrafanaLoki
+  - [x] GrafanaLoki
   - [x] Docker container
     - [ ] Simple/Multi for device
     - [x] Multibuild

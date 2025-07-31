@@ -43,16 +43,16 @@ var (
 		Name:      "request_error_total",
 		Help:      "Number of error request for event store routes",
 	}, []string{"route"})
-	eventCaptureTotal = metrics.NewCounter(prometheus.CounterOpts{
+	eventCaptureTotal = metrics.NewCounterVec(prometheus.CounterOpts{
 		Subsystem: "eventstore",
 		Name:      "event_capture_total",
 		Help:      "Number of events captured by the system",
-	})
-	eventCaptureErrorTotal = metrics.NewCounter(prometheus.CounterOpts{
+	}, []string{"event"})
+	eventCaptureErrorTotal = metrics.NewCounterVec(prometheus.CounterOpts{
 		Subsystem: "eventstore",
 		Name:      "event_capture_error_total",
 		Help:      "Number of events captured by the system in error",
-	})
+	}, []string{"event"})
 
 	l zerolog.Logger
 )
@@ -128,10 +128,10 @@ func (s *EventStoreServer) deleteEventsSub(msg *mir.Msg, clientId string, req mi
 
 func (s *EventStoreServer) streamEventsSub(msg *mir.Msg, subjectId string, req mir_v1.EventSpec, e error) {
 	l.Info().Any("req", req).Str("subject", msg.Subject).Msg("event received")
-	eventCaptureTotal.Inc()
+	eventCaptureTotal.WithLabelValues(req.Reason).Inc()
 	defer msg.Ack()
 	if e != nil {
-		eventCaptureErrorTotal.Inc()
+		eventCaptureErrorTotal.WithLabelValues(req.Reason).Inc()
 		l.Error().Err(e).Msg("error occure while streaming event")
 		return
 	}
@@ -175,7 +175,7 @@ func (s *EventStoreServer) streamEventsSub(msg *mir.Msg, subjectId string, req m
 
 	_, err = s.store.CreateEvent(event)
 	if err != nil {
-		eventCaptureErrorTotal.Inc()
+		eventCaptureErrorTotal.WithLabelValues(req.Reason).Inc()
 		l.Error().Err(err).Msg("error occure while streaming event")
 		return
 	}
