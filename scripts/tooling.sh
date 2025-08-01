@@ -32,12 +32,16 @@ echo "- buf"
 go install github.com/bufbuild/buf/cmd/buf@latest
 echo "- badger"
 go install github.com/dgraph-io/badger/v4/badger@latest
+echo "- natscli"
+go install github.com/nats-io/natscli/nats@latest
 echo "- mdbook"
 cargo install mdbook@0.4.40
 echo "- just"
 cargo install just
 echo "- surreal"
 curl -sSf https://install.surrealdb.com | sh
+echo "- nsc"
+curl -L https://raw.githubusercontent.com/nats-io/nsc/master/install.py | python
 sudo mv ~/.surrealdb/surreal /usr/local/bin
 echo -e '\n-- Post Install --'
 echo '  ? Don''t forget to append go binaries path to path if not set (export PATH=$PATH:$(go env GOPATH)/bin)'

@@ -4128,55 +4128,55 @@
           ],
           "title": "Disk Space Used",
           "type": "timeseries"
-        },
+        }
+      ],
+      "title": "Metrics",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "mir-loki"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 13,
+        "w": 24,
+        "x": 0,
+        "y": 39
+      },
+      "id": 70,
+      "options": {
+        "dedupStrategy": "none",
+        "enableInfiniteScrolling": true,
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": true,
+        "showLabels": false,
+        "showTime": false,
+        "sortOrder": "Ascending",
+        "wrapLogMessage": true
+      },
+      "pluginVersion": "12.1.0-16509090662",
+      "targets": [
         {
           "datasource": {
             "type": "loki",
             "uid": "mir-loki"
           },
-          "fieldConfig": {
-            "defaults": {},
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 13,
-            "w": 24,
-            "x": 0,
-            "y": 39
-          },
-          "id": 70,
-          "options": {
-            "dedupStrategy": "none",
-            "enableInfiniteScrolling": true,
-            "enableLogDetails": true,
-            "prettifyLogMessage": false,
-            "showCommonLabels": true,
-            "showLabels": false,
-            "showTime": false,
-            "sortOrder": "Descending",
-            "wrapLogMessage": true
-          },
-          "pluginVersion": "12.1.0-16509090662",
-          "targets": [
-            {
-              "datasource": {
-                "type": "loki",
-                "uid": "mir-loki"
-              },
-              "direction": "backward",
-              "editorMode": "builder",
-              "expr": "{system=\"mir\", compose_service=\"mir\"} | cmd = `mir`",
-              "queryType": "range",
-              "refId": "A"
-            }
-          ],
-          "title": "Logs",
-          "transparent": true,
-          "type": "logs"
+          "direction": "backward",
+          "editorMode": "builder",
+          "expr": "{system=\"mir\", compose_service=\"mir\"} | cmd = `mir`",
+          "queryType": "range",
+          "refId": "A"
         }
       ],
-      "title": "Metrics",
-      "type": "row"
+      "title": "Logs",
+      "transparent": true,
+      "type": "logs"
     }
   ],
   "preload": false,
