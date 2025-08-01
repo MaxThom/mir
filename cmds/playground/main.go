@@ -16,6 +16,7 @@ type Event struct {
 }
 
 func main() {
+
 	e := Event{
 		Name:       "Max",
 		FamilyName: "Thom",
