@@ -1,0 +1,110 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/maxthom/mir
+  pullPolicy: IfNotPresent
+  tag: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+service:
+  type: NodePort # [ClusterIP|NodePort]
+  port: 80 # Externally exposed ports
+  targetPort: 3015 # Internal port Mir binds to
+  nodePort: 30015 # Fixed NodePort (30000-32767), comment out for random assignment
+
+# Use secret to pass any config as environment variables, mainly passwords and tokens.
+# Refer to chart ./secret/secret.yaml
+# eg:
+#   type: Opaque
+#   stringData:
+#     MIR__SURREAL__PASSWORD: "root"
+#     MIR__INFLUX__TOKEN: "mir-operator-token"
+secretRef: ""
+config:
+  mir:
+    url: "nats://localhost:4222"
+    logLevel: "info"
+  surreal:
+    url: "ws://localhost:8000/rpc"
+    namespace: "global"
+    database: "mir"
+    user: "root"
+    password: # "root"
+  influx:
+    url: "http://localhost:8086/"
+    token: # "mir-operator-token"
+    org: "Mir"
+    bucket: "mir"
+    batchSize: 1000
+    flushInterval: 1000
+    retryBufferLimit: 1073741824
+    gzip: false
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+resources: {}
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+livenessProbe:
+  httpGet:
+    path: /alive
+    port: http
+readinessProbe:
+  httpGet:
+    path: /ready
+    port: http
+
+serviceAccount:
+  create: true
+  automount: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+volumes: []
+# - name: foo
+#   secret:
+#     secretName: mysecret
+#     optional: false
+
+volumeMounts: []
+# - name: foo
+#   mountPath: "/etc/foo"
+#   readOnly: true
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
