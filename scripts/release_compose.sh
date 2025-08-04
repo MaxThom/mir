@@ -47,12 +47,12 @@ mkdir -p $TEMP_FOLDER/mir-compose
 
 # Copy the required directories
 echo "Copying compose files..."
-cp -r infra/local_mir_support $TEMP_FOLDER/mir-compose/
-cp -r infra/surrealdb $TEMP_FOLDER/mir-compose/
-cp -r infra/influxdb $TEMP_FOLDER/mir-compose/
-cp -r infra/promstack $TEMP_FOLDER/mir-compose/
-cp -r infra/mir $TEMP_FOLDER/mir-compose/
-cp -r infra/natsio $TEMP_FOLDER/mir-compose/
+cp -r infra/compose/local_mir_support $TEMP_FOLDER/mir-compose/
+cp -r infra/compose/surrealdb $TEMP_FOLDER/mir-compose/
+cp -r infra/compose/influxdb $TEMP_FOLDER/mir-compose/
+cp -r infra/compose/promstack $TEMP_FOLDER/mir-compose/
+cp -r infra/compose/mir $TEMP_FOLDER/mir-compose/
+cp -r infra/compose/natsio $TEMP_FOLDER/mir-compose/
 
 # Update MIR_VERSION in the copied .env file
 ENV_FILE="$TEMP_FOLDER/mir-compose/local_mir_support/.env"

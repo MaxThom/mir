@@ -60,17 +60,17 @@ tx-full:
 
 # Run supporting infra with docker
 infra:
-	docker compose -f infra/local_support/compose.yaml up --force-recreate
+	docker compose -f infra/compose/local_support/compose.yaml up --force-recreate
 
 infra-down:
-	docker compose -f infra/local_support/compose.yaml down
+	docker compose -f infra/compose/local_support/compose.yaml down
 
 # Run mir and supporting infra with docker
 local:
-	docker compose -f infra/local_mir_support/compose.yaml up --force-recreate
+	docker compose -f infra/compose/local_mir_support/compose.yaml up --force-recreate
 
 local-down:
-	docker compose -f infra/local_mir_support/compose.yaml down
+	docker compose -f infra/compose/local_mir_support/compose.yaml down
 
 docker-kill:
     docker stop "$(docker ps -a -q)"
@@ -87,11 +87,11 @@ docker-run entry="serve":
 
 # Run docker Mir with a config file
 docker-run-config entry="serve":
-    docker run -v $(pwd)/infra/mir/local-config.yaml:/home/mir/.config/mir/mir.yaml --network host mir:latest {{entry}}
+    docker run -v $(pwd)/infra/compose/mir/local-config.yaml:/home/mir/.config/mir/mir.yaml --network host mir:latest {{entry}}
 
 # Run docker Mir and enter the container
 docker-run-exec:
-    docker run -v $(pwd)/infra/mir/local-config.yaml:/home/mir/.config/mir/mir.yaml --network host -it --entrypoint /bin/sh mir:latest
+    docker run -v $(pwd)/infra/compose/mir/local-config.yaml:/home/mir/.config/mir/mir.yaml --network host -it --entrypoint /bin/sh mir:latest
 
 
 # Run Mir book for local documentation
