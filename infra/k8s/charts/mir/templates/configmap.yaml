@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "mir.fullname" . }}-config
+  labels:
+    {{- include "mir.labels" . | nindent 4 }}
+data:
+  mir.yaml: |
+    mir:
+      url: {{ .Values.config.mir.url | quote }}
+      logLevel: {{ .Values.config.mir.logLevel | quote }}
+      httpPort: {{ .Values.service.targetPort }}
+    surreal:
+      url: {{ .Values.config.surreal.url | quote }}
+      namespace: {{ .Values.config.surreal.namespace | quote }}
+      database: {{ .Values.config.surreal.database | quote }}
+      user: {{ .Values.config.surreal.user | quote }}
+      password: {{ .Values.config.surreal.password | quote }}
+    influx:
+      url: {{ .Values.config.influx.url | quote }}
+      token: {{ .Values.config.influx.token | quote }}
+      org: {{ .Values.config.influx.org | quote }}
+      bucket: {{ .Values.config.influx.bucket | quote }}
+      batchSize: {{ .Values.config.influx.batchSize }}
+      flushInterval: {{ .Values.config.influx.flushInterval }}
+      retryBufferLimit: {{ .Values.config.influx.retryBufferLimit }}
+      gzip: {{ .Values.config.influx.gzip }}

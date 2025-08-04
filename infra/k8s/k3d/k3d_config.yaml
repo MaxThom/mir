@@ -1,0 +1,21 @@
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+#name: mir-local-dev
+servers: 1
+agents: 0
+options:
+  kubeconfig:
+    updateDefaultKubeconfig: true
+    switchCurrentContext: true
+ports:
+  # Map localhost:3015 to NodePort 30015 (for Mir service)
+  - port: 30015:30015
+    nodeFilters:
+      - server:0
+registries:
+  config: |
+    configs:
+      "ghcr.io":
+        auth:
+          username: maxthom
+          password: <token>
