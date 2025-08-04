@@ -21,7 +21,7 @@ jobs:
         run: go build -v ./...
 
       - name: Set up test environment
-        run: docker compose -f infra/ci/compose.yaml up -d --wait
+        run: docker compose -f infra/compose/ci/compose.yaml up -d --wait
 
       - name: Set up test services
         run: ./scripts/ci_integration_tests.sh

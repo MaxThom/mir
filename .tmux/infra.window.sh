@@ -1,6 +1,6 @@
 # Set window root path. Default is `$session_root`.
 # Must be called before `new_window`.
-window_root "$PWD/infra/local_support"
+window_root "$PWD/infra/compose/local_support"
 
 # Create new window. If no argument is given, window name will be based on
 # layout file name.

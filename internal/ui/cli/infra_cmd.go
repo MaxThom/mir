@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"path"
 
-	"github.com/maxthom/mir/infra"
+	infra "github.com/maxthom/mir/infra/compose"
 )
 
 type InfraCmd struct {
