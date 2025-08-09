@@ -1,0 +1,20 @@
+{{- if and .Values.nats.enabled .Values.nats.ingress.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "mir.fullname" . }}-nats-monitor
+  labels:
+    {{- include "mir.labels" . | nindent 4 }}
+    app.kubernetes.io/component: nats-monitor
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8222
+      targetPort: 8222
+      protocol: TCP
+      name: monitor
+  selector:
+    app.kubernetes.io/name: nats
+    app.kubernetes.io/component: nats
+    app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}

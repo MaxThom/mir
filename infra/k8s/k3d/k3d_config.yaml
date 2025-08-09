@@ -2,20 +2,24 @@ apiVersion: k3d.io/v1alpha5
 kind: Simple
 #name: mir-local-dev
 servers: 1
-agents: 0
+agents: 3
 options:
   kubeconfig:
     updateDefaultKubeconfig: true
     switchCurrentContext: true
 ports:
-  # Map localhost:3015 to NodePort 30015 (for Mir service)
-  - port: 30015:30015
+  # Traefik
+  - port: 8081:80
     nodeFilters:
-      - server:0
+      - loadbalancer
+  # Nats
+  - port: 31422:31422
+    nodeFilters:
+      - loadbalancer
 registries:
   config: |
     configs:
       "ghcr.io":
         auth:
-          username: maxthom
+          username: <user>
           password: <token>

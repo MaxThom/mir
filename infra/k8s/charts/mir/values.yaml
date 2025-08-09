@@ -10,7 +10,7 @@ nameOverride: ""
 fullnameOverride: ""
 
 service:
-  type: NodePort # [ClusterIP|NodePort]
+  type: ClusterIP # [ClusterIP|NodePort|LoadBalancer]
   port: 80 # Externally exposed ports
   targetPort: 3015 # Internal port Mir binds to
   nodePort: 30015 # Fixed NodePort (30000-32767), comment out for random assignment
@@ -25,17 +25,18 @@ service:
 secretRef: ""
 config:
   mir:
-    url: "nats://localhost:4222"
+    # NATS URL - automatically set when nats.enabled=true, otherwise use this value
+    url: "nats://external-nats:4222"  # Used only when nats.enabled=false
     logLevel: "info"
   surreal:
     url: "ws://localhost:8000/rpc"
     namespace: "global"
     database: "mir"
     user: "root"
-    password: # "root"
+    password: "root"
   influx:
     url: "http://localhost:8086/"
-    token: # "mir-operator-token"
+    token: "mir-operator-token"
     org: "Mir"
     bucket: "mir"
     batchSize: 1000
@@ -48,14 +49,14 @@ ingress:
   className: ""
   annotations: {}
   hosts:
-    - host: chart-example.local
+    - host: mir-local
       paths:
         - path: /
-          pathType: ImplementationSpecific
+          pathType: Prefix
   tls: []
   #  - secretName: chart-example-tls
   #    hosts:
-  #      - chart-example.local
+  #      - mir-local
 
 resources: {}
   # limits:
@@ -108,3 +109,36 @@ volumeMounts: []
 nodeSelector: {}
 tolerations: []
 affinity: {}
+
+# NATS subchart configuration
+nats:
+  enabled: true
+  ingress:
+    enabled: false
+    className: ""  # "[nginx|traefik]"
+    annotations: {}
+    host: nats-local
+    path: /
+    pathType: Prefix
+    tls: []
+    #  - secretName: nats-tls
+    #    hosts:
+    #      - nats-local
+  config:
+    cluster:
+      enabled: true
+      replicas: 3
+    jetstream:
+      enabled: true
+      fileStore:
+        pvc:
+          size: 10Gi
+  podTemplate:
+    topologySpreadConstraints:
+      kubernetes.io/hostname:
+        maxSkew: 1
+        whenUnsatisfiable: DoNotSchedule
+  promExporter:
+    enabled: true
+  podMonitor:
+    enabled: false

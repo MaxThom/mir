@@ -20,3 +20,21 @@
   echo "Visit http://127.0.0.1:8080 to use your application"
   kubectl --namespace {{ .Release.Namespace }} port-forward $POD_NAME 8080:$CONTAINER_PORT
 {{- end }}
+
+2. NATS Configuration:
+{{- if .Values.nats.enabled }}
+   NATS has been deployed as a subchart with the following configuration:
+   - Service: {{ include "mir.fullname" . }}-nats:4222
+   - JetStream: {{ .Values.nats.config.jetstream.enabled }}
+   - Monitor Port: {{ .Values.nats.config.monitor.port }}
+   
+   To access NATS monitoring:
+   kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "mir.fullname" . }}-nats 8222:8222
+   Then visit http://localhost:8222
+{{- else }}
+   NATS subchart is disabled. Mir is configured to use external NATS at: {{ .Values.config.mir.url }}
+   Make sure your external NATS instance is accessible.
+{{- end }}
+
+3. To verify Mir is connected to NATS:
+   kubectl --namespace {{ .Release.Namespace }} logs -l "app.kubernetes.io/name={{ include "mir.name" . }},app.kubernetes.io/instance={{ .Release.Name }}" | grep -i nats
