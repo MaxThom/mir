@@ -33,8 +33,10 @@ kubectl get svc
 ```sh
 # sudo nvim /etc/hosts
 
-127.0.0.1 localhost nats-local mir-local
+127.0.0.1 localhost nats-local mir-local surreal-local
 ```
+
+**Note on SurrealDB Persistence**: When using persistent storage, the PVC name in values must match the pattern `{release-name}-surrealdb-data`. For example, if installing with `helm install mir`, use `mir-surrealdb-data` as the claimName.
 
 ## Uninstall
 

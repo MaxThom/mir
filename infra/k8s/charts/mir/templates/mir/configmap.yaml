@@ -16,18 +16,16 @@ data:
       httpPort: {{ .Values.service.targetPort }}
     surreal:
       {{- if .Values.surrealdb.enabled }}
-      {{- if .Values.surrealdb.external.enabled }}
-      url: {{ .Values.surrealdb.external.tikvUrl | quote }}
-      {{- else }}
-      url: "ws://{{ include "mir.fullname" . }}-surrealdb:8000/rpc"
-      {{- end }}
+      url: "ws://{{ include "mir.fullname" . }}-surrealdb:{{ .Values.surrealdb.service.port }}/rpc"
+      user: {{ .Values.surrealdb.surrealdb.initial_user | quote }}
+      password: {{ .Values.surrealdb.surrealdb.initial_pass | quote }}
       {{- else }}
       url: {{ .Values.config.surreal.url | quote }}
+      user: {{ .Values.config.surreal.user | quote }}
+      password: {{ .Values.config.surreal.password | quote }}
       {{- end }}
       namespace: {{ .Values.config.surreal.namespace | quote }}
       database: {{ .Values.config.surreal.database | quote }}
-      user: {{ .Values.config.surreal.user | quote }}
-      password: {{ .Values.config.surreal.password | quote }}
     influx:
       url: {{ .Values.config.influx.url | quote }}
       token: {{ .Values.config.influx.token | quote }}
