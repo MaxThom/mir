@@ -17,6 +17,7 @@
     - [x] Mir
     - [x] Nats
     - [ ] Surreal
+      - [ ] Test with CLI, cant change url
     - [ ] Influx
     - [ ] PromStack
   - [x] Compose release

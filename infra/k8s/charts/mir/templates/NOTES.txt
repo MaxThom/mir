@@ -27,7 +27,7 @@
    - Service: {{ include "mir.fullname" . }}-nats:4222
    - JetStream: {{ .Values.nats.config.jetstream.enabled }}
    - Monitor Port: {{ .Values.nats.config.monitor.port }}
-   
+
    To access NATS monitoring:
    kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "mir.fullname" . }}-nats 8222:8222
    Then visit http://localhost:8222
@@ -43,17 +43,13 @@
 {{- if .Values.surrealdb.enabled }}
    SurrealDB has been deployed as a subchart with the following configuration:
    - Service: {{ include "mir.fullname" . }}-surrealdb:8000
-   {{- if .Values.surrealdb.external.enabled }}
-   - Storage Backend: External TiKV at {{ .Values.surrealdb.external.tikvUrl }}
-   {{- else }}
    - Storage Backend: File-based (surrealkv) with {{ .Values.surrealdb.persistence.size }} persistent volume
-   {{- end }}
    - Authentication: {{ if .Values.surrealdb.surrealdb.auth }}Enabled{{ else }}Disabled (enable after initial setup){{ end }}
-   
+
    To access SurrealDB Studio:
    kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "mir.fullname" . }}-surrealdb 8000:8000
    Then visit http://localhost:8000
-   
+
    {{- if .Values.surrealdb.ingress.enabled }}
    Or access via ingress at: http://{{ .Values.surrealdb.ingress.host }}
    {{- end }}

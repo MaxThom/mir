@@ -146,49 +146,45 @@ nats:
 # SurrealDB subchart configuration
 surrealdb:
   enabled: true
+  image:
+    tag: "v2.3.7"
   # Storage backend configuration
   # For development/small deployments: use file-based storage with PVC
   # For production with TiKV: disable subchart and use external.tikvUrl
   surrealdb:
-    path: "surrealkv:/data/mydatabase.db"  # File-based storage (default)
-    # path: "memory"  # Memory storage (ephemeral, for testing only)
-    auth: false  # Enable after initial setup
-    user: "root"
-    pass: "root"
+    # Configure this if using external TiKV cluster instead of embedded SurrealDB
+    # Requires TiDB operator to be installed separately. See (https://surrealdb.com/docs/surrealdb/deployment/kubernetes)
+    # path: "tikv://tikv-pd:2379"
+    path: "surrealkv:/data/mir.db"  # File-based storage
+    initial_user: "root"
+    initial_pass: "root"
+    log: info
   persistence:
     enabled: true
     size: 10Gi
-    storageClass: ""  # Use default storage class
+    storageClass: ""
     accessMode: ReadWriteOnce
   service:
     type: ClusterIP
     port: 8000
-  resources:
-    requests:
-      cpu: 500m
-      memory: 1Gi
-    limits:
-      cpu: 2000m
-      memory: 4Gi
   ingress:
     enabled: false
-    className: ""  # "[nginx|traefik]"
+    className: ""
     annotations: {}
-    host: surrealdb-local
-    path: /
-    pathType: Prefix
+    hosts: []
+      # - host: surreal-local
+      #   paths:
+      #     - path: /*
+      #       pathType: Prefix
     tls: []
-  # Volume configuration for file-based storage
+  # Volume configuration for persistent storage
+  # IMPORTANT: When persistence is enabled, a PVC will be created with the name pattern:
+  # {release-name}-surrealdb-data
+  # You must use this exact name pattern in the volumes configuration
   volumes:
-    - name: surrealdb-data
+    - name: data
       persistentVolumeClaim:
-        claimName: "{{ .Release.Name }}-surrealdb-data"
+        claimName: mir-surrealdb-data  # Update 'mir' to match your release name
   volumeMounts:
-    - name: surrealdb-data
+    - name: data
       mountPath: /data
-  # External TiKV configuration (for production deployments with TiDB operator)
-  external:
-    enabled: false
-    # Configure this if using external TiKV cluster instead of embedded SurrealDB
-    # Requires TiDB operator to be installed separately
-    tikvUrl: "tikv://tikv-pd:2379"

@@ -1,3 +1,7 @@
+config:
+  mir:
+    logLevel: "debug"
+
 ingress:
   enabled: true
   className: "traefik"
@@ -35,8 +39,15 @@ surrealdb:
     enabled: true
     className: "traefik"
     annotations: {}
-    host: surrealdb-local
-    path: /
+    host: surreal-local
+    path: /*
     pathType: Prefix
-  persistence:
-    storageClass: "local-path"  # K3d default storage class
+  # Override the PVC name to match the release name
+  # This assumes you're installing with: helm install mir ...
+  volumes:
+    - name: data
+      persistentVolumeClaim:
+        claimName: mir-test-surrealdb-data
+  volumeMounts:
+    - name: data
+      mountPath: /data

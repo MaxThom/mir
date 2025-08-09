@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ include "mir.fullname" . }}-surrealdb-data
+  name: {{ .Release.Name }}-surrealdb-data
   labels:
     {{- include "mir.labels" . | nindent 4 }}
     app.kubernetes.io/component: surrealdb
