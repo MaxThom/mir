@@ -18,22 +18,22 @@ k3d cluster create mir-local-dev --config k3d_config.yaml
 helm install mir ./mir
 
 # Or with custom values
-helm install mir ./mir --values custom-values.yaml
+helm install mir . -f values-k3d.yaml
 
 # Check deployment
 kubectl get pods
 kubectl get svc
 ```
 
-### 4. Access Mir
+### 4. Access MirStack
 
-If using NodePort (default in values.yaml):
-```bash
-# Get the NodePort
-kubectl get svc mir -o jsonpath='{.spec.ports[0].nodePort}'
+- NatsCluster on `localhost:31422`
+- HTTP Services uses ingress on `localhost:8081`, to make it work locally, edit dns mapping file. On linux:
 
-# Access Mir (if k3d was created with port mapping)
-curl http://localhost:3015/alive
+```sh
+# sudo nvim /etc/hosts
+
+127.0.0.1 localhost nats-local mir-local
 ```
 
 ## Uninstall
@@ -43,5 +43,5 @@ curl http://localhost:3015/alive
 helm uninstall mir
 
 # Delete cluster
-k3d cluster delete mir-cluster
+k3d cluster delete mir-local-dev
 ```

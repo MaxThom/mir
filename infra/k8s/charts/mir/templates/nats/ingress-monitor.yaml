@@ -1,0 +1,38 @@
+{{- if and .Values.nats.enabled .Values.nats.ingress.enabled -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "mir.fullname" . }}-nats
+  labels:
+    {{- include "mir.labels" . | nindent 4 }}
+    app.kubernetes.io/component: nats
+  {{- with .Values.nats.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- with .Values.nats.ingress.className }}
+  ingressClassName: {{ . }}
+  {{- end }}
+  {{- if .Values.nats.ingress.tls }}
+  tls:
+    {{- range .Values.nats.ingress.tls }}
+    - hosts:
+        {{- range .hosts }}
+        - {{ . | quote }}
+        {{- end }}
+      secretName: {{ .secretName }}
+    {{- end }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.nats.ingress.host | quote }}
+      http:
+        paths:
+          - path: {{ .Values.nats.ingress.path | default "/" }}
+            pathType: {{ .Values.nats.ingress.pathType | default "Prefix" }}
+            backend:
+              service:
+                name: {{ include "mir.fullname" . }}-nats-monitor
+                port:
+                  number: 8222
+{{- end }}

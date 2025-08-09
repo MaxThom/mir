@@ -1,0 +1,30 @@
+ingress:
+  enabled: true
+  className: "traefik"
+  annotations: {}
+  hosts:
+    - host: mir-local
+      paths:
+        - path: /
+          pathType: Prefix
+
+nats:
+  enabled: true
+  ingress:
+    enabled: true
+    className: "traefik"
+    annotations: {}
+    host: nats-local
+    path: /
+    pathType: Prefix
+  service:
+    merge:
+      spec:
+        type: LoadBalancer
+        ports:
+          - appProtocol: tcp
+            name: nats
+            nodePort: 31422
+            port: 4222
+            protocol: TCP
+            targetPort: nats

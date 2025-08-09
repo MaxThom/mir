@@ -44,9 +44,11 @@ spec:
             - --server-config
             - /etc/mir/mir.yaml
           envFrom:
+            {{- with .Values.secretRef }}
             - secretRef:
-                name: {{ .Values.secretRef }}
+                name: {{ . }}
                 optional: true
+            {{- end }}
           ports:
             - name: http
               containerPort: {{ .Values.service.targetPort }}

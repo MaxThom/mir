@@ -7,7 +7,11 @@ metadata:
 data:
   mir.yaml: |
     mir:
+      {{- if .Values.nats.enabled }}
+      url: "nats://{{ include "mir.fullname" . }}-nats:4222"
+      {{- else }}
       url: {{ .Values.config.mir.url | quote }}
+      {{- end }}
       logLevel: {{ .Values.config.mir.logLevel | quote }}
       httpPort: {{ .Values.service.targetPort }}
     surreal:
