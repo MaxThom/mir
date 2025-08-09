@@ -28,3 +28,15 @@ nats:
             port: 4222
             protocol: TCP
             targetPort: nats
+
+surrealdb:
+  enabled: true
+  ingress:
+    enabled: true
+    className: "traefik"
+    annotations: {}
+    host: surrealdb-local
+    path: /
+    pathType: Prefix
+  persistence:
+    storageClass: "local-path"  # K3d default storage class

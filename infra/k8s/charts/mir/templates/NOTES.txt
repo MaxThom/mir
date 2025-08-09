@@ -38,3 +38,29 @@
 
 3. To verify Mir is connected to NATS:
    kubectl --namespace {{ .Release.Namespace }} logs -l "app.kubernetes.io/name={{ include "mir.name" . }},app.kubernetes.io/instance={{ .Release.Name }}" | grep -i nats
+
+4. SurrealDB Configuration:
+{{- if .Values.surrealdb.enabled }}
+   SurrealDB has been deployed as a subchart with the following configuration:
+   - Service: {{ include "mir.fullname" . }}-surrealdb:8000
+   {{- if .Values.surrealdb.external.enabled }}
+   - Storage Backend: External TiKV at {{ .Values.surrealdb.external.tikvUrl }}
+   {{- else }}
+   - Storage Backend: File-based (surrealkv) with {{ .Values.surrealdb.persistence.size }} persistent volume
+   {{- end }}
+   - Authentication: {{ if .Values.surrealdb.surrealdb.auth }}Enabled{{ else }}Disabled (enable after initial setup){{ end }}
+   
+   To access SurrealDB Studio:
+   kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "mir.fullname" . }}-surrealdb 8000:8000
+   Then visit http://localhost:8000
+   
+   {{- if .Values.surrealdb.ingress.enabled }}
+   Or access via ingress at: http://{{ .Values.surrealdb.ingress.host }}
+   {{- end }}
+{{- else }}
+   SurrealDB subchart is disabled. Mir is configured to use external SurrealDB at: {{ .Values.config.surreal.url }}
+   Make sure your external SurrealDB instance is accessible.
+{{- end }}
+
+5. To verify Mir is connected to SurrealDB:
+   kubectl --namespace {{ .Release.Namespace }} logs -l "app.kubernetes.io/name={{ include "mir.name" . }},app.kubernetes.io/instance={{ .Release.Name }}" | grep -i surreal
