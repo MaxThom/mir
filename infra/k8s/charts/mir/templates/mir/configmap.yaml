@@ -15,7 +15,15 @@ data:
       logLevel: {{ .Values.config.mir.logLevel | quote }}
       httpPort: {{ .Values.service.targetPort }}
     surreal:
+      {{- if .Values.surrealdb.enabled }}
+      {{- if .Values.surrealdb.external.enabled }}
+      url: {{ .Values.surrealdb.external.tikvUrl | quote }}
+      {{- else }}
+      url: "ws://{{ include "mir.fullname" . }}-surrealdb:8000/rpc"
+      {{- end }}
+      {{- else }}
       url: {{ .Values.config.surreal.url | quote }}
+      {{- end }}
       namespace: {{ .Values.config.surreal.namespace | quote }}
       database: {{ .Values.config.surreal.database | quote }}
       user: {{ .Values.config.surreal.user | quote }}

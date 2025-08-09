@@ -14,6 +14,11 @@
   - [ ] device security with nats
   - [x] Grafana Dashboard for eventstore
   - [ ] HelmChart
+    - [x] Mir
+    - [x] Nats
+    - [ ] Surreal
+    - [ ] Influx
+    - [ ] PromStack
   - [x] Compose release
   - [x] GrafanaLoki
   - [x] Docker container
