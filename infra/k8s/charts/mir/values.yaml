@@ -5,43 +5,36 @@ image:
   pullPolicy: IfNotPresent
   tag: ""
 
-imagePullSecrets: []
-nameOverride: ""
-fullnameOverride: ""
-
-service:
-  type: ClusterIP # [ClusterIP|NodePort|LoadBalancer]
-  port: 80 # Externally exposed ports
-  targetPort: 3015 # Internal port Mir binds to
-  nodePort: 30015 # Fixed NodePort (30000-32767), comment out for random assignment
-
-# Use secret to pass any config as environment variables, mainly passwords and tokens.
-# Refer to chart ./secret/secret.yaml
-# eg:
-#   type: Opaque
-#   stringData:
-#     MIR__SURREAL__PASSWORD: "root"
-#     MIR__INFLUX__TOKEN: "mir-operator-token"
-secretRef: ""
+## Use secret to pass any config as environment variables, mainly passwords and tokens.
+## Refer to chart ./secret/mir.secret.yaml
+## eg:
+##   type: Opaque
+##   stringData:
+##     MIR__SURREAL__USER: "root"
+##     MIR__SURREAL__PASSWORD: "root"
+##     MIR__INFLUX__TOKEN: "mir-operator-token"
+#secretRef: mir-secret
 config:
   mir:
     # NATS URL - automatically set when nats.enabled=true, otherwise use this value
-    url: "nats://external-nats:4222"  # Used only when nats.enabled=false
+    url: "nats://external-nats:4222/"
     logLevel: "info"
   surreal:
-    url: "ws://localhost:8000/rpc"
+    # SURREAL URL - automatically set when surreal.enabled=true otherwise use this value
+    url: "ws://localhost:8000/"
     namespace: "global"
     database: "mir"
     user: "root"
     password: "root"
   influx:
+    # INFLUX URL - automatically set when influx.enabled=true otherwise use this value
     url: "http://localhost:8086/"
     token: "mir-operator-token"
     org: "Mir"
     bucket: "mir"
     batchSize: 1000
     flushInterval: 1000
-    retryBufferLimit: 1073741824
+    retryBufferLimit: 1073741824 # one week
     gzip: false
 
 ingress:
@@ -65,6 +58,163 @@ resources: {}
   # requests:
   #   cpu: 100m
   #   memory: 128Mi
+
+#
+# NATS subchart configuration
+#
+nats:
+  enabled: true
+  ## Configure Nats to a LoadBalancer
+  # service:
+  #   merge:
+  #     spec:
+  #       type: LoadBalancer
+  #       ports:
+  #         - appProtocol: tcp
+  #           name: nats
+  #           nodePort: 31422
+  #           port: 4222
+  #           protocol: TCP
+  #           targetPort: nats
+  ingress:
+    enabled: false
+    className: ""  # "[nginx|traefik]"
+    annotations: {}
+    host: nats-local
+    path: /
+    pathType: Prefix
+    tls: []
+    #  - secretName: nats-tls
+    #    hosts:
+    #      - nats-local
+  config:
+    cluster:
+      enabled: true
+      replicas: 3
+    jetstream:
+      enabled: true
+      fileStore:
+        pvc:
+          size: 10Gi
+  podTemplate:
+    topologySpreadConstraints:
+      kubernetes.io/hostname:
+        maxSkew: 1
+        whenUnsatisfiable: DoNotSchedule
+  ## Resources
+  # container:
+  #   env:
+  #     # Different from k8s units, suffix must be B, KiB, MiB, GiB, or TiB
+  #     # Should be ~80% of memory limit
+  #     GOMEMLIMIT: 6GiB
+  #   merge:
+  #     # Recommended minimum: at least 2 CPU cores and 8Gi memory for production JetStream clusters
+  #     # Set same limit as request to ensure Guaranteed QoS
+  #     resources: {}
+  promExporter:
+    enabled: true
+  podMonitor:
+    enabled: false
+
+#
+# SurrealDB subchart configuration
+#
+surrealdb:
+  enabled: true
+  image:
+    tag: "v2.3.7"
+  surrealdb:
+    path: "surrealkv:/data/mir.db"  # File-based storage
+    initial_user: "root"
+    initial_pass: "root"
+    log: info
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClass: ""
+    accessMode: ReadWriteOnce
+  resources: {}
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts: []
+      # - host: surreal-local
+      #   paths:
+      #     - path: /*
+      #       pathType: Prefix
+    tls: []
+  ## Use secret to pass any config as environment variables, mainly passwords and tokens.
+  ## Refer to chart ./secret/surreal.secret.yaml
+  ## eg:
+  ##   type: Opaque
+  ##   stringData:
+  ##     SURREAL_USER: "root"
+  ##     SURREAL_PASS: "mir-operator-token"
+  # podExtraEnv:
+  #  - name: SURREAL_USER
+  #    valueFrom:
+  #      secretKeyRef:
+  #        name: surreal-secret
+  #        key: SURREAL_USER
+  #  - name: SURREAL_PASS
+  #    valueFrom:
+  #      secretKeyRef:
+  #        name: surreal-secret
+  #        key: SURREAL_PASS
+
+#
+# InfluxDB2 subchart configuration
+#
+influxdb2:
+  enabled: true
+  image:
+    tag: "2.7.4"
+  adminUser:
+    organization: "Mir"
+    bucket: "mir"
+    user: "admin"
+    retention_policy: "0s"  # Infinite retention
+    password: "mir-operator"
+    token: "mir-operator-token"
+    ## If set, the password and token values above are ignored.
+    ## Use secret to pass any config as environment variables, mainly passwords and tokens.
+    ## Refer to chart ./secret/influx.secret.yaml
+    ## eg:
+    ##   type: Opaque
+    ##   stringData:
+    ##     admin-password: "mir-operator"
+    ##     admin-token: "mir-operator-token"
+    # existingSecret: influx-secret
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClass: ""  # Use default storage class
+  service:
+    type: ClusterIP
+    port: 8086
+  resources: {}
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hostname: influx-local
+    path: /
+    tls: false
+
+#
+# Mir Server Extra Config
+#
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+service:
+  type: ClusterIP # [ClusterIP|NodePort|LoadBalancer]
+  port: 80 # Externally exposed ports
+  targetPort: 3015 # Internal port Mir binds to
+  nodePort: 30015 # Fixed NodePort (30000-32767), comment out for random assignment
 
 livenessProbe:
   httpGet:
@@ -109,62 +259,3 @@ volumeMounts: []
 nodeSelector: {}
 tolerations: []
 affinity: {}
-
-# NATS subchart configuration
-nats:
-  enabled: true
-  ingress:
-    enabled: false
-    className: ""  # "[nginx|traefik]"
-    annotations: {}
-    host: nats-local
-    path: /
-    pathType: Prefix
-    tls: []
-    #  - secretName: nats-tls
-    #    hosts:
-    #      - nats-local
-  config:
-    cluster:
-      enabled: true
-      replicas: 3
-    jetstream:
-      enabled: true
-      fileStore:
-        pvc:
-          size: 10Gi
-  podTemplate:
-    topologySpreadConstraints:
-      kubernetes.io/hostname:
-        maxSkew: 1
-        whenUnsatisfiable: DoNotSchedule
-  promExporter:
-    enabled: true
-  podMonitor:
-    enabled: false
-
-# SurrealDB subchart configuration
-surrealdb:
-  enabled: true
-  image:
-    tag: "v2.3.7"
-  surrealdb:
-    path: "surrealkv:/data/mir.db"  # File-based storage
-    initial_user: "root"
-    initial_pass: "root"
-    log: info
-  persistence:
-    enabled: true
-    size: 10Gi
-    storageClass: ""
-    accessMode: ReadWriteOnce
-  ingress:
-    enabled: false
-    className: ""
-    annotations: {}
-    hosts: []
-      # - host: surreal-local
-      #   paths:
-      #     - path: /*
-      #       pathType: Prefix
-    tls: []

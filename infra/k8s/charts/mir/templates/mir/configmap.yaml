@@ -17,17 +17,19 @@ data:
     surreal:
       {{- if .Values.surrealdb.enabled }}
       url: "ws://{{ include "mir.fullname" . }}-surrealdb:{{ .Values.surrealdb.service.port }}/rpc"
-      user: {{ .Values.surrealdb.surrealdb.initial_user | quote }}
-      password: {{ .Values.surrealdb.surrealdb.initial_pass | quote }}
       {{- else }}
       url: {{ .Values.config.surreal.url | quote }}
+      {{- end }}
       user: {{ .Values.config.surreal.user | quote }}
       password: {{ .Values.config.surreal.password | quote }}
-      {{- end }}
       namespace: {{ .Values.config.surreal.namespace | quote }}
       database: {{ .Values.config.surreal.database | quote }}
     influx:
+      {{- if .Values.influxdb2.enabled }}
+      url: "http://{{ include "mir.fullname" . }}-influxdb2:{{ .Values.influxdb2.service.port }}"
+      {{- else }}
       url: {{ .Values.config.influx.url | quote }}
+      {{- end }}
       token: {{ .Values.config.influx.token | quote }}
       org: {{ .Values.config.influx.org | quote }}
       bucket: {{ .Values.config.influx.bucket | quote }}

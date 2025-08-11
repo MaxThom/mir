@@ -12,13 +12,19 @@
 - [ ] MCP Server for Mir
 - [ ] Road to Production
   - [ ] device security with nats
+  - [ ] CLI
+    - [ ] config edit and view command
+    - [ ] log view command
+    - [ ] cli context for easy cluster switch
+    - [ ] tlm ls print query option
+  - [ ] core bug with reconnect of loading devices
   - [x] Grafana Dashboard for eventstore
   - [ ] HelmChart
     - [x] Mir
     - [x] Nats
-    - [ ] Surreal
-      - [ ] Test with CLI, cant change url
-    - [ ] Influx
+    - [x] Surreal
+      - [x] Test with CLI, cant change url
+    - [x] Influx
     - [ ] PromStack
   - [x] Compose release
   - [x] GrafanaLoki
@@ -27,6 +33,7 @@
     - [x] Multibuild
     - [x] Simple
   - [ ] Pipeline for each
+    - [ ] HelmChart
     - [ ] For device
     - [x] For server
   - [x] CLI Tool template
