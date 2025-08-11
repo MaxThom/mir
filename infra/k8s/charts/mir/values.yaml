@@ -148,13 +148,7 @@ surrealdb:
   enabled: true
   image:
     tag: "v2.3.7"
-  # Storage backend configuration
-  # For development/small deployments: use file-based storage with PVC
-  # For production with TiKV: disable subchart and use external.tikvUrl
   surrealdb:
-    # Configure this if using external TiKV cluster instead of embedded SurrealDB
-    # Requires TiDB operator to be installed separately. See (https://surrealdb.com/docs/surrealdb/deployment/kubernetes)
-    # path: "tikv://tikv-pd:2379"
     path: "surrealkv:/data/mir.db"  # File-based storage
     initial_user: "root"
     initial_pass: "root"
@@ -164,9 +158,6 @@ surrealdb:
     size: 10Gi
     storageClass: ""
     accessMode: ReadWriteOnce
-  service:
-    type: ClusterIP
-    port: 8000
   ingress:
     enabled: false
     className: ""
@@ -177,14 +168,3 @@ surrealdb:
       #     - path: /*
       #       pathType: Prefix
     tls: []
-  # Volume configuration for persistent storage
-  # IMPORTANT: When persistence is enabled, a PVC will be created with the name pattern:
-  # {release-name}-surrealdb-data
-  # You must use this exact name pattern in the volumes configuration
-  volumes:
-    - name: data
-      persistentVolumeClaim:
-        claimName: mir-surrealdb-data  # Update 'mir' to match your release name
-  volumeMounts:
-    - name: data
-      mountPath: /data

@@ -93,6 +93,13 @@ docker-run-config entry="serve":
 docker-run-exec:
     docker run -v $(pwd)/infra/compose/mir/local-config.yaml:/home/mir/.config/mir/mir.yaml --network host -it --entrypoint /bin/sh mir:latest
 
+# Start k3d cluster for local k8s dev
+k3d-create:
+    k3d cluster create mir-local-dev -c infra/k8s/k3d/scratch/k3d_config.yaml
+
+# Delete k3d cluster
+k3d-delete:
+ k3d cluster delete mir-local-dev
 
 # Run Mir book for local documentation
 book:

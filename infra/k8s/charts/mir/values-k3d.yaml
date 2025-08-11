@@ -39,15 +39,9 @@ surrealdb:
     enabled: true
     className: "traefik"
     annotations: {}
-    host: surreal-local
-    path: /*
-    pathType: Prefix
-  # Override the PVC name to match the release name
-  # This assumes you're installing with: helm install mir ...
-  volumes:
-    - name: data
-      persistentVolumeClaim:
-        claimName: mir-test-surrealdb-data
-  volumeMounts:
-    - name: data
-      mountPath: /data
+    hosts:
+      - host: surreal-local
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
