@@ -45,3 +45,13 @@ surrealdb:
           - path: /
             pathType: Prefix
     tls: []
+
+influxdb2:
+  enabled: true
+  ingress:
+    enabled: true
+    className: "traefik"
+    annotations: {}
+    hostname: influx-local
+    path: /
+    tls: false
