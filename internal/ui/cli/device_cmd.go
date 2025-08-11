@@ -79,7 +79,7 @@ type Target struct {
 	Labels     map[string]string `help:"Set of labels to filter devices"`
 }
 
-func (d *DeviceCmd) Run(log zerolog.Logger, cfg Config, m *mir.Mir) error {
+func (d *DeviceCmd) Run(log zerolog.Logger, m *mir.Mir) error {
 	if err := m.Disconnect(); err != nil {
 		log.Error().Err(err).Msg("error disconnecting from Mir server")
 	}
@@ -105,7 +105,7 @@ func (d *DeviceListCmd) Validate() error {
 	return nil
 }
 
-func (d *DeviceListCmd) Run(log zerolog.Logger, m *mir.Mir, cfg Config) error {
+func (d *DeviceListCmd) Run(log zerolog.Logger, m *mir.Mir) error {
 	var err error
 	list, err := m.Server().ListDevice().Request(
 		mir_v1.DeviceTarget{
@@ -157,7 +157,7 @@ func (d *DeviceCreateCmd) Validate() error {
 	return nil
 }
 
-func (d *DeviceCreateCmd) Run(log zerolog.Logger, m *mir.Mir, cfg Config) error {
+func (d *DeviceCreateCmd) Run(log zerolog.Logger, m *mir.Mir) error {
 	if d.ShowJsonTemplate {
 		if d.Output == "pretty" {
 			d.Output = "yaml"
@@ -253,7 +253,7 @@ func (d *DeviceUpdateCmd) Validate() error {
 	return nil
 }
 
-func (d *DeviceUpdateCmd) Run(log zerolog.Logger, m *mir.Mir, cfg Config) error {
+func (d *DeviceUpdateCmd) Run(log zerolog.Logger, m *mir.Mir) error {
 	var err error
 	// TODO check if label modification works
 	// labels := map[string]*mir_apiv1.OptString{}
@@ -345,7 +345,7 @@ func (d *DeviceDeleteCmd) Validate() error {
 	return nil
 }
 
-func (d *DeviceDeleteCmd) Run(log zerolog.Logger, m *mir.Mir, cfg Config) error {
+func (d *DeviceDeleteCmd) Run(log zerolog.Logger, m *mir.Mir) error {
 	list, err := m.Server().DeleteDevice().Request(mir_v1.DeviceTarget{
 		Ids:        d.Target.Ids,
 		Names:      d.Target.Names,

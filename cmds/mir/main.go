@@ -14,6 +14,7 @@ import (
 	"github.com/maxthom/mir/internal/ui/tui"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 var l zerolog.Logger
@@ -73,43 +74,8 @@ func (v VersionFlag) BeforeApply(app *kong.Kong, vars kong.Vars) error {
 
 func main() {
 	var c CLI
-
-	// Config
-	cfg := defaultCfg
-	errCfg, lookupFiles, foundFiles := mir_config.New(AppName,
-		mir_config.WithEtcFilePath("mir/cli.yaml", mir_config.Yaml, false),
-		mir_config.WithXdgConfigHomeFilePath("mir/cli.yaml", mir_config.Yaml, false),
-		mir_config.WithFilePath(string(c.Client.ConfigFile), mir_config.Yaml, false),
-		mir_config.WithEnvVars("MIR"),
-	).LoadAndUnmarshal(&cfg)
-
-	var file *os.File
-	log := mir_log.Setup(
-		mir_log.WithFlagAndFileLogLevel(c.Client.Debug, c.Client.LogLevel, &cfg.LogLevel),
-		mir_log.WithTimeFormatUnix(),
-		mir_log.WithXdgConfigHomeLogFile("mir/cli.log", file),
-		mir_log.WithAppName(AppName),
-	)
-	defer file.Close()
-
-	log.Info().Strs("lookup config", lookupFiles).Strs("found config", foundFiles).Msg("configuration loaded")
-	if errCfg != nil {
-		log.Err(errCfg).Msg("error loading config")
-		os.Exit(1)
-	}
-	if c.Client.LogLevel != "" {
-		cfg.LogLevel = c.Client.LogLevel
-	}
-	if c.Client.Target != "" {
-		cfg.Target = c.Client.Target
-	}
-
-	prettyCfg, err := mir_config.JsonMarshalWithoutSecrets(cfg)
-	if err != nil {
-		log.Error().Err(err).Msg("error marshalling config")
-		os.Exit(1)
-	}
-	log.Info().Str("config", string(prettyCfg)).Msg("")
+	var logFile *os.File
+	defer logFile.Close()
 
 	// CLI
 	kongCtx := kong.Parse(&c,
@@ -124,15 +90,10 @@ func main() {
 		kong.Vars{
 			"version": build_meta.GetLongVersion(),
 		},
-		kong.Bind(log),
-		kong.Bind(cfg),
+		kong.Bind(logFile),
 	)
 
-	err = kongCtx.Run(
-		log,
-		cli.NewConfig(cfg.LogLevel, cfg.Target),
-		tui.NewConfig(cfg.LogLevel, cfg.Target),
-	)
+	err := kongCtx.Run()
 	if err != nil {
 		log.Error().Err(err).Msg("")
 		fmt.Println(err)
@@ -141,7 +102,42 @@ func main() {
 
 // There is no hook for after subcommands are executed
 // Therefor each command must close Mir :(
-func (d *Client) AfterApply(k *kong.Context, log zerolog.Logger, cfg config) error {
+func (d *Client) AfterApply(k *kong.Context, logFile *os.File) error {
+	// Config
+	cfg := defaultCfg
+	errCfg, lookupFiles, foundFiles := mir_config.New(AppName,
+		mir_config.WithEtcFilePath("mir/cli.yaml", mir_config.Yaml, false),
+		mir_config.WithXdgConfigHomeFilePath("mir/cli.yaml", mir_config.Yaml, false),
+		mir_config.WithFilePath(string(d.ConfigFile), mir_config.Yaml, false),
+		mir_config.WithEnvVars("MIR"),
+	).LoadAndUnmarshal(&cfg)
+
+	if d.LogLevel != "" {
+		cfg.LogLevel = d.LogLevel
+	}
+	if d.Target != "" {
+		cfg.Target = d.Target
+	}
+
+	log := mir_log.Setup(
+		mir_log.WithFlagAndFileLogLevel(d.Debug, cfg.LogLevel, &d.LogLevel),
+		mir_log.WithTimeFormatUnix(),
+		mir_log.WithXdgConfigHomeLogFile("mir/cli.log", logFile),
+		mir_log.WithAppName(AppName),
+	)
+
+	log.Info().Strs("lookup config", lookupFiles).Strs("found config", foundFiles).Msg("configuration loaded")
+	if errCfg != nil {
+		log.Err(errCfg).Msg("error loading config")
+		os.Exit(1)
+	}
+	prettyCfg, err := mir_config.JsonMarshalWithoutSecrets(cfg)
+	if err != nil {
+		log.Error().Err(err).Msg("error marshalling config")
+		os.Exit(1)
+	}
+	log.Info().Str("config", string(prettyCfg)).Msg("")
+
 	m, err := mir.Connect(AppName, cfg.Target, append(mir.WithDefaultReconnectOpts(), mir.WithDefaultConnectionLogging(log)...)...)
 	if err != nil {
 		log.Err(err).Msg("error connection to Mir server")
@@ -150,6 +146,9 @@ func (d *Client) AfterApply(k *kong.Context, log zerolog.Logger, cfg config) err
 	}
 	log.Info().Str("url", cfg.Target).Str("status", m.Bus.Status().String()).Msg("msg bus status")
 	k.Bind(m)
+	k.Bind(log)
+	k.Bind(cli.NewConfig(cfg.LogLevel, cfg.Target))
+	k.Bind(tui.NewConfig(cfg.LogLevel, cfg.Target))
 
 	return nil
 }
