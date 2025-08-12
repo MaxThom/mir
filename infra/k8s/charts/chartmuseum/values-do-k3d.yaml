@@ -38,23 +38,14 @@ chartmuseum:
 
   ingress:
     enabled: true
-    #className: "nginx"  # or "traefik"
-    className: "traefik"  # or "traefik"
+    pathType: Prefix
+    className: "traefik"
     annotations: {}
-      # kubernetes.io/ingress.class: nginx
-      # cert-manager.io/cluster-issuer: "letsencrypt-prod"
-      # nginx.ingress.kubernetes.io/proxy-body-size: "50m"
-      # nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
-      # nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
     hosts:
-      - host: museum-local #charts.maxthom.ca
-        paths:
-          - path: /
-            pathType: Prefix
-    tls: []
-    #   - secretName: chartmuseum-tls
-    #     hosts:
-    #       - charts.maxthom.ca
+      - name: museum-local
+        path: /
+        tls: false
+        tlsSecret: museum-local
 
   resources:
     limits:

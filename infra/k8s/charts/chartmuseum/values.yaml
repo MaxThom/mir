@@ -66,20 +66,17 @@ chartmuseum:
   # Ingress configuration
   ingress:
     enabled: false
-    className: ""  # nginx, traefik, etc.
+    pathType: Prefix
+    className: "" # [nginx|traefik]
     annotations: {}
       # kubernetes.io/ingress.class: nginx
-      # cert-manager.io/cluster-issuer: letsencrypt-prod
-      # nginx.ingress.kubernetes.io/proxy-body-size: "20m"
+      # cert-manager.io/cluster-issuer: "letsencrypt-prod"
+      # nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
     hosts:
-      - host: museum-local
-        paths:
-          - path: /
-            pathType: Prefix
-    tls: []
-    #  - secretName: chartmuseum-tls
-    #    hosts:
-    #      - charts.example.com
+      - name: museum-local
+        path: /
+        tls: false
+        tlsSecret: museum-local
 
   # Persistence (local storage alternative to S3)
   persistence:
