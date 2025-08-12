@@ -1,0 +1,175 @@
+name: Package and Deploy Mir Helm Chart
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+env:
+  CHART_PATH: infra/k8s/charts/mir
+
+jobs:
+  package-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: "v3.15.0"
+
+      - name: Add Helm repositories
+        run: |
+          helm repo add nats https://nats-io.github.io/k8s/helm/charts/
+          helm repo add influxdata https://helm.influxdata.com/
+          helm repo update
+
+      - name: Get latest chart version from ChartMuseum
+        id: latestversion
+        run: |
+          # Query ChartMuseum for the latest version of the mir chart
+          echo "Fetching latest chart version from ChartMuseum..."
+
+          # Get all versions of the mir chart
+          response=$(curl -s -u "${{ secrets.CHARTMUSEUM_USER }}:${{ secrets.CHARTMUSEUM_PASS }}" \
+            "${{ secrets.CHARTMUSEUM_URL }}/api/charts/mir" || echo "")
+
+          if [ -z "$response" ] || [ "$response" = "[]" ]; then
+            echo "No existing chart found, starting with version 0.1.0"
+            LATEST_VERSION="0.0.0"
+          else
+            # Extract the latest version (first in the array, as ChartMuseum returns sorted)
+            LATEST_VERSION=$(echo "$response" | jq -r '.[0].version // "0.0.0"')
+            echo "Found latest version: ${LATEST_VERSION}"
+          fi
+
+          echo "latest=${LATEST_VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Set chart version
+        id: chartversion
+        run: |
+          LATEST="${{ steps.latestversion.outputs.latest }}"
+
+          # For production releases (tags), increment patch version
+          if [[ "${{ github.ref_type }}" == "tag" ]] || [[ "${{ github.event_name }}" == "release" ]]; then
+
+            # Parse semantic version and increment patch
+            if [[ "$LATEST" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)(.*)$ ]]; then
+              MAJOR="${BASH_REMATCH[1]}"
+              MINOR="${BASH_REMATCH[2]}"
+              PATCH="${BASH_REMATCH[3]}"
+              PATCH=$((PATCH + 1))
+              CHART_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+            else
+              # If version doesn't match semver, start fresh
+              CHART_VERSION="0.1.0"
+            fi
+
+            # Set app version from tag
+            APP_VERSION=${GITHUB_REF#refs/tags/}
+
+          # For manual triggers, use current version + branch-commitid for development
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            BRANCH_NAME=${GITHUB_REF#refs/heads/}
+            # Replace slashes with double underscores
+            BRANCH_NAME=${BRANCH_NAME//\//__}
+            SHORT_SHA=${GITHUB_SHA::7}
+
+            # Use latest version as base, or 0.1.0 if none exists
+            if [[ "$LATEST" == "0.0.0" ]]; then
+              BASE_VERSION="0.1.0"
+            else
+              BASE_VERSION="$LATEST"
+            fi
+
+            CHART_VERSION="${BASE_VERSION}-${BRANCH_NAME}.${SHORT_SHA}"
+            APP_VERSION="${BRANCH_NAME}--${SHORT_SHA}"
+          fi
+
+          echo "version=${CHART_VERSION}" >> $GITHUB_OUTPUT
+          echo "appversion=${APP_VERSION}" >> $GITHUB_OUTPUT
+          echo "Chart version: ${CHART_VERSION}"
+          echo "App version: ${APP_VERSION}"
+
+      - name: Update chart dependencies
+        run: |
+          cd ${{ env.CHART_PATH }}
+          helm dependency update
+
+      - name: Lint Helm chart
+        run: |
+          helm lint ${{ env.CHART_PATH }} \
+            --set-string version=${{ steps.chartversion.outputs.version }} \
+            --set-string appVersion=${{ steps.chartversion.outputs.appversion }}
+
+      - name: Package Helm chart
+        id: package
+        run: |
+          # Package the chart with version and appVersion overrides
+          helm package ${{ env.CHART_PATH }} \
+            --version ${{ steps.chartversion.outputs.version }} \
+            --app-version ${{ steps.chartversion.outputs.appversion }} \
+            --destination ./dist
+
+          # Get the package filename
+          PACKAGE_FILE=$(ls ./dist/*.tgz)
+          PACKAGE_NAME=$(basename $PACKAGE_FILE)
+
+          echo "package_file=${PACKAGE_FILE}" >> $GITHUB_OUTPUT
+          echo "package_name=${PACKAGE_NAME}" >> $GITHUB_OUTPUT
+          echo "Packaged chart: ${PACKAGE_NAME}"
+          echo "Chart version: ${{ steps.chartversion.outputs.version }}"
+          echo "App version: ${{ steps.chartversion.outputs.appversion }}"
+
+      - name: Push chart to ChartMuseum
+        run: |
+          # Push using curl
+          echo "Uploading chart to ChartMuseum..."
+          response=$(curl -s -w "\n%{http_code}" --data-binary "@${{ steps.package.outputs.package_file }}" \
+            -u "${{ secrets.CHARTMUSEUM_USER }}:${{ secrets.CHARTMUSEUM_PASS }}" \
+            "${{ secrets.CHARTMUSEUM_URL }}/api/charts")
+
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | head -n-1)
+
+          if [ "$http_code" -eq 201 ] || [ "$http_code" -eq 200 ]; then
+            echo "✅ Chart uploaded successfully!"
+            echo "Response: $body"
+          else
+            echo "❌ Failed to upload chart. HTTP code: $http_code"
+            echo "Response: $body"
+            exit 1
+          fi
+
+      - name: Generate summary
+        run: |
+          echo "### Helm Chart Published! ⎈" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Chart:** mir" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ steps.chartversion.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Package:** ${{ steps.package.outputs.package_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Built by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "#### Installation" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "# Add the repository" >> $GITHUB_STEP_SUMMARY
+          echo "helm repo add mir-charts ${{ secrets.CHARTMUSEUM_URL }}" >> $GITHUB_STEP_SUMMARY
+          echo "helm repo update" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "# Install the chart" >> $GITHUB_STEP_SUMMARY
+          echo "helm install mir mir-charts/mir --version ${{ steps.chartversion.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload chart artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: helm-chart-${{ steps.chartversion.outputs.version }}
+          path: ${{ steps.package.outputs.package_file }}
+          retention-days: 30
