@@ -1,0 +1,76 @@
+# ChartMuseum Production Values for DigitalOcean Spaces
+# This file contains production-ready configuration for DigitalOcean Spaces
+
+chartmuseum:
+  replicaCount: 1  # HA setup
+
+  env:
+    open:
+      # DigitalOcean Spaces Configuration
+      STORAGE: amazon
+      STORAGE_AMAZON_BUCKET: "mir"  # Your actual bucket name
+      STORAGE_AMAZON_REGION: ""  # Your region: nyc3, ams3, sgp1, sfo2, sfo3, fra1
+      STORAGE_AMAZON_ENDPOINT: "tor1.digitaloceanspaces.com"  # Update based on region
+      STORAGE_AMAZON_PREFIX: "charts"  # Organize charts in a subfolder
+
+      # Server Configuration
+      DISABLE_API: false  # Allow chart uploads
+      ALLOW_OVERWRITE: true  # Prevent accidental overwrites
+      AUTH_ANONYMOUS_GET: true  # Allow public chart downloads
+
+      # Logging
+      LOG_JSON: true
+      DEBUG: true
+      ENABLE_METRICS: true
+
+    # These should be stored in a Kubernetes Secret
+    existingSecret: museum-secret
+    existingSecretMappings:
+      BASIC_AUTH_USER: BASIC_AUTH_USER
+      BASIC_AUTH_PASS: BASIC_AUTH_PASS
+      AWS_ACCESS_KEY_ID: AWS_ACCESS_KEY_ID
+      AWS_SECRET_ACCESS_KEY: AWS_SECRET_ACCESS_KEY
+
+
+  service:
+    type: ClusterIP
+    port: 8080
+
+  ingress:
+    enabled: true
+    #className: "nginx"  # or "traefik"
+    className: "traefik"  # or "traefik"
+    annotations: {}
+      # kubernetes.io/ingress.class: nginx
+      # cert-manager.io/cluster-issuer: "letsencrypt-prod"
+      # nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+      # nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+      # nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+    hosts:
+      - host: museum-local #charts.maxthom.ca
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+    #   - secretName: chartmuseum-tls
+    #     hosts:
+    #       - charts.maxthom.ca
+
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 200m
+      memory: 256Mi
+
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 75
+    targetMemoryUtilizationPercentage: 80
+
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1

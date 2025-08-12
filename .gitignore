@@ -12,3 +12,4 @@ scratch/
 history.txt
 # k3d registry config with credentials
 infra/k8s/registries.yaml
+.helm_ls_cache/
