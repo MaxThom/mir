@@ -1,0 +1,6 @@
+dependencies:
+- name: chartmuseum
+  repository: https://chartmuseum.github.io/charts
+  version: 3.10.4
+digest: sha256:34e09c0b9405c7f4866477d26752e8f4e15808e1e05f1f0e553c467b7915bada
+generated: "2025-08-12T03:40:45.541825172-04:00"

@@ -1,0 +1,67 @@
+Museum Chart (ChartMuseum with DigitalOcean Spaces) has been deployed!
+
+{{- if .Values.chartmuseum.enabled }}
+
+================================================================================
+ChartMuseum is configured with DigitalOcean Spaces backend:
+- Bucket: {{ .Values.chartmuseum.env.open.STORAGE_AMAZON_BUCKET }}
+- Region: {{ .Values.chartmuseum.env.open.STORAGE_AMAZON_REGION }}
+- Prefix: {{ .Values.chartmuseum.env.open.STORAGE_AMAZON_PREFIX }}
+================================================================================
+
+1. Get the ChartMuseum URL by running these commands:
+{{- if .Values.chartmuseum.ingress.enabled }}
+{{- range $host := .Values.chartmuseum.ingress.hosts }}
+  {{- range .paths }}
+  http{{ if $.Values.chartmuseum.ingress.tls }}s{{ end }}://{{ $host.host }}{{ .path }}
+  {{- end }}
+{{- end }}
+{{- else if contains "NodePort" .Values.chartmuseum.service.type }}
+  export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "museum.fullname" . }}-chartmuseum)
+  export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo http://$NODE_IP:$NODE_PORT
+{{- else if contains "LoadBalancer" .Values.chartmuseum.service.type }}
+  NOTE: It may take a few minutes for the LoadBalancer IP to be available.
+        You can watch its status by running:
+        kubectl get --namespace {{ .Release.Namespace }} svc -w {{ include "museum.fullname" . }}-chartmuseum
+  
+  export SERVICE_IP=$(kubectl get svc --namespace {{ .Release.Namespace }} {{ include "museum.fullname" . }}-chartmuseum --template "{{"{{ range (index .status.loadBalancer.ingress 0) }}{{.}}{{ end }}"}}")
+  echo http://$SERVICE_IP:{{ .Values.chartmuseum.service.port }}
+{{- else if contains "ClusterIP" .Values.chartmuseum.service.type }}
+  kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "museum.fullname" . }}-chartmuseum 8080:{{ .Values.chartmuseum.service.port }}
+  echo "Visit http://127.0.0.1:8080 to use ChartMuseum"
+{{- end }}
+
+2. Upload a chart:
+   {{- if .Values.chartmuseum.env.secret.BASIC_AUTH_USER }}
+   curl -u {{ .Values.chartmuseum.env.secret.BASIC_AUTH_USER }}:<password> --data-binary "@mychart-0.1.0.tgz" <URL>/api/charts
+   {{- else }}
+   curl --data-binary "@mychart-0.1.0.tgz" <URL>/api/charts
+   {{- end }}
+
+3. Add repository to Helm:
+   {{- if .Values.chartmuseum.env.secret.BASIC_AUTH_USER }}
+   helm repo add museum https://{{ .Values.chartmuseum.env.secret.BASIC_AUTH_USER }}:<password>@<URL>
+   {{- else }}
+   helm repo add museum <URL>
+   {{- end }}
+   helm repo update
+
+4. Search and install charts:
+   helm search repo museum/
+   helm install myapp museum/mychart
+
+{{- if .Values.chartmuseum.env.open.DISABLE_API }}
+WARNING: API is disabled. This is a read-only ChartMuseum instance.
+{{- end }}
+
+{{- if not .Values.chartmuseum.env.existingSecret }}
+{{- if .Values.chartmuseum.env.secret }}
+SECURITY WARNING: Credentials are stored in plain text in values file.
+Consider using 'existingSecret' instead for production deployments.
+{{- end }}
+{{- end }}
+
+{{- else }}
+ChartMuseum is disabled. Set chartmuseum.enabled=true to deploy.
+{{- end }}

@@ -1,0 +1,168 @@
+# Museum Helm Chart Values
+# Configuration for ChartMuseum with DigitalOcean Spaces (S3-compatible) storage
+
+chartmuseum:
+  enabled: true
+  image:
+    repository: ghcr.io/helm/chartmuseum
+    pullPolicy: IfNotPresent
+    tag: "v0.16.3"
+    replicaCount: 1
+
+  # Storage backend configuration for DigitalOcean Spaces
+  env:
+    open:
+      # Storage backend type
+      STORAGE: amazon
+      STORAGE_AMAZON_BUCKET: "your-spaces-bucket-name"  # Replace with your bucket name
+      STORAGE_AMAZON_REGION: "nyc3"  # Or your Spaces region (nyc3, ams3, sgp1, etc.)
+      STORAGE_AMAZON_ENDPOINT: "https://nyc3.digitaloceanspaces.com"  # Replace nyc3 with your region
+      STORAGE_AMAZON_PREFIX: "charts"
+
+      # Chart organization
+      DEPTH: 0  # Allow one level of subdirectories for organization
+
+      # Server Configuration
+      DISABLE_API: false  # Allow chart uploads
+      ALLOW_OVERWRITE: false  # Prevent accidental overwrites
+      AUTH_ANONYMOUS_GET: false  # Allow public chart downloads
+
+      # Logging
+      LOG_JSON: true
+      DEBUG: true
+      ENABLE_METRICS: true
+
+    # Secret environment variables (stored in Kubernetes secret)
+    #existingSecret: museum-secret
+    secret:
+      # DigitalOcean Spaces credentials
+      AWS_ACCESS_KEY_ID: "your-spaces-access-key"  # Replace with your DO Spaces access key
+      AWS_SECRET_ACCESS_KEY: "your-spaces-secret-key"  # Replace with your DO Spaces secret key
+      # Basic auth credentials (optional)
+      BASIC_AUTH_USER: "admin"
+      BASIC_AUTH_PASS: "mir-operator"
+
+  # Deployment configuration
+  deployment:
+    ## Deployment annotations
+    annotations: {}
+    labels: {}
+
+    ## Additional volumes
+    extraVolumes: []
+
+    ## Additional volume mounts
+    extraVolumeMounts: []
+
+  # Service configuration
+  service:
+    type: ClusterIP
+    #port: 8080
+    #targetPort: 8080
+    #nodePort: ""  # Only used when type is NodePort
+    annotations: {}
+    labels: {}
+
+  # Ingress configuration
+  ingress:
+    enabled: false
+    pathType: Prefix
+    className: "" # [nginx|traefik]
+    annotations: {}
+      # kubernetes.io/ingress.class: nginx
+      # cert-manager.io/cluster-issuer: "letsencrypt-prod"
+      # nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    hosts:
+      - name: museum-local
+        path: /
+        tls: false
+        tlsSecret: museum-local
+
+  # Persistence (local storage alternative to S3)
+  persistence:
+    enabled: false  # Disabled since we're using S3/Spaces
+    size: 8Gi
+    storageClass: ""
+    accessMode: ReadWriteOnce
+
+  # Security context
+  securityContext:
+    enabled: true
+    fsGroup: 1000
+    # runAsUser: 1000
+    # runAsNonRoot: true
+    # capabilities:
+    #   drop:
+    #   - ALL
+
+  # Service Account
+  serviceAccount:
+    create: true
+    name: ""
+    automountServiceAccountToken: false
+
+  serviceMonitor:
+    enabled: false
+    labels: {}
+    metricsPath: "/metrics"
+
+  # Resources
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+  # Probes
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: http
+    initialDelaySeconds: 300
+    periodSeconds: 10
+    timeoutSeconds: 1
+    successThreshold: 1
+    failureThreshold: 3
+
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: http
+    initialDelaySeconds: 300
+    periodSeconds: 10
+    timeoutSeconds: 1
+    successThreshold: 1
+    failureThreshold: 3
+
+  # Node selector
+  nodeSelector: {}
+
+  # Tolerations
+  tolerations: []
+
+  # Affinity
+  affinity: {}
+
+  # Pod annotations
+  podAnnotations: {}
+
+  # Pod labels
+  podLabels: {}
+
+  # Priority class name
+  priorityClassName: ""
+
+  # Autoscaling
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+
+  # Pod Disruption Budget
+  podDisruptionBudget:
+    enabled: false
+    minAvailable: 1
