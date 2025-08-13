@@ -13,7 +13,7 @@
   - [ ] device security with nats
   - [ ] CLI
     - [ ] config edit and view command
-    - [ ] log view command
+    - [x] log view command
     - [ ] cli context for easy cluster switch
     - [ ] tlm ls print query option
   - [ ] core bug with reconnect of loading devices

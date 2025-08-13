@@ -11,22 +11,36 @@ import (
 	"os/signal"
 	"path"
 	"path/filepath"
+	"runtime"
 	"syscall"
 	"time"
 
 	"github.com/maxthom/mir/examples"
 	"github.com/maxthom/mir/pkgs/device/proto"
+	"gopkg.in/yaml.v3"
 )
 
 type ToolsCmd struct {
 	Generate GenerateCmd `cmd:"" help:"Generate project templates"`
 	Install  InstallCmd  `cmd:"" help:"Install development tools"`
 	Log      LogCmd      `cmd:"" help:"View and follow Mir CLI logs"`
+	Config   SettingsCmd `cmd:"" help:"Manage Mir CLI configuration"`
 }
 
 type LogCmd struct {
 	Lines  int  `short:"n" help:"Number of lines to display (0 for all)" default:"0"`
 	Follow bool `short:"f" help:"Follow log output" default:"false"`
+}
+
+type SettingsCmd struct {
+	View SettingsViewCmd `cmd:"" help:"View configuration file"`
+	Edit SettingsEditCmd `cmd:"" help:"Edit configuration file"`
+}
+
+type SettingsViewCmd struct {
+}
+
+type SettingsEditCmd struct {
 }
 
 type GenerateCmd struct {
@@ -186,7 +200,7 @@ func (d *LogCmd) Run() error {
 	}
 
 	// Print the file path
-	fmt.Printf("==> %s <==\n", logPath)
+	fmt.Printf("# %s\n", logPath)
 
 	// If not following, just display the requested lines
 	if !d.Follow {
@@ -330,4 +344,120 @@ func tailFile(path string, lines int, follow bool) error {
 		}
 		fmt.Print(line)
 	}
+}
+
+// Helper function to get the config file path
+func getConfigFilePath() (string, bool) {
+	// Check user config first
+	userHomeDir, err := os.UserHomeDir()
+	if err == nil {
+		userPath := filepath.Join(userHomeDir, ".config", "mir", "cli.yaml")
+		if _, err := os.Stat(userPath); err == nil {
+			return userPath, true
+		}
+	}
+
+	// Check system config
+	systemPath := "/etc/mir/cli.yaml"
+	if _, err := os.Stat(systemPath); err == nil {
+		return systemPath, true
+	}
+
+	// Return default user path if no config exists
+	if userHomeDir != "" {
+		return filepath.Join(userHomeDir, ".config", "mir", "cli.yaml"), false
+	}
+
+	return "", false
+}
+
+// SettingsViewCmd implementation
+func (d *SettingsViewCmd) Validate() error {
+	return nil
+}
+
+func (d *SettingsViewCmd) Run() error {
+	configPath, exists := getConfigFilePath()
+	if configPath == "" {
+		return fmt.Errorf("failed to determine config file path")
+	}
+
+	if !exists {
+		fmt.Printf("No configuration file found at expected locations:\n")
+		fmt.Printf("  - ~/.config/mir/cli.yaml\n")
+		fmt.Printf("  - /etc/mir/cli.yaml\n")
+		fmt.Printf("\nYou can create one using 'mir tools config edit'\n")
+		return nil
+	}
+
+	// Read and display the config file
+	content, err := os.ReadFile(configPath)
+	if err != nil {
+		return fmt.Errorf("failed to read config file: %v", err)
+	}
+
+	fmt.Print(string(content))
+	return nil
+}
+
+// SettingsEditCmd implementation
+func (d *SettingsEditCmd) Validate() error {
+	return nil
+}
+
+func (d *SettingsEditCmd) Run(cfg Config) error {
+	configPath, exists := getConfigFilePath()
+	if configPath == "" {
+		return fmt.Errorf("failed to determine config file path")
+	}
+
+	// If config doesn't exist, offer to create it
+	if !exists {
+		fmt.Printf("No configuration file found. Creating new config at: %s\n", configPath)
+
+		// Create directory if it doesn't exist
+		dir := filepath.Dir(configPath)
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return fmt.Errorf("failed to create config directory: %v", err)
+		}
+
+		// Create default config
+		b, err := yaml.Marshal(cfg)
+		if err != nil {
+			return fmt.Errorf("failed to marshal default config: %v", err)
+		}
+		defaultConfig := append([]byte("# Mir CLI Configuration\n"), b...)
+
+		if err := os.WriteFile(configPath, defaultConfig, 0644); err != nil {
+			return fmt.Errorf("failed to create config file: %v", err)
+		}
+	}
+
+	// Determine the editor to use
+	editor := os.Getenv("EDITOR")
+	if editor == "" {
+		switch runtime.GOOS {
+		case "windows":
+			editor = "notepad.exe"
+		case "darwin":
+			editor = "nano"
+		default:
+			editor = "nano"
+		}
+	}
+
+	fmt.Printf("Opening %s with %s...\n", configPath, editor)
+
+	// Open the config file in the editor
+	cmd := exec.Command(editor, configPath)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to open editor: %v", err)
+	}
+
+	fmt.Println("Configuration file saved.")
+	return nil
 }
