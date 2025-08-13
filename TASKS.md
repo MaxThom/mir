@@ -8,7 +8,6 @@
 
 ### Features
 
-- [ ] Search by wildcard
 - [ ] MCP Server for Mir
 - [ ] Road to Production
   - [ ] device security with nats
@@ -20,6 +19,7 @@
   - [ ] core bug with reconnect of loading devices
   - [x] Grafana Dashboard for eventstore
   - [ ] HelmChart
+    - [x] Museum
     - [x] Mir
     - [x] Nats
     - [x] Surreal
@@ -33,7 +33,7 @@
     - [x] Multibuild
     - [x] Simple
   - [ ] Pipeline for each
-    - [ ] HelmChart
+    - [x] HelmChart
     - [ ] For device
     - [x] For server
   - [x] CLI Tool template
