@@ -105,6 +105,9 @@ func New(appName string, options ...func(*MirConfig)) *MirConfig {
 func (s *MirConfig) Load() (errs error, lookupFiles, foundFiles []string) {
 	// Load
 	for _, f := range s.configFiles {
+		lookupFiles = append(lookupFiles, f.path)
+	}
+	for _, f := range s.configFiles {
 		var parser koanf.Parser
 
 		switch f.format {
@@ -117,12 +120,12 @@ func (s *MirConfig) Load() (errs error, lookupFiles, foundFiles []string) {
 		}
 		if err := s.k.Load(file.Provider(f.path), parser); err != nil {
 			if !strings.Contains(err.Error(), "no such file or directory") {
-				errs = errors.Join(errs, err)
+				errs = errors.Join(errs, fmt.Errorf("error with file '%s': %w", f.path, err))
+				foundFiles = append(foundFiles, f.path)
 			}
 		} else {
 			foundFiles = append(foundFiles, f.path)
 		}
-		lookupFiles = append(lookupFiles, f.path)
 	}
 
 	//if errs != nil {

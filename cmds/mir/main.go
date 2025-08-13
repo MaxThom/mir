@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"slices"
 
 	"github.com/alecthomas/kong"
 	"github.com/maxthom/mir/internal/libs/boiler/mir_config"
 	"github.com/maxthom/mir/internal/libs/boiler/mir_log"
 	"github.com/maxthom/mir/internal/libs/build_meta"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
+	"github.com/maxthom/mir/internal/ui"
 	"github.com/maxthom/mir/internal/ui/cli"
 	"github.com/maxthom/mir/internal/ui/tui"
 	"github.com/maxthom/mir/pkgs/module/mir"
@@ -24,22 +26,19 @@ var ctx context.Context
 type configFlag string
 
 type (
-	config struct {
-		LogLevel string
-		Target   string
-	}
 	Globals struct {
-		Target     string      `short:"T" help:"Mir connection target. default:nats://127.0.0.1:4222"`
 		Debug      bool        `short:"D" help:"Enable debug mode"`
+		Ctx        string      `help:"Set context to use. Use mir context for list."`
 		LogLevel   string      `short:"L" help:"Set the logging level (debug|info|warn|error|fatal). default:info"`
 		ConfigFile configFlag  `short:"C" help:"Set path for config path. default:~/.config/mir/cli.yaml"`
 		Version    VersionFlag `short:"V" name:"version" help:"Print version information and quit"`
 	}
 	CLI struct {
-		Client Client       `cmd:"" embed:"" help:"Test Mir ecosystem of servers and services"`
-		Serve  cli.ServeCmd `cmd:"" help:"Serve Mir ecosystem of servers and services"`
-		Infra  cli.InfraCmd `cmd:"" help:"Start and stop Mir supporting infrastructure"`
-		Tools  cli.ToolsCmd `cmd:"" aliases:"" help:"Various tools to interact with Mir ecosystem"`
+		Client  Client         `cmd:"" embed:"" help:"Test Mir ecosystem of servers and services"`
+		Serve   cli.ServeCmd   `cmd:"" help:"Serve Mir ecosystem of servers and services"`
+		Infra   cli.InfraCmd   `cmd:"" help:"Start and stop Mir supporting infrastructure"`
+		Context cli.ContextCmd `cmd:"" aliases:"ctx" help:"Set and list contexts"`
+		Tools   cli.ToolsCmd   `cmd:"" aliases:"" help:"Various tools to interact with Mir ecosystem"`
 	}
 	// Each commands that requires Mir connected as client
 	Client struct {
@@ -55,13 +54,6 @@ type (
 
 const (
 	AppName = "mir"
-)
-
-var (
-	defaultCfg = config{
-		LogLevel: "info",
-		Target:   "nats://127.0.0.1:4222",
-	}
 )
 
 func (v VersionFlag) Decode(ctx *kong.DecodeContext) error { return nil }
@@ -104,19 +96,33 @@ func main() {
 // Therefor each command must close Mir :(
 func (d *Client) AfterApply(k *kong.Context, logFile *os.File) error {
 	// Config
-	cfg := defaultCfg
+	cfg := ui.NewDefaultConfig()
 	errCfg, lookupFiles, foundFiles := mir_config.New(AppName,
 		mir_config.WithEtcFilePath("mir/cli.yaml", mir_config.Yaml, false),
 		mir_config.WithXdgConfigHomeFilePath("mir/cli.yaml", mir_config.Yaml, false),
 		mir_config.WithFilePath(string(d.ConfigFile), mir_config.Yaml, false),
 		mir_config.WithEnvVars("MIR"),
 	).LoadAndUnmarshal(&cfg)
+	if errCfg != nil {
+		return errCfg
+	}
+	k.Bind(cfg)
+	if len(foundFiles) > 0 {
+		ui.LoadedConfigPath = foundFiles[len(foundFiles)-1]
+	}
 
 	if d.LogLevel != "" {
 		cfg.LogLevel = d.LogLevel
 	}
-	if d.Target != "" {
-		cfg.Target = d.Target
+
+	if d.Ctx != "" {
+		cfg.CurrentContext = d.Ctx
+	}
+	ctx, ok := cfg.GetCurrentContext()
+	if !ok {
+		if !slices.Contains(k.Args, "context") && !slices.Contains(k.Args, "ctx") {
+			return fmt.Errorf("current context '%s' does not exist.\nRun 'mir context' to list available contexts.", cfg.CurrentContext)
+		}
 	}
 
 	log := mir_log.Setup(
@@ -127,10 +133,6 @@ func (d *Client) AfterApply(k *kong.Context, logFile *os.File) error {
 	)
 
 	log.Info().Strs("lookup config", lookupFiles).Strs("found config", foundFiles).Msg("configuration loaded")
-	if errCfg != nil {
-		log.Err(errCfg).Msg("error loading config")
-		os.Exit(1)
-	}
 	prettyCfg, err := mir_config.JsonMarshalWithoutSecrets(cfg)
 	if err != nil {
 		log.Error().Err(err).Msg("error marshalling config")
@@ -138,17 +140,15 @@ func (d *Client) AfterApply(k *kong.Context, logFile *os.File) error {
 	}
 	log.Info().Str("config", string(prettyCfg)).Msg("")
 
-	m, err := mir.Connect(AppName, cfg.Target, append(mir.WithDefaultReconnectOpts(), mir.WithDefaultConnectionLogging(log)...)...)
+	m, err := mir.Connect(AppName, ctx.Target, append(mir.WithDefaultReconnectOpts(), mir.WithDefaultConnectionLogging(log)...)...)
 	if err != nil {
 		log.Err(err).Msg("error connection to Mir server")
 		fmt.Println("error connecting to Mir server")
 		os.Exit(1)
 	}
-	log.Info().Str("url", cfg.Target).Str("status", m.Bus.Status().String()).Msg("msg bus status")
+	log.Info().Str("url", ctx.Target).Str("status", m.Bus.Status().String()).Msg("msg bus status")
 	k.Bind(m)
 	k.Bind(log)
-	k.Bind(cli.NewConfig(cfg.LogLevel, cfg.Target))
-	k.Bind(tui.NewConfig(cfg.LogLevel, cfg.Target))
 
 	return nil
 }

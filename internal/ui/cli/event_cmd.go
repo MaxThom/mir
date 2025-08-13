@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/maxthom/mir/internal/ui"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/rs/zerolog"
@@ -41,7 +42,7 @@ type TargetEvent struct {
 	Labels     map[string]string `help:"Set of labels to filter events"`
 }
 
-func (d EventCmd) Run(log zerolog.Logger, cfg Config, m *mir.Mir) error {
+func (d EventCmd) Run(log zerolog.Logger, cfg ui.Config, m *mir.Mir) error {
 	if err := m.Disconnect(); err != nil {
 		log.Error().Err(err).Msg("error disconnecting from Mir server")
 	}
@@ -72,7 +73,7 @@ func (d *EventListCmd) Validate() error {
 	return nil
 }
 
-func (d *EventListCmd) Run(log zerolog.Logger, m *mir.Mir, cfg Config) error {
+func (d *EventListCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) error {
 	list, err := m.Server().ListEvents().Request(
 		mir_v1.EventTarget{
 			ObjectTarget: mir_v1.ObjectTarget{
@@ -125,7 +126,7 @@ func (d *EventDeleteCmd) Validate() error {
 	return nil
 }
 
-func (d *EventDeleteCmd) Run(log zerolog.Logger, m *mir.Mir, cfg Config) error {
+func (d *EventDeleteCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) error {
 	list, err := m.Server().DeleteEvents().Request(mir_v1.EventTarget{
 		ObjectTarget: mir_v1.ObjectTarget{
 			Names:      d.Names,

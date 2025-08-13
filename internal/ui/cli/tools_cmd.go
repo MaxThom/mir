@@ -16,8 +16,8 @@ import (
 	"time"
 
 	"github.com/maxthom/mir/examples"
+	"github.com/maxthom/mir/internal/ui"
 	"github.com/maxthom/mir/pkgs/device/proto"
-	"gopkg.in/yaml.v3"
 )
 
 type ToolsCmd struct {
@@ -346,57 +346,19 @@ func tailFile(path string, lines int, follow bool) error {
 	}
 }
 
-// Helper function to get the config file path
-func getConfigFilePath() (string, bool) {
-	// Check user config first
-	userHomeDir, err := os.UserHomeDir()
-	if err == nil {
-		userPath := filepath.Join(userHomeDir, ".config", "mir", "cli.yaml")
-		if _, err := os.Stat(userPath); err == nil {
-			return userPath, true
-		}
-	}
-
-	// Check system config
-	systemPath := "/etc/mir/cli.yaml"
-	if _, err := os.Stat(systemPath); err == nil {
-		return systemPath, true
-	}
-
-	// Return default user path if no config exists
-	if userHomeDir != "" {
-		return filepath.Join(userHomeDir, ".config", "mir", "cli.yaml"), false
-	}
-
-	return "", false
-}
-
 // SettingsViewCmd implementation
 func (d *SettingsViewCmd) Validate() error {
 	return nil
 }
 
-func (d *SettingsViewCmd) Run() error {
-	configPath, exists := getConfigFilePath()
-	if configPath == "" {
-		return fmt.Errorf("failed to determine config file path")
-	}
-
-	if !exists {
-		fmt.Printf("No configuration file found at expected locations:\n")
-		fmt.Printf("  - ~/.config/mir/cli.yaml\n")
-		fmt.Printf("  - /etc/mir/cli.yaml\n")
-		fmt.Printf("\nYou can create one using 'mir tools config edit'\n")
-		return nil
-	}
-
-	// Read and display the config file
-	content, err := os.ReadFile(configPath)
+func (d *SettingsViewCmd) Run(cfg ui.Config) error {
+	b, err := cfg.PrintConfig()
 	if err != nil {
-		return fmt.Errorf("failed to read config file: %v", err)
+		return err
 	}
+	fmt.Println("# " + ui.LoadedConfigPath)
+	fmt.Println(string(b))
 
-	fmt.Print(string(content))
 	return nil
 }
 
@@ -405,32 +367,9 @@ func (d *SettingsEditCmd) Validate() error {
 	return nil
 }
 
-func (d *SettingsEditCmd) Run(cfg Config) error {
-	configPath, exists := getConfigFilePath()
-	if configPath == "" {
-		return fmt.Errorf("failed to determine config file path")
-	}
-
-	// If config doesn't exist, offer to create it
-	if !exists {
-		fmt.Printf("No configuration file found. Creating new config at: %s\n", configPath)
-
-		// Create directory if it doesn't exist
-		dir := filepath.Dir(configPath)
-		if err := os.MkdirAll(dir, 0755); err != nil {
-			return fmt.Errorf("failed to create config directory: %v", err)
-		}
-
-		// Create default config
-		b, err := yaml.Marshal(cfg)
-		if err != nil {
-			return fmt.Errorf("failed to marshal default config: %v", err)
-		}
-		defaultConfig := append([]byte("# Mir CLI Configuration\n"), b...)
-
-		if err := os.WriteFile(configPath, defaultConfig, 0644); err != nil {
-			return fmt.Errorf("failed to create config file: %v", err)
-		}
+func (d *SettingsEditCmd) Run(cfg ui.Config) error {
+	if err := cfg.WriteConfig(); err != nil {
+		return err
 	}
 
 	// Determine the editor to use
@@ -446,10 +385,10 @@ func (d *SettingsEditCmd) Run(cfg Config) error {
 		}
 	}
 
-	fmt.Printf("Opening %s with %s...\n", configPath, editor)
+	fmt.Printf("Opening %s with %s...\n", ui.LoadedConfigPath, editor)
 
 	// Open the config file in the editor
-	cmd := exec.Command(editor, configPath)
+	cmd := exec.Command(editor, ui.LoadedConfigPath)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

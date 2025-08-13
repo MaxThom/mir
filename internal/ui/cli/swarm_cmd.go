@@ -12,6 +12,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/boiler/mir_signals"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	"github.com/maxthom/mir/internal/libs/swarm"
+	"github.com/maxthom/mir/internal/ui"
 	swarmv1 "github.com/maxthom/mir/internal/ui/cli/gen/swarm/v1"
 	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
 	"github.com/maxthom/mir/pkgs/device/mir"
@@ -43,11 +44,11 @@ func (c *SwarmCmd) Validate() error {
 	return nil
 }
 
-func (d *SwarmCmd) Run(log zerolog.Logger, m *mSdk.Mir, cfg Config) error {
+func (d *SwarmCmd) Run(log zerolog.Logger, m *mSdk.Mir, cfg ui.Config) error {
 	ctx, cancel := mir_signals.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGINT)
 
 	logLvl := mir.LogLevelInfo
-	switch l.GetLevel() {
+	switch log.GetLevel() {
 	case zerolog.DebugLevel:
 		logLvl = mir.LogLevelDebug
 	case zerolog.InfoLevel:

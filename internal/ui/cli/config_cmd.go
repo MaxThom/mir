@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/maxthom/mir/internal/libs/editor"
+	"github.com/maxthom/mir/internal/ui"
 	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/pkg/errors"
@@ -55,7 +56,7 @@ func (d *ConfigListCmd) Validate() error {
 	return nil
 }
 
-func (d *ConfigListCmd) Run(log zerolog.Logger, m *mir.Mir, cfg Config) error {
+func (d *ConfigListCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) error {
 	req := &mir_apiv1.SendListConfigRequest{
 		Targets: &mir_apiv1.DeviceTarget{
 			Ids:        d.Target.Ids,
@@ -147,7 +148,7 @@ func (d *ConfigSendCmd) Validate() error {
 	return nil
 }
 
-func (d *ConfigSendCmd) Run(log zerolog.Logger, m *mir.Mir, cfg Config) error {
+func (d *ConfigSendCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) error {
 	if d.Config == "" {
 		listCfg := ConfigListCmd{
 			Target:            d.Target,
