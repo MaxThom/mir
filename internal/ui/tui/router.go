@@ -10,6 +10,7 @@ import (
 	"github.com/rs/zerolog"
 
 	"github.com/charmbracelet/bubbles/spinner"
+	"github.com/maxthom/mir/internal/ui"
 	"github.com/maxthom/mir/internal/ui/tui/components/labelspinner"
 	"github.com/maxthom/mir/internal/ui/tui/components/menu"
 	"github.com/maxthom/mir/internal/ui/tui/msgs"
@@ -33,14 +34,14 @@ type MirTeaModel interface {
 type Model struct {
 	ctx          context.Context
 	m            *mir.Mir
-	cfg          Config
+	cfg          ui.Config
 	lblSpinner   labelspinner.Model
 	currentRoute menu.OptionValue
 	routes       map[string]MirTeaModel
 }
 
-func NewModel(ctx context.Context, log zerolog.Logger, m *mir.Mir, cfg Config) *Model {
-	l = log.With().Str("page", "router").Logger()
+func NewModel(ctx context.Context, log zerolog.Logger, m *mir.Mir, cfg ui.Config) *Model {
+	log = log.With().Str("page", "router").Logger()
 	s := labelspinner.New(" 🛰️ ", styles.Mir.Render("Mir"), spinner.Dot)
 	routes := map[string]MirTeaModel{
 		"/":               mainmenu.NewModel(),

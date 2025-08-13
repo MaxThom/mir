@@ -6,6 +6,7 @@ import (
 
 	"github.com/maxthom/mir/internal/libs/compression/zstd"
 	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
+	"github.com/maxthom/mir/internal/ui"
 	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/maxthom/mir/pkgs/module/mir"
@@ -62,7 +63,7 @@ func (d *SchemaUploadCmd) Validate() error {
 	return nil
 }
 
-func (d *SchemaUploadCmd) Run(log zerolog.Logger, m *mir.Mir, cfg Config) error {
+func (d *SchemaUploadCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) error {
 	schemaData, err := os.ReadFile(d.Path)
 	if err != nil {
 		return fmt.Errorf("error reading file: %w", err)
@@ -133,7 +134,7 @@ type schemaDevices struct {
 	PbSet     *descriptorpb.FileDescriptorSet
 }
 
-func (d *SchemaExploreCmd) Run(log zerolog.Logger, m *mir.Mir, cfg Config) error {
+func (d *SchemaExploreCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) error {
 	list, err := m.Server().ListDevice().Request(mir_v1.DeviceTarget{
 		Ids:        d.Target.Ids,
 		Names:      d.Target.Names,

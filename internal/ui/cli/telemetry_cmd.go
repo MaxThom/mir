@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/maxthom/mir/internal/libs/external/grafana"
+	"github.com/maxthom/mir/internal/ui"
 	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/rs/zerolog"
@@ -23,8 +24,8 @@ type TelemetryListCmd struct {
 	Measuremeants []string          `short:"m" help:"list of measurements to display. correspond to proto messages of type telemetry"`
 	Filters       map[string]string `short:"f" help:"labels to filter measurements"`
 	ShowFields    bool              `short:"s" help:"show fields of the measurements" default:"false"`
+	PrintQuery    bool              `short:"q" help:"Print Influx query" default:"false"`
 	RefreshSchema bool              `short:"r" help:"Refresh schema from device even if in store" default:"false"`
-	GrafanaUrl    string            `short:"g" help:"grafana instance url to point the generated link to" default:"localhost:3000"`
 }
 
 func (d *TelemetryCmd) Run() error {
@@ -46,7 +47,9 @@ func (d *TelemetryListCmd) Validate() error {
 	return nil
 }
 
-func (d *TelemetryListCmd) Run(log zerolog.Logger, m *mir.Mir, cfg Config) error {
+func (d *TelemetryListCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) error {
+	ctxCfg, _ := cfg.GetCurrentContext()
+
 	req := &mir_apiv1.SendListTelemetryRequest{
 		Targets: &mir_apiv1.DeviceTarget{
 			Ids:        d.Target.Ids,
@@ -80,7 +83,7 @@ func (d *TelemetryListCmd) Run(log zerolog.Logger, m *mir.Mir, cfg Config) error
 				sb.WriteString("{")
 				sb.WriteString(mapToSortedString(tlm.Labels))
 				sb.WriteString("} ")
-				sb.WriteString(FormatHyperlink(d.GrafanaUrl+"/explore", grafana.CreateExploreLink(d.GrafanaUrl, tlm.ExploreQuery)))
+				sb.WriteString(FormatHyperlink(ctxCfg.Grafana+"/explore", grafana.CreateExploreLink(ctxCfg.Grafana, tlm.ExploreQuery)))
 				sb.WriteString("\n")
 				if tlm.Error != "" {
 					sb.WriteString(tlm.Error)
@@ -91,6 +94,11 @@ func (d *TelemetryListCmd) Run(log zerolog.Logger, m *mir.Mir, cfg Config) error
 						sb.WriteString(f)
 						sb.WriteString("\n")
 					}
+				}
+				if d.PrintQuery {
+					sb.WriteString("  ")
+					sb.WriteString(strings.ReplaceAll(tlm.ExploreQuery, "\n", "\n  "))
+					sb.WriteString("\n")
 				}
 			}
 		}

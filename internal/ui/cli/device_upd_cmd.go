@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/maxthom/mir/internal/libs/editor"
+	"github.com/maxthom/mir/internal/ui"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/rs/zerolog"
@@ -44,7 +45,7 @@ func (d *DeviceEditCmd) Validate() error {
 	return nil
 }
 
-func (d *DeviceEditCmd) Run(log zerolog.Logger, m *mir.Mir, cfg Config) error {
+func (d *DeviceEditCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) error {
 	tar := mir_v1.DeviceTarget{
 		Ids:        d.Ids,
 		Names:      d.Names,
@@ -126,7 +127,7 @@ func (d *DeviceApplyCmd) Validate() error {
 	return nil
 }
 
-func (d *DeviceApplyCmd) Run(log zerolog.Logger, m *mir.Mir, cfg Config) error {
+func (d *DeviceApplyCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) error {
 	devs := []*mir_v1.Device{}
 	var err error
 	if isPipedStdIn() || d.Path != "" {
@@ -196,7 +197,7 @@ func (d *DeviceMergeCmd) Validate() error {
 	return nil
 }
 
-func (d *DeviceMergeCmd) Run(log zerolog.Logger, m *mir.Mir, cfg Config) error {
+func (d *DeviceMergeCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) error {
 	devs := []*mir_v1.Device{}
 	var err error
 	if isPipedStdIn() || d.Patch != "" {

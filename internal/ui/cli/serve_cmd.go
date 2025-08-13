@@ -26,6 +26,7 @@ import (
 	"github.com/maxthom/mir/internal/servers/protocmd_srv"
 	"github.com/maxthom/mir/internal/servers/prototlm_srv"
 	"github.com/maxthom/mir/internal/services/schema_cache"
+	"github.com/maxthom/mir/internal/ui"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/rs/zerolog"
 	"golang.org/x/net/http2"
@@ -94,7 +95,7 @@ func (d *ServeCmd) Validate() error {
 	return nil
 }
 
-func (d *ServeCmd) Run(log zerolog.Logger, m *mir.Mir, cfg Config) error {
+func (d *ServeCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) error {
 	if d.DisplayDefaultCfg {
 		out, err := yaml.Marshal(d.ServeConfig)
 		if err != nil {
