@@ -123,10 +123,12 @@ func (d *DeviceTemplateCmd) Validate() error {
 }
 
 func (d *DeviceTemplateCmd) Run() error {
+	fmt.Println("-> Create target directory")
 	if err := os.MkdirAll(d.ContextPath, 0755); err != nil {
 		return fmt.Errorf("failed to create target directory: %w", err)
 	}
 
+	fmt.Println("-> go mod init")
 	if _, err := os.Stat(path.Join(d.ContextPath, "go.mod")); os.IsNotExist(err) {
 		cmd := exec.Command("go", "mod", "init", d.ModulePath)
 		cmd.Dir = d.ContextPath
@@ -137,6 +139,7 @@ func (d *DeviceTemplateCmd) Run() error {
 		}
 	}
 
+	fmt.Println("-> go get device sdk")
 	cmd := exec.Command("go", "get", "github.com/maxthom/mir/")
 	cmd.Dir = d.ContextPath
 	cmd.Stdout = os.Stdout
@@ -145,12 +148,19 @@ func (d *DeviceTemplateCmd) Run() error {
 		return fmt.Errorf("failed to add mir dependency: %v", err)
 	}
 
+	// Prepare replacements map for template variables
+	replacements := map[string]string{
+		"{{project_path}}": d.ModulePath,
+		"//{{}}":           "",
+	}
+
+	fmt.Println("-> generate template")
 	if d.Proto == "buf" {
 		subFS, err := fs.Sub(examples.DeviceTemplateFS, "templates/go_device_buf")
 		if err != nil {
 			return fmt.Errorf("failed to create sub filesystem: %w", err)
 		}
-		if err = RecreateFS(subFS, d.ContextPath, true); err != nil {
+		if err = RecreateFSWithReplacements(subFS, d.ContextPath, true, replacements); err != nil {
 			return fmt.Errorf("failed to create device template project: %w", err)
 		}
 	} else if d.Proto == "protoc" {
@@ -158,7 +168,7 @@ func (d *DeviceTemplateCmd) Run() error {
 		if err != nil {
 			return fmt.Errorf("failed to create sub filesystem: %w", err)
 		}
-		if err = RecreateFS(subFS, d.ContextPath, true); err != nil {
+		if err = RecreateFSWithReplacements(subFS, d.ContextPath, true, replacements); err != nil {
 			return fmt.Errorf("failed to create device template project: %w", err)
 		}
 	}
@@ -168,11 +178,38 @@ func (d *DeviceTemplateCmd) Run() error {
 		if err != nil {
 			return fmt.Errorf("failed to create sub filesystem: %w", err)
 		}
-		if err = RecreateFS(subFS, d.ContextPath, true); err != nil {
+		if err = RecreateFSWithReplacements(subFS, d.ContextPath, true, replacements); err != nil {
 			return fmt.Errorf("failed to create container files: %w", err)
 		}
 	}
 
+	fmt.Println("-> generate proto")
+	if d.Proto == "buf" {
+		cmd = exec.Command("buf", "generate")
+		cmd.Dir = d.ContextPath
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("failed to generate proto: %v", err)
+		}
+	} else if d.Proto == "protoc" {
+		cmd = exec.Command("mkdir", "-p", "proto/gen")
+		cmd.Dir = d.ContextPath
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("failed to create directory: %v", err)
+		}
+		cmd = exec.Command("protoc", "--proto_path=proto", "--go_out=proto/gen", "--go_opt=paths=source_relative", "proto/schema/v1/schema.proto")
+		cmd.Dir = d.ContextPath
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("failed to generate proto: %v", err)
+		}
+	}
+
+	fmt.Println("-> go mod tidy")
 	cmd = exec.Command("go", "mod", "tidy")
 	cmd.Dir = d.ContextPath
 	cmd.Stdout = os.Stdout

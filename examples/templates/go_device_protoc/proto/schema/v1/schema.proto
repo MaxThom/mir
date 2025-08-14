@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 package schema.v1;
-option go_package = "<project_path>/proto/schema/v1/schemav1";
+option go_package = "{{project_path}}/proto/schema/v1/schemav1";
 
 import "mir/device/v1/mir.proto";
 
