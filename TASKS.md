@@ -9,13 +9,14 @@
 ### Features
 
 - [ ] MCP Server for Mir
+- [ ] TinyGo
 - [ ] Road to Production
   - [ ] device security with nats
-  - [ ] CLI
-    - [ ] config edit and view command
+  - [x] CLI
+    - [x] config edit and view command
     - [x] log view command
-    - [ ] cli context for easy cluster switch
-    - [ ] tlm ls print query option
+    - [x] cli context for easy cluster switch
+    - [x] tlm ls print query option
   - [ ] core bug with reconnect of loading devices
   - [x] Grafana Dashboard for eventstore
   - [ ] HelmChart
@@ -29,7 +30,9 @@
   - [x] Compose release
   - [x] GrafanaLoki
   - [x] Docker container
-    - [ ] Simple/Multi for device
+    - [x] Simple/Multi for device
+      - [ ] Makefile, Pipeline
+      - [ ] Optional for docker and maybe helm?
     - [x] Multibuild
     - [x] Simple
   - [ ] Pipeline for each

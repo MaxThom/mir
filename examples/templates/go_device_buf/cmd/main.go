@@ -12,10 +12,7 @@ import (
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	m, err := mir.Builder().
-		DeviceId("example_device").
-		Target("nats://127.0.0.1:4222").
-		LogLevel(mir.LogLevelInfo).
-		//ConfigFile("./config.yaml", mir.Yaml).
+		DefaultConfigFile().
 		//Schema(schemav1.File_schema_v1_schema_proto).
 		Build()
 	if err != nil {
