@@ -78,8 +78,8 @@ docker-kill:
     docker ps --all
 
 # Build docker image
-docker-build tag="latest" version="0.0.0" user="$(id -u -n)" time="$(date -u)":
-    docker build -t ghcr.io/maxthom/mir:{{tag}} --build-arg VERSION={{version}} --build-arg USER="{{user}}" --build-arg TIME="{{time}}" .
+docker-build tag="latest" platform="linux/amd64" version="0.0.0" user="$(id -u -n)" time="$(date -u)":
+    docker build -t ghcr.io/maxthom/mir:{{tag}} --build-arg BUILDPLATFORM={{platform}} --build-arg VERSION={{version}} --build-arg USER="{{user}}" --build-arg TIME="{{time}}" .
 
 # Run docker Mir
 docker-run entry="serve":

@@ -91,19 +91,18 @@ func (b builder) Target(t string) builder {
 // device_id and the target. Specifying those configs
 // in the builder pattern have greater priority
 // then loading from the config file.
-// The file is loaded in folder /etc/mir/device.[json|yaml]
-// If not running in a container, it will also load from path
+// The file is loaded in folders:
+// - ./device.yaml
+// - ~/.config/mir/device.yaml
+// - /etc/mir/device.yaml
 // $HOME/.config/mir/device.[json|yaml]
-func (b builder) DefaultConfigFile(f configFormat) builder {
+func (b builder) DefaultConfigFile() builder {
 	format := mir_config.Yaml
-	fileName := "mir/device.yaml"
-	if f == Json {
-		format = mir_config.Json
-		fileName = "mir/device.json"
-	}
+	fileName := "device.yaml"
 	b.fileOpts = append(b.fileOpts,
-		mir_config.WithEtcFilePath(fileName, format, false),
-		mir_config.WithXdgConfigHomeFilePath(fileName, format, true),
+		mir_config.WithEtcFilePath("mir/"+fileName, format, false),
+		mir_config.WithXdgConfigHomeFilePath("mir/"+fileName, format, false),
+		mir_config.WithFilePath("./"+fileName, format, false),
 	)
 	return b
 }

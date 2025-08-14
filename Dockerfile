@@ -1,5 +1,6 @@
 # Build stage
-FROM golang:1.23.2-alpine AS builder
+ARG BUILDPLATFORM=linux/amd64
+FROM --platform=$BUILDPLATFORM golang:1.23.2-alpine AS builder
 
 # Install build dependencies
 RUN apk add --no-cache git make build-base
@@ -14,12 +15,14 @@ RUN go mod download
 # Copy source code
 COPY . .
 
-# Build the binary
+# Build arguments for multi-platform support
+ARG TARGETOS=linux
+ARG TARGETARCH=amd64
 ARG VERSION=0.0.0
 ARG USER=docker
 ARG TIME
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build \
     -ldflags="-X 'github.com/maxthom/mir/internal/libs/build_meta.Version=${VERSION}' \
     -X 'github.com/maxthom/mir/internal/libs/build_meta.User=${USER}' \
     -X 'github.com/maxthom/mir/internal/libs/build_meta.Time=${TIME}' \

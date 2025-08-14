@@ -105,9 +105,10 @@ func (d *MirSchemaCmd) Run() error {
 }
 
 type DeviceTemplateCmd struct {
-	ContextPath string `short:"p" help:"Context path to generate schema structure" default:"."`
-	Proto       string `enum:"protoc,buf" help:"Protofiles management [protoc|buf]. Buf (recommended)." default:"buf"`
-	ModulePath  string `arg:"" help:"Go project module path. eg: github.com/<user|org>/<project>"`
+	ContextPath      string `short:"p" help:"Context path to generate schema structure" default:"."`
+	ModulePath       string `arg:"" help:"Go project module path. eg: github.com/<user|org>/<project>"`
+	Proto            string `enum:"protoc,buf" help:"Protofiles management [protoc|buf]. Buf (recommended)." default:"buf"`
+	IncludeContainer bool   `short:"c" help:"Include docker containers to package Mir Device" default:"false"`
 }
 
 func (d *DeviceTemplateCmd) Validate() error {
@@ -159,6 +160,16 @@ func (d *DeviceTemplateCmd) Run() error {
 		}
 		if err = RecreateFS(subFS, d.ContextPath, true); err != nil {
 			return fmt.Errorf("failed to create device template project: %w", err)
+		}
+	}
+
+	if d.IncludeContainer {
+		subFS, err := fs.Sub(examples.DeviceTemplateFS, "templates/containers")
+		if err != nil {
+			return fmt.Errorf("failed to create sub filesystem: %w", err)
+		}
+		if err = RecreateFS(subFS, d.ContextPath, true); err != nil {
+			return fmt.Errorf("failed to create container files: %w", err)
 		}
 	}
 

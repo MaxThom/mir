@@ -1,12 +1,32 @@
 default:
     just -l --unsorted
 
+# Generate proto code
 proto:
     buf generate
     buf lint
 
+# Build executable
 build:
 	go build -o bin/device cmd/main.go
 
+# Run executable
 run:
 	go run cmd/main.go
+
+# Build docker image
+docker-build tag="latest" platform="linux/amd64":
+    export GITHUB_TOKEN=$(gh auth token) && \
+    docker build --build-arg BUILDPLATFORM={{platform}} --build-arg GITHUB_TOKEN=$GITHUB_TOKEN -t mir.dev:{{tag}} .
+
+# Run docker Mir
+docker-run tag="latest":
+    docker run --network host mir.dev:{{tag}}
+
+# Run docker Mir with a config file
+docker-run-config tag="latest" file="device.yaml":
+    docker run -v $(pwd)/{{file}}:/home/mir/.config/mir/device.yaml --network host mir.dev:{{tag}}
+
+# Run docker Mir and enter the container
+docker-run-exec tag="latest" file="device.yaml":
+    docker run -v $(pwd)/{{file}}:/home/mir/.config/mir/device.yaml --network host -it --entrypoint /bin/sh mir.dev:{{tag}}
