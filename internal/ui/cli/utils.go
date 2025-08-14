@@ -203,6 +203,10 @@ func getTargetFromNameNs(n string) Target {
 }
 
 func RecreateFS(embedFS fs.FS, targetDir string, deleteExisting bool) error {
+	return RecreateFSWithReplacements(embedFS, targetDir, deleteExisting, nil)
+}
+
+func RecreateFSWithReplacements(embedFS fs.FS, targetDir string, deleteExisting bool, replacements map[string]string) error {
 	if deleteExisting {
 		var filesToDelete []string
 		var dirsToDelete []string
@@ -263,20 +267,24 @@ func RecreateFS(embedFS fs.FS, targetDir string, deleteExisting bool) error {
 			return fmt.Errorf("failed to create parent directories for %s: %w", targetPath, err)
 		}
 
-		src, err := embedFS.Open(path)
+		// Read the entire file content
+		content, err := fs.ReadFile(embedFS, path)
 		if err != nil {
-			return fmt.Errorf("failed to open embedded file %s: %w", path, err)
+			return fmt.Errorf("failed to read embedded file %s: %w", path, err)
 		}
-		defer src.Close()
 
-		dst, err := os.Create(targetPath)
-		if err != nil {
-			return fmt.Errorf("failed to create file %s: %w", targetPath, err)
+		// Perform replacements if any are specified
+		if len(replacements) > 0 {
+			contentStr := string(content)
+			for placeholder, value := range replacements {
+				contentStr = strings.ReplaceAll(contentStr, placeholder, value)
+			}
+			content = []byte(contentStr)
 		}
-		defer dst.Close()
 
-		if _, err := io.Copy(dst, src); err != nil {
-			return fmt.Errorf("failed to copy contents to %s: %w", targetPath, err)
+		// Write the content to the target file
+		if err := os.WriteFile(targetPath, content, 0644); err != nil {
+			return fmt.Errorf("failed to write file %s: %w", targetPath, err)
 		}
 
 		return nil

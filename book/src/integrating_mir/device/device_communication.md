@@ -17,13 +17,11 @@ For this next part, we will define a schema to enable communication between your
 - `mir.proto`: contains Mir metadata and Protobuf extentions. Readonly.
 - `schema.proto`: contains your device schema and defines the communication interface.
 
-Edit `schema.proto` and modify the go_package to your project module path found in the `mod.go`:
-
 ```proto
 syntax = "proto3";
 
 package schema.v1;
-option go_package = "<project_path>/proto/schema/v1/schemav1";
+option go_package = "github.com/maxthom/mir.device.buff/proto/schema/v1/schemav1";
 
 import "mir/device/v1/mir.proto";
 ```
@@ -53,7 +51,7 @@ import (
 	"syscall"
 
 	"github.com/maxthom/mir/pkgs/device/mir"
-	schemav1 "github.com/maxthom/mir.device.buff/proto/gen/schema/v1" // Schema Import
+	schemav1 "github.com/maxthom/mir.device.buff/proto/gen/schema/v1"
 )
 
 func main() {
@@ -62,8 +60,7 @@ func main() {
 		DeviceId("weather").
 		Target("nats://127.0.0.1:4222").
 		LogLevel(mir.LogLevelInfo).
-		//ConfigFile("./config.yaml", mir.Yaml).
-		Schema(schemav1.File_schema_v1_schema_proto). // Uncomment this line
+		Schema(schemav1.File_schema_v1_schema_proto).
 		Build()
 	if err != nil {
 		panic(err)

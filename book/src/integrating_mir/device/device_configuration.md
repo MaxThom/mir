@@ -233,7 +233,6 @@ func main() {
 		DeviceId("weather").
 		Target("nats://127.0.0.1:4222").
 		LogLevel(mir.LogLevelInfo).
-		//ConfigFile("./config.yaml", mir.Yaml).
 		Schema(schemav1.File_schema_v1_schema_proto).
 		Build()
 	if err != nil {

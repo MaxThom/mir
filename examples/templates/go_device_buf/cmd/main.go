@@ -6,6 +6,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	//{{}}schemav1 "{{project_path}}/proto/gen/schema/v1"
+
 	"github.com/maxthom/mir/pkgs/device/mir"
 )
 
@@ -13,7 +15,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	m, err := mir.Builder().
 		DefaultConfigFile().
-		//Schema(schemav1.File_schema_v1_schema_proto).
+		//{{}}Schema(schemav1.File_schema_v1_schema_proto).
 		Build()
 	if err != nil {
 		panic(err)

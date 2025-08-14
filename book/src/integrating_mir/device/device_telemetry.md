@@ -53,7 +53,7 @@ import (
 	"time"
 
 	"github.com/maxthom/mir/pkgs/device/mir"
-	schemav1 "github.com/maxthom/mir.device.buff/proto/gen/schema/v1" // Schema Import
+	schemav1 "github.com/maxthom/mir.device.buff/proto/gen/schema/v1"
 )
 
 func main() {

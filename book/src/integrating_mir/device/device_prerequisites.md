@@ -44,13 +44,6 @@ Mir utilizes a task runner to run common commands, either `justfile` or `makefil
 
 Yours to install depending on your platform.
 
-## Initialize Go project
-
-```bash
-mkdir <project_name> && cd <project_name>
-go mod init github.com/<user/org>/<project>
-```
-
 ## Access Mir Device SDK
 
 Go packages are managed in GitHub repository.

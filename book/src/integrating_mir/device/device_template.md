@@ -8,6 +8,8 @@ The Mir CLI provides templates to initialize new projects with a basic layout. I
 mir tools generate device_template github.com/<user/org>/<project>
 # With Protoc
 mir tools generate device_template --proto=protoc github.com/<user/org>/<project>
+# Add --include-container flag to add a Dockerfile and its GitHub pipeline
+# -h for more options
 ```
 
 ## Structure
@@ -28,7 +30,7 @@ project/
 │           └── schema.proto  # Custom device schema template
 ├── buf.yaml                  # Buf configuration for proto management
 ├── buf.gen.yaml              # Buf code generation configuration
-├── config.yaml               # Device configuration example
+├── device.yaml               # Device configuration example
 ├── makefile                  # Common tasks
 ├── justfile                  # Common tasks
 ├── USAGE.md                  # Usage documentation and getting started guide
@@ -53,7 +55,7 @@ Device-specific Protocol Buffer schema definitions that define your device's com
 
 Mir specific protobuf extentions used by the SDK. This file should not be edited.
 
-#### config.yaml
+#### device.yaml
 
 Device configuration file with development-ready defaults.
 

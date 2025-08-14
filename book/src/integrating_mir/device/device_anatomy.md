@@ -13,6 +13,8 @@ import (
 	"os/signal"
 	"syscall"
 
+  schemav1 "github.com/maxthom/mir.device.buff/proto/gen/schema/v1"
+
 	"github.com/maxthom/mir/pkgs/device/mir"
 )
 
@@ -22,8 +24,7 @@ func main() {
 		DeviceId("weather").
 		Target("nats://127.0.0.1:4222").
 		LogLevel(mir.LogLevelInfo).
-		//ConfigFile("./config.yaml", mir.Yaml).
-		//Schema(schemav1.File_schema_v1_schema_proto).
+		Schema(schemav1.File_schema_v1_schema_proto).
 		Build()
 	if err != nil {
 		panic(err)

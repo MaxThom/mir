@@ -29,13 +29,6 @@ buf generate
 buf lint
 ```
 
-Add schema import to your `cmd/main.go` and uncomment the schema line in the builder:
-```go
-	schemav1 "<module>/proto/schema/v1"
-	...
-	Schema(schemav1.File_schema_v1_schema_proto).
-```
-
 ## Device Configuration
 
 Device can be configured using, in order of priority:
@@ -71,8 +64,8 @@ Add your data under user and edit `main.go` to add your config structure and upd
 		DeviceId("example_device").
 		Target("nats://127.0.0.1:4222").
 		LogLevel(mir.LogLevelInfo).
-		//ConfigFile("./config.yaml", mir.Yaml).
-		//Schema(schemav1.File_schema_v1_schema_proto).
+		DefaultConfigFile().
+		Schema(schemav1.File_schema_v1_schema_proto).
 		BuildWithExtraConfig(&cfg)
 ```
 
