@@ -8,7 +8,11 @@ proto:
 
 # Build executable
 build:
-	go build -o bin/device cmd/main.go
+	go build -o bin/mir.dev cmd/main.go
+
+# Build stripped executable
+build-tiny:
+    go build -ldflags="-s -w" -trimpath -o bin/mir.dev cmd/main.go
 
 # Run executable
 run:

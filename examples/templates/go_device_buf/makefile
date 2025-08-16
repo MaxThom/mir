@@ -5,7 +5,10 @@ proto:
 	buf lint
 
 build:
-	go build -o bin/device cmd/main.go
+	go build -o bin/mir.dev cmd/main.go
+
+build-tiny:
+	go build -ldflags="-s -w" -trimpath -o bin/mir.dev cmd/main.go
 
 run:
 	go run cmd/main.go
