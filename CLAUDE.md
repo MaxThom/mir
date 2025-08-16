@@ -16,4 +16,5 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## CLI Tools
 
-- Learn the `Mir` CLI tools using the file `book/src/operating_mir/mir_cli_tui.md`
+#- Learn the `Mir` CLI tools using the file `book/src/operating_mir/mir_cli_tui.md`
+- Learn the `Mir` CLI tools using the executable: mir
