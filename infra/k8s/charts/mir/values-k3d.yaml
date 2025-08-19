@@ -55,3 +55,113 @@ influxdb2:
     hostname: influx-local
     path: /
     tls: false
+
+# Enable Prometheus monitoring stack for k3d
+kube-prometheus-stack:
+  enabled: true
+
+  prometheus:
+    ingress:
+      enabled: true
+      className: "traefik"
+      annotations: {}
+      hosts:
+        - prometheus-local
+      paths:
+        - /
+      pathType: Prefix
+    prometheusSpec:
+      retention: 3d  # Shorter retention for local dev
+      retentionSize: 5GB
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: 5Gi  # Smaller storage for local
+      resources:
+        requests:
+          cpu: 100m
+          memory: 256Mi
+        limits:
+          cpu: 500m
+          memory: 1Gi
+
+  grafana:
+    enabled: true
+    adminPassword: "mir-operator"
+    ingress:
+      enabled: true
+      className: "traefik"
+      annotations: {}
+      hosts:
+        - grafana-local
+      path: /
+      pathType: Prefix
+    persistence:
+      enabled: true
+      size: 500Mi  # Smaller for local dev
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 250m
+        memory: 256Mi
+
+  alertmanager:
+    enabled: true
+    ingress:
+      enabled: true
+      className: "traefik"
+      annotations: {}
+      hosts:
+        - alertmanager-local
+      paths:
+        - /
+      pathType: Prefix
+    alertmanagerSpec:
+      retention: 48h  # Shorter retention for local
+      storage:
+        volumeClaimTemplate:
+          spec:
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: 500Mi  # Smaller for local
+      resources:
+        requests:
+          cpu: 25m
+          memory: 32Mi
+        limits:
+          cpu: 100m
+          memory: 128Mi
+
+  # Reduce resources for local development
+  nodeExporter:
+    resources:
+      requests:
+        cpu: 25m
+        memory: 16Mi
+      limits:
+        cpu: 100m
+        memory: 64Mi
+
+  kubeStateMetrics:
+    resources:
+      requests:
+        cpu: 25m
+        memory: 32Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi
+
+  prometheusOperator:
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi

@@ -27,6 +27,10 @@
       - [x] Test with CLI, cant change url
     - [x] Influx
     - [ ] PromStack
+      - [ ] ServiceMonitor
+      - [ ] Review
+      - [ ] Loki
+      - [ ] Examples of different configs
   - [x] Compose release
   - [x] GrafanaLoki
   - [x] Docker container

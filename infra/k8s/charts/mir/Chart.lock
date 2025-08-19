@@ -8,5 +8,8 @@ dependencies:
 - name: influxdb2
   repository: https://helm.influxdata.com/
   version: 2.1.2
-digest: sha256:64075109b913c3ccf4145fe74f7b00c6f06007aaf37a302126d6a06c524168b2
-generated: "2025-08-11T07:24:38.77633574-04:00"
+- name: kube-prometheus-stack
+  repository: https://prometheus-community.github.io/helm-charts
+  version: 76.4.0
+digest: sha256:f08b85f2cdec9dd14f99e1d6839faaff849fdd7f0ccc6c6aa1f42230fb831ba8
+generated: "2025-08-18T05:49:05.057625909-04:00"

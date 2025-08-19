@@ -1,0 +1,19 @@
+{{- if .Values.mirDashboards.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "mir.fullname" . }}-grafana-dashboards-infra
+  labels:
+    {{- include "mir.labels" . | nindent 4 }}
+    {{- with .Values.mirDashboards.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  annotations:
+    grafana_folder: "Infrastructure"
+    {{- with .Values.mirDashboards.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+data:
+  mir-infra-overall.json: |
+{{ .Files.Get "dashboards/infra/mir-infra-overall.json" | indent 4 }}
+{{- end }}
