@@ -1,0 +1,34 @@
+{{- if .Values.mirPrometheus.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "mir.fullname" . }}-grafana-dashboards-infra
+  labels:
+    {{- include "mir.labels" . | nindent 4 }}
+    grafana_dashboard: "1"
+  annotations:
+    grafana_folder: "Infrastructure"
+data:
+  mir-infra-overall.json: |
+{{ .Files.Get "dashboards/infra/mir-infra-overall.json" | indent 4 }}
+  nats-servers.json: |
+{{ .Files.Get "dashboards/infra/nats-servers.json" | indent 4 }}
+  nats-jetstream.json: |
+{{ .Files.Get "dashboards/infra/nats-jetstream.json" | indent 4 }}
+  influx.json: |
+{{ .Files.Get "dashboards/infra/influx.json" | indent 4 }}
+  go.json: |
+{{ .Files.Get "dashboards/infra/go.json" | indent 4 }}
+  prometheus.json: |
+{{ .Files.Get "dashboards/infra/prometheus.json" | indent 4 }}
+  grafana.json: |
+{{ .Files.Get "dashboards/infra/grafana.json" | indent 4 }}
+  alertmanager.json: |
+{{ .Files.Get "dashboards/infra/alertmanager.json" | indent 4 }}
+  loki.json: |
+{{ .Files.Get "dashboards/infra/loki.json" | indent 4 }}
+  promtail.json: |
+{{ .Files.Get "dashboards/infra/promtail.json" | indent 4 }}
+  node-exporter.json: |
+{{ .Files.Get "dashboards/infra/node-exporter.json" | indent 4 }}
+{{- end }}

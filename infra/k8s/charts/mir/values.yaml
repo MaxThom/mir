@@ -259,3 +259,312 @@ volumeMounts: []
 nodeSelector: {}
 tolerations: []
 affinity: {}
+
+
+mirServiceMonitors:
+  enabled: true
+
+mirPrometheusRules:
+  enabled: true
+  labels:
+    prometheus: mir
+  annotations: {}
+
+mirDashboards:
+  enabled: true
+  labels:
+    grafana: mir
+  annotations: {}
+
+# Kube-Prometheus-Stack subchart configuration
+kube-prometheus-stack:
+  enabled: false  # Set to true to enable Prometheus monitoring stack
+  commonLabels:
+    prometheus: mir
+
+  prometheus:
+    prometheusSpec:
+      retention: 7d
+      retentionSize: 10GB
+      # Allow prometheus to discover all ServiceMonitors and PodMonitors
+      serviceMonitorSelectorNilUsesHelmValues: false
+      serviceMonitorSelector:
+        matchLabels:
+          prometheus: mir
+      podMonitorSelectorNilUsesHelmValues: false
+      podMonitorSelector:
+        matchLabels:
+          prometheus: mir
+      ruleSelectorNilUsesHelmValues: false
+      ruleSelector:
+        matchLabels:
+          prometheus: mir
+      resources:
+        requests:
+          cpu: 250m
+          memory: 400Mi
+        limits:
+          cpu: 1000m
+          memory: 2Gi
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: 10Gi
+      # Additional scrape configs for Mir services
+      additionalScrapeConfigs: []
+      additionalServiceMonitors: []
+    ingress:
+      enabled: false
+      className: ""
+      annotations: {}
+      hosts: []
+        # - prometheus-local
+      paths: []
+        # - /
+      tls: []
+
+  # Grafana configuration
+  grafana:
+    enabled: true
+    adminUser: admin
+    adminPassword: "mir-operator"  # Change this in production
+    defaultDashboardsEnabled: true
+    defaultDashboardsTimezone: 'browser' #utc
+    # Place all default kube-prometheus-stack dashboards in Kubernetes folder
+    defaultDashboardsFolder: Kubernetes
+    sidecar:
+      dashboards:
+        enabled: true
+        label: grafana
+        labelValue: mir
+        folder: /tmp/dashboards
+        folderAnnotation: grafana_folder
+        searchNamespace: ALL
+        provider:
+          foldersFromFilesStructure: true
+        annotations:
+          grafana_folder: Kubernetes
+    persistence:
+      enabled: true
+      size: 1Gi
+    ingress:
+      enabled: false
+      className: ""
+      annotations: {}
+      hosts: []
+        # - grafana-local
+      path: /
+      tls: []
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
+    # Grafana ini configuration
+    grafana.ini:
+      #server:
+        #root_url: "%(protocol)s://%(domain)s:%(http_port)s/grafana"
+        #serve_from_sub_path: false
+      auth.anonymous:
+        enabled: false
+        org_role: Viewer
+      users:
+        viewers_can_edit: true
+      auth:
+        disable_login_form: false
+        disable_signout_menu: false
+      auth.anonymous:
+        enabled: false
+        org_role: Viewer
+      snapshots:
+        external_enabled: false
+
+    # Add Influx and Surreal as additional datasources
+    additionalDataSources:
+      # - name: alertmanager
+      #   type: alertmanager
+      #   uid: mir-alertmanager
+      #   typeName: Alertmanager
+      #   typeLogoUrl: public/app/plugins/datasource/alertmanager/img/logo.svg
+      #   access: proxy
+      #   url: "http://{{ .Release.Name }}-alertmanager:9093"
+      #   basicAuth: false
+      #   isDefault: false
+      #   jsonData:
+      #     handleGrafanaManagedAlerts: true
+      #     implementation: prometheus
+      #   readOnly: true
+      - name: InfluxDB
+        type: influxdb
+        uid: mir-influxdb
+        access: proxy
+        url: "http://{{ .Release.Name }}-influxdb2:8086"
+        isDefault: false
+        typeName: InfluxDB
+        typeLogoUrl: public/app/plugins/datasource/influxdb/img/influxdb_logo.svg
+        access: proxy
+        user: ""
+        database: ""
+        basicAuth: false
+        isDefault: false
+        readOnly: true
+        jsonData:
+          organization: Mir
+          defaultBucket: mir
+          httpMode: POST
+          timeout: -5
+          version: Flux
+          tlsSkipVerify: true
+        secureJsonData:
+          token: "mir-operator-token"  # Should match influxdb2.adminUser.token
+
+    # Import custom dashboards
+    dashboardProviders:
+      dashboardproviders.yaml:
+        apiVersion: 1
+        providers:
+          - name: 'mir-dashboards'
+            orgId: 1
+            folder: 'Mir'
+            type: file
+            disableDeletion: false
+            editable: true
+            updateIntervalSeconds: 10
+            allowUiUpdates: false
+            options:
+              path: /var/lib/grafana/dashboards/mir
+          - name: 'mir-infra-dashboards'
+            orgId: 1
+            folder: 'Infrastructure'
+            type: file
+            disableDeletion: false
+            editable: true
+            updateIntervalSeconds: 10
+            allowUiUpdates: false
+            options:
+              path: /var/lib/grafana/dashboards/infra
+
+    #dashboardsConfigMaps: []
+      # mir-dashboards: "mir-grafana-dashboards-mir"
+      # mir-infra-dashboards: "mir-grafana-dashboards-infra"
+
+    # Install additional plugins
+    plugins:
+      - grafana-piechart-panel
+      - grafana-worldmap-panel
+
+  # AlertManager configuration
+  alertmanager:
+    enabled: true
+    alertmanagerSpec:
+      retention: 120h
+      storage:
+        volumeClaimTemplate:
+          spec:
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: 1Gi
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          cpu: 200m
+          memory: 256Mi
+    ingress:
+      enabled: false
+      className: ""
+      annotations: {}
+      hosts: []
+        # - alertmanager-local
+      paths: []
+        # - /
+      tls: []
+    config:
+      global:
+        resolve_timeout: 5m
+      route:
+        group_by: ['alertname', 'cluster', 'service']
+        group_wait: 10s
+        group_interval: 10s
+        repeat_interval: 12h
+        receiver: 'null'
+        routes:
+          - match:
+              alertname: Watchdog
+            receiver: 'null'
+          - match_re:
+              severity: critical|warning
+            receiver: 'mir-alerts'
+      receivers:
+        - name: 'null'
+        - name: 'mir-alerts'
+          # Configure your alert receivers here (email, slack, etc.)
+          # email_configs:
+          #   - to: 'team@example.com'
+          #     from: 'alertmanager@example.com'
+          #     smarthost: 'smtp.example.com:587'
+          #     auth_username: 'alertmanager@example.com'
+          #     auth_password: 'password'
+          # slack_configs:
+          #   - api_url: 'YOUR_SLACK_WEBHOOK_URL'
+          #     channel: '#alerts'
+          #     title: 'Mir Alert'
+
+  # Node Exporter for host metrics
+  nodeExporter:
+    enabled: true
+    resources:
+      requests:
+        cpu: 50m
+        memory: 30Mi
+      limits:
+        cpu: 200m
+        memory: 100Mi
+
+  prometheus-node-exporter:
+    prometheus:
+      monitor:
+        additionalLabels:
+          prometheus: mir
+
+  # Kube State Metrics for Kubernetes metrics
+  kubeStateMetrics:
+    enabled: true
+    prometheus:
+      monitor:
+        additionalLabels:
+          prometheus: mir
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+
+  # Prometheus Operator
+  prometheusOperator:
+    enabled: true
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
+  # Default Prometheus rules
+  defaultRules:
+    create: true
+    labels:
+      prometheus: mir
+    additionalRuleLabels:
+      prometheus: mir

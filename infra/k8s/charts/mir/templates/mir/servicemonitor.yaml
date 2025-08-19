@@ -1,0 +1,20 @@
+{{- if .Values.mirServiceMonitors.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "mir.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "mir.labels" . | nindent 4 }}
+    app.kubernetes.io/component: metrics
+    prometheus: mir
+spec:
+  selector:
+    matchLabels:
+      {{- include "mir.selectorLabels" . | nindent 6 }}
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
+{{- end }}
