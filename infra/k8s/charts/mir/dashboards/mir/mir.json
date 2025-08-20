@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 14,
+  "id": 35,
   "links": [
     {
       "asDropdown": true,
@@ -124,7 +124,7 @@
         "showHeader": true,
         "sortBy": []
       },
-      "pluginVersion": "12.1.0-16509090662",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
@@ -133,7 +133,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "mir_app_info{}",
+          "expr": "mir_app_info{job=\"${job}\"}",
           "format": "table",
           "instant": true,
           "legendFormat": "__auto",
@@ -178,7 +178,7 @@
     },
     {
       "datasource": {
-        "uid": "Prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -251,12 +251,12 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.1.0-16509090662",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "editorMode": "code",
           "exemplar": false,
-          "expr": "mir_health_alive{}",
+          "expr": "mir_health_alive{job=\"${job}\"}",
           "instant": true,
           "legendFormat": "{{job}}",
           "range": false,
@@ -318,7 +318,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.1.0-16509090662",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
@@ -326,7 +326,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(mir_core_device_status_count{status=\"online\"})",
+          "expr": "sum(mir_core_device_status_count{job=\"${job}\", status=\"online\"})",
           "legendFormat": "online",
           "range": true,
           "refId": "A"
@@ -337,7 +337,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(mir_core_device_status_count{status=\"offline\"})",
+          "expr": "sum(mir_core_device_status_count{job=\"${job}\", status=\"offline\"})",
           "hide": false,
           "legendFormat": "offline",
           "range": true,
@@ -410,7 +410,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.1.0-16509090662",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
@@ -444,7 +444,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "description": "Number of activate connections to Nats Server",
       "fieldConfig": {
@@ -494,15 +494,15 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.1.0-16509090662",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "gnatsd_varz_connections",
+          "expr": "sum(nats_varz_connections{job=\"${nats}\"})",
           "instant": false,
           "legendFormat": "{{instance}}",
           "range": true,
@@ -578,7 +578,7 @@
         "showThresholdMarkers": true,
         "sizing": "auto"
       },
-      "pluginVersion": "12.1.0-16509090662",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
@@ -634,7 +634,7 @@
     },
     {
       "datasource": {
-        "uid": "Prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -707,12 +707,12 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.1.0-16509090662",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "editorMode": "code",
           "exemplar": false,
-          "expr": "mir_health_ready{}",
+          "expr": "mir_health_ready{job=\"${job}\"}",
           "instant": true,
           "legendFormat": "{{job}}",
           "range": false,
@@ -774,7 +774,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.1.0-16509090662",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
@@ -782,7 +782,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(mir_tlm_timeseries_ingesters_count{})",
+          "expr": "sum(mir_tlm_timeseries_ingesters_count{job=\"${job}\"})",
           "hide": false,
           "legendFormat": "Schemas",
           "range": true,
@@ -794,7 +794,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(mir_schemastore_schema_cache_count{})",
+          "expr": "sum(mir_schemastore_schema_cache_count{job=\"${job}\"})",
           "hide": false,
           "legendFormat": "Ingesters",
           "range": true,
@@ -852,7 +852,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.1.0-16509090662",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
@@ -860,7 +860,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(go_memstats_sys_bytes{})",
+          "expr": "sum(go_memstats_sys_bytes{job=\"${job}\"})",
           "format": "time_series",
           "intervalFactor": 1,
           "range": true,
@@ -873,7 +873,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -918,15 +918,15 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.1.0-16509090662",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(go_goroutines{})",
+          "expr": "sum(go_goroutines{job=\"${job}\"})",
           "format": "time_series",
           "intervalFactor": 1,
           "range": true,
@@ -939,7 +939,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -984,15 +984,15 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.1.0-16509090662",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(go_memstats_mallocs_total{}-go_memstats_frees_total{})",
+          "expr": "sum(go_memstats_mallocs_total{job=\"${job}\"}-go_memstats_frees_total{job=\"${job}\"})",
           "format": "time_series",
           "intervalFactor": 1,
           "range": true,
@@ -1067,7 +1067,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.1.0-16509090662",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
@@ -1075,7 +1075,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(mir_tlm_datapoint_count{}[$__rate_interval]))",
+          "expr": "sum(rate(mir_tlm_datapoint_count{job=\"${job}\"}[$__rate_interval]))",
           "instant": false,
           "legendFormat": "Telemetry",
           "range": true,
@@ -1087,7 +1087,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(mir_cmd_device_cmd_sent_total{}[$__rate_interval]))",
+          "expr": "sum(rate(mir_cmd_device_cmd_sent_total{job=\"${job}\"}[$__rate_interval]))",
           "hide": false,
           "instant": false,
           "legendFormat": "Commands",
@@ -1100,7 +1100,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(mir_cfg_device_desired_props_request_total{}[$__rate_interval])+rate(mir_cfg_device_cfg_sent_total{}[$__rate_interval])+rate(mir_cfg_device_reported_props_request_total{}[$__rate_interval]))",
+          "expr": "sum(rate(mir_cfg_device_desired_props_request_total{job=\"${job}\"}[$__rate_interval])+rate(mir_cfg_device_cfg_sent_total{job=\"${job}\"}[$__rate_interval])+rate(mir_cfg_device_reported_props_request_total{job=\"${job}\"}[$__rate_interval]))",
           "hide": false,
           "instant": false,
           "legendFormat": "Configuration",
@@ -1164,7 +1164,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.1.0-16509090662",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
@@ -1172,7 +1172,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(gnatsd_varz_in_msgs{job=\"natsio\"}[$__rate_interval])+rate(gnatsd_varz_out_msgs{job=\"natsio\"}[$__rate_interval])",
+          "expr": "sum(rate(nats_varz_in_msgs{job=\"${nats}\"}[$__rate_interval])+rate(nats_varz_out_msgs{job=\"${nats}\"}[$__rate_interval]))",
           "instant": false,
           "legendFormat": "{{instance}}",
           "range": true,
@@ -1235,7 +1235,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.1.0-16509090662",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
@@ -1243,7 +1243,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(gnatsd_varz_in_bytes{job=\"natsio\"}[$__rate_interval])+rate(gnatsd_varz_out_bytes{job=\"natsio\"}[$__rate_interval])",
+          "expr": "sum(rate(nats_varz_in_bytes{job=\"${nats}\"}[$__rate_interval])+rate(nats_varz_out_bytes{job=\"${nats}\"}[$__rate_interval]))",
           "instant": false,
           "legendFormat": "{{instance}}",
           "range": true,
@@ -1306,7 +1306,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.1.0-16509090662",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
@@ -1314,7 +1314,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(boltdb_writes_total{job=\"influxdb\"}[$__rate_interval]))+sum(rate(boltdb_reads_total{job=\"influxdb\"}[$__rate_interval]))",
+          "expr": "sum(rate(boltdb_writes_total{job=\"${influx}\"}[$__rate_interval]))+sum(rate(boltdb_reads_total{job=\"${influx}\"}[$__rate_interval]))",
           "instant": false,
           "legendFormat": "{{instance}}",
           "range": true,
@@ -1346,7 +1346,7 @@
         "content": "**Mir System**\n\n*Somewhere, something incredible is waiting to be known - Carl Sagan*\n",
         "mode": "markdown"
       },
-      "pluginVersion": "12.1.0-16509090662",
+      "pluginVersion": "12.1.0",
       "title": "",
       "transparent": true,
       "type": "text"
@@ -1433,7 +1433,7 @@
           "sort": "desc"
         }
       },
-      "pluginVersion": "12.1.0-16509090662",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
@@ -1441,7 +1441,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(mir_cfg_device_cfg_sent_total{}[$__rate_interval])+rate(mir_cfg_device_desired_props_request_total{}[$__rate_interval])",
+          "expr": "rate(mir_cfg_device_cfg_sent_total{job=\"${job}\"}[$__rate_interval])+rate(mir_cfg_device_desired_props_request_total{job=\"${job}\"}[$__rate_interval])",
           "legendFormat": "desired properties",
           "range": true,
           "refId": "A"
@@ -1452,7 +1452,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(mir_cfg_device_reported_props_request_total{}[$__rate_interval])",
+          "expr": "rate(mir_cfg_device_reported_props_request_total{job=\"${job}\"}[$__rate_interval])",
           "hide": false,
           "legendFormat": "reported properties",
           "range": true,
@@ -1562,7 +1562,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.1.0-16509090662",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
@@ -1570,7 +1570,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(mir_tlm_datapoint_count{}[$__rate_interval])",
+          "expr": "rate(mir_tlm_datapoint_count{job=\"${job}\"}[$__rate_interval])",
           "legendFormat": "points",
           "range": true,
           "refId": "A"
@@ -1581,7 +1581,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(mir_tlm_datapoint_error_count{}[$__rate_interval])",
+          "expr": "rate(mir_tlm_datapoint_error_count{job=\"${job}\"}[$__rate_interval])",
           "hide": false,
           "legendFormat": "points error",
           "range": true,
@@ -1689,7 +1689,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.1.0-16509090662",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
@@ -1697,7 +1697,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(mir_cmd_device_cmd_sent_total{}[$__rate_interval])",
+          "expr": "rate(mir_cmd_device_cmd_sent_total{job=\"${job}\"}[$__rate_interval])",
           "legendFormat": "commands",
           "range": true,
           "refId": "A"
@@ -1708,7 +1708,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(mir_cmd_device_cmd_sent_error_total{}[$__rate_interval])",
+          "expr": "rate(mir_cmd_device_cmd_sent_error_total{job=\"${job}\"}[$__rate_interval])",
           "hide": false,
           "legendFormat": "error",
           "range": true,
@@ -1817,7 +1817,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.1.0-16509090662",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
@@ -1825,7 +1825,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum by (source) (rate(mir_schemastore_schema_reconciled_total{}[$__rate_interval]))",
+          "expr": "sum by (source) (rate(mir_schemastore_schema_reconciled_total{job=\"${job}\"}[$__rate_interval]))",
           "legendFormat": "{{source}}",
           "range": true,
           "refId": "A"
@@ -1836,7 +1836,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum by (source) (rate(mir_schemastore_schema_reconciled_error_total{}[$__rate_interval]))",
+          "expr": "sum by (source) (rate(mir_schemastore_schema_reconciled_error_total{job=\"${job}\"}[$__rate_interval]))",
           "hide": false,
           "legendFormat": "error",
           "range": true,
@@ -1928,7 +1928,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.1.0-16509090662",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
@@ -1936,7 +1936,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum by (event) (mir_eventstore_event_capture_total{})",
+          "expr": "sum by (event) (mir_eventstore_event_capture_total{job=\"${job}\"})",
           "legendFormat": "{{event}}",
           "range": true,
           "refId": "A"
@@ -1948,7 +1948,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -2027,15 +2027,15 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.1.0-16509090662",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(gnatsd_varz_connections)",
+          "expr": "sum(nats_varz_connections)",
           "instant": false,
           "legendFormat": "Connections",
           "range": true,
@@ -2044,10 +2044,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(gnatsd_varz_subscriptions)",
+          "expr": "sum(nats_varz_subscriptions)",
           "hide": false,
           "instant": false,
           "legendFormat": "Subscriptions",
@@ -2057,10 +2057,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(gnatsd_varz_slow_consumers)",
+          "expr": "sum(nats_varz_slow_consumers)",
           "hide": false,
           "instant": false,
           "legendFormat": "Slow consumer",
@@ -2155,7 +2155,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.1.0-16509090662",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
@@ -2163,7 +2163,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(gnatsd_varz_in_bytes{job=\"natsio\"}[$__rate_interval]))",
+          "expr": "sum(rate(nats_varz_in_bytes{job=\"${nats}\"}[$__rate_interval]))",
           "instant": false,
           "legendFormat": "Bytes In",
           "range": true,
@@ -2175,7 +2175,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(gnatsd_varz_out_bytes{job=\"natsio\"}[$__rate_interval]))",
+          "expr": "sum(rate(nats_varz_out_bytes{job=\"${nats}\"}[$__rate_interval]))",
           "hide": false,
           "instant": false,
           "interval": "",
@@ -2272,7 +2272,7 @@
           "sort": "desc"
         }
       },
-      "pluginVersion": "12.1.0-16509090662",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
@@ -2280,7 +2280,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(gnatsd_varz_in_msgs{job=\"natsio\"}[$__rate_interval]))",
+          "expr": "sum(rate(nats_varz_in_msgs{job=\"${nats}\"}[$__rate_interval]))",
           "instant": false,
           "legendFormat": "Msg In",
           "range": true,
@@ -2292,7 +2292,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(gnatsd_varz_out_msgs{job=\"natsio\"}[$__rate_interval]))",
+          "expr": "sum(rate(nats_varz_out_msgs{job=\"${nats}\"}[$__rate_interval]))",
           "hide": false,
           "instant": false,
           "legendFormat": "Msg out",
@@ -2306,7 +2306,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -2400,15 +2400,15 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.1.0-16509090662",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(storage_writer_ok_points_sum{job=\"influxdb\"}[$__rate_interval])",
+          "expr": "rate(storage_writer_ok_points_sum{job=\"${influx}\"}[$__rate_interval])",
           "legendFormat": "OK Points",
           "range": true,
           "refId": "C"
@@ -2416,10 +2416,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(storage_writer_dropped_points_sum{job=\"influxdb\"}[$__rate_interval])",
+          "expr": "rate(storage_writer_dropped_points_sum{job=\"${influx}\"}[$__rate_interval])",
           "legendFormat": "Dropped Points",
           "range": true,
           "refId": "A"
@@ -2427,10 +2427,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(storage_writer_err_points_sum{job=\"influxdb\"}[$__rate_interval])",
+          "expr": "rate(storage_writer_err_points_sum{job=\"${influx}\"}[$__rate_interval])",
           "legendFormat": "Error Points",
           "range": true,
           "refId": "B"
@@ -2534,7 +2534,7 @@
           "sort": "desc"
         }
       },
-      "pluginVersion": "12.1.0-16509090662",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
@@ -2542,7 +2542,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(mir_core_request_total{}[$__rate_interval])",
+          "expr": "rate(mir_core_request_total{job=\"${job}\"}[$__rate_interval])",
           "legendFormat": "device {{route}}",
           "range": true,
           "refId": "A"
@@ -2553,7 +2553,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(mir_cfg_request_total{}[$__rate_interval])",
+          "expr": "rate(mir_cfg_request_total{job=\"${job}\"}[$__rate_interval])",
           "hide": false,
           "legendFormat": "config {{route}}",
           "range": true,
@@ -2565,7 +2565,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(mir_tlm_request_total{}[$__rate_interval])",
+          "expr": "rate(mir_tlm_request_total{job=\"${job}\"}[$__rate_interval])",
           "hide": false,
           "legendFormat": "telemetry {{route}}",
           "range": true,
@@ -2577,7 +2577,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(mir_cmd_request_total{}[$__rate_interval])",
+          "expr": "rate(mir_cmd_request_total{job=\"${job}\"}[$__rate_interval])",
           "hide": false,
           "legendFormat": "commands {{route}}",
           "range": true,
@@ -2670,7 +2670,7 @@
           "sort": "desc"
         }
       },
-      "pluginVersion": "12.1.0-16509090662",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
@@ -2678,7 +2678,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(mir_core_request_error_total{}[$__rate_interval])",
+          "expr": "rate(mir_core_request_error_total{job=\"${job}\"}[$__rate_interval])",
           "legendFormat": "device {{route}}",
           "range": true,
           "refId": "A"
@@ -2689,7 +2689,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(mir_cfg_request_error_total{}[$__rate_interval])",
+          "expr": "rate(mir_cfg_request_error_total{job=\"${job}\"}[$__rate_interval])",
           "hide": false,
           "legendFormat": "config {{route}}",
           "range": true,
@@ -2701,7 +2701,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(mir_tlm_request_error_total{}[$__rate_interval])",
+          "expr": "rate(mir_tlm_request_error_total{job=\"${job}\"}[$__rate_interval])",
           "hide": false,
           "legendFormat": "telemetry {{route}}",
           "range": true,
@@ -2713,7 +2713,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(mir_cmd_request_error_total{}[$__rate_interval])",
+          "expr": "rate(mir_cmd_request_error_total{job=\"${job}\"}[$__rate_interval])",
           "hide": false,
           "legendFormat": "command {{route}}",
           "range": true,
@@ -2907,7 +2907,7 @@
             "h": 6,
             "w": 6,
             "x": 0,
-            "y": 33
+            "y": 40
           },
           "id": 61,
           "options": {
@@ -2924,7 +2924,7 @@
               "sort": "desc"
             }
           },
-          "pluginVersion": "12.1.0-16509090662",
+          "pluginVersion": "12.1.0",
           "targets": [
             {
               "datasource": {
@@ -2933,7 +2933,7 @@
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "sum(irate(node_cpu_seconds_total{job=\"node\", mode=\"system\"}[$__rate_interval])) / scalar(count(count(node_cpu_seconds_total{job=\"node\"}) by (cpu)))",
+              "expr": "sum(irate(node_cpu_seconds_total{job=\"node-exporter\", mode=\"system\"}[$__rate_interval])) / scalar(count(count(node_cpu_seconds_total{job=\"node-exporter\"}) by (cpu)))",
               "format": "time_series",
               "hide": false,
               "instant": false,
@@ -2949,7 +2949,7 @@
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "sum(irate(node_cpu_seconds_total{job=\"node\", mode=\"user\"}[$__rate_interval])) / scalar(count(count(node_cpu_seconds_total{job=\"node\"}) by (cpu)))",
+              "expr": "sum(irate(node_cpu_seconds_total{job=\"node-exporter\", mode=\"user\"}[$__rate_interval])) / scalar(count(count(node_cpu_seconds_total{job=\"node-expoter\"}) by (cpu)))",
               "format": "time_series",
               "hide": false,
               "intervalFactor": 1,
@@ -2964,7 +2964,7 @@
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "sum(irate(node_cpu_seconds_total{job=\"node\", mode=\"iowait\"}[$__rate_interval])) / scalar(count(count(node_cpu_seconds_total{job=\"node\"}) by (cpu)))",
+              "expr": "sum(irate(node_cpu_seconds_total{job=\"node-exporter\", mode=\"iowait\"}[$__rate_interval])) / scalar(count(count(node_cpu_seconds_total{job=\"node-exporter\"}) by (cpu)))",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "Busy Iowait",
@@ -2978,7 +2978,7 @@
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "sum(irate(node_cpu_seconds_total{job=\"node\", mode=~\".*irq\"}[$__rate_interval])) / scalar(count(count(node_cpu_seconds_total{job=\"node\"}) by (cpu)))",
+              "expr": "sum(irate(node_cpu_seconds_total{job=\"node-exporter\", mode=~\".*irq\"}[$__rate_interval])) / scalar(count(count(node_cpu_seconds_total{job=\"node-exporter\"}) by (cpu)))",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "Busy IRQs",
@@ -2992,7 +2992,7 @@
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "sum(irate(node_cpu_seconds_total{job=\"node\",  mode!='idle',mode!='user',mode!='system',mode!='iowait',mode!='irq',mode!='softirq'}[$__rate_interval])) / scalar(count(count(node_cpu_seconds_total{job=\"node\"}) by (cpu)))",
+              "expr": "sum(irate(node_cpu_seconds_total{job=\"node-exporter\",  mode!='idle',mode!='user',mode!='system',mode!='iowait',mode!='irq',mode!='softirq'}[$__rate_interval])) / scalar(count(count(node_cpu_seconds_total{job=\"node-exporter\"}) by (cpu)))",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "Busy Other",
@@ -3006,7 +3006,7 @@
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "sum(irate(node_cpu_seconds_total{job=\"node\", mode=\"idle\"}[$__rate_interval])) / scalar(count(count(node_cpu_seconds_total{job=\"node\"}) by (cpu)))",
+              "expr": "sum(irate(node_cpu_seconds_total{job=\"node-exporter\", mode=\"idle\"}[$__rate_interval])) / scalar(count(count(node_cpu_seconds_total{job=\"node-exporter\"}) by (cpu)))",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "Idle",
@@ -3454,7 +3454,7 @@
             "h": 6,
             "w": 6,
             "x": 6,
-            "y": 33
+            "y": 40
           },
           "id": 62,
           "options": {
@@ -3471,7 +3471,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "12.1.0-16509090662",
+          "pluginVersion": "12.1.0",
           "targets": [
             {
               "datasource": {
@@ -3479,7 +3479,7 @@
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "node_memory_MemTotal_bytes{job=\"node\"}",
+              "expr": "node_memory_MemTotal_bytes{job=\"node-exporter\"}",
               "format": "time_series",
               "hide": false,
               "intervalFactor": 1,
@@ -3494,7 +3494,7 @@
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "node_memory_MemTotal_bytes{job=\"node\"} - node_memory_MemFree_bytes{job=\"node\"} - (node_memory_Cached_bytes{job=\"node\"} + node_memory_Buffers_bytes{job=\"node\"} + node_memory_SReclaimable_bytes{job=\"node\"})",
+              "expr": "node_memory_MemTotal_bytes{job=\"node-exporter\"} - node_memory_MemFree_bytes{job=\"node-exporter\"} - (node_memory_Cached_bytes{job=\"node-exporter\"} + node_memory_Buffers_bytes{job=\"node-exporter\"} + node_memory_SReclaimable_bytes{job=\"node-exporter\"})",
               "format": "time_series",
               "hide": false,
               "intervalFactor": 1,
@@ -3509,7 +3509,7 @@
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "node_memory_Cached_bytes{job=\"$job\"} + node_memory_Buffers_bytes{job=\"node\"} + node_memory_SReclaimable_bytes{instance=\"$node\",job=\"node\"}",
+              "expr": "node_memory_Cached_bytes{job=\"$job\"} + node_memory_Buffers_bytes{job=\"${job}\"} + node_memory_SReclaimable_bytes{job=\"$job\",job=\"node-exporter\"}",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "RAM Cache + Buffer",
@@ -3523,7 +3523,7 @@
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "node_memory_MemFree_bytes{job=\"node\"}",
+              "expr": "node_memory_MemFree_bytes{job=\"node-exporter\"}",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "RAM Free",
@@ -3537,7 +3537,7 @@
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "(node_memory_SwapTotal_bytes{job=\"node\"} - node_memory_SwapFree_bytes{job=\"node\"})",
+              "expr": "(node_memory_SwapTotal_bytes{job=\"node-exporter\"} - node_memory_SwapFree_bytes{job=\"node-exporter\"})",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "SWAP Used",
@@ -3974,7 +3974,7 @@
             "h": 6,
             "w": 6,
             "x": 12,
-            "y": 33
+            "y": 40
           },
           "id": 63,
           "options": {
@@ -3990,7 +3990,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "12.1.0-16509090662",
+          "pluginVersion": "12.1.0",
           "targets": [
             {
               "datasource": {
@@ -3998,7 +3998,7 @@
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "irate(node_network_receive_bytes_total{job=\"node\"}[$__rate_interval])*8",
+              "expr": "irate(node_network_receive_bytes_total{job=\"node-exporter\"}[$__rate_interval])*8",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "recv {{device}}",
@@ -4012,7 +4012,7 @@
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "irate(node_network_transmit_bytes_total{job=\"node\"}[$__rate_interval])*8",
+              "expr": "irate(node_network_transmit_bytes_total{job=\"node-exporter\"}[$__rate_interval])*8",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "trans {{device}} ",
@@ -4093,7 +4093,7 @@
             "h": 6,
             "w": 6,
             "x": 18,
-            "y": 33
+            "y": 40
           },
           "id": 64,
           "options": {
@@ -4109,7 +4109,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "12.1.0-16509090662",
+          "pluginVersion": "12.1.0",
           "targets": [
             {
               "datasource": {
@@ -4117,7 +4117,7 @@
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "100 - ((node_filesystem_avail_bytes{job=\"node\",device!~'rootfs'} * 100) / node_filesystem_size_bytes{job=\"node\",device!~'rootfs'})",
+              "expr": "100 - ((node_filesystem_avail_bytes{device!~'rootfs'} * 100) / node_filesystem_size_bytes{device!~'rootfs'})",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "{{mountpoint}}",
@@ -4136,7 +4136,7 @@
     {
       "datasource": {
         "type": "loki",
-        "uid": "mir-loki"
+        "uid": "${logs_datasource}"
       },
       "fieldConfig": {
         "defaults": {},
@@ -4146,7 +4146,7 @@
         "h": 13,
         "w": 24,
         "x": 0,
-        "y": 39
+        "y": 40
       },
       "id": 70,
       "options": {
@@ -4160,12 +4160,12 @@
         "sortOrder": "Ascending",
         "wrapLogMessage": true
       },
-      "pluginVersion": "12.1.0-16509090662",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "loki",
-            "uid": "mir-loki"
+            "uid": "${logs_datasource}"
           },
           "direction": "backward",
           "editorMode": "builder",
@@ -4198,6 +4198,84 @@
         "refresh": 1,
         "regex": "",
         "type": "datasource"
+      },
+      {
+        "description": "",
+        "label": "Logs",
+        "name": "logs_datasource",
+        "options": [],
+        "query": "loki",
+        "refresh": 1,
+        "regex": "",
+        "type": "datasource"
+      },
+      {
+        "allowCustomValue": false,
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "definition": "label_values(mir_app_info,job)",
+        "description": "",
+        "label": "Mir",
+        "name": "job",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(mir_app_info,job)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "type": "query"
+      },
+      {
+        "allowCustomValue": false,
+        "current": {
+          "text": "default/mir-test-nats",
+          "value": "default/mir-test-nats"
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "definition": "label_values(nats_varz_version,job)",
+        "description": "",
+        "label": "Nats",
+        "name": "nats",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(nats_varz_version,job)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "type": "query"
+      },
+      {
+        "allowCustomValue": false,
+        "current": {
+          "text": "mir-test-influxdb2",
+          "value": "mir-test-influxdb2"
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "definition": "label_values(influxdb_info,job)",
+        "description": "",
+        "label": "Influx",
+        "name": "influx",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(influxdb_info,job)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "type": "query"
       }
     ]
   },
@@ -4209,5 +4287,5 @@
   "timezone": "browser",
   "title": "Mir",
   "uid": "aeh3czldd569sd",
-  "version": 1
+  "version": 2
 }

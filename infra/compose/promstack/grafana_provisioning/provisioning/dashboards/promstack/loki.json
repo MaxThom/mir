@@ -5,7 +5,7 @@
         "builtIn": 1,
         "datasource": {
           "type": "prometheus",
-          "uid": "mir-prometheus"
+          "uid": "${datasource}"
         },
         "enable": true,
         "hide": true,
@@ -25,7 +25,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "description": "Shows if Loki is up and running",
       "fieldConfig": {
@@ -92,7 +92,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "up{job=\"loki\"}",
@@ -108,7 +108,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "description": "Rate of log lines ingested per second",
       "fieldConfig": {
@@ -184,7 +184,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "rate(loki_ingester_lines_received_total[$__rate_interval])",
@@ -200,7 +200,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "description": "Number of active streams",
       "fieldConfig": {
@@ -255,7 +255,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "loki_ingester_memory_streams",
@@ -271,7 +271,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "description": "Total bytes ingested",
       "fieldConfig": {
@@ -318,7 +318,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "loki_ingester_bytes_received_total",
@@ -334,7 +334,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "description": "Number of chunks in memory",
       "fieldConfig": {
@@ -389,7 +389,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "loki_ingester_chunks_memory",
@@ -405,7 +405,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "description": "Loki query performance",
       "fieldConfig": {
@@ -481,7 +481,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "histogram_quantile(0.99, sum(rate(loki_request_duration_seconds_bucket{job=\"loki\",route=~\"loki_api_v1_series|loki_api_v1_query|loki_api_v1_query_range|loki_api_v1_labels|loki_api_v1_label_values\"}[$__rate_interval])) by (le, route))",
@@ -493,7 +493,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "histogram_quantile(0.50, sum(rate(loki_request_duration_seconds_bucket{job=\"loki\",route=~\"loki_api_v1_series|loki_api_v1_query|loki_api_v1_query_range|loki_api_v1_labels|loki_api_v1_label_values\"}[$__rate_interval])) by (le, route))",
@@ -510,7 +510,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "description": "HTTP request rate by status code",
       "fieldConfig": {
@@ -586,7 +586,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "sum by (status_code) (rate(loki_request_duration_seconds_count{job=\"loki\"}[$__rate_interval]))",
@@ -602,7 +602,7 @@
     {
       "datasource": {
         "type": "loki",
-        "uid": "mir-loki"
+        "uid": "${logs_datasource}"
       },
       "fieldConfig": {
         "defaults": {},
@@ -626,12 +626,12 @@
         "sortOrder": "Ascending",
         "wrapLogMessage": true
       },
-      "pluginVersion": "12.1.0-16509090662",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "loki",
-            "uid": "mir-loki"
+            "uid": "${logs_datasource}"
           },
           "direction": "backward",
           "editorMode": "builder",
@@ -650,7 +650,32 @@
   "style": "dark",
   "tags": ["mir", "mir-infra", "loki"],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "current": {
+          "text": "Prometheus",
+          "value": "mir-prometheus"
+        },
+        "description": "",
+        "label": "Datasource",
+        "name": "datasource",
+        "options": [],
+        "query": "prometheus",
+        "refresh": 1,
+        "regex": "",
+        "type": "datasource"
+      },
+      {
+        "description": "",
+        "label": "Logs",
+        "name": "logs_datasource",
+        "options": [],
+        "query": "loki",
+        "refresh": 1,
+        "regex": "",
+        "type": "datasource"
+      }
+    ]
   },
   "time": {
     "from": "now-1h",

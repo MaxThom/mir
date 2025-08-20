@@ -5,7 +5,7 @@
         "builtIn": 1,
         "datasource": {
           "type": "prometheus",
-          "uid": "mir-prometheus"
+          "uid": "${datasource}"
         },
         "enable": true,
         "hide": true,
@@ -25,7 +25,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "description": "Shows if Promtail is up and running",
       "fieldConfig": {
@@ -92,7 +92,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "up{job=\"promtail\"}",
@@ -108,7 +108,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "description": "Number of log entries sent per second",
       "fieldConfig": {
@@ -184,7 +184,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "rate(promtail_sent_entries_total[$__rate_interval])",
@@ -200,7 +200,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "description": "Number of active targets being scraped",
       "fieldConfig": {
@@ -247,7 +247,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "promtail_targets_active_total",
@@ -263,7 +263,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "description": "Total bytes sent to Loki",
       "fieldConfig": {
@@ -310,7 +310,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "promtail_sent_bytes_total",
@@ -326,7 +326,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "description": "Number of streams currently active",
       "fieldConfig": {
@@ -381,7 +381,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "promtail_stream_lag_seconds_count",
@@ -397,7 +397,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "description": "Bytes read vs bytes sent per second",
       "fieldConfig": {
@@ -473,7 +473,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "rate(promtail_read_bytes_total[$__rate_interval])",
@@ -485,7 +485,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "rate(promtail_sent_bytes_total[$__rate_interval])",
@@ -502,7 +502,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "description": "HTTP request duration to Loki",
       "fieldConfig": {
@@ -578,7 +578,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "histogram_quantile(0.99, sum(rate(promtail_request_duration_seconds_bucket[$__rate_interval])) by (le, status_code))",
@@ -590,7 +590,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "histogram_quantile(0.50, sum(rate(promtail_request_duration_seconds_bucket[$__rate_interval])) by (le, status_code))",
@@ -607,7 +607,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "description": "Files being tailed by path",
       "fieldConfig": {
@@ -670,7 +670,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "promtail_file_bytes_total",
@@ -705,7 +705,7 @@
     {
       "datasource": {
         "type": "loki",
-        "uid": "mir-loki"
+        "uid": "${logs_datasource}"
       },
       "fieldConfig": {
         "defaults": {},
@@ -729,12 +729,12 @@
         "sortOrder": "Ascending",
         "wrapLogMessage": true
       },
-      "pluginVersion": "12.1.0-16509090662",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "loki",
-            "uid": "mir-loki"
+            "uid": "${logs_datasource}"
           },
           "direction": "backward",
           "editorMode": "builder",
@@ -753,7 +753,32 @@
   "style": "dark",
   "tags": ["mir", "mir-infra", "promtail"],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "current": {
+          "text": "Prometheus",
+          "value": "mir-prometheus"
+        },
+        "description": "",
+        "label": "Datasource",
+        "name": "datasource",
+        "options": [],
+        "query": "prometheus",
+        "refresh": 1,
+        "regex": "",
+        "type": "datasource"
+      },
+      {
+        "description": "",
+        "label": "Logs",
+        "name": "logs_datasource",
+        "options": [],
+        "query": "loki",
+        "refresh": 1,
+        "regex": "",
+        "type": "datasource"
+      }
+    ]
   },
   "time": {
     "from": "now-1h",

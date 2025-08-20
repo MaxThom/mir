@@ -27,7 +27,16 @@
       - [x] Test with CLI, cant change url
     - [x] Influx
     - [ ] PromStack
+      - [ ] Dashboard
+        - [ ] Add job label
+        - [ ] Need to add container label to local
       - [ ] ServiceMonitor
+        - [ ] jobs
+        - [ ] Influx
+        - [ ] Nats
+        - [ ] Grafana
+        - [ ] Loki
+        - [ ] Promtails
       - [ ] Review
       - [ ] Loki
       - [ ] Examples of different configs
@@ -35,13 +44,13 @@
   - [x] GrafanaLoki
   - [x] Docker container
     - [x] Simple/Multi for device
-      - [ ] Makefile, Pipeline
-      - [ ] Optional for docker and maybe helm?
+      - [x] Makefile, Pipeline
+      - [x] Optional for docker
     - [x] Multibuild
     - [x] Simple
-  - [ ] Pipeline for each
+  - [x] Pipeline for each
     - [x] HelmChart
-    - [ ] For device
+    - [x] For device
     - [x] For server
   - [x] CLI Tool template
     - [x] new command to generate config of device

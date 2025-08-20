@@ -1,5 +1,3 @@
-replicaCount: 1
-
 image:
   repository: ghcr.io/maxthom/mir
   pullPolicy: IfNotPresent
@@ -113,8 +111,12 @@ nats:
   #     resources: {}
   promExporter:
     enabled: true
-  podMonitor:
-    enabled: false
+    podMonitor:
+      enabled: true
+      merge:
+        metadata:
+          labels:
+            prometheus: mir
 
 #
 # SurrealDB subchart configuration
@@ -206,6 +208,8 @@ influxdb2:
 # Mir Server Extra Config
 #
 
+enabled: true
+replicaCount: 1
 imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
@@ -263,6 +267,9 @@ affinity: {}
 
 mirServiceMonitors:
   enabled: true
+  labels:
+    prometheus: mir
+  annotations: {}
 
 mirPrometheusRules:
   enabled: true
@@ -276,9 +283,17 @@ mirDashboards:
     grafana: mir
   annotations: {}
 
+# Set of extra dashboards for promstack monitoring
+mirPromDashboards:
+  enabled: true
+  labels:
+    grafana: mir
+  annotations: {}
+
 # Kube-Prometheus-Stack subchart configuration
 kube-prometheus-stack:
   enabled: false  # Set to true to enable Prometheus monitoring stack
+
   commonLabels:
     prometheus: mir
 
@@ -365,6 +380,10 @@ kube-prometheus-stack:
       limits:
         cpu: 500m
         memory: 512Mi
+    serviceMonitor:
+      enabled: true
+      labels:
+        prometheus: mir
 
     # Grafana ini configuration
     grafana.ini:
@@ -441,7 +460,7 @@ kube-prometheus-stack:
               path: /var/lib/grafana/dashboards/mir
           - name: 'mir-infra-dashboards'
             orgId: 1
-            folder: 'Infrastructure'
+            folder: 'Mir Infra'
             type: file
             disableDeletion: false
             editable: true
@@ -449,6 +468,16 @@ kube-prometheus-stack:
             allowUiUpdates: false
             options:
               path: /var/lib/grafana/dashboards/infra
+          - name: 'mir-promstack-dashboards'
+            orgId: 1
+            folder: 'Mir PromStack'
+            type: file
+            disableDeletion: false
+            editable: true
+            updateIntervalSeconds: 10
+            allowUiUpdates: false
+            options:
+              path: /var/lib/grafana/dashboards/promstack
 
     #dashboardsConfigMaps: []
       # mir-dashboards: "mir-grafana-dashboards-mir"

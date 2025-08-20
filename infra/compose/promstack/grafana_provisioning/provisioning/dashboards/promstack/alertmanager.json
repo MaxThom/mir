@@ -18,7 +18,7 @@
           "uid": "$datasource"
         },
         "enable": true,
-        "expr": "changes(process_start_time_seconds{ instance=~\"$instance\"}[2m]) > 0",
+        "expr": "changes(process_start_time_seconds{ job=~\"$job\"}[2m]) > 0",
         "hide": false,
         "iconColor": "#bf1b00",
         "name": "Restarts",
@@ -33,7 +33,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
-  "id": 12,
+  "id": 36,
   "links": [
     {
       "icon": "doc",
@@ -122,7 +122,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -157,15 +157,17 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "uid": "$datasource"
           },
-          "expr": "count(alertmanager_build_info{instance=~\"$instance\"})",
+          "editorMode": "code",
+          "expr": "count(alertmanager_build_info{job=~\"$job\"})",
           "format": "time_series",
           "intervalFactor": 1,
+          "range": true,
           "refId": "A"
         }
       ],
@@ -173,16 +175,191 @@
       "type": "stat"
     },
     {
-      "columns": [],
       "datasource": {
         "uid": "$datasource"
       },
       "description": "Table containing list of Alertmanager instances showing it's version, up time, last reload time and if it was successful.",
       "fieldConfig": {
-        "defaults": {},
-        "overrides": []
+        "defaults": {
+          "custom": {
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "decimals": 2,
+          "displayName": "",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Time"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Time"
+              },
+              {
+                "id": "custom.hidden",
+                "value": true
+              },
+              {
+                "id": "custom.align"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "instance"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Instance"
+              },
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              },
+              {
+                "id": "custom.align"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "version"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Version"
+              },
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              },
+              {
+                "id": "custom.align"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Value #A"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Up time"
+              },
+              {
+                "id": "unit",
+                "value": "s"
+              },
+              {
+                "id": "custom.align"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Value #B"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Last reload"
+              },
+              {
+                "id": "unit",
+                "value": "s"
+              },
+              {
+                "id": "custom.align"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Value #C"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Last reload sucessfull"
+              },
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "custom.align"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "rgba(245, 54, 54, 0.9)",
+                      "value": 0
+                    },
+                    {
+                      "color": "rgba(237, 129, 40, 0.89)",
+                      "value": 0
+                    },
+                    {
+                      "color": "rgba(50, 172, 45, 0.97)",
+                      "value": 1
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
       },
-      "fontSize": "90%",
       "gridPos": {
         "h": 5,
         "w": 9,
@@ -190,126 +367,24 @@
         "y": 1
       },
       "id": 26,
-      "options": {},
-      "pluginVersion": "11.3.0",
-      "scroll": true,
-      "showHeader": true,
-      "sort": {
-        "col": 13,
-        "desc": false
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": ["sum"],
+          "show": false
+        },
+        "showHeader": true
       },
-      "styles": [
-        {
-          "alias": "Time",
-          "align": "auto",
-          "dateFormat": "YYYY-MM-DD HH:mm:ss",
-          "pattern": "Time",
-          "type": "hidden"
-        },
-        {
-          "alias": "Instance",
-          "align": "auto",
-          "colors": [
-            "rgba(245, 54, 54, 0.9)",
-            "rgba(237, 129, 40, 0.89)",
-            "rgba(50, 172, 45, 0.97)"
-          ],
-          "dateFormat": "YYYY-MM-DD HH:mm:ss",
-          "decimals": 2,
-          "mappingType": 1,
-          "pattern": "instance",
-          "thresholds": [],
-          "type": "string",
-          "unit": "short"
-        },
-        {
-          "alias": "Version",
-          "align": "auto",
-          "colors": [
-            "rgba(245, 54, 54, 0.9)",
-            "rgba(237, 129, 40, 0.89)",
-            "rgba(50, 172, 45, 0.97)"
-          ],
-          "dateFormat": "YYYY-MM-DD HH:mm:ss",
-          "decimals": 2,
-          "mappingType": 1,
-          "pattern": "version",
-          "thresholds": [],
-          "type": "string",
-          "unit": "short"
-        },
-        {
-          "alias": "Up time",
-          "align": "auto",
-          "colors": [
-            "rgba(245, 54, 54, 0.9)",
-            "rgba(237, 129, 40, 0.89)",
-            "rgba(50, 172, 45, 0.97)"
-          ],
-          "dateFormat": "YYYY-MM-DD HH:mm:ss",
-          "decimals": 0,
-          "mappingType": 1,
-          "pattern": "Value #A",
-          "thresholds": [],
-          "type": "number",
-          "unit": "s"
-        },
-        {
-          "alias": "Last reload",
-          "align": "auto",
-          "colors": [
-            "rgba(245, 54, 54, 0.9)",
-            "rgba(237, 129, 40, 0.89)",
-            "rgba(50, 172, 45, 0.97)"
-          ],
-          "dateFormat": "YYYY-MM-DD HH:mm:ss",
-          "decimals": 0,
-          "mappingType": 1,
-          "pattern": "Value #B",
-          "thresholds": [],
-          "type": "number",
-          "unit": "s"
-        },
-        {
-          "alias": "Last reload sucessfull",
-          "align": "auto",
-          "colorMode": "cell",
-          "colors": [
-            "rgba(245, 54, 54, 0.9)",
-            "rgba(237, 129, 40, 0.89)",
-            "rgba(50, 172, 45, 0.97)"
-          ],
-          "dateFormat": "YYYY-MM-DD HH:mm:ss",
-          "decimals": 2,
-          "mappingType": 1,
-          "pattern": "Value #C",
-          "thresholds": ["0", "1"],
-          "type": "number",
-          "unit": "short"
-        },
-        {
-          "alias": "",
-          "align": "auto",
-          "colors": [
-            "rgba(245, 54, 54, 0.9)",
-            "rgba(237, 129, 40, 0.89)",
-            "rgba(50, 172, 45, 0.97)"
-          ],
-          "dateFormat": "YYYY-MM-DD HH:mm:ss",
-          "decimals": 2,
-          "mappingType": 1,
-          "pattern": "/.*/",
-          "thresholds": [],
-          "type": "hidden",
-          "unit": "short"
-        }
-      ],
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "uid": "$datasource"
           },
-          "expr": "time() - (alertmanager_build_info{instance=~\"$instance\"} * on (instance, cluster) group_left process_start_time_seconds{instance=~\"$instance\"})",
+          "editorMode": "code",
+          "expr": "time() - (alertmanager_build_info{job=~\"$job\"} * on (instance, cluster) group_left process_start_time_seconds{job=~\"$job\"})",
           "format": "table",
           "instant": true,
           "intervalFactor": 1,
@@ -319,7 +394,8 @@
           "datasource": {
             "uid": "$datasource"
           },
-          "expr": "time() - alertmanager_config_last_reload_success_timestamp_seconds{instance=~\"$instance\"}",
+          "editorMode": "code",
+          "expr": "time() - alertmanager_config_last_reload_success_timestamp_seconds{job=~\"$job\"}",
           "format": "table",
           "instant": true,
           "intervalFactor": 1,
@@ -329,7 +405,8 @@
           "datasource": {
             "uid": "$datasource"
           },
-          "expr": "alertmanager_config_last_reload_successful{instance=~\"$instance\"}",
+          "editorMode": "code",
+          "expr": "alertmanager_config_last_reload_successful{job=~\"$job\"}",
           "format": "table",
           "instant": true,
           "intervalFactor": 1,
@@ -337,8 +414,7 @@
         }
       ],
       "title": "Instance versions and up time",
-      "transform": "table",
-      "type": "table-old"
+      "type": "table"
     },
     {
       "datasource": {
@@ -368,7 +444,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -403,15 +479,17 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "uid": "$datasource"
           },
-          "expr": "max(alertmanager_cluster_members{instance=~\"$instance\"})",
+          "editorMode": "code",
+          "expr": "max(alertmanager_cluster_members{job=~\"$job\"})",
           "format": "time_series",
           "intervalFactor": 1,
+          "range": true,
           "refId": "A"
         }
       ],
@@ -445,7 +523,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -480,15 +558,17 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "uid": "$datasource"
           },
-          "expr": "max(alertmanager_alerts{state=\"active\", instance=~\"$instance\"})",
+          "editorMode": "code",
+          "expr": "max(alertmanager_alerts{state=\"active\", job=~\"$job\"})",
           "format": "time_series",
           "intervalFactor": 1,
+          "range": true,
           "refId": "A"
         }
       ],
@@ -522,7 +602,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -557,15 +637,17 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "uid": "$datasource"
           },
-          "expr": "max(alertmanager_alerts{state=\"suppressed\", instance=~\"$instance\"})",
+          "editorMode": "code",
+          "expr": "max(alertmanager_alerts{state=\"suppressed\", job=~\"$job\"})",
           "format": "time_series",
           "intervalFactor": 1,
+          "range": true,
           "refId": "A"
         }
       ],
@@ -599,7 +681,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -634,15 +716,17 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "uid": "$datasource"
           },
-          "expr": "max(alertmanager_silences{state=\"active\", instance=~\"$instance\"})",
+          "editorMode": "code",
+          "expr": "max(alertmanager_silences{state=\"active\", job=~\"$job\"})",
           "format": "time_series",
           "intervalFactor": 1,
+          "range": true,
           "refId": "A"
         }
       ],
@@ -668,7 +752,58 @@
       },
       "description": "Number of sent notifications to distinct integrations such as PagerDuty, Slack and so on. On negative axis are displayed failed notifications.",
       "fieldConfig": {
-        "defaults": {},
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
         "overrides": [
           {
             "matcher": {
@@ -746,10 +881,12 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.1.0",
       "repeat": "instance",
       "repeatDirection": "h",
       "targets": [
@@ -757,26 +894,30 @@
           "datasource": {
             "uid": "$datasource"
           },
-          "expr": "sum(increase(alertmanager_notifications_total{instance=~\"$instance\"}[$__interval])) by (integration)",
+          "editorMode": "code",
+          "expr": "sum(increase(alertmanager_notifications_total{job=~\"$job\"}[$__interval])) by (integration)",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "{{ integration}}",
+          "range": true,
           "refId": "B"
         },
         {
           "datasource": {
             "uid": "$datasource"
           },
-          "expr": "sum(increase(alertmanager_notifications_failed_total{instance=~\"$instance\"}[$__interval])) by (integration)",
+          "editorMode": "code",
+          "expr": "sum(increase(alertmanager_notifications_failed_total{job=~\"$job\"}[$__interval])) by (integration)",
           "format": "time_series",
           "hide": false,
           "interval": "",
           "intervalFactor": 1,
           "legendFormat": "Failed {{ integration }}",
+          "range": true,
           "refId": "A"
         }
       ],
-      "title": "Notifications sent from $instance",
+      "title": "Notifications sent from $job",
       "type": "timeseries"
     },
     {
@@ -879,7 +1020,7 @@
           "datasource": {
             "uid": "$datasource"
           },
-          "expr": "sum(histogram_quantile(0.9,rate(alertmanager_notification_latency_seconds_bucket{instance=~\"$instance\"}[$__interval]))) by (integration)",
+          "expr": "sum(histogram_quantile(0.9,rate(alertmanager_notification_latency_seconds_bucket{job=~\"$job\"}[$__interval]))) by (integration)",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "0.9q {{ integration }}",
@@ -889,7 +1030,7 @@
           "datasource": {
             "uid": "$datasource"
           },
-          "expr": "sum(histogram_quantile(0.99,rate(alertmanager_notification_latency_seconds_bucket{instance=~\"$instance\"}[$__interval]))) by (integration)",
+          "expr": "sum(histogram_quantile(0.99,rate(alertmanager_notification_latency_seconds_bucket{job=~\"$job\"}[$__interval]))) by (integration)",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -897,7 +1038,7 @@
           "refId": "A"
         }
       ],
-      "title": "Notification durations per integration on $instance",
+      "title": "Notification durations per integration on $job",
       "type": "timeseries"
     },
     {
@@ -919,7 +1060,58 @@
       },
       "description": "Number of alerts by state such as `active`, `suppressed` etc.",
       "fieldConfig": {
-        "defaults": {},
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
         "overrides": [
           {
             "matcher": {
@@ -968,10 +1160,12 @@
           "showLegend": false
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.1.0",
       "repeat": "instance",
       "repeatDirection": "h",
       "targets": [
@@ -979,14 +1173,16 @@
           "datasource": {
             "uid": "$datasource"
           },
-          "expr": "sum(alertmanager_alerts{instance=~\"$instance\"}) by (state)",
+          "editorMode": "code",
+          "expr": "sum(alertmanager_alerts{job=~\"$job\"}) by (state)",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "{{state}}",
+          "range": true,
           "refId": "A"
         }
       ],
-      "title": "Active alerts in $instance",
+      "title": "Active alerts in $job",
       "type": "timeseries"
     },
     {
@@ -995,7 +1191,58 @@
       },
       "description": "Number of received alerts from Prometheus by status `firing` on positive axis and `resolved` on negative axis.",
       "fieldConfig": {
-        "defaults": {},
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
         "overrides": [
           {
             "matcher": {
@@ -1048,10 +1295,12 @@
           "showLegend": false
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.1.0",
       "repeat": "instance",
       "repeatDirection": "h",
       "targets": [
@@ -1059,15 +1308,17 @@
           "datasource": {
             "uid": "$datasource"
           },
-          "expr": "sum(increase(alertmanager_alerts_received_total{instance=~\"$instance\"}[$__interval])) by (status)",
+          "editorMode": "code",
+          "expr": "sum(increase(alertmanager_alerts_received_total{job=~\"$job\"}[$__interval])) by (status)",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
           "legendFormat": "{{ status }}",
+          "range": true,
           "refId": "A"
         }
       ],
-      "title": "Received alerts by status for $instance",
+      "title": "Received alerts by status for $job",
       "type": "timeseries"
     },
     {
@@ -1135,14 +1386,14 @@
               "datasource": {
                 "uid": "$datasource"
               },
-              "expr": "alertmanager_cluster_health_score{instance=~\"$instance\"}",
+              "expr": "alertmanager_cluster_health_score{job=~\"$job\"}",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "Cluster health score",
               "refId": "A"
             }
           ],
-          "title": "Clusterhealth score for $instance",
+          "title": "Clusterhealth score for $job",
           "type": "timeseries"
         },
         {
@@ -1200,7 +1451,7 @@
               "datasource": {
                 "uid": "$datasource"
               },
-              "expr": "alertmanager_cluster_members{instance=~\"$instance\"}",
+              "expr": "alertmanager_cluster_members{job=~\"$job\"}",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "Number of cluster members",
@@ -1210,14 +1461,14 @@
               "datasource": {
                 "uid": "$datasource"
               },
-              "expr": "alertmanager_cluster_failed_peers{instance=~\"$instance\"}",
+              "expr": "alertmanager_cluster_failed_peers{job=~\"$job\"}",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "Number of failed peers",
               "refId": "B"
             }
           ],
-          "title": "Cluster members count on $instance",
+          "title": "Cluster members count on $job",
           "type": "timeseries"
         },
         {
@@ -1244,7 +1495,7 @@
               "datasource": {
                 "uid": "$datasource"
               },
-              "expr": "increase(alertmanager_cluster_peers_left_total{instance=~\"$instance\"}[$__interval])",
+              "expr": "increase(alertmanager_cluster_peers_left_total{job=~\"$job\"}[$__interval])",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "Cluster joined peers",
@@ -1254,14 +1505,14 @@
               "datasource": {
                 "uid": "$datasource"
               },
-              "expr": "increase(alertmanager_cluster_peers_joined_total{instance=~\"$instance\"}[$__interval])",
+              "expr": "increase(alertmanager_cluster_peers_joined_total{job=~\"$job\"}[$__interval])",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "Cluster left peers",
               "refId": "B"
             }
           ],
-          "title": "Cluster peers left/joined on $instance",
+          "title": "Cluster peers left/joined on $job",
           "type": "timeseries"
         },
         {
@@ -1288,7 +1539,7 @@
               "datasource": {
                 "uid": "$datasource"
               },
-              "expr": "increase(alertmanager_cluster_reconnections_total{instance=~\"$instance\"}[$__interval])",
+              "expr": "increase(alertmanager_cluster_reconnections_total{job=~\"$job\"}[$__interval])",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "Sucessful reconnections",
@@ -1298,14 +1549,14 @@
               "datasource": {
                 "uid": "$datasource"
               },
-              "expr": "increase(alertmanager_cluster_reconnections_failed_total{instance=~\"$instance\"}[$__interval])",
+              "expr": "increase(alertmanager_cluster_reconnections_failed_total{job=~\"$job\"}[$__interval])",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "Failed reconnections",
               "refId": "B"
             }
           ],
-          "title": "Cluster reconnections on $instance",
+          "title": "Cluster reconnections on $job",
           "type": "timeseries"
         },
         {
@@ -1332,7 +1583,7 @@
               "datasource": {
                 "uid": "$datasource"
               },
-              "expr": "sum(increase(alertmanager_cluster_messages_sent_total{instance=~\"$instance\"}[$__interval])) by (msg_type)",
+              "expr": "sum(increase(alertmanager_cluster_messages_sent_total{job=~\"$job\"}[$__interval])) by (msg_type)",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "sent {{msg_type}}",
@@ -1342,14 +1593,14 @@
               "datasource": {
                 "uid": "$datasource"
               },
-              "expr": "sum(increase(alertmanager_cluster_messages_received_total{instance=~\"$instance\"}[$__interval])) by (msg_type)",
+              "expr": "sum(increase(alertmanager_cluster_messages_received_total{job=~\"$job\"}[$__interval])) by (msg_type)",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "received {{msg_type}}",
               "refId": "B"
             }
           ],
-          "title": "Cluster messages count on $instance",
+          "title": "Cluster messages count on $job",
           "type": "timeseries"
         },
         {
@@ -1376,7 +1627,7 @@
               "datasource": {
                 "uid": "$datasource"
               },
-              "expr": "sum(increase(alertmanager_cluster_messages_sent_size_total{instance=~\"$instance\"}[$__interval])) by (msg_type)",
+              "expr": "sum(increase(alertmanager_cluster_messages_sent_size_total{job=~\"$job\"}[$__interval])) by (msg_type)",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "sent {{msg_type}}",
@@ -1386,14 +1637,14 @@
               "datasource": {
                 "uid": "$datasource"
               },
-              "expr": "sum(increase(alertmanager_cluster_messages_received_size_total{instance=~\"$instance\"}[$__interval])) by (msg_type)",
+              "expr": "sum(increase(alertmanager_cluster_messages_received_size_total{job=~\"$job\"}[$__interval])) by (msg_type)",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "received {{msg_type}}",
               "refId": "B"
             }
           ],
-          "title": "Cluster messages size on $instance",
+          "title": "Cluster messages size on $job",
           "type": "timeseries"
         },
         {
@@ -1420,7 +1671,7 @@
               "datasource": {
                 "uid": "$datasource"
               },
-              "expr": "alertmanager_cluster_messages_pruned_total{instance=~\"$instance\"}",
+              "expr": "alertmanager_cluster_messages_pruned_total{job=~\"$job\"}",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "Pruned messaged",
@@ -1430,14 +1681,14 @@
               "datasource": {
                 "uid": "$datasource"
               },
-              "expr": "alertmanager_cluster_messages_queued{instance=~\"$instance\"}",
+              "expr": "alertmanager_cluster_messages_queued{job=~\"$job\"}",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "Queued messages",
               "refId": "B"
             }
           ],
-          "title": "Cluster messages queue on $instance",
+          "title": "Cluster messages queue on $job",
           "type": "timeseries"
         }
       ],
@@ -1527,7 +1778,7 @@
               "datasource": {
                 "uid": "$datasource"
               },
-              "expr": "increase(alertmanager_oversized_gossip_message_sent_total{instance=~\"$instance\"}[$__interval])",
+              "expr": "increase(alertmanager_oversized_gossip_message_sent_total{job=~\"$job\"}[$__interval])",
               "format": "time_series",
               "hide": false,
               "intervalFactor": 1,
@@ -1538,7 +1789,7 @@
               "datasource": {
                 "uid": "$datasource"
               },
-              "expr": "increase(alertmanager_oversized_gossip_message_dropped_total{instance=~\"$instance\"}[$__interval])",
+              "expr": "increase(alertmanager_oversized_gossip_message_dropped_total{job=~\"$job\"}[$__interval])",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "dropped {{key}}",
@@ -1548,14 +1799,14 @@
               "datasource": {
                 "uid": "$datasource"
               },
-              "expr": "increase(alertmanager_oversized_gossip_message_failure_total{instance=~\"$instance\"}[$__interval])",
+              "expr": "increase(alertmanager_oversized_gossip_message_failure_total{job=~\"$job\"}[$__interval])",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "failed {{key}}",
               "refId": "C"
             }
           ],
-          "title": "Count of oversized gossip messages on $instance",
+          "title": "Count of oversized gossip messages on $job",
           "type": "timeseries"
         },
         {
@@ -1581,7 +1832,7 @@
               "datasource": {
                 "uid": "$datasource"
               },
-              "expr": "histogram_quantile(1,rate(alertmanager_oversize_gossip_message_duration_seconds_bucket{instance=~\"$instance\"}[$__interval]))",
+              "expr": "histogram_quantile(1,rate(alertmanager_oversize_gossip_message_duration_seconds_bucket{job=~\"$job\"}[$__interval]))",
               "format": "time_series",
               "hide": false,
               "intervalFactor": 1,
@@ -1589,7 +1840,7 @@
               "refId": "A"
             }
           ],
-          "title": "Duration of oversized gossip messages on $instance",
+          "title": "Duration of oversized gossip messages on $job",
           "type": "timeseries"
         },
         {
@@ -1615,7 +1866,7 @@
               "datasource": {
                 "uid": "$datasource"
               },
-              "expr": "increase(alertmanager_silences_gossip_messages_propagated_total{instance=~\"$instance\"}[$__interval])",
+              "expr": "increase(alertmanager_silences_gossip_messages_propagated_total{job=~\"$job\"}[$__interval])",
               "format": "time_series",
               "hide": false,
               "intervalFactor": 1,
@@ -1626,14 +1877,14 @@
               "datasource": {
                 "uid": "$datasource"
               },
-              "expr": "increase(alertmanager_nflog_gossip_messages_propagated_total{instance=~\"$instance\"}[$__interval])",
+              "expr": "increase(alertmanager_nflog_gossip_messages_propagated_total{job=~\"$job\"}[$__interval])",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "nf_log",
               "refId": "B"
             }
           ],
-          "title": "Number of  propagated gossip messages on $instance",
+          "title": "Number of  propagated gossip messages on $job",
           "type": "timeseries"
         }
       ],
@@ -1673,7 +1924,7 @@
               "datasource": {
                 "uid": "$datasource"
               },
-              "expr": "increase(alertmanager_nflog_queries_total{instance=~\"$instance\"}[$__interval])",
+              "expr": "increase(alertmanager_nflog_queries_total{job=~\"$job\"}[$__interval])",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "Nf log query count",
@@ -1683,14 +1934,14 @@
               "datasource": {
                 "uid": "$datasource"
               },
-              "expr": "increase(alertmanager_nflog_query_errors_total{instance=~\"$instance\"}[$__interval])",
+              "expr": "increase(alertmanager_nflog_query_errors_total{job=~\"$job\"}[$__interval])",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "Nf log query errors",
               "refId": "B"
             }
           ],
-          "title": "Nf log queries count for $instance",
+          "title": "Nf log queries count for $job",
           "type": "timeseries"
         },
         {
@@ -1716,14 +1967,14 @@
               "datasource": {
                 "uid": "$datasource"
               },
-              "expr": "histogram_quantile(1,rate(alertmanager_nflog_query_duration_seconds_bucket{instance=~\"$instance\"}[$__interval]))",
+              "expr": "histogram_quantile(1,rate(alertmanager_nflog_query_duration_seconds_bucket{job=~\"$job\"}[$__interval]))",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "Nf log query duration",
               "refId": "A"
             }
           ],
-          "title": "Nf log query duration for $instance",
+          "title": "Nf log query duration for $job",
           "type": "timeseries"
         },
         {
@@ -1749,14 +2000,14 @@
               "datasource": {
                 "uid": "$datasource"
               },
-              "expr": "alertmanager_nflog_snapshot_size_bytes{instance=~\"$instance\"}",
+              "expr": "alertmanager_nflog_snapshot_size_bytes{job=~\"$job\"}",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "Nf log snapshot size",
               "refId": "A"
             }
           ],
-          "title": "Nf log snapshot size for $instance",
+          "title": "Nf log snapshot size for $job",
           "type": "timeseries"
         },
         {
@@ -1782,7 +2033,7 @@
               "datasource": {
                 "uid": "$datasource"
               },
-              "expr": "rate(alertmanager_nflog_snapshot_duration_seconds_sum{instance=~\"$instance\"}[$__interval]) / rate(alertmanager_nflog_snapshot_duration_seconds_sum{instance=~\"$instance\"}[$__interval])",
+              "expr": "rate(alertmanager_nflog_snapshot_duration_seconds_sum{job=~\"$job\"}[$__interval]) / rate(alertmanager_nflog_snapshot_duration_seconds_sum{job=~\"$job\"}[$__interval])",
               "format": "time_series",
               "hide": false,
               "intervalFactor": 1,
@@ -1790,7 +2041,7 @@
               "refId": "A"
             }
           ],
-          "title": "Nf log snapshot duration for $instance",
+          "title": "Nf log snapshot duration for $job",
           "type": "timeseries"
         },
         {
@@ -1816,14 +2067,14 @@
               "datasource": {
                 "uid": "$datasource"
               },
-              "expr": "alertmanager_nflog_gc_duration_seconds{instance=~\"$instance\"}",
+              "expr": "alertmanager_nflog_gc_duration_seconds{job=~\"$job\"}",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "Cluster joined peers",
               "refId": "A"
             }
           ],
-          "title": "Nf log Go GC time for $instance",
+          "title": "Nf log Go GC time for $job",
           "type": "timeseries"
         }
       ],
@@ -1863,7 +2114,7 @@
               "datasource": {
                 "uid": "$datasource"
               },
-              "expr": "alertmanager_silences{instance=~\"$instance\"}",
+              "expr": "alertmanager_silences{job=~\"$job\"}",
               "format": "time_series",
               "hide": false,
               "intervalFactor": 1,
@@ -1871,7 +2122,7 @@
               "refId": "A"
             }
           ],
-          "title": "Silences count by state on $instance",
+          "title": "Silences count by state on $job",
           "type": "timeseries"
         },
         {
@@ -1897,7 +2148,7 @@
               "datasource": {
                 "uid": "$datasource"
               },
-              "expr": "increase(alertmanager_silences_queries_total{instance=~\"$instance\"}[$__interval])",
+              "expr": "increase(alertmanager_silences_queries_total{job=~\"$job\"}[$__interval])",
               "format": "time_series",
               "hide": false,
               "intervalFactor": 1,
@@ -1908,14 +2159,14 @@
               "datasource": {
                 "uid": "$datasource"
               },
-              "expr": "increase(alertmanager_silences_query_errors_total{instance=~\"$instance\"}[$__interval])",
+              "expr": "increase(alertmanager_silences_query_errors_total{job=~\"$job\"}[$__interval])",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "Silecnces query fails",
               "refId": "B"
             }
           ],
-          "title": "Silences query count on $instance",
+          "title": "Silences query count on $job",
           "type": "timeseries"
         },
         {
@@ -1941,7 +2192,7 @@
               "datasource": {
                 "uid": "$datasource"
               },
-              "expr": "histogram_quantile(1,rate(alertmanager_silences_query_duration_seconds_bucket{instance=~\"$instance\"}[$__interval]))",
+              "expr": "histogram_quantile(1,rate(alertmanager_silences_query_duration_seconds_bucket{job=~\"$job\"}[$__interval]))",
               "format": "time_series",
               "hide": false,
               "intervalFactor": 1,
@@ -1949,7 +2200,7 @@
               "refId": "A"
             }
           ],
-          "title": "Silences query duration on $instance",
+          "title": "Silences query duration on $job",
           "type": "timeseries"
         },
         {
@@ -1975,7 +2226,7 @@
               "datasource": {
                 "uid": "$datasource"
               },
-              "expr": "alertmanager_silences_snapshot_size_bytes{instance=~\"$instance\"}",
+              "expr": "alertmanager_silences_snapshot_size_bytes{job=~\"$job\"}",
               "format": "time_series",
               "hide": false,
               "intervalFactor": 1,
@@ -1983,7 +2234,7 @@
               "refId": "A"
             }
           ],
-          "title": "Silences snapshot size on $instance",
+          "title": "Silences snapshot size on $job",
           "type": "timeseries"
         },
         {
@@ -2009,7 +2260,7 @@
               "datasource": {
                 "uid": "$datasource"
               },
-              "expr": "alertmanager_silences_snapshot_duration_seconds{instance=~\"$instance\", quantile=\"0.99\"}",
+              "expr": "alertmanager_silences_snapshot_duration_seconds{job=~\"$job\", quantile=\"0.99\"}",
               "format": "time_series",
               "hide": false,
               "intervalFactor": 1,
@@ -2017,7 +2268,7 @@
               "refId": "A"
             }
           ],
-          "title": "Silences snapshot duration on $instance",
+          "title": "Silences snapshot duration on $job",
           "type": "timeseries"
         },
         {
@@ -2043,7 +2294,7 @@
               "datasource": {
                 "uid": "$datasource"
               },
-              "expr": "alertmanager_silences_gc_duration_seconds{instance=~\"$instance\"}",
+              "expr": "alertmanager_silences_gc_duration_seconds{job=~\"$job\"}",
               "format": "time_series",
               "hide": false,
               "intervalFactor": 1,
@@ -2051,7 +2302,7 @@
               "refId": "A"
             }
           ],
-          "title": "Silences GC duraton on $instance",
+          "title": "Silences GC duraton on $job",
           "type": "timeseries"
         }
       ],
@@ -2091,7 +2342,7 @@
               "datasource": {
                 "uid": "$datasource"
               },
-              "expr": "rate(process_cpu_seconds_total{instance=~\"$instance\"}[$__interval])",
+              "expr": "rate(process_cpu_seconds_total{job=~\"$job\"}[$__interval])",
               "format": "time_series",
               "groupBy": [
                 {
@@ -2128,14 +2379,14 @@
               "datasource": {
                 "uid": "$datasource"
               },
-              "expr": "max(kube_pod_container_resource_limits_cpu_cores{pod=~\"$instance\"}) by (pod)",
+              "expr": "max(kube_pod_container_resource_limits_cpu_cores{pod=~\"$job\"}) by (pod)",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "Limit {{pod}}",
               "refId": "B"
             }
           ],
-          "title": "CPU usage/s for $instance",
+          "title": "CPU usage/s for $job",
           "type": "timeseries"
         },
         {
@@ -2161,7 +2412,7 @@
               "datasource": {
                 "uid": "$datasource"
               },
-              "expr": "process_resident_memory_bytes{instance=~\"$instance\"}",
+              "expr": "process_resident_memory_bytes{job=~\"$job\"}",
               "format": "time_series",
               "hide": false,
               "interval": "",
@@ -2173,14 +2424,14 @@
               "datasource": {
                 "uid": "$datasource"
               },
-              "expr": "max(kube_pod_container_resource_limits_memory_bytes{pod=~\"$instance\"}) by (pod)",
+              "expr": "max(kube_pod_container_resource_limits_memory_bytes{pod=~\"$job\"}) by (pod)",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "Limit {{ pod }}",
               "refId": "A"
             }
           ],
-          "title": "Memory usage for $instance",
+          "title": "Memory usage for $job",
           "type": "timeseries"
         }
       ],
@@ -2190,7 +2441,7 @@
     {
       "datasource": {
         "type": "loki",
-        "uid": "mir-loki"
+        "uid": "${logs_datasource}"
       },
       "fieldConfig": {
         "defaults": {},
@@ -2200,7 +2451,7 @@
         "h": 12,
         "w": 24,
         "x": 0,
-        "y": 104
+        "y": 34
       },
       "id": 400,
       "options": {
@@ -2214,12 +2465,12 @@
         "sortOrder": "Ascending",
         "wrapLogMessage": true
       },
-      "pluginVersion": "12.1.0-16509090662",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "loki",
-            "uid": "mir-loki"
+            "uid": "${logs_datasource}"
           },
           "direction": "backward",
           "editorMode": "builder",
@@ -2235,7 +2486,7 @@
   ],
   "preload": false,
   "refresh": "5m",
-  "schemaVersion": 40,
+  "schemaVersion": 41,
   "tags": ["mir", "mir-infra", "alertmanager"],
   "templating": {
     "list": [
@@ -2245,7 +2496,7 @@
           "value": "mir-prometheus"
         },
         "includeAll": false,
-        "label": "Prometheus datasource",
+        "label": "Datasource",
         "name": "datasource",
         "options": [],
         "query": "prometheus",
@@ -2254,20 +2505,35 @@
         "type": "datasource"
       },
       {
+        "description": "",
+        "label": "Logs",
+        "name": "logs_datasource",
+        "options": [],
+        "query": "loki",
+        "refresh": 1,
+        "regex": "",
+        "type": "datasource"
+      },
+      {
+        "allowCustomValue": false,
         "current": {
-          "text": ["All"],
-          "value": ["$__all"]
+          "text": "mir-test-kube-prometheus-s-alertmanager",
+          "value": "mir-test-kube-prometheus-s-alertmanager"
         },
         "datasource": "$datasource",
-        "definition": "query_result(alertmanager_build_info)",
-        "includeAll": true,
-        "label": "Instance",
-        "multi": true,
-        "name": "instance",
+        "definition": "label_values(alertmanager_build_info,job)",
+        "description": "",
+        "includeAll": false,
+        "label": "Job",
+        "name": "job",
         "options": [],
-        "query": "query_result(alertmanager_build_info)",
+        "query": {
+          "qryType": 1,
+          "query": "label_values(alertmanager_build_info,job)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
         "refresh": 2,
-        "regex": "/.*instance=\"([^\"]+)\".*/",
+        "regex": "",
         "sort": 1,
         "type": "query"
       }
@@ -2281,6 +2547,5 @@
   "timezone": "",
   "title": "Alertmanager",
   "uid": "alertmanager_monitoring",
-  "version": 1,
-  "weekStart": ""
+  "version": 1
 }

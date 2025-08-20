@@ -30,7 +30,7 @@
       "dashes": false,
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -77,7 +77,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "go_memstats_mspan_inuse_bytes{job=\"$job\"}",
@@ -90,7 +90,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "go_memstats_mspan_sys_bytes{job=\"$job\"}",
@@ -102,7 +102,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "go_memstats_mcache_inuse_bytes{job=\"$job\"}",
@@ -114,7 +114,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "go_memstats_mcache_sys_bytes{job=\"$job\"}",
@@ -126,7 +126,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "go_memstats_buck_hash_sys_bytes{job=\"$job\"}",
@@ -138,7 +138,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "expr": "go_memstats_gc_sys_bytes{job=\"$job\"}",
           "format": "time_series",
@@ -148,7 +148,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "expr": "go_memstats_other_sys_bytes{job=\"$job\"} - go_memstats_other_sys_bytes{job=\"$job\"}",
           "format": "time_series",
@@ -159,7 +159,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "expr": "go_memstats_next_gc_bytes{job=\"$job\"}",
           "format": "time_series",
@@ -204,7 +204,7 @@
       "dashes": false,
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -251,7 +251,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "expr": "go_memstats_heap_alloc_bytes{job=\"$job\"}",
           "format": "time_series",
@@ -261,7 +261,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "expr": "go_memstats_heap_sys_bytes{job=\"$job\"}",
           "format": "time_series",
@@ -271,7 +271,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "expr": "go_memstats_heap_idle_bytes{job=\"$job\"}",
           "format": "time_series",
@@ -281,7 +281,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "expr": "go_memstats_heap_inuse_bytes{job=\"$job\"}",
           "format": "time_series",
@@ -292,7 +292,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "expr": "go_memstats_heap_released_bytes{job=\"$job\"}",
           "format": "time_series",
@@ -337,7 +337,7 @@
       "dashes": false,
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -384,7 +384,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "expr": "go_memstats_stack_inuse_bytes{job=\"$job\"}",
           "format": "time_series",
@@ -394,7 +394,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "expr": "go_memstats_stack_sys_bytes{job=\"$job\"}",
           "format": "time_series",
@@ -439,7 +439,7 @@
       "dashes": false,
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -486,7 +486,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "expr": "go_memstats_sys_bytes{job=\"$job\"}",
           "format": "time_series",
@@ -531,7 +531,7 @@
       "dashes": false,
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -580,7 +580,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "expr": "go_memstats_mallocs_total{job=\"$job\"} - go_memstats_frees_total{job=\"$job\"}",
           "format": "time_series",
@@ -625,7 +625,7 @@
       "dashes": false,
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "description": "shows how many heap objects are allocated. This is a counter value so you can use rate() to objects allocated/s.",
       "fieldConfig": {
@@ -673,7 +673,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "expr": "rate(go_memstats_mallocs_total{job=\"$job\"}[1m])",
           "format": "time_series",
@@ -718,7 +718,7 @@
       "dashes": false,
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "description": "go_memstats_lookups_total – counts how many pointer dereferences happened. This is a counter value so you can use rate() to lookups/s.",
       "fieldConfig": {
@@ -766,7 +766,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "expr": "rate(go_memstats_lookups_total{job=\"$job\"}[1m])",
           "format": "time_series",
@@ -811,7 +811,7 @@
       "dashes": false,
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -858,7 +858,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "expr": "go_goroutines{job=\"$job\"}",
           "format": "time_series",
@@ -903,7 +903,7 @@
       "dashes": false,
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -950,7 +950,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "expr": "rate(go_memstats_alloc_bytes_total{job=\"$job\"}[1m])",
           "format": "time_series",
@@ -995,7 +995,7 @@
       "dashes": false,
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1043,7 +1043,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "expr": "go_gc_duration_seconds{job=\"$job\"}",
           "format": "time_series",
@@ -1087,6 +1087,20 @@
   "tags": ["mir", "mir-infra", "go", "golang"],
   "templating": {
     "list": [
+      {
+        "current": {
+          "text": "Prometheus",
+          "value": "mir-prometheus"
+        },
+        "description": "",
+        "label": "Datasource",
+        "name": "datasource",
+        "options": [],
+        "query": "prometheus",
+        "refresh": 1,
+        "regex": "",
+        "type": "datasource"
+      },
       {
         "current": {
           "selected": false,

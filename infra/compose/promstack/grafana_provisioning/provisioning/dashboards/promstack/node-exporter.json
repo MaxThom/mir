@@ -100,7 +100,7 @@
       "collapsed": false,
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "gridPos": {
         "h": 1,
@@ -114,7 +114,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "refId": "A"
         }
@@ -1084,7 +1084,7 @@
       "collapsed": false,
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "gridPos": {
         "h": 1,
@@ -1098,7 +1098,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "refId": "A"
         }
@@ -2478,7 +2478,7 @@
       "collapsed": true,
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "gridPos": {
         "h": 1,
@@ -4524,7 +4524,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "refId": "A"
         }
@@ -4536,7 +4536,7 @@
       "collapsed": true,
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "gridPos": {
         "h": 1,
@@ -10337,7 +10337,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "refId": "A"
         }
@@ -10349,7 +10349,7 @@
       "collapsed": true,
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "gridPos": {
         "h": 1,
@@ -11387,7 +11387,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "refId": "A"
         }
@@ -11399,7 +11399,7 @@
       "collapsed": true,
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "gridPos": {
         "h": 1,
@@ -11893,7 +11893,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "refId": "A"
         }
@@ -11905,7 +11905,7 @@
       "collapsed": true,
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "gridPos": {
         "h": 1,
@@ -12763,7 +12763,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "refId": "A"
         }
@@ -12775,7 +12775,7 @@
       "collapsed": true,
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "gridPos": {
         "h": 1,
@@ -14001,7 +14001,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "refId": "A"
         }
@@ -14013,7 +14013,7 @@
       "collapsed": true,
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "gridPos": {
         "h": 1,
@@ -14449,7 +14449,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "refId": "A"
         }
@@ -14461,7 +14461,7 @@
       "collapsed": true,
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "gridPos": {
         "h": 1,
@@ -14799,7 +14799,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "refId": "A"
         }
@@ -14811,7 +14811,7 @@
       "collapsed": true,
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "gridPos": {
         "h": 1,
@@ -18131,7 +18131,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "refId": "A"
         }
@@ -18143,7 +18143,7 @@
       "collapsed": true,
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "gridPos": {
         "h": 1,
@@ -18720,7 +18720,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "refId": "A"
         }
@@ -18732,7 +18732,7 @@
       "collapsed": true,
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "gridPos": {
         "h": 1,
@@ -20697,7 +20697,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "refId": "A"
         }
@@ -20709,7 +20709,7 @@
       "collapsed": true,
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "gridPos": {
         "h": 1,
@@ -21335,7 +21335,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "refId": "A"
         }
@@ -21347,7 +21347,7 @@
       "collapsed": true,
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "gridPos": {
         "h": 1,
@@ -22958,7 +22958,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "refId": "A"
         }
@@ -22970,7 +22970,7 @@
       "collapsed": true,
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "gridPos": {
         "h": 1,
@@ -23220,7 +23220,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "refId": "A"
         }
@@ -23231,7 +23231,7 @@
     {
       "datasource": {
         "type": "loki",
-        "uid": "mir-loki"
+        "uid": "${logs_datasource}"
       },
       "fieldConfig": {
         "defaults": {},
@@ -23255,12 +23255,12 @@
         "sortOrder": "Ascending",
         "wrapLogMessage": true
       },
-      "pluginVersion": "12.1.0-16509090662",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "loki",
-            "uid": "mir-loki"
+            "uid": "${logs_datasource}"
           },
           "direction": "backward",
           "editorMode": "builder",
@@ -23298,6 +23298,16 @@
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
+        "type": "datasource"
+      },
+      {
+        "description": "",
+        "label": "Logs",
+        "name": "logs_datasource",
+        "options": [],
+        "query": "loki",
+        "refresh": 1,
+        "regex": "",
         "type": "datasource"
       },
       {

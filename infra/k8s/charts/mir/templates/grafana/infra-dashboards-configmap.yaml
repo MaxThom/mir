@@ -9,11 +9,19 @@ metadata:
     {{- toYaml . | nindent 4 }}
     {{- end }}
   annotations:
-    grafana_folder: "Infrastructure"
+    grafana_folder: "Mir Infra"
     {{- with .Values.mirDashboards.annotations }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
 data:
   mir-infra-overall.json: |
 {{ .Files.Get "dashboards/infra/mir-infra-overall.json" | indent 4 }}
+  nats-server.json: |
+{{ .Files.Get "dashboards/infra/nats-server.json" | indent 4 }}
+  nats-jetstream.json: |
+{{ .Files.Get "dashboards/infra/nats-jetstream.json" | indent 4 }}
+  influx.json: |
+{{ .Files.Get "dashboards/infra/influx.json" | indent 4 }}
+  go.json: |
+{{ .Files.Get "dashboards/infra/go.json" | indent 4 }}
 {{- end }}

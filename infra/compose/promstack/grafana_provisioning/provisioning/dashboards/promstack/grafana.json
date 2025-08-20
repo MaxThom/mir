@@ -19,7 +19,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 20,
+  "id": 10,
   "links": [],
   "panels": [
     {
@@ -38,7 +38,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "description": "start time of the process",
       "fieldConfig": {
@@ -59,7 +59,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -94,15 +94,15 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "process_start_time_seconds{job=\"grafana\"} * 1000",
+          "expr": "process_start_time_seconds{job=\"$job\"} * 1000",
           "format": "time_series",
           "intervalFactor": 2,
           "range": true,
@@ -115,7 +115,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "description": "total amount of orgs",
       "fieldConfig": {
@@ -136,7 +136,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -171,15 +171,15 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "grafana_stat_total_orgs{job=\"grafana\"}",
+          "expr": "grafana_stat_total_orgs{job=\"$job\"}",
           "format": "time_series",
           "intervalFactor": 2,
           "range": true,
@@ -192,7 +192,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "description": "total amount of users",
       "fieldConfig": {
@@ -213,7 +213,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -248,15 +248,15 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "grafana_stat_total_users{job=\"grafana\"}",
+          "expr": "grafana_stat_total_users{job=\"$job\"}",
           "format": "time_series",
           "intervalFactor": 2,
           "range": true,
@@ -269,7 +269,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "description": "total amount of dashboards",
       "fieldConfig": {
@@ -290,7 +290,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -325,15 +325,15 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "grafana_stat_totals_dashboard{job=\"grafana\"}",
+          "expr": "grafana_stat_totals_dashboard{job=\"$job\"}",
           "format": "time_series",
           "intervalFactor": 2,
           "range": true,
@@ -359,7 +359,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "description": "Average user and system CPU time spent in seconds.",
       "fieldConfig": {
@@ -406,7 +406,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -433,19 +433,20 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "avg(rate(process_cpu_seconds_total{job=\"grafana\"}[$__rate_interval]))",
+          "expr": "avg(rate(process_cpu_seconds_total{job=\"$job\"}[$__rate_interval]))",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "CPU Time",
@@ -459,7 +460,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "description": "Virtual and Resident memory size in bytes, averages over 5 min interval",
       "fieldConfig": {
@@ -506,7 +507,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -533,19 +534,20 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "avg(rate(process_resident_memory_bytes{job=\"grafana\"}[$__rate_interval]))",
+          "expr": "avg(rate(process_resident_memory_bytes{job=\"$job\"}[$__rate_interval]))",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "Resident Mem",
@@ -555,10 +557,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "avg(rate(process_virtual_memory_bytes{job=\"grafana\"}[$__rate_interval]))",
+          "expr": "avg(rate(process_virtual_memory_bytes{job=\"$job\"}[$__rate_interval]))",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "Virtual Mem",
@@ -572,7 +574,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "description": "Number of open file descriptors",
       "fieldConfig": {
@@ -619,7 +621,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -646,19 +648,20 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "process_open_fds{job=\"grafana\"}",
+          "expr": "process_open_fds{job=\"$job\"}",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "Open FD",
@@ -685,7 +688,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "description": "http response status",
       "fieldConfig": {
@@ -732,7 +735,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -759,18 +762,19 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
-          "expr": "grafana_api_response_status_total{job=\"grafana\"}",
+          "expr": "grafana_api_response_status_total{job=\"$job\"}",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "API {{ code }}",
@@ -779,9 +783,9 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
-          "expr": "grafana_page_response_status_total{job=\"grafana\"}",
+          "expr": "grafana_page_response_status_total{job=\"$job\"}",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "Page {{ code }}",
@@ -790,9 +794,9 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
-          "expr": "grafana_proxy_response_status_total{job=\"grafana\"}",
+          "expr": "grafana_proxy_response_status_total{job=\"$job\"}",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "Proxy {{ code }}",
@@ -805,7 +809,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "description": "http request counter",
       "fieldConfig": {
@@ -852,7 +856,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -879,18 +883,19 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
-          "expr": "http_request_total{job=\"grafana\"}",
+          "expr": "http_request_total{job=\"$job\"}",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "{{handler}} - {{method}} - {{statuscode}}",
@@ -903,7 +908,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "description": "api login counters",
       "fieldConfig": {
@@ -950,7 +955,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -977,18 +982,19 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
-          "expr": "grafana_api_login_post_total{job=\"grafana\"}",
+          "expr": "grafana_api_login_post_total{job=\"$job\"}",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "POST",
@@ -997,9 +1003,9 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
-          "expr": "grafana_api_login_oauth_total{job=\"grafana\"}",
+          "expr": "grafana_api_login_oauth_total{job=\"$job\"}",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "OAuth",
@@ -1025,7 +1031,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "description": "summary for dataproxy request duration",
       "fieldConfig": {
@@ -1072,7 +1078,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -1099,16 +1105,17 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "expr": "grafana_api_dataproxy_request_all_milliseconds{kubernetes_pod_name=\"$pod\", quantile=\"0.5\"}",
           "format": "time_series",
@@ -1119,7 +1126,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "expr": "grafana_api_dataproxy_request_all_milliseconds{kubernetes_pod_name=\"$pod\", quantile=\"0.9\"}",
           "format": "time_series",
@@ -1130,7 +1137,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "expr": "grafana_api_dataproxy_request_all_milliseconds{kubernetes_pod_name=\"$pod\", quantile=\"0.99\"}",
           "format": "time_series",
@@ -1145,7 +1152,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "description": "average dataproxy request duration over 5 minutes",
       "fieldConfig": {
@@ -1192,7 +1199,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -1219,18 +1226,19 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
-          "expr": "rate(grafana_api_dataproxy_request_all_milliseconds_sum{job=\"grafana\"}[$__rate_interval]) / rate(grafana_api_dataproxy_request_all_milliseconds_count{job=\"grafana\"}[$__rate_interval])",
+          "expr": "rate(grafana_api_dataproxy_request_all_milliseconds_sum{job=\"$job\"}[$__rate_interval]) / rate(grafana_api_dataproxy_request_all_milliseconds_count{job=\"$job\"}[$__rate_interval])",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "Average Requests Duration",
@@ -1256,7 +1264,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "description": "summary for dashboard get duration",
       "fieldConfig": {
@@ -1303,7 +1311,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -1330,16 +1338,17 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "expr": "grafana_api_dashboard_get_milliseconds{kubernetes_pod_name=\"$pod\", quantile=\"0.5\"}",
           "format": "time_series",
@@ -1350,7 +1359,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "expr": "grafana_api_dashboard_get_milliseconds{kubernetes_pod_name=\"$pod\", quantile=\"0.9\"}",
           "format": "time_series",
@@ -1361,7 +1370,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "expr": "grafana_api_dashboard_get_milliseconds{kubernetes_pod_name=\"$pod\", quantile=\"0.99\"}",
           "format": "time_series",
@@ -1376,7 +1385,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "description": "average dashboard get duration over 5 minutes",
       "fieldConfig": {
@@ -1423,7 +1432,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -1450,18 +1459,19 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
-          "expr": "rate(grafana_api_dashboard_get_milliseconds_sum{job=\"grafana\"}[$__rate_interval]) / rate(grafana_api_dashboard_get_milliseconds_count{job=\"grafana\"}[$__rate_interval])",
+          "expr": "rate(grafana_api_dashboard_get_milliseconds_sum{job=\"$job\"}[$__rate_interval]) / rate(grafana_api_dashboard_get_milliseconds_count{job=\"$job\"}[$__rate_interval])",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "0.5",
@@ -1487,7 +1497,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "description": "summary for dashboard save duration",
       "fieldConfig": {
@@ -1534,7 +1544,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -1561,16 +1571,17 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "expr": "grafana_api_dashboard_save_milliseconds{kubernetes_pod_name=\"$pod\", quantile=\"0.5\"}",
           "format": "time_series",
@@ -1581,7 +1592,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "expr": "grafana_api_dashboard_save_milliseconds{kubernetes_pod_name=\"$pod\", quantile=\"0.9\"}",
           "format": "time_series",
@@ -1592,7 +1603,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "expr": "grafana_api_dashboard_save_milliseconds{kubernetes_pod_name=\"$pod\", quantile=\"0.99\"}",
           "format": "time_series",
@@ -1607,7 +1618,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "description": "average dashboard save duration over 5 minutes",
       "fieldConfig": {
@@ -1654,7 +1665,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -1681,18 +1692,19 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
-          "expr": "rate(grafana_api_dashboard_save_milliseconds_sum{job=\"grafana\"}[$__rate_interval]) / rate(grafana_api_dashboard_save_milliseconds_count{job=\"grafana\"}[$__rate_interval])",
+          "expr": "rate(grafana_api_dashboard_save_milliseconds_sum{job=\"$job\"}[$__rate_interval]) / rate(grafana_api_dashboard_save_milliseconds_count{job=\"$job\"}[$__rate_interval])",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "0.5",
@@ -1718,7 +1730,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "description": "summary for dashboard search duration",
       "fieldConfig": {
@@ -1765,7 +1777,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -1792,16 +1804,17 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "expr": "grafana_api_dashboard_search_milliseconds{kubernetes_pod_name=\"$pod\", quantile=\"0.5\"}",
           "format": "time_series",
@@ -1812,7 +1825,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "expr": "grafana_api_dashboard_search_milliseconds{kubernetes_pod_name=\"$pod\", quantile=\"0.9\"}",
           "format": "time_series",
@@ -1823,7 +1836,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "expr": "grafana_api_dashboard_search_milliseconds{kubernetes_pod_name=\"$pod\", quantile=\"0.99\"}",
           "format": "time_series",
@@ -1838,7 +1851,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "description": "average dashboard search duration over 5 minutes",
       "fieldConfig": {
@@ -1885,7 +1898,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -1912,18 +1925,19 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
-          "expr": "rate(grafana_api_dashboard_search_milliseconds_sum{job=\"grafana\"}[$__rate_interval]) / rate(grafana_api_dashboard_search_milliseconds_count{job=\"grafana\"}[$__rate_interval])",
+          "expr": "rate(grafana_api_dashboard_search_milliseconds_sum{job=\"$job\"}[$__rate_interval]) / rate(grafana_api_dashboard_search_milliseconds_count{job=\"$job\"}[$__rate_interval])",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "0.5",
@@ -1936,7 +1950,7 @@
     {
       "datasource": {
         "type": "loki",
-        "uid": "mir-loki"
+        "uid": "${logs_datasource}"
       },
       "fieldConfig": {
         "defaults": {},
@@ -1960,12 +1974,12 @@
         "sortOrder": "Ascending",
         "wrapLogMessage": true
       },
-      "pluginVersion": "12.1.0-16509090662",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "loki",
-            "uid": "mir-loki"
+            "uid": "${logs_datasource}"
           },
           "direction": "backward",
           "editorMode": "builder",
@@ -1981,10 +1995,51 @@
   ],
   "preload": false,
   "refresh": "",
-  "schemaVersion": 40,
+  "schemaVersion": 41,
   "tags": ["mir", "mir-infra", "grafana"],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "current": {
+          "text": "Prometheus",
+          "value": "mir-prometheus"
+        },
+        "description": "",
+        "label": "Datasource",
+        "name": "datasource",
+        "options": [],
+        "query": "prometheus",
+        "refresh": 1,
+        "regex": "",
+        "type": "datasource"
+      },
+      {
+        "description": "",
+        "label": "Logs",
+        "name": "logs_datasource",
+        "options": [],
+        "query": "loki",
+        "refresh": 1,
+        "regex": "",
+        "type": "datasource"
+      },
+      {
+        "allowCustomValue": false,
+        "definition": "label_values(grafana_build_info,job)",
+        "description": "",
+        "label": "Job",
+        "name": "job",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(grafana_build_info,job)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "type": "query"
+      }
+    ]
   },
   "time": {
     "from": "now-1h",
@@ -1994,6 +2049,5 @@
   "timezone": "browser",
   "title": "Grafana",
   "uid": "grafana_monitoring",
-  "version": 1,
-  "weekStart": ""
+  "version": 1
 }
