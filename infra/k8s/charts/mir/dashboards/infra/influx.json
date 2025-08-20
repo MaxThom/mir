@@ -18,13 +18,13 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 13,
+  "id": 4,
   "links": [],
   "panels": [
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -44,7 +44,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -72,12 +72,12 @@
         },
         "showHeader": true
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -124,7 +124,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -158,15 +158,15 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "influxdb_uptime_seconds{job=\"influxdb\"}",
+          "expr": "influxdb_uptime_seconds{job=\"${job}\"}",
           "range": true,
           "refId": "A"
         }
@@ -177,7 +177,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -187,7 +187,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -220,15 +220,15 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "go_threads{job=\"influxdb\"}",
+          "expr": "go_threads{job=\"${job}\"}",
           "range": true,
           "refId": "A"
         }
@@ -239,7 +239,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -249,7 +249,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -282,15 +282,15 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "go_goroutines{job=\"influxdb\"}",
+          "expr": "go_goroutines{job=\"${job}\"}",
           "range": true,
           "refId": "A"
         }
@@ -314,7 +314,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -327,7 +327,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               }
             ]
           }
@@ -356,15 +356,15 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "influxdb_buckets_total{job=\"influxdb\"}",
+          "expr": "influxdb_buckets_total{job=\"${job}\"}",
           "range": true,
           "refId": "A"
         }
@@ -375,7 +375,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -388,7 +388,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               }
             ]
           }
@@ -417,15 +417,14 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
+            "type": "prometheus"
           },
           "editorMode": "code",
-          "expr": "influxdb_organizations_total{job=\"influxdb\"}",
+          "expr": "influxdb_organizations_total{job=\"${job}\"}",
           "range": true,
           "refId": "A"
         }
@@ -436,7 +435,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -449,7 +448,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               }
             ]
           }
@@ -478,15 +477,15 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "influxdb_users_total{job=\"influxdb\"}",
+          "expr": "influxdb_users_total{job=\"${job}\"}",
           "range": true,
           "refId": "A"
         }
@@ -497,7 +496,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -510,7 +509,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               }
             ]
           }
@@ -539,15 +538,15 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "influxdb_tokens_total{job=\"influxdb\"}",
+          "expr": "influxdb_tokens_total{job=\"${job}\"}",
           "range": true,
           "refId": "A"
         }
@@ -558,7 +557,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -571,7 +570,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               }
             ]
           }
@@ -600,15 +599,15 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "influxdb_dashboards_total{job=\"influxdb\"}",
+          "expr": "influxdb_dashboards_total{job=\"${job}\"}",
           "range": true,
           "refId": "A"
         }
@@ -619,7 +618,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -632,7 +631,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               }
             ]
           }
@@ -661,15 +660,15 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "influxdb_telegrafs_total{job=\"influxdb\"}",
+          "expr": "influxdb_telegrafs_total{job=\"${job}\"}",
           "range": true,
           "refId": "A"
         }
@@ -693,7 +692,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -739,7 +738,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -766,19 +765,20 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(boltdb_reads_total{job=\"influxdb\"}[$__rate_interval])",
+          "expr": "rate(boltdb_reads_total{job=\"${job}\"}[$__rate_interval])",
           "legendFormat": "BoltDB Reads",
           "range": true,
           "refId": "A"
@@ -786,10 +786,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(boltdb_writes_total{job=\"influxdb\"}[$__rate_interval])",
+          "expr": "rate(boltdb_writes_total{job=\"${job}\"}[$__rate_interval])",
           "legendFormat": "BoltDB Writes",
           "range": true,
           "refId": "B"
@@ -801,7 +801,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -847,7 +847,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -874,19 +874,20 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(storage_writer_dropped_points_sum{job=\"influxdb\"}[$__rate_interval])",
+          "expr": "rate(storage_writer_dropped_points_sum{job=\"${job}\"}[$__rate_interval])",
           "legendFormat": "Dropped Points",
           "range": true,
           "refId": "A"
@@ -894,10 +895,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(storage_writer_err_points_sum{job=\"influxdb\"}[$__rate_interval])",
+          "expr": "rate(storage_writer_err_points_sum{job=\"${job}\"}[$__rate_interval])",
           "legendFormat": "Error Points",
           "range": true,
           "refId": "B"
@@ -905,10 +906,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(storage_writer_ok_points_sum{job=\"influxdb\"}[$__rate_interval])",
+          "expr": "rate(storage_writer_ok_points_sum{job=\"${job}\"}[$__rate_interval])",
           "legendFormat": "OK Points",
           "range": true,
           "refId": "C"
@@ -933,7 +934,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -979,7 +980,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -1006,19 +1007,20 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "go_memstats_heap_alloc_bytes{job=\"influxdb\"}",
+          "expr": "go_memstats_heap_alloc_bytes{job=\"${job}\"}",
           "legendFormat": "Heap Allocated",
           "range": true,
           "refId": "A"
@@ -1026,10 +1028,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "go_memstats_heap_inuse_bytes{job=\"influxdb\"}",
+          "expr": "go_memstats_heap_inuse_bytes{job=\"${job}\"}",
           "legendFormat": "Heap In Use",
           "range": true,
           "refId": "B"
@@ -1037,10 +1039,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "go_memstats_heap_sys_bytes{job=\"influxdb\"}",
+          "expr": "go_memstats_heap_sys_bytes{job=\"${job}\"}",
           "legendFormat": "Heap System",
           "range": true,
           "refId": "C"
@@ -1052,7 +1054,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1065,7 +1067,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "yellow",
@@ -1101,15 +1103,15 @@
         "showThresholdMarkers": true,
         "sizing": "auto"
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "go_memstats_heap_inuse_bytes/go_memstats_heap_sys_bytes{job=\"influxdb\"}",
+          "expr": "go_memstats_heap_inuse_bytes/go_memstats_heap_sys_bytes{job=\"${job}\"}",
           "range": true,
           "refId": "A"
         }
@@ -1120,7 +1122,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1166,7 +1168,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -1193,19 +1195,20 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "go_memstats_objects{job=\"influxdb\"}",
+          "expr": "sum(go_memstats_mallocs_total{job=\"${job}\"} - go_memstats_frees_total{job=\"${job}\"})",
           "legendFormat": "Total Objects",
           "range": true,
           "refId": "A"
@@ -1230,7 +1233,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1276,7 +1279,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -1303,19 +1306,20 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(http_api_requests_total{job=\"influxdb\"}[$__rate_interval])",
+          "expr": "rate(http_api_requests_total{job=\"${job}\"}[$__rate_interval])",
           "legendFormat": "{{method}} {{path}} {{status}}",
           "range": true,
           "refId": "A"
@@ -1327,7 +1331,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1373,7 +1377,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -1400,19 +1404,20 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum(rate(http_api_request_duration_seconds_bucket{job=\"influxdb\"}[$__rate_interval])) by (le, path, method))",
+          "expr": "histogram_quantile(0.95, sum(rate(http_api_request_duration_seconds_bucket{job=\"${job}\"}[$__rate_interval])) by (le, path, method))",
           "legendFormat": "{{method}} {{path}} (p95)",
           "range": true,
           "refId": "A"
@@ -1420,10 +1425,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.50, sum(rate(http_api_request_duration_seconds_bucket{job=\"influxdb\"}[$__rate_interval])) by (le, path, method))",
+          "expr": "histogram_quantile(0.50, sum(rate(http_api_request_duration_seconds_bucket{job=\"${job}\"}[$__rate_interval])) by (le, path, method))",
           "legendFormat": "{{method}} {{path}} (p50)",
           "range": true,
           "refId": "B"
@@ -1448,7 +1453,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1461,7 +1466,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "yellow",
@@ -1497,15 +1502,15 @@
         "showThresholdMarkers": true,
         "sizing": "auto"
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "task_executor_workers_busy{job=\"influxdb\"}",
+          "expr": "task_executor_workers_busy{job=\"${job}\"}",
           "range": true,
           "refId": "A"
         }
@@ -1516,7 +1521,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1529,7 +1534,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "yellow",
@@ -1565,15 +1570,15 @@
         "showThresholdMarkers": true,
         "sizing": "auto"
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "task_executor_promise_queue_usage{job=\"influxdb\"}",
+          "expr": "task_executor_promise_queue_usage{job=\"${job}\"}",
           "range": true,
           "refId": "A"
         }
@@ -1584,7 +1589,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1597,7 +1602,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               }
             ]
           }
@@ -1626,15 +1631,15 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "task_executor_total_runs_active{job=\"influxdb\"}",
+          "expr": "task_executor_total_runs_active{job=\"${job}\"}",
           "range": true,
           "refId": "A"
         }
@@ -1645,7 +1650,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1658,7 +1663,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               }
             ]
           }
@@ -1687,15 +1692,15 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "task_scheduler_current_execution{job=\"influxdb\"}",
+          "expr": "task_scheduler_current_execution{job=\"${job}\"}",
           "range": true,
           "refId": "A"
         }
@@ -1706,7 +1711,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1752,7 +1757,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -1779,19 +1784,20 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(task_scheduler_total_schedule_calls{job=\"influxdb\"}[$__rate_interval])",
+          "expr": "rate(task_scheduler_total_schedule_calls{job=\"${job}\"}[$__rate_interval])",
           "legendFormat": "Schedule Calls",
           "range": true,
           "refId": "A"
@@ -1799,10 +1805,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(task_scheduler_total_execution_calls{job=\"influxdb\"}[$__rate_interval])",
+          "expr": "rate(task_scheduler_total_execution_calls{job=\"${job}\"}[$__rate_interval])",
           "legendFormat": "Execution Calls",
           "range": true,
           "refId": "B"
@@ -1810,7 +1816,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
           "expr": "rate(task_scheduler_total_release_calls[5m])",
           "legendFormat": "Release Calls",
@@ -1823,7 +1829,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1869,7 +1875,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -1896,19 +1902,20 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(task_scheduler_total_execute_failure{job=\"influxdb\"}[$__rate_interval])",
+          "expr": "rate(task_scheduler_total_execute_failure{job=\"${job}\"}[$__rate_interval])",
           "legendFormat": "Execution Failures",
           "range": true,
           "refId": "A"
@@ -1916,10 +1923,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(task_scheduler_total_schedule_fails{job=\"influxdb\"}[$__rate_interval])",
+          "expr": "rate(task_scheduler_total_schedule_fails{job=\"${job}\"}[$__rate_interval])",
           "legendFormat": "Schedule Failures",
           "range": true,
           "refId": "B"
@@ -1931,7 +1938,7 @@
     {
       "datasource": {
         "type": "loki",
-        "uid": "mir-loki"
+        "uid": "${logs_datasource}"
       },
       "fieldConfig": {
         "defaults": {},
@@ -1955,12 +1962,12 @@
         "sortOrder": "Ascending",
         "wrapLogMessage": true
       },
-      "pluginVersion": "12.1.0-16509090662",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "loki",
-            "uid": "mir-loki"
+            "uid": "${logs_datasource}"
           },
           "direction": "backward",
           "editorMode": "builder",
@@ -1976,10 +1983,54 @@
   ],
   "preload": false,
   "refresh": "10s",
-  "schemaVersion": 40,
+  "schemaVersion": 41,
   "tags": ["mir", "mir-infra", "influxdb"],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "current": {
+          "text": "Prometheus",
+          "value": "mir-prometheus"
+        },
+        "description": "",
+        "label": "Datasource",
+        "name": "datasource",
+        "options": [],
+        "query": "prometheus",
+        "refresh": 1,
+        "regex": "",
+        "type": "datasource"
+      },
+      {
+        "description": "",
+        "label": "Logs",
+        "name": "logs_datasource",
+        "options": [],
+        "query": "loki",
+        "refresh": 1,
+        "regex": "",
+        "type": "datasource"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "definition": "label_values(influxdb_info,job)",
+        "description": "",
+        "label": "Influx",
+        "name": "job",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(influxdb_info,job)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "type": "query"
+      }
+    ]
   },
   "time": {
     "from": "now-1h",
@@ -1989,6 +2040,5 @@
   "timezone": "",
   "title": "InfluxDB",
   "uid": "influxdb-monitoring",
-  "version": 4,
-  "weekStart": ""
+  "version": 1
 }

@@ -121,7 +121,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "mir_app_info{instance=\"$instance\"}",
+          "expr": "mir_app_info{job=\"${job}\"}",
           "format": "table",
           "instant": true,
           "legendFormat": "__auto",
@@ -166,7 +166,7 @@
     },
     {
       "datasource": {
-        "uid": "Prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -244,7 +244,7 @@
         {
           "editorMode": "code",
           "exemplar": false,
-          "expr": "mir_health_alive{instance=\"$instance\"}",
+          "expr": "mir_health_alive{job=\"${job}\"}",
           "instant": true,
           "legendFormat": "__auto",
           "range": false,
@@ -310,7 +310,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "go_memstats_sys_bytes{instance=\"$instance\"}",
+          "expr": "go_memstats_sys_bytes{job=\"${job}\"}",
           "format": "time_series",
           "intervalFactor": 1,
           "range": true,
@@ -323,7 +323,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -373,10 +373,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "go_goroutines{instance=\"$instance\"}",
+          "expr": "go_goroutines{job=\"${job}\"}",
           "format": "time_series",
           "intervalFactor": 1,
           "range": true,
@@ -389,7 +389,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -439,10 +439,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "go_memstats_mallocs_total{instance=\"$instance\"} - go_memstats_frees_total{instance=\"$instance\"}",
+          "expr": "go_memstats_mallocs_total{job=\"${job}\"} - go_memstats_frees_total{job=\"${job}\"}",
           "format": "time_series",
           "intervalFactor": 1,
           "range": true,
@@ -454,7 +454,7 @@
     },
     {
       "datasource": {
-        "uid": "Prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -532,7 +532,7 @@
         {
           "editorMode": "code",
           "exemplar": false,
-          "expr": "mir_health_ready{instance=\"$instance\"}",
+          "expr": "mir_health_ready{job=\"${job}\"}",
           "instant": true,
           "legendFormat": "__auto",
           "range": false,
@@ -644,7 +644,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(mir_cfg_device_cfg_sent_total{instance=\"$instance\"}[$__rate_interval])",
+          "expr": "rate(mir_cfg_device_cfg_sent_total{job=\"${job}\"}[$__rate_interval])",
           "legendFormat": "user requested",
           "range": true,
           "refId": "A"
@@ -655,7 +655,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(mir_cfg_device_desired_props_request_total{instance=\"$instance\"}[$__rate_interval])",
+          "expr": "rate(mir_cfg_device_desired_props_request_total{job=\"${job}\"}[$__rate_interval])",
           "hide": false,
           "legendFormat": "device requested",
           "range": true,
@@ -754,7 +754,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(mir_cfg_device_reported_props_request_total{instance=\"$instance\"}[$__rate_interval])",
+          "expr": "rate(mir_cfg_device_reported_props_request_total{job=\"${job}\"}[$__rate_interval])",
           "legendFormat": "reported properties",
           "range": true,
           "refId": "A"
@@ -852,7 +852,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(mir_cfg_request_total{instance=\"$instance\"}[$__rate_interval])",
+          "expr": "rate(mir_cfg_request_total{job=\"${job}\"}[$__rate_interval])",
           "legendFormat": "{{route}}",
           "range": true,
           "refId": "A"
@@ -951,7 +951,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(mir_cfg_device_cfg_sent_error_total{instance=\"$instance\"}[$__rate_interval])",
+          "expr": "rate(mir_cfg_device_cfg_sent_error_total{job=\"${job}\"}[$__rate_interval])",
           "hide": false,
           "legendFormat": "user requested",
           "range": true,
@@ -963,7 +963,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(mir_cfg_device_desired_props_request_error_total{instance=\"$instance\"}[$__rate_interval])",
+          "expr": "rate(mir_cfg_device_desired_props_request_error_total{job=\"${job}\"}[$__rate_interval])",
           "hide": false,
           "legendFormat": "device requested",
           "range": true,
@@ -1063,7 +1063,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(mir_cfg_device_reported_props_request_error_total{instance=\"$instance\"}[$__rate_interval])",
+          "expr": "rate(mir_cfg_device_reported_props_request_error_total{job=\"${job}\"}[$__rate_interval])",
           "legendFormat": "reported properties",
           "range": true,
           "refId": "A"
@@ -1162,7 +1162,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(mir_cfg_request_error_total{instance=\"$instance\"}[$__rate_interval])",
+          "expr": "rate(mir_cfg_request_error_total{job=\"${job}\"}[$__rate_interval])",
           "hide": false,
           "legendFormat": "{{route}}",
           "range": true,
@@ -1245,7 +1245,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "mir_schemastore_schema_cache_count{instance=\"$instance\"}",
+          "expr": "mir_schemastore_schema_cache_count{job=\"${job}\"}",
           "hide": false,
           "legendFormat": "Error",
           "range": true,
@@ -1314,7 +1314,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "mir_schemastore_schema_reconciled_total{instance=\"$instance\"}",
+          "expr": "mir_schemastore_schema_reconciled_total{job=\"${job}\"}",
           "legendFormat": "{{source}}",
           "range": true,
           "refId": "A"
@@ -1412,7 +1412,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(mir_schemastore_schema_reconciled_total{instance=\"$instance\"}[$__rate_interval])",
+          "expr": "rate(mir_schemastore_schema_reconciled_total{job=\"${job}\"}[$__rate_interval])",
           "legendFormat": "{{source}}",
           "range": true,
           "refId": "A"
@@ -1511,7 +1511,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(mir_schemastore_schema_reconciled_error_total{instance=\"$instance\"}[$__rate_interval])",
+          "expr": "rate(mir_schemastore_schema_reconciled_error_total{job=\"${job}\"}[$__rate_interval])",
           "legendFormat": "error",
           "range": true,
           "refId": "A"
@@ -1523,7 +1523,7 @@
     {
       "datasource": {
         "type": "loki",
-        "uid": "mir-loki"
+        "uid": "${logs_datasource}"
       },
       "fieldConfig": {
         "defaults": {},
@@ -1547,12 +1547,12 @@
         "sortOrder": "Ascending",
         "wrapLogMessage": true
       },
-      "pluginVersion": "12.1.0-16509090662",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "loki",
-            "uid": "mir-loki"
+            "uid": "${logs_datasource}"
           },
           "direction": "backward",
           "editorMode": "builder",
@@ -1587,19 +1587,30 @@
         "type": "datasource"
       },
       {
+        "description": "",
+        "label": "Logs",
+        "name": "logs_datasource",
+        "options": [],
+        "query": "loki",
+        "refresh": 1,
+        "regex": "",
+        "type": "datasource"
+      },
+      {
+        "allowCustomValue": false,
         "datasource": {
           "type": "prometheus",
           "uid": "${datasource}"
         },
-        "definition": "label_values(mir_app_info{name=~\"mir|protocfg\"},instance)",
+        "definition": "label_values(mir_app_info{name=~\"mir|protocfg\"},job)",
         "description": "",
         "includeAll": false,
-        "label": "Instance",
-        "name": "instance",
+        "label": "Mir",
+        "name": "job",
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values(mir_app_info{name=~\"mir|protocfg\"},instance)",
+          "query": "label_values(mir_app_info{name=~\"mir|protocfg\"},job)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 2,

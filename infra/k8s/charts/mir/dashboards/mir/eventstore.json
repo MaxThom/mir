@@ -112,7 +112,7 @@
         "showHeader": true,
         "sortBy": []
       },
-      "pluginVersion": "12.1.0-16509090662",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
@@ -121,7 +121,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "mir_app_info{instance=\"$instance\"}",
+          "expr": "mir_app_info{job=\"${job}\"}",
           "format": "table",
           "instant": true,
           "legendFormat": "__auto",
@@ -166,7 +166,7 @@
     },
     {
       "datasource": {
-        "uid": "Prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -239,12 +239,12 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.1.0-16509090662",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "editorMode": "code",
           "exemplar": false,
-          "expr": "mir_health_alive{instance=\"$instance\"}",
+          "expr": "mir_health_alive{job=\"${job}\"}",
           "instant": true,
           "legendFormat": "__auto",
           "range": false,
@@ -302,7 +302,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.1.0-16509090662",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
@@ -310,7 +310,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "go_memstats_sys_bytes{instance=\"$instance\"}",
+          "expr": "go_memstats_sys_bytes{job=\"${job}\"}",
           "format": "time_series",
           "intervalFactor": 1,
           "range": true,
@@ -323,7 +323,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -368,15 +368,15 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.1.0-16509090662",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "go_goroutines{instance=\"$instance\"}",
+          "expr": "go_goroutines{job=\"${job}\"}",
           "format": "time_series",
           "intervalFactor": 1,
           "range": true,
@@ -389,7 +389,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "mir-prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -434,15 +434,15 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.1.0-16509090662",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "mir-prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "go_memstats_mallocs_total{instance=\"$instance\"} - go_memstats_frees_total{instance=\"$instance\"}",
+          "expr": "go_memstats_mallocs_total{job=\"${job}\"} - go_memstats_frees_total{job=\"${job}\"}",
           "format": "time_series",
           "intervalFactor": 1,
           "range": true,
@@ -454,7 +454,7 @@
     },
     {
       "datasource": {
-        "uid": "Prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -527,12 +527,12 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.1.0-16509090662",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "editorMode": "code",
           "exemplar": false,
-          "expr": "mir_health_ready{instance=\"$instance\"}",
+          "expr": "mir_health_ready{job=\"${job}\"}",
           "instant": true,
           "legendFormat": "__auto",
           "range": false,
@@ -637,7 +637,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.1.0-16509090662",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
@@ -645,7 +645,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum by (event) (mir_eventstore_event_capture_total{instance=\"$instance\"})",
+          "expr": "sum by (event) (mir_eventstore_event_capture_total{job=\"${job}\"})",
           "legendFormat": "{{event}}",
           "range": true,
           "refId": "A"
@@ -736,7 +736,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.1.0-16509090662",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
@@ -744,7 +744,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(mir_eventstore_event_capture_total{instance=\"$instance\"}[$__rate_interval])",
+          "expr": "rate(mir_eventstore_event_capture_total{job=\"${job}\"}[$__rate_interval])",
           "legendFormat": "{{event}}",
           "range": true,
           "refId": "A"
@@ -835,7 +835,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.1.0-16509090662",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
@@ -843,7 +843,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(mir_eventstore_event_capture_error_total{instance=\"$instance\"}[$__rate_interval])",
+          "expr": "rate(mir_eventstore_event_capture_error_total{job=\"${job}\"}[$__rate_interval])",
           "legendFormat": "{{event}}",
           "range": true,
           "refId": "A"
@@ -934,7 +934,7 @@
           "sort": "desc"
         }
       },
-      "pluginVersion": "12.1.0-16509090662",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
@@ -942,7 +942,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(mir_eventstore_request_total{instance=\"$instance\"}[$__rate_interval])",
+          "expr": "rate(mir_eventstore_request_total{job=\"${job}\"}[$__rate_interval])",
           "legendFormat": "{{route}}",
           "range": true,
           "refId": "A"
@@ -1033,7 +1033,7 @@
           "sort": "desc"
         }
       },
-      "pluginVersion": "12.1.0-16509090662",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
@@ -1041,7 +1041,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(mir_eventstore_request_error_total{instance=\"$instance\"}[$__rate_interval])",
+          "expr": "rate(mir_eventstore_request_error_total{job=\"${job}\"}[$__rate_interval])",
           "legendFormat": "{{route}}",
           "range": true,
           "refId": "A"
@@ -1053,7 +1053,7 @@
     {
       "datasource": {
         "type": "loki",
-        "uid": "mir-loki"
+        "uid": "${logs_datasource}"
       },
       "fieldConfig": {
         "defaults": {},
@@ -1077,12 +1077,12 @@
         "sortOrder": "Ascending",
         "wrapLogMessage": true
       },
-      "pluginVersion": "12.1.0-16509090662",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
             "type": "loki",
-            "uid": "mir-loki"
+            "uid": "${logs_datasource}"
           },
           "direction": "backward",
           "editorMode": "code",
@@ -1117,23 +1117,30 @@
         "type": "datasource"
       },
       {
-        "current": {
-          "text": "localhost:3020",
-          "value": "localhost:3020"
-        },
+        "description": "",
+        "label": "Logs",
+        "name": "logs_datasource",
+        "options": [],
+        "query": "loki",
+        "refresh": 1,
+        "regex": "",
+        "type": "datasource"
+      },
+      {
+        "allowCustomValue": false,
         "datasource": {
           "type": "prometheus",
           "uid": "${datasource}"
         },
-        "definition": "label_values(mir_app_info{name=~\"mir|eventstore\"},instance)",
+        "definition": "label_values(mir_app_info{name=~\"mir|eventstore\"},job)",
         "description": "",
         "includeAll": false,
-        "label": "Instance",
-        "name": "instance",
+        "label": "Mir",
+        "name": "job",
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values(mir_app_info{name=~\"mir|eventstore\"},instance)",
+          "query": "label_values(mir_app_info{name=~\"mir|eventstore\"},job)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 2,

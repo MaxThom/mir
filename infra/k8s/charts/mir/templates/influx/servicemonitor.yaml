@@ -2,7 +2,7 @@
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: {{ include "mir.fullname" . }}
+  name: {{ include "mir.fullname" . }}-influxdb2
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "mir.labels" . | nindent 4 }}
@@ -17,7 +17,8 @@ metadata:
 spec:
   selector:
     matchLabels:
-      {{- include "mir.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/name: influxdb2
+      app.kubernetes.io/instance: {{ .Release.Name }}
   endpoints:
     - port: http
       path: /metrics

@@ -105,6 +105,9 @@ k3d-create:
 k3d-delete:
  k3d cluster delete mir-local-dev
 
+# Recreate k3d cluster
+k3d-recreate: k3d-delete k3d-create
+
 # Run Mir book for local documentation
 book:
 	cd book && mdbook serve -p 5001

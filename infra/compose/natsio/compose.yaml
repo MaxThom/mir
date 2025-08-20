@@ -12,6 +12,6 @@ services:
     image: natsio/prometheus-nats-exporter:latest
     ports:
       - "7777:7777"
-    command: -varz -connz_detailed -routez -subz -jsz all "http://nats:8222"
+    command: -varz -connz -routez -subz -prefix=nats -jsz all "http://nats:8222"
     depends_on:
       - nats

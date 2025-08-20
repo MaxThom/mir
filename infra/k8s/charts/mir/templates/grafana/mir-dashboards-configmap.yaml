@@ -16,4 +16,14 @@ metadata:
 data:
   mir.json: |
 {{ .Files.Get "dashboards/mir/mir.json" | indent 4 }}
+  core.json: |
+{{ .Files.Get "dashboards/mir/core.json" | indent 4 }}
+  telemetry.json: |
+{{ .Files.Get "dashboards/mir/telemetry.json" | indent 4 }}
+  command.json: |
+{{ .Files.Get "dashboards/mir/command.json" | indent 4 }}
+  configuration.json: |
+{{ .Files.Get "dashboards/mir/configuration.json" | indent 4 }}
+  eventstore.json: |
+{{ .Files.Get "dashboards/mir/eventstore.json" | indent 4 }}
 {{- end }}
