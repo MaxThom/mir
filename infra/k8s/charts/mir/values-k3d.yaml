@@ -165,3 +165,17 @@ kube-prometheus-stack:
       limits:
         cpu: 200m
         memory: 256Mi
+
+loki:
+  enabled: true
+  persistence:
+    enabled: true
+    size: 10Gi
+  ingress:
+    enabled: true
+    ingressClassName: "traefik"
+    hosts:
+      - loki-local
+
+promtail:
+  enabled: true

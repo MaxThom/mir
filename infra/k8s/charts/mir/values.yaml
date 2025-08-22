@@ -442,6 +442,25 @@ kube-prometheus-stack:
           tlsSkipVerify: true
         secureJsonData:
           token: "mir-operator-token"  # Should match influxdb2.adminUser.token
+      - name: Loki
+        type: loki
+        uid: mir-loki
+        access: proxy
+        url: "http://{{ .Release.Name }}-loki-gateway"
+        isDefault: false
+        typeName: Loki
+        typeLogoUrl: public/app/plugins/datasource/loki/img/loki_icon.svg
+        basicAuth: false
+        readOnly: true
+        jsonData:
+          maxLines: 1000
+          derivedFields:
+            - datasourceName: Tempo
+              datasourceUid: tempo
+              matcherRegex: '"trace_id":"(\w+)"'
+              name: TraceID
+              url: "$${__value.raw}"
+              urlDisplayLabel: "View Trace"
 
     # Import custom dashboards
     dashboardProviders:
@@ -597,3 +616,280 @@ kube-prometheus-stack:
       prometheus: mir
     additionalRuleLabels:
       prometheus: mir
+
+#
+# Loki subchart configuration
+#
+loki:
+  enabled: false  # Set to true to enable Loki log aggregation
+
+  # Deployment mode
+  deploymentMode: SingleBinary
+
+  # Single binary config for monolithic deployment
+  singleBinary:
+    replicas: 1
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 1Gi
+    persistence:
+      enabled: true
+      size: 10Gi
+      storageClass: ""  # Use default storage class
+
+  # Loki configuration
+  loki:
+    ui:
+      enabled: true
+    auth_enabled: false
+    commonConfig:
+      replication_factor: 1
+    storage:
+      type: filesystem
+    limits_config:
+      retention_period: 168h  # 7 days retention to match Prometheus
+      max_entries_limit_per_query: 5000
+      max_query_parallelism: 4
+    schemaConfig:
+      configs:
+        - from: "2024-01-01"
+          store: tsdb
+          object_store: filesystem
+          schema: v13
+          index:
+            prefix: loki_index_
+            period: 24h
+
+  # Gateway configuration
+  gateway:
+    enabled: true
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+
+  # Monitoring
+  monitoring:
+    dashboards:
+      enabled: false
+      labels:
+        grafana: mir
+      annotations:
+        grafana_folder: "Mir Infra"
+    rules:
+      enabled: true
+      labels:
+        prometheus: mir
+    serviceMonitor:
+      enabled: true
+      labels:
+        prometheus: mir
+      interval: 30s
+    selfMonitoring:
+      enabled: false
+      grafanaAgent:
+        installOperator: false
+
+  # Test configuration
+  test:
+    enabled: false
+
+  # Backend components (disabled for SingleBinary mode)
+  backend:
+    replicas: 0
+  read:
+    replicas: 0
+  write:
+    replicas: 0
+
+  # Ingress configuration
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts: []
+      # - host: loki-local
+      #   paths:
+      #     - path: /
+      #       pathType: Prefix
+    tls: []
+
+#
+# Promtail subchart configuration
+#
+promtail:
+  enabled: false  # Set to true to enable Promtail log collection
+
+  # Deployment configuration
+  daemonset:
+    enabled: true
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+  # Configure Promtail to send logs to Loki
+  config:
+    clients:
+      - url: http://{{ .Release.Name }}-loki-gateway/loki/api/v1/push
+
+    snippets:
+      pipelineStages:
+        - cri: {}
+        - labeldrop:
+            - filename
+            - stream
+
+      # Additional scrape configs
+      scrapeConfigs: |
+        # Scrape config for all pods
+        - job_name: kubernetes-pods
+          pipeline_stages:
+            - cri: {}
+            - labeldrop:
+                - filename
+                - stream
+            - json:
+                expressions:
+                  level: level
+                  device_id: device_id
+                  cmd: cmd
+                  srv: srv
+                  sub: sub
+                  time: time
+            - timestamp:
+                source: time
+                format: Unix
+            - static_labels:
+                system: mir
+            - labels:
+                __tmp_controller_name:
+                level:
+                job:
+                service_id:
+                service_name:
+                device_id:
+                cmd:
+                srv:
+                sub:
+
+          kubernetes_sd_configs:
+            - role: pod
+          relabel_configs:
+            - source_labels:
+                - __meta_kubernetes_pod_controller_name
+              regex: ([0-9a-z-.]+?)(-[0-9a-f]{4,10})?
+              action: replace
+              target_label: __tmp_controller_name
+            - source_labels:
+                - __meta_kubernetes_pod_label_app_kubernetes_io_name
+                - __meta_kubernetes_pod_label_app
+                - __tmp_controller_name
+                - __meta_kubernetes_pod_name
+              regex: ^;*([^;]+)(;.*)?$
+              action: replace
+              target_label: app
+            - source_labels:
+                - __meta_kubernetes_pod_label_app_kubernetes_io_instance
+                - __meta_kubernetes_pod_label_instance
+              regex: ^;*([^;]+)(;.*)?$
+              action: replace
+              target_label: instance
+            - source_labels:
+                - __meta_kubernetes_pod_label_app_kubernetes_io_component
+                - __meta_kubernetes_pod_label_component
+              regex: ^;*([^;]+)(;.*)?$
+              action: replace
+              target_label: component
+            - action: replace
+              source_labels:
+                - __meta_kubernetes_pod_node_name
+              target_label: node_name
+            - action: replace
+              source_labels:
+                - __meta_kubernetes_namespace
+              target_label: namespace
+            - action: replace
+              source_labels:
+                - __meta_kubernetes_pod_name
+              target_label: pod
+            - action: replace
+              source_labels:
+                - __meta_kubernetes_pod_container_name
+              target_label: container
+            - replacement: /var/log/pods/*$1/*.log
+              separator: /
+              source_labels:
+                - __meta_kubernetes_pod_uid
+                - __meta_kubernetes_pod_container_name
+              target_label: __path__
+            - action: replace
+              regex: (.*)
+              source_labels:
+                - __meta_kubernetes_pod_label_app_kubernetes_io_name
+              target_label: app_kubernetes_io_name
+            - action: replace
+              regex: (.*)
+              source_labels:
+                - __meta_kubernetes_pod_label_app_kubernetes_io_instance
+              target_label: app_kubernetes_io_instance
+            - action: replace
+              regex: (.*)
+              source_labels:
+                - __meta_kubernetes_pod_label_app_kubernetes_io_component
+              target_label: app_kubernetes_io_component
+            - action: replace
+              source_labels:
+                - __meta_kubernetes_pod_label_app_kubernetes_io_instance
+                - __meta_kubernetes_pod_label_app_kubernetes_io_name
+              separator: "-"
+              regex: ^(.+)-(.+)$
+              replacement: ${1}-${2}
+              target_label: job
+            - source_labels: [__tmp_controller_name]
+              regex: ^(.+)$
+              target_label: job
+
+  # Service Monitor for Prometheus
+  serviceMonitor:
+    enabled: true
+    labels:
+      prometheus: mir
+    interval: 30s
+
+  # Tolerations to run on all nodes
+  tolerations:
+    - key: node-role.kubernetes.io/master
+      operator: Exists
+      effect: NoSchedule
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
+
+  # Volume mounts for log collection
+  volumeMounts:
+    - name: containers
+      mountPath: /var/log/pods
+      readOnly: true
+    - name: docker
+      mountPath: /var/lib/docker/containers
+      readOnly: true
+
+  volumes:
+    - name: containers
+      hostPath:
+        path: /var/log/pods
+    - name: docker
+      hostPath:
+        path: /var/lib/docker/containers

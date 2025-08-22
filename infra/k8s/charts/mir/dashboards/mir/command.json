@@ -1247,7 +1247,7 @@
           },
           "direction": "backward",
           "editorMode": "builder",
-          "expr": "{system=\"mir\", compose_service=\"mir\"} | cmd = `protocmd` or srv = `protocmd_server`",
+          "expr": "{job=\"$job\"} | cmd = `protocmd` or srv = `protocmd_server`",
           "queryType": "range",
           "refId": "A"
         }
