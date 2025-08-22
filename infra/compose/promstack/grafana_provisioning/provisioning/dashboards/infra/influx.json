@@ -1971,7 +1971,7 @@
           },
           "direction": "backward",
           "editorMode": "builder",
-          "expr": "{system=\"mir\", compose_service=\"influxdb\"} | label_format level=detected_level",
+          "expr": "{job=\"$job\"} | label_format level=detected_level",
           "queryType": "range",
           "refId": "A"
         }

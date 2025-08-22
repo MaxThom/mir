@@ -25,7 +25,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
-  "id": 15,
+  "id": 51,
   "links": [],
   "panels": [
     {
@@ -88,21 +88,11 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(nats_varz_jetstream_stats_storage{job=\"${nats}\"})/sum(nats_varz_jetstream_config_max_storage{job=\"${nats}\"})",
+          "expr": "sum(nats_varz_jetstream_stats_storage{job=~\"(.*/)?${nats}\"})/sum(nats_varz_jetstream_config_max_storage{job=~\"(.*/)?${nats}\"})",
           "interval": "",
           "legendFormat": "",
           "range": true,
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "expr": "",
-          "interval": "",
-          "legendFormat": "",
-          "refId": "B"
         }
       ],
       "title": "Storage Used",
@@ -160,7 +150,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(nats_varz_jetstream_stats_storage{job=\"${nats}\"})",
+          "expr": "sum(nats_varz_jetstream_stats_storage{job=~\"(.*/)?${nats}\"})",
           "interval": "",
           "legendFormat": "",
           "range": true,
@@ -230,7 +220,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(nats_varz_jetstream_stats_memory{job=\"${nats}\"})/sum(nats_varz_jetstream_config_max_memory{job=\"${nats}\"})",
+          "expr": "sum(nats_varz_jetstream_stats_memory{job=~\"(.*/)?${nats}\"})/sum(nats_varz_jetstream_config_max_memory{job=~\"(.*/)?${nats}\"})",
           "interval": "",
           "legendFormat": "",
           "range": true,
@@ -292,7 +282,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(nats_varz_jetstream_stats_memory{job=\"${nats}\"})",
+          "expr": "sum(nats_varz_jetstream_stats_memory{job=~\"(.*/)?${nats}\"})",
           "interval": "",
           "legendFormat": "",
           "range": true,
@@ -357,9 +347,11 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(nats_varz_connections{server_id=~\"$server\"})",
+          "editorMode": "code",
+          "expr": "sum(nats_varz_connections{job=~\"(.*/)?${nats}\"})",
           "interval": "",
           "legendFormat": "",
+          "range": true,
           "refId": "A"
         }
       ],
@@ -418,7 +410,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(nats_varz_jetstream_config_max_storage{job=\"${nats}\"})",
+          "expr": "sum(nats_varz_jetstream_config_max_storage{job=~\"(.*/)?${nats}\"})",
           "interval": "",
           "legendFormat": "",
           "range": true,
@@ -480,7 +472,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(nats_varz_jetstream_config_max_memory{job=\"${nats}\"})",
+          "expr": "sum(nats_varz_jetstream_config_max_memory{job=~\"(.*/)?${nats}\"})",
           "interval": "",
           "legendFormat": "",
           "range": true,
@@ -545,7 +537,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(jetstream_server_total_consumers{job=\"${nats}\"})",
+          "expr": "sum(jetstream_server_total_consumers{job=~\"(.*/)?${nats}\"})",
           "interval": "",
           "legendFormat": "",
           "range": true,
@@ -657,7 +649,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(jetstream_stream_total_bytes{job=\"${nats}\"}) by (stream_name)",
+          "expr": "sum(jetstream_stream_total_bytes{job=~\"(.*/)?${nats}\"}) by (stream_name)",
           "interval": "",
           "legendFormat": "{{stream_name}}",
           "range": true,
@@ -756,7 +748,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(jetstream_stream_total_messages{job=\"${nats}\"}) by (stream_name)",
+          "expr": "sum(jetstream_stream_total_messages{job=~\"(.*/)?${nats}\"}) by (stream_name)",
           "interval": "",
           "legendFormat": "{{stream_name}}",
           "range": true,
@@ -855,7 +847,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(jetstream_stream_last_seq{job=\"${nats}\", stream_name=~\"$stream\"}[$__rate_interval])) by (stream_name)",
+          "expr": "sum(rate(jetstream_stream_last_seq{job=~\"(.*/)?${nats}\", stream_name=~\"$stream\"}[$__rate_interval])) by (stream_name)",
           "hide": false,
           "interval": "",
           "legendFormat": "{{stream_name}}",
@@ -969,7 +961,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(jetstream_consumer_num_pending{job=\"${nats}\",stream_name=~\"$stream\",consumer_name=~\"$consumer\"}[$__rate_interval])+rate(jetstream_consumer_delivered_consumer_seq{job=\"${nats}\",stream_name=~\"$stream\",consumer_name=~\"$consumer\"}[$__rate_interval])) by (consumer_name)",
+          "expr": "sum(rate(jetstream_consumer_num_pending{job=~\"(.*/)?${nats}\",stream_name=~\"$stream\",consumer_name=~\"$consumer\"}[$__rate_interval])+rate(jetstream_consumer_delivered_consumer_seq{job=~\"(.*/)?${nats}\",stream_name=~\"$stream\",consumer_name=~\"$consumer\"}[$__rate_interval])) by (consumer_name)",
           "hide": false,
           "instant": false,
           "interval": "",
@@ -983,7 +975,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "- sum(rate(jetstream_consumer_delivered_consumer_seq{job=\"${nats}\",stream_name=~\"$stream\",consumer_name=~\"$consumer\",consumer_name=~\"$consumer\"}[$__rate_interval])) by (consumer_name)",
+          "expr": "- sum(rate(jetstream_consumer_delivered_consumer_seq{job=~\"(.*/)?${nats}\",stream_name=~\"$stream\",consumer_name=~\"$consumer\",consumer_name=~\"$consumer\"}[$__rate_interval])) by (consumer_name)",
           "hide": false,
           "interval": "",
           "legendFormat": "{{consumer_name}} -",
@@ -1083,7 +1075,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(jetstream_consumer_delivered_consumer_seq{job=\"${nats}\",stream_name=~\"$stream\",consumer_name=~\"$consumer\"}) by (consumer_name)",
+          "expr": "sum(jetstream_consumer_delivered_consumer_seq{job=~\"(.*/)?${nats}\",stream_name=~\"$stream\",consumer_name=~\"$consumer\"}) by (consumer_name)",
           "hide": false,
           "interval": "",
           "legendFormat": "{{consumer_name}}",
@@ -1184,7 +1176,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(jetstream_consumer_num_pending{job=\"${nats}\",stream_name=~\"$stream\",consumer_name=~\"$consumer\"}) by (consumer_name)",
+          "expr": "sum(jetstream_consumer_num_pending{job=~\"(.*/)?${nats}\",stream_name=~\"$stream\",consumer_name=~\"$consumer\"}) by (consumer_name)",
           "hide": false,
           "interval": "",
           "legendFormat": "{{consumer_name}}",
@@ -1285,7 +1277,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(jetstream_consumer_num_ack_pending{job=\"${nats}\",stream_name=~\"$stream\",consumer_name=~\"$consumer\"}) by (consumer_name)",
+          "expr": "sum(jetstream_consumer_num_ack_pending{job=~\"(.*/)?${nats}\",stream_name=~\"$stream\",consumer_name=~\"$consumer\"}) by (consumer_name)",
           "hide": false,
           "interval": "",
           "legendFormat": "{{consumer_name}}",
@@ -1332,7 +1324,7 @@
           },
           "direction": "backward",
           "editorMode": "builder",
-          "expr": "{system=\"mir\", compose_service=\"nats\"} | label_format level=detected_level",
+          "expr": "{job=\"$nats\"} | label_format level=detected_level",
           "queryType": "range",
           "refId": "A"
         }
@@ -1373,6 +1365,7 @@
         "type": "datasource"
       },
       {
+        "allowCustomValue": false,
         "current": {
           "text": "default/mir-noprom-nats",
           "value": "default/mir-noprom-nats"
@@ -1392,7 +1385,7 @@
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 1,
-        "regex": "",
+        "regex": "(?:.*/)?(.+)",
         "type": "query"
       },
       {

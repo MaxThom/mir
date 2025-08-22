@@ -1086,7 +1086,7 @@
           },
           "direction": "backward",
           "editorMode": "code",
-          "expr": "{system=\"mir\", compose_service=\"mir\"} | cmd = `eventstore` or srv = `eventstore_server`",
+          "expr": "{job=\"$job\"} | cmd = `eventstore` or srv = `eventstore_server`",
           "queryType": "range",
           "refId": "A"
         }

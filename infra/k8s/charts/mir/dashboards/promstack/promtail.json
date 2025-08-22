@@ -18,9 +18,8 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": null,
+  "id": 8,
   "links": [],
-  "liveNow": false,
   "panels": [
     {
       "datasource": {
@@ -55,7 +54,7 @@
             "steps": [
               {
                 "color": "red",
-                "value": null
+                "value": 0
               },
               {
                 "color": "green",
@@ -79,15 +78,18 @@
         "graphMode": "none",
         "justifyMode": "center",
         "orientation": "auto",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "text": {},
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "10.2.2",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
@@ -95,7 +97,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "up{job=\"promtail\"}",
+          "expr": "up{job=\"$job\"}",
           "instant": false,
           "legendFormat": "{{instance}}",
           "range": true,
@@ -117,18 +119,20 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
             "hideFrom": {
+              "legend": false,
               "tooltip": false,
-              "viz": false,
-              "legend": false
+              "viz": false
             },
             "insertNulls": false,
             "lineInterpolation": "linear",
@@ -153,7 +157,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               }
             ]
           },
@@ -176,10 +180,12 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
@@ -187,7 +193,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(promtail_sent_entries_total[$__rate_interval])",
+          "expr": "rate(promtail_sent_entries_total{job=\"$job\"}[$__rate_interval])",
           "instant": false,
           "legendFormat": "{{job}}",
           "range": true,
@@ -214,7 +220,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               }
             ]
           },
@@ -234,15 +240,18 @@
         "graphMode": "area",
         "justifyMode": "center",
         "orientation": "auto",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "text": {},
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "10.2.2",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
@@ -250,7 +259,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "promtail_targets_active_total",
+          "expr": "promtail_targets_active_total{job=\"$job\"}",
           "instant": false,
           "legendFormat": "Active Targets",
           "range": true,
@@ -277,7 +286,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               }
             ]
           },
@@ -297,15 +306,18 @@
         "graphMode": "none",
         "justifyMode": "center",
         "orientation": "auto",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "text": {},
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "10.2.2",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
@@ -340,15 +352,15 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "yellow",
-                "value": 100
+                "value": 500
               },
               {
                 "color": "red",
-                "value": 500
+                "value": 1000
               }
             ]
           },
@@ -368,15 +380,18 @@
         "graphMode": "area",
         "justifyMode": "center",
         "orientation": "auto",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "text": {},
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "10.2.2",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
@@ -384,7 +399,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "promtail_stream_lag_seconds_count",
+          "expr": "sum(promtail_targets_active_total{job=\"$job\"})",
           "instant": false,
           "legendFormat": "Streams",
           "range": true,
@@ -406,18 +421,20 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
             "hideFrom": {
+              "legend": false,
               "tooltip": false,
-              "viz": false,
-              "legend": false
+              "viz": false
             },
             "insertNulls": false,
             "lineInterpolation": "linear",
@@ -442,7 +459,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               }
             ]
           },
@@ -465,10 +482,12 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
@@ -476,7 +495,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(promtail_read_bytes_total[$__rate_interval])",
+          "expr": "rate(promtail_read_bytes_total{job=\"$job\"}[$__rate_interval])",
           "instant": false,
           "legendFormat": "Bytes Read",
           "range": true,
@@ -488,7 +507,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(promtail_sent_bytes_total[$__rate_interval])",
+          "expr": "rate(promtail_sent_bytes_total{job=\"$job\"}[$__rate_interval])",
           "hide": false,
           "instant": false,
           "legendFormat": "Bytes Sent",
@@ -511,18 +530,20 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
             "hideFrom": {
+              "legend": false,
               "tooltip": false,
-              "viz": false,
-              "legend": false
+              "viz": false
             },
             "insertNulls": false,
             "lineInterpolation": "linear",
@@ -547,7 +568,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               }
             ]
           },
@@ -570,10 +591,12 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
@@ -581,7 +604,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum(rate(promtail_request_duration_seconds_bucket[$__rate_interval])) by (le, status_code))",
+          "expr": "histogram_quantile(0.99, sum(rate(promtail_request_duration_seconds_bucket{job=\"$job\"}[$__rate_interval])) by (le, status_code))",
           "instant": false,
           "legendFormat": "p99 {{status_code}}",
           "range": true,
@@ -628,7 +651,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               }
             ]
           }
@@ -665,7 +688,7 @@
         },
         "showHeader": true
       },
-      "pluginVersion": "10.2.2",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
@@ -673,7 +696,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "promtail_file_bytes_total",
+          "expr": "promtail_file_bytes_total{job=\"$job\"}",
           "format": "table",
           "instant": true,
           "legendFormat": "__auto",
@@ -688,9 +711,9 @@
           "options": {
             "excludeByName": {
               "Time": true,
-              "job": true,
               "__name__": true,
-              "instance": true
+              "instance": true,
+              "job": true
             },
             "indexByName": {},
             "renameByName": {
@@ -701,64 +724,15 @@
         }
       ],
       "type": "table"
-    },
-    {
-      "datasource": {
-        "type": "loki",
-        "uid": "${logs_datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {},
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 12,
-        "w": 24,
-        "x": 0,
-        "y": 24
-      },
-      "id": 9,
-      "options": {
-        "dedupStrategy": "none",
-        "enableInfiniteScrolling": true,
-        "enableLogDetails": true,
-        "prettifyLogMessage": true,
-        "showCommonLabels": true,
-        "showLabels": false,
-        "showTime": false,
-        "sortOrder": "Ascending",
-        "wrapLogMessage": true
-      },
-      "pluginVersion": "12.1.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "loki",
-            "uid": "${logs_datasource}"
-          },
-          "direction": "backward",
-          "editorMode": "builder",
-          "expr": "{system=\"mir\", compose_service=\"promtail\"} | label_format level=detected_level",
-          "queryType": "range",
-          "refId": "A"
-        }
-      ],
-      "title": "Logs",
-      "transparent": true,
-      "type": "logs"
     }
   ],
+  "preload": false,
   "refresh": "10s",
-  "schemaVersion": 38,
-  "style": "dark",
+  "schemaVersion": 41,
   "tags": ["mir", "mir-infra", "promtail"],
   "templating": {
     "list": [
       {
-        "current": {
-          "text": "Prometheus",
-          "value": "mir-prometheus"
-        },
         "description": "",
         "label": "Datasource",
         "name": "datasource",
@@ -777,6 +751,25 @@
         "refresh": 1,
         "regex": "",
         "type": "datasource"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "definition": "label_values(promtail_build_info,job)",
+        "description": "",
+        "label": "Job",
+        "name": "job",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(promtail_build_info,job)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "type": "query"
       }
     ]
   },
@@ -788,6 +781,5 @@
   "timezone": "",
   "title": "Promtail",
   "uid": "promtail-metrics",
-  "version": 1,
-  "weekStart": ""
+  "version": 1
 }

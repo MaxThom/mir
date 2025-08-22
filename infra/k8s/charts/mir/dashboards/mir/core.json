@@ -983,7 +983,7 @@
           },
           "direction": "backward",
           "editorMode": "builder",
-          "expr": "{system=\"mir\", compose_service=\"mir\"} | cmd = `core` or srv = `core_server`",
+          "expr": "{job=\"$job\"} | cmd = `core` or srv = `core_server`",
           "queryType": "range",
           "refId": "A"
         }

@@ -4169,7 +4169,7 @@
           },
           "direction": "backward",
           "editorMode": "builder",
-          "expr": "{system=\"mir\", compose_service=\"mir\"} | cmd = `mir`",
+          "expr": "{job=\"$job\"} | cmd = `mir`",
           "queryType": "range",
           "refId": "A"
         }

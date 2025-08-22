@@ -33,7 +33,7 @@ scrape_configs:
       # Keep compose service name, eg: alertmanager
       - source_labels:
           ["__meta_docker_container_label_com_docker_compose_service"]
-        target_label: "compose_service"
+        target_label: "job"
 
       # Keep compose service version, this is the docker version, useless
       # - source_labels:
@@ -50,6 +50,7 @@ scrape_configs:
 
       - json:
           expressions:
+            level: level
             device_id: device_id
             cmd: cmd
             srv: srv
@@ -64,8 +65,9 @@ scrape_configs:
           system: mir
 
       - labels:
+          level:
           service_id:
-          service_name:
+          job:
           compose_service:
           compose_project:
           compose_version:

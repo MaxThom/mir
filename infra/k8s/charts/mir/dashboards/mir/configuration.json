@@ -1556,7 +1556,7 @@
           },
           "direction": "backward",
           "editorMode": "builder",
-          "expr": "{system=\"mir\", compose_service=\"mir\"} | cmd = `protocfg` or srv = `protocfg_server`",
+          "expr": "{job=\"$job\"} | cmd = `protocfg` or srv = `protocfg_server`",
           "queryType": "range",
           "refId": "A"
         }

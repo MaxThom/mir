@@ -1407,7 +1407,7 @@
           },
           "direction": "backward",
           "editorMode": "builder",
-          "expr": "{system=\"mir\", compose_service=\"mir\"} | cmd = `prototlm` or srv = `prototlm_server`",
+          "expr": "{job=\"$job\"} | cmd = `prototlm` or srv = `prototlm_server`",
           "queryType": "range",
           "refId": "A"
         }

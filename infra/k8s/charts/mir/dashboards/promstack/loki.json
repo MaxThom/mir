@@ -18,9 +18,8 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": null,
+  "id": 14,
   "links": [],
-  "liveNow": false,
   "panels": [
     {
       "datasource": {
@@ -55,7 +54,7 @@
             "steps": [
               {
                 "color": "red",
-                "value": null
+                "value": 0
               },
               {
                 "color": "green",
@@ -79,15 +78,18 @@
         "graphMode": "none",
         "justifyMode": "center",
         "orientation": "auto",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "text": {},
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "10.2.2",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
@@ -95,7 +97,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "up{job=\"loki\"}",
+          "expr": "up{job=\"$job\"}",
           "instant": false,
           "legendFormat": "{{instance}}",
           "range": true,
@@ -117,18 +119,20 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
             "hideFrom": {
+              "legend": false,
               "tooltip": false,
-              "viz": false,
-              "legend": false
+              "viz": false
             },
             "insertNulls": false,
             "lineInterpolation": "linear",
@@ -153,7 +157,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               }
             ]
           },
@@ -176,10 +180,12 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
@@ -187,7 +193,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(loki_ingester_lines_received_total[$__rate_interval])",
+          "expr": "rate(loki_distributor_lines_received_total{job=\"$job\"}[$__rate_interval])",
           "instant": false,
           "legendFormat": "{{job}}",
           "range": true,
@@ -214,7 +220,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "yellow",
@@ -242,15 +248,18 @@
         "graphMode": "area",
         "justifyMode": "center",
         "orientation": "auto",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "text": {},
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "10.2.2",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
@@ -258,7 +267,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "loki_ingester_memory_streams",
+          "expr": "loki_ingester_memory_streams{job=\"$job\"}",
           "instant": false,
           "legendFormat": "Active Streams",
           "range": true,
@@ -285,7 +294,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               }
             ]
           },
@@ -302,18 +311,20 @@
       "id": 4,
       "options": {
         "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "center",
+        "graphMode": "area",
+        "justifyMode": "auto",
         "orientation": "auto",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
-        "text": {},
-        "textMode": "auto"
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "10.2.2",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
@@ -321,7 +332,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "loki_ingester_bytes_received_total",
+          "expr": "loki_distributor_bytes_received_total{job=\"$job\"}",
           "instant": false,
           "legendFormat": "Total Bytes",
           "range": true,
@@ -348,7 +359,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "yellow",
@@ -376,15 +387,18 @@
         "graphMode": "area",
         "justifyMode": "center",
         "orientation": "auto",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "text": {},
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "10.2.2",
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
@@ -392,7 +406,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "loki_ingester_chunks_memory",
+          "expr": "loki_ingester_memory_chunks{job=\"$job\"}",
           "instant": false,
           "legendFormat": "Chunks",
           "range": true,
@@ -414,18 +428,20 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
             "hideFrom": {
+              "legend": false,
               "tooltip": false,
-              "viz": false,
-              "legend": false
+              "viz": false
             },
             "insertNulls": false,
             "lineInterpolation": "linear",
@@ -450,7 +466,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               }
             ]
           },
@@ -473,10 +489,12 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
@@ -484,7 +502,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum(rate(loki_request_duration_seconds_bucket{job=\"loki\",route=~\"loki_api_v1_series|loki_api_v1_query|loki_api_v1_query_range|loki_api_v1_labels|loki_api_v1_label_values\"}[$__rate_interval])) by (le, route))",
+          "expr": "histogram_quantile(0.99, sum(rate(loki_request_duration_seconds_bucket{job=\"$job\",route=~\"loki_api_v1_series|loki_api_v1_query|loki_api_v1_query_range|loki_api_v1_labels|loki_api_v1_label_values\"}[$__rate_interval])) by (le, route))",
           "instant": false,
           "legendFormat": "{{route}} p99",
           "range": true,
@@ -496,7 +514,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.50, sum(rate(loki_request_duration_seconds_bucket{job=\"loki\",route=~\"loki_api_v1_series|loki_api_v1_query|loki_api_v1_query_range|loki_api_v1_labels|loki_api_v1_label_values\"}[$__rate_interval])) by (le, route))",
+          "expr": "histogram_quantile(0.50, sum(rate(loki_request_duration_seconds_bucket{job=\"$job\",route=~\"loki_api_v1_series|loki_api_v1_query|loki_api_v1_query_range|loki_api_v1_labels|loki_api_v1_label_values\"}[$__rate_interval])) by (le, route))",
           "hide": false,
           "instant": false,
           "legendFormat": "{{route}} p50",
@@ -519,18 +537,20 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
             "hideFrom": {
+              "legend": false,
               "tooltip": false,
-              "viz": false,
-              "legend": false
+              "viz": false
             },
             "insertNulls": false,
             "lineInterpolation": "linear",
@@ -555,7 +575,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               }
             ]
           },
@@ -578,10 +598,12 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.1.0",
       "targets": [
         {
           "datasource": {
@@ -589,7 +611,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum by (status_code) (rate(loki_request_duration_seconds_count{job=\"loki\"}[$__rate_interval]))",
+          "expr": "sum by (status_code) (rate(loki_request_duration_seconds_count{job=\"$job\"}[$__rate_interval]))",
           "instant": false,
           "legendFormat": "{{status_code}}",
           "range": true,
@@ -598,64 +620,15 @@
       ],
       "title": "Request Rate by Status",
       "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "loki",
-        "uid": "${logs_datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {},
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 12,
-        "w": 24,
-        "x": 0,
-        "y": 24
-      },
-      "id": 8,
-      "options": {
-        "dedupStrategy": "none",
-        "enableInfiniteScrolling": true,
-        "enableLogDetails": true,
-        "prettifyLogMessage": true,
-        "showCommonLabels": true,
-        "showLabels": false,
-        "showTime": false,
-        "sortOrder": "Ascending",
-        "wrapLogMessage": true
-      },
-      "pluginVersion": "12.1.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "loki",
-            "uid": "${logs_datasource}"
-          },
-          "direction": "backward",
-          "editorMode": "builder",
-          "expr": "{system=\"mir\", compose_service=\"loki\"} | label_format level=detected_level",
-          "queryType": "range",
-          "refId": "A"
-        }
-      ],
-      "title": "Logs",
-      "transparent": true,
-      "type": "logs"
     }
   ],
+  "preload": false,
   "refresh": "10s",
-  "schemaVersion": 38,
-  "style": "dark",
+  "schemaVersion": 41,
   "tags": ["mir", "mir-infra", "loki"],
   "templating": {
     "list": [
       {
-        "current": {
-          "text": "Prometheus",
-          "value": "mir-prometheus"
-        },
         "description": "",
         "label": "Datasource",
         "name": "datasource",
@@ -674,6 +647,26 @@
         "refresh": 1,
         "regex": "",
         "type": "datasource"
+      },
+      {
+        "allowCustomValue": false,
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "definition": "label_values(loki_build_info,job)",
+        "description": "",
+        "label": "Job",
+        "name": "job",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(loki_build_info,job)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "type": "query"
       }
     ]
   },
@@ -685,6 +678,5 @@
   "timezone": "",
   "title": "Loki",
   "uid": "loki-metrics",
-  "version": 1,
-  "weekStart": ""
+  "version": 1
 }
