@@ -63,17 +63,17 @@ resources: {}
 nats:
   enabled: true
   ## Configure Nats to a LoadBalancer
-  # service:
-  #   merge:
-  #     spec:
-  #       type: LoadBalancer
-  #       ports:
-  #         - appProtocol: tcp
-  #           name: nats
-  #           nodePort: 31422
-  #           port: 4222
-  #           protocol: TCP
-  #           targetPort: nats
+  service:
+    merge:
+      spec:
+        type: LoadBalancer
+        ports:
+          - appProtocol: tcp
+            name: nats
+            nodePort: 31422
+            port: 4222
+            protocol: TCP
+            targetPort: nats
   ingress:
     enabled: false
     className: ""  # "[nginx|traefik]"
@@ -264,7 +264,9 @@ nodeSelector: {}
 tolerations: []
 affinity: {}
 
-
+##
+## Service Monitors, Dashboards and Rules pickup by Prometheus stack.
+##
 mirServiceMonitors:
   enabled: true
   labels:
@@ -314,13 +316,13 @@ kube-prometheus-stack:
       ruleSelector:
         matchLabels:
           prometheus: mir
-      resources:
-        requests:
-          cpu: 250m
-          memory: 400Mi
-        limits:
-          cpu: 1000m
-          memory: 2Gi
+      resources: {}
+        # requests:
+        #   cpu: 250m
+        #   memory: 400Mi
+        # limits:
+        #   cpu: 1000m
+        #   memory: 2Gi
       storageSpec:
         volumeClaimTemplate:
           spec:
@@ -351,6 +353,9 @@ kube-prometheus-stack:
     # Place all default kube-prometheus-stack dashboards in Kubernetes folder
     defaultDashboardsFolder: Kubernetes
     sidecar:
+      datasources:
+        alertmanager:
+          handleGrafanaManagedAlerts: true
       dashboards:
         enabled: true
         label: grafana
@@ -373,13 +378,13 @@ kube-prometheus-stack:
         # - grafana-local
       path: /
       tls: []
-    resources:
-      requests:
-        cpu: 100m
-        memory: 128Mi
-      limits:
-        cpu: 500m
-        memory: 512Mi
+    resources: {}
+      # requests:
+      #   cpu: 100m
+      #   memory: 128Mi
+      # limits:
+      #   cpu: 500m
+      #   memory: 512Mi
     serviceMonitor:
       enabled: true
       labels:
@@ -519,13 +524,13 @@ kube-prometheus-stack:
             resources:
               requests:
                 storage: 1Gi
-      resources:
-        requests:
-          cpu: 50m
-          memory: 64Mi
-        limits:
-          cpu: 200m
-          memory: 256Mi
+      resources: {}
+        # requests:
+        #   cpu: 50m
+        #   memory: 64Mi
+        # limits:
+        #   cpu: 200m
+        #   memory: 256Mi
     ingress:
       enabled: false
       className: ""
@@ -569,13 +574,13 @@ kube-prometheus-stack:
   # Node Exporter for host metrics
   nodeExporter:
     enabled: true
-    resources:
-      requests:
-        cpu: 50m
-        memory: 30Mi
-      limits:
-        cpu: 200m
-        memory: 100Mi
+    resources: {}
+    #   requests:
+    #     cpu: 50m
+    #     memory: 30Mi
+    #   limits:
+    #     cpu: 200m
+    #     memory: 100Mi
 
   prometheus-node-exporter:
     prometheus:
@@ -590,24 +595,24 @@ kube-prometheus-stack:
       monitor:
         additionalLabels:
           prometheus: mir
-    resources:
-      requests:
-        cpu: 50m
-        memory: 64Mi
-      limits:
-        cpu: 200m
-        memory: 256Mi
+    resources: {}
+      # requests:
+      #   cpu: 50m
+      #   memory: 64Mi
+      # limits:
+      #   cpu: 200m
+      #   memory: 256Mi
 
   # Prometheus Operator
   prometheusOperator:
     enabled: true
-    resources:
-      requests:
-        cpu: 100m
-        memory: 128Mi
-      limits:
-        cpu: 500m
-        memory: 512Mi
+    resources: {}
+      # requests:
+      #   cpu: 100m
+      #   memory: 128Mi
+      # limits:
+      #   cpu: 500m
+      #   memory: 512Mi
 
   # Default Prometheus rules
   defaultRules:
@@ -629,13 +634,13 @@ loki:
   # Single binary config for monolithic deployment
   singleBinary:
     replicas: 1
-    resources:
-      requests:
-        cpu: 100m
-        memory: 256Mi
-      limits:
-        cpu: 500m
-        memory: 1Gi
+    resources: {}
+      # requests:
+      #   cpu: 100m
+      #   memory: 256Mi
+      # limits:
+      #   cpu: 500m
+      #   memory: 1Gi
     persistence:
       enabled: true
       size: 10Gi
@@ -667,13 +672,13 @@ loki:
   # Gateway configuration
   gateway:
     enabled: true
-    resources:
-      requests:
-        cpu: 50m
-        memory: 64Mi
-      limits:
-        cpu: 200m
-        memory: 256Mi
+    resources: {}
+      # requests:
+      #   cpu: 50m
+      #   memory: 64Mi
+      # limits:
+      #   cpu: 200m
+      #   memory: 256Mi
 
   # Monitoring
   monitoring:
@@ -731,13 +736,13 @@ promtail:
   daemonset:
     enabled: true
 
-  resources:
-    requests:
-      cpu: 50m
-      memory: 64Mi
-    limits:
-      cpu: 200m
-      memory: 128Mi
+  resources: {}
+    # requests:
+    #   cpu: 50m
+    #   memory: 64Mi
+    # limits:
+    #   cpu: 200m
+    #   memory: 128Mi
 
   # Configure Promtail to send logs to Loki
   config:
