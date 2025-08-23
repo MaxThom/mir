@@ -19,27 +19,27 @@
     - [x] tlm ls print query option
   - [ ] core bug with reconnect of loading devices
   - [x] Grafana Dashboard for eventstore
-  - [ ] HelmChart
+  - [x] HelmChart
     - [x] Museum
     - [x] Mir
     - [x] Nats
     - [x] Surreal
       - [x] Test with CLI, cant change url
     - [x] Influx
-    - [ ] PromStack
-      - [ ] Dashboard
-        - [ ] Add job label
-        - [ ] Need to add container label to local
-      - [ ] ServiceMonitor
-        - [ ] jobs
-        - [ ] Influx
-        - [ ] Nats
-        - [ ] Grafana
-        - [ ] Loki
-        - [ ] Promtails
-      - [ ] Review
-      - [ ] Loki
-      - [ ] Examples of different configs
+    - [x] PromStack
+      - [x] Dashboard
+        - [x] Add job label
+        - [x] Need to add container label to local
+      - [x] ServiceMonitor
+        - [x] jobs
+        - [x] Influx
+        - [x] Nats
+        - [x] Grafana
+        - [x] Loki
+        - [x] Promtails
+      - [x] Review
+      - [x] Loki
+      - [x] Examples of different configs
   - [x] Compose release
   - [x] GrafanaLoki
   - [x] Docker container

@@ -20,7 +20,7 @@ dependencies:
     repository: https://helm.influxdata.com/
     condition: influxdb2.enabled
   - name: kube-prometheus-stack
-    version: "76.4.0"
+    version: "77.0.0"
     repository: https://prometheus-community.github.io/helm-charts
     condition: kube-prometheus-stack.enabled
   - name: loki

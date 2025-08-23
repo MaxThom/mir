@@ -1,0 +1,276 @@
+# values-standard.yaml
+# Standard deployment - Mir with infrastructure components (NATS, SurrealDB, InfluxDB)
+# No monitoring stack (Prometheus, Grafana, Loki)
+#
+# This configuration includes:
+# - Mir services
+# - NATS with JetStream for messaging
+# - SurrealDB for device metadata and events
+# - InfluxDB for time-series telemetry data
+# - Mir Dashboards, Prometheus Rules and Service Monitors
+#
+# Usage:
+# helm install mir ./mir -f values-standard.yaml
+
+# Mir image configuration
+image:
+  repository: ghcr.io/maxthom/mir
+  pullPolicy: IfNotPresent
+  tag: ""
+
+## Use secret to pass any config as environment variables, mainly passwords and tokens.
+## Refer to chart ./secret/mir.secret.yaml
+## eg:
+##   type: Opaque
+##   stringData:
+##     MIR__SURREAL__USER: "root"
+##     MIR__SURREAL__PASSWORD: "root"
+##     MIR__INFLUX__TOKEN: "mir-operator-token"
+#secretRef: mir-secret
+config:
+  mir:
+    # NATS URL - automatically set when nats.enabled=true
+    url: ""
+    logLevel: "info"
+  surreal:
+    # SurrealDB URL - automatically set when surrealdb.enabled=true
+    url: ""
+    namespace: "global"
+    database: "mir"
+    user: "root"
+    password: "root"  # Change in production, use secretRef
+  influx:
+    # InfluxDB URL - automatically set when influxdb2.enabled=true
+    url: ""
+    token: "mir-operator-token"  # Change in production, use secretRef
+    org: "Mir"
+    bucket: "mir"
+    batchSize: 1000
+    flushInterval: 1000
+    retryBufferLimit: 1073741824  # 1GB buffer for offline resilience
+    gzip: true  # Enable compression for production
+
+# Production resource allocation
+resources: {}
+  # requests:
+  #   cpu: 200m
+  #   memory: 256Mi
+  # limits:
+  #   cpu: 1000m
+  #   memory: 1Gi
+
+# Ingress configuration
+ingress:
+  enabled: false
+  className: ""  # nginx, traefik, etc.
+  annotations: {}
+  hosts:
+    - host: mir.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  #  - secretName: mir-tls
+  #    hosts:
+  #      - mir.example.com
+
+#
+# NATS Configuration - Messaging backbone
+#
+nats:
+  enabled: true
+  ## Configure Nats to a LoadBalancer
+  ## Required for device outside the cluster
+  ## Nats does not use http thus cannot use ingress
+  # service:
+  #   merge:
+  #     spec:
+  #       type: LoadBalancer
+  #       ports:
+  #         - appProtocol: tcp
+  #           name: nats
+  #           nodePort: 31422
+  #           port: 4222
+  #           protocol: TCP
+  #           targetPort: nats
+
+  # NATS ingress
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    host: nats.example.com
+    path: /
+    pathType: Prefix
+    tls: []
+
+  # NATS cluster configuration
+  config:
+    cluster:
+      enabled: true
+      replicas: 3  # HA configuration
+    jetstream:
+      enabled: true
+      fileStore:
+        pvc:
+          size: 20Gi  # Adequate storage for message persistence
+
+  # NATS resources
+  # container:
+  #   env:
+  #     GOMEMLIMIT: 8GiB  # ~80% of memory limit
+  #   merge:
+  #     resources:
+  #       requests:
+  #         cpu: 1000m
+  #         memory: 10Gi
+  #       limits:
+  #         cpu: 1000m
+  #         memory: 10Gi
+
+  # Enable metrics exporter
+  promExporter:
+    enabled: true
+    podMonitor:
+      enabled: true
+      # merge:
+      #   metadata:
+      #     labels:
+      #       prometheus: mir
+
+#
+# SurrealDB Configuration - Device metadata and events
+#
+surrealdb:
+  enabled: true
+
+  surrealdb:
+    path: "surrealkv:/data/mir.db"  # File-based storage for persistence
+    initial_user: "root"
+    initial_pass: "root"  # Change in production
+    log: info
+
+  persistence:
+    enabled: true
+    size: 20Gi  # Adequate storage for device data
+    storageClass: ""  # Use default
+    accessMode: ReadWriteOnce
+
+  resources: {}
+    # requests:
+    #   cpu: 500m
+    #   memory: 4Gi
+    # limits:
+    #   cpu: 1000m
+    #   memory: 8Gi
+
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts: []
+    tls: []
+
+  ## Use secret to pass any config as environment variables, mainly passwords and tokens.
+  ## Refer to chart ./secret/surreal.secret.yaml
+  ## eg:
+  ##   type: Opaque
+  ##   stringData:
+  ##     SURREAL_USER: "root"
+  ##     SURREAL_PASS: "mir-operator-token"
+  # podExtraEnv:
+  #  - name: SURREAL_USER
+  #    valueFrom:
+  #      secretKeyRef:
+  #        name: surreal-secret
+  #        key: SURREAL_USER
+  #  - name: SURREAL_PASS
+  #    valueFrom:
+  #      secretKeyRef:
+  #        name: surreal-secret
+  #        key: SURREAL_PASS
+
+#
+# InfluxDB Configuration - Time-series telemetry storage
+#
+influxdb2:
+  enabled: true
+
+  adminUser:
+    organization: "Mir"
+    bucket: "mir"
+    user: "admin"
+    retention_policy: "0d"  # 0 for infinite
+    password: "mir-operator"  # Change in production
+    token: "mir-operator-token"  # Change in production
+    ## If set, the password and token values above are ignored.
+    ## Use secret to pass any config as environment variables, mainly passwords and tokens.
+    ## Refer to chart ./secret/influx.secret.yaml
+    ## eg:
+    ##   type: Opaque
+    ##   stringData:
+    ##     admin-password: "mir-operator"
+    ##     admin-token: "mir-operator-token"
+    # existingSecret: influx-secret
+
+  persistence:
+    enabled: true
+    size: 50Gi  # Adequate storage for telemetry data
+    storageClass: ""  # Use default
+
+  resources: {}
+    # requests:
+    #   cpu: 1000m
+    #   memory: 8Gi
+    # limits:
+    #   cpu: 1000m
+    #   memory: 8Gi
+
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hostname: influx.example.com
+    path: /
+    tls: false
+
+
+##
+## Service Monitors, Dashboards and Rules pickup by Prometheus stack.
+##
+mirServiceMonitors:
+  enabled: false
+  labels:
+    prometheus: mir
+  annotations: {}
+
+mirPrometheusRules:
+  enabled: false
+  labels:
+    prometheus: mir
+  annotations: {}
+
+mirDashboards:
+  enabled: false
+  labels:
+    grafana: mir
+  annotations: {}
+
+# Set of extra dashboards for promstack monitoring
+mirPromDashboards:
+  enabled: false
+  labels:
+    grafana: mir
+  annotations: {}
+
+#
+# Monitoring Components - All Disabled
+#
+kube-prometheus-stack:
+  enabled: false
+
+loki:
+  enabled: false
+
+promtail:
+  enabled: false

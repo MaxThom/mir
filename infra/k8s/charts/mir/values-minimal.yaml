@@ -1,0 +1,122 @@
+# values-minimal.yaml
+# Minimal deployment - Mir services only, no infrastructure
+# Use this when you have existing NATS, SurrealDB, and InfluxDB deployments
+#
+# Prerequisites:
+# - External NATS server accessible at the configured URL
+# - External SurrealDB instance with proper credentials
+# - External InfluxDB instance with configured token and organization
+#
+# Usage:
+# helm install mir ./mir -f values-minimal.yaml
+
+# Mir image configuration
+image:
+  repository: ghcr.io/maxthom/mir
+  pullPolicy: IfNotPresent
+  tag: ""
+
+## Use secret to pass any config as environment variables, mainly passwords and tokens.
+## Refer to chart ./secret/mir.secret.yaml
+## eg:
+##   type: Opaque
+##   stringData:
+##     MIR__SURREAL__USER: "root"
+##     MIR__SURREAL__PASSWORD: "root"
+##     MIR__INFLUX__TOKEN: "mir-operator-token"
+#secretRef: mir-secret
+config:
+  mir:
+    # External NATS URL - update to your NATS instance
+    url: "nats://your-nats-server:4222/"
+    logLevel: "info"
+  surreal:
+    # External SurrealDB URL - update to your SurrealDB instance
+    url: "ws://your-surrealdb-server:8000/"
+    namespace: "global"
+    database: "mir"
+    user: "root"
+    password: "your-surreal-password"  # Use secretRef in production
+  influx:
+    # External InfluxDB URL - update to your InfluxDB instance
+    url: "http://your-influxdb-server:8086/"
+    token: "your-influx-token"  # Use secretRef in production
+    org: "Mir"
+    bucket: "mir"
+    batchSize: 1000
+    flushInterval: 1000
+    retryBufferLimit: 1073741824
+    gzip: false
+
+# Minimal resource allocation
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+# Ingress configuration
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: mir.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+##
+## Service Monitors, Dashboards and Rules pickup by Prometheus stack.
+##
+mirServiceMonitors:
+  enabled: false
+  labels:
+    prometheus: mir
+  annotations: {}
+
+mirPrometheusRules:
+  enabled: false
+  labels:
+    prometheus: mir
+  annotations: {}
+
+mirDashboards:
+  enabled: false
+  labels:
+    grafana: mir
+  annotations: {}
+
+# Set of extra dashboards for promstack monitoring
+mirPromDashboards:
+  enabled: false
+  labels:
+    grafana: mir
+  annotations: {}
+
+##
+## Disable all infrastructure components
+##
+nats:
+  enabled: false
+
+surrealdb:
+  enabled: false
+
+influxdb2:
+  enabled: false
+
+##
+## Disable monitoring stack
+##
+kube-prometheus-stack:
+  enabled: false
+
+loki:
+  enabled: false
+
+promtail:
+  enabled: false
