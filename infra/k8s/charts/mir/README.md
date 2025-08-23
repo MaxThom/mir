@@ -33,6 +33,20 @@ helm repo update
 
 The chart includes several pre-configured values files for common deployment scenarios:
 
+### 0. Default (`values.yaml`)
+
+Deploy Mir with all infrastructure components but without monitoring.
+
+Create loadbalancer for Nats on NodePort 31422.
+
+**Includes**:
+- Mir services
+- NATS with JetStream
+- SurrealDB
+- InfluxDB
+- Service Monitors
+- Grafana Dashboards
+
 ### 1. Minimal Deployment (`values-minimal.yaml`)
 
 Deploy only Mir services, connecting to external infrastructure.
