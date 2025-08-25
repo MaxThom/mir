@@ -135,6 +135,18 @@ surrealdb:
     size: 10Gi
     storageClass: ""
     accessMode: ReadWriteOnce
+  podSecurityContext:
+    podSecurityContext:
+    runAsUser: 999
+    runAsGroup: 999
+    fsGroup: 999
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 999
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
   resources: {}
   ingress:
     enabled: false
