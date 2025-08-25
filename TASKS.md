@@ -31,12 +31,10 @@
 ### Documentation
 
 - [ ] ModuleSDK
-- [x] DeviceSDK new features
-- [x] DeviceSDK with buf
 - [ ] Update MdBook to latest version
-- [x] Mir Concepts
-- [ ] DeviceConfiguration
+- [ ] DeviceConfiguration and ServerConfiguration options
 - [ ] Talk about reconnection and network loss
+- [ ] Update CLI usage, mainly ctx and under device subcommand
 
 ### Ergonomics
 

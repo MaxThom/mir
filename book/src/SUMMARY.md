@@ -38,8 +38,8 @@
 - [Running Mir](./running_mir/running_mir.md)
 	- [Local Development](./running_mir/local.md)
 	- [Binary Installation](./running_mir/binary.md)
-	- [Docker Deployment]()
-	- [Kubernetes Deployment]()
+	- [Docker Deployment](./running_mir/docker.md)
+	- [Kubernetes Deployment](./running_mir/kubernetes.md)
 
 - [Operating Mir](./operating_mir/operating_mir.md)
 	- [Mir CLI & TUI](./operating_mir/mir_cli_tui.md)
@@ -53,5 +53,6 @@
 - [Contributing]()
 - [Roadmap](./resources/roadmap.md)
 - [Access Mir Repository](./resources/access_mir.md)
+- [Access Mir Container Registry](./resources/access_mir_container_reg.md)
 
 ---

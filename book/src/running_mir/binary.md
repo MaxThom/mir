@@ -57,7 +57,7 @@ localhost:8000 # root///root
 # Prometheus
 localhost:9090
 # NatsIO
-localhost:8222
+localhost:4222
 ```
 
 Having embeded docker compose ensure that each distributed Mir binary can
