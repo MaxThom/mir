@@ -36,7 +36,7 @@ jobs:
           # Extract version from Chart.yaml
           CURRENT_VERSION=$(grep '^version:' ${{ env.CHART_PATH }}/Chart.yaml | sed 's/version: //')
           echo "Current chart version in Chart.yaml: ${CURRENT_VERSION}"
-          
+
           # Parse major and minor version
           if [[ "$CURRENT_VERSION" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)(.*)$ ]]; then
             CURRENT_MAJOR="${BASH_REMATCH[1]}"
@@ -48,7 +48,7 @@ jobs:
             CURRENT_MINOR="2"
             echo "Warning: Could not parse version, using fallback: ${CURRENT_MAJOR}.${CURRENT_MINOR}"
           fi
-          
+
           echo "major=${CURRENT_MAJOR}" >> $GITHUB_OUTPUT
           echo "minor=${CURRENT_MINOR}" >> $GITHUB_OUTPUT
 
@@ -74,36 +74,51 @@ jobs:
             ALL_VERSIONS="$response"
           fi
 
+          echo $LATEST_VERSION
+          echo $ALL_VERSIONS
           echo "latest=${LATEST_VERSION}" >> $GITHUB_OUTPUT
-          echo "all_versions=${ALL_VERSIONS}" >> $GITHUB_OUTPUT
+          echo "all_versions=$(echo "$ALL_VERSIONS" | base64 -w 0)" >> $GITHUB_OUTPUT
 
       - name: Set chart version
         id: chartversion
         run: |
           LATEST="${{ steps.latestversion.outputs.latest }}"
-          ALL_VERSIONS="${{ steps.latestversion.outputs.all_versions }}"
+          ALL_VERSIONS=$(echo "${{ steps.latestversion.outputs.all_versions }}" | base64 -d)
           CURRENT_MAJOR="${{ steps.currentversion.outputs.major }}"
           CURRENT_MINOR="${{ steps.currentversion.outputs.minor }}"
 
           # For production releases (tags), use Chart.yaml major.minor with ChartMuseum patch
           if [[ "${{ github.ref_type }}" == "tag" ]] || [[ "${{ github.event_name }}" == "release" ]]; then
 
-            # Parse the latest version from ChartMuseum to get the patch
+            # Parse the latest version from ChartMuseum to check major.minor
             if [[ "$LATEST" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)(.*)$ ]]; then
+              MUSEUM_MAJOR="${BASH_REMATCH[1]}"
+              MUSEUM_MINOR="${BASH_REMATCH[2]}"
               MUSEUM_PATCH="${BASH_REMATCH[3]}"
             else
+              MUSEUM_MAJOR="0"
+              MUSEUM_MINOR="0"
               MUSEUM_PATCH="0"
             fi
 
-            # Construct the new version using Chart.yaml major.minor and ChartMuseum patch
-            CHART_VERSION="${CURRENT_MAJOR}.${CURRENT_MINOR}.${MUSEUM_PATCH}"
-            
+            # Check if ChartMuseum's major.minor matches Chart.yaml's major.minor
+            if [[ "$MUSEUM_MAJOR" == "$CURRENT_MAJOR" ]] && [[ "$MUSEUM_MINOR" == "$CURRENT_MINOR" ]]; then
+              # Same major.minor, use the ChartMuseum patch
+              BASE_PATCH="$MUSEUM_PATCH"
+            else
+              # Different major.minor, start with patch 0
+              BASE_PATCH="0"
+            fi
+
+            # Construct the new version using Chart.yaml major.minor and determined patch
+            CHART_VERSION="${CURRENT_MAJOR}.${CURRENT_MINOR}.${BASE_PATCH}"
+
             # Check if this version already exists in ChartMuseum
             VERSION_EXISTS=$(echo "$ALL_VERSIONS" | jq -r --arg v "$CHART_VERSION" '.[] | select(.version == $v) | .version' || echo "")
-            
+
             if [ -n "$VERSION_EXISTS" ]; then
               echo "Version ${CHART_VERSION} already exists in ChartMuseum, incrementing patch"
-              PATCH=$((MUSEUM_PATCH + 1))
+              PATCH=$((BASE_PATCH + 1))
               CHART_VERSION="${CURRENT_MAJOR}.${CURRENT_MINOR}.${PATCH}"
             else
               echo "Version ${CHART_VERSION} does not exist in ChartMuseum, using as-is"
@@ -116,29 +131,36 @@ jobs:
           elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             BRANCH_NAME=${GITHUB_REF#refs/heads/}
             # Replace slashes with double underscores
-            BRANCH_NAME=${BRANCH_NAME//\//__}
+            BRANCH_NAME_APP=${BRANCH_NAME//\//__}
+            BRANCH_NAME_CHART=${BRANCH_NAME//\//--}
             SHORT_SHA=${GITHUB_SHA::7}
 
-            # Use the constructed version as base
+            # Parse the latest ChartMuseum version to check if major.minor matches
             if [[ "$LATEST" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)(.*)$ ]]; then
+              MUSEUM_MAJOR="${BASH_REMATCH[1]}"
+              MUSEUM_MINOR="${BASH_REMATCH[2]}"
               MUSEUM_PATCH="${BASH_REMATCH[3]}"
             else
+              MUSEUM_MAJOR="0"
+              MUSEUM_MINOR="0"
               MUSEUM_PATCH="0"
             fi
-            
-            # Construct base version
-            BASE_VERSION="${CURRENT_MAJOR}.${CURRENT_MINOR}.${MUSEUM_PATCH}"
-            
-            # Check if this exact version exists
-            VERSION_EXISTS=$(echo "$ALL_VERSIONS" | jq -r --arg v "$BASE_VERSION" '.[] | select(.version == $v) | .version' || echo "")
-            
-            if [ -n "$VERSION_EXISTS" ]; then
-              PATCH=$((MUSEUM_PATCH + 1))
-              BASE_VERSION="${CURRENT_MAJOR}.${CURRENT_MINOR}.${PATCH}"
+
+            # Check if ChartMuseum's major.minor matches Chart.yaml's major.minor
+            if [[ "$MUSEUM_MAJOR" == "$CURRENT_MAJOR" ]] && [[ "$MUSEUM_MINOR" == "$CURRENT_MINOR" ]]; then
+              # Same major.minor, use the ChartMuseum patch
+              BASE_PATCH="$MUSEUM_PATCH"
+            else
+              # Different major.minor, start with patch 0
+              BASE_PATCH="0"
             fi
 
-            CHART_VERSION="${BASE_VERSION}-${BRANCH_NAME}.${SHORT_SHA}"
-            APP_VERSION="${BRANCH_NAME}--${SHORT_SHA}"
+            # Construct base version
+            BASE_VERSION="${CURRENT_MAJOR}.${CURRENT_MINOR}.${BASE_PATCH}"
+
+            # For manual triggers, we don't increment - branch and commit make it unique
+            CHART_VERSION="${BASE_VERSION}-${BRANCH_NAME_CHART}+${SHORT_SHA}"
+            APP_VERSION="${BRANCH_NAME_APP}--${SHORT_SHA}"
           fi
 
           echo "version=${CHART_VERSION}" >> $GITHUB_OUTPUT
