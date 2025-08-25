@@ -73,7 +73,7 @@ helm install mir ./mir -f values-standard.yaml
 ```
 
 **Includes**:
-- Mir services (2 replicas for HA)
+- Mir services
 - NATS with JetStream (3-node cluster)
 - SurrealDB with 20Gi storage
 - InfluxDB with 50Gi storage

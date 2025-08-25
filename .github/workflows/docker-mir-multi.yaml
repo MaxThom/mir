@@ -92,6 +92,7 @@ jobs:
             org.opencontainers.image.vendor=maxthom
             org.opencontainers.image.documentation=https://book.mirhub.io
             org.opencontainers.image.licenses=Apache-2.0
+            org.opencontainers.image.source = "https://github.com/MaxThom/mir"
 
       - name: Build and push multi-platform Docker image
         id: build
