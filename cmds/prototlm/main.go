@@ -15,6 +15,7 @@ import (
 	"github.com/maxthom/mir/internal/externals/ts"
 	"github.com/maxthom/mir/internal/libs/api/health"
 	"github.com/maxthom/mir/internal/libs/api/metrics"
+	"github.com/maxthom/mir/internal/libs/api/pprof"
 	"github.com/maxthom/mir/internal/libs/boiler/mir_cli"
 	"github.com/maxthom/mir/internal/libs/boiler/mir_config"
 	"github.com/maxthom/mir/internal/libs/boiler/mir_log"
@@ -245,6 +246,7 @@ func run(
 	mux := http.NewServeMux()
 	metrics.RegisterRoutes(mux)
 	health.RegisterRoutes(mux)
+	pprof.RegisterRoutesIfEnvGoPprofSet(mux)
 
 	// WebServer
 	server := &http.Server{
