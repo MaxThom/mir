@@ -21,8 +21,6 @@ import (
 	"github.com/maxthom/mir/internal/servers/mcp_srv"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/rs/zerolog"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
 )
 
 const (
@@ -157,26 +155,40 @@ func run(
 	pprof.RegisterRoutesIfEnvGoPprofSet(mux)
 
 	// WebServer
-	server := &http.Server{
-		Addr:    fmt.Sprintf(":%d", cfg.HttpServer.Port),
-		Handler: h2c.NewHandler(mux, &http2.Server{}),
-	}
+	// server := &http.Server{
+	// 	Addr:    fmt.Sprintf(":%d", cfg.HttpServer.Port),
+	// 	Handler: h2c.NewHandler(mux, &http2.Server{}),
+	// }
 
 	wg := &sync.WaitGroup{}
+	// wg.Add(1)
+	// go func() {
+	// 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+	// 		log.Err(err).Msg("")
+	// 		health.SetUnready()
+	// 		mir_signals.Shutdown()
+	// 	}
+	// 	log.Debug().Msg("http server shutdown")
+	// 	wg.Done()
+	// }()
+
 	wg.Add(1)
+	mcpHttpSrv := mcpSrv.GetHttpServer()
 	go func() {
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := mcpHttpSrv.Start(fmt.Sprintf(":%d", cfg.HttpServer.Port)); err != nil {
 			log.Err(err).Msg("")
 			health.SetUnready()
 			mir_signals.Shutdown()
 		}
-		log.Debug().Msg("http server shutdown")
+
+		// if err := mcpSrv.Serve(fmt.Sprintf(":%d", cfg.HttpServer.Port)); err != nil {
+		// 	log.Err(err).Msg("")
+		// 	health.SetUnready()
+		// 	mir_signals.Shutdown()
+		// }
+		log.Debug().Msg("mcp server shutdown")
 		wg.Done()
 	}()
-
-	if err := mcpSrv.Serve(); err != nil {
-		return err
-	}
 
 	// Handle shutdown
 	log.Info().Msg(fmt.Sprintf("%s initialized", AppName))
@@ -184,10 +196,10 @@ func run(
 	mir_signals.WaitForOsSignals(func() {
 		cancel()
 		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 3*time.Second)
-		if err := server.Shutdown(shutdownCtx); err != nil {
-			log.Error().Err(err).Msg("failed to gracefully shutdown server")
-		}
-		if err := mcpSrv.Shutdown(); err != nil {
+		// if err := server.Shutdown(shutdownCtx); err != nil {
+		// 	log.Error().Err(err).Msg("failed to gracefully shutdown server")
+		// }
+		if err := mcpHttpSrv.Shutdown(shutdownCtx); err != nil {
 			log.Error().Err(err).Msg("failed to gracefully shutdown core server")
 		}
 		if err := m.Disconnect(); err != nil {

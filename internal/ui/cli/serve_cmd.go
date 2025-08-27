@@ -23,7 +23,6 @@ import (
 	"github.com/maxthom/mir/internal/libs/external/surreal"
 	"github.com/maxthom/mir/internal/servers/core_srv"
 	"github.com/maxthom/mir/internal/servers/eventstore_srv"
-	"github.com/maxthom/mir/internal/servers/mcp_srv"
 	"github.com/maxthom/mir/internal/servers/protocfg_srv"
 	"github.com/maxthom/mir/internal/servers/protocmd_srv"
 	"github.com/maxthom/mir/internal/servers/prototlm_srv"
@@ -243,10 +242,10 @@ func (d *ServeCmd) run(
 		return err
 	}
 
-	mcpSrv, err := mcp_srv.NewMCP(log, m)
-	if err != nil {
-		return err
-	}
+	// mcpSrv, err := mcp_srv.NewMCP(log, m)
+	// if err != nil {
+	// 	return err
+	// }
 
 	// Metrics & Health
 	mux := http.NewServeMux()
@@ -288,9 +287,9 @@ func (d *ServeCmd) run(
 	if err := eventSrv.Serve(); err != nil {
 		return err
 	}
-	if err := mcpSrv.Serve(); err != nil {
-		return err
-	}
+	// if err := mcpSrv.Serve(); err != nil {
+	// 	return err
+	// }
 
 	// Handle shutdown
 	log.Info().Msg(fmt.Sprintf("%s initialized", AppName))

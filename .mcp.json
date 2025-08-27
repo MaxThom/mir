@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "mir": {
+      "url": "http://localhost:3021/mcp"
+    }
+  }
+}

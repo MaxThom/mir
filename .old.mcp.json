@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "mir": {
+      "command": "go",
+      "args": [
+        "run",
+        "/home/maxthom/code/mir-ecosystem/mir.server/cmds/mcp/main.go"
+      ],
+      "env": {
+        "API_KEY": "your-api-key-here"
+      }
+    }
+  }
+}

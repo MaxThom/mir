@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "mir": {
+      "command": "go",
+      "args": [
+        "run",
+        "/home/maxthom/code/mir-ecosystem/mir.server/cmds/mcp/main.go"
+      ]
+    }
+  }
+}
+
+{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}
+{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"get_devices","arguments":{"name":"gopher1","namespace":"default"}}}
+
+claude mcp add --transport http mir http://localhost:3021/mcp
