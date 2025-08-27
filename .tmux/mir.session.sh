@@ -13,6 +13,7 @@ if initialize_session "mir"; then
 	load_window "./.tmux/mir.window.sh"
 	load_window "./.tmux/claude.window.sh"
 	load_window "./.tmux/core.window.sh"
+	load_window "./.tmux/mcp.window.sh"
 	load_window "./.tmux/protocfg.window.sh"
 	load_window "./.tmux/prototlm.window.sh"
 	load_window "./.tmux/protocmd.window.sh"

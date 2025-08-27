@@ -23,6 +23,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/external/surreal"
 	"github.com/maxthom/mir/internal/servers/core_srv"
 	"github.com/maxthom/mir/internal/servers/eventstore_srv"
+	"github.com/maxthom/mir/internal/servers/mcp_srv"
 	"github.com/maxthom/mir/internal/servers/protocfg_srv"
 	"github.com/maxthom/mir/internal/servers/protocmd_srv"
 	"github.com/maxthom/mir/internal/servers/prototlm_srv"
@@ -78,6 +79,7 @@ type ServeCmd struct {
 	Configuration     bool   `help:"Configuration module is for device properties" default:"true"`
 	Telemetry         bool   `help:"Telemetry module is for data ingestion and visualization" default:"true"`
 	Command           bool   `help:"Command module if for command and control" default:"true"`
+	MCP               bool   `help:"MCP module for LLM" default:"true"`
 	DisplayDefaultCfg bool   `name:"display-default-cfg" help:"Display default configuration. Can be piped to config file '> ~/.config/mir/mir.yaml'" default:"false"`
 	DisplayLoadedCfg  bool   `name:"display-cfg" help:"Display loaded configuration. Usefull for debug scenario" default:"false"`
 	ConfigFile        string `name:"server-config" help:"Set path for config path." default:"~/.config/mir/mir.yaml"`
@@ -241,6 +243,11 @@ func (d *ServeCmd) run(
 		return err
 	}
 
+	mcpSrv, err := mcp_srv.NewMCP(log, m)
+	if err != nil {
+		return err
+	}
+
 	// Metrics & Health
 	mux := http.NewServeMux()
 	metrics.RegisterRoutes(mux)
@@ -279,6 +286,9 @@ func (d *ServeCmd) run(
 		return err
 	}
 	if err := eventSrv.Serve(); err != nil {
+		return err
+	}
+	if err := mcpSrv.Serve(); err != nil {
 		return err
 	}
 
