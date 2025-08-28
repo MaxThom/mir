@@ -4,8 +4,9 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/mark3labs/mcp-go/server"
 	"github.com/maxthom/mir/pkgs/module/mir"
+
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/rs/zerolog"
 )
 
@@ -13,7 +14,7 @@ type MCPServer struct {
 	ctx       context.Context
 	cancelCtx context.CancelFunc
 	m         *mir.Mir
-	mcp       *server.MCPServer
+	mcp       *mcp.Server
 }
 
 const (
@@ -59,35 +60,22 @@ func NewMCP(logger zerolog.Logger, m *mir.Mir) (*MCPServer, error) {
 }
 
 func (s *MCPServer) initMCPServer() {
-	s.mcp = server.NewMCPServer(
-		"Mir 🛰️",
-		"1.0.0",
-		server.WithToolCapabilities(true),
-		server.WithLogging(),
-	)
-	s.getDevicesTool()
+	s.mcp = mcp.NewServer(&mcp.Implementation{Name: "Mir 🛰️", Version: "v1.0.0"}, &mcp.ServerOptions{
+		HasPrompts:   true,
+		HasResources: true,
+		HasTools:     true,
+	})
 
-}
-
-func (s *MCPServer) RegisterRoutes(r *http.ServeMux) {
-	// Not implemented yet
-	//server.AddMCPRoutes(r, s.mcp, "/mcp")
-}
-
-func (s *MCPServer) GetHttpServer() *server.StreamableHTTPServer {
-	return server.NewStreamableHTTPServer(s.mcp)
+	NewGetDevicesTool(s.m).RegisterTool(s.mcp)
 }
 
 func (s *MCPServer) Serve(addr string) error {
-	// httpServer := server.NewStreamableHTTPServer(s.mcp)
-	// if err := httpServer.Start(addr); err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	// if err := server.ServeStdio(s.mcp); err != nil {
-	// 	fmt.Printf("Server error: %v\n", err)
-	// }
-	return nil
+	handler := mcp.NewStreamableHTTPHandler(func(*http.Request) *mcp.Server {
+		return s.mcp
+	}, &mcp.StreamableHTTPOptions{
+		Stateless: true,
+	})
+	return http.ListenAndServe(addr, handler)
 }
 
 func (s *MCPServer) Shutdown() error {

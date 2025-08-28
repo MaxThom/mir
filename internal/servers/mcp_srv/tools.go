@@ -2,51 +2,65 @@ package mcp_srv
 
 import (
 	"context"
-	"strings"
+	"encoding/json"
 
-	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/maxthom/mir/pkgs/mir_v1"
+	"github.com/maxthom/mir/pkgs/module/mir"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-func (s *MCPServer) getDevicesTool() {
-	tool := mcp.NewTool("get_devices",
-		mcp.WithDescription("Get list of Mir devices"),
-		mcp.WithString("name",
-			mcp.Description("Name of the device to query"),
-		),
-		mcp.WithString("namespace",
-			mcp.Description("Namespace to query"),
-		),
-	)
+type GetDevicesTool struct {
+	m *mir.Mir
+	t mcp.Tool
+}
+type GetDevicesParams struct {
+	Name      string `json:"name,omitempty" jsonschema:"Name of the device to query"`
+	Namespace string `json:"namespace,omitempty" jsonschema:"Namespace to query"`
+}
 
-	fn := func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		name := request.GetString("name", "")
-		namespace := request.GetString("namespace", "")
+func NewGetDevicesTool(m *mir.Mir) GetDevicesTool {
+	return GetDevicesTool{
+		m: m,
+		t: mcp.Tool{
+			Title:       "Get Devices",
+			Name:        "get_devices",
+			Description: "Get list of Mir devices",
+		},
+	}
+}
 
-		names := []string{}
-		if name != "" {
-			names = append(names, name)
-		}
-		namespaces := []string{}
-		if namespace != "" {
-			namespaces = append(namespaces, namespace)
-		}
+func (t GetDevicesTool) RegisterTool(mcpSrv *mcp.Server) {
+	mcp.AddTool(mcpSrv, &t.t, t.Handler)
+}
 
-		devs, err := s.m.Server().ListDevice().Request(mir_v1.DeviceTarget{
-			Names:      names,
-			Namespaces: namespaces,
-		}, true)
-		if err != nil {
-			return mcp.NewToolResultError(err.Error()), nil
-		}
-
-		var sb strings.Builder
-		for _, d := range devs {
-			sb.WriteString(d.GetNameNamespace())
-		}
-
-		return mcp.NewToolResultText(sb.String()), nil
+func (t GetDevicesTool) Handler(ctx context.Context, request *mcp.CallToolRequest, args GetDevicesParams) (*mcp.CallToolResult, any, error) {
+	names := []string{}
+	if args.Name != "" {
+		names = append(names, args.Name)
+	}
+	namespaces := []string{}
+	if args.Namespace != "" {
+		namespaces = append(namespaces, args.Namespace)
 	}
 
-	s.mcp.AddTool(tool, fn)
+	devs, err := t.m.Server().ListDevice().Request(mir_v1.DeviceTarget{
+		Names:      names,
+		Namespaces: namespaces,
+	}, true)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	for i, d := range devs {
+		d.Status.Schema.CompressedSchema = nil
+		devs[i] = d
+	}
+	j, err := json.MarshalIndent(devs, "", "  ")
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return &mcp.CallToolResult{
+		Content: []mcp.Content{&mcp.TextContent{Text: string(j)}},
+	}, nil, nil
 }

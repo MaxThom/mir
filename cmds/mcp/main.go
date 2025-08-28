@@ -8,7 +8,6 @@ import (
 	"os"
 	"sync"
 	"syscall"
-	"time"
 
 	"github.com/maxthom/mir/internal/libs/api/health"
 	"github.com/maxthom/mir/internal/libs/api/metrics"
@@ -173,19 +172,12 @@ func run(
 	// }()
 
 	wg.Add(1)
-	mcpHttpSrv := mcpSrv.GetHttpServer()
 	go func() {
-		if err := mcpHttpSrv.Start(fmt.Sprintf(":%d", cfg.HttpServer.Port)); err != nil {
+		if err := mcpSrv.Serve(fmt.Sprintf(":%d", cfg.HttpServer.Port)); err != nil {
 			log.Err(err).Msg("")
 			health.SetUnready()
 			mir_signals.Shutdown()
 		}
-
-		// if err := mcpSrv.Serve(fmt.Sprintf(":%d", cfg.HttpServer.Port)); err != nil {
-		// 	log.Err(err).Msg("")
-		// 	health.SetUnready()
-		// 	mir_signals.Shutdown()
-		// }
 		log.Debug().Msg("mcp server shutdown")
 		wg.Done()
 	}()
@@ -195,17 +187,17 @@ func run(
 	health.SetReady()
 	mir_signals.WaitForOsSignals(func() {
 		cancel()
-		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 3*time.Second)
+		// shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 3*time.Second)
 		// if err := server.Shutdown(shutdownCtx); err != nil {
 		// 	log.Error().Err(err).Msg("failed to gracefully shutdown server")
 		// }
-		if err := mcpHttpSrv.Shutdown(shutdownCtx); err != nil {
+		if err := mcpSrv.Shutdown(); err != nil {
 			log.Error().Err(err).Msg("failed to gracefully shutdown core server")
 		}
 		if err := m.Disconnect(); err != nil {
 			log.Error().Err(err).Msg("failed to gracefully shutdown Mir")
 		}
-		shutdownCancel()
+		// shutdownCancel()
 		wg.Wait()
 		log.Info().Msg("all system have shutdown gracefully")
 	})
