@@ -44,6 +44,12 @@ spec:
             - serve
             - --server-config
             - /etc/mir/mir.yaml
+          env:
+            - name: GO_PPROF
+              value: "on"
+            {{- with .Values.envVars }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
           envFrom:
             {{- with .Values.secretRef }}
             - secretRef:
