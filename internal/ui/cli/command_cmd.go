@@ -128,7 +128,6 @@ func (d *CommandSendCmd) Validate() error {
 	}
 
 	if d.NameNs != "" {
-		fmt.Println(d.NameNs)
 		d.Target = getTargetFromNameNs(d.NameNs)
 	}
 
