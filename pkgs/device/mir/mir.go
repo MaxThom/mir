@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	proto "github.com/aperturerobotics/protobuf-go-lite"
 	"github.com/maxthom/mir/internal/clients"
 	"github.com/maxthom/mir/internal/clients/cfg_client"
 	"github.com/maxthom/mir/internal/clients/core_client"
@@ -20,7 +21,6 @@ import (
 	"github.com/nats-io/nats.go"
 	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
@@ -335,16 +335,6 @@ func (m Mir) Logger() *zerolog.Logger {
 	return &l
 }
 
-// Marshal the FileDescriptorSet to bytes
-func (m Mir) marshalTelemetrySchema() ([]byte, error) {
-	var schemaBytes []byte
-	var err error
-	if m.schema != nil {
-		schemaBytes, err = proto.Marshal(m.schema)
-	}
-	return schemaBytes, err
-}
-
 // Send proto telemetry to Mir Server
 func (m Mir) SendTelemetry(t proto.Message) error {
 	msg, err := tlm_client.GetTelemetryStreamMsg(m.cfg.Device.Id, t)
@@ -415,6 +405,8 @@ func (m Mir) callAllCfgHandlers() {
 
 		v := reflect.New(h.t).Interface()
 		msg := v.(proto.Message)
+
+		protoData, err := data.MarshalVT()
 		if err := proto.Unmarshal(props.Value, msg); err != nil {
 			m.l.Error().Err(err).Msg("error unmarshalling properties")
 			continue
@@ -530,7 +522,7 @@ func (m Mir) SendJsonData(sbj subject, data any, h Header) error {
 // Use `m.NewSubject` to create a subject.
 // Use the module sdk to subscribe to the subject and process the data
 func (m Mir) SendProtoData(sbj subject, data proto.Message, h Header) error {
-	protoData, err := proto.Marshal(data)
+	protoData, err := data.MarshalVT()
 	if err != nil {
 		return err
 	}
