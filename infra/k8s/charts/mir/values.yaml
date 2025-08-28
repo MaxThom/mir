@@ -35,6 +35,11 @@ config:
     retryBufferLimit: 1073741824 # one week
     gzip: false
 
+## Pass extra environment variables
+envVars: []
+# - name: key
+#   value: value
+
 ingress:
   enabled: false
   className: ""
