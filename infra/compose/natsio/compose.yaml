@@ -4,10 +4,15 @@
 services:
   nats:
     image: nats:latest
-    command: --jetstream -m 8222
+    command: -c /etc/nats/config.conf
+    volumes:
+      - ./config.conf:/etc/nats/config.conf:ro
+      - ./resolver.conf:/etc/nats/resolver.conf:ro
+      - nats_data:/data
     ports:
       - 4222:4222
       - 8222:8222
+      - 9222:9222
   nats-exporter:
     image: natsio/prometheus-nats-exporter:latest
     ports:
@@ -15,3 +20,6 @@ services:
     command: -varz -connz -routez -subz -prefix=nats -jsz all "http://nats:8222"
     depends_on:
       - nats
+
+volumes:
+  nats_data:

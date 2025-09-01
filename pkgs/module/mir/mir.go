@@ -119,6 +119,13 @@ func Connect(name string, target string, natsOpts ...nats.Option) (*Mir, error) 
 	return m, nil
 }
 
+func WithUserCredentials(filePath string) nats.Option {
+	if filePath == "" {
+		return func(o *nats.Options) error { return nil }
+	}
+	return nats.UserCredentials(filePath)
+}
+
 func WithDefaultReconnectOpts() []nats.Option {
 	return []nats.Option{
 		nats.RetryOnFailedConnect(true),
@@ -143,7 +150,7 @@ func WithDefaultConnectionLogging(l zerolog.Logger) []nats.Option {
 			l.Info().Str("url", c.ConnectedUrl()).Str("status", c.Status().String()).Msg("reconnected to Mir Server ")
 		}),
 		nats.ClosedHandler(func(c *nats.Conn) {
-			l.Warn().Str("url", c.ConnectedUrl()).Str("status", c.Status().String()).Msg("closed connection from Mir Server")
+			l.Warn().Str("url", c.ConnectedAddr()).Str("status", c.Status().String()).Err(c.LastError()).Msg("closed connection from Mir Server")
 		}),
 	}
 }

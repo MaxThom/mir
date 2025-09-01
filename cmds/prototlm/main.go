@@ -49,7 +49,8 @@ type (
 	}
 
 	DataBusServer struct {
-		Url string
+		Url                 string
+		CredentialsFilePath string
 	}
 
 	DatabaseSever struct {
@@ -81,7 +82,8 @@ var (
 			Port: 3017,
 		},
 		DataBusServer: DataBusServer{
-			Url: "nats://127.0.0.1:4222",
+			Url:                 "nats://127.0.0.1:4222",
+			CredentialsFilePath: "",
 		},
 		DatabaseServer: DatabaseSever{
 			Url:       "ws://127.0.0.1:8000/rpc",
@@ -109,6 +111,7 @@ func main() {
 
 	// cli
 	var flagMirTarget string
+	var flagMirCredentials string
 	var flagDebug bool
 	var flagFilePath string
 	var flagLogLevel string
@@ -125,6 +128,7 @@ func main() {
 			&defaultCfg, true, ""),
 		mir_cli.WithOsFlag(func() {
 			flag.StringVar(&flagMirTarget, "target", "", "set Mir server url. Default to nats://127.0.0.1:4222.")
+			flag.StringVar(&flagMirCredentials, "credentials", "", "path to Mir credential file generated with NSC.")
 		}),
 	)
 	mir_cli.Parse()
@@ -157,6 +161,9 @@ func main() {
 
 	if flagMirTarget != "" {
 		cfg.DataBusServer.Url = flagMirTarget
+	}
+	if flagMirCredentials != "" {
+		cfg.DataBusServer.CredentialsFilePath = flagMirCredentials
 	}
 
 	prettyCfg, err := mir_config.JsonMarshalWithoutSecrets(cfg)
@@ -226,7 +233,9 @@ func run(
 	}
 
 	// Bus
-	m, err := mir.Connect(AppName, cfg.DataBusServer.Url, append(mir.WithDefaultReconnectOpts(), mir.WithDefaultConnectionLogging(log)...)...)
+	opts := append(mir.WithDefaultReconnectOpts(), mir.WithDefaultConnectionLogging(log)...)
+	opts = append(opts, mir.WithUserCredentials(cfg.DataBusServer.CredentialsFilePath))
+	m, err := mir.Connect(AppName, cfg.DataBusServer.Url, opts...)
 	if err != nil {
 		return err
 	}

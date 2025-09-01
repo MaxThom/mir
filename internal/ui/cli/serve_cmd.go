@@ -43,9 +43,10 @@ type (
 	}
 
 	MirCfg struct {
-		Url      string `help:"Mir server URL" default:"nats://127.0.0.1:4222" yaml:"url"`
-		LogLevel string `help:"Mir loglevel for each service" default:"info" yaml:"logLevel"`
-		HttpPort int    `help:"Mir http port for api" default:"3015" yaml:"httpPort"`
+		Url         string `help:"Mir server URL" default:"nats://127.0.0.1:4222" yaml:"url"`
+		Credentials string `help:"Mir JWT/NKEY credential file path" default:"" yaml:"credentials"`
+		LogLevel    string `help:"Mir loglevel for each service" default:"info" yaml:"logLevel"`
+		HttpPort    int    `help:"Mir http port for api" default:"3015" yaml:"httpPort"`
 	}
 
 	SurrealCfg struct {
@@ -200,8 +201,9 @@ func (d *ServeCmd) run(
 		}
 		log.Info().Str("url", cfg.Influx.Url).Msg("connected to puthost")
 	}
-
-	m, err = mir.Connect(AppName, cfg.Mir.Url, append(mir.WithDefaultReconnectOpts(), mir.WithDefaultConnectionLogging(log)...)...)
+	opts := append(mir.WithDefaultReconnectOpts(), mir.WithDefaultConnectionLogging(log)...)
+	opts = append(opts, mir.WithUserCredentials(cfg.Mir.Credentials))
+	m, err = mir.Connect(AppName, cfg.Mir.Url, opts...)
 	if err != nil {
 		log.Err(err).Msg("error connecting to Mir server")
 		fmt.Println("error connecting to Mir server")

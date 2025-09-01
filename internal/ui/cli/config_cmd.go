@@ -69,7 +69,7 @@ func (d *ConfigListCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) error
 	}
 	resp, err := m.Server().ListConfig().Request(req)
 	if err != nil {
-		return fmt.Errorf("error publising list config request: %w", err)
+		return fmt.Errorf("error publishing list config request: %w", err)
 	}
 
 	tpls := map[string][]string{}
@@ -182,7 +182,7 @@ func (d *ConfigSendCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) error
 	}
 	resp, err := m.Server().SendConfig().Request(req)
 	if err != nil {
-		return fmt.Errorf("error publising send config request: %w", err)
+		return fmt.Errorf("error publishing send config request: %w", err)
 	}
 
 	if d.ShowJsonTemplate || d.ShowCurrentValues {
@@ -235,7 +235,7 @@ func (d *ConfigSendCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) error
 			req.Payload = payload
 			resp, err = m.Server().SendConfig().Request(req)
 			if err != nil {
-				return fmt.Errorf("error publising send config request: %w", err)
+				return fmt.Errorf("error publishing send config request: %w", err)
 			}
 		} else {
 			fmt.Println(sb.String())

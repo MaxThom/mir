@@ -88,7 +88,7 @@ func (d *EventListCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) error 
 			Limit: d.Limit,
 		})
 	if err != nil {
-		return fmt.Errorf("error publising list event request: %w", err)
+		return fmt.Errorf("error publishing list event request: %w", err)
 	}
 
 	if d.Output == "pretty" && len(list) == 1 {
@@ -139,7 +139,7 @@ func (d *EventDeleteCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) erro
 		},
 	})
 	if err != nil {
-		return fmt.Errorf("error publising delete event request: %w", err)
+		return fmt.Errorf("error publishing delete event request: %w", err)
 	}
 
 	if d.Output == "pretty" && len(list) == 1 {
