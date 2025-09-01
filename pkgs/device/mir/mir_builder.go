@@ -21,6 +21,7 @@ import (
 
 type builder struct {
 	fileOpts            []func(*mir_config.MirConfig)
+	credentials         *string
 	deviceId            *string
 	deviceIdGenerator   *IdGenerator
 	deviceIdPrefix      *IdPrefix
@@ -77,6 +78,11 @@ func (b builder) DeviceIdGenerator(t IdGenerator) builder {
 
 func (b builder) DeviceIdPrefix(p IdPrefix) builder {
 	b.deviceIdPrefix = &p
+	return b
+}
+
+func (b builder) UserCredentials(file string) builder {
+	b.credentials = &file
 	return b
 }
 
@@ -239,6 +245,9 @@ func (b builder) build(extraCfg any) (*Mir, error) {
 		cfg.Mir.Target = *b.target
 	} else if cfg.Mir.Target == "" {
 		cfg.Mir.Target = "nats://127.0.0.1:4222"
+	}
+	if b.credentials != nil {
+		cfg.Mir.Credentials = *b.credentials
 	}
 	if b.logLevel != nil {
 		cfg.Mir.LogLevel = b.logLevel.String()
