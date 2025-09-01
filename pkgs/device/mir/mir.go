@@ -41,10 +41,11 @@ type Mir struct {
 }
 
 type Config struct {
-	Target     string       `json:"target" yaml:"target"`
-	LogLevel   string       `json:"logLevel" yaml:"logLevel"`
-	Device     DeviceCfg    `json:"device" yaml:"device"`
-	LocalStore StoreOptions `json:"localStore" yaml:"localStore"`
+	Target      string       `json:"target" yaml:"target"`
+	Credentials string       `json:"credentials" yaml:"credentials"`
+	LogLevel    string       `json:"logLevel" yaml:"logLevel"`
+	Device      DeviceCfg    `json:"device" yaml:"device"`
+	LocalStore  StoreOptions `json:"localStore" yaml:"localStore"`
 }
 
 type DeviceCfg struct {
@@ -166,6 +167,7 @@ func (m *Mir) Launch(ctx context.Context) (*sync.WaitGroup, error) {
 
 	// Setup Mir bus
 	m.b, err = bus.New(m.cfg.Target,
+		bus.WithUserCredentials(m.cfg.Credentials),
 		bus.WithConnectHandler(func(nc *nats.Conn) {
 			m.l.Info().Msg("connected to Mir Server ")
 			m.setOnlineHandler()
@@ -212,7 +214,7 @@ func (m *Mir) Launch(ctx context.Context) (*sync.WaitGroup, error) {
 			m.setOfflineHandler()
 		}),
 		bus.WithClosedHandler(func(nc *nats.Conn) {
-			m.l.Warn().Msg("closed connection from Mir Server")
+			m.l.Warn().Err(nc.LastError()).Msg("closed connection from Mir Server")
 		}),
 		bus.WithReconnect())
 	if err != nil {
@@ -303,7 +305,7 @@ func (m *Mir) commands(ctx context.Context, sub *nats.Subscription) {
 		default:
 			// TODO error channel
 			msg, err := sub.NextMsgWithContext(ctx)
-			if err != nil && !strings.Contains(err.Error(), "context canceled") { // TODO if not context canceled
+			if err != nil && !strings.Contains(err.Error(), "context canceled") && !strings.Contains(err.Error(), "connection closed") { // TODO if not context canceled
 				m.l.Error().Err(err).Msg("error receiving commands")
 			}
 			if msg != nil {

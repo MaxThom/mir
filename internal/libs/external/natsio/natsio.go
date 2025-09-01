@@ -89,6 +89,13 @@ func WithClosedHandler(fn nats.ConnHandler) func(*BusConn) {
 	}
 }
 
+func WithUserCredentials(credentialsFile string) func(*BusConn) {
+	return func(bus *BusConn) {
+		if credentialsFile != "" {
+			bus.opts = append(bus.opts, nats.UserCredentials(credentialsFile))
+		}
+	}
+}
 func WithCustom(options ...nats.Option) func(*BusConn) {
 	return func(bus *BusConn) {
 		bus.opts = append(bus.opts, options...)
