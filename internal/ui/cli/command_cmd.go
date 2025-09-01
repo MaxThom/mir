@@ -178,7 +178,7 @@ func (d *CommandSendCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) erro
 	}
 	resp, err := m.Server().SendCommand().Request(req)
 	if err != nil {
-		return fmt.Errorf("error publising send command request: %w", err)
+		return fmt.Errorf("error publishing send command request: %w", err)
 	}
 
 	if req.ShowTemplate {
@@ -230,7 +230,7 @@ func (d *CommandSendCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) erro
 			req.Payload = payload
 			resp, err = m.Server().SendCommand().Request(req)
 			if err != nil {
-				return fmt.Errorf("error publising send command request: %w", err)
+				return fmt.Errorf("error publishing send command request: %w", err)
 			}
 		} else {
 			fmt.Println(sb.String())

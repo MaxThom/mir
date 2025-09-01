@@ -115,7 +115,7 @@ func (d *DeviceListCmd) Run(log zerolog.Logger, m *mir.Mir) error {
 			Labels:     d.Labels,
 		}, true)
 	if err != nil {
-		return fmt.Errorf("error publising list device request: %w", err)
+		return fmt.Errorf("error publishing list device request: %w", err)
 	}
 	if d.Output == "pretty" && len(list) == 1 {
 		d.Output = "yaml"
@@ -306,7 +306,7 @@ func (d *DeviceUpdateCmd) Run(log zerolog.Logger, m *mir.Mir) error {
 
 	list, err := m.Server().UpdateDevice().Request(target, dev)
 	if err != nil {
-		return fmt.Errorf("error publising device update request: %w", err)
+		return fmt.Errorf("error publishing device update request: %w", err)
 	}
 
 	if str, err := stringifyDevices(d.Output, list); err != nil {
@@ -353,7 +353,7 @@ func (d *DeviceDeleteCmd) Run(log zerolog.Logger, m *mir.Mir) error {
 		Labels:     d.Target.Labels,
 	})
 	if err != nil {
-		return fmt.Errorf("error publising device delete request: %w", err)
+		return fmt.Errorf("error publishing device delete request: %w", err)
 	}
 
 	if str, err := stringifyDevices(d.Output, list); err != nil {

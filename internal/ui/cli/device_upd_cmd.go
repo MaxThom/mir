@@ -54,7 +54,7 @@ func (d *DeviceEditCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) error
 	}
 	devs, err := m.Server().ListDevice().Request(tar, false)
 	if err != nil {
-		return fmt.Errorf("error publising device list request: %w", err)
+		return fmt.Errorf("error publishing device list request: %w", err)
 	}
 
 	header := []string{

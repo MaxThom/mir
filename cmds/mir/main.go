@@ -140,7 +140,9 @@ func (d *Client) AfterApply(k *kong.Context, logFile *os.File) error {
 	}
 	log.Info().Str("config", string(prettyCfg)).Msg("")
 
-	m, err := mir.Connect(AppName, ctx.Target, append(mir.WithDefaultReconnectOpts(), mir.WithDefaultConnectionLogging(log)...)...)
+	opts := append(mir.WithDefaultReconnectOpts(), mir.WithDefaultConnectionLogging(log)...)
+	opts = append(opts, mir.WithUserCredentials(ctx.Credentials))
+	m, err := mir.Connect(AppName, ctx.Target, opts...)
 	if err != nil {
 		log.Err(err).Msg("error connection to Mir server")
 		fmt.Println("error connecting to Mir server")

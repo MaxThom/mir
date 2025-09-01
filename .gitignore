@@ -11,3 +11,4 @@ book/book/
 scratch/
 history.txt
 .helm_ls_cache/
+local.resolver.conf
