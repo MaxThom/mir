@@ -338,21 +338,33 @@ func generateTimeFn(desc protoreflect.MessageDescriptor) (func(protoreflect.Mess
 	case devicev1.TimestampType_TIMESTAMP_TYPE_SEC:
 		return func(m protoreflect.Message) int64 {
 			v := m.Get(fieldsDesc.Get(tsFieldIndex))
+			if v.Int() == 0 {
+				return time.Now().UTC().UnixNano()
+			}
 			return v.Int() * 1e9
 		}, tsFieldIndex
 	case devicev1.TimestampType_TIMESTAMP_TYPE_MILLI:
 		return func(m protoreflect.Message) int64 {
 			v := m.Get(fieldsDesc.Get(tsFieldIndex))
+			if v.Int() == 0 {
+				return time.Now().UTC().UnixNano()
+			}
 			return v.Int() * 1e6
 		}, tsFieldIndex
 	case devicev1.TimestampType_TIMESTAMP_TYPE_MICRO:
 		return func(m protoreflect.Message) int64 {
 			v := m.Get(fieldsDesc.Get(tsFieldIndex))
+			if v.Int() == 0 {
+				return time.Now().UTC().UnixNano()
+			}
 			return v.Int() * 1e3
 		}, tsFieldIndex
 	case devicev1.TimestampType_TIMESTAMP_TYPE_NANO:
 		return func(m protoreflect.Message) int64 {
 			v := m.Get(fieldsDesc.Get(tsFieldIndex))
+			if v.Int() == 0 {
+				return time.Now().UTC().UnixNano()
+			}
 			return v.Int()
 		}, tsFieldIndex
 	case devicev1.TimestampType_TIMESTAMP_TYPE_FRACTION:
@@ -363,7 +375,11 @@ func generateTimeFn(desc protoreflect.MessageDescriptor) (func(protoreflect.Mess
 			nanosField := mrNested.Descriptor().Fields().ByName("nanos")
 			seconds := mrNested.Get(secondsField).Int()
 			nanos := mrNested.Get(nanosField).Int()
-			return seconds*1e9 + nanos
+			ts := seconds*1e9 + nanos
+			if ts == 0 {
+				return time.Now().UTC().UnixNano()
+			}
+			return ts
 		}, tsFieldIndex
 	default:
 		return func(_ protoreflect.Message) int64 {

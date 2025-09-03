@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/adrg/xdg"
@@ -81,8 +82,8 @@ func (b builder) DeviceIdPrefix(p IdPrefix) builder {
 	return b
 }
 
-func (b builder) UserCredentials(file string) builder {
-	b.credentials = &file
+func (b builder) UserCredentials(fullPath string) builder {
+	b.credentials = &fullPath
 	return b
 }
 
@@ -345,6 +346,9 @@ func (b builder) build(extraCfg any) (*Mir, error) {
 			return nil, fmt.Errorf("error generating device prefix: %w", err)
 		}
 		cfg.Mir.Device.Id = fmt.Sprintf("%s_%s", prefix, cfg.Mir.Device.Id)
+	}
+	if strings.Contains(cfg.Mir.Device.Id, ".") || strings.Contains(cfg.Mir.Device.Id, ">") || strings.Contains(cfg.Mir.Device.Id, "*") {
+		fieldsErr = append(fieldsErr, "Device ID must not contain reserved characters: * > .")
 	}
 
 	if prettyCfg, err := mir_config.JsonMarshalWithoutSecrets(cfg); err != nil {
