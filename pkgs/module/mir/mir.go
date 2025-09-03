@@ -2,6 +2,7 @@ package mir
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -212,7 +213,12 @@ func (m *Mir) publish(subject string, data []byte, headers nats.Header) error {
 		Header:  headers,
 		Data:    data,
 	}
-	return m.Bus.PublishMsg(msg)
+
+	err := m.Bus.PublishMsg(msg)
+	if err != nil && m.Bus.LastError() != nil {
+		err = errors.Join(err, m.Bus.LastError())
+	}
+	return err
 }
 
 func (m *Mir) request(subject string, data []byte, headers nats.Header, timeout time.Duration) (*nats.Msg, error) {
@@ -226,7 +232,11 @@ func (m *Mir) request(subject string, data []byte, headers nats.Header, timeout 
 		Header:  headers,
 		Data:    data,
 	}
-	return m.Bus.RequestMsg(msg, timeout)
+	resp, err := m.Bus.RequestMsg(msg, timeout)
+	if err != nil && m.Bus.LastError() != nil {
+		err = errors.Join(err, m.Bus.LastError())
+	}
+	return resp, err
 }
 
 func (m *Mir) decompressMsg(msg *nats.Msg) (*nats.Msg, error) {

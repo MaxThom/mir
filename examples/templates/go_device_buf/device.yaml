@@ -1,6 +1,7 @@
 mir:
   target: "nats://127.0.0.1:4222" # Mir server URL
   logLevel: "info" # [trace|debug|info|warn|error|fatal]
+  credentials: "" # Filepath to Mir credentials file
   device:
     id: "example_device" # Must be unique per instance
   localStore:

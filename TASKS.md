@@ -12,6 +12,18 @@
 - [ ] TinyGo
 - [ ] Road to Production
   - [ ] device security with nats
+    - [ ] nkeys/jwt
+      - [x] modify sdks
+      - [x] learn how it work
+      - [ ] integrate nsc to cli with default security for device and clients
+        - [ ] add the nsc generator
+        - [x] what permission does a device need
+        - [x] what permission does a client need
+          - [x] read only
+          - [x] read and write
+      - [ ] work on compose release, maybe its just a readme
+      - [ ] adjust helm release
+    - [ ] tls
   - [ ] core bug with reconnect of loading devices
   - [ ] autoreconnect
     - [ ] nats
@@ -25,6 +37,7 @@
               - [ ] online
               - [ ] offline
               - [ ] cmd send
+
 
 ### Refactoring
 

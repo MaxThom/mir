@@ -54,26 +54,28 @@ func (s swarm) ToTarget() mir_v1.DeviceTarget {
 }
 
 type devicesBuilder struct {
-	s          *swarm
-	logLevel   mirDevice.LogLevel
-	logWriters []io.Writer
-	deviceReqs []*mir_apiv1.CreateDeviceRequest
-	deviceIds  []string
-	sch        []protoreflect.FileDescriptor
-	cmd        []commandHandler
-	cfg        []configHandler
-	storeOpts  mirDevice.StoreOptions
+	s           *swarm
+	logLevel    mirDevice.LogLevel
+	credentials string
+	logWriters  []io.Writer
+	deviceReqs  []*mir_apiv1.CreateDeviceRequest
+	deviceIds   []string
+	sch         []protoreflect.FileDescriptor
+	cmd         []commandHandler
+	cfg         []configHandler
+	storeOpts   mirDevice.StoreOptions
 }
 
 type deviceBuilder struct {
-	s          *swarm
-	logLevel   mirDevice.LogLevel
-	logWriters []io.Writer
-	deviceReq  *mir_apiv1.CreateDeviceRequest
-	sch        []protoreflect.FileDescriptor
-	cmd        []commandHandler
-	cfg        []configHandler
-	storeOpts  mirDevice.StoreOptions
+	s           *swarm
+	credentials string
+	logLevel    mirDevice.LogLevel
+	logWriters  []io.Writer
+	deviceReq   *mir_apiv1.CreateDeviceRequest
+	sch         []protoreflect.FileDescriptor
+	cmd         []commandHandler
+	cfg         []configHandler
+	storeOpts   mirDevice.StoreOptions
 }
 
 type commandHandler struct {
@@ -122,6 +124,11 @@ func (b *devicesBuilder) WithSchema(s ...protoreflect.FileDescriptor) *devicesBu
 	return b
 }
 
+func (b *devicesBuilder) WithCredentials(filePath string) *devicesBuilder {
+	b.credentials = filePath
+	return b
+}
+
 func (b *devicesBuilder) WithCommandHandler(t proto.Message, handler func(proto.Message) (proto.Message, error)) *devicesBuilder {
 	b.cmd = append(b.cmd, commandHandler{
 		target:  t,
@@ -164,6 +171,7 @@ func (b *devicesBuilder) Incubate() ([]*mir_apiv1.CreateDeviceResponse, error) {
 			LogLevel(b.logLevel).
 			Store(b.storeOpts).
 			Target(b.s.bus.ConnectedUrl()).
+			UserCredentials(b.credentials).
 			Schema(b.sch...).Build()
 		if err != nil {
 			errs = errors.Join(err)
@@ -186,6 +194,7 @@ func (b *devicesBuilder) Incubate() ([]*mir_apiv1.CreateDeviceResponse, error) {
 			LogWriters(b.logWriters).
 			Store(b.storeOpts).
 			Target(b.s.bus.ConnectedUrl()).
+			UserCredentials(b.credentials).
 			Schema(b.sch...).Build()
 		if err != nil {
 			errs = errors.Join(err)
@@ -215,6 +224,11 @@ func (b *devicesBuilder) Incubate() ([]*mir_apiv1.CreateDeviceResponse, error) {
 
 func (b *deviceBuilder) WithSchema(s ...protoreflect.FileDescriptor) *deviceBuilder {
 	b.sch = s
+	return b
+}
+
+func (b *deviceBuilder) WithCredentials(filePath string) *deviceBuilder {
+	b.credentials = filePath
 	return b
 }
 
@@ -259,6 +273,7 @@ func (b *deviceBuilder) Incubate() (*mir_apiv1.CreateDeviceResponse, error) {
 		LogWriters(b.logWriters).
 		Store(b.storeOpts).
 		Target(b.s.bus.ConnectedUrl()).
+		UserCredentials(b.credentials).
 		Schema(b.sch...).Build()
 	if err != nil {
 		return nil, err

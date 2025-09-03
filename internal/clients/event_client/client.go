@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	ListEventsRequest   clients.ServerSubject = "client.%s.events.v1alpha.list"
-	DeleteEventsRequest clients.ServerSubject = "client.%s.events.v1alpha.delete"
+	ListEventsRequest   clients.ServerSubject = "client.%s.evt.v1alpha.list"
+	DeleteEventsRequest clients.ServerSubject = "client.%s.evt.v1alpha.delete"
 
 	EventsStream clients.ServerSubject = "event.%s.*.*.*"
 )

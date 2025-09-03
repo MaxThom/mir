@@ -11,8 +11,9 @@ import (
 )
 
 const (
-	TelemetryDeviceStream clients.ServerSubject = "device.%s.telemetry.v1alpha.proto"
-	TelemetryListRequest  clients.ServerSubject = "client.%s.telemetry.v1alpha.list"
+	TelemetryDeviceStream clients.ServerSubject = "device.%s.tlm.v1alpha.proto"
+
+	TelemetryListRequest clients.ServerSubject = "client.%s.tlm.v1alpha.list"
 )
 
 func PublishTelemetryStream(bus *nats.Conn, deviceId string, t protoreflect.ProtoMessage) error {

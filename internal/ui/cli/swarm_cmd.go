@@ -59,11 +59,14 @@ func (d *SwarmCmd) Run(log zerolog.Logger, m *mSdk.Mir, cfg ui.Config) error {
 		logLvl = mir.LogLevelError
 	}
 
+	currentCtx, _ := cfg.GetCurrentContext()
+
 	s := swarm.NewSwarm(bus.NewWithBus(m.Bus).Conn)
 	_, err := s.AddDeviceWithIds(d.DeviceIds).
 		WithSchema(swarmv1.File_swarm_v1_demo_proto).
 		WithLogLevel(logLvl).
 		WithPrettyLogger(false).
+		WithCredentials(currentCtx.Credentials).
 		Incubate()
 	if err != nil {
 		return fmt.Errorf("error incubating swarm: %w", err)
