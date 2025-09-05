@@ -22,7 +22,7 @@ import (
 
 type builder struct {
 	fileOpts            []func(*mir_config.MirConfig)
-	credentials         *string
+	credentialsFiles    []string
 	deviceId            *string
 	deviceIdGenerator   *IdGenerator
 	deviceIdPrefix      *IdPrefix
@@ -82,8 +82,28 @@ func (b builder) DeviceIdPrefix(p IdPrefix) builder {
 	return b
 }
 
-func (b builder) UserCredentials(fullPath string) builder {
-	b.credentials = &fullPath
+func (b builder) UserCredentialsFile(fullPath string) builder {
+	b.credentialsFiles = append(b.credentialsFiles, fullPath)
+	return b
+}
+
+// Look for a user credentials file at those locations in order to authenticate:
+//   - ./device.creds
+//   - ~/.config/mir/device.creds
+//   - /etc/mir/device.creds
+func (b builder) DefaultUserCredentialsFile() builder {
+	userHomeDir, err := os.UserHomeDir()
+	if err != nil {
+		fmt.Println("$HOME is not defined")
+		userHomeDir = "./"
+	}
+	xdgConfigHome := filepath.Join(userHomeDir, ".config", "mir", "device.creds")
+
+	b.credentialsFiles = append(b.credentialsFiles,
+		"/etc/mir/device.creds",
+		xdgConfigHome,
+		"./device.creds",
+	)
 	return b
 }
 
@@ -94,15 +114,12 @@ func (b builder) Target(t string) builder {
 	return b
 }
 
-// Use a configuration file to load the
-// device_id and the target. Specifying those configs
-// in the builder pattern have greater priority
-// then loading from the config file.
-// The file is loaded in folders:
-// - ./device.yaml
-// - ~/.config/mir/device.yaml
-// - /etc/mir/device.yaml
-// $HOME/.config/mir/device.[json|yaml]
+// Use a configuration file to load device configs.
+// Specifying those configs in the builder pattern have greater priority
+// then loading from the config file. The file is loaded in folders:
+//   - ./device.yaml
+//   - ~/.config/mir/device.yaml
+//   - /etc/mir/device.yaml
 func (b builder) DefaultConfigFile() builder {
 	format := mir_config.Yaml
 	fileName := "device.yaml"
@@ -247,8 +264,17 @@ func (b builder) build(extraCfg any) (*Mir, error) {
 	} else if cfg.Mir.Target == "" {
 		cfg.Mir.Target = "nats://127.0.0.1:4222"
 	}
-	if b.credentials != nil {
-		cfg.Mir.Credentials = *b.credentials
+	// Add credential file path
+	if cfg.Mir.Credentials != "" {
+		b.credentialsFiles = append(b.credentialsFiles, cfg.Mir.Credentials)
+	}
+	// Look for first file to exist
+	for i := len(b.credentialsFiles) - 1; i >= 0; i-- {
+		c := b.credentialsFiles[i]
+		if _, err := os.Stat(c); err == nil {
+			cfg.Mir.Credentials = c
+			break
+		}
 	}
 	if b.logLevel != nil {
 		cfg.Mir.LogLevel = b.logLevel.String()

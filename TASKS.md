@@ -14,6 +14,7 @@
   - [ ] device security with nats
     - [ ] nkeys/jwt
       - [x] modify sdks
+        [ ] add device,default credential location
       - [x] learn how it work
       - [ ] integrate nsc to cli with default security for device and clients
         - [ ] add the nsc generator
@@ -22,6 +23,7 @@
           - [x] read only
           - [x] read and write
       - [ ] work on compose release, maybe its just a readme
+        - [ ] default config has resolver.conf include commented out
       - [ ] adjust helm release
     - [ ] tls
   - [ ] core bug with reconnect of loading devices

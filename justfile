@@ -58,6 +58,10 @@ install-scp host arch="arm64" os="linux":
 tx:
 	tmuxifier s ./.tmux/mir.session.sh
 
+# Start tmux layouts with mir in docker and serve using CLI
+tx-serve:
+	tmuxifier s ./.tmux/mir-serve.session.sh
+
 # Start tmux layouts with mir in docker
 tx-full:
 	tmuxifier s ./.tmux/mir-full.session.sh
