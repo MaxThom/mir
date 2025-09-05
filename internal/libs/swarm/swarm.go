@@ -171,7 +171,7 @@ func (b *devicesBuilder) Incubate() ([]*mir_apiv1.CreateDeviceResponse, error) {
 			LogLevel(b.logLevel).
 			Store(b.storeOpts).
 			Target(b.s.bus.ConnectedUrl()).
-			UserCredentials(b.credentials).
+			UserCredentialsFile(b.credentials).
 			Schema(b.sch...).Build()
 		if err != nil {
 			errs = errors.Join(err)
@@ -194,7 +194,7 @@ func (b *devicesBuilder) Incubate() ([]*mir_apiv1.CreateDeviceResponse, error) {
 			LogWriters(b.logWriters).
 			Store(b.storeOpts).
 			Target(b.s.bus.ConnectedUrl()).
-			UserCredentials(b.credentials).
+			UserCredentialsFile(b.credentials).
 			Schema(b.sch...).Build()
 		if err != nil {
 			errs = errors.Join(err)
@@ -273,7 +273,7 @@ func (b *deviceBuilder) Incubate() (*mir_apiv1.CreateDeviceResponse, error) {
 		LogWriters(b.logWriters).
 		Store(b.storeOpts).
 		Target(b.s.bus.ConnectedUrl()).
-		UserCredentials(b.credentials).
+		UserCredentialsFile(b.credentials).
 		Schema(b.sch...).Build()
 	if err != nil {
 		return nil, err
