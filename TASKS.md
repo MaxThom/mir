@@ -16,8 +16,8 @@
       - [x] modify sdks
         - [x] add device,default credential location
       - [x] learn how it work
-      - [ ] integrate nsc to cli with default security for device and clients
-        - [ ] add the nsc generator
+      - [x] integrate nsc to cli with default security for device and clients
+        - [x] add the nsc generator
         - [x] what permission does a device need
         - [x] what permission does a client need
           - [x] read only
