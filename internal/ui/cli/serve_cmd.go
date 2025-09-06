@@ -97,7 +97,7 @@ func (d *ServeCmd) Validate() error {
 	return nil
 }
 
-func (d *ServeCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) error {
+func (d *ServeCmd) Run(cfg ui.Config) error {
 	if d.DisplayDefaultCfg {
 		out, err := yaml.Marshal(d.ServeConfig)
 		if err != nil {
@@ -125,7 +125,7 @@ func (d *ServeCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) error {
 		return nil
 	}
 
-	log = mir_log.Setup(
+	log := mir_log.Setup(
 		mir_log.WithDevOnlyPrettyLogger(),
 		mir_log.WithFlagAndFileLogLevel(false, d.Mir.LogLevel, &d.Mir.LogLevel),
 		mir_log.WithAppName(AppName),
@@ -145,7 +145,7 @@ func (d *ServeCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) error {
 	log.Info().Str("config", string(prettyCfg)).Msg("")
 	metrics.RegisterMirMetrics(AppName, build_meta.GetShortVersion(), map[string]string{}, string(prettyCfg))
 
-	if err := d.run(context.Background(), log, m, d.ServeConfig); err != nil {
+	if err := d.run(context.Background(), log, d.ServeConfig); err != nil {
 		log.Error().Err(err).Msg("")
 		return err
 	}
@@ -155,7 +155,6 @@ func (d *ServeCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) error {
 func (d *ServeCmd) run(
 	ctx context.Context,
 	log zerolog.Logger,
-	m *mir.Mir,
 	cfg ServeConfig,
 ) error {
 	ctx, cancel := mir_signals.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGINT)
@@ -203,7 +202,7 @@ func (d *ServeCmd) run(
 	}
 	opts := append(mir.WithDefaultReconnectOpts(), mir.WithDefaultConnectionLogging(log)...)
 	opts = append(opts, mir.WithUserCredentials(cfg.Mir.Credentials))
-	m, err = mir.Connect(AppName, cfg.Mir.Url, opts...)
+	m, err := mir.Connect(AppName, cfg.Mir.Url, opts...)
 	if err != nil {
 		log.Err(err).Msg("error connecting to Mir server")
 		fmt.Println("error connecting to Mir server")
