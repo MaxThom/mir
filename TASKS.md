@@ -14,7 +14,7 @@
   - [ ] device security with nats
     - [ ] nkeys/jwt
       - [x] modify sdks
-        [ ] add device,default credential location
+        - [x] add device,default credential location
       - [x] learn how it work
       - [ ] integrate nsc to cli with default security for device and clients
         - [ ] add the nsc generator

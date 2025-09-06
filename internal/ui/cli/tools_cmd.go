@@ -24,7 +24,8 @@ type ToolsCmd struct {
 	Generate GenerateCmd `cmd:"" help:"Generate project templates"`
 	Install  InstallCmd  `cmd:"" help:"Install development tools"`
 	Log      LogCmd      `cmd:"" help:"View and follow Mir CLI logs"`
-	Config   SettingsCmd `cmd:"" help:"Manage Mir CLI configuration"`
+	Config   SettingsCmd `cmd:"" aliases:"cfg" help:"Manage Mir CLI configuration"`
+	Security SecurityCmd `cmd:"" aliases:"sec" help:"Manage encryption and credentials for connected clients, devices and modules. Uses context for operator name and url."`
 }
 
 type LogCmd struct {
@@ -79,6 +80,14 @@ func (d *InstallCmd) Run() error {
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
 		errs = errors.Join(errs, fmt.Errorf("failed to install protoc: %v", err))
+	}
+
+	fmt.Println("installing nsc...")
+	cmd = exec.Command("go", "install", "github.com/nats-io/nsc/v2@latest")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		errs = errors.Join(errs, fmt.Errorf("failed to install nsc: %v", err))
 	}
 
 	fmt.Println("install complete 🚀 !")
