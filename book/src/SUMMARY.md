@@ -16,7 +16,7 @@
 	  - [Command](./concepts/communication_command.md)
 	  - [Configuration](./concepts/communication_configuration.md)
 	- [Event and Audit System](./concepts/event_audit_system.md)
-	- [Security]()
+	- [Security](./concepts/security.md)
 
 - [Integrating Mir](./integrating_mir/integrating_mir.md)
 	- [Device SDK](./integrating_mir/device/device_sdk.md)
@@ -46,6 +46,11 @@
 	- [Web Interface]()
 	- [Monitoring](./operating_mir/monitoring.md)
 	- [Alerting]()
+
+- [Securing Mir](./security/security.md)
+  - [Auth](./security/auth.md)
+    - [Tutorial](./security/auth-tutorial.md)
+  - [TLS](./security/tls.md)
 
 # Additional Resources
 

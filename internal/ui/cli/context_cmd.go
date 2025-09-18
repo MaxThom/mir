@@ -48,15 +48,15 @@ func (d *ContextCmd) Run(cfg ui.Config) error {
 	var err error
 	switch d.Output {
 	case "pretty":
-		format := "%-20s %-30s %s\n"
+		format := "%-20s %-30s %-30s %s\n"
 		var sb strings.Builder
-		sb.WriteString(fmt.Sprintf(format, "NAME", "TARGET", "GRAFANA"))
+		sb.WriteString(fmt.Sprintf(format, "NAME", "TARGET", "GRAFANA", "CREDENTIALS"))
 		for _, c := range data.Contexts {
 			st := c.Name
 			if c.Name == data.CurrentContext {
 				st = "*" + c.Name + ""
 			}
-			sb.WriteString(fmt.Sprintf(format, st, c.Target, c.Grafana))
+			sb.WriteString(fmt.Sprintf(format, st, c.Target, c.Grafana, c.Credentials))
 		}
 		out = sb.String()
 	case "json":

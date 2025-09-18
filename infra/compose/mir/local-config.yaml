@@ -2,6 +2,7 @@ mir:
   url: "nats://local_mir_support-nats-1:4222"
   logLevel: "info"
   httpPort: 3015
+  credentials: ""
 surreal:
   url: "ws://local_mir_support-surrealdb-1:8000/rpc"
   namespace: "global"

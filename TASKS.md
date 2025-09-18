@@ -23,7 +23,7 @@
           - [x] read only
           - [x] read and write
       - [ ] work on compose release, maybe its just a readme
-        - [ ] default config has resolver.conf include commented out
+        - [x] default config has resolver.conf include commented out
       - [ ] adjust helm release
     - [ ] tls
   - [ ] core bug with reconnect of loading devices
@@ -50,6 +50,8 @@
 - [ ] DeviceConfiguration and ServerConfiguration options
 - [ ] Talk about reconnection and network loss
 - [ ] Update CLI usage, mainly ctx and under device subcommand
+- [ ] Security
+- [ ] DeviceStorage
 
 ### Ergonomics
 
