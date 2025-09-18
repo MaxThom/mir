@@ -91,6 +91,8 @@ This bundle contains all the necessary Docker Compose files to run Mir IoT Hub v
    - Mir API: http://localhost:3015
    - Grafana: http://localhost:3000 (admin/mir-operator)
    - InfluxDB: http://localhost:8086 (admin/mir-operator)
+   - SurrealDB: http://localhost:8000 (root/root)
+   - Prometheus: http://localhost:9090
 
 ## Services Included
 

@@ -117,9 +117,9 @@ func (d *DeviceListCmd) Run(log zerolog.Logger, m *mir.Mir) error {
 	if err != nil {
 		return fmt.Errorf("error publishing list device request: %w", err)
 	}
-	if d.Output == "pretty" && len(list) == 1 {
-		d.Output = "yaml"
-	}
+	// if d.Output == "pretty" && len(list) == 1 {
+	// 	d.Output = "yaml"
+	// }
 	if str, err := stringifyDevices(d.Output, list); err != nil {
 		return fmt.Errorf("error marshalling response: %w", err)
 	} else {

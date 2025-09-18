@@ -54,6 +54,9 @@ docker compose down
 
 ## To stop and remove all data
 docker compose down -v
+
+# View logs
+docker compose logs mir -f
 ```
 
 ## Configuration
@@ -148,6 +151,10 @@ Mir Docker images support multiple architectures:
 - `linux/arm32`: ARM 32-bit
 
 Docker automatically selects the appropriate architecture.
+
+### Security
+
+Securing the environment is done via the NSC tool. Refer to [Security Tutorial](../security/auth-tutorial.md) for details.
 
 ## Next Steps
 
