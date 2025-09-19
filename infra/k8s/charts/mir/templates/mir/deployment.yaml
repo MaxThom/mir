@@ -74,8 +74,15 @@ spec:
           {{- end }}
           volumeMounts:
             - name: config
-              mountPath: /etc/mir
+              mountPath: /etc/mir/mir.yaml
+              subPath: mir.yaml
               readOnly: true
+            {{- with .Values.authSecretRef }}
+            - name: auth
+              mountPath: /etc/mir/mir.creds
+              subPath: mir.creds
+              readOnly: true
+            {{- end }}
           {{- with .Values.volumeMounts }}
             {{- toYaml . | nindent 12 }}
           {{- end }}
@@ -83,6 +90,11 @@ spec:
         - name: config
           configMap:
             name: {{ include "mir.fullname" . }}-config
+        {{- with .Values.authSecretRef }}
+        - name: auth
+          secret:
+            secretName: {{ . }}
+        {{- end }}
       {{- with .Values.volumes }}
         {{- toYaml . | nindent 8 }}
       {{- end }}

@@ -1,0 +1,51 @@
+## Quick Setup
+# 1. mir tools security init
+# 2. mir tools security generate-resolver -p ./mir-resolver.secret.yaml --kubernetes
+# 3. mir tools security add module mir_srv
+# 4. mir tools security push
+# 5. mir tools security generate-creds mir_srv -p ./mir-auth.secret.yaml --kubernetes
+##
+
+## NATS
+# Add SYSTEM configuration for Nats Auth
+nats:
+  config:
+    resolver:
+      enabled: true
+      merge:
+        type: full
+        interval: 2m
+        timeout: 1.9s
+
+# Option 1 with tokens direcly in values file
+nats:
+    merge:
+      operator: <OPERATOR_JWT>
+      system_account: <SYS_ACCOUNT_ID>
+      resolver_preload:
+        <SYS_ACCOUNT_ID>: <SYS_ACCOUNT_JWT>
+
+# Option 2 with secret
+nats:
+  merge:
+    $include: ../nats-auth/resolver.conf
+  container:
+    patch:
+    - op: add
+      path: /volumeMounts/-
+      value:
+        name: nats-auth-include
+        mountPath: /etc/nats-auth/
+  podTemplate:
+    patch:
+    - op: add
+      path: /spec/volumes/-
+      value:
+        name: nats-auth-include
+        secret:
+          # See ./secret/mir-resolver.secret.yaml
+          secretName: <MIR_RESOLVER_SECRET>
+
+## MIR
+# Configure Mir Server Access, see ./secret/mir-auth.secret.yaml
+authSecretRef: <MIR_AUTH_SECRET>

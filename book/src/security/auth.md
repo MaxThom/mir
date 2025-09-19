@@ -50,7 +50,7 @@ Devices have restricted permissions to prevent compromise:
 ```bash
 # Device-specific permissions
 --allow-pubsub _INBOX.>           # Required for request-reply
---allow-pub device.{deviceId}.>   # Publish telemetry/configuration/heathbeat
+--allow-pub device.{deviceId}.>   # Publish telemetry/configuration/hearthbeat
 --allow-sub {deviceId}.>          # Receive commands/config
 ```
 
@@ -67,10 +67,10 @@ Three levels of client access:
 ```bash
 --allow-pubsub _INBOX.>
 --allow-pub client.*.core.v1alpa.list  # List devices only
---allow-pub client.*.cfg.v1alpa.list   # List configurations
---allow-pub client.*.cmd.v1alpa.list   # List commands
---allow-pub client.*.tlm.v1alpa.list   # List telemetry
---allow-pub client.*.evt.v1alpa.list   # List events
+--allow-pub client.*.cfg.v1alpha.list   # List configurations
+--allow-pub client.*.cmd.v1alpha.list   # List commands
+--allow-pub client.*.tlm.v1alpha.list   # List telemetry
+--allow-pub client.*.evt.v1alpha.list   # List events
 ```
 
 **Swarm Client (Development or Demo):**

@@ -1,4 +1,4 @@
-# Tutorial: Securing Your Mir Deployment
+# Securing your Kubernetes deployment
 
 ## Prerequisites
 
@@ -8,7 +8,7 @@ Install required security tools:
 - `mir tools install`
 
 Have a mir deployment ready to be used:
-- [Setup Compose Release](../running_mir/docker.md)
+- [Setup Kubernetes Release](../running_mir/kubernetes.md)
 
 ## Setup
 
@@ -21,10 +21,10 @@ Mir Security CLI wraps NSC commands with a set of preset to make securing Mir ec
 The CLI uses the current context to help manage which server to target. Use `mir config edit`to add a new context with server name and url:
 
 ```yaml
-# If using local setup
-- name: local
-  target: nats://localhost:4222
-  grafana: localhost:3000
+# If using local k3d
+- name: k3d
+  target: nats://localhost:31422
+  grafana: grafana-local:8081
 ```
 
 You can overwrite the Operator, Account and URL arguments using flags. This requires more familiarity with the NSC tool. Moreover, you can use flag `--no-exec` on each command to see NSC commands.
@@ -51,16 +51,70 @@ Generate Resolver Configuration used to launch Nats Server:
 mir tools security generate-resolver -p ./resolver.conf
 ```
 
-Update NATS Configuration
+#### Using Values file
 
-Edit `./mir-compose/natsio/config.conf` and uncomment or add this line `include resolver.conf`.
+Replace the OPERATOR_JWT, SYS_ACCOUNT_ID, and SYS_ACCOUNT_JWT with your values. Make sure that you do not include the trailing , in the SYS_ACCOUNT_JWT.
 
-Start server `docker compose up`.
+```yaml
+# values-auth.yaml
+## Nats Config
+nats:
+  config:
+    resolver:
+      enabled: true
+      merge:
+        type: full
+        interval: 2m
+        timeout: 1.9s
+    merge:
+      operator: OPERATOR_JWT
+      system_account: SYS_ACCOUNT_ID
+      resolver_preload:
+        SYS_ACCOUNT_ID: SYS_ACCOUNT_JWT
+```
 
+#### Using Secret
 
-The server is now running with authorization. To validate, run `mir device ls` and you should see `nats: Authorization Violation`. Similar for the logs of Mir server.
+To use a secret instead, we need to transform the `resolver.conf` as a Kubernetes secret:
 
-Moreover, if you run `mir tools sec list accounts` you should see two accounts: SYS and mir.
+```bash
+# Directly to the cluster
+kubectl create secret generic mir-resolver-secret --from-file=resolver.conf
+# As file
+kubectl create secret generic mir-resolver-secret --from-file=resolver.conf --dry-run=client -o yaml > mir-resolver.secret.yaml
+```
+
+Alternatively, you can use the `--kubernetes` flag to combine credetials and secret creation:
+
+```bash
+mir tools security generate-resolver -p ./mir-resolver.secret.yaml --kubernetes
+```
+
+We create a new volume to mount the file and then we refer the secret.
+Update <MIR_RESOLVER_SECRET> with your secret name.
+
+```yaml
+nats:
+  merge:
+    $include: ../nats-auth/resolver.conf
+  container:
+    patch:
+    - op: add
+      path: /volumeMounts/-
+      value:
+        name: nats-auth-include
+        mountPath: /etc/nats-auth/
+  podTemplate:
+    patch:
+    - op: add
+      path: /spec/volumes/-
+      value:
+        name: nats-auth-include
+        secret:
+          secretName: <MIR_RESOLVER_SECRET>
+```
+
+The server will now be running with authorization.
 
 ### Step 3: Create Module Credentials
 
@@ -75,20 +129,50 @@ mir tools security push
 mir tools security generate-creds mir_srv -p ./mir_srv.creds
 ```
 
-Now pass the let's launch the server with the credentials file. Edit `./mir-compose/mir/local-config.yaml` and set the path of the credentials files under `mir.credentials`.
+Now time to create the Kubernetes Secret and Configure the Mir Server with it.
 
 ```bash
-# Restart server
-docker compose down
-docker compose up
+# Directly to the cluster
+kubectl create secret generic mir-auth-secret --from-file=mir.creds=mir_srv.creds
+# As file
+kubectl create secret generic mir-auth-secret --from-file=mir.creds=mir_srv.creds --dry-run=client -o yaml > mir-auth.secret.yaml
+# Note: the key `mir.creds` is required
 ```
 
-You should see a successfull connection withour any errors.
+Alternatively, you can use the `--kubernetes` flag to combine credetials and secret creation:
+
+```bash
+mir tools security generate-creds mir_srv -p ./mir-auth.secret.yaml --kubernetes
+```
+
+Finally, let's refer the secret in the `values-auth.yaml` and restart the server:
+
+```yaml
+# values-auth.yaml
+## Nats Config
+nats:
+  config:
+    resolver:
+      enabled: true
+      merge:
+        type: full
+        interval: 2m
+        timeout: 1.9s
+  ...
+
+## Mir Server
+authSecretRef: "mir-auth-secret"
+```
+
+Start server using `helm [install|upgrade] <name> <path> -f values-auth.yaml`.
+
+You should see a successfull connection withour any errors from the Mir Server pod.
+
+To validate authorization is probably setup, run `mir device ls` and you should see `nats: Authorization Violation`.
 
 ### Step 4: Create Client Credentials
 
 Let's create a Client credentials to have full access to the system.
-
 
 ```bash
 # Create new user of type Client

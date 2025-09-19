@@ -1,3 +1,6 @@
+image:
+  tag: "feature__nkeys-infra--5cd7553"
+
 config:
   mir:
     logLevel: "debug"
@@ -58,7 +61,7 @@ influxdb2:
 
 # Enable Prometheus monitoring stack for k3d
 kube-prometheus-stack:
-  enabled: true
+  enabled: false
 
   prometheus:
     ingress:
@@ -167,7 +170,7 @@ kube-prometheus-stack:
         memory: 256Mi
 
 loki:
-  enabled: true
+  enabled: false
   persistence:
     enabled: true
     size: 10Gi
@@ -178,4 +181,4 @@ loki:
       - loki-local
 
 promtail:
-  enabled: true
+  enabled: false
