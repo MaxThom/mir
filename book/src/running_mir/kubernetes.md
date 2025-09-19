@@ -243,6 +243,12 @@ influxdb2:
     existingSecret: influx-secret
 ```
 
+### Authentification and Authorization
+
+Securing the environment is done via the NSC tool. Refer to [Security Tutorial](../security/auth.md) for details on how to setup.
+
+To configure Kubernetes,
+
 ## Next Steps
 
 - Set up device connections to your Mir cluster

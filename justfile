@@ -112,6 +112,10 @@ k3d-delete:
 # Recreate k3d cluster
 k3d-recreate: k3d-delete k3d-create
 
+# Deploy mir
+k3d-mir instance="local":
+    cd infra/k8s/charts/mir && helm install {{instance}} . -f values-local-k3d.yaml
+
 # Run Mir book for local documentation
 book:
 	cd book && mdbook serve -p 5001

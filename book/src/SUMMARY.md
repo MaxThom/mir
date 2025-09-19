@@ -49,7 +49,8 @@
 
 - [Securing Mir](./security/security.md)
   - [Auth](./security/auth.md)
-    - [Tutorial](./security/auth-tutorial.md)
+    - [Docker](./security/auth-docker.md)
+    - [Kubernetes](./security/auth-kubernetes.md)
   - [TLS](./security/tls.md)
 
 # Additional Resources

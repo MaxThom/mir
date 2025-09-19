@@ -9,15 +9,18 @@ data:
   mir.yaml: |
     mir:
       {{- if .Values.nats.enabled }}
-      url: "nats://{{ include "mir.fullname" . }}-nats:4222"
+      url: "nats://{{ .Release.Name }}-nats:4222"
       {{- else }}
       url: {{ .Values.config.mir.url | quote }}
       {{- end }}
       logLevel: {{ .Values.config.mir.logLevel | quote }}
       httpPort: {{ .Values.service.targetPort }}
+      {{- if .Values.authSecretRef }}
+      credentials: "/etc/mir/mir.creds"
+      {{- end }}
     surreal:
       {{- if .Values.surrealdb.enabled }}
-      url: "ws://{{ include "mir.fullname" . }}-surrealdb:{{ .Values.surrealdb.service.port }}/rpc"
+      url: "ws://{{ .Release.Name }}-surrealdb:{{ .Values.surrealdb.service.port }}/rpc"
       {{- else }}
       url: {{ .Values.config.surreal.url | quote }}
       {{- end }}
@@ -27,7 +30,7 @@ data:
       database: {{ .Values.config.surreal.database | quote }}
     influx:
       {{- if .Values.influxdb2.enabled }}
-      url: "http://{{ include "mir.fullname" . }}-influxdb2:{{ .Values.influxdb2.service.port }}"
+      url: "http://{{ .Release.Name }}-influxdb2:{{ .Values.influxdb2.service.port }}"
       {{- else }}
       url: {{ .Values.config.influx.url | quote }}
       {{- end }}

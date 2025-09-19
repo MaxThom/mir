@@ -38,9 +38,10 @@ type EditCmd struct {
 }
 
 type ResolverCmd struct {
-	Operator string `short:"o"  help:"Name of operator. Default to context name."`
-	Path     string `short:"p" type:"path"`
-	NoExec   bool   `help:"Print commands instead of executing." default:"false"`
+	Operator   string `short:"o"  help:"Name of operator. Default to context name."`
+	Path       string `short:"p" type:"path"`
+	Kubernetes bool   `help:"Create the credentials as a Kubernetes secret (use Kubectl)" default:"false"`
+	NoExec     bool   `help:"Print commands instead of executing." default:"false"`
 }
 
 type EnvCmd struct {
@@ -59,12 +60,13 @@ type PushCmd struct {
 }
 
 type CredsCmd struct {
-	Operator string `short:"o"  help:"Name of operator. Default to context name."`
-	Url      string `short:"u" help:"Url of Mir server. Default to context url."`
-	Account  string `short:"a" help:"Name of main account." default:"mir"`
-	User     string `arg:"" help:"Name of user"`
-	Path     string `short:"p" type:"path"`
-	NoExec   bool   `help:"Print commands instead of executing." default:"false"`
+	Operator   string `short:"o"  help:"Name of operator. Default to context name."`
+	Url        string `short:"u" help:"Url of Mir server. Default to context url."`
+	Account    string `short:"a" help:"Name of main account." default:"mir"`
+	User       string `arg:"" help:"Name of user"`
+	Path       string `short:"p" type:"path"`
+	Kubernetes bool   `help:"Create the credentials as a Kubernetes secret (use Kubectl)" default:"false"`
+	NoExec     bool   `help:"Print commands instead of executing." default:"false"`
 }
 
 type ListCmd struct {
@@ -245,8 +247,6 @@ func (d *ResolverCmd) Validate() error {
 }
 
 func (d *ResolverCmd) Run(ctx ui.Context) error {
-	var errs error
-
 	if d.Operator == "" {
 		d.Operator = ctx.Name
 	}
@@ -256,31 +256,47 @@ func (d *ResolverCmd) Run(ctx ui.Context) error {
 	cmd.Stderr = io.Discard
 	if !d.NoExec {
 		if err := cmd.Run(); err != nil {
-			errs = errors.Join(errs, fmt.Errorf("failed to set current operator: %w", err))
+			return fmt.Errorf("failed to set current operator: %w", err)
 		}
 	} else {
 		fmt.Println(strings.Join(cmd.Args, " "))
 	}
 
 	cmd = exec.Command("nsc", "generate", "config", "--nats-resolver")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	resolverOut := []byte{}
+	var err error
+	if !d.NoExec {
+		resolverOut, err = cmd.CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("failed to generate resolver: %w", err)
+		}
+	} else {
+		fmt.Println(strings.Join(cmd.Args, " "))
+	}
+
+	if d.Kubernetes {
+		cmd = exec.Command("kubectl", "create", "secret", "generic", "mir-resolver-secret", "--from-literal=resolver.conf="+string(resolverOut), "--dry-run=client", "-o", "yaml")
+		if !d.NoExec {
+			resolverOut, err = cmd.CombinedOutput()
+			if err != nil {
+				return fmt.Errorf("failed to generate kubernetes secret for resolver: %w", err)
+			}
+		} else {
+			fmt.Println(strings.Join(cmd.Args, " "))
+		}
+	}
+
 	if d.Path != "" {
 		file, err := os.Create(d.Path)
 		if err != nil {
 			return fmt.Errorf("unable to create file: %w", err)
 		}
 		defer file.Close()
-		cmd.Stdout = file
-		cmd.Stderr = file
-	}
-	if !d.NoExec {
-		if err := cmd.Run(); err != nil {
-			errs = errors.Join(errs, fmt.Errorf("failed to generate resolver.conf: %w", err))
+		if _, err = file.Write(resolverOut); err != nil {
+			return fmt.Errorf("unable to write to file: %w", err)
 		}
-		fmt.Println()
 	} else {
-		fmt.Println(strings.Join(cmd.Args, " "))
+		fmt.Println(string(resolverOut))
 	}
 
 	return nil
@@ -422,8 +438,6 @@ func (d *CredsCmd) Validate() error {
 }
 
 func (d *CredsCmd) Run(ctx ui.Context) error {
-	var errs error
-
 	if d.Operator == "" {
 		d.Operator = ctx.Name
 	}
@@ -433,31 +447,47 @@ func (d *CredsCmd) Run(ctx ui.Context) error {
 	cmd.Stderr = io.Discard
 	if !d.NoExec {
 		if err := cmd.Run(); err != nil {
-			errs = errors.Join(errs, fmt.Errorf("failed to set current operator: %w", err))
+			return fmt.Errorf("failed to set current operator: %w", err)
 		}
 	} else {
 		fmt.Println(strings.Join(cmd.Args, " "))
 	}
 
 	cmd = exec.Command("nsc", "generate", "creds", "-a", d.Account, "-n", d.User)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	credsOut := []byte{}
+	var err error
+	if !d.NoExec {
+		credsOut, err = cmd.CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("failed to generate credentials for user: %w", err)
+		}
+	} else {
+		fmt.Println(strings.Join(cmd.Args, " "))
+	}
+
+	if d.Kubernetes {
+		cmd = exec.Command("kubectl", "create", "secret", "generic", d.User+"-auth-secret", "--from-literal=mir.creds="+string(credsOut), "--dry-run=client", "-o", "yaml")
+		if !d.NoExec {
+			credsOut, err = cmd.CombinedOutput()
+			if err != nil {
+				return fmt.Errorf("failed to generate kubernetes secret for user credentials: %w", err)
+			}
+		} else {
+			fmt.Println(strings.Join(cmd.Args, " "))
+		}
+	}
+
 	if d.Path != "" {
 		file, err := os.Create(d.Path)
 		if err != nil {
 			return fmt.Errorf("unable to create file: %w", err)
 		}
 		defer file.Close()
-		cmd.Stdout = file
-		cmd.Stderr = file
-	}
-	if !d.NoExec {
-		if err := cmd.Run(); err != nil {
-			errs = errors.Join(errs, fmt.Errorf("failed to generate credentials for user: %w", err))
+		if _, err = file.Write(credsOut); err != nil {
+			return fmt.Errorf("unable to write to file: %w", err)
 		}
-		fmt.Println()
 	} else {
-		fmt.Println(strings.Join(cmd.Args, " "))
+		fmt.Println(string(credsOut))
 	}
 
 	return nil
