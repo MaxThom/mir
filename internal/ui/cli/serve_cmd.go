@@ -45,6 +45,7 @@ type (
 	MirCfg struct {
 		Url         string `help:"Mir server URL" default:"nats://127.0.0.1:4222" yaml:"url"`
 		Credentials string `help:"Mir JWT/NKEY credential file path" default:"" yaml:"credentials"`
+		RootCA      string `help:"Mir RootCA for TLS connection" default:"" yaml:"rootCA"`
 		LogLevel    string `help:"Mir loglevel for each service" default:"info" yaml:"logLevel"`
 		HttpPort    int    `help:"Mir http port for api" default:"3015" yaml:"httpPort"`
 	}
@@ -202,13 +203,14 @@ func (d *ServeCmd) run(
 	}
 	opts := append(mir.WithDefaultReconnectOpts(), mir.WithDefaultConnectionLogging(log)...)
 	opts = append(opts, mir.WithUserCredentials(cfg.Mir.Credentials))
+	opts = append(opts, mir.WithRootCA(cfg.Mir.RootCA))
 	m, err := mir.Connect(AppName, cfg.Mir.Url, opts...)
 	if err != nil {
 		log.Err(err).Msg("error connecting to Mir server")
 		fmt.Println("error connecting to Mir server")
 		os.Exit(1)
 	} else if !m.Bus.IsConnected() {
-		log.Error().Str("url", cfg.Mir.Url).Str("status", m.Bus.Status().String()).Msg("cannot connect to Mir msg bus")
+		log.Error().Str("url", cfg.Mir.Url).Str("status", m.Bus.Status().String()).Err(m.Bus.LastError()).Msg("cannot connect to Mir msg bus")
 	}
 
 	// Services

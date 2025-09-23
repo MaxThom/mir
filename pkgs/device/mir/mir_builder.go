@@ -23,6 +23,7 @@ import (
 type builder struct {
 	fileOpts            []func(*mir_config.MirConfig)
 	credentialsFiles    []string
+	rootCAFiles         []string
 	deviceId            *string
 	deviceIdGenerator   *IdGenerator
 	deviceIdPrefix      *IdPrefix
@@ -103,6 +104,31 @@ func (b builder) DefaultUserCredentialsFile() builder {
 		"/etc/mir/device.creds",
 		xdgConfigHome,
 		"./device.creds",
+	)
+	return b
+}
+
+func (b builder) RootCAFile(fullPath string) builder {
+	b.rootCAFiles = append(b.rootCAFiles, fullPath)
+	return b
+}
+
+// Look for a RootCA file at those locations in order to identify server:
+//   - ./ca-cert.pem
+//   - ~/.config/mir/ca-cert.pem
+//   - /etc/mir/ca-cert.pem
+func (b builder) DefaultRootCA() builder {
+	userHomeDir, err := os.UserHomeDir()
+	if err != nil {
+		fmt.Println("$HOME is not defined")
+		userHomeDir = "./"
+	}
+	xdgConfigHome := filepath.Join(userHomeDir, ".config", "mir", "ca-cert.pem")
+
+	b.rootCAFiles = append(b.rootCAFiles,
+		"/etc/mir/ca-cert.pem",
+		xdgConfigHome,
+		"./ca-cert.pem",
 	)
 	return b
 }
@@ -273,6 +299,18 @@ func (b builder) build(extraCfg any) (*Mir, error) {
 		c := b.credentialsFiles[i]
 		if _, err := os.Stat(c); err == nil {
 			cfg.Mir.Credentials = c
+			break
+		}
+	}
+	// Add RootCA file path
+	if cfg.Mir.RootCA != "" {
+		b.rootCAFiles = append(b.rootCAFiles, cfg.Mir.RootCA)
+	}
+	// Look for first file to exist
+	for i := len(b.rootCAFiles) - 1; i >= 0; i-- {
+		c := b.rootCAFiles[i]
+		if _, err := os.Stat(c); err == nil {
+			cfg.Mir.RootCA = c
 			break
 		}
 	}

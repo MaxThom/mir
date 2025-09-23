@@ -3,11 +3,12 @@
 # It is designed for building distributed systems and microservices architectures.
 services:
   nats:
-    image: nats:latest
+    image: nats:alpine
     command: -c /etc/nats/config.conf
     volumes:
       - ./config.conf:/etc/nats/config.conf:ro
       - ./resolver.conf:/etc/nats/resolver.conf:ro
+      - ./certs:/etc/nats/certs
       - nats_data:/data
     ports:
       - 4222:4222

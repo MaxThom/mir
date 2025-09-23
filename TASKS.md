@@ -13,7 +13,13 @@
 - [ ] Road to Production
   - [ ] security with nats
     - [ ] tls
+      - [ ] setup with self generated tls
+      - [ ] need to add CA on device side
+      - [ ] add any nats opts on dev SDK
+      - [ ] add lets encrypt example for k8s
+      - [ ] maybe with mutual TLS?
   - [ ] core bug with reconnect of loading devices
+  - [ ] docs
   - [ ] autoreconnect
     - [ ] nats
       - [ ] switch to jetstream for tlm
@@ -54,9 +60,9 @@
   - [x] Grafana Loki for logs
 - [ ] Productions
   - [x] Docker
-  - [ ] Template container for device sdk
-  - [ ] Kubernetes/Helm, helm in the code and pushing chart to a registry
-  - [ ] One deployment in private cluster
+  - [x] Template container for device sdk
+  - [x] Kubernetes/Helm, helm in the code and pushing chart to a registry
+  - [x] One deployment in private cluster
   - [ ] Performance analysis
 - [x] Event Module
   - [x] Code

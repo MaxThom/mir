@@ -48,6 +48,7 @@ type Context struct {
 	Target      string `yaml:"target"`
 	Grafana     string `yaml:"grafana"`
 	Credentials string `yaml:"credentials"`
+	RootCA      string `yaml:"rootCA"`
 }
 
 func (c Config) GetCurrentContext() (Context, bool) {

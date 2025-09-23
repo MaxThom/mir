@@ -46,6 +46,7 @@ type (
 	DataBusServer struct {
 		Url                 string
 		CredentialsFilePath string
+		RootCAFilePath      string
 	}
 
 	DatabaseSever struct {
@@ -183,11 +184,12 @@ func run(
 	// Bus
 	opts := append(mir.WithDefaultReconnectOpts(), mir.WithDefaultConnectionLogging(log)...)
 	opts = append(opts, mir.WithUserCredentials(cfg.DataBusServer.CredentialsFilePath))
+	opts = append(opts, mir.WithRootCA(cfg.DataBusServer.RootCAFilePath))
 	m, err := mir.Connect(AppName, cfg.DataBusServer.Url, opts...)
 	if err != nil {
 		return err
 	}
-	log.Info().Str("url", cfg.DataBusServer.Url).Str("status", m.Bus.Status().String()).Msg("msg bus status")
+	log.Info().Err(m.Bus.LastError()).Str("url", cfg.DataBusServer.Url).Str("status", m.Bus.Status().String()).Msg("msg bus status")
 
 	// Services
 	coreSrv, err := core_srv.NewCore(log, m, mng.NewSurrealMirStore(db))

@@ -96,6 +96,15 @@ func WithUserCredentials(credentialsFile string) func(*BusConn) {
 		}
 	}
 }
+
+func WithRootCA(rootCAFile string) func(*BusConn) {
+	return func(bus *BusConn) {
+		if rootCAFile != "" {
+			bus.opts = append(bus.opts, nats.RootCAs(rootCAFile))
+		}
+	}
+}
+
 func WithCustom(options ...nats.Option) func(*BusConn) {
 	return func(bus *BusConn) {
 		bus.opts = append(bus.opts, options...)

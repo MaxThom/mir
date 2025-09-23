@@ -43,6 +43,7 @@ type Mir struct {
 type Config struct {
 	Target      string       `json:"target" yaml:"target"`
 	Credentials string       `json:"credentials" yaml:"credentials"`
+	RootCA      string       `json:"rootCA" yaml:"rootCA"`
 	LogLevel    string       `json:"logLevel" yaml:"logLevel"`
 	Device      DeviceCfg    `json:"device" yaml:"device"`
 	LocalStore  StoreOptions `json:"localStore" yaml:"localStore"`
@@ -168,6 +169,7 @@ func (m *Mir) Launch(ctx context.Context) (*sync.WaitGroup, error) {
 	// Setup Mir bus
 	m.b, err = bus.New(m.cfg.Target,
 		bus.WithUserCredentials(m.cfg.Credentials),
+		bus.WithRootCA(m.cfg.RootCA),
 		bus.WithConnectHandler(func(nc *nats.Conn) {
 			m.l.Info().Msg("connected to Mir Server ")
 			m.setOnlineHandler()
