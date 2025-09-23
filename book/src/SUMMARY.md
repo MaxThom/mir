@@ -52,6 +52,8 @@
     - [Docker](./security/auth-docker.md)
     - [Kubernetes](./security/auth-kubernetes.md)
   - [TLS](./security/tls.md)
+    - [Docker](./security/tls-docker.md)
+    - [Kubernetes](./security/tls-kubernetes.md)
 
 # Additional Resources
 

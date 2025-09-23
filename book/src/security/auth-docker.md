@@ -75,7 +75,7 @@ mir tools security push
 mir tools security generate-creds mir_srv -p ./mir_srv.creds
 ```
 
-Now let's launch the server with the credentials file. Edit `./mir-compose/mir/local-config.yaml` and set the path of the credentials files under `mir.credentials`.
+Now let's launch the server with the credentials file. Edit `./mir-compose/mir/local-config.yaml` and set the path of the credentials files under `mir.credentials`. Edit `./mir-compose/mir/compose.yaml` to mount the file.
 
 ```bash
 # Restart server
@@ -88,7 +88,6 @@ You should see a successfull connection without any errors.
 ### Step 4: Create Client Credentials
 
 Let's create a Client credentials to have full access to the system.
-
 
 ```bash
 # Create new user of type Client

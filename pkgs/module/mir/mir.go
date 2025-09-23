@@ -127,6 +127,13 @@ func WithUserCredentials(filePath string) nats.Option {
 	return nats.UserCredentials(filePath)
 }
 
+func WithRootCA(filePath string) nats.Option {
+	if filePath == "" {
+		return func(o *nats.Options) error { return nil }
+	}
+	return nats.RootCAs(filePath)
+}
+
 func WithDefaultReconnectOpts() []nats.Option {
 	return []nats.Option{
 		nats.RetryOnFailedConnect(true),
