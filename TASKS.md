@@ -13,11 +13,14 @@
 - [ ] Road to Production
   - [ ] security with nats
     - [ ] tls
-      - [ ] setup with self generated tls
-      - [ ] need to add CA on device side
+      - [x] setup with self generated tls
+        - [ ] update script for both server only and mutual
+        - [ ] update names of certs and keys
+      - [x] need to add CA on device side
+        - [ ] update name of default ca
       - [ ] add any nats opts on dev SDK
       - [ ] add lets encrypt example for k8s
-      - [ ] maybe with mutual TLS?
+      - [ ] mutual TLS
   - [ ] core bug with reconnect of loading devices
   - [ ] docs
   - [ ] autoreconnect
