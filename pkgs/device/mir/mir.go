@@ -145,13 +145,12 @@ func (m Mir) GetDeviceId() string {
 	return m.cfg.Device.Id
 }
 
-// Establish connection to the Mir server
-// This will enable communication to and from the device
-// For a gracefull shutdown, simply wait the returning waitgroup after
-// cancelling the context
-// Upon Launch, the device will request its properties from the server
-// and call all the registered properties handlers
-func (m *Mir) Launch(ctx context.Context) (*sync.WaitGroup, error) {
+// Launch establish connection to the Mir server.
+//   - This will enable communication to and from the device.
+//   - For a gracefull shutdown, simply wait the returning waitgroup after cancelling the context
+//   - Upon Launch, the device will request its properties from the server and call all the registered properties handlers.
+//   - Pass extra Nats options for more control and options.
+func (m *Mir) Launch(ctx context.Context, opts ...nats.Option) (*sync.WaitGroup, error) {
 	var err error
 	var wg sync.WaitGroup
 	if ctx == nil {
@@ -170,6 +169,7 @@ func (m *Mir) Launch(ctx context.Context) (*sync.WaitGroup, error) {
 	m.b, err = bus.New(m.cfg.Target,
 		bus.WithUserCredentials(m.cfg.Credentials),
 		bus.WithRootCA(m.cfg.RootCA),
+		bus.WithCustom(opts...),
 		bus.WithConnectHandler(func(nc *nats.Conn) {
 			m.l.Info().Msg("connected to Mir Server ")
 			m.setOnlineHandler()

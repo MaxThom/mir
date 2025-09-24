@@ -140,6 +140,10 @@ tooling:
 protogen:
 	./scripts/protogen.sh
 
+# Run the certificate manager script
+certs *args:
+    ./scripts/generate_certs.sh {{args}}
+
 # Go code line count
 line-count:
 	find . -name '*.go' | xargs -I {} cat {} | wc -l

@@ -14,6 +14,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/boiler/mir_log"
 	"github.com/maxthom/mir/internal/libs/systemid"
 	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
+	"github.com/nats-io/nats.go"
 	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -35,6 +36,7 @@ type builder struct {
 	telemetryModuleFlag bool
 	excludeMirProtoFlag bool
 	storeOpts           StoreOptions
+	extraOpts           []nats.Option
 }
 
 type configFormat string
@@ -114,21 +116,21 @@ func (b builder) RootCAFile(fullPath string) builder {
 }
 
 // Look for a RootCA file at those locations in order to identify server:
-//   - ./ca-cert.pem
-//   - ~/.config/mir/ca-cert.pem
-//   - /etc/mir/ca-cert.pem
+//   - ./ca.crt
+//   - ~/.config/mir/ca.crt
+//   - /etc/mir/ca.crt
 func (b builder) DefaultRootCA() builder {
 	userHomeDir, err := os.UserHomeDir()
 	if err != nil {
 		fmt.Println("$HOME is not defined")
 		userHomeDir = "./"
 	}
-	xdgConfigHome := filepath.Join(userHomeDir, ".config", "mir", "ca-cert.pem")
+	xdgConfigHome := filepath.Join(userHomeDir, ".config", "mir", "ca.crt")
 
 	b.rootCAFiles = append(b.rootCAFiles,
-		"/etc/mir/ca-cert.pem",
+		"/etc/mir/ca.crt",
 		xdgConfigHome,
-		"./ca-cert.pem",
+		"./ca.crt",
 	)
 	return b
 }

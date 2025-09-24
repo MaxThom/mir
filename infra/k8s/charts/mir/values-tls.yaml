@@ -1,0 +1,23 @@
+## Quick Setup
+# 1. NATS TLS Secret
+# kubectl create secret tls <NATS_TLS_SECRET> --cert=tls.crt --key=tls.key
+# 2. NATS TLS Secret with CA
+# kubectl create secret generic <NATS_TLS_SECRET> --from-file=ca.crt=ca.crt --from-file=tls.crt=tls.crt --from-file=tls.key=tls.key
+# 3. Mir Root CA
+# kubectl create secret generic <MIR_ROOTCA_SECRET> --from-file=ca.crt=ca.crt
+##
+
+## NATS
+nats:
+  config:
+    nats:
+      tls:
+        enabled: true
+        secretName: <NATS_TLS_SECRET>
+        dir: /etc/nats-certs/nats
+        cert: tls.crt
+        key: tls.key
+
+## MIR
+# Configure Mir Server Access, see ./secret/mir-rootca.secret.yaml
+rootCASecretRef: <MIR_ROOTCA_SECRET>

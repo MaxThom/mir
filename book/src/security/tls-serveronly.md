@@ -23,18 +23,18 @@ This will:
 
 ```sh
 # Generating CA private key
-openssl genrsa -out ca-key.pem 4096
+openssl genrsa -out ca.key 4096
 
 # Generating CA certificate
-openssl req -new -x509 -days 3650 -key ca-key.pem -out ca-cert.pem \
+openssl req -new -x509 -days 3650 -key ca.key -out ca.crt \
     -subj "/C=US/ST=CA/L=San Francisco/O=NATS Demo/OU=Certificate Authority/CN=NATS Root CA" \
     2>/dev/null
 
 # Generating Server private key
-openssl genrsa -out server-key.pem 4096
+openssl genrsa -out tls.key 4096
 
 # Generating Server certificate
-openssl req -new -key server-key.pem -out server.csr \
+openssl req -new -key tls.key -out server.csr \
     -subj "/C=US/ST=CA/L=San Francisco/O=NATS Demo/OU=NATS Server/CN=localhost" \
     2>/dev/null
 
@@ -45,23 +45,23 @@ subjectAltName = DNS:localhost,DNS:*.localhost,DNS:local-nats,IP:127.0.0.1,IP:::
 EOF
 
 # Sign the server certificate
-openssl x509 -req -days 365 -in server.csr -CA ca-cert.pem -CAkey ca-key.pem \
-    -CAcreateserial -out server-cert.pem -extfile server-ext.cnf 2>/dev/null
+openssl x509 -req -days 365 -in server.csr -CA ca.crt -CAkey ca.key \
+    -CAcreateserial -out tls.crt -extfile server-ext.cnf 2>/dev/null
 ```
 
 ### Step 2: Configure Nats Server
 
 #### Docker
 
-Copy `server-cert.pem` and `server-key.pem` under `./mir-compose/natsio/certs`.
+Copy `tls.crt` and `tls.key` under `./mir-compose/natsio/certs`.
 
 In the `./mir-compose/natsio/config.conf`, update with the following:
 
 ```
 # TLS/Security
 tls: {
-  cert_file: "/etc/nats/certs/server-cert.pem"
-  key_file: "/etc/nats/certs/server-key.pem"
+  cert_file: "/etc/nats/certs/tls.crt"
+  key_file: "/etc/nats/certs/tls.key"
   timeout: 2
 }
 ```
@@ -152,7 +152,7 @@ Steps for ArchLinux:
 
 ```bash
 # 1. Copy CA to anchors
-sudo cp ca-cert.pem /etc/ca-certificates/trust-source/anchors/nats-ca.crt
+sudo cp ca.crt /etc/ca-certificates/trust-source/anchors/nats-ca.crt
 # 2. Ensure correct permissions
 sudo chmod 644 /etc/ca-certificates/trust-source/anchors/nats-ca.crt
 # 3. Update trust database
@@ -173,7 +173,7 @@ Edit CLI configuration file to add the RootCA `mir tools config edit`:
 - name: local
   target: nats://localhost:4222
   grafana: localhost:3000
-  rootCA: <path>/ca-cert.pem
+  rootCA: <path>/ca.crt
 ```
 
 #### Device
@@ -184,13 +184,13 @@ There are a few options to load the RootCA file with the DeviceSDK.
 # Using Builder with fix path
 device := mir.NewDevice().
     WithTarget("nats://nats.example.com:4222").
-    WithRootCA("/<path>/ca-cert.pem").
+    WithRootCA("/<path>/ca.crt").
     WithDeviceId("dev1").
     Build()
 # Using Builder with default lookup
-#   ./ca-cert.pem
-#   ~/.config/mir/ca-cert.pem
-#   /etc/mir/ca-cert.pem
+#   ./ca.crt
+#   ~/.config/mir/ca.crt
+#   /etc/mir/ca.crt
 device := mir.NewDevice().
     WithTarget("nats://nats.example.com:4222").
     DefaultRootCA().
@@ -209,7 +209,7 @@ device := mir.NewDevice().
 
 ```yaml
 mir:
-  rootCA: "<path>/ca-cert.pem"
+  rootCA: "<path>/ca.crt"
   device:
     id: "dev1"
 ```
