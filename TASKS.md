@@ -14,11 +14,11 @@
   - [ ] security with nats
     - [ ] tls
       - [x] setup with self generated tls
-        - [ ] update script for both server only and mutual
-        - [ ] update names of certs and keys
+        - [x] update script for both server only and mutual
+        - [x] update names of certs and keys
       - [x] need to add CA on device side
-        - [ ] update name of default ca
-      - [ ] add any nats opts on dev SDK
+        - [x] update name of default ca
+      - [x] add any nats opts on dev SDK
       - [ ] add lets encrypt example for k8s
       - [ ] mutual TLS
   - [ ] core bug with reconnect of loading devices
