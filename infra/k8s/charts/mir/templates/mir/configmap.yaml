@@ -18,6 +18,9 @@ data:
       {{- if .Values.authSecretRef }}
       credentials: "/etc/mir/mir.creds"
       {{- end }}
+      {{- if .Values.rootCASecretRef }}
+      rootCA: "/etc/mir/ca.crt"
+      {{- end }}
     surreal:
       {{- if .Values.surrealdb.enabled }}
       url: "ws://{{ .Release.Name }}-surrealdb:{{ .Values.surrealdb.service.port }}/rpc"

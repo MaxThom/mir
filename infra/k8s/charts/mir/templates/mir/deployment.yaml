@@ -83,6 +83,12 @@ spec:
               subPath: mir.creds
               readOnly: true
             {{- end }}
+            {{- with .Values.rootCASecretRef }}
+            - name: rootca
+              mountPath: /etc/mir/ca.crt
+              subPath: ca.crt
+              readOnly: true
+            {{- end }}
           {{- with .Values.volumeMounts }}
             {{- toYaml . | nindent 12 }}
           {{- end }}
@@ -92,6 +98,11 @@ spec:
             name: {{ include "mir.fullname" . }}-config
         {{- with .Values.authSecretRef }}
         - name: auth
+          secret:
+            secretName: {{ . }}
+        {{- end }}
+        {{- with .Values.rootCASecretRef }}
+        - name: rootca
           secret:
             secretName: {{ . }}
         {{- end }}

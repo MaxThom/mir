@@ -41,7 +41,7 @@ openssl req -new -key server-key.pem -out server.csr \
 # Create extensions file for SAN (Subject Alternative Names)
 # Make sure to put the address of your server
 cat > server-ext.cnf <<EOF
-subjectAltName = DNS:localhost,DNS:*.localhost,IP:127.0.0.1,IP:::1
+subjectAltName = DNS:localhost,DNS:*.localhost,DNS:local-nats,IP:127.0.0.1,IP:::1
 EOF
 
 # Sign the server certificate
@@ -82,7 +82,63 @@ Start server `docker compose up`.
 
 #### Kubernetes
 
-### Step 3: Install the Root Certificate on the Clients
+Create a Kubernetes Secret with the TLS:
+
+```bash
+# Directly to the cluster
+kubectl create secret tls mir-tls-secret --cert=tls.crt --key=tls.key
+# As file
+kubectl create secret tls mir-tls-secret --cert=tls.crt --key=tls.key -o yaml --dry-run=client > mir-tls.secret.yaml
+```
+
+Update values file:
+
+```yaml
+## Nats
+nats:
+  config:
+    nats:
+      tls:
+        enabled: true
+        secretName: mir-tls-secret # Secret name
+        dir: /etc/nats-certs/nats
+        cert: tls.crt
+        key: tls.key
+```
+
+### Step 3: Install Root Certificate on Module
+
+If the CA Certificate is public and installed in the Trusted Store of your container, you can skip this step.
+
+#### Docker
+
+Let's launch the server with the RootCA file. Edit `./mir-compose/mir/local-config.yaml` and set the path of the credentials files under `mir.rootCA`. Edit `./mir-compose/mir/compose.yaml` to mount the file.
+
+```bash
+# Restart server
+docker compose down
+docker compose up
+```
+
+#### Kubernetes
+
+Create a Kubernetes Secret with the RootCA:
+
+```bash
+# Directly to the cluster
+kubectl create secret generic mir-rootca-secret --from-file=ca.crt
+# As file
+kubectl create secret generic mir-rootca-secret --from-file=ca.crt -o yaml --dry-run=client > mir-rootca.secret.yaml
+```
+
+Update values file:
+
+```yaml
+## MIR
+rootCASecretRef: mir-rootca-secret # Secret name
+```
+
+### Step 4: Install the Root Certificate on the Clients
 
 If the CA Certificate is public and installed in the Trusted Store of your machine, you can skip this step.
 
@@ -108,16 +164,6 @@ trust list | grep "NATS Root CA"
 #### Via Configuration
 
 If you prefer not too use the Trusted Store, you can pass the CA certificate directly in the Mir applications.
-
-##### Module
-
-Let's launch the server with the RootCA file. Edit `./mir-compose/mir/local-config.yaml` and set the path of the credentials files under `mir.rootCA`. Edit `./mir-compose/mir/compose.yaml` to mount the file.
-
-```bash
-# Restart server
-docker compose down
-docker compose up
-```
 
 #### CLI
 
