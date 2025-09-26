@@ -83,10 +83,18 @@ spec:
               subPath: mir.creds
               readOnly: true
             {{- end }}
-            {{- with .Values.rootCASecretRef }}
-            - name: rootca
+            {{- if or .Values.caSecretRef .Values.tlsSecretRef }}
+            - name: mir-certs
               mountPath: /etc/mir/ca.crt
               subPath: ca.crt
+              readOnly: true
+            - name: mir-certs
+              mountPath: /etc/mir/tls.crt
+              subPath: tls.crt
+              readOnly: true
+            - name: mir-certs
+              mountPath: /etc/mir/tls.key
+              subPath: tls.key
               readOnly: true
             {{- end }}
           {{- with .Values.volumeMounts }}
@@ -101,10 +109,26 @@ spec:
           secret:
             secretName: {{ . }}
         {{- end }}
-        {{- with .Values.rootCASecretRef }}
-        - name: rootca
-          secret:
-            secretName: {{ . }}
+        {{- if or .Values.caSecretRef .Values.tlsSecretRef }}
+        - name: mir-certs
+          projected:
+            sources:
+            {{- with .Values.caSecretRef }}
+            - secret:
+                name: {{ . }}
+                items:
+                - key: ca.crt
+                  path: ca.crt
+            {{- end }}
+            {{- with .Values.tlsSecretRef }}
+            - secret:
+                name: {{ . }}
+                items:
+                - key: tls.crt
+                  path: tls.crt
+                - key: tls.key
+                  path: tls.key
+            {{- end }}
         {{- end }}
       {{- with .Values.volumes }}
         {{- toYaml . | nindent 8 }}

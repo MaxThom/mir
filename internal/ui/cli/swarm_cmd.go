@@ -67,6 +67,8 @@ func (d *SwarmCmd) Run(log zerolog.Logger, m *mSdk.Mir, cfg ui.Config) error {
 		WithLogLevel(logLvl).
 		WithPrettyLogger(false).
 		WithCredentials(currentCtx.Credentials).
+		WithCerticate(currentCtx.TlsCert, currentCtx.TlsKey).
+		WithCA(currentCtx.RootCA).
 		Incubate()
 	if err != nil {
 		return fmt.Errorf("error incubating swarm: %w", err)

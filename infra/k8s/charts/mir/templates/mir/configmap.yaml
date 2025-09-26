@@ -18,8 +18,12 @@ data:
       {{- if .Values.authSecretRef }}
       credentials: "/etc/mir/mir.creds"
       {{- end }}
-      {{- if .Values.rootCASecretRef }}
+      {{- if .Values.caSecretRef }}
       rootCA: "/etc/mir/ca.crt"
+      {{- end }}
+      {{- if .Values.tlsSecretRef }}
+      tlsKey: "/etc/mir/tls.key"
+      tlsCert: "/etc/mir/tls.crt"
       {{- end }}
     surreal:
       {{- if .Values.surrealdb.enabled }}

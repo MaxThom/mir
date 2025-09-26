@@ -134,6 +134,13 @@ func WithRootCA(filePath string) nats.Option {
 	return nats.RootCAs(filePath)
 }
 
+func WithClientCertificate(certFilePath, keyFilePath string) nats.Option {
+	if keyFilePath == "" || certFilePath == "" {
+		return func(o *nats.Options) error { return nil }
+	}
+	return nats.ClientCert(certFilePath, keyFilePath)
+}
+
 func WithDefaultReconnectOpts() []nats.Option {
 	return []nats.Option{
 		nats.RetryOnFailedConnect(true),

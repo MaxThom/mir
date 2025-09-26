@@ -97,10 +97,25 @@ func WithUserCredentials(credentialsFile string) func(*BusConn) {
 	}
 }
 
-func WithRootCA(rootCAFile string) func(*BusConn) {
+func WithRootCA(rootCAFile ...string) func(*BusConn) {
 	return func(bus *BusConn) {
-		if rootCAFile != "" {
-			bus.opts = append(bus.opts, nats.RootCAs(rootCAFile))
+		// Filter out empty entries from rootCAFile
+		var filteredRootCA []string
+		for _, ca := range rootCAFile {
+			if ca != "" {
+				filteredRootCA = append(filteredRootCA, ca)
+			}
+		}
+		if len(filteredRootCA) > 0 {
+			bus.opts = append(bus.opts, nats.RootCAs(filteredRootCA...))
+		}
+	}
+}
+
+func WithClientCertificate(certFile string, keyFile string) func(*BusConn) {
+	return func(bus *BusConn) {
+		if certFile != "" && keyFile != "" {
+			bus.opts = append(bus.opts, nats.ClientCert(certFile, keyFile))
 		}
 	}
 }

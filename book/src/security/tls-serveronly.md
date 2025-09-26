@@ -7,6 +7,7 @@ Have certificates on hands:
 
 Have a mir deployment ready to be used:
 - [Setup Compose Release](../running_mir/docker.md)
+- [Setup Kubernetes Release](../running_mir/kubernetes.md)
 
 ## Steps
 
@@ -16,7 +17,7 @@ If you have your own, skip to **Step 2**.
 
 This will:
 - generate a CA private key and certificate
-  - must be installed on Mir clients (CLI, Devices, Modules)
+  - the certificate must be installed on Mir clients (CLI, Devices, Modules)
 - generate a Server private key and certificate.
   - must be passed on Nats Message Bus
 - sign the Server certificate with the CA
@@ -135,7 +136,7 @@ Update values file:
 
 ```yaml
 ## MIR
-rootCASecretRef: mir-rootca-secret # Secret name
+caSecretRef: mir-rootca-secret # Secret name
 ```
 
 ### Step 4: Install the Root Certificate on the Clients

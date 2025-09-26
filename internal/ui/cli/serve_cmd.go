@@ -46,6 +46,8 @@ type (
 		Url         string `help:"Mir server URL" default:"nats://127.0.0.1:4222" yaml:"url"`
 		Credentials string `help:"Mir JWT/NKEY credential file path" default:"" yaml:"credentials"`
 		RootCA      string `help:"Mir RootCA for TLS connection" default:"" yaml:"rootCA"`
+		TLSCert     string `help:"Mir Certificate for TLS connection" default:"" yaml:"tlsCert"`
+		TLSKey      string `help:"Mir Private Key for TLS connection" default:"" yaml:"tlsKey"`
 		LogLevel    string `help:"Mir loglevel for each service" default:"info" yaml:"logLevel"`
 		HttpPort    int    `help:"Mir http port for api" default:"3015" yaml:"httpPort"`
 	}
@@ -204,6 +206,7 @@ func (d *ServeCmd) run(
 	opts := append(mir.WithDefaultReconnectOpts(), mir.WithDefaultConnectionLogging(log)...)
 	opts = append(opts, mir.WithUserCredentials(cfg.Mir.Credentials))
 	opts = append(opts, mir.WithRootCA(cfg.Mir.RootCA))
+	opts = append(opts, mir.WithClientCertificate(cfg.Mir.TLSCert, cfg.Mir.TLSKey))
 	m, err := mir.Connect(AppName, cfg.Mir.Url, opts...)
 	if err != nil {
 		log.Err(err).Msg("error connecting to Mir server")

@@ -165,6 +165,7 @@ func (d *Client) BeforeApply(k *kong.Context, log zerolog.Logger, ctx ui.Context
 	opts := append(mir.WithDefaultReconnectOpts(), mir.WithDefaultConnectionLogging(log)...)
 	opts = append(opts, mir.WithUserCredentials(ctx.Credentials))
 	opts = append(opts, mir.WithRootCA(ctx.RootCA))
+	opts = append(opts, mir.WithClientCertificate(ctx.TlsCert, ctx.TlsKey))
 	m, err := mir.Connect(AppName, ctx.Target, opts...)
 	if err != nil {
 		log.Err(err).Msg("error connection to Mir server")
