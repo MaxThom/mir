@@ -11,6 +11,7 @@
 - [ ] MCP Server for Mir
 - [ ] TinyGo
 - [ ] Road to Production
+  - [ ] Module SDK Server rename to Client
   - [ ] security with nats
     - [ ] tls
       - [x] setup with self generated tls
@@ -20,7 +21,8 @@
         - [x] update name of default ca
       - [x] add any nats opts on dev SDK
       - [ ] add lets encrypt example for k8s
-      - [ ] mutual TLS
+      - [x] mutual TLS
+  - [ ] remove custom Surreal Helm
   - [ ] core bug with reconnect of loading devices
   - [ ] docs
   - [ ] autoreconnect
@@ -46,7 +48,7 @@
 - [ ] DeviceConfiguration and ServerConfiguration options
 - [ ] Talk about reconnection and network loss
 - [ ] Update CLI usage, mainly ctx and under device subcommand
-- [ ] Security
+- [x] Security
 - [ ] DeviceStorage
 
 ### Ergonomics

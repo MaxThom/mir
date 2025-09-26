@@ -57,6 +57,9 @@ type devicesBuilder struct {
 	s           *swarm
 	logLevel    mirDevice.LogLevel
 	credentials string
+	tlsKey      string
+	tlsCert     string
+	caCert      string
 	logWriters  []io.Writer
 	deviceReqs  []*mir_apiv1.CreateDeviceRequest
 	deviceIds   []string
@@ -69,6 +72,9 @@ type devicesBuilder struct {
 type deviceBuilder struct {
 	s           *swarm
 	credentials string
+	tlsKey      string
+	tlsCert     string
+	caCert      string
 	logLevel    mirDevice.LogLevel
 	logWriters  []io.Writer
 	deviceReq   *mir_apiv1.CreateDeviceRequest
@@ -129,6 +135,17 @@ func (b *devicesBuilder) WithCredentials(filePath string) *devicesBuilder {
 	return b
 }
 
+func (b *devicesBuilder) WithCerticate(keyFile, certFile string) *devicesBuilder {
+	b.tlsCert = certFile
+	b.tlsKey = keyFile
+	return b
+}
+
+func (b *devicesBuilder) WithCA(certFile string) *devicesBuilder {
+	b.caCert = certFile
+	return b
+}
+
 func (b *devicesBuilder) WithCommandHandler(t proto.Message, handler func(proto.Message) (proto.Message, error)) *devicesBuilder {
 	b.cmd = append(b.cmd, commandHandler{
 		target:  t,
@@ -172,6 +189,8 @@ func (b *devicesBuilder) Incubate() ([]*mir_apiv1.CreateDeviceResponse, error) {
 			Store(b.storeOpts).
 			Target(b.s.bus.ConnectedUrl()).
 			UserCredentialsFile(b.credentials).
+			RootCAFile(b.caCert).
+			ClientCertificateFile(b.tlsCert, b.tlsKey).
 			Schema(b.sch...).Build()
 		if err != nil {
 			errs = errors.Join(err)
@@ -195,6 +214,8 @@ func (b *devicesBuilder) Incubate() ([]*mir_apiv1.CreateDeviceResponse, error) {
 			Store(b.storeOpts).
 			Target(b.s.bus.ConnectedUrl()).
 			UserCredentialsFile(b.credentials).
+			RootCAFile(b.caCert).
+			ClientCertificateFile(b.tlsCert, b.tlsKey).
 			Schema(b.sch...).Build()
 		if err != nil {
 			errs = errors.Join(err)
@@ -229,6 +250,17 @@ func (b *deviceBuilder) WithSchema(s ...protoreflect.FileDescriptor) *deviceBuil
 
 func (b *deviceBuilder) WithCredentials(filePath string) *deviceBuilder {
 	b.credentials = filePath
+	return b
+}
+
+func (b *deviceBuilder) WithCerticate(keyFile, certFile string) *deviceBuilder {
+	b.tlsCert = certFile
+	b.tlsKey = keyFile
+	return b
+}
+
+func (b *deviceBuilder) WithCA(certFile string) *deviceBuilder {
+	b.caCert = certFile
 	return b
 }
 
@@ -274,6 +306,8 @@ func (b *deviceBuilder) Incubate() (*mir_apiv1.CreateDeviceResponse, error) {
 		Store(b.storeOpts).
 		Target(b.s.bus.ConnectedUrl()).
 		UserCredentialsFile(b.credentials).
+		RootCAFile(b.caCert).
+		ClientCertificateFile(b.tlsCert, b.tlsKey).
 		Schema(b.sch...).Build()
 	if err != nil {
 		return nil, err

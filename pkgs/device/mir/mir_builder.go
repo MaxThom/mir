@@ -25,6 +25,7 @@ type builder struct {
 	fileOpts            []func(*mir_config.MirConfig)
 	credentialsFiles    []string
 	rootCAFiles         []string
+	clientTls           []tls
 	deviceId            *string
 	deviceIdGenerator   *IdGenerator
 	deviceIdPrefix      *IdPrefix
@@ -37,6 +38,11 @@ type builder struct {
 	excludeMirProtoFlag bool
 	storeOpts           StoreOptions
 	extraOpts           []nats.Option
+}
+
+type tls struct {
+	cert string
+	key  string
 }
 
 type configFormat string
@@ -119,7 +125,7 @@ func (b builder) RootCAFile(fullPath string) builder {
 //   - ./ca.crt
 //   - ~/.config/mir/ca.crt
 //   - /etc/mir/ca.crt
-func (b builder) DefaultRootCA() builder {
+func (b builder) DefaultRootCAFile() builder {
 	userHomeDir, err := os.UserHomeDir()
 	if err != nil {
 		fmt.Println("$HOME is not defined")
@@ -131,6 +137,40 @@ func (b builder) DefaultRootCA() builder {
 		"/etc/mir/ca.crt",
 		xdgConfigHome,
 		"./ca.crt",
+	)
+	return b
+}
+
+func (b builder) ClientCertificateFile(certFile, keyFile string) builder {
+	b.clientTls = append(b.clientTls, tls{cert: certFile, key: keyFile})
+	return b
+}
+
+// Look for a Certificate and Private Key file at those locations in order to identify server:
+//   - ./tls.crt & ./tls.key
+//   - ~/.config/mir/tls.crt & ~/.config/mir/tls.key
+//   - /etc/mir/tls.crt & /etc/mir/tls.key
+func (b builder) DefaultClientCertificateFile() builder {
+	userHomeDir, err := os.UserHomeDir()
+	if err != nil {
+		fmt.Println("$HOME is not defined")
+		userHomeDir = "./"
+	}
+	xdgConfigHome := filepath.Join(userHomeDir, ".config", "mir")
+
+	b.clientTls = append(b.clientTls,
+		tls{
+			key:  "/etc/mir/tls.key",
+			cert: "/etc/mir/tls.crt",
+		},
+		tls{
+			key:  filepath.Join(xdgConfigHome, "tls.key"),
+			cert: filepath.Join(xdgConfigHome, "tls.crt"),
+		},
+		tls{
+			key:  "./tls.key",
+			cert: "./tls.crt",
+		},
 	)
 	return b
 }
@@ -296,7 +336,7 @@ func (b builder) build(extraCfg any) (*Mir, error) {
 	if cfg.Mir.Credentials != "" {
 		b.credentialsFiles = append(b.credentialsFiles, cfg.Mir.Credentials)
 	}
-	// Look for first file to exist
+	// Look for first file to exist, reverse so we prioritise config file
 	for i := len(b.credentialsFiles) - 1; i >= 0; i-- {
 		c := b.credentialsFiles[i]
 		if _, err := os.Stat(c); err == nil {
@@ -308,7 +348,7 @@ func (b builder) build(extraCfg any) (*Mir, error) {
 	if cfg.Mir.RootCA != "" {
 		b.rootCAFiles = append(b.rootCAFiles, cfg.Mir.RootCA)
 	}
-	// Look for first file to exist
+	// Look for first file to exist, reverse so we prioritise config file
 	for i := len(b.rootCAFiles) - 1; i >= 0; i-- {
 		c := b.rootCAFiles[i]
 		if _, err := os.Stat(c); err == nil {
@@ -316,6 +356,24 @@ func (b builder) build(extraCfg any) (*Mir, error) {
 			break
 		}
 	}
+
+	// Add TLS file path
+	if cfg.Mir.TLSCert != "" && cfg.Mir.TLSKey != "" {
+		b.clientTls = append(b.clientTls, tls{cert: cfg.Mir.TLSCert, key: cfg.Mir.TLSKey})
+	}
+	// Look for first file to exist, reverse so we prioritise config file
+	for i := len(b.clientTls) - 1; i >= 0; i-- {
+		c := b.clientTls[i]
+		if _, err := os.Stat(c.cert); err != nil {
+			continue
+		}
+		if _, err := os.Stat(c.key); err != nil {
+			continue
+		}
+		cfg.Mir.TLSCert = c.cert
+		cfg.Mir.TLSKey = c.key
+	}
+
 	if b.logLevel != nil {
 		cfg.Mir.LogLevel = b.logLevel.String()
 	} else if cfg.Mir.LogLevel == "" {

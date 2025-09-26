@@ -47,6 +47,8 @@ type (
 		Url                 string
 		CredentialsFilePath string
 		RootCAFilePath      string
+		CertificateFilePath string
+		KeyFilePath         string
 	}
 
 	DatabaseSever struct {
@@ -67,6 +69,9 @@ var (
 		DataBusServer: DataBusServer{
 			Url:                 "nats://127.0.0.1:4222",
 			CredentialsFilePath: "",
+			RootCAFilePath:      "",
+			CertificateFilePath: "",
+			KeyFilePath:         "",
 		},
 		DatabaseServer: DatabaseSever{
 			Url:       "ws://127.0.0.1:8000/rpc",
@@ -185,6 +190,7 @@ func run(
 	opts := append(mir.WithDefaultReconnectOpts(), mir.WithDefaultConnectionLogging(log)...)
 	opts = append(opts, mir.WithUserCredentials(cfg.DataBusServer.CredentialsFilePath))
 	opts = append(opts, mir.WithRootCA(cfg.DataBusServer.RootCAFilePath))
+	opts = append(opts, mir.WithClientCertificate(cfg.DataBusServer.CertificateFilePath, cfg.DataBusServer.KeyFilePath))
 	m, err := mir.Connect(AppName, cfg.DataBusServer.Url, opts...)
 	if err != nil {
 		return err

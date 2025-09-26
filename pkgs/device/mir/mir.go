@@ -44,6 +44,8 @@ type Config struct {
 	Target      string       `json:"target" yaml:"target"`
 	Credentials string       `json:"credentials" yaml:"credentials"`
 	RootCA      string       `json:"rootCA" yaml:"rootCA"`
+	TLSCert     string       `json:"tlsCert" yaml:"tlsCert"`
+	TLSKey      string       `json:"tlsKey" yaml:"tlsKey"`
 	LogLevel    string       `json:"logLevel" yaml:"logLevel"`
 	Device      DeviceCfg    `json:"device" yaml:"device"`
 	LocalStore  StoreOptions `json:"localStore" yaml:"localStore"`
@@ -169,6 +171,7 @@ func (m *Mir) Launch(ctx context.Context, opts ...nats.Option) (*sync.WaitGroup,
 	m.b, err = bus.New(m.cfg.Target,
 		bus.WithUserCredentials(m.cfg.Credentials),
 		bus.WithRootCA(m.cfg.RootCA),
+		bus.WithClientCertificate(m.cfg.TLSCert, m.cfg.TLSKey),
 		bus.WithCustom(opts...),
 		bus.WithConnectHandler(func(nc *nats.Conn) {
 			m.l.Info().Msg("connected to Mir Server ")
@@ -211,7 +214,7 @@ func (m *Mir) Launch(ctx context.Context, opts ...nats.Option) (*sync.WaitGroup,
 				m.sendPendingMsgs()
 			}()
 		}),
-		bus.WithDisconnHandler(func(_ *nats.Conn, err error) {
+		bus.WithDisconnHandler(func(c *nats.Conn, err error) {
 			m.l.Warn().Err(err).Msg("disconnected from Mir Server")
 			m.setOfflineHandler()
 		}),
@@ -261,7 +264,7 @@ func (m *Mir) Launch(ctx context.Context, opts ...nats.Option) (*sync.WaitGroup,
 	case <-connectWorkDone:
 		m.l.Debug().Msg("online initialization")
 	case <-time.After(2 * time.Second):
-		m.l.Warn().Msg("disconnected from Mir Server ")
+		m.l.Warn().Err(m.b.LastError()).Msg("disconnected from Mir Server ")
 		m.setOfflineHandler()
 		m.l.Debug().Msg("offline initialization")
 	}
