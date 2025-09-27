@@ -1,5 +1,5 @@
 
-ld_flags := "-X 'github.com/maxthom/mir/internal/libs/build_meta.Version=0.0.0' -X 'github.com/maxthom/mir/internal/libs/build_meta.User=$(id -u -n)' -X 'github.com/maxthom/mir/internal/libs/build_meta.Time=$(date -u)'"
+ld_flags := "-X 'github.com/maxthom/mir/internal/libs/build_meta.Version=$(git branch --show-current)-$(git rev-parse --short HEAD)' -X 'github.com/maxthom/mir/internal/libs/build_meta.User=$(id -u -n)' -X 'github.com/maxthom/mir/internal/libs/build_meta.Time=$(date -u)'"
 
 # Display recipes
 default:

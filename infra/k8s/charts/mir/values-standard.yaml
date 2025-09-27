@@ -143,19 +143,15 @@ nats:
 #
 surrealdb:
   enabled: true
-
   surrealdb:
     path: "surrealkv:/data/mir.db"  # File-based storage for persistence
     initial_user: "root"
     initial_pass: "root"  # Change in production
     log: info
-
   persistence:
     enabled: true
     size: 20Gi  # Adequate storage for device data
-    storageClass: ""  # Use default
-    accessMode: ReadWriteOnce
-
+    storageClassName: ""  # Use default
   resources: {}
     # requests:
     #   cpu: 500m
@@ -163,14 +159,12 @@ surrealdb:
     # limits:
     #   cpu: 1000m
     #   memory: 8Gi
-
   ingress:
     enabled: false
     className: ""
     annotations: {}
     hosts: []
     tls: []
-
   ## Use secret to pass any config as environment variables, mainly passwords and tokens.
   ## Refer to chart ./secret/surreal.secret.yaml
   ## eg:

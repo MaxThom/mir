@@ -128,8 +128,6 @@ nats:
 #
 surrealdb:
   enabled: true
-  image:
-    tag: "v2.3.7"
   surrealdb:
     path: "surrealkv:/data/mir.db"  # File-based storage
     initial_user: "root"
@@ -138,8 +136,7 @@ surrealdb:
   persistence:
     enabled: true
     size: 10Gi
-    storageClass: ""
-    accessMode: ReadWriteOnce
+    storageClassName: ""
   podSecurityContext:
     podSecurityContext:
     runAsUser: 999
