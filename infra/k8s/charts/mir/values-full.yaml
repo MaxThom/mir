@@ -177,19 +177,15 @@ nats:
 #
 surrealdb:
   enabled: true
-
   surrealdb:
     path: "surrealkv:/data/mir.db"
     initial_user: "root"
     initial_pass: "root"  # Change in production
     log: info
-
   persistence:
     enabled: true
     size: 20Gi  # Production storage
-    storageClass: ""
-    accessMode: ReadWriteOnce
-
+    storageClassName: ""
   resources: {}
     # requests:
     #   cpu: 1000m
@@ -197,7 +193,6 @@ surrealdb:
     # limits:
     #   cpu: 1000m
     #   memory: 8Gi
-
   ingress:
     enabled: false
     className: ""
@@ -211,7 +206,6 @@ surrealdb:
       - secretName: surreal-tls
         hosts:
           - surreal.example.com
-
   ## Use secret to pass any config as environment variables, mainly passwords and tokens.
   ## Refer to chart ./secret/surreal.secret.yaml
   ## eg:

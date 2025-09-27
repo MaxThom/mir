@@ -3,8 +3,8 @@ dependencies:
   repository: https://nats-io.github.io/k8s/helm/charts/
   version: 1.3.9
 - name: surrealdb
-  repository: file://./charts/surrealdb
-  version: 0.3.7
+  repository: https://helm.surrealdb.com
+  version: 0.4.0
 - name: influxdb2
   repository: https://helm.influxdata.com/
   version: 2.1.2
@@ -17,5 +17,5 @@ dependencies:
 - name: promtail
   repository: https://grafana.github.io/helm-charts
   version: 6.17.0
-digest: sha256:3a72d5fbdfaf2d52d04504a2fbf703808f3697561b4d2808f1aa2b410db0c5c7
-generated: "2025-08-23T13:28:03.731010635-04:00"
+digest: sha256:3e434ddb5976662d87f187e99ead9dde5e97b579797a853f94824f91ff00a045
+generated: "2025-09-27T14:45:59.642952636-04:00"

@@ -12,8 +12,8 @@ dependencies:
     repository: https://nats-io.github.io/k8s/helm/charts/
     condition: nats.enabled
   - name: surrealdb
-    version: "0.3.7"
-    repository: "file://./charts/surrealdb"
+    version: "0.4.0"
+    repository: https://helm.surrealdb.com
     condition: surrealdb.enabled
   - name: influxdb2
     version: "2.1.2"
