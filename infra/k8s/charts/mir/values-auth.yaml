@@ -7,7 +7,7 @@
 ##
 
 ## NATS
-# Add SYSTEM configuration for Nats Auth
+# Option 1 with tokens direcly in values file
 nats:
   config:
     resolver:
@@ -16,9 +16,6 @@ nats:
         type: full
         interval: 2m
         timeout: 1.9s
-
-# Option 1 with tokens direcly in values file
-nats:
     merge:
       operator: <OPERATOR_JWT>
       system_account: <SYS_ACCOUNT_ID>
@@ -27,8 +24,15 @@ nats:
 
 # Option 2 with secret
 nats:
-  merge:
-    $include: ../nats-auth/resolver.conf
+  config:
+    resolver:
+      enabled: true
+      merge:
+        type: full
+        interval: 2m
+        timeout: 1.9s
+    merge:
+      $include: ../nats-auth/resolver.conf
   container:
     patch:
     - op: add
