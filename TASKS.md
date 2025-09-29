@@ -21,6 +21,11 @@
         - [x] update name of default ca
       - [x] add any nats opts on dev SDK
       - [ ] add lets encrypt example for k8s
+        - [x] cant do mutual with lets encrypt as it does not give CA to sign clients.
+        - [x] add DNS01 challenge
+        - [ ] tidy up deployment
+        - [ ] add cert object in gitops Mir
+        - [ ] update mir chart to set url to release if not empty
       - [x] mutual TLS
   - [ ] remove custom Surreal Helm
   - [ ] core bug with reconnect of loading devices

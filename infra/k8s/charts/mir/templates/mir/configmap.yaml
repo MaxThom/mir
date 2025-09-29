@@ -8,10 +8,10 @@ metadata:
 data:
   mir.yaml: |
     mir:
-      {{- if .Values.nats.enabled }}
-      url: "nats://{{ .Release.Name }}-nats:4222"
-      {{- else }}
+      {{- if .Values.config.mir.url }}
       url: {{ .Values.config.mir.url | quote }}
+      {{- else }}
+      url: "nats://{{ .Release.Name }}-nats:4222"
       {{- end }}
       logLevel: {{ .Values.config.mir.logLevel | quote }}
       httpPort: {{ .Values.service.targetPort }}
@@ -26,20 +26,20 @@ data:
       tlsCert: "/etc/mir/tls.crt"
       {{- end }}
     surreal:
-      {{- if .Values.surrealdb.enabled }}
-      url: "ws://{{ .Release.Name }}-surrealdb:{{ .Values.surrealdb.service.port }}/rpc"
-      {{- else }}
+      {{- if .Values.config.surreal.url }}
       url: {{ .Values.config.surreal.url | quote }}
+      {{- else }}
+      url: "ws://{{ .Release.Name }}-surrealdb:{{ .Values.surrealdb.service.port }}/rpc"
       {{- end }}
       user: {{ .Values.config.surreal.user | quote }}
       password: {{ .Values.config.surreal.password | quote }}
       namespace: {{ .Values.config.surreal.namespace | quote }}
       database: {{ .Values.config.surreal.database | quote }}
     influx:
-      {{- if .Values.influxdb2.enabled }}
-      url: "http://{{ .Release.Name }}-influxdb2:{{ .Values.influxdb2.service.port }}"
-      {{- else }}
+      {{- if .Values.config.influx.url }}
       url: {{ .Values.config.influx.url | quote }}
+      {{- else }}
+      url: "http://{{ .Release.Name }}-influxdb2:{{ .Values.influxdb2.service.port }}"
       {{- end }}
       token: {{ .Values.config.influx.token | quote }}
       org: {{ .Values.config.influx.org | quote }}
