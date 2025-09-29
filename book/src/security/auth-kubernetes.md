@@ -95,8 +95,15 @@ Update <MIR_RESOLVER_SECRET> with your secret name.
 
 ```yaml
 nats:
-  merge:
-    $include: ../nats-auth/resolver.conf
+  config:
+    resolver:
+      enabled: true
+      merge:
+        type: full
+        interval: 2m
+        timeout: 1.9s
+    merge:
+      $include: ../nats-auth/resolver.conf
   container:
     patch:
     - op: add
