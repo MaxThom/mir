@@ -14,19 +14,19 @@ image:
 #secretRef: mir-secret
 config:
   mir:
-    # NATS URL - automatically set when nats.enabled=true, otherwise use this value
-    url: "nats://external-nats:4222/"
+    # NATS URL - automatically set with release name when empty
+    url: "" # nats://localhost:4222/
     logLevel: "info"
   surreal:
-    # SURREAL URL - automatically set when surreal.enabled=true otherwise use this value
-    url: "ws://localhost:8000/"
+    # SURREAL URL - automatically set with release name when empty
+    url: "" # ws://localhost:8000/
     namespace: "global"
     database: "mir"
     user: "root"
     password: "root"
   influx:
-    # INFLUX URL - automatically set when influx.enabled=true otherwise use this value
-    url: "http://localhost:8086/"
+    # INFLUX URL - automatically set with release name when empty
+    url: "" # http://localhost:8086/
     token: "mir-operator-token"
     org: "Mir"
     bucket: "mir"
@@ -36,6 +36,10 @@ config:
     gzip: false
 
 ## Pass extra environment variables
+# Each config can be overwritten using env. vars.
+# MIR__ for prefix, __ for nesting
+# eg: MIR__MIR__URL for config.mir.url
+# eg: MIR__SURREAL__PASSWORD for config.surreal.password
 envVars: []
 # - name: key
 #   value: value
