@@ -18,7 +18,7 @@ type listEventsRoute struct {
 }
 
 // List events
-func (r *serverRoutes) ListEvents() *listEventsRoute {
+func (r *clientRoutes) ListEvents() *listEventsRoute {
 	return &listEventsRoute{m: r.m}
 }
 
@@ -44,7 +44,7 @@ func (r *listEventsRoute) handlerWrapper(f func(msg *Msg, clientId string, req m
 			return
 		}
 
-		resp, err := f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), mir_v1.ProtoEventTargetToMirEventTarget(req.Target))
+		resp, err := f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), mir_v1.ProtoEventTargetToMirEventTarget(req.Target))
 		if err != nil {
 			_ = r.m.sendReplyOrAck(msg, &mir_apiv1.ListEventsResponse{Response: &mir_apiv1.ListEventsResponse_Error{
 				Error: err.Error(),
@@ -98,7 +98,7 @@ type deleteEventsRoute struct {
 }
 
 // Delete events
-func (r *serverRoutes) DeleteEvents() *deleteEventsRoute {
+func (r *clientRoutes) DeleteEvents() *deleteEventsRoute {
 	return &deleteEventsRoute{m: r.m}
 }
 
@@ -124,7 +124,7 @@ func (r *deleteEventsRoute) handlerWrapper(f func(msg *Msg, clientId string, req
 			return
 		}
 
-		resp, err := f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), mir_v1.ProtoEventTargetToMirEventTarget(req.Target))
+		resp, err := f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), mir_v1.ProtoEventTargetToMirEventTarget(req.Target))
 		if err != nil {
 			_ = r.m.sendReplyOrAck(msg, &mir_apiv1.DeleteEventReponse{Response: &mir_apiv1.DeleteEventReponse_Error{
 				Error: err.Error(),

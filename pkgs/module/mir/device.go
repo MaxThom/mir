@@ -44,7 +44,7 @@ func (r deviceRoutes) NewSubject(module, version, function string, extra ...stri
 // <extra>: any extra token you want to add
 func (r *deviceRoutes) Subscribe(sbj deviceSubject, h func(msg *Msg, deviceId string, data []byte)) error {
 	f := func(msg *nats.Msg) {
-		h(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), msg.Data)
+		h(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), msg.Data)
 	}
 	return r.m.subscribe(sbj.String(), f)
 }
@@ -58,7 +58,7 @@ func (r *deviceRoutes) Subscribe(sbj deviceSubject, h func(msg *Msg, deviceId st
 // <extra>: any extra token you want to add
 func (r *deviceRoutes) QueueSubscribe(queue string, sbj deviceSubject, h func(msg *Msg, deviceId string, data []byte)) error {
 	f := func(msg *nats.Msg) {
-		h(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), msg.Data)
+		h(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), msg.Data)
 	}
 	return r.m.queueSubscribe(queue, sbj.String(), f)
 }
@@ -98,7 +98,7 @@ func (r *hearthbeatRoute) QueueSubscribe(queue string, deviceId string, f func(m
 
 func (r *hearthbeatRoute) handlerWrapper(f func(msg *Msg, deviceId string)) nats.MsgHandler {
 	return func(msg *nats.Msg) {
-		f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId())
+		f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId())
 	}
 }
 
@@ -122,7 +122,7 @@ func (r *telemetryRoute) Subscribe(deviceId string, f func(msg *Msg, deviceId st
 	}
 	sbj := tlm_client.TelemetryDeviceStream.WithId(deviceId)
 	h := func(msg *nats.Msg) {
-		f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), msg.Header.Get(HeaderMsgName), msg.Data)
+		f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), msg.Header.Get(HeaderMsgName), msg.Data)
 	}
 	return r.m.subscribe(sbj, h)
 }
@@ -136,7 +136,7 @@ func (r *telemetryRoute) QueueSubscribe(queue string, deviceId string, f func(ms
 	}
 	sbj := tlm_client.TelemetryDeviceStream.WithId(deviceId)
 	h := func(msg *nats.Msg) {
-		f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), msg.Header.Get(HeaderMsgName), msg.Data)
+		f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), msg.Header.Get(HeaderMsgName), msg.Data)
 	}
 	return r.m.queueSubscribe(queue, sbj, h)
 }
@@ -197,22 +197,22 @@ func (r *schemaRoute) handlerWrapper(f func(msg *Msg, deviceId string, schema *m
 	return func(msg *nats.Msg) {
 		msg, err := r.m.decompressMsg(msg)
 		if err != nil {
-			f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), nil, fmt.Errorf("error decompressing msg: %w", err))
+			f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), nil, fmt.Errorf("error decompressing msg: %w", err))
 			return
 		}
 
 		sch := &mir_apiv1.SchemaRetrieveResponse{}
 		if err = proto.Unmarshal(msg.Data, sch); err != nil {
-			f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), nil, fmt.Errorf("error deserializing schema: %w", err))
+			f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), nil, fmt.Errorf("error deserializing schema: %w", err))
 			return
 		}
 		if sch.GetError() != "" {
-			f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), nil, fmt.Errorf("error in schema response: %s", sch.GetError()))
+			f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), nil, fmt.Errorf("error in schema response: %s", sch.GetError()))
 			return
 		}
 
 		schema, err := mir_proto.UnmarshalSchema(sch.GetSchema())
-		f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), schema, err)
+		f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), schema, err)
 	}
 }
 
@@ -349,7 +349,7 @@ func (r *reportedPropertiesRoute) Subscribe(deviceId string, f func(msg *Msg, de
 	}
 	sbj := cfg_client.ReportedPropertiesStream.WithId(deviceId)
 	h := func(msg *nats.Msg) {
-		f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), msg.Header.Get(HeaderMsgName), msg.Data)
+		f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), msg.Header.Get(HeaderMsgName), msg.Data)
 	}
 	return r.m.subscribe(sbj, h)
 }
@@ -363,7 +363,7 @@ func (r *reportedPropertiesRoute) QueueSubscribe(queue string, deviceId string, 
 	}
 	sbj := cfg_client.ReportedPropertiesStream.WithId(deviceId)
 	h := func(msg *nats.Msg) {
-		f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), msg.Header.Get(HeaderMsgName), msg.Data)
+		f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), msg.Header.Get(HeaderMsgName), msg.Data)
 	}
 	return r.m.queueSubscribe(queue, sbj, h)
 }
@@ -403,7 +403,7 @@ func (r *desiredPropertiesRoute) QueueSubscribe(queue string, deviceId string, h
 
 func (r *desiredPropertiesRoute) handlerWrapper(f func(msg *Msg, deviceId string) (*mir_apiv1.DeviceEncodedReportedProperties, error)) nats.MsgHandler {
 	return func(msg *nats.Msg) {
-		resp, err := f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId())
+		resp, err := f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId())
 		if err != nil {
 			err = r.m.sendReplyOrAck(msg, &mir_apiv1.DeviceReportedPropertiesResponse{
 				Response: &mir_apiv1.DeviceReportedPropertiesResponse_Error{

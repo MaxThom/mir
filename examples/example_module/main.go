@@ -95,16 +95,16 @@ func device(m *mir.Mir) {
 }
 
 func server(m *mir.Mir) {
-	if err := m.Server().Subscribe(
-		m.Server().NewSubject("test", "v1", "fn"),
+	if err := m.Client().Subscribe(
+		m.Client().NewSubject("test", "v1", "fn"),
 		func(msg *mir.Msg, clientId string, data []byte) {
 			fmt.Println("server:", clientId, string(data))
 		}); err != nil {
 		fmt.Println("error subscribing to server data")
 	}
 
-	if err := m.Server().Publish(
-		m.Server().NewSubject("test", "v1", "fn"),
+	if err := m.Client().Publish(
+		m.Client().NewSubject("test", "v1", "fn"),
 		[]byte("hello")); err != nil {
 		fmt.Println("error publishing data")
 	}

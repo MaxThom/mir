@@ -22,55 +22,55 @@ const (
 // TODO Eventually, the subject will be a userid when auth is in place
 // The serverid is a header
 
-type serverSubject []string
+type clientSubject []string
 
-func (e serverSubject) String() string {
+func (e clientSubject) String() string {
 	return strings.Join(e, ".")
 }
 
-type serverRoutes struct {
+type clientRoutes struct {
 	m *Mir
 }
 
 // Access all server routes
-func (m *Mir) Server() *serverRoutes {
-	return &serverRoutes{m: m}
+func (m *Mir) Client() *clientRoutes {
+	return &clientRoutes{m: m}
 }
 
 // Create a Server Route subject to liscen data from a device stream
-func (r serverRoutes) NewSubject(module, version, function string, extra ...string) serverSubject {
+func (r clientRoutes) NewSubject(module, version, function string, extra ...string) clientSubject {
 	return append([]string{"client", "*", module, version, function}, extra...)
 }
 
 // Listen to a custom stream from server
-// User m.Server().NewSubject() to create the subject
+// User m.Client().NewSubject() to create the subject
 // <module>: refer to the module/app your building
 // <version>: version of the data in the stream (v1alpha, v1, etc)
 // <function>: refer to the exact function of the stream
 // <extra>: any extra token you want to add
-func (r *serverRoutes) Subscribe(sbj serverSubject, h func(msg *Msg, clientId string, data []byte)) error {
+func (r *clientRoutes) Subscribe(sbj clientSubject, h func(msg *Msg, clientId string, data []byte)) error {
 	f := func(msg *nats.Msg) {
-		h(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), msg.Data)
+		h(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), msg.Data)
 	}
 	return r.m.subscribe(sbj.String(), f)
 }
 
-// Listen to a custom stream from server1
+// Listen to a custom stream from server
 // Worker queue behavior means only one worker will process the message
 // User m.Server().NewSubject() to create the subject
 // <module>: refer to the module/app your building
 // <version>: version of the data in the stream (v1alpha, v1, etc)
 // <function>: refer to the exact function of the stream
 // <extra>: any extra token you want to add
-func (r *serverRoutes) QueueSubscribe(queue string, sbj serverSubject, h func(msg *Msg, clientId string, data []byte)) error {
+func (r *clientRoutes) QueueSubscribe(queue string, sbj clientSubject, h func(msg *Msg, clientId string, data []byte)) error {
 	f := func(msg *nats.Msg) {
-		h(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), msg.Data)
+		h(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), msg.Data)
 	}
 	return r.m.queueSubscribe(queue, sbj.String(), f)
 }
 
 // Publish proto data to a custom event stream from serve
-func (r *serverRoutes) PublishProto(sbj serverSubject, data proto.Message) error {
+func (r *clientRoutes) PublishProto(sbj clientSubject, data proto.Message) error {
 	sbj[1] = r.m.GetInstanceName()
 	b, err := proto.Marshal(data)
 	if err != nil {
@@ -84,7 +84,7 @@ func (r *serverRoutes) PublishProto(sbj serverSubject, data proto.Message) error
 }
 
 // Publish json data to a custom event stream from serve
-func (r *serverRoutes) PublishJson(sbj serverSubject, data any) error {
+func (r *clientRoutes) PublishJson(sbj clientSubject, data any) error {
 	sbj[1] = r.m.GetInstanceName()
 	b, err := json.Marshal(data)
 	if err != nil {
@@ -95,7 +95,7 @@ func (r *serverRoutes) PublishJson(sbj serverSubject, data any) error {
 }
 
 // Publish data to a custom server stream from serve
-func (r *serverRoutes) Publish(sbj serverSubject, data []byte) error {
+func (r *clientRoutes) Publish(sbj clientSubject, data []byte) error {
 	sbj[1] = r.m.GetInstanceName()
 	return r.m.publish(sbj.String(), data, nats.Header{})
 }
@@ -107,7 +107,7 @@ type createDeviceRoute struct {
 }
 
 // CreateDevice to integrate a new device in the system
-func (r *serverRoutes) CreateDevice() *createDeviceRoute {
+func (r *clientRoutes) CreateDevice() *createDeviceRoute {
 	return &createDeviceRoute{m: r.m}
 }
 
@@ -134,7 +134,7 @@ func (r *createDeviceRoute) handlerWrapper(f func(msg *Msg, clientId string, d m
 			return
 		}
 
-		resp, err := f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), mir_v1.NewDeviceFromCreateDeviceReq(req))
+		resp, err := f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), mir_v1.NewDeviceFromCreateDeviceReq(req))
 		if err != nil {
 			err = r.m.sendReplyOrAck(msg, &mir_apiv1.CreateDeviceResponse{Response: &mir_apiv1.CreateDeviceResponse_Error{
 				Error: err.Error(),
@@ -183,7 +183,7 @@ type updateDeviceRoute struct {
 }
 
 // Update a device in the system
-func (r *serverRoutes) UpdateDevice() *updateDeviceRoute {
+func (r *clientRoutes) UpdateDevice() *updateDeviceRoute {
 	return &updateDeviceRoute{m: r.m}
 }
 
@@ -209,7 +209,7 @@ func (r *updateDeviceRoute) handlerWrapper(f func(msg *Msg, clientId string, t m
 			return
 		}
 
-		resp, err := f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), mir_v1.ProtoDeviceTargetToMirDeviceTarget(req.Targets), mir_v1.NewDeviceFromUpdateDeviceReq(req))
+		resp, err := f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), mir_v1.ProtoDeviceTargetToMirDeviceTarget(req.Targets), mir_v1.NewDeviceFromUpdateDeviceReq(req))
 		if err != nil {
 			err = r.m.sendReplyOrAck(msg, &mir_apiv1.UpdateDeviceResponse{Response: &mir_apiv1.UpdateDeviceResponse_Error{
 				Error: err.Error(),
@@ -289,7 +289,7 @@ type deleteDeviceRoute struct {
 }
 
 // Delete a device in the system
-func (r *serverRoutes) DeleteDevice() *deleteDeviceRoute {
+func (r *clientRoutes) DeleteDevice() *deleteDeviceRoute {
 	return &deleteDeviceRoute{m: r.m}
 }
 
@@ -316,7 +316,7 @@ func (r *deleteDeviceRoute) handlerWrapper(f func(msg *Msg, clientId string, req
 			return
 		}
 
-		resp, err := f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), mir_v1.ProtoDeviceTargetToMirDeviceTarget(req.Targets))
+		resp, err := f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), mir_v1.ProtoDeviceTargetToMirDeviceTarget(req.Targets))
 		if err != nil {
 			err = r.m.sendReplyOrAck(msg, &mir_apiv1.DeleteDeviceResponse{Response: &mir_apiv1.DeleteDeviceResponse_Error{
 				Error: err.Error(),
@@ -367,7 +367,7 @@ type listDeviceRoute struct {
 }
 
 // Delete a device in the system
-func (r *serverRoutes) ListDevice() *listDeviceRoute {
+func (r *clientRoutes) ListDevice() *listDeviceRoute {
 	return &listDeviceRoute{m: r.m}
 }
 
@@ -394,7 +394,7 @@ func (r *listDeviceRoute) handlerWrapper(f func(msg *Msg, clientId string, t mir
 			return
 		}
 
-		resp, err := f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), mir_v1.ProtoDeviceTargetToMirDeviceTarget(req.Targets), req.IncludeEvents)
+		resp, err := f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), mir_v1.ProtoDeviceTargetToMirDeviceTarget(req.Targets), req.IncludeEvents)
 		if err != nil {
 			err = r.m.sendReplyOrAck(msg, &mir_apiv1.ListDeviceResponse{Response: &mir_apiv1.ListDeviceResponse_Error{
 				Error: err.Error(),

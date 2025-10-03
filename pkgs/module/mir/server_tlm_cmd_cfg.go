@@ -21,7 +21,7 @@ type listTelemetryRoute struct {
 }
 
 // List device telemetry
-func (r *serverRoutes) ListTelemetry() *listTelemetryRoute {
+func (r *clientRoutes) ListTelemetry() *listTelemetryRoute {
 	return &listTelemetryRoute{m: r.m}
 }
 
@@ -48,7 +48,7 @@ func (r *listTelemetryRoute) handlerWrapper(f func(msg *Msg, clientId string, re
 			return
 		}
 
-		resp, err := f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), req)
+		resp, err := f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), req)
 		if err != nil {
 			err = r.m.sendReplyOrAck(msg, &mir_apiv1.SendListTelemetryResponse{Response: &mir_apiv1.SendListTelemetryResponse_Error{
 				Error: err.Error(),
@@ -98,7 +98,7 @@ type listCommandRoute struct {
 }
 
 // List device command
-func (r *serverRoutes) ListCommands() *listCommandRoute {
+func (r *clientRoutes) ListCommands() *listCommandRoute {
 	return &listCommandRoute{m: r.m}
 }
 
@@ -125,7 +125,7 @@ func (r *listCommandRoute) handlerWrapper(f func(msg *Msg, clientId string, req 
 			return
 		}
 
-		resp, err := f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), req)
+		resp, err := f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), req)
 		if err != nil {
 			// TODO log error here
 			_ = r.m.sendReplyOrAck(msg, &mir_apiv1.SendListCommandsResponse{Response: &mir_apiv1.SendListCommandsResponse_Error{
@@ -176,7 +176,7 @@ type sendCommandRoute struct {
 }
 
 // Send command to device
-func (r *serverRoutes) SendCommand() *sendCommandRoute {
+func (r *clientRoutes) SendCommand() *sendCommandRoute {
 	return &sendCommandRoute{m: r.m}
 }
 
@@ -203,7 +203,7 @@ func (r *sendCommandRoute) handlerWrapper(f func(msg *Msg, clientId string, req 
 			return
 		}
 
-		resp, err := f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), req)
+		resp, err := f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), req)
 		if err != nil {
 			// TODO log error here
 			_ = r.m.sendReplyOrAck(msg, &mir_apiv1.SendCommandResponse{Response: &mir_apiv1.SendCommandResponse_Error{
@@ -278,7 +278,7 @@ type listConfigurationRoute struct {
 }
 
 // List device command
-func (r *serverRoutes) ListConfig() *listConfigurationRoute {
+func (r *clientRoutes) ListConfig() *listConfigurationRoute {
 	return &listConfigurationRoute{m: r.m}
 }
 
@@ -305,7 +305,7 @@ func (r *listConfigurationRoute) handlerWrapper(f func(msg *Msg, clientId string
 			return
 		}
 
-		resp, err := f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), req)
+		resp, err := f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), req)
 		if err != nil {
 			// TODO log error here
 			_ = r.m.sendReplyOrAck(msg, &mir_apiv1.SendListConfigResponse{Response: &mir_apiv1.SendListConfigResponse_Error{
@@ -356,7 +356,7 @@ type sendConfigRoute struct {
 }
 
 // Send config to device
-func (r *serverRoutes) SendConfig() *sendConfigRoute {
+func (r *clientRoutes) SendConfig() *sendConfigRoute {
 	return &sendConfigRoute{m: r.m}
 }
 
@@ -383,7 +383,7 @@ func (r *sendConfigRoute) handlerWrapper(f func(msg *Msg, clientId string, req *
 			return
 		}
 
-		resp, err := f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), req)
+		resp, err := f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), req)
 		if err != nil {
 			// TODO log error here
 			_ = r.m.sendReplyOrAck(msg, &mir_apiv1.SendConfigResponse{Response: &mir_apiv1.SendConfigResponse_Error{

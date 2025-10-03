@@ -11,9 +11,9 @@
 - [ ] MCP Server for Mir
 - [ ] TinyGo
 - [ ] Road to Production
-  - [ ] Module SDK Server rename to Client
+  - [x] Module SDK Server rename to Client
   - [ ] core bug with reconnect of loading devices
-  - [ ] is connected to surreal on start? do random query to try
+  - [x] is connected to surreal on start? do random query to try
   - [ ] docs
   - [ ] autoreconnect
     - [ ] nats

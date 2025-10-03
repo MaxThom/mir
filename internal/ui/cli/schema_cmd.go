@@ -79,7 +79,7 @@ func (d *SchemaUploadCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) err
 	}
 	packNames := sch.GetPackageList()
 
-	list, err := m.Server().UpdateDevice().Request(mir_v1.DeviceTarget{
+	list, err := m.Client().UpdateDevice().Request(mir_v1.DeviceTarget{
 		Ids:        d.Target.Ids,
 		Names:      d.Target.Names,
 		Namespaces: d.Target.Namespaces,
@@ -135,7 +135,7 @@ type schemaDevices struct {
 }
 
 func (d *SchemaExploreCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) error {
-	list, err := m.Server().ListDevice().Request(mir_v1.DeviceTarget{
+	list, err := m.Client().ListDevice().Request(mir_v1.DeviceTarget{
 		Ids:        d.Target.Ids,
 		Names:      d.Target.Names,
 		Namespaces: d.Target.Namespaces,

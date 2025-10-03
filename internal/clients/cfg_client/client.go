@@ -10,14 +10,14 @@ import (
 )
 
 const (
-	SendConfigRequest clients.ServerSubject = "client.%s.cfg.v1alpha.send"
-	ListConfigRequest clients.ServerSubject = "client.%s.cfg.v1alpha.list"
+	SendConfigRequest clients.ClientSubject = "client.%s.cfg.v1alpha.send"
+	ListConfigRequest clients.ClientSubject = "client.%s.cfg.v1alpha.list"
 
-	DesiredPropertiesEvent  clients.ServerSubject = "event.%s.cfg.v1alpha.desiredproperties"
-	ReportedPropertiesEvent clients.ServerSubject = "event.%s.cfg.v1alpha.reportedproperties"
+	DesiredPropertiesEvent  clients.ClientSubject = "event.%s.cfg.v1alpha.desiredproperties"
+	ReportedPropertiesEvent clients.ClientSubject = "event.%s.cfg.v1alpha.reportedproperties"
 
-	ReportedPropertiesStream       clients.ServerSubject = "device.%s.cfg.v1alpha.proto"
-	RequestDesiredPropertiesStream clients.ServerSubject = "device.%s.cfg.v1alpha.desiredproperties"
+	ReportedPropertiesStream       clients.ClientSubject = "device.%s.cfg.v1alpha.proto"
+	RequestDesiredPropertiesStream clients.ClientSubject = "device.%s.cfg.v1alpha.desiredproperties"
 )
 
 func PublishSendConfigRequest(bus *nats.Conn, req *mir_apiv1.SendConfigRequest) (*mir_apiv1.SendConfigResponse, error) {

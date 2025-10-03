@@ -67,7 +67,7 @@ func (d *ConfigListCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) error
 		FilterLabels:  d.FilterLabels,
 		RefreshSchema: d.RefreshSchema,
 	}
-	resp, err := m.Server().ListConfig().Request(req)
+	resp, err := m.Client().ListConfig().Request(req)
 	if err != nil {
 		return fmt.Errorf("error publishing list config request: %w", err)
 	}
@@ -180,7 +180,7 @@ func (d *ConfigSendCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) error
 		DryRun:          d.DryRun,
 		ForcePush:       d.ForcePush,
 	}
-	resp, err := m.Server().SendConfig().Request(req)
+	resp, err := m.Client().SendConfig().Request(req)
 	if err != nil {
 		return fmt.Errorf("error publishing send config request: %w", err)
 	}
@@ -233,7 +233,7 @@ func (d *ConfigSendCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) error
 			req.ShowTemplate = false
 			req.ShowValues = false
 			req.Payload = payload
-			resp, err = m.Server().SendConfig().Request(req)
+			resp, err = m.Client().SendConfig().Request(req)
 			if err != nil {
 				return fmt.Errorf("error publishing send config request: %w", err)
 			}

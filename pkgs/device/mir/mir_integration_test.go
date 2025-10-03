@@ -58,7 +58,7 @@ func TestMain(m *testing.M) {
 }
 
 func dataCleanUp() error {
-	if _, err := mSdk.Server().DeleteDevice().Request(mir_v1.DeviceTarget{
+	if _, err := mSdk.Client().DeleteDevice().Request(mir_v1.DeviceTarget{
 		Labels: map[string]string{
 			"test": "mir_device",
 		},
@@ -84,7 +84,7 @@ func dataCleanUp() error {
 			DeviceId: "TestLaunchHearthbeat",
 		},
 	}
-	if _, err := mSdk.Server().CreateDevice().Request(devReq); err != nil {
+	if _, err := mSdk.Client().CreateDevice().Request(devReq); err != nil {
 		return err
 	}
 

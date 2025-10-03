@@ -49,21 +49,21 @@ func TestMain(m *testing.M) {
 
 func dataCleanUp() error {
 	// Clear data
-	if _, err := mSdk.Server().DeleteEvents().Request(mir_v1.EventTarget{
+	if _, err := mSdk.Client().DeleteEvents().Request(mir_v1.EventTarget{
 		ObjectTarget: mir_v1.ObjectTarget{
 			Namespaces: []string{"event_testing"},
 		},
 	}); err != nil {
 		return err
 	}
-	if _, err := mSdk.Server().DeleteEvents().Request(mir_v1.EventTarget{
+	if _, err := mSdk.Client().DeleteEvents().Request(mir_v1.EventTarget{
 		ObjectTarget: mir_v1.ObjectTarget{
 			Namespaces: []string{"default"},
 		},
 	}); err != nil {
 		return err
 	}
-	if _, err := mSdk.Server().DeleteDevice().Request(mir_v1.DeviceTarget{
+	if _, err := mSdk.Client().DeleteDevice().Request(mir_v1.DeviceTarget{
 		Namespaces: []string{"event_testing"},
 	}); err != nil {
 		return err
@@ -113,7 +113,7 @@ func TestPublishEventStoreNormal(t *testing.T) {
 
 	time.Sleep(1 * time.Second)
 
-	events, err := mSdk.Server().ListEvents().Request(
+	events, err := mSdk.Client().ListEvents().Request(
 		mir_v1.EventTarget{
 			ObjectTarget: mir_v1.ObjectTarget{
 				Namespaces: []string{
@@ -184,7 +184,7 @@ func TestPublishEventStoreNsDefault(t *testing.T) {
 
 	time.Sleep(1 * time.Second)
 
-	events, err := mSdk.Server().ListEvents().Request(
+	events, err := mSdk.Client().ListEvents().Request(
 		mir_v1.EventTarget{
 			ObjectTarget: mir_v1.ObjectTarget{
 				Namespaces: []string{
@@ -238,7 +238,7 @@ func TestPublishListDeviceRequestWithEvents(t *testing.T) {
 	}
 	time.Sleep(1 * time.Second)
 
-	dResp, err := mSdk.Server().ListDevice().Request(s.ToTarget(), true)
+	dResp, err := mSdk.Client().ListDevice().Request(s.ToTarget(), true)
 
 	// Assert
 	assert.Equal(t, len(dResp), 1)
@@ -303,19 +303,19 @@ func TestPublishDeleteEventsRequest(t *testing.T) {
 	// is processing so many events for the other tests
 	time.Sleep(10 * time.Second)
 
-	eventPresent, err := mSdk.Server().ListEvents().Request(target)
+	eventPresent, err := mSdk.Client().ListEvents().Request(target)
 	if err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
 
-	eventDeleted, err := mSdk.Server().DeleteEvents().Request(target)
+	eventDeleted, err := mSdk.Client().DeleteEvents().Request(target)
 	if err != nil {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
 
-	eventGone, err := mSdk.Server().ListEvents().Request(target)
+	eventGone, err := mSdk.Client().ListEvents().Request(target)
 	if err != nil {
 		t.Error(err)
 	}

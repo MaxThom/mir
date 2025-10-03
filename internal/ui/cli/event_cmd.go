@@ -74,7 +74,7 @@ func (d *EventListCmd) Validate() error {
 }
 
 func (d *EventListCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) error {
-	list, err := m.Server().ListEvents().Request(
+	list, err := m.Client().ListEvents().Request(
 		mir_v1.EventTarget{
 			ObjectTarget: mir_v1.ObjectTarget{
 				Names:      d.Names,
@@ -127,7 +127,7 @@ func (d *EventDeleteCmd) Validate() error {
 }
 
 func (d *EventDeleteCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) error {
-	list, err := m.Server().DeleteEvents().Request(mir_v1.EventTarget{
+	list, err := m.Client().DeleteEvents().Request(mir_v1.EventTarget{
 		ObjectTarget: mir_v1.ObjectTarget{
 			Names:      d.Names,
 			Namespaces: d.Namespaces,

@@ -59,14 +59,14 @@ func TestMain(m *testing.M) {
 }
 
 func dataCleanUp() error {
-	if _, err := mSdk.Server().DeleteDevice().Request(mir_v1.DeviceTarget{
+	if _, err := mSdk.Client().DeleteDevice().Request(mir_v1.DeviceTarget{
 		Labels: map[string]string{
 			"testing": "core",
 		},
 	}); err != nil {
 		return err
 	}
-	if _, err := mSdk.Server().DeleteDevice().Request(mir_v1.DeviceTarget{
+	if _, err := mSdk.Client().DeleteDevice().Request(mir_v1.DeviceTarget{
 		Ids: []string{"device_auto_provision"},
 	}); err != nil {
 		return err
@@ -826,7 +826,7 @@ func TestPublishDeviceDeleteTargetIds(t *testing.T) {
 	s, err := mSdk.Bus.Subscribe(
 		core_client.DeviceDeletedEvent.WithId("*"),
 		func(msg *nats.Msg) {
-			if slices.Contains(deviceIds, clients.ServerSubject(msg.Subject).GetId()) {
+			if slices.Contains(deviceIds, clients.ClientSubject(msg.Subject).GetId()) {
 				count += 1
 			}
 			msg.Ack()
@@ -1703,7 +1703,7 @@ func TestCreatedDeviceAlreadyExist(t *testing.T) {
 	s, _ := mSdk.Bus.Subscribe(
 		core_client.DeviceCreatedEvent.WithId("*"),
 		func(msg *nats.Msg) {
-			if slices.Contains(deviceIds, clients.ServerSubject(msg.Subject).GetId()) {
+			if slices.Contains(deviceIds, clients.ClientSubject(msg.Subject).GetId()) {
 				count += 1
 			}
 			msg.Ack()
@@ -2420,7 +2420,7 @@ func TestDeviceAutoProvision(t *testing.T) {
 	c, err := mSdk.Bus.Subscribe(
 		core_client.DeviceCreatedEvent.WithId("*"),
 		func(msg *nats.Msg) {
-			if clients.ServerSubject(msg.Subject).GetId() == deviceIds[0] {
+			if clients.ClientSubject(msg.Subject).GetId() == deviceIds[0] {
 				createEventCount += 1
 			}
 			msg.Ack()
@@ -2500,7 +2500,7 @@ func TestDeviceUpdateDesiredProperties(t *testing.T) {
 		t.Error(err)
 	}
 	time.Sleep(5 * time.Second)
-	devs, err := mSdk.Server().UpdateDevice().Request(s.ToTarget(), devUpd)
+	devs, err := mSdk.Client().UpdateDevice().Request(s.ToTarget(), devUpd)
 	if err != nil {
 		t.Error(err)
 	}
@@ -2563,12 +2563,12 @@ func TestDeviceUpdateDesiredPropertiesDoubleSameUpdate(t *testing.T) {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
-	devs, err := mSdk.Server().UpdateDevice().Request(s.ToTarget(), updDev)
+	devs, err := mSdk.Client().UpdateDevice().Request(s.ToTarget(), updDev)
 	if err != nil {
 		t.Error(err)
 	}
 	time.Sleep(2 * time.Second)
-	devs, err = mSdk.Server().UpdateDevice().Request(s.ToTarget(), updDev)
+	devs, err = mSdk.Client().UpdateDevice().Request(s.ToTarget(), updDev)
 	if err != nil {
 		t.Error(err)
 	}
@@ -2632,7 +2632,7 @@ func TestDeviceUpdateDesiredPropertiesInvalid(t *testing.T) {
 		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
-	_, err = mSdk.Server().UpdateDevice().Request(s.ToTarget(), devUpd)
+	_, err = mSdk.Client().UpdateDevice().Request(s.ToTarget(), devUpd)
 
 	// Assert
 	assert.ErrorContains(t, err, "error validating config")

@@ -6,12 +6,12 @@ import (
 )
 
 // Server subject are liscened server side
-type ServerSubject string
+type ClientSubject string
 
 // Device subject are liscened device side
 type DeviceSubject string
 
-func (s ServerSubject) WithId(id string) string {
+func (s ClientSubject) WithId(id string) string {
 	return fmt.Sprintf(string(s), id)
 }
 
@@ -19,7 +19,7 @@ func (s DeviceSubject) WithId(id string) string {
 	return fmt.Sprintf(string(s), id)
 }
 
-func (s ServerSubject) GetSource() string {
+func (s ClientSubject) GetSource() string {
 	parts := strings.Split(string(s), ".")
 	if len(parts) != 5 {
 		return ""
@@ -27,7 +27,7 @@ func (s ServerSubject) GetSource() string {
 	return parts[0]
 }
 
-func (s ServerSubject) GetId() string {
+func (s ClientSubject) GetId() string {
 	parts := strings.Split(string(s), ".")
 	if len(parts) != 5 {
 		return ""
@@ -35,7 +35,7 @@ func (s ServerSubject) GetId() string {
 	return parts[1]
 }
 
-func (s ServerSubject) GetModule() string {
+func (s ClientSubject) GetModule() string {
 	parts := strings.Split(string(s), ".")
 	if len(parts) != 5 {
 		return ""
@@ -43,7 +43,7 @@ func (s ServerSubject) GetModule() string {
 	return parts[2]
 }
 
-func (s ServerSubject) GetVersion() string {
+func (s ClientSubject) GetVersion() string {
 	parts := strings.Split(string(s), ".")
 	if len(parts) != 5 {
 		return ""
@@ -51,7 +51,7 @@ func (s ServerSubject) GetVersion() string {
 	return parts[3]
 }
 
-func (s ServerSubject) GetFunction() string {
+func (s ClientSubject) GetFunction() string {
 	parts := strings.Split(string(s), ".")
 	if len(parts) != 5 {
 		return ""

@@ -61,7 +61,7 @@ func TestMain(m *testing.M) {
 
 func dataCleanUp() error {
 	// Clear data
-	if _, err := mSdk.Server().DeleteDevice().Request(mir_v1.DeviceTarget{
+	if _, err := mSdk.Client().DeleteDevice().Request(mir_v1.DeviceTarget{
 		Labels: map[string]string{
 			"testing": "cfg",
 		},

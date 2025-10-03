@@ -10,10 +10,10 @@ import (
 )
 
 const (
-	SendCommandRequest  clients.ServerSubject = "client.%s.cmd.v1alpha.send"
-	ListCommandsRequest clients.ServerSubject = "client.%s.cmd.v1alpha.list"
+	SendCommandRequest  clients.ClientSubject = "client.%s.cmd.v1alpha.send"
+	ListCommandsRequest clients.ClientSubject = "client.%s.cmd.v1alpha.list"
 
-	DeviceCommandEvent clients.ServerSubject = "event.%s.cmd.v1alpha.devicecommand"
+	DeviceCommandEvent clients.ClientSubject = "event.%s.cmd.v1alpha.devicecommand"
 )
 
 func PublishSendCommandRequest(bus *nats.Conn, req *mir_apiv1.SendCommandRequest) (*mir_apiv1.SendCommandResponse, error) {

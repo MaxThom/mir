@@ -11,19 +11,19 @@ import (
 )
 
 const (
-	CreateDeviceRequest clients.ServerSubject = "client.%s.core.v1alpha.create"
-	UpdateDeviceRequest clients.ServerSubject = "client.%s.core.v1alpha.update"
-	DeleteDeviceRequest clients.ServerSubject = "client.%s.core.v1alpha.delete"
-	ListDeviceRequest   clients.ServerSubject = "client.%s.core.v1alpha.list"
+	CreateDeviceRequest clients.ClientSubject = "client.%s.core.v1alpha.create"
+	UpdateDeviceRequest clients.ClientSubject = "client.%s.core.v1alpha.update"
+	DeleteDeviceRequest clients.ClientSubject = "client.%s.core.v1alpha.delete"
+	ListDeviceRequest   clients.ClientSubject = "client.%s.core.v1alpha.list"
 
-	DeviceOnlineEvent  clients.ServerSubject = "event.%s.core.v1alpha.deviceonline"
-	DeviceOfflineEvent clients.ServerSubject = "event.%s.core.v1alpha.deviceoffline"
-	DeviceCreatedEvent clients.ServerSubject = "event.%s.core.v1alpha.devicecreated"
-	DeviceDeletedEvent clients.ServerSubject = "event.%s.core.v1alpha.devicedeleted"
-	DeviceUpdatedEvent clients.ServerSubject = "event.%s.core.v1alpha.deviceupdated"
+	DeviceOnlineEvent  clients.ClientSubject = "event.%s.core.v1alpha.deviceonline"
+	DeviceOfflineEvent clients.ClientSubject = "event.%s.core.v1alpha.deviceoffline"
+	DeviceCreatedEvent clients.ClientSubject = "event.%s.core.v1alpha.devicecreated"
+	DeviceDeletedEvent clients.ClientSubject = "event.%s.core.v1alpha.devicedeleted"
+	DeviceUpdatedEvent clients.ClientSubject = "event.%s.core.v1alpha.deviceupdated"
 
-	HearthbeatDeviceStream clients.ServerSubject = "device.%s.core.v1alpha.hearthbeat"
-	SchemaDeviceStream     clients.ServerSubject = "device.%s.core.v1alpha.schema"
+	HearthbeatDeviceStream clients.ClientSubject = "device.%s.core.v1alpha.hearthbeat"
+	SchemaDeviceStream     clients.ClientSubject = "device.%s.core.v1alpha.schema"
 )
 
 // Core Builder

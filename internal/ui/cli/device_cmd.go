@@ -107,7 +107,7 @@ func (d *DeviceListCmd) Validate() error {
 
 func (d *DeviceListCmd) Run(log zerolog.Logger, m *mir.Mir) error {
 	var err error
-	list, err := m.Server().ListDevice().Request(
+	list, err := m.Client().ListDevice().Request(
 		mir_v1.DeviceTarget{
 			Ids:        d.Ids,
 			Names:      d.Names,
@@ -208,7 +208,7 @@ func (d *DeviceCreateCmd) Run(log zerolog.Logger, m *mir.Mir) error {
 	list := []mir_v1.Device{}
 	var errs error
 	for _, d := range devs {
-		respD, err := m.Server().CreateDevice().Request(*d)
+		respD, err := m.Client().CreateDevice().Request(*d)
 		if err != nil {
 			errs = errors.Join(errs, err)
 		} else {
@@ -304,7 +304,7 @@ func (d *DeviceUpdateCmd) Run(log zerolog.Logger, m *mir.Mir) error {
 		dev.Spec.DeviceId = *d.Id
 	}
 
-	list, err := m.Server().UpdateDevice().Request(target, dev)
+	list, err := m.Client().UpdateDevice().Request(target, dev)
 	if err != nil {
 		return fmt.Errorf("error publishing device update request: %w", err)
 	}
@@ -346,7 +346,7 @@ func (d *DeviceDeleteCmd) Validate() error {
 }
 
 func (d *DeviceDeleteCmd) Run(log zerolog.Logger, m *mir.Mir) error {
-	list, err := m.Server().DeleteDevice().Request(mir_v1.DeviceTarget{
+	list, err := m.Client().DeleteDevice().Request(mir_v1.DeviceTarget{
 		Ids:        d.Target.Ids,
 		Names:      d.Target.Names,
 		Namespaces: d.Target.Namespaces,

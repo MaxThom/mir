@@ -11,10 +11,10 @@ import (
 )
 
 const (
-	ListEventsRequest   clients.ServerSubject = "client.%s.evt.v1alpha.list"
-	DeleteEventsRequest clients.ServerSubject = "client.%s.evt.v1alpha.delete"
+	ListEventsRequest   clients.ClientSubject = "client.%s.evt.v1alpha.list"
+	DeleteEventsRequest clients.ClientSubject = "client.%s.evt.v1alpha.delete"
 
-	EventsStream clients.ServerSubject = "event.%s.*.*.*"
+	EventsStream clients.ClientSubject = "event.%s.*.*.*"
 )
 
 func PublishEventsStream(bus *bus.BusConn) error {
