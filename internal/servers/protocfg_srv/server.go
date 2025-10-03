@@ -114,10 +114,10 @@ func NewProtoCfg(logger zerolog.Logger, m *mir.Mir, store mng.MirStore, schemaCa
 
 // Using the db and bus, listen for telemetry, deserialize using proto and push to line protocol db
 func (s *ProtoCfgServer) Serve() error {
-	if err := s.m.Server().SendConfig().QueueSubscribe(ServiceName, s.sendConfigSub); err != nil {
+	if err := s.m.Client().SendConfig().QueueSubscribe(ServiceName, s.sendConfigSub); err != nil {
 		return err
 	}
-	if err := s.m.Server().ListConfig().QueueSubscribe(ServiceName, s.listCfgSub); err != nil {
+	if err := s.m.Client().ListConfig().QueueSubscribe(ServiceName, s.listCfgSub); err != nil {
 		return err
 	}
 	if err := s.m.Device().ReportedProperties().QueueSubscribe(ServiceName, "*", s.reportedPropsSub); err != nil {

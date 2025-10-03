@@ -61,7 +61,7 @@ func (d *TelemetryListCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) er
 		Filters:       d.Filters,
 		RefreshSchema: d.RefreshSchema,
 	}
-	resp, err := m.Server().ListTelemetry().Request(req)
+	resp, err := m.Client().ListTelemetry().Request(req)
 	if err != nil {
 		return fmt.Errorf("error publishing telemtry list request: %w", err)
 	}

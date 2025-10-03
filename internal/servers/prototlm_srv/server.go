@@ -131,7 +131,7 @@ func (s *ProtoTlmServer) Serve() error {
 	if err := s.m.Device().Telemetry().QueueSubscribe(ServiceName, "", s.handleTelemetryStream); err != nil {
 		return fmt.Errorf("cannot listen to device telemetry stream: %w", err)
 	}
-	if err := s.m.Server().ListTelemetry().QueueSubscribe(ServiceName, s.handleTelemetryListRequest); err != nil {
+	if err := s.m.Client().ListTelemetry().QueueSubscribe(ServiceName, s.handleTelemetryListRequest); err != nil {
 		return fmt.Errorf("cannot listen to device telemetry list request: %w", err)
 	}
 	return nil

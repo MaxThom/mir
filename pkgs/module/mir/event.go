@@ -98,7 +98,7 @@ func (r *eventRoutes) QueueSubscribeSubject(queue string, sbj eventSubject, f fu
 
 func (r *eventRoutes) handlerWrapper(f func(msg *Msg, subjectId string, req mir_v1.EventSpec, e error)) nats.MsgHandler {
 	return func(msg *nats.Msg) {
-		subjectId := clients.ServerSubject(msg.Subject).GetId()
+		subjectId := clients.ClientSubject(msg.Subject).GetId()
 		req := &mir_apiv1.CreateEventRequest{}
 		if err := proto.Unmarshal(msg.Data, req); err != nil {
 			f(&Msg{msg}, subjectId, mir_v1.EventSpec{}, err)
@@ -136,10 +136,10 @@ func (r *deviceOnlineEventRoute) handlerWrapper(f func(msg *Msg, deviceId string
 	return func(msg *nats.Msg) {
 		dev := mir_v1.NewDevice()
 		if err := eventMsgToObject(msg, &dev); err != nil {
-			f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), dev, err)
+			f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), dev, err)
 			return
 		}
-		f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), dev, nil)
+		f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), dev, nil)
 	}
 }
 
@@ -170,10 +170,10 @@ func (r *deviceOfflineEventRoute) handlerWrapper(f func(msg *Msg, deviceId strin
 	return func(msg *nats.Msg) {
 		dev := mir_v1.NewDevice()
 		if err := eventMsgToObject(msg, &dev); err != nil {
-			f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), dev, err)
+			f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), dev, err)
 			return
 		}
-		f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), dev, nil)
+		f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), dev, nil)
 	}
 }
 
@@ -204,10 +204,10 @@ func (r *deviceCreateEventRoute) handlerWrapper(f func(msg *Msg, deviceId string
 	return func(msg *nats.Msg) {
 		dev := mir_v1.NewDevice()
 		if err := eventMsgToObject(msg, &dev); err != nil {
-			f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), dev, err)
+			f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), dev, err)
 			return
 		}
-		f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), dev, nil)
+		f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), dev, nil)
 	}
 }
 
@@ -238,10 +238,10 @@ func (r *deviceUpdateEventRoute) handlerWrapper(f func(msg *Msg, deviceId string
 	return func(msg *nats.Msg) {
 		dev := mir_v1.NewDevice()
 		if err := eventMsgToObject(msg, &dev); err != nil {
-			f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), dev, err)
+			f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), dev, err)
 			return
 		}
-		f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), dev, nil)
+		f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), dev, nil)
 	}
 }
 
@@ -294,10 +294,10 @@ func (r *deviceDeleteEventRoute) handlerWrapper(f func(msg *Msg, serverId string
 	return func(msg *nats.Msg) {
 		dev := mir_v1.NewDevice()
 		if err := eventMsgToObject(msg, &dev); err != nil {
-			f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), dev, err)
+			f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), dev, err)
 			return
 		}
-		f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), dev, nil)
+		f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), dev, nil)
 	}
 }
 
@@ -328,10 +328,10 @@ func (r *commandEventRoute) handlerWrapper(f func(msg *Msg, deviceId string, cmd
 	return func(msg *nats.Msg) {
 		req := mir_apiv1.SendCommandResponse_CommandResponse{}
 		if err := eventMsgToObject(msg, &req); err != nil {
-			f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), &req, err)
+			f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), &req, err)
 			return
 		}
-		f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), &req, nil)
+		f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), &req, nil)
 	}
 }
 
@@ -363,10 +363,10 @@ func (r *desiredPropertiesEventRoute) handlerWrapper(f func(msg *Msg, deviceId s
 		req := make(map[string]any)
 		// TODO not sure about the correct reference for req here
 		if err := eventMsgToObject(msg, &req); err != nil {
-			f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), req, err)
+			f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), req, err)
 			return
 		}
-		f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), req, nil)
+		f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), req, nil)
 	}
 }
 
@@ -398,9 +398,9 @@ func (r *reportedPropertiesEventRoute) handlerWrapper(f func(msg *Msg, deviceId 
 		req := make(map[string]any)
 		// TODO not sure about the correct reference for req here
 		if err := eventMsgToObject(msg, &req); err != nil {
-			f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), req, err)
+			f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), req, err)
 			return
 		}
-		f(&Msg{msg}, clients.ServerSubject(msg.Subject).GetId(), req, nil)
+		f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), req, nil)
 	}
 }

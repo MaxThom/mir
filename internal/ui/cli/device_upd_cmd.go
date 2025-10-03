@@ -52,7 +52,7 @@ func (d *DeviceEditCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) error
 		Namespaces: d.Namespaces,
 		Labels:     d.Labels,
 	}
-	devs, err := m.Server().ListDevice().Request(tar, false)
+	devs, err := m.Client().ListDevice().Request(tar, false)
 	if err != nil {
 		return fmt.Errorf("error publishing device list request: %w", err)
 	}
@@ -88,7 +88,7 @@ func (d *DeviceEditCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) error
 	var errs error
 	list := []mir_v1.Device{}
 	for _, d := range devs {
-		list, err = m.Server().UpdateDevice().Request(tar, d)
+		list, err = m.Client().UpdateDevice().Request(tar, d)
 		if err != nil {
 			errs = errors.Join(errs, errors.New("error sending update device request"))
 		}
@@ -140,7 +140,7 @@ func (d *DeviceApplyCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) erro
 	var errs error
 	list := []mir_v1.Device{}
 	for _, d := range devs {
-		resp, err := m.Server().UpdateDevice().RequestSingle(*d)
+		resp, err := m.Client().UpdateDevice().RequestSingle(*d)
 		if err != nil {
 			errs = errors.Join(errs, errors.New("error sending update device request"))
 			continue
@@ -210,7 +210,7 @@ func (d *DeviceMergeCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) erro
 	var errs error
 	list := []mir_v1.Device{}
 	for _, dev := range devs {
-		resp, err := m.Server().UpdateDevice().Request(
+		resp, err := m.Client().UpdateDevice().Request(
 			mir_v1.DeviceTarget{
 				Ids:        d.Ids,
 				Names:      d.Names,

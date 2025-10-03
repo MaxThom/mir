@@ -67,7 +67,7 @@ func (d *CommandListCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) erro
 		FilterLabels:  d.FilterLabels,
 		RefreshSchema: d.RefreshSchema,
 	}
-	resp, err := m.Server().ListCommands().Request(req)
+	resp, err := m.Client().ListCommands().Request(req)
 	if err != nil {
 		return err
 	}
@@ -176,7 +176,7 @@ func (d *CommandSendCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) erro
 		ForcePush:       d.ForcePush,
 		TimeoutSec:      uint32(d.Timeout),
 	}
-	resp, err := m.Server().SendCommand().Request(req)
+	resp, err := m.Client().SendCommand().Request(req)
 	if err != nil {
 		return fmt.Errorf("error publishing send command request: %w", err)
 	}
@@ -228,7 +228,7 @@ func (d *CommandSendCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) erro
 			err = editor.EditRawDocument(&payload, header)
 			req.ShowTemplate = false
 			req.Payload = payload
-			resp, err = m.Server().SendCommand().Request(req)
+			resp, err = m.Client().SendCommand().Request(req)
 			if err != nil {
 				return fmt.Errorf("error publishing send command request: %w", err)
 			}

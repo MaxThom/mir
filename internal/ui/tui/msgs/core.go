@@ -36,7 +36,7 @@ func ListMirDevices(m *mir.Mir) tea.Cmd {
 
 func listMirDevicesCmd(m *mir.Mir, noToast bool) func() tea.Msg {
 	return func() tea.Msg {
-		list, err := m.Server().ListDevice().Request(mir_v1.DeviceTarget{}, true)
+		list, err := m.Client().ListDevice().Request(mir_v1.DeviceTarget{}, true)
 		if err != nil {
 			return ErrMsg{Err: err}
 		}
@@ -54,7 +54,7 @@ func CreateMirDevice(m *mir.Mir, d mir_v1.Device) tea.Cmd {
 
 func createMirDeviceCmd(m *mir.Mir, noToast bool, d mir_v1.Device) tea.Cmd {
 	return func() tea.Msg {
-		dev, err := m.Server().CreateDevice().Request(d)
+		dev, err := m.Client().CreateDevice().Request(d)
 		if err != nil {
 			return ErrMsg{Err: err}
 		}
@@ -72,7 +72,7 @@ func DeleteMirDevice(m *mir.Mir, t mir_v1.DeviceTarget) tea.Cmd {
 
 func deleteMirDeviceCmd(m *mir.Mir, noToast bool, t mir_v1.DeviceTarget) tea.Cmd {
 	return func() tea.Msg {
-		devs, err := m.Server().DeleteDevice().Request(t)
+		devs, err := m.Client().DeleteDevice().Request(t)
 		if err != nil {
 			return ErrMsg{Err: err}
 		}
@@ -90,7 +90,7 @@ func UpdateMirDevice(m *mir.Mir, d mir_v1.Device) tea.Cmd {
 
 func updateMirDeviceCmd(m *mir.Mir, noToast bool, d mir_v1.Device) tea.Cmd {
 	return func() tea.Msg {
-		devs, err := m.Server().UpdateDevice().RequestSingle(d)
+		devs, err := m.Client().UpdateDevice().RequestSingle(d)
 		if err != nil {
 			return ErrMsg{Err: err}
 		}

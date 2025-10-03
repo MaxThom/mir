@@ -75,6 +75,9 @@ func Connect(ctx context.Context, url, namespace, database, user, password strin
 		}
 		return db, err
 	}
+	if db.connHandler.FnConnected != nil {
+		db.connHandler.FnConnected(db.Url)
+	}
 	return db, nil
 }
 
@@ -150,15 +153,6 @@ func (db *AutoReconnDB) Close() error {
 	}
 	return db.DB.Close(db.ctx)
 }
-
-// TODO, if error is of network disconnect
-//  - [x] update status
-//  - [x] start monitoring process
-//    - [x] check connection every few seconds
-//    - [x] recreate the db if needed
-//    - [x] set status to connected
-//  - [x] discard coming request as it is disconnected
-//  - [x] add status changes handler
 
 func (db *AutoReconnDB) monitorAndReconnect() {
 	db.isConn = false

@@ -126,16 +126,16 @@ func NewCore(logger zerolog.Logger, m *mir.Mir, store mng.MirStore) (*CoreServer
 
 // Using the db and bus, listen for telemetry, deserialize using proto and push to line protocol db
 func (s *CoreServer) Serve() error {
-	if err := s.m.Server().CreateDevice().QueueSubscribe(ServiceName, s.createDeviceSub); err != nil {
+	if err := s.m.Client().CreateDevice().QueueSubscribe(ServiceName, s.createDeviceSub); err != nil {
 		return err
 	}
-	if err := s.m.Server().UpdateDevice().QueueSubscribe(ServiceName, s.updateDeviceSub); err != nil {
+	if err := s.m.Client().UpdateDevice().QueueSubscribe(ServiceName, s.updateDeviceSub); err != nil {
 		return err
 	}
-	if err := s.m.Server().DeleteDevice().QueueSubscribe(ServiceName, s.deleteDeviceSub); err != nil {
+	if err := s.m.Client().DeleteDevice().QueueSubscribe(ServiceName, s.deleteDeviceSub); err != nil {
 		return err
 	}
-	if err := s.m.Server().ListDevice().QueueSubscribe(ServiceName, s.listDeviceSub); err != nil {
+	if err := s.m.Client().ListDevice().QueueSubscribe(ServiceName, s.listDeviceSub); err != nil {
 		return err
 	}
 	if err := s.m.Device().Hearthbeat().QueueSubscribe(ServiceName, "*", s.hearthbeatSub); err != nil {
@@ -192,7 +192,7 @@ func (s *CoreServer) updateDeviceSub(msg *mir.Msg, clientId string, t mir_v1.Dev
 		// We do this as we do not want to have only a subset of the request to be written
 		var errs error
 		for k, v := range d.Properties.Desired {
-			cfgRespDryRun, err := s.m.Server().SendConfig().RequestJson(&mir.SendDeviceConfigRequestJson{
+			cfgRespDryRun, err := s.m.Client().SendConfig().RequestJson(&mir.SendDeviceConfigRequestJson{
 				Targets:        mir_v1.MirDeviceTargetToProtoDeviceTarget(t),
 				CommandName:    k,
 				CommandPayload: v,
@@ -217,7 +217,7 @@ func (s *CoreServer) updateDeviceSub(msg *mir.Msg, clientId string, t mir_v1.Dev
 		// If all validated, we can send
 		// We know they were validated, so if error, it means its to the device
 		for k, v := range d.Properties.Desired {
-			s.m.Server().SendConfig().RequestJson(&mir.SendDeviceConfigRequestJson{
+			s.m.Client().SendConfig().RequestJson(&mir.SendDeviceConfigRequestJson{
 				Targets:           mir_v1.MirDeviceTargetToProtoDeviceTarget(t),
 				CommandName:       k,
 				CommandPayload:    v,
@@ -229,7 +229,7 @@ func (s *CoreServer) updateDeviceSub(msg *mir.Msg, clientId string, t mir_v1.Dev
 	respDb, err := s.store.UpdateDevice(t, d)
 	if err != nil {
 		if errors.Is(err, mng.ErrorDeviceShouldBeCreated) {
-			resp, err := s.m.Server().CreateDevice().Request(d)
+			resp, err := s.m.Client().CreateDevice().Request(d)
 			if err != nil {
 				l.Error().Err(err).Msg("error creating device")
 				requestErrorTotal.WithLabelValues("update").Inc()
@@ -376,7 +376,7 @@ func (s *CoreServer) hearthbeatSub(msg *mir.Msg, deviceId string) {
 	}
 	// Means device is not in db, we provision it
 	if len(dev) == 0 {
-		_, err := s.m.Server().CreateDevice().Request(mir_v1.NewDevice().WithSpec(mir_v1.DeviceSpec{
+		_, err := s.m.Client().CreateDevice().Request(mir_v1.NewDevice().WithSpec(mir_v1.DeviceSpec{
 			DeviceId: deviceId,
 		}))
 		if err != nil {
@@ -426,7 +426,7 @@ func (s *CoreServer) schemaSub(msg *mir.Msg, deviceId string, sch *mir_proto.Mir
 
 	l.Debug().Str("route", "schema").Str("device_id", deviceId).Msg("schema device request")
 	timeNow := time.Now().UTC()
-	_, err = s.m.Server().UpdateDevice().Request(
+	_, err = s.m.Client().UpdateDevice().Request(
 		mir_v1.DeviceTarget{
 			Ids: []string{deviceId},
 		},

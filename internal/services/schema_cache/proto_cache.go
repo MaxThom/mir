@@ -152,7 +152,7 @@ func (c *MirSchemaCache) reconcileDeviceSchema(deviceId string, forceDeviceFetch
 	// IDEA refresh if last fetch is older then a timespan
 	if !forceDeviceFetch {
 		l.Debug().Str("device_id", deviceId).Msg("device schema not in cache, reconciling...")
-		devs, err := c.m.Server().ListDevice().Request(
+		devs, err := c.m.Client().ListDevice().Request(
 			mir_v1.DeviceTarget{
 				Ids: []string{deviceId},
 			}, false)
@@ -192,7 +192,7 @@ func (c *MirSchemaCache) reconcileDeviceSchema(deviceId string, forceDeviceFetch
 	}
 
 	timeNow := time.Now().UTC()
-	devResp, err := c.m.Server().UpdateDevice().Request(
+	devResp, err := c.m.Client().UpdateDevice().Request(
 		mir_v1.DeviceTarget{
 			Ids: []string{deviceId},
 		},

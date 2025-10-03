@@ -76,10 +76,10 @@ func NewEventStore(logger zerolog.Logger, m *mir.Mir, store mng.MirStore) (*Even
 
 // Using the db and bus, listen for telemetry, deserialize using proto and push to line protocol db
 func (s *EventStoreServer) Serve() error {
-	if err := s.m.Server().ListEvents().QueueSubscribe(ServiceName, s.listEventsSub); err != nil {
+	if err := s.m.Client().ListEvents().QueueSubscribe(ServiceName, s.listEventsSub); err != nil {
 		return err
 	}
-	if err := s.m.Server().DeleteEvents().QueueSubscribe(ServiceName, s.deleteEventsSub); err != nil {
+	if err := s.m.Client().DeleteEvents().QueueSubscribe(ServiceName, s.deleteEventsSub); err != nil {
 		return err
 	}
 	if err := s.m.Event().QueueSubscribe(ServiceName, s.streamEventsSub); err != nil {

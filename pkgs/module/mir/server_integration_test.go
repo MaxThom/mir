@@ -37,23 +37,23 @@ func TestServerRoutes_NewSubject(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.expected, func(t *testing.T) {
-			subject := m.Server().NewSubject(tt.module, tt.version, tt.function, tt.extra...)
+			subject := m.Client().NewSubject(tt.module, tt.version, tt.function, tt.extra...)
 			assert.Equal(t, tt.expected, subject.String())
 		})
 	}
 }
 
 func TestServerRoutes_Subscribe(t *testing.T) {
-	subject := m.Server().NewSubject("test", "v1", "function")
+	subject := m.Client().NewSubject("test", "v1", "function")
 	received := make(chan bool)
 
-	err := m.Server().Subscribe(subject, func(msg *Msg, id string, data []byte) {
+	err := m.Client().Subscribe(subject, func(msg *Msg, id string, data []byte) {
 		assert.Equal(t, "test-data", string(data))
 		received <- true
 	})
 	assert.NilError(t, err)
 
-	err = m.Server().Publish(subject, []byte("test-data"))
+	err = m.Client().Publish(subject, []byte("test-data"))
 	assert.NilError(t, err)
 
 	select {
@@ -65,24 +65,24 @@ func TestServerRoutes_Subscribe(t *testing.T) {
 }
 
 func TestServerRoutes_QueueSubscribe(t *testing.T) {
-	subject := m.Server().NewSubject("test", "v1", "function")
+	subject := m.Client().NewSubject("test", "v1", "function")
 	queueName := "test-queue-server"
 	messageCount := 10
 	receivedCount1 := 0
 	receivedCount2 := 0
 
-	err := m.Server().QueueSubscribe(queueName, subject, func(msg *Msg, id string, data []byte) {
+	err := m.Client().QueueSubscribe(queueName, subject, func(msg *Msg, id string, data []byte) {
 		receivedCount1++
 	})
 	assert.NilError(t, err)
 
-	err = m.Server().QueueSubscribe(queueName, subject, func(msg *Msg, id string, data []byte) {
+	err = m.Client().QueueSubscribe(queueName, subject, func(msg *Msg, id string, data []byte) {
 		receivedCount2++
 	})
 	assert.NilError(t, err)
 
 	for i := 0; i < messageCount; i++ {
-		err = m.Server().Publish(subject, []byte("test-data"))
+		err = m.Client().Publish(subject, []byte("test-data"))
 		assert.NilError(t, err)
 	}
 
@@ -102,7 +102,7 @@ func TestServerRoutes_CreateDevice(t *testing.T) {
 			DeviceId: deviceID,
 		})
 
-	err := m.Server().CreateDevice().Subscribe(
+	err := m.Client().CreateDevice().Subscribe(
 		func(msg *Msg, clientId string, d mir_v1.Device) (mir_v1.Device, error) {
 			return mir_v1.NewDevice().WithMeta(
 				mir_v1.Meta{
@@ -126,7 +126,7 @@ func TestServerRoutes_CreateDevice(t *testing.T) {
 			DeviceId: deviceID,
 		})
 
-	device, err := m.Server().CreateDevice().Request(req)
+	device, err := m.Client().CreateDevice().Request(req)
 	assert.NilError(t, err)
 	assert.Equal(t, testDevice.Meta.Name, device.Meta.Name)
 	assert.Equal(t, testDevice.Spec.DeviceId, device.Spec.DeviceId)
@@ -142,7 +142,7 @@ func TestServerRoutes_UpdateDevice(t *testing.T) {
 		DeviceId: deviceID,
 	})
 
-	err := m.Server().UpdateDevice().Subscribe(
+	err := m.Client().UpdateDevice().Subscribe(
 		func(msg *Msg, clientId string, t mir_v1.DeviceTarget, d mir_v1.Device) ([]mir_v1.Device, error) {
 			return []mir_v1.Device{
 				testDevice,
@@ -152,7 +152,7 @@ func TestServerRoutes_UpdateDevice(t *testing.T) {
 
 	// Test request
 
-	device, err := m.Server().UpdateDevice().RequestSingle(testDevice)
+	device, err := m.Client().UpdateDevice().RequestSingle(testDevice)
 	assert.NilError(t, err)
 	assert.Equal(t, testDevice.Meta.Name, device[0].Meta.Name)
 	assert.Equal(t, testDevice.Spec.DeviceId, device[0].Spec.DeviceId)
@@ -168,7 +168,7 @@ func TestServerRoutes_DeleteDevice(t *testing.T) {
 		DeviceId: deviceID,
 	})
 
-	err := m.Server().DeleteDevice().Subscribe(
+	err := m.Client().DeleteDevice().Subscribe(
 		func(msg *Msg, clientId string, req mir_v1.DeviceTarget) ([]mir_v1.Device, error) {
 			return []mir_v1.Device{
 				testDevice,
@@ -178,7 +178,7 @@ func TestServerRoutes_DeleteDevice(t *testing.T) {
 
 	// Test request
 
-	device, err := m.Server().DeleteDevice().Request(testDevice.ToTarget())
+	device, err := m.Client().DeleteDevice().Request(testDevice.ToTarget())
 	assert.NilError(t, err)
 	assert.Equal(t, testDevice.Meta.Name, device[0].Meta.Name)
 	assert.Equal(t, testDevice.Spec.DeviceId, device[0].Spec.DeviceId)
@@ -194,7 +194,7 @@ func TestServerRoutes_ListDevice(t *testing.T) {
 		DeviceId: deviceID,
 	})
 
-	err := m.Server().ListDevice().Subscribe(
+	err := m.Client().ListDevice().Subscribe(
 		func(msg *Msg, clientId string, d mir_v1.DeviceTarget, includeEvents bool) ([]mir_v1.Device, error) {
 			return []mir_v1.Device{testDevice}, nil
 		})
@@ -202,7 +202,7 @@ func TestServerRoutes_ListDevice(t *testing.T) {
 
 	// Test request
 
-	device, err := m.Server().ListDevice().Request(testDevice.ToTarget(), false)
+	device, err := m.Client().ListDevice().Request(testDevice.ToTarget(), false)
 	assert.NilError(t, err)
 	assert.Equal(t, testDevice.Meta.Name, device[0].Meta.Name)
 	assert.Equal(t, testDevice.Spec.DeviceId, device[0].Spec.DeviceId)
@@ -210,18 +210,18 @@ func TestServerRoutes_ListDevice(t *testing.T) {
 
 func TestServerRoutes_PublishSubscribe(t *testing.T) {
 	// Test custom server publish/subscribe
-	subject := m.Server().NewSubject("test", "v1", "custom")
+	subject := m.Client().NewSubject("test", "v1", "custom")
 	received := make(chan bool)
 
 	// Subscribe
-	err := m.Server().Subscribe(subject, func(msg *Msg, clientId string, data []byte) {
+	err := m.Client().Subscribe(subject, func(msg *Msg, clientId string, data []byte) {
 		assert.Equal(t, "test-data", string(data))
 		received <- true
 	})
 	assert.NilError(t, err)
 
 	// Publish
-	err = m.Server().Publish(subject, []byte("test-data"))
+	err = m.Client().Publish(subject, []byte("test-data"))
 	assert.NilError(t, err)
 
 	select {
@@ -233,7 +233,7 @@ func TestServerRoutes_PublishSubscribe(t *testing.T) {
 }
 
 func TestServerRoutes_PublishProto(t *testing.T) {
-	subject := m.Server().NewSubject("test", "v1", "proto")
+	subject := m.Client().NewSubject("test", "v1", "proto")
 	received := make(chan bool)
 
 	testDevice := &mir_apiv1.Device{
@@ -247,7 +247,7 @@ func TestServerRoutes_PublishProto(t *testing.T) {
 	}
 
 	// Subscribe
-	err := m.Server().Subscribe(subject, func(msg *Msg, clientId string, data []byte) {
+	err := m.Client().Subscribe(subject, func(msg *Msg, clientId string, data []byte) {
 		device := &mir_apiv1.Device{}
 		err := proto.Unmarshal(data, device)
 		assert.NilError(t, err)
@@ -258,7 +258,7 @@ func TestServerRoutes_PublishProto(t *testing.T) {
 	assert.NilError(t, err)
 
 	// Publish
-	err = m.Server().PublishProto(subject, testDevice)
+	err = m.Client().PublishProto(subject, testDevice)
 	assert.NilError(t, err)
 
 	select {
@@ -270,7 +270,7 @@ func TestServerRoutes_PublishProto(t *testing.T) {
 }
 
 func TestServerRoutes_PublishJson(t *testing.T) {
-	subject := m.Server().NewSubject("test", "v1", "json")
+	subject := m.Client().NewSubject("test", "v1", "json")
 	received := make(chan bool)
 
 	testData := mir_v1.Device{
@@ -286,7 +286,7 @@ func TestServerRoutes_PublishJson(t *testing.T) {
 	}
 
 	// Subscribe
-	err := m.Server().Subscribe(subject, func(msg *Msg, clientId string, data []byte) {
+	err := m.Client().Subscribe(subject, func(msg *Msg, clientId string, data []byte) {
 		var device mir_v1.Device
 		err := json.Unmarshal(data, &device)
 		assert.NilError(t, err)
@@ -297,7 +297,7 @@ func TestServerRoutes_PublishJson(t *testing.T) {
 	assert.NilError(t, err)
 
 	// Publish
-	err = m.Server().PublishJson(subject, testData)
+	err = m.Client().PublishJson(subject, testData)
 	assert.NilError(t, err)
 
 	select {
@@ -320,14 +320,14 @@ func TestServerRoutes_ListTelemetry(t *testing.T) {
 		},
 	}
 
-	err := m.Server().ListTelemetry().Subscribe(
+	err := m.Client().ListTelemetry().Subscribe(
 		func(msg *Msg, clientId string, req *mir_apiv1.SendListTelemetryRequest) ([]*mir_apiv1.DevicesTelemetry, error) {
 			return testTelemetry, nil
 		},
 	)
 	assert.NilError(t, err)
 
-	resp, err := m.Server().ListTelemetry().Request(&mir_apiv1.SendListTelemetryRequest{
+	resp, err := m.Client().ListTelemetry().Request(&mir_apiv1.SendListTelemetryRequest{
 		Targets: &mir_apiv1.DeviceTarget{
 			Ids: []string{deviceID},
 		},
@@ -348,14 +348,14 @@ func TestServerRoutes_ListCommand(t *testing.T) {
 		},
 	}
 
-	err := m.Server().ListCommands().Subscribe(
+	err := m.Client().ListCommands().Subscribe(
 		func(msg *Msg, clientId string, req *mir_apiv1.SendListCommandsRequest) (map[string]*mir_apiv1.Commands, error) {
 			return testCommands, nil
 		},
 	)
 	assert.NilError(t, err)
 
-	resp, err := m.Server().ListCommands().Request(&mir_apiv1.SendListCommandsRequest{
+	resp, err := m.Client().ListCommands().Request(&mir_apiv1.SendListCommandsRequest{
 		Targets: &mir_apiv1.DeviceTarget{
 			Ids: []string{deviceID},
 		},
@@ -375,7 +375,7 @@ func TestServerRoutes_SendCommand(t *testing.T) {
 	}
 
 	done := make(chan bool)
-	err := m.Server().SendCommand().QueueSubscribe("test_module",
+	err := m.Client().SendCommand().QueueSubscribe("test_module",
 		func(msg *Msg, clientId string, req *mir_apiv1.SendCommandRequest) (*mir_apiv1.SendCommandResponse_CommandResponses, error) {
 			done <- true
 			return testCommands, nil
@@ -385,7 +385,7 @@ func TestServerRoutes_SendCommand(t *testing.T) {
 
 	// Conflict with the cmd server running
 	// We can only validate if the route work and not the reply
-	_, _ = m.Server().SendCommand().Request(&mir_apiv1.SendCommandRequest{
+	_, _ = m.Client().SendCommand().Request(&mir_apiv1.SendCommandRequest{
 		Targets: &mir_apiv1.DeviceTarget{
 			Ids: []string{deviceID},
 		},

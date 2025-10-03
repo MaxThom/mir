@@ -83,10 +83,10 @@ func NewProtoCmd(logger zerolog.Logger, m *mir.Mir, devStore mng.MirStore, schem
 }
 
 func (s *ProtoCmdServer) Serve() error {
-	if err := s.m.Server().SendCommand().QueueSubscribe(ServiceName, s.sendCommandSub); err != nil {
+	if err := s.m.Client().SendCommand().QueueSubscribe(ServiceName, s.sendCommandSub); err != nil {
 		return err
 	}
-	if err := s.m.Server().ListCommands().QueueSubscribe(ServiceName, s.listCommandsSub); err != nil {
+	if err := s.m.Client().ListCommands().QueueSubscribe(ServiceName, s.listCommandsSub); err != nil {
 		return err
 	}
 	return nil
