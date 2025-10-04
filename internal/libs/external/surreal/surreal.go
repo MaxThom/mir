@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/maxthom/mir/internal/libs/external"
 	"github.com/maxthom/mir/internal/libs/resync"
 	"github.com/rs/zerolog"
 	"github.com/surrealdb/surrealdb.go"
@@ -14,42 +15,14 @@ import (
 
 var ErrDatabaseDisconnected = fmt.Errorf("database disconnected")
 
-type ConnectionStatus int
-
-const (
-	// Connection is connected
-	StatusConnected ConnectionStatus = iota
-	// Connection is disconnected and not trying to reconnect
-	StatusDisconnected
-	// Connection is attempting to reconnect
-	StatusReconnecting
-	// Connection cannot authentified itself to the db
-	StatusNotAuthenticated
-	// Connection is purposfully closed
-	StatusClosed
-)
-
-func (s ConnectionStatus) String() string {
-	switch s {
-	case StatusDisconnected:
-		return "Disconnected"
-	case StatusConnected:
-		return "Connected"
-	case StatusNotAuthenticated:
-		return "NotAuthenticated"
-	case StatusClosed:
-		return "Closed"
-	default:
-		return "Unknown"
-	}
-}
-
 type AutoReconnDB struct {
 	*surrealdb.DB
+	statusSubs  []chan external.ConnectionStatus
+	statusMu    sync.RWMutex
 	dbMu        sync.RWMutex
 	ctx         context.Context
 	log         zerolog.Logger
-	ConnStatus  ConnectionStatus
+	ConnStatus  external.ConnectionStatus
 	once        resync.Once
 	isConn      bool
 	connHandler ConnHandler
@@ -87,7 +60,7 @@ func connect(ctx context.Context, url, namespace, database, user, password strin
 		d := &AutoReconnDB{
 			DB:          db,
 			ctx:         ctx,
-			ConnStatus:  StatusDisconnected,
+			ConnStatus:  external.StatusDisconnected,
 			connHandler: h,
 			Url:         url,
 			User:        user,
@@ -105,7 +78,7 @@ func connect(ctx context.Context, url, namespace, database, user, password strin
 		d := &AutoReconnDB{
 			DB:          db,
 			ctx:         ctx,
-			ConnStatus:  StatusNotAuthenticated,
+			ConnStatus:  external.StatusNotAuthenticated,
 			connHandler: h,
 			Url:         url,
 			User:        user,
@@ -120,7 +93,7 @@ func connect(ctx context.Context, url, namespace, database, user, password strin
 		return &AutoReconnDB{
 			DB:          db,
 			ctx:         ctx,
-			ConnStatus:  StatusConnected,
+			ConnStatus:  external.StatusConnected,
 			connHandler: h,
 			isConn:      true,
 			Url:         url,
@@ -134,7 +107,7 @@ func connect(ctx context.Context, url, namespace, database, user, password strin
 	return &AutoReconnDB{
 		DB:          db,
 		ctx:         ctx,
-		ConnStatus:  StatusConnected,
+		ConnStatus:  external.StatusConnected,
 		connHandler: h,
 		isConn:      true,
 		Url:         url,
@@ -146,11 +119,21 @@ func connect(ctx context.Context, url, namespace, database, user, password strin
 }
 
 func (db *AutoReconnDB) Close() error {
-	db.dbMu.RLock()
-	defer db.dbMu.RUnlock()
+	db.dbMu.Lock()
+	defer db.dbMu.Unlock()
+	db.statusMu.Lock()
+	defer db.statusMu.Unlock()
+
+	db.ConnStatus = external.StatusClosed
+	for _, ch := range db.statusSubs {
+		ch <- db.ConnStatus
+		close(ch)
+	}
+
 	if db.DB == nil {
 		return nil
 	}
+
 	return db.DB.Close(db.ctx)
 }
 
@@ -158,6 +141,10 @@ func (db *AutoReconnDB) monitorAndReconnect() {
 	db.isConn = false
 	fnM := func() {
 		go func() {
+			db.ConnStatus = external.StatusDisconnected
+			for _, ch := range db.statusSubs {
+				ch <- db.ConnStatus
+			}
 			if db.connHandler.FnDisconnected != nil {
 				db.connHandler.FnDisconnected(db.Url)
 			}
@@ -172,6 +159,11 @@ func (db *AutoReconnDB) monitorAndReconnect() {
 					d, err := connect(db.ctx, db.Url, db.Namespace, db.Database, db.User, db.Password, db.connHandler)
 					db.dbMu.Lock()
 					db.DB = d.DB
+					if db.ConnStatus != d.ConnStatus {
+						for _, ch := range db.statusSubs {
+							ch <- d.ConnStatus
+						}
+					}
 					db.ConnStatus = d.ConnStatus
 					db.dbMu.Unlock()
 					if err != nil {
@@ -192,6 +184,14 @@ func (db *AutoReconnDB) monitorAndReconnect() {
 		}()
 	}
 	db.once.Do(fnM)
+}
+
+func (db *AutoReconnDB) StatusSubscribe() <-chan external.ConnectionStatus {
+	ch := make(chan external.ConnectionStatus, 10) // Buffered to prevent blocking
+	db.statusMu.Lock()
+	db.statusSubs = append(db.statusSubs, ch)
+	db.statusMu.Unlock()
+	return ch
 }
 
 func Create[T any, TWhat surrealdb.TableOrRecord](db *AutoReconnDB, what TWhat, data any) (*T, error) {

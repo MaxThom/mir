@@ -8,28 +8,58 @@ import (
 	"github.com/rs/zerolog"
 )
 
+type ConnectionStatus int
+
+const (
+	// Connection is connected
+	StatusConnected ConnectionStatus = iota
+	// Connection is disconnected and not trying to reconnect
+	StatusDisconnected
+	// Connection is attempting to reconnect
+	StatusReconnecting
+	// Connection cannot authentified itself to the db
+	StatusNotAuthenticated
+	// Connection is purposfully closed
+	StatusClosed
+)
+
+func (s ConnectionStatus) String() string {
+	switch s {
+	case StatusDisconnected:
+		return "Disconnected"
+	case StatusConnected:
+		return "Connected"
+	case StatusNotAuthenticated:
+		return "NotAuthenticated"
+	case StatusClosed:
+		return "Closed"
+	default:
+		return "Unknown"
+	}
+}
+
 // CallWithTimeout executes a function with a timeout and returns the result or an error if it times out
 func CallWithTimeout[T any](ctx context.Context, timeout time.Duration, fn func() (T, error)) (T, error) {
 	var zero T
-	
+
 	// Create context with timeout
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	
+
 	// Result channel
 	type result struct {
 		value T
 		err   error
 	}
-	
+
 	resultChan := make(chan result, 1)
-	
+
 	// Execute function in goroutine
 	go func() {
 		value, err := fn()
 		resultChan <- result{value: value, err: err}
 	}()
-	
+
 	// Wait for result or timeout
 	select {
 	case <-ctx.Done():

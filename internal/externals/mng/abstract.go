@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"regexp"
 
+	"github.com/maxthom/mir/internal/libs/external"
 	"github.com/maxthom/mir/internal/libs/external/surreal"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 )
@@ -31,6 +32,9 @@ type MirStore interface {
 	UpdateEvent(t mir_v1.ObjectTarget, upd mir_v1.EventUpdate) ([]mir_v1.Event, error)
 	MergeEvent(t mir_v1.ObjectTarget, patch json.RawMessage, op UpdateType) ([]mir_v1.Event, error)
 	DeleteEvent(t mir_v1.EventTarget) ([]mir_v1.Event, error)
+
+	Status() external.ConnectionStatus
+	StatusSubscribe() <-chan external.ConnectionStatus
 }
 
 type surrealMirStore struct {
@@ -41,4 +45,12 @@ func NewSurrealMirStore(db *surreal.AutoReconnDB) *surrealMirStore {
 	return &surrealMirStore{
 		db: db,
 	}
+}
+
+func (s *surrealMirStore) Status() external.ConnectionStatus {
+	return s.db.ConnStatus
+}
+
+func (s *surrealMirStore) StatusSubscribe() <-chan external.ConnectionStatus {
+	return s.db.StatusSubscribe()
 }
