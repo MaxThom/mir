@@ -5,16 +5,16 @@
 ### Bug
 
 - [ ] Add deviceid to badger
+- [ ] core bug with reconnect of loading devices
 
 ### Features
 
 - [ ] MCP Server for Mir
 - [ ] TinyGo
 - [ ] Road to Production
-  - [x] Module SDK Server rename to Client
-  - [ ] core bug with reconnect of loading devices
-  - [x] is connected to surreal on start? do random query to try
   - [ ] docs
+  - [ ] alert & alarms
+  - [ ] perf test
   - [ ] autoreconnect
     - [ ] nats
       - [ ] switch to jetstream for tlm
@@ -22,11 +22,9 @@
       - [ ] surreal
         - [ ] accumulate events in a buffer, event from cmd
             - [ ] Add that events can be sent without related object
-            - [ ] Have a event buffer
-            - [ ] events
-              - [ ] online
-              - [ ] offline
-              - [ ] cmd send
+              - [ ] Check to send event in degraded (cmd, online, offline)
+            - [x] Have a event buffer
+            - [ ] Testing Auto
 
 
 ### Refactoring

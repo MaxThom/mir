@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/maxthom/mir/internal/externals/mng"
 	"github.com/maxthom/mir/internal/libs/api/metrics"
+	"github.com/maxthom/mir/internal/libs/external"
 	"github.com/maxthom/mir/internal/services/schema_cache"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/maxthom/mir/pkgs/module/mir"
@@ -20,12 +21,15 @@ import (
 )
 
 type EventStoreServer struct {
-	ctx       context.Context
-	cancelCtx context.CancelFunc
-	wg        *sync.WaitGroup
-	m         *mir.Mir
-	store     mng.MirStore
-	schStore  *schema_cache.MirSchemaCache
+	ctx            context.Context
+	cancelCtx      context.CancelFunc
+	wg             *sync.WaitGroup
+	m              *mir.Mir
+	store          mng.MirStore
+	schStore       *schema_cache.MirSchemaCache
+	eventsBuffer   []mir_v1.Event
+	eventsBufferMu sync.RWMutex
+	eventsFn       func(event mir_v1.Event) error
 }
 
 const (
@@ -66,16 +70,39 @@ func NewEventStore(logger zerolog.Logger, m *mir.Mir, store mng.MirStore) (*Even
 	l = logger.With().Str("srv", "eventstore_server").Logger()
 	ctx, cancelFn := context.WithCancel(context.Background())
 	return &EventStoreServer{
-		ctx:       ctx,
-		cancelCtx: cancelFn,
-		wg:        &sync.WaitGroup{},
-		m:         m,
-		store:     store,
+		ctx:            ctx,
+		cancelCtx:      cancelFn,
+		wg:             &sync.WaitGroup{},
+		m:              m,
+		store:          store,
+		eventsBuffer:   []mir_v1.Event{},
+		eventsBufferMu: sync.RWMutex{},
 	}, nil
 }
 
 // Using the db and bus, listen for telemetry, deserialize using proto and push to line protocol db
 func (s *EventStoreServer) Serve() error {
+	// Set send function to buffer or db depending on db conn status
+	if s.store.Status() == external.StatusConnected {
+		s.eventsFn = s.sendToDb
+	} else {
+		l.Warn().Str("status", s.store.Status().String()).Msg("database disconnected: sending events to buffer")
+		s.eventsFn = s.sendToBuffer
+	}
+	s.wg.Add(1)
+	go func() {
+		ch := s.store.StatusSubscribe()
+		for {
+			select {
+			case status := <-ch:
+				s.dbConnUpdate(status)
+			case <-s.ctx.Done():
+				s.wg.Done()
+				return
+			}
+		}
+	}()
+
 	if err := s.m.Client().ListEvents().QueueSubscribe(ServiceName, s.listEventsSub); err != nil {
 		return err
 	}
@@ -173,12 +200,60 @@ func (s *EventStoreServer) streamEventsSub(msg *mir.Msg, subjectId string, req m
 	event.Status.FirstAt = &now
 	event.Status.LastAt = &now
 
-	_, err = s.store.CreateEvent(event)
-	if err != nil {
+	if err = s.eventsFn(event); err != nil {
 		eventCaptureErrorTotal.WithLabelValues(req.Reason).Inc()
 		l.Error().Err(err).Msg("error occure while streaming event")
 		return
 	}
 
-	l.Info().Msg("event streamed successfully")
+	l.Debug().Msg("event streamed successfully")
+}
+
+func (s *EventStoreServer) sendToBuffer(event mir_v1.Event) error {
+	s.eventsBufferMu.Lock()
+	defer s.eventsBufferMu.Unlock()
+	s.eventsBuffer = append(s.eventsBuffer, event)
+	return nil
+}
+
+func (s *EventStoreServer) sendToDb(event mir_v1.Event) error {
+	_, err := s.store.CreateEvent(event)
+	if err != nil {
+		s.eventsBuffer = append(s.eventsBuffer, event)
+	}
+	return err
+}
+
+func (s *EventStoreServer) dbConnUpdate(status external.ConnectionStatus) {
+	if s.store.Status() == external.StatusConnected {
+		l.Warn().Str("status", status.String()).Int("buffer count", len(s.eventsBuffer)).Msg("database reconnected: sending buffered events to storage")
+		s.eventsFn = s.sendToDb
+
+		// If the db reconnect and then redisconnect while this is ongoing
+		//   - We need to make sure not to lose the unprocess item so read them to the eventsBuffer > using second slice instead of inplace
+		//   - The process event can be relaunched a second time with a few events in the buffer, thus they
+		//     must not overwrite each other > mutex
+
+		go func() {
+			s.eventsBufferMu.Lock()
+			tempBuffer := make([]mir_v1.Event, len(s.eventsBuffer))
+			copy(tempBuffer, s.eventsBuffer)
+			s.eventsBuffer = []mir_v1.Event{}
+			s.eventsBufferMu.Unlock()
+
+			for i, evt := range tempBuffer {
+				if _, err := s.store.CreateEvent(evt); err != nil {
+					l.Error().Err(err).Msg("error sending event from buffer")
+					// Readd unprocessed item to the buffer
+					s.eventsBufferMu.Lock()
+					s.eventsBuffer = append(s.eventsBuffer, tempBuffer[i:]...)
+					s.eventsBufferMu.Unlock()
+					break
+				}
+			}
+		}()
+	} else {
+		l.Warn().Str("status", status.String()).Msg("database disconnected: sending events to buffer")
+		s.eventsFn = s.sendToBuffer
+	}
 }
