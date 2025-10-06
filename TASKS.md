@@ -24,6 +24,7 @@
             - [ ] Add that events can be sent without related object
               - [ ] Check to send event in degraded (cmd, online, offline)
             - [x] Have a event buffer
+              - [ ] add buffer metric
             - [ ] Testing Auto
 
 
