@@ -177,7 +177,7 @@ func (s *EventStoreServer) streamEventsSub(msg *mir.Msg, subjectId string, req m
 	if req.RelatedObject.Meta.Name != "" {
 		event.Meta.Name = req.RelatedObject.Meta.Name + "-" + id.String()[24:]
 	} else {
-		event.Meta.Name = id.String()
+		event.Meta.Name = subjectId + "-" + id.String()[24:]
 	}
 	event.Meta.Namespace = req.RelatedObject.Meta.Namespace
 	if event.Meta.Namespace == "" {
@@ -235,7 +235,7 @@ func (s *EventStoreServer) sendToDb(event mir_v1.Event) error {
 
 func (s *EventStoreServer) dbConnUpdate(status external.ConnectionStatus) {
 	if s.store.Status() == external.StatusConnected {
-		l.Warn().Str("status", status.String()).Int("buffer count", len(s.eventsBuffer)).Msg("database reconnected: sending buffered events to storage")
+		l.Info().Str("status", status.String()).Int("buffer count", len(s.eventsBuffer)).Msg("database reconnected: sending buffered events to storage")
 		s.eventsFn = s.sendToDb
 
 		// If the db reconnect and then redisconnect while this is ongoing

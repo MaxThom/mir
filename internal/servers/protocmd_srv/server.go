@@ -362,13 +362,14 @@ func (s *ProtoCmdServer) sendCommandToDevices(msg *mir.Msg, req *mir_apiv1.SendC
 	wg.Wait()
 
 	// Event
-	if !degradedMode {
-		if len(commandsToSend) > 0 {
-			for nameNs, cmdResp := range devResp {
-				nns := strings.Split(nameNs, "/")
-				if err = publishCommandEvent(s.m, msg, nns[0], nns[1], cmdResp); err != nil {
-					l.Warn().Err(err).Msg("error while publishing device command event")
-				}
+	if len(commandsToSend) > 0 {
+		for nameNs, cmdResp := range devResp {
+			nns := strings.Split(nameNs, "/")
+			if degradedMode {
+				nns = []string{nameNs, "__degraded"}
+			}
+			if err = publishCommandEvent(s.m, msg, nns[0], nns[1], cmdResp); err != nil {
+				l.Warn().Err(err).Msg("error while publishing device command event")
 			}
 		}
 	}
