@@ -167,20 +167,20 @@ func stringifyEvents(output string, events []mir_v1.Event) (string, error) {
 }
 
 func prettyStringEvents(events []mir_v1.Event) string {
-	format := "%-16s %-30s %-8s %-20s %-60s\n"
+	format := "%-16s %-45s %-8s %-20s %-60s\n"
 	var sb strings.Builder
 	sb.WriteString(fmt.Sprintf(format, "AGE", "NAMESPACE/NAME", "TYPE", "REASON", "MESSAGE"))
 
-	// TODO sort namespace, time
+	// TODO sort time, namespace, name
 	sort.Slice(events, func(i, j int) bool {
-		if events[i].Meta.Namespace == events[j].Meta.Namespace {
-			if events[i].Status.FirstAt.Equal(events[j].Status.FirstAt.Time) {
+		if events[i].Status.FirstAt.Equal(events[j].Status.FirstAt.Time) {
+			if events[i].Meta.Namespace == events[j].Meta.Namespace {
 				return events[i].Meta.Name < events[j].Meta.Name
 			} else {
-				return events[i].Status.FirstAt.After(events[j].Status.FirstAt.Time)
+				return events[i].Meta.Namespace < events[j].Meta.Namespace
 			}
 		} else {
-			return events[i].Meta.Namespace < events[j].Meta.Namespace
+			return events[i].Status.FirstAt.After(events[j].Status.FirstAt.Time)
 		}
 	})
 

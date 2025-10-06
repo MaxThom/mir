@@ -12,17 +12,13 @@ import (
 	"github.com/maxthom/mir/internal/clients/core_client"
 	"github.com/maxthom/mir/internal/externals/mng"
 	"github.com/maxthom/mir/internal/libs/api/metrics"
-	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	"github.com/maxthom/mir/internal/libs/external/surreal"
 	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/maxthom/mir/pkgs/module/mir"
-	"github.com/nats-io/nats.go"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
 	surrealdbModels "github.com/surrealdb/surrealdb.go/pkg/models"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 // How to make this service scalable
@@ -326,7 +322,14 @@ func (s *CoreServer) hearthbeatPulsor(ctx context.Context, interval time.Duratio
 					if !strings.Contains(err.Error(), surreal.ErrDatabaseDisconnected.Error()) {
 						l.Error().Err(err).Msg("error occure while executing hearthbeat db query")
 					}
-					continue
+					// Degraded mode
+					devs = make([]mir_v1.Device, len(newOffline))
+					for i, id := range newOffline {
+						devs[i] = mir_v1.NewDevice().WithId(id).WithMeta(mir_v1.Meta{
+							Name:      id,
+							Namespace: "__degraded",
+						})
+					}
 				}
 				l.Info().Str("route", "hearthbeat_pulsor").Str("event", "device_offline").Strs("new devices", newOffline).Msg("offline devices")
 				s.hearthbeatsMutex.Lock()
@@ -348,6 +351,7 @@ func (s *CoreServer) hearthbeatPulsor(ctx context.Context, interval time.Duratio
 
 func (s *CoreServer) hearthbeatSub(msg *mir.Msg, deviceId string) {
 	l.Trace().Str("route", "hearthbeat").Msg("hearthbeat device request")
+	degradedMode := false
 	// If not in map, mean is newly online device
 	timeNow := time.Now().UTC()
 	// if last != now by >= 3 mins, the device offline
@@ -366,42 +370,44 @@ func (s *CoreServer) hearthbeatSub(msg *mir.Msg, deviceId string) {
 		LastHearthbeat: &surrealdbModels.CustomDateTime{Time: timeNow},
 	})
 
-	dev, err := s.store.UpdateDevice(t, d)
+	devs, err := s.store.UpdateDevice(t, d)
 	if err != nil {
 		if !strings.Contains(err.Error(), surreal.ErrDatabaseDisconnected.Error()) {
 			l.Error().Err(err).Msg("error occure while executing hearthbeat db query")
 		}
-		msg.Ack()
-		return
+		// Degraded mode
+		degradedMode = true
+		devs = []mir_v1.Device{
+			mir_v1.NewDevice().WithId(deviceId).WithMeta(mir_v1.Meta{
+				Name:      deviceId,
+				Namespace: "__degraded",
+			}),
+		}
 	}
 	// Means device is not in db, we provision it
-	if len(dev) == 0 {
+	if len(devs) == 0 && !degradedMode {
 		_, err := s.m.Client().CreateDevice().Request(mir_v1.NewDevice().WithSpec(mir_v1.DeviceSpec{
 			DeviceId: deviceId,
 		}))
 		if err != nil {
 			l.Error().Err(err).Str("device_id", deviceId).Msg("could not automaticly provision new device")
-			msg.Ack()
-			return
 		}
-		dev, err = s.store.UpdateDevice(t, d)
+		devs, err = s.store.UpdateDevice(t, d)
 		if err != nil {
 			if !strings.Contains(err.Error(), surreal.ErrDatabaseDisconnected.Error()) {
 				l.Error().Err(err).Msg("error occure while executing hearthbeat db query")
 			}
-			msg.Ack()
-			return
 		}
 		deviceStatusCount.WithLabelValues("offline").Inc()
 	}
 
-	if _, ok := s.hearthbeats[deviceId]; !ok && len(dev) > 0 {
+	if _, ok := s.hearthbeats[deviceId]; !ok && len(devs) > 0 {
 		l.Info().Str("route", "hearthbeat").Str("event", "device_online").Msg(deviceId)
-		if err := publishDeviceOnlineEvent(s.m, msg, dev[0]); err != nil {
+		if err := publishDeviceOnlineEvent(s.m, msg, devs[0]); err != nil {
 			l.Warn().Err(err).Str("device_id", deviceId).Msg("error occure while publishing device online event")
 		}
 		deviceStatusCount.WithLabelValues("online").Inc()
-		deviceStatusCount.WithLabelValues("offline").Sub(1)
+		deviceStatusCount.WithLabelValues("offline").Dec()
 	}
 	s.hearthbeatsMutex.Lock()
 	s.hearthbeats[deviceId] = time.Now().UTC()
@@ -444,21 +450,6 @@ func (s *CoreServer) schemaSub(msg *mir.Msg, deviceId string, sch *mir_proto.Mir
 	}
 
 	msg.Ack()
-}
-
-func sendReplyOrAck(bus *bus.BusConn, msg nats.Msg, m protoreflect.ProtoMessage) {
-	if msg.Reply != "" {
-		bResp, err := proto.Marshal(m)
-		if err != nil {
-			l.Error().Err(err).Msg("error occure while creating response")
-		}
-		err = bus.Publish(msg.Reply, bResp)
-		if err != nil {
-			l.Error().Err(err).Msg("error occure while sending reply")
-		}
-	} else {
-		msg.Ack()
-	}
 }
 
 func publishDeviceOnlineEvent(m *mir.Mir, msg *mir.Msg, d mir_v1.Device) error {

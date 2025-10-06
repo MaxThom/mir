@@ -16,17 +16,10 @@
   - [ ] alert & alarms
   - [ ] perf test
   - [ ] autoreconnect
-    - [ ] nats
-      - [ ] switch to jetstream for tlm
-    - [ ] during
-      - [ ] surreal
-        - [ ] accumulate events in a buffer, event from cmd
-            - [ ] Add that events can be sent without related object
-              - [ ] Check to send event in degraded (cmd, online, offline)
-            - [x] Have a event buffer
-              - [ ] add buffer metric
-            - [ ] Testing Auto
-
+    - [ ] if modules are down
+      - [ ] switch to jetstream for tlm, could be in memory TLM
+        - must add jetstream functions to ModuleSDK
+        - update routes to use jetstream, hearthbeat, tlm, reported properties
 
 ### Refactoring
 

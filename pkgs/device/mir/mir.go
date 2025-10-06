@@ -245,7 +245,8 @@ func (m *Mir) Launch(ctx context.Context, opts ...nats.Option) (*sync.WaitGroup,
 
 	wg.Add(1)
 	go func() {
-		m.shutdown(m.ctx)
+		<-ctx.Done()
+		m.shutdown()
 		wg.Done()
 	}()
 
@@ -324,8 +325,7 @@ func (m *Mir) commands(ctx context.Context, sub *nats.Subscription) {
 	}
 }
 
-func (m *Mir) shutdown(ctx context.Context) {
-	<-ctx.Done()
+func (m *Mir) shutdown() {
 	m.l.Info().Msg("shutting down connection to Mir")
 	m.b.Conn.Close()
 }
