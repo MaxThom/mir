@@ -57,6 +57,11 @@ var (
 		Name:      "event_capture_error_total",
 		Help:      "Number of events captured by the system in error",
 	}, []string{"event"})
+	eventBufferSize = metrics.NewGauge(prometheus.GaugeOpts{
+		Subsystem: "eventstore",
+		Name:      "event_buffer_size",
+		Help:      "Number of events in buffer",
+	})
 
 	l zerolog.Logger
 )
@@ -213,13 +218,17 @@ func (s *EventStoreServer) sendToBuffer(event mir_v1.Event) error {
 	s.eventsBufferMu.Lock()
 	defer s.eventsBufferMu.Unlock()
 	s.eventsBuffer = append(s.eventsBuffer, event)
+	eventBufferSize.Inc()
 	return nil
 }
 
 func (s *EventStoreServer) sendToDb(event mir_v1.Event) error {
 	_, err := s.store.CreateEvent(event)
 	if err != nil {
+		s.eventsBufferMu.Lock()
 		s.eventsBuffer = append(s.eventsBuffer, event)
+		eventBufferSize.Inc()
+		s.eventsBufferMu.Unlock()
 	}
 	return err
 }
@@ -250,6 +259,7 @@ func (s *EventStoreServer) dbConnUpdate(status external.ConnectionStatus) {
 					s.eventsBufferMu.Unlock()
 					break
 				}
+				eventBufferSize.Dec()
 			}
 		}()
 	} else {
