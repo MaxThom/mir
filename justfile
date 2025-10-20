@@ -33,6 +33,14 @@ run-prototlm:
 run-protocmd:
 	air -c .air/protocmd.toml
 
+# See list of direct dependencies
+dep-list:
+    go list -u -m -f '{{{{if not .Indirect}}{{{{.}}{{{{end}}' all
+
+# Update all dependencies
+dep-update:
+    go get -u ./...
+
 # Test with coverage
 test:
 	mkdir -p ./.tmp

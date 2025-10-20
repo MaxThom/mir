@@ -12,6 +12,7 @@
 - [ ] MCP Server for Mir
 - [ ] TinyGo
 - [ ] Road to Production
+  - [ ] update all dependencies
   - [ ] docs
   - [ ] alert & alarms
   - [ ] perf test
@@ -25,11 +26,11 @@
 
 ### Documentation
 
-- [ ] ModuleSDK
+- [x] ModuleSDK
 - [ ] Update MdBook to latest version
 - [ ] DeviceConfiguration and ServerConfiguration options
 - [ ] Talk about reconnection and network loss
-- [ ] Update CLI usage, mainly ctx and under device subcommand
+- [x] Update CLI usage, mainly ctx and under device subcommand
 - [x] Security
 - [ ] DeviceStorage
 
