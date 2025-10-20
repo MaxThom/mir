@@ -13,7 +13,7 @@
 - [ ] TinyGo
 - [ ] Road to Production
   - [ ] update all dependencies
-  - [ ] docs
+  - [x] docs
   - [ ] alert & alarms
   - [ ] perf test
   - [ ] autoreconnect
@@ -28,11 +28,11 @@
 
 - [x] ModuleSDK
 - [ ] Update MdBook to latest version
-- [ ] DeviceConfiguration and ServerConfiguration options
-- [ ] Talk about reconnection and network loss
+- [x] DeviceConfiguration and ServerConfiguration options
+- [x] Talk about reconnection and network loss
 - [x] Update CLI usage, mainly ctx and under device subcommand
 - [x] Security
-- [ ] DeviceStorage
+- [x] DeviceStorage
 
 ### Ergonomics
 
@@ -65,7 +65,7 @@
   - [x] DeviceID (MAC, random, etc [save to kv store])
   - [x] Custom Routes
 - [ ] ModuleSDK
-  - [ ] Documentation
+  - [x] Documentation
   - [x] Improvements
   - [x] Custom Routes
   - [x] Better reconnections

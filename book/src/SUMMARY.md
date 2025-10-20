@@ -16,6 +16,7 @@
 	  - [Command](./concepts/communication_command.md)
 	  - [Configuration](./concepts/communication_configuration.md)
 	- [Event and Audit System](./concepts/event_audit_system.md)
+	- [Network Resiliency](./concepts/network.md)
 
 - [Integrating Mir](./integrating_mir/integrating_mir.md)
 	- [Device SDK](./integrating_mir/device/device_sdk.md)
@@ -23,14 +24,15 @@
 		- [Project Template](./integrating_mir/device/device_template.md)
 		- [Anatomy](./integrating_mir/device/device_anatomy.md)
 		- [Communication](./integrating_mir/device/device_communication.md)
-		- [Telemetry](./integrating_mir/device/device_telemetry.md)
-		- [Commands](./integrating_mir/device/device_commands.md)
-		- [Configuration](./integrating_mir/device/device_configuration.md)
+			- [Telemetry](./integrating_mir/device/device_telemetry.md)
+			- [Commands](./integrating_mir/device/device_commands.md)
+			- [Configuration](./integrating_mir/device/device_configuration.md)
+		- [Local Configuration](./integrating_mir/device/device_local_configuration.md)
 		- [What's Next](./integrating_mir/device/device_next.md)
 	- [Module SDK](./integrating_mir/module/module_sdk.md)
 		- [Getting Started](./integrating_mir/module/module_getting_started.md)
 		- [Routes](./integrating_mir/module/module_routes.md)
-		  - [Examples](./integrating_mir/module/module_routes_example.md)
+		  - [Routes Example](./integrating_mir/module/module_routes_example.md)
 
 # Operators Guide
 
