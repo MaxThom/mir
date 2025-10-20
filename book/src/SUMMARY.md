@@ -29,8 +29,8 @@
 		- [What's Next](./integrating_mir/device/device_next.md)
 	- [Module SDK](./integrating_mir/module/module_sdk.md)
 		- [Getting Started](./integrating_mir/module/module_getting_started.md)
-		- [Event Subscriptions](./integrating_mir/module/module_events.md)
-		- [Examples](./integrating_mir/module/module_examples.md)
+		- [Routes](./integrating_mir/module/module_routes.md)
+		  - [Examples](./integrating_mir/module/module_routes_example.md)
 
 # Operators Guide
 
@@ -61,5 +61,6 @@
 - [Roadmap](./resources/roadmap.md)
 - [Access Mir Repository](./resources/access_mir.md)
 - [Access Mir Container Registry](./resources/access_mir_container_reg.md)
+- [Article: Software Ergonomics](./resources/software_ergonomics.md)
 
 ---
