@@ -1,0 +1,102 @@
+apiVersion: mir/v1alpha
+kind: swarm
+meta:
+  name: "local"
+  namespace: "swarm"
+  labels: {}
+  annotations: {}
+swarm:
+  logLevel: info
+  devices:
+    - count: 2
+      meta:
+        name: reco
+        annotations:
+          swarm: "true"
+        namespace: default
+      telemetry:
+        - name: Environment
+          interval: 3s
+          tags: {}
+          fields:
+            - temperature
+            - humidity
+            - pressure
+        - name: Power
+          interval: 3s
+          tags: {}
+          fields:
+            - ampere
+            - voltage
+            - power
+        - name: Consumption
+          interval: 3s
+          tags: {}
+          fields:
+            - consumption
+            - beans
+  telemetryFields:
+    - name: beans
+      type: message
+      fields:
+        - grains
+        - water
+    - name: grains
+      type: float64
+      tags:
+        unit: m3
+      generator:
+        expr: "10*sin(t)+3"
+    - name: water
+      type: float64
+      tags:
+        unit: l3
+      generator:
+        expr: "10*cos(t)+3"
+    - name: consumption
+      type: message
+      fields:
+        - power
+        - gaz
+    - name: gaz
+      type: float64
+      tags:
+        unit: m3
+      generator:
+        expr: "10*sin(t)+3"
+    - name: power
+      type: float64
+      tags:
+        unit: W
+      generator:
+        expr: "10*cos(t)+3"
+    - name: voltage
+      type: float64
+      tags:
+        unit: V
+      generator:
+        expr: "tan(t)+3"
+    - name: ampere
+      type: float64
+      tags:
+        unit: A
+      generator:
+        expr: "10*sin(t)+3.0"
+    - name: temperature
+      type: float64
+      tags:
+        unit: C
+      generator:
+        expr: "10*sin(t)+3.0"
+    - name: pressure
+      type: float64
+      tags:
+        unit: Pa
+      generator:
+        expr: "tan(t)+3.0"
+    - name: humidity
+      type: float64
+      tags:
+        unit: "%"
+      generator:
+        expr: "10*cos(t)+3.0"

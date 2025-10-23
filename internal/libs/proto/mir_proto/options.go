@@ -13,11 +13,11 @@ func findTimestampField(desc protoreflect.MessageDescriptor) {
 
 func RetrieveMessageTags(desc protoreflect.MessageDescriptor) map[string]string {
 	tags := make(map[string]string)
-	retrieveTagsFromDescriptor(desc, tags)
+	retrieveTagsFromDescriptor(desc, "", tags)
 	return tags
 }
 
-func retrieveTagsFromDescriptor(desc protoreflect.MessageDescriptor, tags map[string]string) {
+func retrieveTagsFromDescriptor(desc protoreflect.MessageDescriptor, nestedKey string, tags map[string]string) {
 	// Get meta opts
 	opts, ok := desc.Options().(*descriptorpb.MessageOptions)
 	if ok {
@@ -25,7 +25,7 @@ func retrieveTagsFromDescriptor(desc protoreflect.MessageDescriptor, tags map[st
 		if meta != nil {
 			for k, v := range meta.Tags {
 				if v != "" {
-					tags[k] = v
+					tags[nestedKey+k] = v
 				}
 			}
 		}
@@ -40,13 +40,13 @@ func retrieveTagsFromDescriptor(desc protoreflect.MessageDescriptor, tags map[st
 			if fieldMeta != nil {
 				for k, v := range fieldMeta.Tags {
 					if v != "" {
-						tags[k] = v
+						tags[nestedKey+string(fd.Name())+"."+k] = v
 					}
 				}
 			}
 		}
 		if fd.Kind() == protoreflect.MessageKind {
-			retrieveTagsFromDescriptor(fd.Message(), tags)
+			retrieveTagsFromDescriptor(fd.Message(), nestedKey+string(fd.Name())+".", tags)
 		}
 	}
 }

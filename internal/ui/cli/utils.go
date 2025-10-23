@@ -58,7 +58,6 @@ func unmarshalTypeFromStdInOrFile[T any](path string) ([]*T, error) {
 			devs = append(devs, dev)
 		}
 	}
-	fmt.Println(devs)
 
 	return devs, nil
 }
