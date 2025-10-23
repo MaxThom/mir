@@ -16,20 +16,21 @@ import (
 	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/descriptorpb"
 )
 
-type swarm struct {
+type Swarm struct {
 	bus     *nats.Conn
 	Devices []*mirDevice.Mir
 }
 
-func NewSwarm(bus *nats.Conn) swarm {
-	return swarm{
+func NewSwarm(bus *nats.Conn) Swarm {
+	return Swarm{
 		bus: bus,
 	}
 }
 
-func (s *swarm) Deploy(ctx context.Context) ([]*sync.WaitGroup, error) {
+func (s *Swarm) Deploy(ctx context.Context) ([]*sync.WaitGroup, error) {
 	var errs error
 	var wgs []*sync.WaitGroup
 	for _, d := range s.Devices {
@@ -43,7 +44,7 @@ func (s *swarm) Deploy(ctx context.Context) ([]*sync.WaitGroup, error) {
 	return wgs, errs
 }
 
-func (s swarm) ToTarget() mir_v1.DeviceTarget {
+func (s Swarm) ToTarget() mir_v1.DeviceTarget {
 	devIds := make([]string, len(s.Devices))
 	for i, d := range s.Devices {
 		devIds[i] = d.GetDeviceId()
@@ -54,7 +55,7 @@ func (s swarm) ToTarget() mir_v1.DeviceTarget {
 }
 
 type devicesBuilder struct {
-	s           *swarm
+	s           *Swarm
 	logLevel    mirDevice.LogLevel
 	credentials string
 	tlsKey      string
@@ -64,13 +65,14 @@ type devicesBuilder struct {
 	deviceReqs  []*mir_apiv1.CreateDeviceRequest
 	deviceIds   []string
 	sch         []protoreflect.FileDescriptor
+	schProto    []*descriptorpb.FileDescriptorProto
 	cmd         []commandHandler
 	cfg         []configHandler
 	storeOpts   mirDevice.StoreOptions
 }
 
 type deviceBuilder struct {
-	s           *swarm
+	s           *Swarm
 	credentials string
 	tlsKey      string
 	tlsCert     string
@@ -79,6 +81,7 @@ type deviceBuilder struct {
 	logWriters  []io.Writer
 	deviceReq   *mir_apiv1.CreateDeviceRequest
 	sch         []protoreflect.FileDescriptor
+	schProto    []*descriptorpb.FileDescriptorProto
 	cmd         []commandHandler
 	cfg         []configHandler
 	storeOpts   mirDevice.StoreOptions
@@ -94,7 +97,7 @@ type configHandler struct {
 	handler func(protoreflect.ProtoMessage)
 }
 
-func (s *swarm) AddDeviceWithIds(ids []string) *devicesBuilder {
+func (s *Swarm) AddDeviceWithIds(ids []string) *devicesBuilder {
 	return &devicesBuilder{
 		deviceIds: ids,
 		s:         s,
@@ -103,7 +106,7 @@ func (s *swarm) AddDeviceWithIds(ids []string) *devicesBuilder {
 		},
 	}
 }
-func (s *swarm) AddDevices(req ...*mir_apiv1.CreateDeviceRequest) *devicesBuilder {
+func (s *Swarm) AddDevices(req ...*mir_apiv1.CreateDeviceRequest) *devicesBuilder {
 	return &devicesBuilder{
 		deviceReqs: req,
 		s:          s,
@@ -114,7 +117,7 @@ func (s *swarm) AddDevices(req ...*mir_apiv1.CreateDeviceRequest) *devicesBuilde
 	}
 }
 
-func (s *swarm) AddDevice(req *mir_apiv1.CreateDeviceRequest) *deviceBuilder {
+func (s *Swarm) AddDevice(req *mir_apiv1.CreateDeviceRequest) *deviceBuilder {
 	return &deviceBuilder{
 		deviceReq: req,
 		s:         s,
@@ -127,6 +130,11 @@ func (s *swarm) AddDevice(req *mir_apiv1.CreateDeviceRequest) *deviceBuilder {
 
 func (b *devicesBuilder) WithSchema(s ...protoreflect.FileDescriptor) *devicesBuilder {
 	b.sch = s
+	return b
+}
+
+func (b *devicesBuilder) WithSchemaProto(s ...*descriptorpb.FileDescriptorProto) *devicesBuilder {
+	b.schProto = s
 	return b
 }
 
@@ -191,6 +199,7 @@ func (b *devicesBuilder) Incubate() ([]*mir_apiv1.CreateDeviceResponse, error) {
 			UserCredentialsFile(b.credentials).
 			RootCAFile(b.caCert).
 			ClientCertificateFile(b.tlsCert, b.tlsKey).
+			SchemaProto(b.schProto...).
 			Schema(b.sch...).Build()
 		if err != nil {
 			errs = errors.Join(err)
@@ -216,6 +225,7 @@ func (b *devicesBuilder) Incubate() ([]*mir_apiv1.CreateDeviceResponse, error) {
 			UserCredentialsFile(b.credentials).
 			RootCAFile(b.caCert).
 			ClientCertificateFile(b.tlsCert, b.tlsKey).
+			SchemaProto(b.schProto...).
 			Schema(b.sch...).Build()
 		if err != nil {
 			errs = errors.Join(err)
@@ -245,6 +255,11 @@ func (b *devicesBuilder) Incubate() ([]*mir_apiv1.CreateDeviceResponse, error) {
 
 func (b *deviceBuilder) WithSchema(s ...protoreflect.FileDescriptor) *deviceBuilder {
 	b.sch = s
+	return b
+}
+
+func (b *deviceBuilder) WithSchemaProto(s ...*descriptorpb.FileDescriptorProto) *deviceBuilder {
+	b.schProto = s
 	return b
 }
 
@@ -308,6 +323,7 @@ func (b *deviceBuilder) Incubate() (*mir_apiv1.CreateDeviceResponse, error) {
 		UserCredentialsFile(b.credentials).
 		RootCAFile(b.caCert).
 		ClientCertificateFile(b.tlsCert, b.tlsKey).
+		SchemaProto(b.schProto...).
 		Schema(b.sch...).Build()
 	if err != nil {
 		return nil, err

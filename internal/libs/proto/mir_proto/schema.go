@@ -32,6 +32,25 @@ func NewMirProtoSchema(s ...protoreflect.FileDescriptor) (*MirProtoSchema, error
 	return &MirProtoSchema{Files: reg}, err
 }
 
+func NewMirProtoSchemaWithMir(s ...*descriptorpb.FileDescriptorProto) (*MirProtoSchema, error) {
+	pbSet := &descriptorpb.FileDescriptorSet{}
+	for _, f := range s {
+		pbSet.File = append(pbSet.File, f)
+	}
+
+	pbSet.File = append(pbSet.File,
+		protodesc.ToFileDescriptorProto(
+			devicev1.File_mir_device_v1_mir_proto,
+		),
+		protodesc.ToFileDescriptorProto(
+			descriptorpb.File_google_protobuf_descriptor_proto,
+		),
+	)
+
+	reg, err := protodesc.NewFiles(pbSet)
+	return &MirProtoSchema{Files: reg}, err
+}
+
 func (m *MirProtoSchema) GetTelemetryList(filterMeasurements []string, filterLabels map[string]string) ([]*mir_apiv1.TelemetryDescriptor, error) {
 	telemetry := []*mir_apiv1.TelemetryDescriptor{}
 	m.RangeFiles(func(fd protoreflect.FileDescriptor) bool {
@@ -127,7 +146,9 @@ func (m *MirProtoSchema) GetConfigList(filterLabels map[string]string) ([]*mir_a
 func (m *MirProtoSchema) GetPackageList() []string {
 	packages := []string{}
 	m.RangeFiles(func(fd protoreflect.FileDescriptor) bool {
-		packages = append(packages, string(fd.Package()))
+		if !slices.Contains(packages, string(fd.Package())) {
+			packages = append(packages, string(fd.Package()))
+		}
 		return true
 	})
 	return packages

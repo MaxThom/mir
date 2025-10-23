@@ -9,6 +9,7 @@ require (
 	github.com/charmbracelet/bubbletea v0.25.0
 	github.com/charmbracelet/lipgloss v0.10.0
 	github.com/dgraph-io/badger/v4 v4.7.0
+	github.com/expr-lang/expr v1.17.6
 	github.com/influxdata/influxdb-client-go/v2 v2.13.0
 	github.com/klauspost/compress v1.18.0
 	github.com/knadh/koanf/providers/env v0.1.0
