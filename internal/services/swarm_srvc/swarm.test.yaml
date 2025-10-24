@@ -1,6 +1,3 @@
-# Swarm File Definition
-#  Used to defined a set of swarms to mimic devices
-#  Can be used for integration and performance testing or demos
 apiVersion: mir/v1alpha
 kind: swarm
 meta:
@@ -15,14 +12,14 @@ swarm:
     - count: 2
       meta:
         name: reco # Used as prefix with __{i} if more then one
-        namespace: swarm
         annotations:
           swarm: "true"
+        namespace: default
       telemetry:
         - name: Environment # Schema message name
           interval: 3s # Send interval
           tags: {} # Becomes schema message tags
-          fields: # Refers to Telemetry fields definition
+          fields: # Refers to Telemetry fields
             - temperature
             - humidity
             - pressure
@@ -38,26 +35,38 @@ swarm:
           tags: {}
           fields:
             - consumption
+            - beans
   # Telemetry fields are a message fields of
   # value type with a attached generator function
   # or a message type pointing to other fields for compositions
   telemetryFields:
-    - name: consumption # Field name
+    - name: beans
       type: message # [message|int8|int16|int32|int64|float32|float64]
       fields: # If message, point to other fields
-        - power
-        - gaz
-    - name: gaz
+        - grains
+        - water
+    - name: grains
       type: float64
       tags: # List of annotations on a field schema
         unit: m3
       generator: # Telemetry generator options
-        # Any math expression, t=time.Now and is required.
-        # Supported functions or variables:
-        #   - sin, cos, tan, abs, sqrt
-        #   - pow, exp, log, log10, floor
-        #   - ceil, round, min, max
-        #   - pi, π, e, rand, t, x
+        expr: "10*sin(t)+3" # Math expression where t is time.Now
+    - name: water
+      type: float64
+      tags:
+        unit: l3
+      generator:
+        expr: "10*cos(t)+3"
+    - name: consumption
+      type: message
+      fields:
+        - power
+        - gaz
+    - name: gaz
+      type: float64
+      tags:
+        unit: m3
+      generator:
         expr: "10*sin(t)+3"
     - name: power
       type: float64

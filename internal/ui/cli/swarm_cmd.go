@@ -48,6 +48,7 @@ func (c *SwarmCmd) Validate() error {
 func (d *SwarmCmd) Run(log zerolog.Logger, m *mSdk.Mir, cfg ui.Config) error {
 	if d.SwarmTemplate {
 		// TODO
+		fmt.Println(string(swarm_srvc.SwarmExampleFile))
 		return nil
 	}
 
