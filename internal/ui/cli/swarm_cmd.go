@@ -77,7 +77,7 @@ func (d *SwarmCmd) Run(log zerolog.Logger, m *mSdk.Mir, cfg ui.Config) error {
 
 		swarmCfg = mir_v1.NewSwarm()
 		swarmCfg.Spec.LogLevel = string(logLvl)
-		swarmCfg.Spec.TelemetryFields = []mir_v1.SwarmTelemetryField{
+		swarmCfg.Spec.Fields = []mir_v1.SwarmField{
 			{
 				Name: "Temperature",
 				Tags: map[string]string{

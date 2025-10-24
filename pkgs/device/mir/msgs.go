@@ -14,6 +14,7 @@ import (
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/dynamicpb"
 )
 
 const (
@@ -60,7 +61,7 @@ func DefinedCommandHandler(msg *nats.Msg, m *Mir) error {
 		shouldZstd = true
 	}
 	descName := msg.Header.Get(HeaderMsgName)
-	_, err := m.schemaReg.FindDescriptorByName(protoreflect.FullName(descName))
+	desc, err := m.schemaReg.FindDescriptorByName(protoreflect.FullName(descName))
 	if err != nil {
 		return sendReplyOrAck(m.b, msg, &devicev1.Error{
 			Message: fmt.Errorf("device error while looking for command descriptor: %w", err).Error(),
@@ -74,8 +75,13 @@ func DefinedCommandHandler(msg *nats.Msg, m *Mir) error {
 		}, nil, false)
 	}
 
-	v := reflect.New(h.t).Interface()
-	cmdMsg := v.(proto.Message)
+	var cmdMsg proto.Message
+	if h.t == reflect.TypeOf(dynamicpb.Message{}) {
+		cmdMsg = dynamicpb.NewMessage(desc.(protoreflect.MessageDescriptor))
+	} else {
+		v := reflect.New(h.t).Interface()
+		cmdMsg = v.(proto.Message)
+	}
 
 	if err = proto.Unmarshal(msg.Data, cmdMsg); err != nil {
 		return sendReplyOrAck(m.b, msg, &devicev1.Error{
