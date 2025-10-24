@@ -30,6 +30,54 @@ func NewSwarm(bus *nats.Conn) Swarm {
 	}
 }
 
+func (s *Swarm) BatchDeploy(ctx context.Context, batchSize int) ([]*sync.WaitGroup, error) {
+	var errs error
+	var wgs []*sync.WaitGroup
+	var mu sync.Mutex
+
+	totalDevices := len(s.Devices)
+	var batchWg sync.WaitGroup
+
+	// Process devices in batches of 10
+	for i := 0; i < totalDevices; i += batchSize {
+		end := i + batchSize
+		if end > totalDevices {
+			end = totalDevices
+		}
+		if ctx.Err() != nil {
+			break
+		}
+
+		batch := s.Devices[i:end]
+		batchWg.Add(1)
+		go func() {
+			defer batchWg.Done()
+			var wgb []*sync.WaitGroup
+			var errsb error
+			for _, d := range batch {
+				if ctx.Err() != nil {
+					return
+				}
+
+				wg, err := d.Launch(ctx)
+				if err != nil {
+					errsb = errors.Join(err)
+				} else {
+					wgb = append(wgb, wg)
+				}
+			}
+
+			mu.Lock()
+			errs = errors.Join(errsb)
+			wgs = append(wgs, wgb...)
+			mu.Unlock()
+		}()
+	}
+
+	batchWg.Wait()
+	return wgs, errs
+}
+
 func (s *Swarm) Deploy(ctx context.Context) ([]*sync.WaitGroup, error) {
 	var errs error
 	var wgs []*sync.WaitGroup

@@ -11,6 +11,7 @@ meta:
   annotations: {}
 swarm:
   logLevel: info
+  deployBatchSize: 10
   devices:
     - count: 1
       meta:

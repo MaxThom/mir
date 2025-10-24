@@ -51,9 +51,10 @@ func NewSwarm() Swarm {
 
 // SwarmSpec contains the main swarm configuration
 type SwarmSpec struct {
-	LogLevel string        `yaml:"logLevel"`
-	Devices  []SwarmDevice `yaml:"devices"`
-	Fields   []SwarmField  `yaml:"fields"`
+	LogLevel        string        `yaml:"logLevel"`
+	DeployBatchSize int           `yaml:"deployBatchSize"`
+	Devices         []SwarmDevice `yaml:"devices"`
+	Fields          []SwarmField  `yaml:"fields"`
 }
 
 // SwarmDevice defines a device template with count and telemetry groups
