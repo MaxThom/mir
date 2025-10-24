@@ -1313,7 +1313,7 @@ func TestDeviceTlmNestedTags(t *testing.T) {
 	fmt.Println(lp)
 
 	// Assert
-	assert.Equal(t, true, strings.Contains(lp, "lp_test.v1.DeviceTlmNestedTags,field_temp=hot,floor=two,level=one env.temperature=12i,env.pressure=42i,env.humidity=88i 1257894000000000"))
+	assert.Equal(t, true, strings.Contains(lp, "lp_test.v1.DeviceTlmNestedTags,env.floor=two,env.temperature.field_temp=hot,level=one env.temperature=12i,env.pressure=42i,env.humidity=88i 1257894000000000"))
 }
 
 func TestDeviceTlmFieldTags(t *testing.T) {
@@ -1338,7 +1338,7 @@ func TestDeviceTlmFieldTags(t *testing.T) {
 	fmt.Println(lp)
 
 	// Assert
-	assert.Equal(t, true, strings.Contains(lp, "lp_test.v1.DeviceTlmFieldTags,field_temp=hot,level=one temperature=12i,pressure=42i,humidity=88i 1257894000000000"))
+	assert.Equal(t, true, strings.Contains(lp, "lp_test.v1.DeviceTlmFieldTags,level=one,temperature.field_temp=hot temperature=12i,pressure=42i,humidity=88i 1257894000000000"))
 }
 
 func ptr[T any](t T) *T {

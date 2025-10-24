@@ -49,6 +49,17 @@ swarm:
           tags: {}
           fields:
             - temperature
+      properties:
+        - name: HVAC
+          delay: 2s
+          tags: {}
+          fields:
+            - power
+        - name: SensorTemp
+          delay: 1s
+          tags: {}
+          fields:
+            - temperature
   # Telemetry fields are a message fields of
   # value type with a attached generator function
   # or a message type pointing to other fields for compositions

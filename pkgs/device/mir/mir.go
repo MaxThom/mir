@@ -21,8 +21,10 @@ import (
 	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
+	"google.golang.org/protobuf/types/dynamicpb"
 )
 
 type Mir struct {
@@ -484,8 +486,19 @@ func (m Mir) HandleProperties(t proto.Message, handler ...func(proto.Message)) {
 			return
 		}
 
-		v := reflect.New(cfg.t).Interface()
-		msg := v.(proto.Message)
+		var msg proto.Message
+		if cfg.t == reflect.TypeOf(dynamicpb.Message{}) {
+			desc, err := m.schemaReg.FindDescriptorByName(protoreflect.FullName(key))
+			if err != nil {
+				m.l.Error().Err(fmt.Errorf("device error while looking for property descriptor: %w", err))
+				return
+			}
+			msg = dynamicpb.NewMessage(desc.(protoreflect.MessageDescriptor))
+		} else {
+			v := reflect.New(cfg.t).Interface()
+			msg = v.(proto.Message)
+		}
+
 		if err := proto.Unmarshal(props.Value, msg); err != nil {
 			m.l.Error().Err(err).Msg("error unmarshalling properties")
 			return
