@@ -94,3 +94,7 @@ swarm:
       fields:
         - "sensor_name"
 ```
+
+### Validator
+
+Would be nice to have a validator

@@ -28,6 +28,8 @@ const (
 	Float32 ValueType = "float32"
 	Float64 ValueType = "float64"
 	Message ValueType = "message"
+	String  ValueType = "string"
+	Bool    ValueType = "bool"
 )
 
 const ()
@@ -49,9 +51,9 @@ func NewSwarm() Swarm {
 
 // SwarmSpec contains the main swarm configuration
 type SwarmSpec struct {
-	LogLevel        string                `yaml:"logLevel"`
-	Devices         []SwarmDevice         `yaml:"devices"`
-	TelemetryFields []SwarmTelemetryField `yaml:"telemetryFields"`
+	LogLevel string        `yaml:"logLevel"`
+	Devices  []SwarmDevice `yaml:"devices"`
+	Fields   []SwarmField  `yaml:"fields"`
 }
 
 // SwarmDevice defines a device template with count and telemetry groups
@@ -59,6 +61,7 @@ type SwarmDevice struct {
 	Count     int                   `yaml:"count"`
 	Meta      SwarmDeviceMeta       `yaml:"meta"`
 	Telemetry []SwarmTelemetryGroup `yaml:"telemetry"`
+	Commands  []SwarmCommandsGroup  `yaml:"commands"`
 }
 
 // SwarmDeviceMeta contains device metadata
@@ -77,8 +80,15 @@ type SwarmTelemetryGroup struct {
 	Fields   []string          `yaml:"fields"`
 }
 
-// SwarmTelemetryField defines a telemetry field with type and generator
-type SwarmTelemetryField struct {
+type SwarmCommandsGroup struct {
+	Name   string            `yaml:"name"`
+	Delay  time.Duration     `yaml:"delay"`
+	Tags   map[string]string `yaml:"tags,omitempty"`
+	Fields []string          `yaml:"fields"`
+}
+
+// SwarmField defines a telemetry field with type and generator
+type SwarmField struct {
 	Name      string                   `yaml:"name"`
 	Type      ValueType                `yaml:"type"` // int8|int16|int32|int64|float32|float64|message
 	Tags      map[string]string        `yaml:"tags,omitempty"`

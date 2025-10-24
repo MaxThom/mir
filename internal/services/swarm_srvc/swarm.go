@@ -25,14 +25,14 @@ import (
 )
 
 var (
-	ErrTelemetryFieldNotFound = fmt.Errorf("could not find telemetry field")
-	ErrUnsupportedValueType   = fmt.Errorf("unsupported value type")
-	ErrCreatingSchema         = fmt.Errorf("error creating schema")
-	ErrIncubatingSwarm        = fmt.Errorf("error incubating device swarm")
-	ErrIncubatingDevice       = fmt.Errorf("error incubating a device")
-	ErrDeployingSwarm         = fmt.Errorf("error deploying swarm")
-	ErrFindingMessage         = fmt.Errorf("error finding message in schema")
-	ErrCreatingGenerator      = fmt.Errorf("error creating telemetry field generator")
+	ErrFieldNotFound        = fmt.Errorf("could not find field")
+	ErrUnsupportedValueType = fmt.Errorf("unsupported value type")
+	ErrCreatingSchema       = fmt.Errorf("error creating schema")
+	ErrIncubatingSwarm      = fmt.Errorf("error incubating device swarm")
+	ErrIncubatingDevice     = fmt.Errorf("error incubating a device")
+	ErrDeployingSwarm       = fmt.Errorf("error deploying swarm")
+	ErrFindingMessage       = fmt.Errorf("error finding message in schema")
+	ErrCreatingGenerator    = fmt.Errorf("error creating telemetry field generator")
 
 	//go:embed swarm.example.yaml
 	SwarmExampleFile []byte
@@ -43,6 +43,12 @@ type SwarmService struct {
 	swarm       swarm.Swarm
 	schemaFiles map[string][]*descriptorpb.FileDescriptorProto
 	tlmFunc     map[string][]func(context.Context, *sync.WaitGroup, *mir.Mir)
+	cmdFunc     map[string][]cmdHandlerFunc
+}
+
+type cmdHandlerFunc struct {
+	msg proto.Message
+	fn  func(proto.Message) (proto.Message, error)
 }
 
 func NewSwarmService(mirCtx ui.Context, swarmCfg mir_v1.Swarm, bus *nats.Conn) (*SwarmService, error) {
@@ -52,6 +58,11 @@ func NewSwarmService(mirCtx ui.Context, swarmCfg mir_v1.Swarm, bus *nats.Conn) (
 	}
 
 	tlmFunc, err := createTlmFnForDeviceGroup(swarmCfg, protoFiles)
+	if err != nil {
+		return nil, err
+	}
+
+	cmdFunc, err := createCmdFnForDeviceGroup(swarmCfg, protoFiles)
 	if err != nil {
 		return nil, err
 	}
@@ -66,6 +77,7 @@ func NewSwarmService(mirCtx ui.Context, swarmCfg mir_v1.Swarm, bus *nats.Conn) (
 		swarm:       s,
 		schemaFiles: protoFiles,
 		tlmFunc:     tlmFunc,
+		cmdFunc:     cmdFunc,
 	}, nil
 }
 
@@ -78,9 +90,14 @@ func (s *SwarmService) Deploy(ctx context.Context) ([]*sync.WaitGroup, error) {
 	wg := &sync.WaitGroup{}
 	for _, d := range s.swarm.Devices {
 		devGroupName := strings.Split(d.GetDeviceId(), "__")[0]
+		// Telemetry
 		for _, f := range s.tlmFunc[devGroupName] {
 			wg.Add(1)
 			go f(ctx, wg, d)
+		}
+		// Command
+		for _, h := range s.cmdFunc[devGroupName] {
+			d.HandleCommand(h.msg, h.fn)
 		}
 	}
 	return wgs, nil
@@ -144,18 +161,18 @@ func createSwarmForDeviceGroup(swarmCfg mir_v1.Swarm, bus *nats.Conn, mirCtx ui.
 func createSchemasForDeviceGroup(swarmCfg mir_v1.Swarm) (map[string][]*descriptorpb.FileDescriptorProto, error) {
 	protoFiles := map[string][]*descriptorpb.FileDescriptorProto{}
 	packageName := "swarm." + swarmCfg.Meta.Namespace + "." + swarmCfg.Meta.Name
-	telemetryFieldsMap := make(map[string]mir_v1.SwarmTelemetryField)
-	telemetryMessages := []mir_v1.SwarmTelemetryField{}
-	for _, field := range swarmCfg.Spec.TelemetryFields {
-		telemetryFieldsMap[field.Name] = field
+	fieldsMaps := make(map[string]mir_v1.SwarmField)
+	fieldsMessages := []mir_v1.SwarmField{}
+	for _, field := range swarmCfg.Spec.Fields {
+		fieldsMaps[field.Name] = field
 		if field.Type == mir_v1.Message {
-			telemetryMessages = append(telemetryMessages, field)
+			fieldsMessages = append(fieldsMessages, field)
 		}
 	}
 
-	// Create telemetry messages
-	tlmFile := mir_proto.NewFileDescriptor(packageName, "telemetry")
-	for _, msg := range telemetryMessages {
+	// Create messages
+	tlmFile := mir_proto.NewFileDescriptor(packageName, "fields")
+	for _, msg := range fieldsMessages {
 		msgDesc := &descriptorpb.DescriptorProto{
 			Name:    proto.String(msg.Name),
 			Options: &descriptorpb.MessageOptions{},
@@ -165,9 +182,9 @@ func createSchemasForDeviceGroup(swarmCfg mir_v1.Swarm) (map[string][]*descripto
 		}
 
 		for i, fieldName := range msg.Fields {
-			field, ok := telemetryFieldsMap[fieldName]
+			field, ok := fieldsMaps[fieldName]
 			if !ok {
-				return nil, fmt.Errorf("%w: %s", ErrTelemetryFieldNotFound, fieldName)
+				return nil, fmt.Errorf("%w: %s", ErrFieldNotFound, fieldName)
 			}
 			vt, err := valueTypeToProtoType(field.Type)
 			if err != nil {
@@ -192,15 +209,16 @@ func createSchemasForDeviceGroup(swarmCfg mir_v1.Swarm) (map[string][]*descripto
 	for _, swarmDevs := range swarmCfg.Spec.Devices {
 		files := []*descriptorpb.FileDescriptorProto{tlmFile}
 		file := mir_proto.NewFileDescriptor(packageName, swarmDevs.Meta.Name)
-		file.Dependency = append(file.Dependency, packageName+"/telemetry.proto")
+		file.Dependency = append(file.Dependency, packageName+"/fields.proto")
 
+		// Telemetry
 		for _, tlmGroup := range swarmDevs.Telemetry {
 			tlmDesc := mir_proto.NewTelemetryDescriptor(tlmGroup.Name, &devicev1.Meta{Tags: tlmGroup.Tags}, devicev1.TimestampType_TIMESTAMP_TYPE_NANO)
 
 			for i, tlmName := range tlmGroup.Fields {
-				tlmField, ok := telemetryFieldsMap[tlmName]
+				tlmField, ok := fieldsMaps[tlmName]
 				if !ok {
-					return nil, fmt.Errorf("%w: %s", ErrTelemetryFieldNotFound, tlmName)
+					return nil, fmt.Errorf("%w: %s", ErrFieldNotFound, tlmName)
 				}
 				vt, err := valueTypeToProtoType(tlmField.Type)
 				if err != nil {
@@ -208,7 +226,7 @@ func createSchemasForDeviceGroup(swarmCfg mir_v1.Swarm) (map[string][]*descripto
 				}
 				fieldDesc := &descriptorpb.FieldDescriptorProto{
 					Name:    proto.String(tlmField.Name),
-					Number:  proto.Int32(int32(i + 2)),
+					Number:  proto.Int32(int32(i + 2)), // +2 for the ts field and for index start at 1
 					Type:    &vt,
 					Options: &descriptorpb.FieldOptions{},
 				}
@@ -220,6 +238,35 @@ func createSchemasForDeviceGroup(swarmCfg mir_v1.Swarm) (map[string][]*descripto
 			}
 			file.MessageType = append(file.MessageType, tlmDesc)
 		}
+
+		// Commands
+		for _, cmdGroup := range swarmDevs.Commands {
+			desc := mir_proto.NewCommandDescriptor(cmdGroup.Name, &devicev1.Meta{Tags: cmdGroup.Tags})
+
+			for i, name := range cmdGroup.Fields {
+				field, ok := fieldsMaps[name]
+				if !ok {
+					return nil, fmt.Errorf("%w: %s", ErrFieldNotFound, name)
+				}
+				vt, err := valueTypeToProtoType(field.Type)
+				if err != nil {
+					return nil, err
+				}
+				fieldDesc := &descriptorpb.FieldDescriptorProto{
+					Name:    proto.String(field.Name),
+					Number:  proto.Int32(int32(i + 1)),
+					Type:    &vt,
+					Options: &descriptorpb.FieldOptions{},
+				}
+				if field.Type == mir_v1.Message {
+					fieldDesc.TypeName = proto.String(packageName + "." + field.Name)
+				}
+				proto.SetExtension(fieldDesc.Options, devicev1.E_FieldMeta, &devicev1.FieldMeta{Tags: field.Tags})
+				desc.Field = append(desc.Field, fieldDesc)
+			}
+			file.MessageType = append(file.MessageType, desc)
+		}
+
 		files = append(files, file)
 		protoFiles[swarmDevs.Meta.Name] = files
 	}
@@ -228,8 +275,8 @@ func createSchemasForDeviceGroup(swarmCfg mir_v1.Swarm) (map[string][]*descripto
 }
 
 func createTlmFnForDeviceGroup(swarmCfg mir_v1.Swarm, protoFiles map[string][]*descriptorpb.FileDescriptorProto) (map[string][]func(context.Context, *sync.WaitGroup, *mir.Mir), error) {
-	telemetryFieldsMap := make(map[string]mir_v1.SwarmTelemetryField)
-	for _, field := range swarmCfg.Spec.TelemetryFields {
+	telemetryFieldsMap := make(map[string]mir_v1.SwarmField)
+	for _, field := range swarmCfg.Spec.Fields {
 		telemetryFieldsMap[field.Name] = field
 	}
 	tlmFunc := map[string][]func(context.Context, *sync.WaitGroup, *mir.Mir){}
@@ -272,6 +319,40 @@ func createTlmFnForDeviceGroup(swarmCfg mir_v1.Swarm, protoFiles map[string][]*d
 	return tlmFunc, nil
 }
 
+func createCmdFnForDeviceGroup(swarmCfg mir_v1.Swarm, protoFiles map[string][]*descriptorpb.FileDescriptorProto) (map[string][]cmdHandlerFunc, error) {
+	telemetryFieldsMap := make(map[string]mir_v1.SwarmField)
+	for _, field := range swarmCfg.Spec.Fields {
+		telemetryFieldsMap[field.Name] = field
+	}
+	cmdFunc := map[string][]cmdHandlerFunc{}
+	packageName := "swarm." + swarmCfg.Meta.Namespace + "." + swarmCfg.Meta.Name
+	for _, devGroup := range swarmCfg.Spec.Devices {
+		for _, cmdGroup := range devGroup.Commands {
+			sch, err := mir_proto.NewMirProtoSchemaWithMir(protoFiles[devGroup.Meta.Name]...)
+			if err != nil {
+				return nil, fmt.Errorf("%w: %w", ErrCreatingSchema, err)
+			}
+			desc, err := sch.FindDescriptorByName(protoreflect.FullName(packageName + "." + cmdGroup.Name))
+			if err != nil {
+				return nil, fmt.Errorf("%w: %w", ErrFindingMessage, err)
+			}
+			descMsg := desc.(protoreflect.MessageDescriptor)
+			msg := dynamicpb.NewMessage(descMsg)
+
+			fn := func(m proto.Message) (proto.Message, error) {
+				time.Sleep(cmdGroup.Delay)
+				return m, nil
+			}
+
+			cmdFunc[devGroup.Meta.Name] = append(cmdFunc[devGroup.Meta.Name], cmdHandlerFunc{
+				msg: msg,
+				fn:  fn,
+			})
+		}
+	}
+	return cmdFunc, nil
+}
+
 func valueTypeToProtoType(vt mir_v1.ValueType) (descriptorpb.FieldDescriptorProto_Type, error) {
 	switch vt {
 	case mir_v1.Int8:
@@ -290,6 +371,10 @@ func valueTypeToProtoType(vt mir_v1.ValueType) (descriptorpb.FieldDescriptorProt
 		return descriptorpb.FieldDescriptorProto_TYPE_DOUBLE, nil
 	case mir_v1.Message:
 		return descriptorpb.FieldDescriptorProto_TYPE_MESSAGE, nil
+	case mir_v1.Bool:
+		return descriptorpb.FieldDescriptorProto_TYPE_BOOL, nil
+	case mir_v1.String:
+		return descriptorpb.FieldDescriptorProto_TYPE_STRING, nil
 	default:
 		return 0, fmt.Errorf("%w: %s", ErrUnsupportedValueType, vt)
 	}
@@ -298,7 +383,7 @@ func valueTypeToProtoType(vt mir_v1.ValueType) (descriptorpb.FieldDescriptorProt
 type FieldSetterFn func(t time.Time) (protoreflect.Value, error)
 type MsgSetterFn func(t time.Time) (proto.Message, error)
 
-func SetTelemetryMsg(descMsg protoreflect.MessageDescriptor, tlmFieldsMap map[string]mir_v1.SwarmTelemetryField) (MsgSetterFn, error) {
+func SetTelemetryMsg(descMsg protoreflect.MessageDescriptor, tlmFieldsMap map[string]mir_v1.SwarmField) (MsgSetterFn, error) {
 	setters, err := setMsgGenerators(descMsg, tlmFieldsMap)
 	if err != nil {
 		return nil, err
@@ -322,7 +407,7 @@ func SetTelemetryMsg(descMsg protoreflect.MessageDescriptor, tlmFieldsMap map[st
 	}, nil
 }
 
-func setMsgGenerators(descMsg protoreflect.MessageDescriptor, tlmFieldsMap map[string]mir_v1.SwarmTelemetryField) ([]FieldSetterFn, error) {
+func setMsgGenerators(descMsg protoreflect.MessageDescriptor, tlmFieldsMap map[string]mir_v1.SwarmField) ([]FieldSetterFn, error) {
 	fieldSetters := []FieldSetterFn{}
 
 	for i := 0; i < descMsg.Fields().Len(); i++ {
@@ -362,7 +447,7 @@ func setMsgGenerators(descMsg protoreflect.MessageDescriptor, tlmFieldsMap map[s
 
 		tlmField, ok := tlmFieldsMap[f.TextName()]
 		if !ok {
-			return nil, fmt.Errorf("%w: %s", ErrTelemetryFieldNotFound, f.TextName())
+			return nil, fmt.Errorf("%w: %s", ErrFieldNotFound, f.TextName())
 		}
 		gen, err := NewGenerator(tlmField.Generator)
 		if err != nil {
