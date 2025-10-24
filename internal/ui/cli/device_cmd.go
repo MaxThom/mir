@@ -410,7 +410,7 @@ func marshalResponse(format string, v any) (string, error) {
 }
 
 func prettyStringDevices(devs []mir_v1.Device) string {
-	format := "%-45s %-16s %-10s %-20s %-20s %s\n"
+	format := "%-45s %-25s %-10s %-20s %-20s %s\n"
 	timeFormat := "2006-01-02 15:04:05"
 	var sb strings.Builder
 	sb.WriteString(fmt.Sprintf(format, "NAMESPACE/NAME", "DEVICE_ID", "STATUS", "LAST_HEARTHBEAT", "LAST_SCHEMA_FETCH", "LABELS"))

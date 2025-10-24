@@ -84,7 +84,11 @@ func NewSwarmService(mirCtx ui.Context, swarmCfg mir_v1.Swarm, bus *nats.Conn) (
 }
 
 func (s *SwarmService) Deploy(ctx context.Context) ([]*sync.WaitGroup, error) {
-	wgs, err := s.swarm.Deploy(ctx)
+	batchSize := 10
+	if s.cfg.Spec.DeployBatchSize != 0 {
+		batchSize = s.cfg.Spec.DeployBatchSize
+	}
+	wgs, err := s.swarm.BatchDeploy(ctx, batchSize)
 	if err != nil {
 		return wgs, fmt.Errorf("%w: %w", ErrDeployingSwarm, err)
 	}

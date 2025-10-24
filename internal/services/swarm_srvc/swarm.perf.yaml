@@ -9,9 +9,10 @@ meta:
     created-by: "mir-swarm"
 swarm:
   logLevel: info
+  deployBatchSize: 50
   devices:
     # Environmental sensor fleet
-    - count: 1
+    - count: 200
       meta:
         name: env-sensor
         namespace: default
@@ -45,7 +46,7 @@ swarm:
             - sampleRate
             - enabled
     # Power monitoring fleet
-    - count: 1
+    - count: 200
       meta:
         name: power-monitor
         namespace: default

@@ -55,6 +55,7 @@ meta:
   annotations: {}
 swarm:
   logLevel: info          # debug|info|warn|error
+  deployBatchSize: 10     # Number of deploy batches to distribute deploy
   devices: []             # Device group definitions
   fields: []              # Field definitions (shared across devices)
 ```
@@ -246,6 +247,7 @@ meta:
     created-by: "mir-swarm"
 swarm:
   logLevel: info
+  deployBatchSize: 10
   devices:
     # Environmental sensor fleet
     - count: 1
