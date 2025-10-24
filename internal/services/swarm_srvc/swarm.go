@@ -43,12 +43,8 @@ type SwarmService struct {
 	swarm       swarm.Swarm
 	schemaFiles map[string][]*descriptorpb.FileDescriptorProto
 	tlmFunc     map[string][]func(context.Context, *sync.WaitGroup, *mir.Mir)
-	cmdFunc     map[string][]cmdHandlerFunc
-}
-
-type cmdHandlerFunc struct {
-	msg proto.Message
-	fn  func(proto.Message) (proto.Message, error)
+	cmdFunc     map[string][]func(*mir.Mir)
+	cfgFunc     map[string][]func(*mir.Mir)
 }
 
 func NewSwarmService(mirCtx ui.Context, swarmCfg mir_v1.Swarm, bus *nats.Conn) (*SwarmService, error) {
@@ -67,6 +63,11 @@ func NewSwarmService(mirCtx ui.Context, swarmCfg mir_v1.Swarm, bus *nats.Conn) (
 		return nil, err
 	}
 
+	cfgFunc, err := createCfgFnForDeviceGroup(swarmCfg, protoFiles)
+	if err != nil {
+		return nil, err
+	}
+
 	s, err := createSwarmForDeviceGroup(swarmCfg, bus, mirCtx, protoFiles)
 	if err != nil {
 		return nil, err
@@ -78,6 +79,7 @@ func NewSwarmService(mirCtx ui.Context, swarmCfg mir_v1.Swarm, bus *nats.Conn) (
 		schemaFiles: protoFiles,
 		tlmFunc:     tlmFunc,
 		cmdFunc:     cmdFunc,
+		cfgFunc:     cfgFunc,
 	}, nil
 }
 
@@ -97,7 +99,11 @@ func (s *SwarmService) Deploy(ctx context.Context) ([]*sync.WaitGroup, error) {
 		}
 		// Command
 		for _, h := range s.cmdFunc[devGroupName] {
-			d.HandleCommand(h.msg, h.fn)
+			h(d)
+		}
+		// Properties
+		for _, h := range s.cfgFunc[devGroupName] {
+			h(d)
 		}
 	}
 	return wgs, nil
@@ -267,6 +273,33 @@ func createSchemasForDeviceGroup(swarmCfg mir_v1.Swarm) (map[string][]*descripto
 			file.MessageType = append(file.MessageType, desc)
 		}
 
+		// Properties
+		for _, cfgGroup := range swarmDevs.Properties {
+			desc := mir_proto.NewConfigDescriptor(cfgGroup.Name, &devicev1.Meta{Tags: cfgGroup.Tags})
+
+			for i, name := range cfgGroup.Fields {
+				field, ok := fieldsMaps[name]
+				if !ok {
+					return nil, fmt.Errorf("%w: %s", ErrFieldNotFound, name)
+				}
+				vt, err := valueTypeToProtoType(field.Type)
+				if err != nil {
+					return nil, err
+				}
+				fieldDesc := &descriptorpb.FieldDescriptorProto{
+					Name:    proto.String(field.Name),
+					Number:  proto.Int32(int32(i + 1)),
+					Type:    &vt,
+					Options: &descriptorpb.FieldOptions{},
+				}
+				if field.Type == mir_v1.Message {
+					fieldDesc.TypeName = proto.String(packageName + "." + field.Name)
+				}
+				proto.SetExtension(fieldDesc.Options, devicev1.E_FieldMeta, &devicev1.FieldMeta{Tags: field.Tags})
+				desc.Field = append(desc.Field, fieldDesc)
+			}
+			file.MessageType = append(file.MessageType, desc)
+		}
 		files = append(files, file)
 		protoFiles[swarmDevs.Meta.Name] = files
 	}
@@ -319,12 +352,12 @@ func createTlmFnForDeviceGroup(swarmCfg mir_v1.Swarm, protoFiles map[string][]*d
 	return tlmFunc, nil
 }
 
-func createCmdFnForDeviceGroup(swarmCfg mir_v1.Swarm, protoFiles map[string][]*descriptorpb.FileDescriptorProto) (map[string][]cmdHandlerFunc, error) {
-	telemetryFieldsMap := make(map[string]mir_v1.SwarmField)
+func createCmdFnForDeviceGroup(swarmCfg mir_v1.Swarm, protoFiles map[string][]*descriptorpb.FileDescriptorProto) (map[string][]func(*mir.Mir), error) {
+	fieldsMap := make(map[string]mir_v1.SwarmField)
 	for _, field := range swarmCfg.Spec.Fields {
-		telemetryFieldsMap[field.Name] = field
+		fieldsMap[field.Name] = field
 	}
-	cmdFunc := map[string][]cmdHandlerFunc{}
+	cmdFunc := map[string][]func(*mir.Mir){}
 	packageName := "swarm." + swarmCfg.Meta.Namespace + "." + swarmCfg.Meta.Name
 	for _, devGroup := range swarmCfg.Spec.Devices {
 		for _, cmdGroup := range devGroup.Commands {
@@ -339,18 +372,50 @@ func createCmdFnForDeviceGroup(swarmCfg mir_v1.Swarm, protoFiles map[string][]*d
 			descMsg := desc.(protoreflect.MessageDescriptor)
 			msg := dynamicpb.NewMessage(descMsg)
 
-			fn := func(m proto.Message) (proto.Message, error) {
-				time.Sleep(cmdGroup.Delay)
-				return m, nil
+			fn := func(d *mir.Mir) {
+				d.HandleCommand(msg, func(m proto.Message) (proto.Message, error) {
+					time.Sleep(cmdGroup.Delay)
+					return m, nil
+				})
 			}
 
-			cmdFunc[devGroup.Meta.Name] = append(cmdFunc[devGroup.Meta.Name], cmdHandlerFunc{
-				msg: msg,
-				fn:  fn,
-			})
+			cmdFunc[devGroup.Meta.Name] = append(cmdFunc[devGroup.Meta.Name], fn)
 		}
 	}
 	return cmdFunc, nil
+}
+
+func createCfgFnForDeviceGroup(swarmCfg mir_v1.Swarm, protoFiles map[string][]*descriptorpb.FileDescriptorProto) (map[string][]func(*mir.Mir), error) {
+	fieldsMap := make(map[string]mir_v1.SwarmField)
+	for _, field := range swarmCfg.Spec.Fields {
+		fieldsMap[field.Name] = field
+	}
+	cfgFunc := map[string][]func(*mir.Mir){}
+	packageName := "swarm." + swarmCfg.Meta.Namespace + "." + swarmCfg.Meta.Name
+	for _, devGroup := range swarmCfg.Spec.Devices {
+		for _, cmdGroup := range devGroup.Properties {
+			sch, err := mir_proto.NewMirProtoSchemaWithMir(protoFiles[devGroup.Meta.Name]...)
+			if err != nil {
+				return nil, fmt.Errorf("%w: %w", ErrCreatingSchema, err)
+			}
+			desc, err := sch.FindDescriptorByName(protoreflect.FullName(packageName + "." + cmdGroup.Name))
+			if err != nil {
+				return nil, fmt.Errorf("%w: %w", ErrFindingMessage, err)
+			}
+			descMsg := desc.(protoreflect.MessageDescriptor)
+			msg := dynamicpb.NewMessage(descMsg)
+
+			fn := func(d *mir.Mir) {
+				d.HandleProperties(msg, func(m proto.Message) {
+					time.Sleep(cmdGroup.Delay)
+					d.SendProperties(m)
+				})
+			}
+
+			cfgFunc[devGroup.Meta.Name] = append(cfgFunc[devGroup.Meta.Name], fn)
+		}
+	}
+	return cfgFunc, nil
 }
 
 func valueTypeToProtoType(vt mir_v1.ValueType) (descriptorpb.FieldDescriptorProto_Type, error) {

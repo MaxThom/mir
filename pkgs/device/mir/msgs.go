@@ -119,23 +119,32 @@ func DefinedConfigHandler(msg *nats.Msg, m *Mir) error {
 	}
 
 	// Props are newer
+	desc, err := m.schemaReg.FindDescriptorByName(protoreflect.FullName(descName))
+	if err != nil {
+		return fmt.Errorf("device error while looking for property descriptor: %w", err)
+	}
 
 	h, ok := m.cfgHandlers[descName]
 	if !ok {
-		return fmt.Errorf("device error: no handler for config %s found", descName)
+		return fmt.Errorf("device error: no handler for property %s found", descName)
 	}
 
-	v := reflect.New(h.t).Interface()
-	cmdMsg := v.(proto.Message)
-	if err = proto.Unmarshal(msg.Data, cmdMsg); err != nil {
-		return fmt.Errorf("device error while unmarshalling config payload: %w", err)
+	var cfgMsg proto.Message
+	if h.t == reflect.TypeOf(dynamicpb.Message{}) {
+		cfgMsg = dynamicpb.NewMessage(desc.(protoreflect.MessageDescriptor))
+	} else {
+		v := reflect.New(h.t).Interface()
+		cfgMsg = v.(proto.Message)
+	}
+
+	if err = proto.Unmarshal(msg.Data, cfgMsg); err != nil {
+		return fmt.Errorf("device error while unmarshalling property payload: %w", err)
 	}
 
 	for _, handler := range h.h {
-		handler(cmdMsg)
+		handler(cfgMsg)
 	}
 
-	// TODO maybe should return reported properties as dx
 	return nil // sendReplyOrAck(m.b, msg, cmdResp, nil, shouldZstd)
 }
 

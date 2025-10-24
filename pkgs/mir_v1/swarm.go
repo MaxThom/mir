@@ -58,10 +58,11 @@ type SwarmSpec struct {
 
 // SwarmDevice defines a device template with count and telemetry groups
 type SwarmDevice struct {
-	Count     int                   `yaml:"count"`
-	Meta      SwarmDeviceMeta       `yaml:"meta"`
-	Telemetry []SwarmTelemetryGroup `yaml:"telemetry"`
-	Commands  []SwarmCommandsGroup  `yaml:"commands"`
+	Count      int                    `yaml:"count"`
+	Meta       SwarmDeviceMeta        `yaml:"meta"`
+	Telemetry  []SwarmTelemetryGroup  `yaml:"telemetry"`
+	Commands   []SwarmCommandsGroup   `yaml:"commands"`
+	Properties []SwarmPropertiesGroup `yaml:"properties"`
 }
 
 // SwarmDeviceMeta contains device metadata
@@ -81,6 +82,13 @@ type SwarmTelemetryGroup struct {
 }
 
 type SwarmCommandsGroup struct {
+	Name   string            `yaml:"name"`
+	Delay  time.Duration     `yaml:"delay"`
+	Tags   map[string]string `yaml:"tags,omitempty"`
+	Fields []string          `yaml:"fields"`
+}
+
+type SwarmPropertiesGroup struct {
 	Name   string            `yaml:"name"`
 	Delay  time.Duration     `yaml:"delay"`
 	Tags   map[string]string `yaml:"tags,omitempty"`
