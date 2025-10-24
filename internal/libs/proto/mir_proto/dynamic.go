@@ -17,12 +17,6 @@ func NewFileDescriptor(packageName, fileName string) *descriptorpb.FileDescripto
 			"mir/device/v1/mir.proto",
 		},
 	}
-
-	// if opts.GoPackage != "" {
-	// 	fileDesc.Options = &descriptorpb.FileOptions{}
-	// 	fileDesc.Options.GoPackage = proto.String(opts.GoPackage)
-	// }
-
 	return fileDesc
 }
 
@@ -43,13 +37,10 @@ func NewTelemetryDescriptor(name string, meta *devicev1.Meta, tst devicev1.Times
 
 	// Add TS field
 	if tst == devicev1.TimestampType_TIMESTAMP_TYPE_FRACTION {
-		// TODO see how to reference mir schema instead of nested type
-		// msgDesc.NestedType = append(msgDesc.NestedType, NewFractionTimestampDescriptor())
 		tsField := &descriptorpb.FieldDescriptorProto{
-			Name:   proto.String("ts"),
-			Number: proto.Int32(1),
-			Type:   descriptorpb.FieldDescriptorProto_TYPE_MESSAGE.Enum(),
-			//TypeName: proto.String("." + name + ".Timestamp"),
+			Name:     proto.String("ts"),
+			Number:   proto.Int32(1),
+			Type:     descriptorpb.FieldDescriptorProto_TYPE_MESSAGE.Enum(),
 			TypeName: proto.String("mir.device.v1.Timestamp"),
 			Options:  &descriptorpb.FieldOptions{},
 		}

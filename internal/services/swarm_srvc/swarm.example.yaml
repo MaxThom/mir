@@ -12,7 +12,7 @@ meta:
 swarm:
   logLevel: info
   devices:
-    - count: 2
+    - count: 1
       meta:
         name: reco # Used as prefix with __{i} if more then one
         namespace: swarm
@@ -39,8 +39,9 @@ swarm:
           fields:
             - consumption
       commands:
+        # Commands reply with the same data
         - name: ActivateHVAC
-          delay: 2s
+          delay: 2s # Delays before reply
           tags: {}
           fields:
             - power
@@ -50,8 +51,9 @@ swarm:
           fields:
             - temperature
       properties:
+        # Sending desired properties will update the reported properties with the same values
         - name: HVAC
-          delay: 2s
+          delay: 2s # Delays before reported properties
           tags: {}
           fields:
             - power
@@ -60,9 +62,9 @@ swarm:
           tags: {}
           fields:
             - temperature
-  # Telemetry fields are a message fields of
-  # value type with a attached generator function
+  # Fields are a message fields of a value type
   # or a message type pointing to other fields for compositions
+  # For telemetry field, a generator function is attached
   fields:
     - name: consumption # Field name
       type: message # [message|int8|int16|int32|int64|float32|float64]

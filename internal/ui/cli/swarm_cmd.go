@@ -5,10 +5,13 @@ import (
 	"fmt"
 	"math/rand/v2"
 	"os"
+	"sync"
 	"syscall"
 	"time"
 
 	"github.com/maxthom/mir/internal/libs/boiler/mir_signals"
+	bus "github.com/maxthom/mir/internal/libs/external/natsio"
+	"github.com/maxthom/mir/internal/libs/swarm"
 	"github.com/maxthom/mir/internal/services/swarm_srvc"
 	"github.com/maxthom/mir/internal/ui"
 	swarmv1 "github.com/maxthom/mir/internal/ui/cli/gen/swarm/v1"
@@ -47,7 +50,6 @@ func (c *SwarmCmd) Validate() error {
 
 func (d *SwarmCmd) Run(log zerolog.Logger, m *mSdk.Mir, cfg ui.Config) error {
 	if d.SwarmTemplate {
-		// TODO
 		fmt.Println(string(swarm_srvc.SwarmExampleFile))
 		return nil
 	}
@@ -56,12 +58,23 @@ func (d *SwarmCmd) Run(log zerolog.Logger, m *mSdk.Mir, cfg ui.Config) error {
 	mirCtx, _ := cfg.GetCurrentContext()
 
 	var swarmCfg mir_v1.Swarm
+	var wgs []*sync.WaitGroup
 	if isPipedStdIn() || d.SwarmFile != "" {
 		swarms, err := unmarshalTypeFromStdInOrFile[mir_v1.Swarm](d.SwarmFile)
 		if err != nil {
 			return fmt.Errorf("error reading swarm from file: %w", err)
 		}
 		swarmCfg = *swarms[0]
+
+		swarmSvc, err := swarm_srvc.NewSwarmService(mirCtx, swarmCfg, m.Bus)
+		if err != nil {
+			return err
+		}
+
+		wgs, err = swarmSvc.Deploy(ctx)
+		if err != nil {
+			return err
+		}
 	} else {
 		logLvl := mir.LogLevelInfo
 		switch log.GetLevel() {
@@ -74,82 +87,11 @@ func (d *SwarmCmd) Run(log zerolog.Logger, m *mSdk.Mir, cfg ui.Config) error {
 		case zerolog.ErrorLevel:
 			logLvl = mir.LogLevelError
 		}
-
-		swarmCfg = mir_v1.NewSwarm()
-		swarmCfg.Spec.LogLevel = string(logLvl)
-		swarmCfg.Spec.Fields = []mir_v1.SwarmField{
-			{
-				Name: "Temperature",
-				Tags: map[string]string{
-					"unit": "C",
-				},
-				Type: mir_v1.Float32,
-				Generator: &mir_v1.SwarmTelemetryGenerator{
-					Expr: "cos(t*pi*2)+4",
-				},
-			},
-			{
-				Name: "Pressure",
-				Tags: map[string]string{
-					"unit": "Pa",
-				},
-				Type: mir_v1.Float32,
-				Generator: &mir_v1.SwarmTelemetryGenerator{
-					Expr: "cos(t*pi*2)+4",
-				},
-			},
-			{
-				Name: "Humidity",
-				Tags: map[string]string{
-					"unit": "%",
-				},
-				Type: mir_v1.Float32,
-				Generator: &mir_v1.SwarmTelemetryGenerator{
-					Expr: "cos(t*pi*2)+4",
-				},
-			},
+		var err error
+		wgs, err = launchSwarm(ctx, m, logLvl, mirCtx, d.DeviceIds)
+		if err != nil {
+			return err
 		}
-
-		for _, id := range d.DeviceIds {
-			d := mir_v1.SwarmDevice{
-				Count: 1,
-				Meta: mir_v1.SwarmDeviceMeta{
-					Name:      id,
-					Namespace: "default",
-					Annotations: map[string]string{
-						"swarm": "true",
-					},
-				},
-				Telemetry: []mir_v1.SwarmTelemetryGroup{
-					{
-						Name:     "Environment",
-						Interval: 3 * time.Second,
-						Fields: []string{
-							"Temperature",
-							"Humidity",
-							"Pressure",
-						},
-					},
-				},
-			}
-			swarmCfg.Spec.Devices = append(swarmCfg.Spec.Devices, d)
-		}
-		// TODO swarmCfg with ids only and a default setup
-		// wgs, err = launchSwarm(ctx, m, logLvl, currentCtx, d.DeviceIds)
-		// if err != nil {
-		// 	cancel()
-		// 	return err
-		// }
-	}
-
-	swarmSvc, err := swarm_srvc.NewSwarmService(mirCtx, swarmCfg, m.Bus)
-	if err != nil {
-		return err
-	}
-
-	wgs, err := swarmSvc.Deploy(ctx)
-	if err != nil {
-		return err
 	}
 
 	mir_signals.WaitForOsSignals(func() {
@@ -167,60 +109,60 @@ func (d *SwarmCmd) Run(log zerolog.Logger, m *mSdk.Mir, cfg ui.Config) error {
 	return nil
 }
 
-// func launchSwarm(ctx context.Context, m *mSdk.Mir, logLvl mir.LogLevel, mirCtx ui.Context, ids []string) ([]*sync.WaitGroup, error) {
-// 	s := swarm.NewSwarm(bus.NewWithBus(m.Bus).Conn)
-// 	_, err := s.AddDeviceWithIds(ids).
-// 		WithSchema(swarmv1.File_swarm_v1_demo_proto).
-// 		WithLogLevel(logLvl).
-// 		WithPrettyLogger(false).
-// 		WithCredentials(mirCtx.Credentials).
-// 		WithCerticate(mirCtx.TlsCert, mirCtx.TlsKey).
-// 		WithCA(mirCtx.RootCA).
-// 		Incubate()
-// 	if err != nil {
-// 		return nil, fmt.Errorf("error incubating swarm: %w", err)
-// 	}
+func launchSwarm(ctx context.Context, m *mSdk.Mir, logLvl mir.LogLevel, mirCtx ui.Context, ids []string) ([]*sync.WaitGroup, error) {
+	s := swarm.NewSwarm(bus.NewWithBus(m.Bus).Conn)
+	_, err := s.AddDeviceWithIds(ids).
+		WithSchema(swarmv1.File_swarm_v1_demo_proto).
+		WithLogLevel(logLvl).
+		WithPrettyLogger(false).
+		WithCredentials(mirCtx.Credentials).
+		WithCerticate(mirCtx.TlsCert, mirCtx.TlsKey).
+		WithCA(mirCtx.RootCA).
+		Incubate()
+	if err != nil {
+		return nil, fmt.Errorf("error incubating swarm: %w", err)
+	}
 
-// 	wgs, err := s.Deploy(ctx)
-// 	if err != nil {
-// 		return nil, fmt.Errorf("error deploying swarm: %w", err)
-// 	}
+	wgs, err := s.Deploy(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("error deploying swarm: %w", err)
+	}
 
-// 	wg := &sync.WaitGroup{}
-// 	for _, d := range s.Devices {
-// 		intSec := time.Duration(5)
-// 		d.HandleCommand(&swarmv1.ActivateHVAC{}, handleActivateHVACRequest(d))
-// 		d.HandleProperties(&swarmv1.DataRateProp{},
-// 			func(m proto.Message) {
-// 				cfg := m.(*swarmv1.DataRateProp)
-// 				if cfg.Sec < 1 {
-// 					cfg.Sec = 1
-// 				}
-// 				intSec = time.Duration(cfg.Sec)
-// 				d.Logger().Info().Int("rate_sec", int(cfg.Sec)).Msg("handling data rate properties")
-// 				if err := d.SendProperties(&swarmv1.DataRateStatus{
-// 					Sec: cfg.Sec,
-// 				}); err != nil {
-// 					d.Logger().Error().Err(err).Msg("error sending data rate status property")
-// 				}
-// 			},
-// 		)
-// 		wg.Add(1)
-// 		go func() {
-// 			for {
-// 				select {
-// 				case <-ctx.Done():
-// 					wg.Done()
-// 					return
-// 				case <-time.After(intSec * time.Second):
-// 					sendTelemetry(d)
-// 				}
-// 			}
-// 		}()
-// 	}
+	wg := &sync.WaitGroup{}
+	for _, d := range s.Devices {
+		intSec := time.Duration(5)
+		d.HandleCommand(&swarmv1.ActivateHVAC{}, handleActivateHVACRequest(d))
+		d.HandleProperties(&swarmv1.DataRateProp{},
+			func(m proto.Message) {
+				cfg := m.(*swarmv1.DataRateProp)
+				if cfg.Sec < 1 {
+					cfg.Sec = 1
+				}
+				intSec = time.Duration(cfg.Sec)
+				d.Logger().Info().Int("rate_sec", int(cfg.Sec)).Msg("handling data rate properties")
+				if err := d.SendProperties(&swarmv1.DataRateStatus{
+					Sec: cfg.Sec,
+				}); err != nil {
+					d.Logger().Error().Err(err).Msg("error sending data rate status property")
+				}
+			},
+		)
+		wg.Add(1)
+		go func() {
+			for {
+				select {
+				case <-ctx.Done():
+					wg.Done()
+					return
+				case <-time.After(intSec * time.Second):
+					sendTelemetry(d)
+				}
+			}
+		}()
+	}
 
-// 	return append(wgs, wg), nil
-// }
+	return append(wgs, wg), nil
+}
 
 func sendTelemetry(d *mir.Mir) {
 	dataEnv := swarmv1.EnvironmentTlm{

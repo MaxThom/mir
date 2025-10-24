@@ -16,7 +16,7 @@
   - [x] docs
   - [ ] alert & alarms
   - [ ] perf test
-  - [ ] swarm
+  - [x] swarm
   - [ ] autoreconnect
     - [ ] if modules are down
       - [ ] switch to jetstream for tlm, could be in memory TLM
