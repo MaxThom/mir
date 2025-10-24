@@ -44,6 +44,7 @@
 
 - [Operating Mir](./operating_mir/operating_mir.md)
 	- [Mir CLI & TUI](./operating_mir/mir_cli_tui.md)
+	  - [Swarm](./operating_mir/mir_swarm.md)
 	- [Web Interface]()
 	- [Monitoring](./operating_mir/monitoring.md)
 	- [Alerting]()
