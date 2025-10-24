@@ -2,6 +2,7 @@ package swarm_srvc
 
 import (
 	"context"
+	_ "embed"
 	"errors"
 	"fmt"
 	"strconv"
@@ -32,6 +33,9 @@ var (
 	ErrDeployingSwarm         = fmt.Errorf("error deploying swarm")
 	ErrFindingMessage         = fmt.Errorf("error finding message in schema")
 	ErrCreatingGenerator      = fmt.Errorf("error creating telemetry field generator")
+
+	//go:embed swarm.example.yaml
+	SwarmExampleFile []byte
 )
 
 type SwarmService struct {

@@ -23,7 +23,7 @@ The Swarm module is a configurable device simulator for the Mir IoT Hub that ena
 
 ## Configuration Structure
 
-### Top-Level Schema
+### Telemetry
 
 ```yaml
 swarm:
@@ -32,7 +32,7 @@ swarm:
   devices:
     - count: 100                      # Total devices to simulate
       meta:
-        idPrefix: "device"            # ID template pattern
+        name: "device"            # ID template pattern
         labels: {}                    # key value pair of string, string
         annotations: {}               # key value pair of string, string
         namespace: "default"          # Default namespace
@@ -48,7 +48,7 @@ swarm:
       tags:                       # key value pair of string, string
         - unit: "C"               # Sensor unit
       generator:                  # Value generation configuration
-        type: "sin"               # Generator type
+        expr: "sin(t)"            # Generator expression
         # ... generator parameters
     - name: "environmental"
       type: "message"
@@ -57,47 +57,40 @@ swarm:
         - "name"
 ```
 
-### Generator Types
+### Commands
 
-Generators create realistic sensor data patterns:
+Commands gonna reply the same proto message with the same data.
+There is gonna be some options to add delays and else.
 
-#### Periodic Generators (sin, cos, tan)
+Another idea, is to have also an expression that transform the data. x could be
+the received data for the field
+
 ```yaml
-generator:
-  type: "sin"
-  amplitude: 10.0      # Wave height/range
-  frequency: 0.1       # Hz - cycles per second
-  phase: 0.0           # Starting phase (degrees)
-  offset: 20.0         # Base/center value
-  noise: 0.5           # Random variation ±
-```
+swarm:
+  logLevel: "info"                  # Log level
 
-#### Random Generator
-```yaml
-generator:
-  type: "random"
-  min: 1000
-  max: 1020
-```
+  devices:
+    - count: 100                      # Total devices to simulate
+      meta:
+        name: "device"            # ID template pattern
+        labels: {}                    # key value pair of string, string
+        annotations: {}               # key value pair of string, string
+        namespace: "default"          # Default namespace
+      commands:                       # Commands groups to include, each group is a proto message
+        - name: "group_name"          # Proto message name
+          delay: 2s                   # Delay in the reply
+          fields:
+            - "sensor_name"            # List of fields
+            - "nested"
 
-#### Linear Generator
-```yaml
-generator:
-  type: "linear"
-  start: 100           # Starting value
-  slope: -0.001        # Change per second
-  min: 0               # Minimum bound (optional)
-  max: 100             # Maximum bound (optional)
+  fields:                  # Command field definitions
+    - name: "sensor_name"
+      type: "float32"             # int8|int16|int32|int64|float32|float64|message|string|bool
+      tags:                       # key value pair of string, string
+        - unit: "C"               # Sensor unit
+    - name: "nested"
+      type: "message"
+      tags: {}
+      fields:
+        - "sensor_name"
 ```
-
-#### Constant Generator
-```yaml
-generator:
-  type: "constant"
-  value: 42
-  noise: 0.5           # Optional random variation
-```
-
-#### Additional Generators
-- **sawtooth**: Ramp wave pattern
-- **square**: Square wave pattern
