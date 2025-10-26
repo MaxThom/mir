@@ -75,9 +75,9 @@ func NewModel(ctx context.Context) *Model {
 
 	columns := []table.Column{
 		{Title: "", Width: 2}, // Icon with status. online/offline/desabled
-		{Title: "id", Width: 10},
-		{Title: "name", Width: 15},
-		{Title: "namespace", Width: 15},
+		{Title: "id", Width: 20},
+		{Title: "name", Width: 25},
+		{Title: "namespace", Width: 25},
 		{Title: "labels", Width: 50},
 	}
 

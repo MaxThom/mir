@@ -32,9 +32,10 @@ type DeviceCmd struct {
 }
 
 type DeviceListCmd struct {
-	Output string `short:"o" help:"output format for response [pretty|json|yaml]" default:"pretty"`
-	NameNs string `name:"name/namespace" arg:"" optional:"" help:"list single device."`
-	Target `embed:"" prefix:"target."`
+	Output        string `short:"o" help:"output format for response [pretty|json|yaml]" default:"pretty"`
+	NameNs        string `name:"name/namespace" arg:"" optional:"" help:"list single device."`
+	ExcludeEvents bool   `short:"e" help:"Exclude events in each device. Speed up the query." default:"false"`
+	Target        `embed:"" prefix:"target."`
 }
 
 type DeviceCreateCmd struct {
@@ -106,6 +107,9 @@ func (d *DeviceListCmd) Validate() error {
 }
 
 func (d *DeviceListCmd) Run(log zerolog.Logger, m *mir.Mir) error {
+	if d.Output == "pretty" {
+		d.ExcludeEvents = true
+	}
 	var err error
 	list, err := m.Client().ListDevice().Request(
 		mir_v1.DeviceTarget{
@@ -113,7 +117,7 @@ func (d *DeviceListCmd) Run(log zerolog.Logger, m *mir.Mir) error {
 			Names:      d.Names,
 			Namespaces: d.Namespaces,
 			Labels:     d.Labels,
-		}, true)
+		}, !d.ExcludeEvents)
 	if err != nil {
 		return fmt.Errorf("error publishing list device request: %w", err)
 	}
@@ -365,6 +369,7 @@ func (d *DeviceDeleteCmd) Run(log zerolog.Logger, m *mir.Mir) error {
 }
 
 func stringifyDevices(output string, devices []mir_v1.Device) (string, error) {
+	sortDevicesByNamespaceAndName(devices)
 	switch output {
 	case "json":
 		return marshalResponse(output, devices)
@@ -409,15 +414,21 @@ func marshalResponse(format string, v any) (string, error) {
 	return string(out), e
 }
 
+// Sorts devices first by namespace, then by name
+func sortDevicesByNamespaceAndName(devs []mir_v1.Device) {
+	sort.Slice(devs, func(i, j int) bool {
+		if devs[i].Meta.Namespace != devs[j].Meta.Namespace {
+			return devs[i].Meta.Namespace < devs[j].Meta.Namespace
+		}
+		return devs[i].Meta.Name < devs[j].Meta.Name
+	})
+}
+
 func prettyStringDevices(devs []mir_v1.Device) string {
 	format := "%-45s %-25s %-10s %-20s %-20s %s\n"
 	timeFormat := "2006-01-02 15:04:05"
 	var sb strings.Builder
 	sb.WriteString(fmt.Sprintf(format, "NAMESPACE/NAME", "DEVICE_ID", "STATUS", "LAST_HEARTHBEAT", "LAST_SCHEMA_FETCH", "LABELS"))
-
-	sort.Slice(devs, func(i, j int) bool {
-		return devs[i].Meta.Namespace < devs[j].Meta.Namespace
-	})
 
 	for _, d := range devs {
 		st := ""

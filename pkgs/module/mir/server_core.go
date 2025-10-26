@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	defaultTimeout = 7 * time.Second
+	defaultTimeout = 30 * time.Second
 )
 
 // TODO Eventually, the subject will be a userid when auth is in place

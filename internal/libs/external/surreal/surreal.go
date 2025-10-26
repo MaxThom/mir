@@ -15,6 +15,8 @@ import (
 
 var ErrDatabaseDisconnected = fmt.Errorf("database disconnected")
 
+const defaultTimeout = 30 * time.Second
+
 type AutoReconnDB struct {
 	*surrealdb.DB
 	statusSubs  []chan external.ConnectionStatus
@@ -198,7 +200,7 @@ func Create[T any, TWhat surrealdb.TableOrRecord](db *AutoReconnDB, what TWhat, 
 	if !db.isConn {
 		return nil, ErrDatabaseDisconnected
 	}
-	ctxT, cancel := context.WithTimeout(db.ctx, 5*time.Second)
+	ctxT, cancel := context.WithTimeout(db.ctx, defaultTimeout)
 	defer cancel()
 	db.dbMu.RLock()
 	respDb, err := surrealdb.Create[T](ctxT, db.DB, what, data)
@@ -220,7 +222,7 @@ func Query[T any](db *AutoReconnDB, query string, vars map[string]any) (T, error
 		return empty, ErrDatabaseDisconnected
 	}
 
-	ctxT, cancel := context.WithTimeout(db.ctx, 5*time.Second)
+	ctxT, cancel := context.WithTimeout(db.ctx, defaultTimeout)
 	defer cancel()
 	db.dbMu.RLock()
 	result, err := surrealdb.Query[T](ctxT, db.DB, query, vars)
