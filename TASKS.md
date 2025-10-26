@@ -17,6 +17,10 @@
   - [ ] alert & alarms
   - [ ] perf test
   - [x] swarm
+    - [ ] test all query with high number of devices
+      - [ ] List
+      - [ ] Tlm Grafana Link too long
+      - [ ] Bug start server must check to put offline ones
   - [ ] autoreconnect
     - [ ] if modules are down
       - [ ] switch to jetstream for tlm, could be in memory TLM

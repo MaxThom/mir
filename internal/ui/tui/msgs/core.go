@@ -36,7 +36,7 @@ func ListMirDevices(m *mir.Mir) tea.Cmd {
 
 func listMirDevicesCmd(m *mir.Mir, noToast bool) func() tea.Msg {
 	return func() tea.Msg {
-		list, err := m.Client().ListDevice().Request(mir_v1.DeviceTarget{}, true)
+		list, err := m.Client().ListDevice().Request(mir_v1.DeviceTarget{}, false)
 		if err != nil {
 			return ErrMsg{Err: err}
 		}
