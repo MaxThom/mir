@@ -66,10 +66,11 @@ func (d *SwarmCmd) Run(log zerolog.Logger, m *mSdk.Mir, cfg ui.Config) error {
 		}
 		swarmCfg = *swarms[0]
 
-		swarmSvc, err := swarm_srvc.NewSwarmService(mirCtx, swarmCfg, m.Bus)
+		swarmSvc, err := swarm_srvc.NewSwarmService(log, mirCtx, swarmCfg, m.Bus)
 		if err != nil {
 			return err
 		}
+		fmt.Println("Swarm created !")
 
 		wgs, err = swarmSvc.Deploy(ctx)
 		if err != nil {
@@ -93,6 +94,7 @@ func (d *SwarmCmd) Run(log zerolog.Logger, m *mSdk.Mir, cfg ui.Config) error {
 			return err
 		}
 	}
+	fmt.Println("Swarm deployed !")
 
 	mir_signals.WaitForOsSignals(func() {
 		cancel()
@@ -122,6 +124,7 @@ func launchSwarm(ctx context.Context, m *mSdk.Mir, logLvl mir.LogLevel, mirCtx u
 	if err != nil {
 		return nil, fmt.Errorf("error incubating swarm: %w", err)
 	}
+	fmt.Println("Swarm created !")
 
 	wgs, err := s.Deploy(ctx)
 	if err != nil {

@@ -2,13 +2,13 @@
 
 bin="./bin/mir"
 
-namespaces=$($bin device list -o json | sed -n 's/.*"namespace": "\([^"]*\)".*/\1/p')
+namespaces=$($bin device list -o json -e | sed -n 's/.*"namespace": "\([^"]*\)".*/\1/p' | sort -u)
 for namespace in $namespaces; do
     echo "$namespace"
     $bin device delete --target.namespaces "$namespace"
 done
 
-namespaces=$($bin event list -o json | sed -n 's/.*"namespace": "\([^"]*\)".*/\1/p')
+namespaces=$($bin event list -o json | sed -n 's/.*"namespace": "\([^"]*\)".*/\1/p' | sort -u)
 for namespace in $namespaces; do
     echo "$namespace"
     $bin event delete --target.namespaces "$namespace"
