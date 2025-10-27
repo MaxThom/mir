@@ -89,17 +89,30 @@ func DefinedCommandHandler(msg *nats.Msg, m *Mir) error {
 		}, nil, false)
 	}
 
-	cmdResp, err := h.h(cmdMsg)
-	if err != nil {
-		return sendReplyOrAck(m.b, msg, &devicev1.Error{
-			Message: fmt.Errorf("device error in command handler: %w", err).Error(),
-		}, nil, false)
-	}
+	// Call handler in a go routine?
+	go func() {
+		cmdResp, err := h.h(cmdMsg)
+		if err != nil {
+			if err := sendReplyOrAck(m.b, msg, &devicev1.Error{
+				Message: fmt.Errorf("device error in command handler: %w", err).Error(),
+			}, nil, false); err != nil {
+				m.l.Error().Err(err).Msg("error sending command response")
+			}
+			return
+		}
 
-	if cmdResp == nil {
-		return sendReplyOrAck(m.b, msg, &devicev1.Void{}, nil, false)
-	}
-	return sendReplyOrAck(m.b, msg, cmdResp, nil, shouldZstd)
+		if cmdResp == nil {
+			if err := sendReplyOrAck(m.b, msg, &devicev1.Void{}, nil, false); err != nil {
+				m.l.Error().Err(err).Msg("error sending command response")
+			}
+			return
+		}
+		if err := sendReplyOrAck(m.b, msg, cmdResp, nil, shouldZstd); err != nil {
+			m.l.Error().Err(err).Msg("error sending command response")
+		}
+	}()
+
+	return nil
 }
 
 func DefinedConfigHandler(msg *nats.Msg, m *Mir) error {
@@ -142,7 +155,7 @@ func DefinedConfigHandler(msg *nats.Msg, m *Mir) error {
 	}
 
 	for _, handler := range h.h {
-		handler(cfgMsg)
+		go handler(cfgMsg)
 	}
 
 	return nil // sendReplyOrAck(m.b, msg, cmdResp, nil, shouldZstd)

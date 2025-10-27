@@ -18,6 +18,7 @@ import (
 	"github.com/maxthom/mir/pkgs/device/mir"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/nats-io/nats.go"
+	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
@@ -36,6 +37,8 @@ var (
 
 	//go:embed swarm.example.yaml
 	SwarmExampleFile []byte
+
+	l zerolog.Logger
 )
 
 type SwarmService struct {
@@ -47,7 +50,8 @@ type SwarmService struct {
 	cfgFunc     map[string][]func(*mir.Mir)
 }
 
-func NewSwarmService(mirCtx ui.Context, swarmCfg mir_v1.Swarm, bus *nats.Conn) (*SwarmService, error) {
+func NewSwarmService(logger zerolog.Logger, mirCtx ui.Context, swarmCfg mir_v1.Swarm, bus *nats.Conn) (*SwarmService, error) {
+	l = logger.With().Str("sub", "swarm").Logger()
 	protoFiles, err := createSchemasForDeviceGroup(swarmCfg)
 	if err != nil {
 		return nil, err
@@ -73,6 +77,8 @@ func NewSwarmService(mirCtx ui.Context, swarmCfg mir_v1.Swarm, bus *nats.Conn) (
 		return nil, err
 	}
 
+	l.Info().Int("device_count", len(s.Devices)).Msg("Swarm created !")
+
 	return &SwarmService{
 		cfg:         swarmCfg,
 		swarm:       s,
@@ -93,6 +99,8 @@ func (s *SwarmService) Deploy(ctx context.Context) ([]*sync.WaitGroup, error) {
 		return wgs, fmt.Errorf("%w: %w", ErrDeployingSwarm, err)
 	}
 
+	l.Info().Int("device_count", len(s.swarm.Devices)).Msg("Swarm deployed !")
+
 	wg := &sync.WaitGroup{}
 	for _, d := range s.swarm.Devices {
 		devGroupName := strings.Split(d.GetDeviceId(), "__")[0]
@@ -110,7 +118,8 @@ func (s *SwarmService) Deploy(ctx context.Context) ([]*sync.WaitGroup, error) {
 			h(d)
 		}
 	}
-	return wgs, nil
+	l.Info().Int("device_count", len(s.swarm.Devices)).Msg("Swarm deployed !")
+	return append(wgs, wg), nil
 }
 
 func createSwarmForDeviceGroup(swarmCfg mir_v1.Swarm, bus *nats.Conn, mirCtx ui.Context, protoFiles map[string][]*descriptorpb.FileDescriptorProto) (swarm.Swarm, error) {
@@ -156,8 +165,9 @@ func createSwarmForDeviceGroup(swarmCfg mir_v1.Swarm, bus *nats.Conn, mirCtx ui.
 			return s, fmt.Errorf("%w: %w", ErrIncubatingSwarm, err)
 		}
 		var errs error
-		for _, resp := range createResps {
+		for i, resp := range createResps {
 			if resp.GetError() != "" && !strings.Contains(resp.GetError(), "already exist") {
+				errs = errors.Join(fmt.Errorf("device %s: %s", createReqs[i].Spec.DeviceId, resp.GetError()))
 				errs = errors.Join(errors.New(resp.GetError()))
 			}
 		}

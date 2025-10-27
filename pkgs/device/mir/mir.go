@@ -505,7 +505,7 @@ func (m Mir) HandleProperties(t proto.Message, handler ...func(proto.Message)) {
 		}
 
 		for _, handler := range handler {
-			handler(msg)
+			go handler(msg)
 		}
 	}
 }
