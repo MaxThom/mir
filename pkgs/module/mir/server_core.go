@@ -398,6 +398,7 @@ func (r *listDeviceRoute) handlerWrapper(f func(msg *Msg, clientId string, t mir
 
 		resp, err := f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), mir_v1.ProtoDeviceTargetToMirDeviceTarget(req.Targets), req.IncludeEvents)
 		if err != nil {
+			l.Error().Err(err).Msg("error handling request")
 			err = r.m.sendReplyOrAck(msg, &mir_apiv1.ListDeviceResponse{Response: &mir_apiv1.ListDeviceResponse_Error{
 				Error: err.Error(),
 			}})

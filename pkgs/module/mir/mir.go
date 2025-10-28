@@ -292,7 +292,6 @@ func (m *Mir) sendReplyOrAck(msg *nats.Msg, resp proto.Message) error {
 	if msg.Reply != "" {
 		bResp, err := proto.Marshal(resp)
 		if err != nil {
-			msg.Ack()
 			return fmt.Errorf("error marshalling response: %w", err)
 		}
 		headers := nats.Header{}
@@ -304,7 +303,6 @@ func (m *Mir) sendReplyOrAck(msg *nats.Msg, resp proto.Message) error {
 		}
 		err = m.Bus.PublishMsg(reply)
 		if err != nil {
-			msg.Ack()
 			return fmt.Errorf("error publishing response: %w", err)
 		}
 	}
