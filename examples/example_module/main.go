@@ -59,7 +59,7 @@ func main() {
 	mir_signals.Notify(syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT)
 
 	// Mir
-	m, err := mir.Connect(log.Logger, AppName, defaultCfg.DataBusServer.Url, mir.WithDefaultReconnectOpts()...)
+	m, err := mir.Connect(AppName, defaultCfg.DataBusServer.Url, mir.WithDefaultReconnectOpts()...)
 	if err != nil {
 		panic(err)
 	}

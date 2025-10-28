@@ -147,6 +147,11 @@ func (r *createDeviceRoute) handlerWrapper(f func(msg *Msg, clientId string, d m
 				Ok: mir_v1.NewProtoDeviceFromDevice(resp),
 			},
 		})
+		if err != nil {
+			err = r.m.sendReplyOrAck(msg, &mir_apiv1.CreateDeviceResponse{Response: &mir_apiv1.CreateDeviceResponse_Error{
+				Error: err.Error(),
+			}})
+		}
 	}
 }
 
@@ -222,6 +227,11 @@ func (r *updateDeviceRoute) handlerWrapper(f func(msg *Msg, clientId string, t m
 				Ok: &mir_apiv1.DeviceList{Devices: mir_v1.NewProtoDeviceListFromDevices(resp)},
 			},
 		})
+		if err != nil {
+			err = r.m.sendReplyOrAck(msg, &mir_apiv1.UpdateDeviceResponse{Response: &mir_apiv1.UpdateDeviceResponse_Error{
+				Error: err.Error(),
+			}})
+		}
 	}
 }
 
@@ -329,6 +339,11 @@ func (r *deleteDeviceRoute) handlerWrapper(f func(msg *Msg, clientId string, req
 				Ok: &mir_apiv1.DeviceList{Devices: mir_v1.NewProtoDeviceListFromDevices(resp)},
 			},
 		})
+		if err != nil {
+			err = r.m.sendReplyOrAck(msg, &mir_apiv1.DeleteDeviceResponse{Response: &mir_apiv1.DeleteDeviceResponse_Error{
+				Error: err.Error(),
+			}})
+		}
 	}
 }
 
@@ -388,7 +403,6 @@ func (r *listDeviceRoute) handlerWrapper(f func(msg *Msg, clientId string, t mir
 		req := &mir_apiv1.ListDeviceRequest{}
 		if err := proto.Unmarshal(msg.Data, req); err != nil {
 			// TODO log error here
-			l.Error().Err(err).Msg("error unmarshalling request")
 			_ = r.m.sendReplyOrAck(msg, &mir_apiv1.ListDeviceResponse{Response: &mir_apiv1.ListDeviceResponse_Error{
 				Error: err.Error(),
 			}})
@@ -397,7 +411,6 @@ func (r *listDeviceRoute) handlerWrapper(f func(msg *Msg, clientId string, t mir
 
 		resp, err := f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), mir_v1.ProtoDeviceTargetToMirDeviceTarget(req.Targets), req.IncludeEvents)
 		if err != nil {
-			l.Error().Err(err).Msg("error handling request")
 			err = r.m.sendReplyOrAck(msg, &mir_apiv1.ListDeviceResponse{Response: &mir_apiv1.ListDeviceResponse_Error{
 				Error: err.Error(),
 			}})
@@ -411,7 +424,6 @@ func (r *listDeviceRoute) handlerWrapper(f func(msg *Msg, clientId string, t mir
 			},
 		})
 		if err != nil {
-			l.Error().Err(err).Msg("error marshalling response")
 			err = r.m.sendReplyOrAck(msg, &mir_apiv1.ListDeviceResponse{Response: &mir_apiv1.ListDeviceResponse_Error{
 				Error: err.Error(),
 			}})

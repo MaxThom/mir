@@ -36,7 +36,7 @@ func TestMain(m *testing.M) {
 	fmt.Println("> Test Setup")
 	var err error
 
-	mSdk, err = mir.Connect(log, "test_cfg", busUrl)
+	mSdk, err = mir.Connect("test_cfg", busUrl)
 	if err != nil {
 		panic(err)
 	}

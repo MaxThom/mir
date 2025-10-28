@@ -207,7 +207,7 @@ func (d *ServeCmd) run(
 	opts = append(opts, mir.WithUserCredentials(cfg.Mir.Credentials))
 	opts = append(opts, mir.WithRootCA(cfg.Mir.RootCA))
 	opts = append(opts, mir.WithClientCertificate(cfg.Mir.TLSCert, cfg.Mir.TLSKey))
-	m, err := mir.Connect(log, AppName, cfg.Mir.Url, opts...)
+	m, err := mir.Connect(AppName, cfg.Mir.Url, opts...)
 	if err != nil {
 		log.Err(err).Msg("error connecting to Mir server")
 		fmt.Println("error connecting to Mir server")

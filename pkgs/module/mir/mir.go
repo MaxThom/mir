@@ -97,15 +97,10 @@ const (
 	HeaderTime             = "mir-time"
 )
 
-var (
-	l zerolog.Logger
-)
-
 // Establish connection to the Mir server
 // This will enable communication to and from the device
 // To properly close the connection, call the Close() function
-func Connect(logger zerolog.Logger, name string, target string, natsOpts ...nats.Option) (*Mir, error) {
-	l = logger.With().Str("sdk", "mir").Logger()
+func Connect(name string, target string, natsOpts ...nats.Option) (*Mir, error) {
 	m := &Mir{
 		wg:           &sync.WaitGroup{},
 		name:         name,

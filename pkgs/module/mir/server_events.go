@@ -59,6 +59,11 @@ func (r *listEventsRoute) handlerWrapper(f func(msg *Msg, clientId string, req m
 				},
 			},
 		})
+		if err != nil {
+			err = r.m.sendReplyOrAck(msg, &mir_apiv1.ListEventsResponse{Response: &mir_apiv1.ListEventsResponse_Error{
+				Error: err.Error(),
+			}})
+		}
 	}
 }
 
@@ -139,6 +144,11 @@ func (r *deleteEventsRoute) handlerWrapper(f func(msg *Msg, clientId string, req
 				},
 			},
 		})
+		if err != nil {
+			err = r.m.sendReplyOrAck(msg, &mir_apiv1.DeleteEventReponse{Response: &mir_apiv1.DeleteEventReponse_Error{
+				Error: err.Error(),
+			}})
+		}
 	}
 }
 
