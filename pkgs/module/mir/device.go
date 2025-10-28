@@ -417,5 +417,10 @@ func (r *desiredPropertiesRoute) handlerWrapper(f func(msg *Msg, deviceId string
 				Ok: resp,
 			},
 		})
+		if err != nil {
+			err = r.m.sendReplyOrAck(msg, &mir_apiv1.DeviceReportedPropertiesResponse{Response: &mir_apiv1.DeviceReportedPropertiesResponse_Error{
+				Error: err.Error(),
+			}})
+		}
 	}
 }

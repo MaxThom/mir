@@ -35,7 +35,7 @@ func TestMain(m *testing.M) {
 	fmt.Println("> Test Setup")
 	var err error
 	db = test_utils.SetupSurrealDbConnsPanic("ws://127.0.0.1:8000/rpc", "root", "root", "global", "mir_testing")
-	mSdk, err = mir.Connect(log, "test_coresrv", busUrl)
+	mSdk, err = mir.Connect("test_coresrv", busUrl)
 	if err != nil {
 		panic(err)
 	}

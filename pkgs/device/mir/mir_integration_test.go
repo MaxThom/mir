@@ -28,14 +28,14 @@ import (
 )
 
 var mSdk *mir.Mir
-var busUrl = "nats://127.tlm0.0.1:4222"
+var busUrl = "nats://127.0.0.1:4222"
 var log = test_utils.TestLogger("device")
 
 func TestMain(m *testing.M) {
 	// Setup
 	fmt.Println("> Test Setup")
 	var err error
-	mSdk, err = mir.Connect(log, "test_devicesdk", busUrl)
+	mSdk, err = mir.Connect("test_devicesdk", busUrl)
 	if err != nil {
 		panic(err)
 	}

@@ -243,7 +243,7 @@ func run(
 	opts = append(opts, mir.WithUserCredentials(cfg.DataBusServer.CredentialsFilePath))
 	opts = append(opts, mir.WithRootCA(cfg.DataBusServer.RootCAFilePath))
 	opts = append(opts, mir.WithClientCertificate(cfg.DataBusServer.CertificateFilePath, cfg.DataBusServer.KeyFilePath))
-	m, err := mir.Connect(log, AppName, cfg.DataBusServer.Url, opts...)
+	m, err := mir.Connect(AppName, cfg.DataBusServer.Url, opts...)
 	if err != nil {
 		return err
 	}
