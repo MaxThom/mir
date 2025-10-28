@@ -21,6 +21,9 @@
       - [ ] List
       - [ ] Tlm Grafana Link too long
       - [ ] Bug start server must check to put offline ones
+    - [ ] BUG why invalid wired format
+      - [ ] Add logger to mir sdk
+      - [ ] Deploy
     - [ ] Perf Improvements
       - [ ] Stack Events and flush them every x seconds
         - [ ] With many create at the same time

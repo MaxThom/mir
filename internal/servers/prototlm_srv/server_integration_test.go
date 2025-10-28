@@ -31,6 +31,7 @@ var busUrl = "nats://127.0.0.1:4222"
 var lpClient influxdb2.Client
 var lpWriter api.WriteAPI
 var lpQuery api.QueryAPI
+var log = test_utils.TestLogger("tlm")
 
 func TestMain(m *testing.M) {
 	// Setup
@@ -38,7 +39,7 @@ func TestMain(m *testing.M) {
 	ctx, cancel := context.WithCancel(context.Background())
 	lpClient, lpWriter, lpQuery = test_utils.SetupInfluxConnsPanic(ctx, "http://localhost:8086/", "mir-operator-token", "mir", "mir_testing")
 	var err error
-	mSdk, err = mir.Connect("test_prototlm", busUrl)
+	mSdk, err = mir.Connect(log, "test_prototlm", busUrl)
 	if err != nil {
 		panic(err)
 	}

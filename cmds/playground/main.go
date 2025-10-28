@@ -7,11 +7,12 @@ import (
 
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/maxthom/mir/pkgs/module/mir"
+	"github.com/rs/zerolog"
 )
 
 func main() {
 
-	m, err := mir.Connect("playground", "nats://localhost:4222")
+	m, err := mir.Connect(*zerolog.DefaultContextLogger, "playground", "nats://localhost:4222")
 	if err != nil {
 		panic(err)
 	}

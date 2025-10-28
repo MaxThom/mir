@@ -388,11 +388,13 @@ func (r *listDeviceRoute) handlerWrapper(f func(msg *Msg, clientId string, t mir
 		req := &mir_apiv1.ListDeviceRequest{}
 		if err := proto.Unmarshal(msg.Data, req); err != nil {
 			// TODO log error here
+			l.Error().Err(err).Msg("error unmarshalling request")
 			_ = r.m.sendReplyOrAck(msg, &mir_apiv1.ListDeviceResponse{Response: &mir_apiv1.ListDeviceResponse_Error{
 				Error: err.Error(),
 			}})
 			return
 		}
+		fmt.Println(req)
 
 		resp, err := f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), mir_v1.ProtoDeviceTargetToMirDeviceTarget(req.Targets), req.IncludeEvents)
 		if err != nil {
@@ -401,12 +403,19 @@ func (r *listDeviceRoute) handlerWrapper(f func(msg *Msg, clientId string, t mir
 			}})
 			return
 		}
+		fmt.Println(resp)
 		// TODO log error here
 		err = r.m.sendReplyOrAck(msg, &mir_apiv1.ListDeviceResponse{
 			Response: &mir_apiv1.ListDeviceResponse_Ok{
 				Ok: &mir_apiv1.DeviceList{Devices: mir_v1.NewProtoDeviceListFromDevices(resp)},
 			},
 		})
+		if err != nil {
+			l.Error().Err(err).Msg("error marshalling response")
+			err = r.m.sendReplyOrAck(msg, &mir_apiv1.ListDeviceResponse{Response: &mir_apiv1.ListDeviceResponse_Error{
+				Error: err.Error(),
+			}})
+		}
 	}
 }
 
@@ -430,6 +439,8 @@ func (r *listDeviceRoute) Request(t mir_v1.DeviceTarget, includeEvents bool) ([]
 	resp := &mir_apiv1.ListDeviceResponse{}
 	err = proto.Unmarshal(resMsg.Data, resp)
 	if err != nil {
+		fmt.Println(string(resMsg.Data))
+		fmt.Println("HERE")
 		return []mir_v1.Device{}, err
 	}
 	if resp.GetError() != "" {

@@ -28,13 +28,14 @@ import (
 var mSdk *mir.Mir
 var busUrl = "nats://127.0.0.1:4222"
 var db *surreal.AutoReconnDB
+var log = test_utils.TestLogger("core")
 
 func TestMain(m *testing.M) {
 	// Setup
 	fmt.Println("> Test Setup")
 	var err error
 	db = test_utils.SetupSurrealDbConnsPanic("ws://127.0.0.1:8000/rpc", "root", "root", "global", "mir_testing")
-	mSdk, err = mir.Connect("test_coresrv", busUrl)
+	mSdk, err = mir.Connect(log, "test_coresrv", busUrl)
 	if err != nil {
 		panic(err)
 	}

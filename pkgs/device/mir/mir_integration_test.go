@@ -12,6 +12,7 @@ import (
 	"github.com/maxthom/mir/internal/clients/core_client"
 	"github.com/maxthom/mir/internal/clients/device_client"
 	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
+	"github.com/maxthom/mir/internal/libs/test_utils"
 	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
 	mir_device_testv1 "github.com/maxthom/mir/pkgs/device/mir/proto_test/gen/mir_device_test/v1"
@@ -27,13 +28,14 @@ import (
 )
 
 var mSdk *mir.Mir
-var busUrl = "nats://127.0.0.1:4222"
+var busUrl = "nats://127.tlm0.0.1:4222"
+var log = test_utils.TestLogger("device")
 
 func TestMain(m *testing.M) {
 	// Setup
 	fmt.Println("> Test Setup")
 	var err error
-	mSdk, err = mir.Connect("test_devicesdk", busUrl)
+	mSdk, err = mir.Connect(log, "test_devicesdk", busUrl)
 	if err != nil {
 		panic(err)
 	}
