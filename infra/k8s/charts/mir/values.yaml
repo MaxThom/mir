@@ -95,6 +95,8 @@ nats:
     #    hosts:
     #      - nats-local
   config:
+    merge:
+      max_payload: << 8MB >>
     cluster:
       enabled: true
       replicas: 3
