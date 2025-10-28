@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/maxthom/mir/internal/libs/swarm"
+	"github.com/maxthom/mir/internal/libs/test_utils"
 	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/maxthom/mir/pkgs/module/mir"
@@ -18,13 +19,14 @@ import (
 
 var mSdk *mir.Mir
 var busUrl = "nats://127.0.0.1:4222"
+var log = test_utils.TestLogger("event")
 
 func TestMain(m *testing.M) {
 	// Setup
 	fmt.Println("> Test Setup")
 	var err error
 
-	mSdk, err = mir.Connect("test_eventstore", busUrl)
+	mSdk, err = mir.Connect(log, "test_eventstore", busUrl)
 	if err != nil {
 		panic(err)
 	}

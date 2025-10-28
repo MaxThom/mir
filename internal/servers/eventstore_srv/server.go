@@ -159,7 +159,7 @@ func (s *EventStoreServer) deleteEventsSub(msg *mir.Msg, clientId string, req mi
 }
 
 func (s *EventStoreServer) streamEventsSub(msg *mir.Msg, subjectId string, req mir_v1.EventSpec, e error) {
-	l.Debug().Any("req", req).Str("subject", msg.Subject).Msg("event received")
+	l.Trace().Any("req", req).Str("subject", msg.Subject).Msg("event received")
 	eventCaptureTotal.WithLabelValues(req.Reason).Inc()
 	defer msg.Ack()
 	if e != nil {

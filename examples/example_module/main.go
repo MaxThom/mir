@@ -59,7 +59,7 @@ func main() {
 	mir_signals.Notify(syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT)
 
 	// Mir
-	m, err := mir.Connect(AppName, defaultCfg.DataBusServer.Url, mir.WithDefaultReconnectOpts()...)
+	m, err := mir.Connect(log.Logger, AppName, defaultCfg.DataBusServer.Url, mir.WithDefaultReconnectOpts()...)
 	if err != nil {
 		panic(err)
 	}
@@ -68,7 +68,7 @@ func main() {
 	device(m)
 
 	// Handle shutdown
-	fmt.Println(fmt.Sprintf("%s initialized", AppName))
+	fmt.Printf("%s initialized\n", AppName)
 	mir_signals.WaitForOsSignals(func() {
 		if err := m.Disconnect(); err != nil {
 			log.Error().Err(err).Msg("failed to gracefully shutdown Mir")

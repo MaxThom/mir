@@ -6,17 +6,19 @@ import (
 	"testing"
 	"time"
 
+	"github.com/maxthom/mir/internal/libs/test_utils"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/nats-io/nats.go"
 	"gotest.tools/assert"
 )
 
 var m *Mir
+var log = test_utils.TestLogger("event")
 
 func TestMain(t *testing.M) {
 	// Setup
 	var err error
-	m, err = Connect("test-client-modulesdk", nats.DefaultURL)
+	m, err = Connect(log, "test-client-modulesdk", nats.DefaultURL)
 	if err != nil {
 		panic(err)
 	}
