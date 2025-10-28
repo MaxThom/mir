@@ -80,21 +80,52 @@ func (s *surrealMirStore) UpdateDevice(t mir_v1.DeviceTarget, d mir_v1.Device) (
 		return nil, err
 	}
 
-	// Update is full document
-	// Change is a merge
-	// Modify is a patch
-	q := ""
-	v := map[string]any{}
-	q, v = createUpdateQueryForDevice(t, d)
-	if q == "" {
-		return s.ListDevice(t, false)
-	}
-	respDb, err := surreal.Query[[]mir_v1.Device](s.db, q, v)
-	if err != nil {
-		return nil, errors.Wrap(err, mir_v1.ErrorDbExecutingQuery.Error())
-	}
+	// divided the query into multiple as we reach surreal limits
+	if len(t.Ids) > 100 {
+		var allResults []mir_v1.Device
+		for i := 0; i < len(t.Ids); i += 100 {
+			end := i + 100
+			if end > len(t.Ids) {
+				end = len(t.Ids)
+			}
+			batchTarget := t
+			batchTarget.Ids = t.Ids[i:end]
 
-	return respDb, nil
+			q := ""
+			v := map[string]any{}
+			q, v = createUpdateQueryForDevice(batchTarget, d)
+			if q == "" {
+				results, err := s.ListDevice(batchTarget, false)
+				if err != nil {
+					return nil, err
+				}
+				allResults = append(allResults, results...)
+				continue
+			}
+			respDb, err := surreal.Query[[]mir_v1.Device](s.db, q, v)
+			if err != nil {
+				return nil, errors.Wrap(err, mir_v1.ErrorDbExecutingQuery.Error())
+			}
+			allResults = append(allResults, respDb...)
+		}
+		return allResults, nil
+	} else {
+		// Update is full document
+		// Change is a merge
+		// Modify is a patch
+		q := ""
+		v := map[string]any{}
+		q, v = createUpdateQueryForDevice(t, d)
+		if q == "" {
+			return s.ListDevice(t, false)
+		}
+		respDb, err := surreal.Query[[]mir_v1.Device](s.db, q, v)
+		if err != nil {
+			return nil, errors.Wrap(err, mir_v1.ErrorDbExecutingQuery.Error())
+		}
+
+		return respDb, nil
+	}
 }
 
 func (s *surrealMirStore) MergeDevice(t mir_v1.DeviceTarget, patch json.RawMessage, op UpdateType) ([]mir_v1.Device, error) {
