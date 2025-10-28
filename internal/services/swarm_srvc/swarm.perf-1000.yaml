@@ -1,0 +1,133 @@
+apiVersion: mir/v1alpha
+kind: swarm
+meta:
+  name: "productiontest"
+  namespace: "testing"
+  labels:
+    environment: "staging"
+  annotations:
+    created-by: "mir-swarm"
+swarm:
+  logLevel: debug
+  deployBatchSize: 10
+  devices:
+    # Environmental sensor fleet
+    - count: 500
+      meta:
+        name: env-sensor
+        namespace: swarm_env
+        annotations:
+          location: "warehouse"
+        labels:
+          swarm: "true"
+          type: "environmental"
+      telemetry:
+        - name: Environment
+          interval: 3s
+          tags:
+            unit_system: "metric"
+          fields:
+            - temperature
+            - humidity
+            - pressure
+        - name: AirQuality
+          interval: 3s
+          fields:
+            - co2
+            - voc
+      commands:
+        - name: Calibrate
+          delay: 3s
+          fields:
+            - calibrationMode
+      properties:
+        - name: SensorConfig
+          delay: 1s
+          fields:
+            - sampleRate
+            - enabled
+    # Power monitoring fleet
+    - count: 500
+      meta:
+        name: power-monitor
+        namespace: swarm_power
+        labels:
+          swarm: "true"
+          type: "power"
+      telemetry:
+        - name: PowerMetrics
+          interval: 1s
+          tags:
+            unit_system: "metric"
+          fields:
+            - consumption
+      commands:
+        - name: ResetMetrics
+          delay: 1s
+          fields:
+            - resetType
+
+  # Field definitions
+  fields:
+    # Environmental sensors
+    - name: temperature
+      type: float64
+      tags:
+        unit: "C"
+      generator:
+        expr: "22 + 3*sin(t/12)"
+    - name: humidity
+      type: float64
+      tags:
+        unit: "%"
+      generator:
+        expr: "60 + 15*cos(t/18) + 2"
+    - name: pressure
+      type: float64
+      tags:
+        unit: "Pa"
+      generator:
+        expr: "101325 + 100*sin(t/30)"
+    - name: co2
+      type: float64
+      tags:
+        unit: "ppm"
+      generator:
+        expr: "400 + 50*sin(t/60)"
+    - name: voc
+      type: float64
+      tags:
+        unit: "ppb"
+      generator:
+        expr: "100 + 30*cos(t/40)"
+    # Power monitoring
+    - name: consumption
+      type: message
+      fields:
+        - power
+        - energy
+    - name: power
+      type: float64
+      tags:
+        unit: "W"
+      generator:
+        expr: "100 + 30*cos(t/40)"
+    - name: energy
+      type: float64
+      tags:
+        unit: "kWh"
+      generator:
+        expr: "t/36"
+    # Command/config fields
+    - name: calibrationMode
+      type: int32
+      tags:
+        description: "Calibration mode: 0=auto, 1=manual"
+    - name: sampleRate
+      type: int32
+      tags:
+        unit: "Hz"
+    - name: enabled
+      type: bool
+    - name: resetType
+      type: string

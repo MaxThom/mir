@@ -18,6 +18,8 @@ const (
 
 	ReportedPropertiesStream       clients.ClientSubject = "device.%s.cfg.v1alpha.proto"
 	RequestDesiredPropertiesStream clients.ClientSubject = "device.%s.cfg.v1alpha.desiredproperties"
+
+	timeout = 30 * time.Second
 )
 
 func PublishSendConfigRequest(bus *nats.Conn, req *mir_apiv1.SendConfigRequest) (*mir_apiv1.SendConfigResponse, error) {
@@ -27,7 +29,7 @@ func PublishSendConfigRequest(bus *nats.Conn, req *mir_apiv1.SendConfigRequest) 
 	}
 
 	// TODO revist timeout
-	resMsg, err := bus.Request(SendConfigRequest.WithId("todo"), b, 20*time.Second)
+	resMsg, err := bus.Request(SendConfigRequest.WithId("todo"), b, timeout)
 	if err != nil {
 		return &mir_apiv1.SendConfigResponse{}, err
 	}
@@ -48,7 +50,7 @@ func PublishListConfigRequest(bus *nats.Conn, req *mir_apiv1.SendListConfigReque
 	}
 
 	// TODO revist timeout
-	resMsg, err := bus.Request(ListConfigRequest.WithId("todo"), b, 20*time.Second)
+	resMsg, err := bus.Request(ListConfigRequest.WithId("todo"), b, timeout)
 	if err != nil {
 		return &mir_apiv1.SendListConfigResponse{}, err
 	}
@@ -87,7 +89,7 @@ func GetReportedPropertiesStreamMsg(deviceId string, t proto.Message) (*nats.Msg
 }
 
 func PublishRequestDesiredPropertiesStream(bus *nats.Conn, deviceId string) (*mir_apiv1.DeviceReportedPropertiesResponse, error) {
-	resMsg, err := bus.Request(RequestDesiredPropertiesStream.WithId(deviceId), []byte{}, 7*time.Second)
+	resMsg, err := bus.Request(RequestDesiredPropertiesStream.WithId(deviceId), []byte{}, timeout)
 	if err != nil {
 		return &mir_apiv1.DeviceReportedPropertiesResponse{}, err
 
