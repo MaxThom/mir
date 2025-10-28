@@ -356,7 +356,9 @@ func createTlmFnForDeviceGroup(swarmCfg mir_v1.Swarm, protoFiles map[string][]*d
 						if err != nil {
 							fmt.Println(err)
 						}
-						d.SendTelemetry(msg)
+						if err := d.SendTelemetry(msg); err != nil {
+							fmt.Println(err)
+						}
 					}
 				}
 			}

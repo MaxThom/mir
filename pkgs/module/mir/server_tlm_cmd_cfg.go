@@ -63,6 +63,11 @@ func (r *listTelemetryRoute) handlerWrapper(f func(msg *Msg, clientId string, re
 				},
 			},
 		})
+		if err != nil {
+			err = r.m.sendReplyOrAck(msg, &mir_apiv1.SendListTelemetryResponse{Response: &mir_apiv1.SendListTelemetryResponse_Error{
+				Error: err.Error(),
+			}})
+		}
 	}
 }
 
@@ -141,6 +146,11 @@ func (r *listCommandRoute) handlerWrapper(f func(msg *Msg, clientId string, req 
 				},
 			},
 		})
+		if err != nil {
+			err = r.m.sendReplyOrAck(msg, &mir_apiv1.SendListCommandsResponse{Response: &mir_apiv1.SendListCommandsResponse_Error{
+				Error: err.Error(),
+			}})
+		}
 	}
 }
 
@@ -217,6 +227,11 @@ func (r *sendCommandRoute) handlerWrapper(f func(msg *Msg, clientId string, req 
 				Ok: resp,
 			},
 		})
+		if err != nil {
+			err = r.m.sendReplyOrAck(msg, &mir_apiv1.SendCommandResponse{Response: &mir_apiv1.SendCommandResponse_Error{
+				Error: err.Error(),
+			}})
+		}
 	}
 }
 
@@ -321,6 +336,11 @@ func (r *listConfigurationRoute) handlerWrapper(f func(msg *Msg, clientId string
 				},
 			},
 		})
+		if err != nil {
+			err = r.m.sendReplyOrAck(msg, &mir_apiv1.SendListConfigResponse{Response: &mir_apiv1.SendListConfigResponse_Error{
+				Error: err.Error(),
+			}})
+		}
 	}
 }
 
@@ -397,6 +417,11 @@ func (r *sendConfigRoute) handlerWrapper(f func(msg *Msg, clientId string, req *
 				Ok: resp,
 			},
 		})
+		if err != nil {
+			err = r.m.sendReplyOrAck(msg, &mir_apiv1.SendConfigResponse{Response: &mir_apiv1.SendConfigResponse_Error{
+				Error: err.Error(),
+			}})
+		}
 	}
 }
 

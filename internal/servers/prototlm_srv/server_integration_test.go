@@ -39,7 +39,7 @@ func TestMain(m *testing.M) {
 	ctx, cancel := context.WithCancel(context.Background())
 	lpClient, lpWriter, lpQuery = test_utils.SetupInfluxConnsPanic(ctx, "http://localhost:8086/", "mir-operator-token", "mir", "mir_testing")
 	var err error
-	mSdk, err = mir.Connect(log, "test_prototlm", busUrl)
+	mSdk, err = mir.Connect("test_prototlm", busUrl)
 	if err != nil {
 		panic(err)
 	}

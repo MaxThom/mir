@@ -217,7 +217,7 @@ func (m *Mir) Launch(ctx context.Context, opts ...nats.Option) (*sync.WaitGroup,
 			}()
 		}),
 		bus.WithDisconnHandler(func(c *nats.Conn, err error) {
-			m.l.Warn().Err(err).Msg("disconnected from Mir Server")
+			m.l.Warn().Err(err).Err(c.LastError()).Msg("disconnected from Mir Server")
 			m.setOfflineHandler()
 		}),
 		bus.WithClosedHandler(func(nc *nats.Conn) {
@@ -263,13 +263,20 @@ func (m *Mir) Launch(ctx context.Context, opts ...nats.Option) (*sync.WaitGroup,
 		wg.Done()
 	}()
 
+	// This timeout has to be longer then the connect handler possible time to take
 	select {
 	case <-connectWorkDone:
 		m.l.Debug().Msg("online initialization")
-	case <-time.After(2 * time.Second):
-		m.l.Warn().Err(m.b.LastError()).Msg("disconnected from Mir Server ")
-		m.setOfflineHandler()
-		m.l.Debug().Msg("offline initialization")
+	case <-time.After(40 * time.Second):
+		m.l.Warn().Str("connection_status", m.b.Status().String()).Err(m.b.LastError()).Msg("graceful initialization time out")
+		if m.b.Status() == nats.CONNECTED {
+			m.setOnlineHandler()
+			m.l.Debug().Msg("partial online initialization")
+		} else {
+			m.l.Warn().Err(m.b.LastError()).Msg("disconnected from Mir Server ")
+			m.setOfflineHandler()
+			m.l.Debug().Msg("offline initialization")
+		}
 	}
 
 	m.callAllCfgHandlers()
@@ -286,8 +293,10 @@ func (m *Mir) Launch(ctx context.Context, opts ...nats.Option) (*sync.WaitGroup,
 // Send hearthbeat to Mir on a based interval
 // Run in a routine for non blocking
 func (m *Mir) hearthbeat(ctx context.Context, interval time.Duration) {
-	if err := core_client.PublishHearthbeatStream(m.b.Conn, m.cfg.Device.Id); err != nil {
-		m.l.Error().Err(err).Msg("error sending hearthbeat to Mir")
+	if m.b.Status() == nats.CONNECTED {
+		if err := core_client.PublishHearthbeatStream(m.b.Conn, m.cfg.Device.Id); err != nil {
+			m.l.Error().Err(err).Msg("error sending hearthbeat to Mir")
+		}
 	}
 	for {
 		select {
@@ -295,8 +304,10 @@ func (m *Mir) hearthbeat(ctx context.Context, interval time.Duration) {
 			m.l.Debug().Msg("shutting down hearthbeat")
 			return
 		case <-time.After(interval):
-			if err := core_client.PublishHearthbeatStream(m.b.Conn, m.cfg.Device.Id); err != nil {
-				m.l.Error().Err(err).Msg("error sending hearthbeat to Mir")
+			if m.b.Status() == nats.CONNECTED {
+				if err := core_client.PublishHearthbeatStream(m.b.Conn, m.cfg.Device.Id); err != nil {
+					m.l.Error().Err(err).Msg("error sending hearthbeat to Mir")
+				}
 			}
 		}
 	}

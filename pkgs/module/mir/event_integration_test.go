@@ -18,7 +18,7 @@ var log = test_utils.TestLogger("event")
 func TestMain(t *testing.M) {
 	// Setup
 	var err error
-	m, err = Connect(log, "test-client-modulesdk", nats.DefaultURL)
+	m, err = Connect("test-client-modulesdk", nats.DefaultURL)
 	if err != nil {
 		panic(err)
 	}
