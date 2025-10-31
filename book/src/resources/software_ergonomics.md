@@ -1,6 +1,6 @@
 # Software Ergonomics: Why Developer Experience is the Foundation of Great User Experience
 
-We obsess over delivering products with exceptional User Experience, yet we consistently overlook the most critical users of any software system: **the developers themselves**.
+As we develop software, we want to deliver products with a good user experience. In reality, most softwares greatly lack in user experience as we focus too much on performance and the rest becomes an afterthought. Software developpers need to focus on bringing back a great UX and to achieve that we need to put back the most important users in the center: **the developers themselves**.
 
 This oversight creates a cascade of problems: overwhelm by complex systems, endless urgent support work that keeps on increasing, tools that fight against us, hypersiloization of team members. In short, developers lose joy in their craft and morale plummets, leading to employee dissatisfaction, resignations, and increased tribal knowledge. The remaining team members face mounting pressure while managers scramble through interview cycles, creating a downward spiral that ultimately results into productivity and delivery slowdown and lower product quality. New hires come in and the integration is challenging, difficult and draining. Lost in all the ecosystems, colleagues are overwhelmed and can't help out. The new hires, often young developers, wonder if it's their fault increasing their sense of imposter syndromes.
 
