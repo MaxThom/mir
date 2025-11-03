@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -2422,6 +2423,61 @@ func TestPulishListDeviceWithEvents(t *testing.T) {
 	assert.Equal(t, lResp[0].Status.Events[0].Reason, "PEANUT")
 	assert.Equal(t, lResp[0].Status.Events[1].Reason, "PEANUT")
 
+}
+
+func TestPublishEventStoreCreateBatchRequest(t *testing.T) {
+	// Arrange
+	j, err := json.Marshal(map[string]any{
+		"key":  "value",
+		"key2": "value2",
+		"key3": map[string]any{
+			"key3": "value3",
+			"key4": "value4",
+		},
+	})
+	if err != nil {
+		t.Error(err)
+	}
+	spec := mir_v1.EventSpec{
+		Type:    mir_v1.EventTypeNormal,
+		Reason:  "integration_test",
+		Message: "a simple test",
+		RelatedObject: mir_v1.Object{
+			ApiVersion: "mir/v1alpha",
+			Kind:       "device",
+			Meta: mir_v1.Meta{
+				Name:      "device1",
+				Namespace: "store_test",
+			},
+		},
+		Payload: j,
+	}
+	status := mir_v1.EventStatus{
+		Count:   1,
+		FirstAt: surrealTimePtr(time.Now().UTC()),
+		LastAt:  surrealTimePtr(time.Now().UTC()),
+	}
+	count := 10
+	events := make([]mir_v1.Event, count)
+	for i := range count {
+		events[i] = mir_v1.NewEvent().WithMeta(mir_v1.Meta{
+			Name:      "create_event_batch_" + strconv.Itoa(i),
+			Namespace: "store_test",
+			Labels: map[string]string{
+				"mirstore": "testing",
+			},
+		}).WithSpec(spec).WithStatus(status)
+	}
+
+	// Act
+
+	mResp, err := mirStore.CreateEvents(events)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, len(mResp), count)
 }
 
 func strPtr(s string) *string {

@@ -14,8 +14,8 @@ services:
       - --pass
       - root
       - -A
-      #- --log
-      #- trace
+      - --log
+      - debug
 
 volumes:
   surrealdb_data:

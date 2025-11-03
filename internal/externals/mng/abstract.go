@@ -29,6 +29,7 @@ type MirStore interface {
 
 	ListEvent(t mir_v1.EventTarget) ([]mir_v1.Event, error)
 	CreateEvent(e mir_v1.Event) (mir_v1.Event, error)
+	CreateEvents(e []mir_v1.Event) ([]mir_v1.Event, error)
 	UpdateEvent(t mir_v1.ObjectTarget, upd mir_v1.EventUpdate) ([]mir_v1.Event, error)
 	MergeEvent(t mir_v1.ObjectTarget, patch json.RawMessage, op UpdateType) ([]mir_v1.Event, error)
 	DeleteEvent(t mir_v1.EventTarget) ([]mir_v1.Event, error)

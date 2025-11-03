@@ -174,13 +174,13 @@ func (s *surrealMirStore) DeleteDevice(t mir_v1.DeviceTarget) ([]mir_v1.Device, 
 	qList, vList := createListQueryForDevice(t, false)
 	respDbList, err := surreal.Query[[]mir_v1.Device](s.db, qList, vList)
 	if err != nil {
-		return nil, mir_v1.ErrorDbExecutingQuery
+		return nil, errors.Wrap(err, mir_v1.ErrorDbExecutingQuery.Error())
 	}
 
 	q, v := createDeleteQueryForDevice(t)
 	_, err = surreal.Query[[]mir_v1.Device](s.db, q, v)
 	if err != nil {
-		return nil, mir_v1.ErrorDbExecutingQuery
+		return nil, errors.Wrap(err, mir_v1.ErrorDbExecutingQuery.Error())
 	}
 
 	return respDbList, nil
