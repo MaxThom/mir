@@ -25,8 +25,10 @@
       - [x] Add logger to mir sdk
       - [x] Deploy
     - [ ] Perf Improvements
-      - [ ] Stack Events and flush them every x seconds
-        - [ ] With many create at the same time
+      - [ ] Bulk create devices
+        - [ ] Use for swarm
+      - [x] Stack Events and flush them every x seconds
+        - [x] With many create at the same time
       - [ ] Stack Hearbeaths and flush them every x seconds
         - [ ] With many update at the same time
 

@@ -57,6 +57,26 @@ func (s *surrealMirStore) CreateEvent(e mir_v1.Event) (mir_v1.Event, error) {
 	return *respDb, nil
 }
 
+func (s *surrealMirStore) CreateEvents(e []mir_v1.Event) ([]mir_v1.Event, error) {
+	// Validate
+	for _, e := range e {
+		if err := e.Validate(); err != nil {
+			return []mir_v1.Event{}, err
+		}
+	}
+	if len(e) == 1 {
+		resp, err := s.CreateEvent(e[0])
+		return []mir_v1.Event{resp}, err
+	}
+
+	// Create
+	respDb, err := surreal.Insert[mir_v1.Event](s.db, surrealEventTable, e)
+	if err != nil {
+		return []mir_v1.Event{}, fmt.Errorf("%w: %w", mir_v1.ErrorDbExecutingQuery, err)
+	}
+	return *respDb, nil
+}
+
 // This method is too OP
 // Maybe it need to be divided into Upsert and Patch
 // Upsert is for apply and edit

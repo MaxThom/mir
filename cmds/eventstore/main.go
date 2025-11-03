@@ -32,8 +32,9 @@ const (
 )
 
 type (
-	CoreConfig struct {
+	EventConfig struct {
 		LogLevel       string
+		FlushInterval  time.Duration
 		HttpServer     HttpServer
 		DataBusServer  DataBusServer
 		DatabaseServer DatabaseSever
@@ -61,8 +62,9 @@ type (
 )
 
 var (
-	defaultCfg = CoreConfig{
-		LogLevel: "info",
+	defaultCfg = EventConfig{
+		LogLevel:      "info",
+		FlushInterval: 5 * time.Second,
 		HttpServer: HttpServer{
 			Port: 3020,
 		},
@@ -163,7 +165,7 @@ func main() {
 func run(
 	ctx context.Context,
 	log zerolog.Logger,
-	cfg CoreConfig,
+	cfg EventConfig,
 ) error {
 	ctx, cancel := mir_signals.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGINT)
 
@@ -198,7 +200,7 @@ func run(
 	log.Info().Str("url", cfg.DataBusServer.Url).Str("status", m.Bus.Status().String()).Msg("msg bus status")
 
 	// Services
-	eventSrv, err := eventstore_srv.NewEventStore(log, m, mng.NewSurrealMirStore(db))
+	eventSrv, err := eventstore_srv.NewEventStore(log, m, mng.NewSurrealMirStore(db), &eventstore_srv.Options{FlushInterval: cfg.FlushInterval})
 	if err != nil {
 		return err
 	}

@@ -11,6 +11,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/resync"
 	"github.com/rs/zerolog"
 	"github.com/surrealdb/surrealdb.go"
+	"github.com/surrealdb/surrealdb.go/pkg/models"
 )
 
 var ErrDatabaseDisconnected = fmt.Errorf("database disconnected")
@@ -204,6 +205,26 @@ func Create[T any, TWhat surrealdb.TableOrRecord](db *AutoReconnDB, what TWhat, 
 	defer cancel()
 	db.dbMu.RLock()
 	respDb, err := surrealdb.Create[T](ctxT, db.DB, what, data)
+	db.dbMu.RUnlock()
+	if err != nil {
+		// Check for connection errors
+		if strings.Contains(err.Error(), "connection refused") || strings.Contains(err.Error(), "broken pipe") || strings.Contains(err.Error(), "context deadline exceeded") {
+			db.monitorAndReconnect()
+		}
+		return nil, err
+	}
+
+	return respDb, err
+}
+
+func Insert[TResult any](db *AutoReconnDB, what string, data any) (*[]TResult, error) {
+	if !db.isConn {
+		return nil, ErrDatabaseDisconnected
+	}
+	ctxT, cancel := context.WithTimeout(db.ctx, defaultTimeout)
+	defer cancel()
+	db.dbMu.RLock()
+	respDb, err := surrealdb.Insert[TResult](ctxT, db.DB, models.Table(what), data)
 	db.dbMu.RUnlock()
 	if err != nil {
 		// Check for connection errors

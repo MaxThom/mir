@@ -37,9 +37,14 @@ import (
 
 type (
 	ServeConfig struct {
-		Mir     MirCfg     `embed:"" prefix:"mir." yaml:"mir"`
-		Surreal SurrealCfg `embed:"" prefix:"surreal." yaml:"surreal"`
-		Influx  InfluxCfg  `embed:"" prefix:"influx." yaml:"influx"`
+		Mir        MirCfg        `embed:"" prefix:"mir." yaml:"mir"`
+		Surreal    SurrealCfg    `embed:"" prefix:"surreal." yaml:"surreal"`
+		Influx     InfluxCfg     `embed:"" prefix:"influx." yaml:"influx"`
+		EventStore EventStoreCfg `embed:"" prefix:"event." yaml:"eventStore"`
+	}
+
+	EventStoreCfg struct {
+		FlushInterval time.Duration `help:"Event store flush interval" default:"5s" yaml:"flushInterval"`
 	}
 
 	MirCfg struct {
@@ -242,7 +247,7 @@ func (d *ServeCmd) run(
 		return err
 	}
 
-	eventSrv, err := eventstore_srv.NewEventStore(log, m, mng.NewSurrealMirStore(db))
+	eventSrv, err := eventstore_srv.NewEventStore(log, m, mng.NewSurrealMirStore(db), &eventstore_srv.Options{FlushInterval: cfg.EventStore.FlushInterval})
 	if err != nil {
 		return err
 	}
