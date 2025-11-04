@@ -178,6 +178,9 @@ func (m *Mir) Launch(ctx context.Context, opts ...nats.Option) (*sync.WaitGroup,
 		bus.WithConnectHandler(func(nc *nats.Conn) {
 			m.l.Info().Msg("connected to Mir Server ")
 			m.setOnlineHandler()
+			if err := core_client.PublishHearthbeatStream(m.b.Conn, m.cfg.Device.Id); err != nil {
+				m.l.Error().Err(err).Msg("error sending hearthbeat to Mir")
+			}
 
 			time.Sleep(1 * time.Second)
 			if !m.cfg.Device.NoSchemaOnBoot {
@@ -189,7 +192,11 @@ func (m *Mir) Launch(ctx context.Context, opts ...nats.Option) (*sync.WaitGroup,
 
 			// Call config handler
 			if err := m.requestDesiredProperties(); err != nil {
-				m.l.Error().Err(err).Msg("error requesting desired properties, using local")
+				if strings.Contains(err.Error(), "no device found with current targets criteria") {
+					m.l.Warn().Msg("device not found on Mir Server, commissionning a new device")
+				} else {
+					m.l.Error().Err(err).Msg("error requesting desired properties, using local")
+				}
 			}
 
 			go func() {
@@ -235,13 +242,13 @@ func (m *Mir) Launch(ctx context.Context, opts ...nats.Option) (*sync.WaitGroup,
 
 	wg.Add(1)
 	go func() {
-		m.commands(ctx, sub)
+		m.hearthbeat(m.ctx, time.Second*10)
 		wg.Done()
 	}()
 
 	wg.Add(1)
 	go func() {
-		m.hearthbeat(m.ctx, time.Second*10)
+		m.commands(ctx, sub)
 		wg.Done()
 	}()
 
@@ -293,17 +300,14 @@ func (m *Mir) Launch(ctx context.Context, opts ...nats.Option) (*sync.WaitGroup,
 // Send hearthbeat to Mir on a based interval
 // Run in a routine for non blocking
 func (m *Mir) hearthbeat(ctx context.Context, interval time.Duration) {
-	if m.b.Status() == nats.CONNECTED {
-		if err := core_client.PublishHearthbeatStream(m.b.Conn, m.cfg.Device.Id); err != nil {
-			m.l.Error().Err(err).Msg("error sending hearthbeat to Mir")
-		}
-	}
+	timer := time.NewTicker(interval)
+	defer timer.Stop()
 	for {
 		select {
 		case <-ctx.Done():
 			m.l.Debug().Msg("shutting down hearthbeat")
 			return
-		case <-time.After(interval):
+		case <-timer.C:
 			if m.b.Status() == nats.CONNECTED {
 				if err := core_client.PublishHearthbeatStream(m.b.Conn, m.cfg.Device.Id); err != nil {
 					m.l.Error().Err(err).Msg("error sending hearthbeat to Mir")

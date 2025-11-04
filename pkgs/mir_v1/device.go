@@ -7,6 +7,8 @@ import (
 	surrealdbModels "github.com/surrealdb/surrealdb.go/pkg/models"
 )
 
+type DeviceId string
+
 type Device struct {
 	Object     `json:",inline" yaml:",inline"`
 	Spec       DeviceSpec       `json:"spec,omitempty" yaml:"spec"`

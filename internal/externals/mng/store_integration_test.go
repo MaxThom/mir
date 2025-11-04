@@ -2480,6 +2480,46 @@ func TestPublishEventStoreCreateBatchRequest(t *testing.T) {
 	assert.Equal(t, len(mResp), count)
 }
 
+func TestPublishUpdateDeviceHeartbeats(t *testing.T) {
+	// Arrange
+	count := 10
+	deviceIds := make([]string, count)
+	updates := make(map[mir_v1.DeviceId]time.Time)
+
+	for i := range count {
+		deviceId := fmt.Sprintf("heartbeat_test_device_%d", i)
+		deviceIds[i] = deviceId
+
+		dev := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
+			Name:      deviceId,
+			Namespace: "store_test",
+			Labels: map[string]string{
+				"mirstore": "testing",
+			},
+		}).WithSpec(mir_v1.DeviceSpec{
+			DeviceId: deviceId,
+		})
+
+		_, err := mirStore.CreateDevice(dev)
+		if err != nil {
+			t.Error(err)
+		}
+
+		updates[mir_v1.DeviceId(deviceId)] = time.Date(2025, 10, 14, 14, 0, 0, 0, time.UTC)
+	}
+
+	// Act
+	resp, err := mirStore.UpdateDeviceHeartbeats(updates)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, len(resp), count)
+	assert.Equal(t, *resp[0].Status.Online, true)
+	assert.Equal(t, resp[0].Status.LastHearthbeat.Time.UTC(), time.Date(2025, 10, 14, 14, 0, 0, 0, time.UTC))
+}
+
 func strPtr(s string) *string {
 	return &s
 }

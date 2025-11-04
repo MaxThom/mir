@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"strings"
 	"sync"
 	"time"
@@ -14,6 +15,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/api/metrics"
 	"github.com/maxthom/mir/internal/libs/external/surreal"
 	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
+	"github.com/maxthom/mir/internal/libs/retry"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/prometheus/client_golang/prometheus"
@@ -37,13 +39,22 @@ import (
 //  Use a distributed keyvalue store like etcd or natskv to store the map
 
 type CoreServer struct {
-	ctx              context.Context
-	cancelCtx        context.CancelFunc
-	wg               *sync.WaitGroup
-	m                *mir.Mir
-	store            mng.MirStore
-	hearthbeats      map[string]time.Time
-	hearthbeatsMutex sync.RWMutex
+	ctx                      context.Context
+	cancelCtx                context.CancelFunc
+	wg                       *sync.WaitGroup
+	m                        *mir.Mir
+	store                    mng.MirStore
+	hearthbeats              map[mir_v1.DeviceId]time.Time
+	hearthbeatsMutex         sync.RWMutex
+	hearthbeatsWriteBuffer   map[mir_v1.DeviceId]time.Time
+	hearthbeatsWriteBufferMu sync.RWMutex
+	opts                     Options
+}
+
+type Options struct {
+	DeviceOnlineFlush  time.Duration
+	DeviceOfflineFlush time.Duration
+	DeviceOfflineAfter time.Duration
 }
 
 const (
@@ -67,8 +78,7 @@ var (
 		Help:      "Number of devices online or offline",
 	}, []string{"status"})
 
-	l            zerolog.Logger
-	offlineAfter = time.Second * 30
+	l zerolog.Logger
 )
 
 func init() {
@@ -84,9 +94,26 @@ func init() {
 	deviceStatusCount.With(prometheus.Labels{"status": "offline"}).Add(0)
 }
 
-func NewCore(logger zerolog.Logger, m *mir.Mir, store mng.MirStore) (*CoreServer, error) {
+func NewCore(logger zerolog.Logger, m *mir.Mir, store mng.MirStore, opts *Options) (*CoreServer, error) {
 	l = logger.With().Str("srv", "core_server").Logger()
-	hearbeats := map[string]time.Time{}
+	if opts == nil {
+		opts = &Options{
+			DeviceOnlineFlush:  7 * time.Second,
+			DeviceOfflineFlush: 12 * time.Second,
+			DeviceOfflineAfter: 30 * time.Second,
+		}
+	}
+	if opts.DeviceOnlineFlush == 0 {
+		opts.DeviceOnlineFlush = 7 * time.Second
+	}
+	if opts.DeviceOfflineFlush == 0 {
+		opts.DeviceOfflineFlush = 12 * time.Second
+	}
+	if opts.DeviceOfflineAfter == 0 {
+		opts.DeviceOfflineAfter = 30 * time.Second
+	}
+
+	hearbeats := map[mir_v1.DeviceId]time.Time{}
 
 	// Preload hearthbeat map. Required in case the
 	// app is down while a device is also, but report as online
@@ -95,6 +122,7 @@ func NewCore(logger zerolog.Logger, m *mir.Mir, store mng.MirStore) (*CoreServer
 	if err != nil {
 		l.Error().Err(err).Msg("error occure while executing list query")
 	}
+	timeNow := time.Now().UTC()
 	for _, d := range devices {
 		// We only add the online ones
 		// This way, the pulse doesnt do a check on offline device
@@ -102,7 +130,12 @@ func NewCore(logger zerolog.Logger, m *mir.Mir, store mng.MirStore) (*CoreServer
 		// to the map.
 		// If a device becomes offline, it's removed from the map
 		if d.Status.Online != nil && *d.Status.Online {
-			hearbeats[d.Spec.DeviceId] = d.Status.LastHearthbeat.Time
+			// Edge case, device will be set to offline on next pulsor offline cycle
+			if d.Status.LastHearthbeat == nil {
+				hearbeats[mir_v1.DeviceId(d.Spec.DeviceId)] = timeNow
+			} else {
+				hearbeats[mir_v1.DeviceId(d.Spec.DeviceId)] = d.Status.LastHearthbeat.Time
+			}
 			deviceStatusCount.WithLabelValues("online").Inc()
 		} else {
 			deviceStatusCount.WithLabelValues("offline").Inc()
@@ -111,12 +144,14 @@ func NewCore(logger zerolog.Logger, m *mir.Mir, store mng.MirStore) (*CoreServer
 
 	ctx, cancelFn := context.WithCancel(context.Background())
 	return &CoreServer{
-		ctx:         ctx,
-		cancelCtx:   cancelFn,
-		wg:          &sync.WaitGroup{},
-		m:           m,
-		store:       store,
-		hearthbeats: hearbeats,
+		ctx:                    ctx,
+		cancelCtx:              cancelFn,
+		wg:                     &sync.WaitGroup{},
+		m:                      m,
+		store:                  store,
+		hearthbeats:            hearbeats,
+		hearthbeatsWriteBuffer: make(map[mir_v1.DeviceId]time.Time),
+		opts:                   *opts,
 	}, nil
 }
 
@@ -143,8 +178,22 @@ func (s *CoreServer) Serve() error {
 
 	s.wg.Add(1)
 	go func() {
-		s.hearthbeatPulsor(s.ctx, time.Second*10, offlineAfter)
-		s.wg.Done()
+		offlineTicker := time.NewTicker(s.opts.DeviceOfflineFlush)
+		onlineTicker := time.NewTicker(s.opts.DeviceOnlineFlush)
+		defer offlineTicker.Stop()
+		defer onlineTicker.Stop()
+		defer s.wg.Done()
+		for {
+			select {
+			case <-s.ctx.Done():
+				l.Debug().Msg("shutting down pulsor task")
+				return
+			case <-offlineTicker.C:
+				s.hearthbeatOfflinePulsor(s.opts.DeviceOfflineAfter)
+			case <-onlineTicker.C:
+				s.hearthbeatOnlinePulsor()
+			}
+		}
 	}()
 	return nil
 }
@@ -278,7 +327,7 @@ func (s *CoreServer) deleteDeviceSub(msg *mir.Msg, clientId string, t mir_v1.Dev
 }
 
 func (s *CoreServer) listDeviceSub(msg *mir.Msg, clientId string, t mir_v1.DeviceTarget, includeEvents bool) ([]mir_v1.Device, error) {
-	l.Debug().Str("route", "list").Str("payload", fmt.Sprintf("%v", t)).Msg("list device request")
+	l.Debug().Str("client_id", clientId).Str("route", "list").Str("payload", fmt.Sprintf("%v", t)).Msg("list device request")
 	requestTotal.WithLabelValues("list").Inc()
 
 	respDb, err := s.store.ListDevice(t, includeEvents)
@@ -291,127 +340,146 @@ func (s *CoreServer) listDeviceSub(msg *mir.Msg, clientId string, t mir_v1.Devic
 	return respDb, nil
 }
 
-func (s *CoreServer) hearthbeatPulsor(ctx context.Context, interval time.Duration, offlineAfter time.Duration) {
-	for {
-		select {
-		case <-ctx.Done():
-			l.Debug().Msg("shutting down pulsor task")
-			return
-		case <-time.After(interval):
-			s.hearthbeatsMutex.RLock()
-			newOffline := []string{}
-			now := time.Now().UTC()
-			for k, v := range s.hearthbeats {
-				if v.Add(offlineAfter).Before(now) {
-					newOffline = append(newOffline, k)
-				}
-			}
-			s.hearthbeatsMutex.RUnlock()
-			if len(newOffline) > 0 {
-				toBoolRef := func(b bool) *bool {
-					return &b
-				}
-				t := mir_v1.DeviceTarget{
-					Ids: newOffline,
-				}
-				d := mir_v1.NewDevice().WithStatus(mir_v1.DeviceStatus{
-					Online: toBoolRef(false),
-				})
-				devs, err := s.store.UpdateDevice(t, d)
-				if err != nil {
-					if !strings.Contains(err.Error(), surreal.ErrDatabaseDisconnected.Error()) {
-						l.Error().Err(err).Msg("error occure while executing hearthbeat db query")
-					}
-					// Degraded mode
-					devs = make([]mir_v1.Device, len(newOffline))
-					for i, id := range newOffline {
-						devs[i] = mir_v1.NewDevice().WithId(id).WithMeta(mir_v1.Meta{
-							Name:      id,
-							Namespace: "__degraded",
-						})
-					}
-				}
-				l.Info().Str("route", "hearthbeat_pulsor").Str("event", "device_offline").Strs("new devices", newOffline).Msg("offline devices")
-				s.hearthbeatsMutex.Lock()
-				for _, d := range devs {
-					if err := publishDeviceOfflineEvent(s.m, nil, d); err != nil {
-						l.Warn().Err(err).Str("device_id", d.Spec.DeviceId).Msg("error occure while publishing device offline event")
-					}
-					delete(s.hearthbeats, d.Spec.DeviceId)
-				}
-				deviceStatusCount.WithLabelValues("offline").Add(float64(len(devs)))
-				deviceStatusCount.WithLabelValues("online").Sub(float64(len(devs)))
-				s.hearthbeatsMutex.Unlock()
-			}
-
-			l.Debug().Strs("new_offline_devices", newOffline).Msg("hearthbeats pulse")
+func (s *CoreServer) hearthbeatOfflinePulsor(offlineAfter time.Duration) {
+	l.Trace().Msg("hearthbeats offline pulse")
+	s.hearthbeatsMutex.Lock()
+	defer s.hearthbeatsMutex.Unlock()
+	newOffline := []string{}
+	now := time.Now().UTC()
+	for k, v := range s.hearthbeats {
+		if v.Add(offlineAfter).Before(now) {
+			newOffline = append(newOffline, string(k))
 		}
+	}
+	if len(newOffline) > 0 {
+		toBoolRef := func(b bool) *bool {
+			return &b
+		}
+		t := mir_v1.DeviceTarget{
+			Ids: newOffline,
+		}
+		d := mir_v1.NewDevice().WithStatus(mir_v1.DeviceStatus{
+			Online: toBoolRef(false),
+		})
+		devs, err := s.store.UpdateDevice(t, d)
+		if err != nil {
+			if !strings.Contains(err.Error(), surreal.ErrDatabaseDisconnected.Error()) {
+				l.Error().Err(err).Msg("error occure while executing hearthbeat db query")
+			}
+			// Degraded mode
+			devs = make([]mir_v1.Device, len(newOffline))
+			for i, id := range newOffline {
+				devs[i] = mir_v1.NewDevice().WithId(id).WithMeta(mir_v1.Meta{
+					Name:      id,
+					Namespace: "__degraded",
+				})
+			}
+		}
+		l.Info().Str("route", "hearthbeat_pulsor").Str("event", "device_offline").Strs("new devices", newOffline).Msg("offline devices")
+		for _, d := range devs {
+			if err := publishDeviceOfflineEvent(s.m, nil, d); err != nil {
+				l.Warn().Err(err).Str("device_id", d.Spec.DeviceId).Msg("error occure while publishing device offline event")
+			}
+			delete(s.hearthbeats, mir_v1.DeviceId(d.Spec.DeviceId))
+		}
+		deviceStatusCount.WithLabelValues("offline").Add(float64(len(devs)))
+		deviceStatusCount.WithLabelValues("online").Sub(float64(len(devs)))
+
+		l.Info().Strs("new_offline_devices", newOffline).Msg("hearthbeats offline pulse")
 	}
 }
 
-func (s *CoreServer) hearthbeatSub(msg *mir.Msg, deviceId string) {
-	l.Trace().Str("route", "hearthbeat").Msg("hearthbeat device request")
+func (s *CoreServer) hearthbeatOnlinePulsor() {
+	l.Trace().Msg("hearthbeats online pulse")
+	s.hearthbeatsWriteBufferMu.Lock()
+	tempBuffer := maps.Clone(s.hearthbeatsWriteBuffer)
+	s.hearthbeatsWriteBuffer = make(map[mir_v1.DeviceId]time.Time, len(s.hearthbeatsWriteBuffer))
+	s.hearthbeatsWriteBufferMu.Unlock()
+
 	degradedMode := false
-	// If not in map, mean is newly online device
-	timeNow := time.Now().UTC()
-	// if last != now by >= 3 mins, the device offline
-	// every minute, a routine check the map to see if there is
-	// hearthbeat older then 3 mins, if so set device to offline
 
-	toBoolRef := func(b bool) *bool {
-		return &b
-	}
-	// Since this update is only for hearthbeat and often, we dont want to have a device update event
-	t := mir_v1.DeviceTarget{
-		Ids: []string{deviceId},
-	}
-	d := mir_v1.NewDevice().WithStatus(mir_v1.DeviceStatus{
-		Online:         toBoolRef(true),
-		LastHearthbeat: &surrealdbModels.CustomDateTime{Time: timeNow},
-	})
-
-	devs, err := s.store.UpdateDevice(t, d)
+	devsResp, err := retry.RetryOnErrorContainsWithResult(func() ([]mir_v1.Device, error) {
+		res, err := s.store.UpdateDeviceHeartbeats(tempBuffer)
+		return res, err
+	}, "Failed to commit transaction due to a read or write conflict.", 1, 100*time.Millisecond)
 	if err != nil {
 		if !strings.Contains(err.Error(), surreal.ErrDatabaseDisconnected.Error()) {
 			l.Error().Err(err).Msg("error occure while executing hearthbeat db query")
 		}
 		// Degraded mode
 		degradedMode = true
-		devs = []mir_v1.Device{
-			mir_v1.NewDevice().WithId(deviceId).WithMeta(mir_v1.Meta{
-				Name:      deviceId,
+		devsResp = make([]mir_v1.Device, len(tempBuffer))
+		i := 0
+		for deviceId, t := range tempBuffer {
+			devsResp[i] = mir_v1.NewDevice().WithId(string(deviceId)).WithMeta(mir_v1.Meta{
+				Name:      string(deviceId),
 				Namespace: "__degraded",
-			}),
+			}).WithStatus(mir_v1.DeviceStatus{
+				Online:         &degradedMode,
+				LastHearthbeat: &surrealdbModels.CustomDateTime{Time: t},
+			})
+			i += 1
 		}
 	}
-	// Means device is not in db, we provision it
-	if len(devs) == 0 && !degradedMode {
-		_, err := s.m.Client().CreateDevice().Request(mir_v1.NewDevice().WithSpec(mir_v1.DeviceSpec{
-			DeviceId: deviceId,
-		}))
-		if err != nil {
-			l.Error().Err(err).Str("device_id", deviceId).Msg("could not automaticly provision new device")
+
+	// devsResp contains all devices that were updated, if devices was not updated,
+	// it means it does not exist in db thus we need to provision it
+	if len(devsResp) != len(tempBuffer) && !degradedMode {
+		updatedDeviceIds := make(map[mir_v1.DeviceId]bool)
+		newDevices := make(map[mir_v1.DeviceId]time.Time)
+		for _, device := range devsResp {
+			updatedDeviceIds[mir_v1.DeviceId(device.Spec.DeviceId)] = true
 		}
-		devs, err = s.store.UpdateDevice(t, d)
+		for id, t := range tempBuffer {
+			if !updatedDeviceIds[id] {
+				newDevices[id] = t
+			}
+		}
+		// TODO, one request instead of many
+		for id := range newDevices {
+			_, err := s.m.Client().CreateDevice().Request(mir_v1.NewDevice().WithSpec(mir_v1.DeviceSpec{
+				DeviceId: string(id),
+			}))
+			if err != nil {
+				l.Error().Err(err).Str("device_id", string(id)).Msg("could not automaticly provision new device")
+			}
+		}
+		newDevsResp, err := s.store.UpdateDeviceHeartbeats(newDevices)
 		if err != nil {
 			if !strings.Contains(err.Error(), surreal.ErrDatabaseDisconnected.Error()) {
 				l.Error().Err(err).Msg("error occure while executing hearthbeat db query")
 			}
 		}
-		deviceStatusCount.WithLabelValues("offline").Inc()
+		devsResp = append(devsResp, newDevsResp...)
+		deviceStatusCount.WithLabelValues("offline").Add(float64(len(newDevsResp)))
 	}
 
-	if _, ok := s.hearthbeats[deviceId]; !ok && len(devs) > 0 {
-		l.Info().Str("route", "hearthbeat").Str("event", "device_online").Msg(deviceId)
-		if err := publishDeviceOnlineEvent(s.m, msg, devs[0]); err != nil {
-			l.Warn().Err(err).Str("device_id", deviceId).Msg("error occure while publishing device online event")
-		}
-		deviceStatusCount.WithLabelValues("online").Inc()
-		deviceStatusCount.WithLabelValues("offline").Dec()
-	}
+	newOnline := []string{}
 	s.hearthbeatsMutex.Lock()
-	s.hearthbeats[deviceId] = time.Now().UTC()
+	for _, dev := range devsResp {
+		if _, ok := s.hearthbeats[mir_v1.DeviceId(dev.Spec.DeviceId)]; !ok {
+			l.Info().Str("route", "hearthbeat").Str("event", "device_online").Msg(dev.Spec.DeviceId)
+			if err := publishDeviceOnlineEvent(s.m, nil, dev); err != nil {
+				l.Warn().Err(err).Str("device_id", dev.Spec.DeviceId).Msg("error occure while publishing device online event")
+			}
+			deviceStatusCount.WithLabelValues("online").Inc()
+			deviceStatusCount.WithLabelValues("offline").Dec()
+			newOnline = append(newOnline, dev.Spec.DeviceId)
+		}
+		s.hearthbeats[mir_v1.DeviceId(dev.Spec.DeviceId)] = dev.Status.LastHearthbeat.Time
+	}
 	s.hearthbeatsMutex.Unlock()
+
+	if len(newOnline) > 0 {
+		l.Info().Strs("new_online_devices", newOnline).Msg("new online devices")
+	}
+}
+
+func (s *CoreServer) hearthbeatSub(msg *mir.Msg, deviceId string) {
+	l.Trace().Str("route", "hearthbeat").Msg("hearthbeat device request")
+	s.hearthbeatsWriteBufferMu.Lock()
+	s.hearthbeatsWriteBuffer[mir_v1.DeviceId(deviceId)] = time.Now().UTC()
+	s.hearthbeatsWriteBufferMu.Unlock()
 	msg.Ack()
 }
 
