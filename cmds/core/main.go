@@ -33,10 +33,13 @@ const (
 
 type (
 	CoreConfig struct {
-		LogLevel       string
-		HttpServer     HttpServer
-		DataBusServer  DataBusServer
-		DatabaseServer DatabaseSever
+		LogLevel           string
+		DeviceOnlineFlush  time.Duration
+		DeviceOfflineFlush time.Duration
+		DeviceOfflineAfter time.Duration
+		HttpServer         HttpServer
+		DataBusServer      DataBusServer
+		DatabaseServer     DatabaseSever
 	}
 
 	HttpServer struct {
@@ -62,7 +65,10 @@ type (
 
 var (
 	defaultCfg = CoreConfig{
-		LogLevel: "debug",
+		LogLevel:           "debug",
+		DeviceOnlineFlush:  7 * time.Second,
+		DeviceOfflineFlush: 12 * time.Second,
+		DeviceOfflineAfter: 30 * time.Second,
 		HttpServer: HttpServer{
 			Port: 3016,
 		},
@@ -198,7 +204,11 @@ func run(
 	log.Info().Err(m.Bus.LastError()).Str("url", cfg.DataBusServer.Url).Str("status", m.Bus.Status().String()).Msg("msg bus status")
 
 	// Services
-	coreSrv, err := core_srv.NewCore(log, m, mng.NewSurrealMirStore(db))
+	coreSrv, err := core_srv.NewCore(log, m, mng.NewSurrealMirStore(db), &core_srv.Options{
+		DeviceOnlineFlush:  cfg.DeviceOnlineFlush,
+		DeviceOfflineFlush: cfg.DeviceOfflineFlush,
+		DeviceOfflineAfter: cfg.DeviceOfflineAfter,
+	})
 	if err != nil {
 		return err
 	}

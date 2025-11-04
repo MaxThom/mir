@@ -128,6 +128,39 @@ func (s *surrealMirStore) UpdateDevice(t mir_v1.DeviceTarget, d mir_v1.Device) (
 	}
 }
 
+// UpdateDeviceHeartbeats performs bulk heartbeat updates for multiple devices in a single query
+func (s *surrealMirStore) UpdateDeviceHeartbeats(updates map[mir_v1.DeviceId]time.Time) ([]mir_v1.Device, error) {
+	if len(updates) == 0 {
+		return []mir_v1.Device{}, nil
+	}
+
+	var q strings.Builder
+	q.WriteString("BEGIN TRANSACTION;\n")
+
+	for deviceId, timestamp := range updates {
+		q.WriteString(fmt.Sprintf(
+			"UPDATE devices MERGE { status: { online: true, lastHearthbeat: d\"%s\" } } WHERE spec.deviceId = \"%s\";\n",
+			timestamp.Format(time.RFC3339Nano),
+			deviceId,
+		))
+	}
+
+	q.WriteString("COMMIT TRANSACTION;")
+
+	resp, err := surreal.QueryMultiple[[]mir_v1.Device](s.db, q.String(), map[string]any{})
+	if err != nil {
+		return []mir_v1.Device{}, errors.Wrap(err, mir_v1.ErrorDbExecutingQuery.Error())
+	}
+
+	// Flatten the nested response arrays into a single array
+	var flatResp []mir_v1.Device
+	for _, devices := range resp {
+		flatResp = append(flatResp, devices...)
+	}
+
+	return flatResp, nil
+}
+
 func (s *surrealMirStore) MergeDevice(t mir_v1.DeviceTarget, patch json.RawMessage, op UpdateType) ([]mir_v1.Device, error) {
 	if t.HasNoTarget() {
 		return nil, mir_v1.ErrorNoDeviceTargetProvided

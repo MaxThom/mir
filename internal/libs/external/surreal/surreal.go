@@ -263,3 +263,35 @@ func Query[T any](db *AutoReconnDB, query string, vars map[string]any) (T, error
 
 	return res[0].Result, nil
 }
+
+func QueryMultiple[T any](db *AutoReconnDB, query string, vars map[string]any) ([]T, error) {
+	var empty []T
+	if !db.isConn {
+		return empty, ErrDatabaseDisconnected
+	}
+
+	ctxT, cancel := context.WithTimeout(db.ctx, defaultTimeout)
+	defer cancel()
+	db.dbMu.RLock()
+	result, err := surrealdb.Query[T](ctxT, db.DB, query, vars)
+	db.dbMu.RUnlock()
+	if err != nil {
+		// Check for connection errors
+		if strings.Contains(err.Error(), "connection refused") || strings.Contains(err.Error(), "broken pipe") || strings.Contains(err.Error(), "context deadline exceeded") {
+			db.monitorAndReconnect()
+		}
+		return empty, err
+	}
+
+	res := *result
+	if len(res) == 0 {
+		return empty, nil
+	}
+
+	objs := make([]T, len(res))
+	for _, r := range res {
+		objs = append(objs, r.Result)
+	}
+
+	return objs, nil
+}

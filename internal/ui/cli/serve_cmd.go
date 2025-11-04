@@ -37,10 +37,21 @@ import (
 
 type (
 	ServeConfig struct {
-		Mir        MirCfg        `embed:"" prefix:"mir." yaml:"mir"`
-		Surreal    SurrealCfg    `embed:"" prefix:"surreal." yaml:"surreal"`
-		Influx     InfluxCfg     `embed:"" prefix:"influx." yaml:"influx"`
-		EventStore EventStoreCfg `embed:"" prefix:"event." yaml:"eventStore"`
+		Mir     MirCfg     `embed:"" prefix:"mir." yaml:"mir"`
+		Surreal SurrealCfg `embed:"" prefix:"surreal." yaml:"surreal"`
+		Influx  InfluxCfg  `embed:"" prefix:"influx." yaml:"influx"`
+		Module  ModuleCfg  `embed:"" prefix:"event." yaml:"module"`
+	}
+
+	ModuleCfg struct {
+		Core       CoreCfg       `embed:"" prefix:"core." yaml:"core"`
+		EventStore EventStoreCfg `embed:"" prefix:"eventStore." yaml:"eventStore"`
+	}
+
+	CoreCfg struct {
+		DeviceOnlineFlush  time.Duration `help:"Device online flush interval" default:"7s" yaml:"deviceOnlineFlush"`
+		DeviceOfflineFlush time.Duration `help:"Device offline flush interval" default:"12s" yaml:"deviceOfflineFlush"`
+		DeviceOfflineAfter time.Duration `help:"Device offline after" default:"30s" yaml:"deviceOfflineAfter"`
 	}
 
 	EventStoreCfg struct {
@@ -222,7 +233,12 @@ func (d *ServeCmd) run(
 	}
 
 	// Services
-	coreSrv, err := core_srv.NewCore(log, m, mng.NewSurrealMirStore(db))
+	coreSrv, err := core_srv.NewCore(log, m, mng.NewSurrealMirStore(db),
+		&core_srv.Options{
+			DeviceOnlineFlush:  cfg.Module.Core.DeviceOnlineFlush,
+			DeviceOfflineFlush: cfg.Module.Core.DeviceOfflineFlush,
+			DeviceOfflineAfter: cfg.Module.Core.DeviceOfflineAfter,
+		})
 	if err != nil {
 		return err
 	}
@@ -247,7 +263,7 @@ func (d *ServeCmd) run(
 		return err
 	}
 
-	eventSrv, err := eventstore_srv.NewEventStore(log, m, mng.NewSurrealMirStore(db), &eventstore_srv.Options{FlushInterval: cfg.EventStore.FlushInterval})
+	eventSrv, err := eventstore_srv.NewEventStore(log, m, mng.NewSurrealMirStore(db), &eventstore_srv.Options{FlushInterval: cfg.Module.EventStore.FlushInterval})
 	if err != nil {
 		return err
 	}

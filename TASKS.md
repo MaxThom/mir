@@ -29,8 +29,8 @@
         - [ ] Use for swarm
       - [x] Stack Events and flush them every x seconds
         - [x] With many create at the same time
-      - [ ] Stack Hearbeaths and flush them every x seconds
-        - [ ] With many update at the same time
+      - [x] Stack Hearbeaths and flush them every x seconds
+        - [x] With many update at the same time
 
   - [ ] autoreconnect
     - [ ] if modules are down
