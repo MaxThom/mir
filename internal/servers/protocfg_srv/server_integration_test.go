@@ -1943,7 +1943,7 @@ func TestPublishReportedProperties(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	time.Sleep(1 * time.Second)
+	time.Sleep(5 * time.Second)
 
 	reqPayload := protocfg_testv1.PowerLevel{
 		Power: 5,
@@ -1998,7 +1998,7 @@ func TestPublishReportedPropertiesEvent(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	time.Sleep(1 * time.Second)
+	time.Sleep(10 * time.Second)
 
 	reqPayload := protocfg_testv1.PowerLevel{
 		Power: 5,

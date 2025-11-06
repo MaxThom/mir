@@ -113,7 +113,7 @@ func TestPublishEventStoreNormal(t *testing.T) {
 		t.Error(err)
 	}
 
-	time.Sleep(1 * time.Second)
+	time.Sleep(10 * time.Second)
 
 	events, err := mSdk.Client().ListEvents().Request(
 		mir_v1.EventTarget{
@@ -184,7 +184,7 @@ func TestPublishEventStoreNsDefault(t *testing.T) {
 		t.Error(err)
 	}
 
-	time.Sleep(1 * time.Second)
+	time.Sleep(10 * time.Second)
 
 	events, err := mSdk.Client().ListEvents().Request(
 		mir_v1.EventTarget{

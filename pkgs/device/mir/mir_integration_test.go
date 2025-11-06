@@ -220,7 +220,7 @@ func TestSendSchema(t *testing.T) {
 		t.Error(err)
 	}
 
-	time.Sleep(3 * time.Second)
+	time.Sleep(10 * time.Second)
 
 	resp, err := core_client.PublishDeviceListRequest(mSdk.Bus, &mir_apiv1.ListDeviceRequest{
 		Targets: &mir_apiv1.DeviceTarget{
