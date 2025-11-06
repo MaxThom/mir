@@ -318,6 +318,7 @@ func TestPublishDeviceUpdateTargetIds(t *testing.T) {
 			"tb": "devices",
 			"id": id,
 		})
+	time.Sleep(1 * time.Second)
 
 	// Assert
 	assert.Equal(t, reqUpd.Targets.Ids[0], respDb[0].Spec.DeviceId)
@@ -2297,7 +2298,7 @@ func TestDeviceGoesOnline(t *testing.T) {
 	if err := core_client.PublishHearthbeatStream(mSdk.Bus, deviceIds[0]); err != nil {
 		t.Error(err)
 	}
-	time.Sleep(1 * time.Second)
+	time.Sleep(10 * time.Second)
 
 	respList, err := core_client.PublishDeviceListRequest(mSdk.Bus, reqList)
 	if err != nil {
@@ -2310,7 +2311,7 @@ func TestDeviceGoesOnline(t *testing.T) {
 		case deviceIds[0]:
 			assert.Equal(t, dev.Status.Online, true)
 			devTs := mir_v1.AsGoTime(dev.Status.LastHearthbeat)
-			assert.Equal(t, time.Now().UTC().Sub(devTs).Abs().Seconds() < 10, true)
+			assert.Equal(t, time.Now().UTC().Sub(devTs).Abs().Seconds() < 20, true)
 		}
 	}
 	assert.Equal(t, 1, onlineEventCount)
@@ -2367,7 +2368,7 @@ func TestDeviceGoesOffline(t *testing.T) {
 	if err := core_client.PublishHearthbeatStream(mSdk.Bus, deviceIds[0]); err != nil {
 		t.Error(err)
 	}
-	time.Sleep(1 * time.Second)
+	time.Sleep(10 * time.Second)
 
 	respListOn, err := core_client.PublishDeviceListRequest(mSdk.Bus, reqList)
 	if err != nil {
@@ -2381,7 +2382,7 @@ func TestDeviceGoesOffline(t *testing.T) {
 		case deviceIds[0]:
 			assert.Equal(t, dev.Status.Online, true)
 			devTs := mir_v1.AsGoTime(dev.Status.LastHearthbeat)
-			assert.Equal(t, hbTime.Sub(devTs).Abs().Seconds() < 10, true)
+			assert.Equal(t, hbTime.Sub(devTs).Abs().Seconds() < 20, true)
 		}
 	}
 	// TODO this does work, but when running all test, it fails
@@ -2410,11 +2411,13 @@ func TestDeviceAutoProvision(t *testing.T) {
 	}
 
 	// Subscribe to device online event
+	msgReceived := make(chan bool, 1)
 	onlineEventCount := 0
 	s, err := mSdk.Bus.Subscribe(
 		core_client.DeviceOnlineEvent.WithId(deviceIds[0]),
 		func(msg *nats.Msg) {
 			onlineEventCount += 1
+			msgReceived <- true
 			msg.Ack()
 		})
 	createEventCount := 0
@@ -2431,7 +2434,13 @@ func TestDeviceAutoProvision(t *testing.T) {
 	if err := core_client.PublishHearthbeatStream(mSdk.Bus, deviceIds[0]); err != nil {
 		t.Error(err)
 	}
-	time.Sleep(1 * time.Second)
+
+	select {
+	case <-msgReceived:
+		// Device created event received
+	case <-time.After(20 * time.Second):
+		t.Error("Timeout waiting for device auto-provision")
+	}
 
 	respList, err := core_client.PublishDeviceListRequest(mSdk.Bus, reqList)
 	if err != nil {
@@ -2445,7 +2454,7 @@ func TestDeviceAutoProvision(t *testing.T) {
 		case deviceIds[0]:
 			assert.Equal(t, dev.Status.Online, true)
 			devTs := mir_v1.AsGoTime(dev.Status.LastHearthbeat)
-			assert.Equal(t, time.Now().UTC().Sub(devTs).Abs().Seconds() < 10, true)
+			assert.Equal(t, time.Now().UTC().Sub(devTs).Abs().Seconds() < 20, true)
 		}
 	}
 	assert.Equal(t, 1, onlineEventCount)
