@@ -10,6 +10,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/compression/zstd"
 	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
 	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
+	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
 	"gotest.tools/assert"
@@ -112,7 +113,7 @@ func TestDeviceRoutes_Hearthbeat(t *testing.T) {
 	deviceID := "test-device-hearthbeat"
 	received := make(chan bool)
 
-	err := m.Device().Hearthbeat().Subscribe(deviceID, func(msg *Msg, id string) {
+	err := m.Device().Hearthbeat().Subscribe(deviceID, func(msg *Msg, id string, hello mir_v1.DeviceHello, e error) {
 		assert.Equal(t, deviceID, id)
 		received <- true
 	})

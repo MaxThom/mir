@@ -46,7 +46,7 @@ type CoreServer struct {
 	store                    mng.MirStore
 	hearthbeats              map[mir_v1.DeviceId]time.Time
 	hearthbeatsMutex         sync.RWMutex
-	hearthbeatsWriteBuffer   map[mir_v1.DeviceId]time.Time
+	hearthbeatsWriteBuffer   map[mir_v1.DeviceId]mir_v1.DeviceHello
 	hearthbeatsWriteBufferMu sync.RWMutex
 	opts                     Options
 }
@@ -150,7 +150,7 @@ func NewCore(logger zerolog.Logger, m *mir.Mir, store mng.MirStore, opts *Option
 		m:                      m,
 		store:                  store,
 		hearthbeats:            hearbeats,
-		hearthbeatsWriteBuffer: make(map[mir_v1.DeviceId]time.Time),
+		hearthbeatsWriteBuffer: make(map[mir_v1.DeviceId]mir_v1.DeviceHello),
 		opts:                   *opts,
 	}, nil
 }
@@ -393,15 +393,15 @@ func (s *CoreServer) hearthbeatOnlinePulsor() {
 	l.Trace().Msg("hearthbeats online pulse")
 	s.hearthbeatsWriteBufferMu.Lock()
 	tempBuffer := maps.Clone(s.hearthbeatsWriteBuffer)
-	s.hearthbeatsWriteBuffer = make(map[mir_v1.DeviceId]time.Time, len(s.hearthbeatsWriteBuffer))
+	s.hearthbeatsWriteBuffer = make(map[mir_v1.DeviceId]mir_v1.DeviceHello, len(s.hearthbeatsWriteBuffer))
 	s.hearthbeatsWriteBufferMu.Unlock()
 
 	degradedMode := false
 
 	devsResp, err := retry.RetryOnErrorContainsWithResult(func() ([]mir_v1.Device, error) {
-		res, err := s.store.UpdateDeviceHeartbeats(tempBuffer)
+		res, err := s.store.UpdateDeviceHello(tempBuffer)
 		return res, err
-	}, "Failed to commit transaction due to a read or write conflict.", 1, 100*time.Millisecond)
+	}, "Failed to commit transaction due to a read or write conflict.", 10, 100*time.Millisecond)
 	if err != nil {
 		if !strings.Contains(err.Error(), surreal.ErrDatabaseDisconnected.Error()) {
 			l.Error().Err(err).Msg("error occure while executing hearthbeat db query")
@@ -416,7 +416,7 @@ func (s *CoreServer) hearthbeatOnlinePulsor() {
 				Namespace: "__degraded",
 			}).WithStatus(mir_v1.DeviceStatus{
 				Online:         &degradedMode,
-				LastHearthbeat: &surrealdbModels.CustomDateTime{Time: t},
+				LastHearthbeat: &surrealdbModels.CustomDateTime{Time: t.Hearthbeat},
 			})
 			i += 1
 		}
@@ -426,7 +426,7 @@ func (s *CoreServer) hearthbeatOnlinePulsor() {
 	// it means it does not exist in db thus we need to provision it
 	if len(devsResp) != len(tempBuffer) && !degradedMode {
 		updatedDeviceIds := make(map[mir_v1.DeviceId]bool)
-		newDevices := make(map[mir_v1.DeviceId]time.Time)
+		newDevices := make(map[mir_v1.DeviceId]mir_v1.DeviceHello)
 		for _, device := range devsResp {
 			updatedDeviceIds[mir_v1.DeviceId(device.Spec.DeviceId)] = true
 		}
@@ -444,7 +444,7 @@ func (s *CoreServer) hearthbeatOnlinePulsor() {
 				l.Error().Err(err).Str("device_id", string(id)).Msg("could not automaticly provision new device")
 			}
 		}
-		newDevsResp, err := s.store.UpdateDeviceHeartbeats(newDevices)
+		newDevsResp, err := s.store.UpdateDeviceHello(newDevices)
 		if err != nil {
 			if !strings.Contains(err.Error(), surreal.ErrDatabaseDisconnected.Error()) {
 				l.Error().Err(err).Msg("error occure while executing hearthbeat db query")
@@ -475,10 +475,14 @@ func (s *CoreServer) hearthbeatOnlinePulsor() {
 	}
 }
 
-func (s *CoreServer) hearthbeatSub(msg *mir.Msg, deviceId string) {
+func (s *CoreServer) hearthbeatSub(msg *mir.Msg, deviceId string, hello mir_v1.DeviceHello, err error) {
 	l.Trace().Str("route", "hearthbeat").Msg("hearthbeat device request")
+	if err != nil {
+		l.Error().Err(err).Msg("upstream error in sdk")
+	}
+
 	s.hearthbeatsWriteBufferMu.Lock()
-	s.hearthbeatsWriteBuffer[mir_v1.DeviceId(deviceId)] = time.Now().UTC()
+	s.hearthbeatsWriteBuffer[mir_v1.DeviceId(deviceId)] = hello
 	s.hearthbeatsWriteBufferMu.Unlock()
 	msg.Ack()
 }

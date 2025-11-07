@@ -25,6 +25,8 @@
       - [x] Add logger to mir sdk
       - [x] Deploy
     - [ ] Perf Improvements
+      - [ ] Test hearthbeat with hello
+      - [ ] prototlm/protocfg, if device dont exist, dont ask schema
       - [ ] Bulk create devices
         - [ ] Use for swarm
       - [x] Stack Events and flush them every x seconds

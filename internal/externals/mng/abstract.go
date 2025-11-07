@@ -3,7 +3,6 @@ package mng
 import (
 	"encoding/json"
 	"regexp"
-	"time"
 
 	"github.com/maxthom/mir/internal/libs/external"
 	"github.com/maxthom/mir/internal/libs/external/surreal"
@@ -25,7 +24,7 @@ type MirStore interface {
 	ListDevice(t mir_v1.DeviceTarget, includeEvents bool) ([]mir_v1.Device, error)
 	CreateDevice(d mir_v1.Device) (mir_v1.Device, error)
 	UpdateDevice(t mir_v1.DeviceTarget, d mir_v1.Device) ([]mir_v1.Device, error)
-	UpdateDeviceHeartbeats(updates map[mir_v1.DeviceId]time.Time) ([]mir_v1.Device, error)
+	UpdateDeviceHello(updates map[mir_v1.DeviceId]mir_v1.DeviceHello) ([]mir_v1.Device, error)
 	MergeDevice(t mir_v1.DeviceTarget, patch json.RawMessage, op UpdateType) ([]mir_v1.Device, error)
 	DeleteDevice(t mir_v1.DeviceTarget) ([]mir_v1.Device, error)
 

@@ -20,6 +20,20 @@ message SchemaRetrieveResponse {
   }
 }
 
+/*
+  Device Hello message containing schema or error
+*/
+message DeviceHello {
+  oneof response {
+  	DeviceHelloContent hello = 1; // Schema in bytes
+    string error = 2; // Error in string value
+  }
+}
+
+message DeviceHelloContent {
+  bytes schema = 1; // Schema in bytes
+}
+
 message DeviceReportedPropertiesResponse {
 oneof response {
   DeviceEncodedReportedProperties ok = 1; // reported properties map
