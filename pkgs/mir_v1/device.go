@@ -2,6 +2,7 @@ package mir_v1
 
 import (
 	"strings"
+	"time"
 
 	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
 	surrealdbModels "github.com/surrealdb/surrealdb.go/pkg/models"
@@ -14,6 +15,11 @@ type Device struct {
 	Spec       DeviceSpec       `json:"spec,omitempty" yaml:"spec"`
 	Properties DeviceProperties `json:"properties,omitempty" yaml:"properties"`
 	Status     DeviceStatus     `json:"status,omitempty" yaml:"status"`
+}
+
+type DeviceHello struct {
+	Hearthbeat time.Time
+	Schema     *mir_proto.MirProtoSchema
 }
 
 func NewDevice() Device {
@@ -168,6 +174,15 @@ type Schema struct {
 
 func (s Schema) GetProtoFiles() (*mir_proto.MirProtoSchema, error) {
 	return mir_proto.DecompressSchema(s.CompressedSchema)
+}
+
+func NewSchemaFromProtoSchema(m *mir_proto.MirProtoSchema) (Schema, error) {
+	sch := Schema{}
+	err := sch.SetProtoSchema(m)
+	if err != nil {
+		return Schema{}, err
+	}
+	return sch, nil
 }
 
 func (s *Schema) SetProtoSchema(m *mir_proto.MirProtoSchema) error {

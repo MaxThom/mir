@@ -11,6 +11,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/external/surreal"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/pkg/errors"
+	"github.com/surrealdb/surrealdb.go/pkg/models"
 )
 
 var (
@@ -129,25 +130,53 @@ func (s *surrealMirStore) UpdateDevice(t mir_v1.DeviceTarget, d mir_v1.Device) (
 }
 
 // UpdateDeviceHeartbeats performs bulk heartbeat updates for multiple devices in a single query
-func (s *surrealMirStore) UpdateDeviceHeartbeats(updates map[mir_v1.DeviceId]time.Time) ([]mir_v1.Device, error) {
+func (s *surrealMirStore) UpdateDeviceHello(updates map[mir_v1.DeviceId]mir_v1.DeviceHello) ([]mir_v1.Device, error) {
 	if len(updates) == 0 {
 		return []mir_v1.Device{}, nil
 	}
+	vars := map[string]any{}
 
 	var q strings.Builder
 	q.WriteString("BEGIN TRANSACTION;\n")
 
-	for deviceId, timestamp := range updates {
+	for deviceId, hb := range updates {
+		var sbStatus strings.Builder
+		if hb.Schema != nil {
+			sch, err := mir_v1.NewSchemaFromProtoSchema(hb.Schema)
+			if err == nil {
+				sch.LastSchemaFetch = &models.CustomDateTime{Time: hb.Hearthbeat}
+				var sbStatusSchema strings.Builder
+				if sch.CompressedSchema != nil {
+					sbStatusSchema.WriteString("compressedSchema: $" + string(deviceId) + "_SCH,")
+					vars[string(deviceId)+"_SCH"] = sch.CompressedSchema
+				}
+				if sch.PackageNames != nil {
+					sbStatusSchema.WriteString("packageNames: $" + string(deviceId) + "_PKGS,")
+					vars[string(deviceId)+"_PKGS"] = sch.PackageNames
+				}
+				if sch.LastSchemaFetch != nil && !sch.LastSchemaFetch.IsZero() {
+					sbStatusSchema.WriteString("lastSchemaFetch: $" + string(deviceId) + "_FETCH,")
+					vars[string(deviceId)+"_FETCH"] = sch.LastSchemaFetch
+				}
+				if sbStatusSchema.Len() > 0 {
+					sbStatus.WriteString(", schema: { ")
+					sbStatus.WriteString(sbStatusSchema.String())
+					sbStatus.WriteString(" }")
+				}
+			}
+		}
+
 		q.WriteString(fmt.Sprintf(
-			"UPDATE devices MERGE { status: { online: true, lastHearthbeat: d\"%s\" } } WHERE spec.deviceId = \"%s\";\n",
-			timestamp.Format(time.RFC3339Nano),
+			"UPDATE devices MERGE { status: { online: true, lastHearthbeat: d\"%s\"%s } } WHERE spec.deviceId = \"%s\";\n",
+			hb.Hearthbeat.Format(time.RFC3339Nano),
+			sbStatus.String(),
 			deviceId,
 		))
 	}
 
 	q.WriteString("COMMIT TRANSACTION;")
 
-	resp, err := surreal.QueryMultiple[[]mir_v1.Device](s.db, q.String(), map[string]any{})
+	resp, err := surreal.QueryMultiple[[]mir_v1.Device](s.db, q.String(), vars)
 	if err != nil {
 		return []mir_v1.Device{}, errors.Wrap(err, mir_v1.ErrorDbExecutingQuery.Error())
 	}

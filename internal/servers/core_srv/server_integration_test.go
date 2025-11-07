@@ -21,7 +21,9 @@ import (
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/descriptorpb"
 	"gotest.tools/assert"
 )
 
@@ -2455,6 +2457,74 @@ func TestDeviceAutoProvision(t *testing.T) {
 			assert.Equal(t, dev.Status.Online, true)
 			devTs := mir_v1.AsGoTime(dev.Status.LastHearthbeat)
 			assert.Equal(t, time.Now().UTC().Sub(devTs).Abs().Seconds() < 20, true)
+		}
+	}
+	assert.Equal(t, 1, onlineEventCount)
+	assert.Equal(t, 1, createEventCount)
+	s.Unsubscribe()
+	c.Unsubscribe()
+}
+
+func TestDeviceAutoProvisionWithSchema(t *testing.T) {
+	// Arrange
+	deviceIds := []string{"device_auto_provision_schema"}
+	reqList := &mir_apiv1.ListDeviceRequest{
+		Targets: &mir_apiv1.DeviceTarget{
+			Ids: deviceIds,
+		},
+	}
+
+	// Subscribe to device online event
+	msgReceived := make(chan bool, 1)
+	onlineEventCount := 0
+	s, err := mSdk.Bus.Subscribe(
+		core_client.DeviceOnlineEvent.WithId(deviceIds[0]),
+		func(msg *nats.Msg) {
+			onlineEventCount += 1
+			msgReceived <- true
+			msg.Ack()
+		})
+	createEventCount := 0
+	c, err := mSdk.Bus.Subscribe(
+		core_client.DeviceCreatedEvent.WithId("*"),
+		func(msg *nats.Msg) {
+			if clients.ClientSubject(msg.Subject).GetId() == deviceIds[0] {
+				createEventCount += 1
+			}
+			msg.Ack()
+		})
+
+	// Act
+	f := protodesc.ToFileDescriptorProto(core_testv1.File_core_test_v1_core_proto)
+	fSet := &descriptorpb.FileDescriptorSet{
+		File: []*descriptorpb.FileDescriptorProto{f},
+	}
+
+	if err := core_client.PublishHearthbeatWithHello(mSdk.Bus, deviceIds[0], fSet); err != nil {
+		t.Error(err)
+	}
+
+	select {
+	case <-msgReceived:
+		// Device created event received
+	case <-time.After(20 * time.Second):
+		t.Error("Timeout waiting for device auto-provision")
+	}
+
+	respList, err := core_client.PublishDeviceListRequest(mSdk.Bus, reqList)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, len(respList.GetOk().Devices), 1)
+	for _, dev := range respList.GetOk().Devices {
+		switch dev.Spec.DeviceId {
+		case deviceIds[0]:
+			assert.Equal(t, dev.Status.Online, true)
+			devTs := mir_v1.AsGoTime(dev.Status.LastHearthbeat)
+			assert.Equal(t, time.Now().UTC().Sub(devTs).Abs().Seconds() < 20, true)
+			assert.Equal(t, len(dev.Status.Schema.CompressedSchema) != 0, true)
 		}
 	}
 	assert.Equal(t, 1, onlineEventCount)

@@ -12,6 +12,7 @@ import (
 	"github.com/maxthom/mir/internal/clients/tlm_client"
 	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
 	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
+	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
 )
@@ -77,7 +78,7 @@ func (r *deviceRoutes) Hearthbeat() *hearthbeatRoute {
 // Subscribe to hearthbeat messages
 // To listen to all devices, use deviceId = "" or deviceId = "*"
 // You are responsible of acknowledging the message
-func (r *hearthbeatRoute) Subscribe(deviceId string, f func(msg *Msg, deviceId string)) error {
+func (r *hearthbeatRoute) Subscribe(deviceId string, f func(msg *Msg, deviceId string, hello mir_v1.DeviceHello, err error)) error {
 	if deviceId == "" {
 		deviceId = "*"
 	}
@@ -88,7 +89,7 @@ func (r *hearthbeatRoute) Subscribe(deviceId string, f func(msg *Msg, deviceId s
 // Subscribe to hearthbeat messages
 // To listen to all devices, use deviceId = "" or deviceId = "*"
 // You are responsible of acknowledging the message
-func (r *hearthbeatRoute) QueueSubscribe(queue string, deviceId string, f func(msg *Msg, deviceId string)) error {
+func (r *hearthbeatRoute) QueueSubscribe(queue string, deviceId string, f func(msg *Msg, deviceId string, hello mir_v1.DeviceHello, err error)) error {
 	if deviceId == "" {
 		deviceId = "*"
 	}
@@ -96,9 +97,33 @@ func (r *hearthbeatRoute) QueueSubscribe(queue string, deviceId string, f func(m
 	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
 }
 
-func (r *hearthbeatRoute) handlerWrapper(f func(msg *Msg, deviceId string)) nats.MsgHandler {
+func (r *hearthbeatRoute) handlerWrapper(f func(msg *Msg, deviceId string, hello mir_v1.DeviceHello, err error)) nats.MsgHandler {
 	return func(msg *nats.Msg) {
-		f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId())
+		var err error
+		hel := mir_v1.DeviceHello{
+			Hearthbeat: time.Now().UTC(),
+		}
+
+		if content := msg.Header.Get("mir-content"); content == "mir-hello" {
+			msg, err = r.m.decompressMsgData(msg)
+			if err != nil {
+				f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), hel, fmt.Errorf("error decompressing msg: %w", err))
+				return
+			}
+
+			sch := &mir_apiv1.DeviceHello{}
+			if err = proto.Unmarshal(msg.Data, sch); err != nil {
+				f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), hel, fmt.Errorf("error deserializing hello: %w", err))
+				return
+			}
+			var schema *mir_proto.MirProtoSchema
+			if len(sch.GetHello().GetSchema()) != 0 {
+				schema, err = mir_proto.UnmarshalSchema(sch.GetHello().GetSchema())
+				hel.Schema = schema
+			}
+		}
+
+		f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), hel, err)
 	}
 }
 
@@ -195,7 +220,7 @@ func (r *schemaRoute) QueueSubscribe(queue string, deviceId string, h func(msg *
 
 func (r *schemaRoute) handlerWrapper(f func(msg *Msg, deviceId string, schema *mir_proto.MirProtoSchema, err error)) nats.MsgHandler {
 	return func(msg *nats.Msg) {
-		msg, err := r.m.decompressMsg(msg)
+		msg, err := r.m.decompressMsgData(msg)
 		if err != nil {
 			f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), nil, fmt.Errorf("error decompressing msg: %w", err))
 			return

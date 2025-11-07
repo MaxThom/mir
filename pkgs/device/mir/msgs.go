@@ -20,6 +20,7 @@ import (
 const (
 	HeaderMsgName = "mir-msg"
 	HeaderTime    = "mir-time"
+	HeaderSchema  = "mir-schema"
 )
 
 var (
@@ -43,7 +44,7 @@ func SchemaRetrieveHandler(msg *nats.Msg, m *Mir) error {
 	if err != nil {
 		return sendReplyOrAck(m.b, msg, &mir_apiv1.SchemaRetrieveResponse{
 			Response: &mir_apiv1.SchemaRetrieveResponse_Error{
-				Error: fmt.Sprintf("error occure while marshaiing schema: %s", err.Error()),
+				Error: fmt.Sprintf("error occure while marshalling schema: %s", err.Error()),
 			},
 		}, nil, false)
 	}

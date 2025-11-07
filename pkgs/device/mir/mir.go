@@ -178,22 +178,24 @@ func (m *Mir) Launch(ctx context.Context, opts ...nats.Option) (*sync.WaitGroup,
 		bus.WithConnectHandler(func(nc *nats.Conn) {
 			m.l.Info().Msg("connected to Mir Server ")
 			m.setOnlineHandler()
-			if err := core_client.PublishHearthbeatStream(m.b.Conn, m.cfg.Device.Id); err != nil {
-				m.l.Error().Err(err).Msg("error sending hearthbeat to Mir")
+
+			if !m.cfg.Device.NoSchemaOnBoot {
+				if err := core_client.PublishHearthbeatWithHello(m.b.Conn, m.cfg.Device.Id, m.schema); err != nil {
+					m.l.Error().Err(err).Msg("error sending initial hello hearthbeat to Mir")
+				}
+			} else {
+				if err := core_client.PublishHearthbeatStream(m.b.Conn, m.cfg.Device.Id); err != nil {
+					m.l.Error().Err(err).Msg("error sending initial hearthbeat to Mir")
+				}
 			}
+			m.l.Debug().Bool("with_schema", m.cfg.Device.NoSchemaOnBoot).Msg("initial hello hearthbeat sent")
 
 			time.Sleep(1 * time.Second)
-			if !m.cfg.Device.NoSchemaOnBoot {
-				if err := m.sendSchema(); err != nil {
-					m.l.Error().Err(err).Msg("error sending schema on connect")
-				}
-				m.l.Debug().Msg("schema sent")
-			}
 
 			// Call config handler
 			if err := m.requestDesiredProperties(); err != nil {
 				if strings.Contains(err.Error(), "no device found with current targets criteria") {
-					m.l.Warn().Msg("device not found on Mir Server, commissionning a new device")
+					m.l.Warn().Msg("device not found on Mir Server, auto commissionning a new device")
 				} else {
 					m.l.Error().Err(err).Msg("error requesting desired properties, using local")
 				}

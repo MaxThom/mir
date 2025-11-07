@@ -2484,7 +2484,7 @@ func TestPublishUpdateDeviceHeartbeats(t *testing.T) {
 	// Arrange
 	count := 10
 	deviceIds := make([]string, count)
-	updates := make(map[mir_v1.DeviceId]time.Time)
+	updates := make(map[mir_v1.DeviceId]mir_v1.DeviceHello)
 
 	for i := range count {
 		deviceId := fmt.Sprintf("heartbeat_test_device_%d", i)
@@ -2505,11 +2505,13 @@ func TestPublishUpdateDeviceHeartbeats(t *testing.T) {
 			t.Error(err)
 		}
 
-		updates[mir_v1.DeviceId(deviceId)] = time.Date(2025, 10, 14, 14, 0, 0, 0, time.UTC)
+		updates[mir_v1.DeviceId(deviceId)] = mir_v1.DeviceHello{
+			Hearthbeat: time.Date(2025, 10, 14, 14, 0, 0, 0, time.UTC),
+		}
 	}
 
 	// Act
-	resp, err := mirStore.UpdateDeviceHeartbeats(updates)
+	resp, err := mirStore.UpdateDeviceHello(updates)
 	if err != nil {
 		t.Error(err)
 	}

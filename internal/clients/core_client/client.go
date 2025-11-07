@@ -1,13 +1,16 @@
 package core_client
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/maxthom/mir/internal/clients"
+	"github.com/maxthom/mir/internal/libs/compression/zstd"
 	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/descriptorpb"
 )
 
 const (
@@ -109,6 +112,41 @@ func PublishDeviceListRequest(bus *nats.Conn, req *mir_apiv1.ListDeviceRequest) 
 
 func PublishHearthbeatStream(bus *nats.Conn, deviceId string) error {
 	return bus.Publish(HearthbeatDeviceStream.WithId(deviceId), []byte{})
+}
+
+func PublishHearthbeatWithHello(bus *nats.Conn, deviceId string, sch *descriptorpb.FileDescriptorSet) error {
+	schBytes, err := proto.Marshal(sch)
+	if err != nil {
+		return fmt.Errorf("failed to marshal schema: %w", err)
+	}
+
+	hello := &mir_apiv1.DeviceHello{
+		Response: &mir_apiv1.DeviceHello_Hello{
+			Hello: &mir_apiv1.DeviceHelloContent{
+				Schema: schBytes,
+			},
+		},
+	}
+
+	bytes, err := proto.Marshal(hello)
+	if err != nil {
+		return fmt.Errorf("failed to marshal schema: %w", err)
+	}
+
+	cmprBytes, err := zstd.CompressData(bytes)
+	if err != nil {
+		return fmt.Errorf("failed to compress schema: %w", err)
+	}
+
+	msg := &nats.Msg{
+		Subject: HearthbeatDeviceStream.WithId(deviceId),
+		Data:    cmprBytes,
+		Header: nats.Header{
+			"mir-content-encoding": []string{"mir-zstd"},
+			"mir-content":          []string{"mir-hello"},
+		},
+	}
+	return bus.PublishMsg(msg)
 }
 
 func PublishDeviceDeletedEvent(bus *nats.Conn, originalInstance string, deviceId string, d mir_v1.Device) error {

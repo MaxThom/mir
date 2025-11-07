@@ -253,7 +253,7 @@ func (m *Mir) request(subject string, data []byte, headers nats.Header, timeout 
 	return resp, err
 }
 
-func (m *Mir) decompressMsg(msg *nats.Msg) (*nats.Msg, error) {
+func (m *Mir) decompressMsgData(msg *nats.Msg) (*nats.Msg, error) {
 	if msg.Header.Get(HeaderContentEncoding) == HeaderZstdEncoding {
 		var err error
 		msg.Data, err = zstd.DecompressData(msg.Data)
