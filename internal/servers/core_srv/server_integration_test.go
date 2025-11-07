@@ -16,6 +16,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/test_utils"
 	core_testv1 "github.com/maxthom/mir/internal/servers/core_srv/proto_test/gen/core_test/v1"
 	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
+	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
 	mirDev "github.com/maxthom/mir/pkgs/device/mir"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/maxthom/mir/pkgs/module/mir"
@@ -2495,9 +2496,12 @@ func TestDeviceAutoProvisionWithSchema(t *testing.T) {
 		})
 
 	// Act
-	f := protodesc.ToFileDescriptorProto(core_testv1.File_core_test_v1_core_proto)
 	fSet := &descriptorpb.FileDescriptorSet{
-		File: []*descriptorpb.FileDescriptorProto{f},
+		File: []*descriptorpb.FileDescriptorProto{
+			protodesc.ToFileDescriptorProto(core_testv1.File_core_test_v1_core_proto),
+			protodesc.ToFileDescriptorProto(devicev1.File_mir_device_v1_mir_proto),
+			protodesc.ToFileDescriptorProto(descriptorpb.File_google_protobuf_descriptor_proto),
+		},
 	}
 
 	if err := core_client.PublishHearthbeatWithHello(mSdk.Bus, deviceIds[0], fSet); err != nil {

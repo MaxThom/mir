@@ -478,7 +478,7 @@ func (s *CoreServer) hearthbeatOnlinePulsor() {
 func (s *CoreServer) hearthbeatSub(msg *mir.Msg, deviceId string, hello mir_v1.DeviceHello, err error) {
 	l.Trace().Str("route", "hearthbeat").Msg("hearthbeat device request")
 	if err != nil {
-		l.Error().Err(err).Msg("upstream error in sdk")
+		l.Error().Err(err).Str("device_id", deviceId).Msg("upstream error in sdk")
 	}
 
 	s.hearthbeatsWriteBufferMu.Lock()
