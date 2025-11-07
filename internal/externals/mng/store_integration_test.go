@@ -97,6 +97,209 @@ func TestPublishStoreDeviceCreate(t *testing.T) {
 	assert.Equal(t, *d.Spec.Disabled, *dResp.Spec.Disabled)
 }
 
+func TestPublishStoreDeviceCreateMany(t *testing.T) {
+	// Arrange
+	devs := []mir_v1.Device{}
+	count := 10
+	for i := range count {
+		d := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
+			Name:      "create_dev_bulk__" + strconv.Itoa(i),
+			Namespace: "mirstore",
+			Labels: map[string]string{
+				"mirstore": "testing",
+			},
+		}).WithSpec(mir_v1.DeviceSpec{
+			DeviceId: "create_dev_bulk__" + strconv.Itoa(i),
+			Disabled: boolPtr(true),
+		})
+		devs = append(devs, d)
+	}
+
+	// Act
+	dResp, err := mirStore.CreateDevices(devs)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, len(dResp), count)
+}
+
+func TestPublishStoreDeviceCreateManyAlreadyExist(t *testing.T) {
+	// Arrange
+	devs := []mir_v1.Device{}
+	count := 10
+	for i := range count {
+		id := "create_dev_bulk_already__" + strconv.Itoa(i)
+		d := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
+			Name:      id,
+			Namespace: "mirstore",
+			Labels: map[string]string{
+				"mirstore": "testing",
+			},
+		}).WithSpec(mir_v1.DeviceSpec{
+			DeviceId: id,
+			Disabled: boolPtr(true),
+		})
+		devs = append(devs, d)
+	}
+
+	// Act
+	_, err := mirStore.CreateDevice(devs[0])
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = mirStore.CreateDevice(devs[1])
+	if err != nil {
+		t.Error(err)
+	}
+	dResp, err := mirStore.CreateDevices(devs)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, len(dResp), count-2)
+	for _, dev := range dResp {
+		if dev.Spec.DeviceId == devs[0].Spec.DeviceId ||
+			dev.Spec.DeviceId == devs[1].Spec.DeviceId {
+			assert.Equal(t, true, false, "Returned device list contains existing device "+dev.Spec.DeviceId)
+		}
+	}
+}
+
+func TestPublishStoreDeviceCreateManyDuplicate(t *testing.T) {
+	// Arrange
+	devs := []mir_v1.Device{}
+	d := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
+		Name:      "create_dev_bulk_duplicates__sameidnamens",
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+	}).WithSpec(mir_v1.DeviceSpec{
+		DeviceId: "create_dev_bulk_duplicates__sameidnamens",
+		Disabled: boolPtr(true),
+	})
+	devs = append(devs, d)
+	d = mir_v1.NewDevice().WithMeta(mir_v1.Meta{
+		Name:      "create_dev_bulk_duplicates__sameidnamens",
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+	}).WithSpec(mir_v1.DeviceSpec{
+		DeviceId: "create_dev_bulk_duplicates__sameidnamens",
+		Disabled: boolPtr(true),
+	})
+	devs = append(devs, d)
+	d = mir_v1.NewDevice().WithMeta(mir_v1.Meta{
+		Name:      "create_dev_bulk_duplicates__sameid_diff1",
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+	}).WithSpec(mir_v1.DeviceSpec{
+		DeviceId: "create_dev_bulk_duplicates__sameid",
+		Disabled: boolPtr(true),
+	})
+	devs = append(devs, d)
+	d = mir_v1.NewDevice().WithMeta(mir_v1.Meta{
+		Name:      "create_dev_bulk_duplicates__sameid_diff2",
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+	}).WithSpec(mir_v1.DeviceSpec{
+		DeviceId: "create_dev_bulk_duplicates__sameid",
+		Disabled: boolPtr(true),
+	})
+	d = mir_v1.NewDevice().WithMeta(mir_v1.Meta{
+		Name:      "create_dev_bulk_duplicates__samenamens",
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+	}).WithSpec(mir_v1.DeviceSpec{
+		DeviceId: "create_dev_bulk_duplicates__samenamens_diff1",
+		Disabled: boolPtr(true),
+	})
+	devs = append(devs, d)
+	d = mir_v1.NewDevice().WithMeta(mir_v1.Meta{
+		Name:      "create_dev_bulk_duplicates__samenamens",
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+	}).WithSpec(mir_v1.DeviceSpec{
+		DeviceId: "create_dev_bulk_duplicates__samenamens_diff2",
+		Disabled: boolPtr(true),
+	})
+	devs = append(devs, d)
+	d = mir_v1.NewDevice().WithMeta(mir_v1.Meta{
+		Name:      "create_dev_bulk_duplicates__samename",
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+	}).WithSpec(mir_v1.DeviceSpec{
+		DeviceId: "create_dev_bulk_duplicates__samename_diff1",
+		Disabled: boolPtr(true),
+	})
+	devs = append(devs, d)
+	d = mir_v1.NewDevice().WithMeta(mir_v1.Meta{
+		Name:      "create_dev_bulk_duplicates__samename",
+		Namespace: "mirstore2",
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+	}).WithSpec(mir_v1.DeviceSpec{
+		DeviceId: "create_dev_bulk_duplicates__samename_diff2",
+		Disabled: boolPtr(true),
+	})
+	devs = append(devs, d)
+	d = mir_v1.NewDevice().WithMeta(mir_v1.Meta{
+		Name:      "create_dev_bulk_duplicates__samens_diff1",
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+	}).WithSpec(mir_v1.DeviceSpec{
+		DeviceId: "create_dev_bulk_duplicates__samens_diff1",
+		Disabled: boolPtr(true),
+	})
+	devs = append(devs, d)
+	d = mir_v1.NewDevice().WithMeta(mir_v1.Meta{
+		Name:      "create_dev_bulk_duplicates__samens_diff2",
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+	}).WithSpec(mir_v1.DeviceSpec{
+		DeviceId: "create_dev_bulk_duplicates__samens_diff2",
+		Disabled: boolPtr(true),
+	})
+	devs = append(devs, d)
+
+	// Act
+	dResp, err := mirStore.CreateDevices(devs)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, len(dResp), 7)
+	seen := make(map[string]bool)
+	for _, d := range dResp {
+		deviceIdKey := d.Spec.DeviceId
+		nameNsKey := d.Meta.Name + "/" + d.Meta.Namespace
+		// Check that we have not seen this deviceId or name/namespace before
+		assert.Assert(t, true, !seen[deviceIdKey] && !seen[nameNsKey])
+		seen[deviceIdKey] = true
+		seen[nameNsKey] = true
+	}
+}
+
 func TestPublishStoreDeviceCreateMissingNameNamespace(t *testing.T) {
 	// Arrange
 	d := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
@@ -2422,7 +2625,6 @@ func TestPulishListDeviceWithEvents(t *testing.T) {
 	assert.Equal(t, len(lResp[0].Status.Events), 2)
 	assert.Equal(t, lResp[0].Status.Events[0].Reason, "PEANUT")
 	assert.Equal(t, lResp[0].Status.Events[1].Reason, "PEANUT")
-
 }
 
 func TestPublishEventStoreCreateBatchRequest(t *testing.T) {

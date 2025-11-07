@@ -68,6 +68,85 @@ func (s *surrealMirStore) CreateDevice(d mir_v1.Device) (mir_v1.Device, error) {
 	return *respDb, nil
 }
 
+func (s *surrealMirStore) CreateDevices(devs []mir_v1.Device) ([]mir_v1.Device, error) {
+	// Validate
+	for _, d := range devs {
+		if d.Spec.DeviceId == "" {
+			return []mir_v1.Device{}, fmt.Errorf("device id is missing")
+		}
+		if d.Meta.Name == "" {
+			d.Meta.Name = d.Spec.DeviceId
+		}
+		if d.Meta.Namespace == "" {
+			d.Meta.Namespace = "default"
+		}
+		d.Status = mir_v1.DeviceStatus{}
+	}
+
+	// Remove duplicates based on deviceId or name/namespace combination
+	seen := make(map[string]bool)
+	uniqueDevs := make([]mir_v1.Device, 0, len(devs))
+
+	for _, d := range devs {
+		deviceIdKey := d.Spec.DeviceId
+		nameNsKey := d.Meta.Name + "/" + d.Meta.Namespace
+		if !seen[deviceIdKey] && !seen[nameNsKey] {
+			seen[deviceIdKey] = true
+			seen[nameNsKey] = true
+			uniqueDevs = append(uniqueDevs, d)
+		}
+	}
+	devs = uniqueDevs
+	fmt.Println(len(devs))
+
+	if len(devs) == 1 {
+		resp, err := s.CreateDevice(devs[0])
+		return []mir_v1.Device{resp}, err
+	}
+
+	// Check duplicates already in database
+	var q strings.Builder
+	q.WriteString("BEGIN TRANSACTION;\n")
+	for _, d := range devs {
+		devQ, _ := createIsDeviceUniqueQuery(d.Meta.Name, d.Meta.Namespace, d.Spec.DeviceId)
+		q.WriteString(devQ + "\n")
+	}
+	q.WriteString("COMMIT TRANSACTION;\n")
+
+	resp, err := surreal.QueryMultiple[[]mir_v1.Device](s.db, q.String(), map[string]any{})
+	if err != nil {
+		return []mir_v1.Device{}, errors.Wrap(err, mir_v1.ErrorDbExecutingQuery.Error())
+	}
+
+	// Flatten the nested response arrays into a single array
+	var flatResp []mir_v1.Device
+	for _, devices := range resp {
+		flatResp = append(flatResp, devices...)
+	}
+
+	if len(flatResp) > 0 {
+		// Mean some devices already exist
+		// Which one so we remove from the created list
+		for _, existingD := range flatResp {
+			for i := 0; i < len(devs); i++ {
+				if existingD.Meta.Name == devs[i].Meta.Name &&
+					existingD.Meta.Namespace == devs[i].Meta.Namespace ||
+					existingD.Spec.DeviceId == devs[i].Spec.DeviceId {
+					devs = append(devs[:i], devs[i+1:]...)
+					break
+				}
+			}
+		}
+	}
+
+	// Create
+	respDb, err := surreal.Insert[mir_v1.Device](s.db, surrealDeviceTable, devs)
+	if err != nil {
+		return []mir_v1.Device{}, fmt.Errorf("%w: %w", mir_v1.ErrorDbExecutingQuery, err)
+	}
+	return *respDb, nil
+}
+
 // UpdateDevice This method is too OP
 // Maybe it need to be divided into Upsert and Patch
 // Upsert is for apply and edit
