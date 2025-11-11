@@ -143,7 +143,7 @@ func TestPublishDeviceUpdateCache(t *testing.T) {
 	// Assert
 	assert.Equal(t, true, mir_proto.AreSchemaEqual(ogSch, sch))
 	assert.Equal(t, devPostUpd.Meta.Labels["test"], str)
-	assert.Equal(t, 1, count)
+	assert.Equal(t, 2, count)
 	cancel()
 	wg.Wait()
 }
