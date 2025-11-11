@@ -334,8 +334,8 @@ func NewDeviceFromUpdateDeviceReq(d *mir_apiv1.UpdateDeviceRequest) Device {
 	return dev
 }
 
-func NewCreateDeviceReqFromDevice(d Device) *mir_apiv1.CreateDeviceRequest {
-	return &mir_apiv1.CreateDeviceRequest{
+func NewCreateDeviceReqFromDevice(d Device) *mir_apiv1.CreateDeviceRequest_Device {
+	return &mir_apiv1.CreateDeviceRequest_Device{
 		Meta: &mir_apiv1.Meta{
 			Name:        d.Meta.Name,
 			Namespace:   d.Meta.Namespace,
@@ -346,8 +346,15 @@ func NewCreateDeviceReqFromDevice(d Device) *mir_apiv1.CreateDeviceRequest {
 			DeviceId: d.Spec.DeviceId,
 			Disabled: asUnRefBool(d.Spec.Disabled),
 		},
-		Properties: &mir_apiv1.DeviceProperties{},
 	}
+}
+
+func NewCreateDeviceReqFromDevices(d []Device) *mir_apiv1.CreateDeviceRequest {
+	req := &mir_apiv1.CreateDeviceRequest{}
+	for _, dev := range d {
+		req.Devices = append(req.Devices, NewCreateDeviceReqFromDevice(dev))
+	}
+	return req
 }
 
 func DeviceToUpdateDeviceRequest(d Device) *mir_apiv1.UpdateDeviceRequest {
@@ -419,13 +426,12 @@ func NewCreateDeviceReqFromDeviceUpdateRequest(d *mir_apiv1.UpdateDeviceRequest)
 		}
 		return opt
 	}
-	dev := &mir_apiv1.CreateDeviceRequest{
+	dev := &mir_apiv1.CreateDeviceRequest_Device{
 		Meta: &mir_apiv1.Meta{
 			Labels:      toMap(d.Meta.Labels),
 			Annotations: toMap(d.Meta.Annotations),
 		},
-		Spec:       &mir_apiv1.DeviceSpec{},
-		Properties: &mir_apiv1.DeviceProperties{},
+		Spec: &mir_apiv1.DeviceSpec{},
 	}
 	if d.Meta != nil {
 		if d.Meta.Name != nil {
@@ -443,10 +449,23 @@ func NewCreateDeviceReqFromDeviceUpdateRequest(d *mir_apiv1.UpdateDeviceRequest)
 			dev.Spec.Disabled = *d.Spec.Disabled
 		}
 	}
-	return dev
+	return &mir_apiv1.CreateDeviceRequest{
+		Devices: []*mir_apiv1.CreateDeviceRequest_Device{dev},
+	}
 }
 
-func NewDeviceFromCreateDeviceReq(d *mir_apiv1.CreateDeviceRequest) Device {
+func NewDevicesFromCreateDeviceReq(d *mir_apiv1.CreateDeviceRequest) []Device {
+	if d == nil {
+		return []Device{}
+	}
+	devs := []Device{}
+	for _, dev := range d.Devices {
+		devs = append(devs, NewDeviceFromCreateDeviceReq(dev))
+	}
+	return devs
+}
+
+func NewDeviceFromCreateDeviceReq(d *mir_apiv1.CreateDeviceRequest_Device) Device {
 	return Device{
 		Object: Object{
 			ApiVersion: "mir/v1alpha",

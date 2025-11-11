@@ -6,7 +6,6 @@ import (
 	"io"
 	"os"
 	"sync"
-	"time"
 
 	"github.com/maxthom/mir/internal/clients/core_client"
 	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
@@ -110,7 +109,7 @@ type devicesBuilder struct {
 	tlsCert     string
 	caCert      string
 	logWriters  []io.Writer
-	deviceReqs  []*mir_apiv1.CreateDeviceRequest
+	deviceReqs  []*mir_apiv1.CreateDeviceRequest_Device
 	deviceIds   []string
 	sch         []protoreflect.FileDescriptor
 	schProto    []*descriptorpb.FileDescriptorProto
@@ -127,7 +126,7 @@ type deviceBuilder struct {
 	caCert      string
 	logLevel    mirDevice.LogLevel
 	logWriters  []io.Writer
-	deviceReq   *mir_apiv1.CreateDeviceRequest
+	deviceReq   *mir_apiv1.CreateDeviceRequest_Device
 	sch         []protoreflect.FileDescriptor
 	schProto    []*descriptorpb.FileDescriptorProto
 	cmd         []commandHandler
@@ -154,7 +153,7 @@ func (s *Swarm) AddDeviceWithIds(ids []string) *devicesBuilder {
 		},
 	}
 }
-func (s *Swarm) AddDevices(req ...*mir_apiv1.CreateDeviceRequest) *devicesBuilder {
+func (s *Swarm) AddDevices(req ...*mir_apiv1.CreateDeviceRequest_Device) *devicesBuilder {
 	return &devicesBuilder{
 		deviceReqs: req,
 		s:          s,
@@ -165,7 +164,7 @@ func (s *Swarm) AddDevices(req ...*mir_apiv1.CreateDeviceRequest) *devicesBuilde
 	}
 }
 
-func (s *Swarm) AddDevice(req *mir_apiv1.CreateDeviceRequest) *deviceBuilder {
+func (s *Swarm) AddDevice(req *mir_apiv1.CreateDeviceRequest_Device) *deviceBuilder {
 	return &deviceBuilder{
 		deviceReq: req,
 		s:         s,
@@ -236,7 +235,7 @@ func (b *devicesBuilder) WithStoreOptions(opts mirDevice.StoreOptions) *devicesB
 	return b
 }
 
-func (b *devicesBuilder) Incubate() ([]*mir_apiv1.CreateDeviceResponse, error) {
+func (b *devicesBuilder) Incubate() ([]mir_v1.Device, error) {
 	var errs error
 	for _, d := range b.deviceReqs {
 		dev, err := mirDevice.Builder().
@@ -289,16 +288,22 @@ func (b *devicesBuilder) Incubate() ([]*mir_apiv1.CreateDeviceResponse, error) {
 		b.s.Devices = append(b.s.Devices, dev)
 	}
 
-	responses := []*mir_apiv1.CreateDeviceResponse{}
-	for _, reqCreate := range b.deviceReqs {
-		resp, err := core_client.PublishDeviceCreateRequest(b.s.bus, reqCreate)
-		if err != nil {
-			errs = errors.Join(err)
-		} else {
-			responses = append(responses, resp)
-		}
+	resp, err := core_client.PublishDeviceCreateRequest(b.s.bus,
+		&mir_apiv1.CreateDeviceRequest{
+			Devices: b.deviceReqs,
+		})
+	if err != nil {
+		errs = errors.Join(err)
+		return nil, errs
 	}
-	return responses, errs
+	if resp.GetError() != "" {
+		errs = errors.Join(errors.New(resp.GetError()))
+		return nil, errs
+	}
+	if resp.GetOk() == nil {
+		return []mir_v1.Device{}, nil
+	}
+	return mir_v1.NewDeviceListFromProtoDevices(resp.GetOk().Devices), errs
 }
 
 func (b *deviceBuilder) WithSchema(s ...protoreflect.FileDescriptor) *deviceBuilder {
@@ -361,7 +366,7 @@ func (b *deviceBuilder) WithStoreOptions(opts mirDevice.StoreOptions) *deviceBui
 	return b
 }
 
-func (b *deviceBuilder) Incubate() (*mir_apiv1.CreateDeviceResponse, error) {
+func (b *deviceBuilder) Incubate() (mir_v1.Device, error) {
 	dev, err := mirDevice.Builder().
 		DeviceId(b.deviceReq.Spec.DeviceId).
 		LogLevel(b.logLevel).
@@ -374,7 +379,7 @@ func (b *deviceBuilder) Incubate() (*mir_apiv1.CreateDeviceResponse, error) {
 		SchemaProto(b.schProto...).
 		Schema(b.sch...).Build()
 	if err != nil {
-		return nil, err
+		return mir_v1.Device{}, err
 	}
 	for _, cmd := range b.cmd {
 		dev.HandleCommand(cmd.target, cmd.handler)
@@ -384,7 +389,18 @@ func (b *deviceBuilder) Incubate() (*mir_apiv1.CreateDeviceResponse, error) {
 	}
 	b.s.Devices = append(b.s.Devices, dev)
 
-	resp, err := core_client.PublishDeviceCreateRequest(b.s.bus, b.deviceReq)
-	time.Sleep(2 * time.Second)
-	return resp, err
+	resp, err := core_client.PublishDeviceCreateRequest(b.s.bus,
+		&mir_apiv1.CreateDeviceRequest{
+			Devices: []*mir_apiv1.CreateDeviceRequest_Device{b.deviceReq},
+		})
+	if err != nil {
+		return mir_v1.Device{}, err
+	}
+	if resp.GetError() != "" {
+		return mir_v1.Device{}, errors.New(resp.GetError())
+	}
+	if resp.GetOk() == nil || len(resp.GetOk().Devices) == 0 {
+		return mir_v1.Device{}, nil
+	}
+	return mir_v1.NewDeviceListFromProtoDevices(resp.GetOk().Devices)[0], nil
 }

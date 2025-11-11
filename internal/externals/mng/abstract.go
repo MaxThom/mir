@@ -23,6 +23,7 @@ const (
 type MirStore interface {
 	ListDevice(t mir_v1.DeviceTarget, includeEvents bool) ([]mir_v1.Device, error)
 	CreateDevice(d mir_v1.Device) (mir_v1.Device, error)
+	CreateDevices(d []mir_v1.Device) ([]mir_v1.Device, error)
 	UpdateDevice(t mir_v1.DeviceTarget, d mir_v1.Device) ([]mir_v1.Device, error)
 	UpdateDeviceHello(updates map[mir_v1.DeviceId]mir_v1.DeviceHello) ([]mir_v1.Device, error)
 	MergeDevice(t mir_v1.DeviceTarget, patch json.RawMessage, op UpdateType) ([]mir_v1.Device, error)

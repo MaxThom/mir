@@ -79,7 +79,7 @@ func TestPublishDevicePushTelemetry(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_push_tlm"
-	reqCreate := &mir_apiv1.CreateDeviceRequest{
+	reqCreate := &mir_apiv1.CreateDeviceRequest_Device{
 		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_core",
@@ -100,7 +100,10 @@ func TestPublishDevicePushTelemetry(t *testing.T) {
 	}
 
 	// Act
-	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate)
+	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus,
+		&mir_apiv1.CreateDeviceRequest{
+			Devices: []*mir_apiv1.CreateDeviceRequest_Device{reqCreate},
+		})
 	if err != nil {
 		t.Error(err)
 	}
@@ -195,7 +198,7 @@ func TestPublishDeviceSchemaAlreadyPresent(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_schema_present"
-	reqCreate := &mir_apiv1.CreateDeviceRequest{
+	reqCreate := &mir_apiv1.CreateDeviceRequest_Device{
 		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_core",
@@ -237,7 +240,10 @@ func TestPublishDeviceSchemaAlreadyPresent(t *testing.T) {
 	}
 
 	// Act
-	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate)
+	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus,
+		&mir_apiv1.CreateDeviceRequest{
+			Devices: []*mir_apiv1.CreateDeviceRequest_Device{reqCreate},
+		})
 	if err != nil {
 		t.Error(err)
 	}
@@ -330,7 +336,7 @@ func TestPublishDeviceSchemaInvalid(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_invalid_schema"
-	reqCreate := &mir_apiv1.CreateDeviceRequest{
+	reqCreate := &mir_apiv1.CreateDeviceRequest_Device{
 		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_core",
@@ -376,7 +382,10 @@ func TestPublishDeviceSchemaInvalid(t *testing.T) {
 	}
 
 	// Act
-	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate)
+	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus,
+		&mir_apiv1.CreateDeviceRequest{
+			Devices: []*mir_apiv1.CreateDeviceRequest_Device{reqCreate},
+		})
 	if err != nil {
 		t.Error(err)
 	}
@@ -473,7 +482,7 @@ func TestPublishDevicePushTelemetryDeviceUpdate(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_push_tlm_upd"
-	reqCreate := &mir_apiv1.CreateDeviceRequest{
+	reqCreate := &mir_apiv1.CreateDeviceRequest_Device{
 		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_core",
@@ -494,7 +503,10 @@ func TestPublishDevicePushTelemetryDeviceUpdate(t *testing.T) {
 	}
 
 	// Act
-	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate)
+	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus,
+		&mir_apiv1.CreateDeviceRequest{
+			Devices: []*mir_apiv1.CreateDeviceRequest_Device{reqCreate},
+		})
 	if err != nil {
 		t.Error(err)
 	}
@@ -580,7 +592,7 @@ func TestPublishTelemetryListPairs(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	s := swarm.NewSwarm(mSdk.Bus)
 	_, err := s.AddDevices(
-		&mir_apiv1.CreateDeviceRequest{
+		&mir_apiv1.CreateDeviceRequest_Device{
 			Meta: &mir_apiv1.Meta{
 				Name:      "dev_tlm_list_1",
 				Namespace: "testing_core",
@@ -592,7 +604,7 @@ func TestPublishTelemetryListPairs(t *testing.T) {
 				DeviceId: "dev_tlm_list_1",
 			},
 		},
-		&mir_apiv1.CreateDeviceRequest{
+		&mir_apiv1.CreateDeviceRequest_Device{
 			Meta: &mir_apiv1.Meta{
 				Name:      "dev_tlm_list_2",
 				Namespace: "testing_core",
@@ -607,7 +619,7 @@ func TestPublishTelemetryListPairs(t *testing.T) {
 		prototlm_testv1.File_prototlm_test_v1_telemetry_proto,
 	).Incubate()
 	_, err = s.AddDevices(
-		&mir_apiv1.CreateDeviceRequest{
+		&mir_apiv1.CreateDeviceRequest_Device{
 			Meta: &mir_apiv1.Meta{
 				Name:      "dev_tlm_list_3",
 				Namespace: "testing_core",
@@ -619,7 +631,7 @@ func TestPublishTelemetryListPairs(t *testing.T) {
 				DeviceId: "dev_tlm_list_3",
 			},
 		},
-		&mir_apiv1.CreateDeviceRequest{
+		&mir_apiv1.CreateDeviceRequest_Device{
 			Meta: &mir_apiv1.Meta{
 				Name:      "dev_tlm_list_4",
 				Namespace: "testing_core",
@@ -634,7 +646,7 @@ func TestPublishTelemetryListPairs(t *testing.T) {
 		prototlm_testv1.File_prototlm_test_v1_telemetry2_proto,
 	).Incubate()
 	_, err = s.AddDevices(
-		&mir_apiv1.CreateDeviceRequest{
+		&mir_apiv1.CreateDeviceRequest_Device{
 			Meta: &mir_apiv1.Meta{
 				Name:      "dev_tlm_list_5",
 				Namespace: "testing_core",
@@ -646,7 +658,7 @@ func TestPublishTelemetryListPairs(t *testing.T) {
 				DeviceId: "dev_tlm_list_5",
 			},
 		},
-		&mir_apiv1.CreateDeviceRequest{
+		&mir_apiv1.CreateDeviceRequest_Device{
 			Meta: &mir_apiv1.Meta{
 				Name:      "dev_tlm_list_6",
 				Namespace: "testing_core",
@@ -711,7 +723,7 @@ func TestPublishTelemetryList(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	s := swarm.NewSwarm(mSdk.Bus)
 	_, err := s.AddDevices(
-		&mir_apiv1.CreateDeviceRequest{
+		&mir_apiv1.CreateDeviceRequest_Device{
 			Meta: &mir_apiv1.Meta{
 				Name:      "dev_tlm_listing_!",
 				Namespace: "testing_core",
@@ -785,7 +797,7 @@ func TestPublishTelemetryListError(t *testing.T) {
 	// Arrange
 	s := swarm.NewSwarm(mSdk.Bus)
 	_, err := s.AddDevices(
-		&mir_apiv1.CreateDeviceRequest{
+		&mir_apiv1.CreateDeviceRequest_Device{
 			Meta: &mir_apiv1.Meta{
 				Name:      "dev_tlm_list_offline",
 				Namespace: "testing_core",

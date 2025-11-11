@@ -73,7 +73,7 @@ func TestPublishCmdListRequest(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_list_cmd"
 	s := swarm.NewSwarm(mSdk.Bus)
-	if _, err := s.AddDevice(&mir_apiv1.CreateDeviceRequest{
+	if _, err := s.AddDevice(&mir_apiv1.CreateDeviceRequest_Device{
 		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_cmd",
@@ -134,7 +134,7 @@ func TestPublishCmdListFiltersRequest(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_list_cmd_filters"
 	s := swarm.NewSwarm(mSdk.Bus)
-	if _, err := s.AddDevice(&mir_apiv1.CreateDeviceRequest{
+	if _, err := s.AddDevice(&mir_apiv1.CreateDeviceRequest_Device{
 		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_cmd",
@@ -190,7 +190,7 @@ func TestPublishCmdRequest(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_send_cmd"
-	reqCreate := &mir_apiv1.CreateDeviceRequest{
+	reqCreate := &mir_apiv1.CreateDeviceRequest_Device{
 		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_cmd",
@@ -241,7 +241,10 @@ func TestPublishCmdRequest(t *testing.T) {
 	}
 
 	// Act
-	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate)
+	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus,
+		&mir_apiv1.CreateDeviceRequest{
+			Devices: []*mir_apiv1.CreateDeviceRequest_Device{reqCreate},
+		})
 	if err != nil {
 		t.Error(err)
 	}
@@ -302,7 +305,7 @@ func TestPublishCmdJsonRequest(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_send_cmd_json"
-	reqCreate := &mir_apiv1.CreateDeviceRequest{
+	reqCreate := &mir_apiv1.CreateDeviceRequest_Device{
 		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_cmd",
@@ -352,7 +355,10 @@ func TestPublishCmdJsonRequest(t *testing.T) {
 	}
 
 	// Act
-	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate)
+	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus,
+		&mir_apiv1.CreateDeviceRequest{
+			Devices: []*mir_apiv1.CreateDeviceRequest_Device{reqCreate},
+		})
 	if err != nil {
 		t.Error(err)
 	}
@@ -423,7 +429,7 @@ func TestPublishCmdNoDeviceFound(t *testing.T) {
 func TestPublishCmdProtoNoValidationDryRun(t *testing.T) {
 	// Arrange
 	id := "proto_novalidation_dryrun"
-	reqCreate := &mir_apiv1.CreateDeviceRequest{
+	reqCreate := &mir_apiv1.CreateDeviceRequest_Device{
 		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_cmd",
@@ -459,7 +465,10 @@ func TestPublishCmdProtoNoValidationDryRun(t *testing.T) {
 	}
 
 	// Act
-	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate)
+	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus,
+		&mir_apiv1.CreateDeviceRequest{
+			Devices: []*mir_apiv1.CreateDeviceRequest_Device{reqCreate},
+		})
 	if err != nil {
 		t.Error(err)
 	}
@@ -485,7 +494,7 @@ func TestPublishCmdProtoInvalidPayloadNoValidation(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_send_cmd_no_validation"
-	reqCreate := &mir_apiv1.CreateDeviceRequest{
+	reqCreate := &mir_apiv1.CreateDeviceRequest_Device{
 		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_cmd",
@@ -541,7 +550,10 @@ func TestPublishCmdProtoInvalidPayloadNoValidation(t *testing.T) {
 	}
 
 	// Act
-	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate)
+	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus,
+		&mir_apiv1.CreateDeviceRequest{
+			Devices: []*mir_apiv1.CreateDeviceRequest_Device{reqCreate},
+		})
 	if err != nil {
 		t.Error(err)
 	}
@@ -573,7 +585,7 @@ func TestPublishCmdRequestMultipleDevices(t *testing.T) {
 	cmdHandled := &protocmd_testv1.ChangePower{}
 	swarm := swarm.NewSwarm(mSdk.Bus)
 	handlerCount := 0
-	_, err := swarm.AddDevices(&mir_apiv1.CreateDeviceRequest{
+	_, err := swarm.AddDevices(&mir_apiv1.CreateDeviceRequest_Device{
 		Meta: &mir_apiv1.Meta{
 			Name:      "device_send_cmd_1",
 			Namespace: "testing_cmd",
@@ -587,7 +599,7 @@ func TestPublishCmdRequestMultipleDevices(t *testing.T) {
 		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: "device_send_cmd_1",
 		},
-	}, &mir_apiv1.CreateDeviceRequest{
+	}, &mir_apiv1.CreateDeviceRequest_Device{
 		Meta: &mir_apiv1.Meta{
 			Name:      "device_send_cmd_2",
 			Namespace: "testing_cmd",
@@ -664,7 +676,7 @@ func TestPublishCmdRequestMultipleDevicesOneNoHandler(t *testing.T) {
 	cmdHandled := &protocmd_testv1.ChangePower{}
 	swarm := swarm.NewSwarm(mSdk.Bus)
 	handlerCount := 0
-	_, err := swarm.AddDevices(&mir_apiv1.CreateDeviceRequest{
+	_, err := swarm.AddDevices(&mir_apiv1.CreateDeviceRequest_Device{
 		Meta: &mir_apiv1.Meta{
 			Name:      "device_send_cmd_1_no_handler",
 			Namespace: "testing_cmd",
@@ -678,7 +690,7 @@ func TestPublishCmdRequestMultipleDevicesOneNoHandler(t *testing.T) {
 		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: "device_send_cmd_1_no_handler",
 		},
-	}, &mir_apiv1.CreateDeviceRequest{
+	}, &mir_apiv1.CreateDeviceRequest_Device{
 		Meta: &mir_apiv1.Meta{
 			Name:      "device_send_cmd_2_no_handler",
 			Namespace: "testing_cmd",
@@ -702,7 +714,7 @@ func TestPublishCmdRequestMultipleDevicesOneNoHandler(t *testing.T) {
 				return &protocmd_testv1.ChangePowerResp{Success: true}, nil
 			},
 		).Incubate()
-	swarm.AddDevice(&mir_apiv1.CreateDeviceRequest{
+	swarm.AddDevice(&mir_apiv1.CreateDeviceRequest_Device{
 		Meta: &mir_apiv1.Meta{
 			Name:      "device_send_cmd_3_no_handler",
 			Namespace: "testing_cmd",
@@ -774,7 +786,7 @@ func TestPublishCmdRequestMultipleDevicesOneTimeout(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_send_cmd_multi_timeout"
-	reqCreate := &mir_apiv1.CreateDeviceRequest{
+	reqCreate := &mir_apiv1.CreateDeviceRequest_Device{
 		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_cmd",
@@ -798,7 +810,7 @@ func TestPublishCmdRequestMultipleDevicesOneTimeout(t *testing.T) {
 	}
 
 	id2 := "device_send_cmd_multi_timeout_2"
-	reqCreate2 := &mir_apiv1.CreateDeviceRequest{
+	reqCreate2 := &mir_apiv1.CreateDeviceRequest_Device{
 		Meta: &mir_apiv1.Meta{
 			Name:      id2,
 			Namespace: "testing_cmd",
@@ -842,11 +854,17 @@ func TestPublishCmdRequestMultipleDevicesOneTimeout(t *testing.T) {
 	}
 
 	// Act
-	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate)
+	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus,
+		&mir_apiv1.CreateDeviceRequest{
+			Devices: []*mir_apiv1.CreateDeviceRequest_Device{reqCreate},
+		})
 	if err != nil {
 		t.Error(err)
 	}
-	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate2)
+	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus,
+		&mir_apiv1.CreateDeviceRequest{
+			Devices: []*mir_apiv1.CreateDeviceRequest_Device{reqCreate2},
+		})
 	if err != nil {
 		t.Error(err)
 	}
@@ -895,7 +913,7 @@ func TestPublishCmdRequestMultipleDevicesJson(t *testing.T) {
 	swarm := swarm.NewSwarm(mSdk.Bus)
 	handlerCount := 0
 	_, err := swarm.AddDevices(
-		&mir_apiv1.CreateDeviceRequest{
+		&mir_apiv1.CreateDeviceRequest_Device{
 			Meta: &mir_apiv1.Meta{
 				Namespace: "testing_cmd",
 				Labels: map[string]string{
@@ -905,7 +923,7 @@ func TestPublishCmdRequestMultipleDevicesJson(t *testing.T) {
 			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: "device_send_cmd_multi_json_1",
 			},
-		}, &mir_apiv1.CreateDeviceRequest{
+		}, &mir_apiv1.CreateDeviceRequest_Device{
 			Meta: &mir_apiv1.Meta{
 				Namespace: "testing_cmd",
 				Labels: map[string]string{
@@ -979,7 +997,7 @@ func TestPublishCmdRequestMultipleDevicesDescriptorNotFound(t *testing.T) {
 	swarm := swarm.NewSwarm(mSdk.Bus)
 	handlerCount := 0
 	_, err := swarm.AddDevices(
-		&mir_apiv1.CreateDeviceRequest{
+		&mir_apiv1.CreateDeviceRequest_Device{
 			Meta: &mir_apiv1.Meta{
 				Namespace: "testing_cmd",
 				Labels: map[string]string{
@@ -989,7 +1007,7 @@ func TestPublishCmdRequestMultipleDevicesDescriptorNotFound(t *testing.T) {
 			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: "device_send_notfound_1",
 			},
-		}, &mir_apiv1.CreateDeviceRequest{
+		}, &mir_apiv1.CreateDeviceRequest_Device{
 			Meta: &mir_apiv1.Meta{
 				Namespace: "testing_cmd",
 				Labels: map[string]string{
@@ -1054,7 +1072,7 @@ func TestPublishCmdRequestMultipleDevicesSingleDescriptorNotFoundForcePush(t *te
 	swarm := swarm.NewSwarm(mSdk.Bus)
 	handlerCount := 0
 	_, err := swarm.AddDevice(
-		&mir_apiv1.CreateDeviceRequest{
+		&mir_apiv1.CreateDeviceRequest_Device{
 			Meta: &mir_apiv1.Meta{
 				Namespace: "testing_cmd",
 				Labels: map[string]string{
@@ -1075,7 +1093,7 @@ func TestPublishCmdRequestMultipleDevicesSingleDescriptorNotFoundForcePush(t *te
 			},
 		).Incubate()
 	_, err = swarm.AddDevice(
-		&mir_apiv1.CreateDeviceRequest{
+		&mir_apiv1.CreateDeviceRequest_Device{
 			Meta: &mir_apiv1.Meta{
 				Namespace: "testing_cmd",
 				Labels: map[string]string{
@@ -1148,7 +1166,7 @@ func TestPublishCmdRequestMultipleDevicesJsonTemplate(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	swarm := swarm.NewSwarm(mSdk.Bus)
 	_, err := swarm.AddDevices(
-		&mir_apiv1.CreateDeviceRequest{
+		&mir_apiv1.CreateDeviceRequest_Device{
 			Meta: &mir_apiv1.Meta{
 				Namespace: "testing_cmd",
 				Labels: map[string]string{
@@ -1161,7 +1179,7 @@ func TestPublishCmdRequestMultipleDevicesJsonTemplate(t *testing.T) {
 			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: "device_send_cmd_multi_json_tlm_1",
 			},
-		}, &mir_apiv1.CreateDeviceRequest{
+		}, &mir_apiv1.CreateDeviceRequest_Device{
 			Meta: &mir_apiv1.Meta{
 				Namespace: "testing_cmd",
 				Labels: map[string]string{
@@ -1216,7 +1234,7 @@ func TestPublishCmdRequestMultipleDevicesOneTimeoutJsonTemplate(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_send_cmd_multi_timeout_json_template_1"
-	reqCreate := &mir_apiv1.CreateDeviceRequest{
+	reqCreate := &mir_apiv1.CreateDeviceRequest_Device{
 		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_cmd",
@@ -1240,7 +1258,7 @@ func TestPublishCmdRequestMultipleDevicesOneTimeoutJsonTemplate(t *testing.T) {
 	}
 
 	id2 := "device_send_cmd_multi_timeout_json_template_2"
-	reqCreate2 := &mir_apiv1.CreateDeviceRequest{
+	reqCreate2 := &mir_apiv1.CreateDeviceRequest_Device{
 		Meta: &mir_apiv1.Meta{
 			Name:      id2,
 			Namespace: "testing_cmd",
@@ -1267,11 +1285,17 @@ func TestPublishCmdRequestMultipleDevicesOneTimeoutJsonTemplate(t *testing.T) {
 	}
 
 	// Act
-	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate)
+	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus,
+		&mir_apiv1.CreateDeviceRequest{
+			Devices: []*mir_apiv1.CreateDeviceRequest_Device{reqCreate},
+		})
 	if err != nil {
 		t.Error(err)
 	}
-	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate2)
+	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus,
+		&mir_apiv1.CreateDeviceRequest{
+			Devices: []*mir_apiv1.CreateDeviceRequest_Device{reqCreate2},
+		})
 	if err != nil {
 		t.Error(err)
 	}
@@ -1308,7 +1332,7 @@ func TestPublishCmdJsonNameWithCurlyRequest(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_send_cmd_json_curly"
-	reqCreate := &mir_apiv1.CreateDeviceRequest{
+	reqCreate := &mir_apiv1.CreateDeviceRequest_Device{
 		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_cmd",
@@ -1358,7 +1382,10 @@ func TestPublishCmdJsonNameWithCurlyRequest(t *testing.T) {
 	}
 
 	// Act
-	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus, reqCreate)
+	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus,
+		&mir_apiv1.CreateDeviceRequest{
+			Devices: []*mir_apiv1.CreateDeviceRequest_Device{reqCreate},
+		})
 	if err != nil {
 		t.Error(err)
 	}

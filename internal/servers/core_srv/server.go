@@ -204,23 +204,24 @@ func (s *CoreServer) Shutdown() error {
 	return nil
 }
 
-func (s *CoreServer) createDeviceSub(msg *mir.Msg, clientId string, d mir_v1.Device) (mir_v1.Device, error) {
+func (s *CoreServer) createDeviceSub(msg *mir.Msg, clientId string, d []mir_v1.Device) ([]mir_v1.Device, error) {
 	l.Debug().Str("route", "create").Str("payload", fmt.Sprintf("%v", d)).Msg("new device request")
 	requestTotal.WithLabelValues("create").Inc()
 
-	newDev, err := s.store.CreateDevice(d)
+	newDevs, err := s.store.CreateDevices(d)
 	if err != nil {
-		l.Error().Err(err).Msg("error occure while creating device")
+		l.Error().Err(err).Msg("error occure while creating some devices")
 		requestErrorTotal.WithLabelValues("create").Inc()
-		return mir_v1.Device{}, fmt.Errorf("error creating device: %w", err)
 	}
 
 	// Publish created events
-	if err := publishDeviceCreateEvent(s.m, msg, newDev); err != nil {
-		l.Warn().Err(err).Str("device_id", newDev.Spec.DeviceId).Msg("error occure while publishing device created event")
+	for _, newDev := range newDevs {
+		if err := publishDeviceCreateEvent(s.m, msg, newDev); err != nil {
+			l.Warn().Err(err).Str("device_id", newDev.Spec.DeviceId).Msg("error occure while publishing device created event")
+		}
 	}
 
-	return newDev, nil
+	return newDevs, err
 }
 
 func (s *CoreServer) updateDeviceSub(msg *mir.Msg, clientId string, t mir_v1.DeviceTarget, d mir_v1.Device) ([]mir_v1.Device, error) {

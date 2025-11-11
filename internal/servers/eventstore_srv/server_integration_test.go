@@ -220,7 +220,7 @@ func TestPublishListDeviceRequestWithEvents(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	s := swarm.NewSwarm(mSdk.Bus)
-	_, err := s.AddDevice(&mir_apiv1.CreateDeviceRequest{
+	_, err := s.AddDevice(&mir_apiv1.CreateDeviceRequest_Device{
 		Meta: &mir_apiv1.Meta{
 			Namespace: "event_testing",
 		},
@@ -233,12 +233,12 @@ func TestPublishListDeviceRequestWithEvents(t *testing.T) {
 	}
 
 	// Act
-	time.Sleep(1 * time.Second)
 	wgs, err := s.Deploy(ctx)
 	if err != nil {
 		t.Error(err)
 	}
-	time.Sleep(1 * time.Second)
+	// Timer cause event cache flush
+	time.Sleep(5 * time.Second)
 
 	dResp, err := mSdk.Client().ListDevice().Request(s.ToTarget(), true)
 
