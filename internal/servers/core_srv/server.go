@@ -436,14 +436,17 @@ func (s *CoreServer) hearthbeatOnlinePulsor() {
 				newDevices[id] = t
 			}
 		}
-		// TODO, one request instead of many
+		newDevs := []mir_v1.Device{}
+		newDevsId := []string{}
 		for id := range newDevices {
-			_, err := s.m.Client().CreateDevice().Request(mir_v1.NewDevice().WithSpec(mir_v1.DeviceSpec{
+			newDevs = append(newDevs, mir_v1.NewDevice().WithSpec(mir_v1.DeviceSpec{
 				DeviceId: string(id),
 			}))
-			if err != nil {
-				l.Error().Err(err).Str("device_id", string(id)).Msg("could not automaticly provision new device")
-			}
+			newDevsId = append(newDevsId, string(id))
+		}
+		_, err := s.m.Client().CreateDevice().RequestMany(newDevs)
+		if err != nil {
+			l.Error().Err(err).Strs("device_ids", newDevsId).Msg("could not automaticly provision new devices")
 		}
 		newDevsResp, err := s.store.UpdateDeviceHello(newDevices)
 		if err != nil {
