@@ -241,13 +241,13 @@ func (c *MirSchemaCache) deviceUpdateSub(msg *mir.Msg, deviceId string, device m
 
 	// We dont update the cache with new elements.
 	// It has to be requested first
-	c.cacheLock.RLock()
-	if _, ok := c.cache[deviceId]; !ok {
-		msg.Ack()
-		c.cacheLock.RUnlock()
-		return
-	}
-	c.cacheLock.RUnlock()
+	// c.cacheLock.RLock()
+	// if _, ok := c.cache[deviceId]; !ok {
+	// 	msg.Ack()
+	// 	c.cacheLock.RUnlock()
+	// 	return
+	// }
+	// c.cacheLock.RUnlock()
 
 	if err != nil {
 		l.Error().Str("device_id", deviceId).Err(err).Msg("error deserializing event")

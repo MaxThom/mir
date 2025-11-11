@@ -2513,6 +2513,17 @@ func TestDeviceAutoProvisionWithSchema(t *testing.T) {
 			msg.Ack()
 		})
 
+	// Subscribe to device update event
+	updEvent := make(chan bool, 1)
+	updateEventCount := 0
+	u, err := mSdk.Bus.Subscribe(
+		core_client.DeviceUpdatedEvent.WithId(deviceIds[0]),
+		func(msg *nats.Msg) {
+			updateEventCount += 1
+			updEvent <- true
+			msg.Ack()
+		})
+
 	// Act
 	fSet := &descriptorpb.FileDescriptorSet{
 		File: []*descriptorpb.FileDescriptorProto{
@@ -2526,11 +2537,19 @@ func TestDeviceAutoProvisionWithSchema(t *testing.T) {
 		t.Error(err)
 	}
 
-	select {
-	case <-msgReceived:
-		// Device created event received
-	case <-time.After(20 * time.Second):
-		t.Error("Timeout waiting for device auto-provision")
+	count := 0
+EvtLoop:
+	for count < 2 {
+		select {
+		case <-msgReceived:
+			// Device created event received
+			count++
+		case <-updEvent:
+			count++
+		case <-time.After(20 * time.Second):
+			t.Error("Timeout waiting for device auto-provision")
+			break EvtLoop
+		}
 	}
 
 	respList, err := core_client.PublishDeviceListRequest(mSdk.Bus, reqList)
@@ -2551,7 +2570,9 @@ func TestDeviceAutoProvisionWithSchema(t *testing.T) {
 	}
 	assert.Equal(t, 1, onlineEventCount)
 	assert.Equal(t, 1, createEventCount)
+	assert.Equal(t, 1, updateEventCount)
 	s.Unsubscribe()
+	u.Unsubscribe()
 	c.Unsubscribe()
 }
 

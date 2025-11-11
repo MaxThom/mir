@@ -24,11 +24,16 @@
     - [x] BUG why invalid wired format
       - [x] Add logger to mir sdk
       - [x] Deploy
-    - [ ] Perf Improvements
+    - [x] Perf Improvements
+      - [x] protocfg/cmd schema protocache
+        - [x] need an event on device hello for schema
+              1. new schema update event maybe? no just use update
+              2. on hello received or on the buffer flush? buffer flush
+        - [x] change protocache to accept new schema even if not request before so its ready
       - [x] Test hearthbeat with hello
-      - [ ] prototlm/protocfg, if device dont exist, dont ask schema
-      - [ ] Bulk create devices
-        - [ ] Use for swarm
+      - [x] prototlm/protocfg, if device dont exist, dont ask schema
+      - [x] Bulk create devices
+        - [x] Use for swarm
       - [x] Stack Events and flush them every x seconds
         - [x] With many create at the same time
       - [x] Stack Hearbeaths and flush them every x seconds

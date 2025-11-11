@@ -398,7 +398,6 @@ func (s *CoreServer) hearthbeatOnlinePulsor() {
 	s.hearthbeatsWriteBufferMu.Unlock()
 
 	degradedMode := false
-
 	devsResp, err := retry.RetryOnErrorContainsWithResult(func() ([]mir_v1.Device, error) {
 		res, err := s.store.UpdateDeviceHello(tempBuffer)
 		return res, err
@@ -418,7 +417,7 @@ func (s *CoreServer) hearthbeatOnlinePulsor() {
 			}).WithStatus(mir_v1.DeviceStatus{
 				Online:         &degradedMode,
 				LastHearthbeat: &surrealdbModels.CustomDateTime{Time: t.Hearthbeat},
-			})
+			}).WithSchema(t.Schema, t.Hearthbeat)
 			i += 1
 		}
 	}
@@ -471,6 +470,12 @@ func (s *CoreServer) hearthbeatOnlinePulsor() {
 			newOnline = append(newOnline, dev.Spec.DeviceId)
 		}
 		s.hearthbeats[mir_v1.DeviceId(dev.Spec.DeviceId)] = dev.Status.LastHearthbeat.Time
+
+		if hello, ok := tempBuffer[mir_v1.DeviceId(dev.Spec.DeviceId)]; ok && hello.Schema != nil {
+			if err := publishDeviceUpdateEvent(s.m, nil, dev); err != nil {
+				l.Warn().Err(err).Str("device_id", dev.Spec.DeviceId).Msg("error occure while publishing device update event")
+			}
+		}
 	}
 	s.hearthbeatsMutex.Unlock()
 

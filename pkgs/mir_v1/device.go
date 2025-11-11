@@ -74,6 +74,15 @@ func (d Device) WithStatus(s DeviceStatus) Device {
 	return d
 }
 
+func (d Device) WithSchema(s *mir_proto.MirProtoSchema, t time.Time) Device {
+	if s == nil {
+		return d
+	}
+	d.Status.Schema, _ = NewSchemaFromProtoSchema(s)
+	d.Status.Schema.LastSchemaFetch = &surrealdbModels.CustomDateTime{Time: t}
+	return d
+}
+
 func (d Device) GetNameNamespace() string {
 	return d.Meta.Name + "/" + d.Meta.Namespace
 }
