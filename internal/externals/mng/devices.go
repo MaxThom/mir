@@ -3,6 +3,7 @@ package mng
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -10,7 +11,6 @@ import (
 
 	"github.com/maxthom/mir/internal/libs/external/surreal"
 	"github.com/maxthom/mir/pkgs/mir_v1"
-	"github.com/pkg/errors"
 	"github.com/surrealdb/surrealdb.go/pkg/models"
 )
 
@@ -33,7 +33,7 @@ func (s *surrealMirStore) ListDevice(t mir_v1.DeviceTarget, includeEvents bool) 
 	q, v := createListQueryForDevice(t, includeEvents)
 	devs, err := surreal.Query[[]mir_v1.Device](s.db, q, v)
 	if err != nil {
-		return nil, errors.Wrap(err, ErrorListingDevices.Error())
+		return nil, fmt.Errorf("%w: %w", ErrorListingDevices, err)
 	}
 	return devs, nil
 }
@@ -70,17 +70,21 @@ func (s *surrealMirStore) CreateDevice(d mir_v1.Device) (mir_v1.Device, error) {
 
 func (s *surrealMirStore) CreateDevices(devs []mir_v1.Device) ([]mir_v1.Device, error) {
 	// Validate
-	for _, d := range devs {
-		if d.Spec.DeviceId == "" {
-			return []mir_v1.Device{}, fmt.Errorf("device id is missing")
+	var errs error
+	for i := 0; i < len(devs); i++ {
+		if devs[i].Spec.DeviceId == "" {
+			errs = errors.Join(errs, fmt.Errorf("device at index %d is missing its id", i))
+			devs = append(devs[:i], devs[i+1:]...)
+			i -= 1
+			continue
 		}
-		if d.Meta.Name == "" {
-			d.Meta.Name = d.Spec.DeviceId
+		if devs[i].Meta.Name == "" {
+			devs[i].Meta.Name = devs[i].Spec.DeviceId
 		}
-		if d.Meta.Namespace == "" {
-			d.Meta.Namespace = "default"
+		if devs[i].Meta.Namespace == "" {
+			devs[i].Meta.Namespace = "default"
 		}
-		d.Status = mir_v1.DeviceStatus{}
+		devs[i].Status = mir_v1.DeviceStatus{}
 	}
 
 	// Remove duplicates based on deviceId or name/namespace combination
@@ -94,14 +98,17 @@ func (s *surrealMirStore) CreateDevices(devs []mir_v1.Device) ([]mir_v1.Device, 
 			seen[deviceIdKey] = true
 			seen[nameNsKey] = true
 			uniqueDevs = append(uniqueDevs, d)
+		} else if seen[deviceIdKey] {
+			errs = errors.Join(errs, fmt.Errorf("device with id %s is duplicated", deviceIdKey))
+		} else if seen[nameNsKey] {
+			errs = errors.Join(errs, fmt.Errorf("device with name/namespace %s is duplicated", nameNsKey))
 		}
 	}
 	devs = uniqueDevs
-	fmt.Println(len(devs))
 
 	if len(devs) == 1 {
 		resp, err := s.CreateDevice(devs[0])
-		return []mir_v1.Device{resp}, err
+		return []mir_v1.Device{resp}, errors.Join(errs, err)
 	}
 
 	// Check duplicates already in database
@@ -115,7 +122,7 @@ func (s *surrealMirStore) CreateDevices(devs []mir_v1.Device) ([]mir_v1.Device, 
 
 	resp, err := surreal.QueryMultiple[[]mir_v1.Device](s.db, q.String(), map[string]any{})
 	if err != nil {
-		return []mir_v1.Device{}, errors.Wrap(err, mir_v1.ErrorDbExecutingQuery.Error())
+		return []mir_v1.Device{}, fmt.Errorf("%w: %w", mir_v1.ErrorDbExecutingQuery, err)
 	}
 
 	// Flatten the nested response arrays into a single array
@@ -132,6 +139,7 @@ func (s *surrealMirStore) CreateDevices(devs []mir_v1.Device) ([]mir_v1.Device, 
 				if existingD.Meta.Name == devs[i].Meta.Name &&
 					existingD.Meta.Namespace == devs[i].Meta.Namespace ||
 					existingD.Spec.DeviceId == devs[i].Spec.DeviceId {
+					errs = errors.Join(errs, fmt.Errorf("device with id %s and name/namespace %s already exist", devs[i].Spec.DeviceId, devs[i].Meta.Name+"/"+devs[i].Meta.Namespace))
 					devs = append(devs[:i], devs[i+1:]...)
 					break
 				}
@@ -144,7 +152,7 @@ func (s *surrealMirStore) CreateDevices(devs []mir_v1.Device) ([]mir_v1.Device, 
 	if err != nil {
 		return []mir_v1.Device{}, fmt.Errorf("%w: %w", mir_v1.ErrorDbExecutingQuery, err)
 	}
-	return *respDb, nil
+	return *respDb, errs
 }
 
 // UpdateDevice This method is too OP
@@ -184,7 +192,7 @@ func (s *surrealMirStore) UpdateDevice(t mir_v1.DeviceTarget, d mir_v1.Device) (
 			}
 			respDb, err := surreal.Query[[]mir_v1.Device](s.db, q, v)
 			if err != nil {
-				return nil, errors.Wrap(err, mir_v1.ErrorDbExecutingQuery.Error())
+				return nil, fmt.Errorf("%w: %w", mir_v1.ErrorDbExecutingQuery, err)
 			}
 			allResults = append(allResults, respDb...)
 		}
@@ -201,7 +209,7 @@ func (s *surrealMirStore) UpdateDevice(t mir_v1.DeviceTarget, d mir_v1.Device) (
 		}
 		respDb, err := surreal.Query[[]mir_v1.Device](s.db, q, v)
 		if err != nil {
-			return nil, errors.Wrap(err, mir_v1.ErrorDbExecutingQuery.Error())
+			return nil, fmt.Errorf("%w: %w", mir_v1.ErrorDbExecutingQuery, err)
 		}
 
 		return respDb, nil
@@ -257,7 +265,7 @@ func (s *surrealMirStore) UpdateDeviceHello(updates map[mir_v1.DeviceId]mir_v1.D
 
 	resp, err := surreal.QueryMultiple[[]mir_v1.Device](s.db, q.String(), vars)
 	if err != nil {
-		return []mir_v1.Device{}, errors.Wrap(err, mir_v1.ErrorDbExecutingQuery.Error())
+		return []mir_v1.Device{}, fmt.Errorf("%w: %w", mir_v1.ErrorDbExecutingQuery, err)
 	}
 
 	// Flatten the nested response arrays into a single array
@@ -300,7 +308,7 @@ func (s *surrealMirStore) MergeDevice(t mir_v1.DeviceTarget, patch json.RawMessa
 
 		respDb, err := surreal.Query[[]mir_v1.Device](s.db, sql, map[string]any{})
 		if err != nil {
-			return nil, errors.Wrap(err, mir_v1.ErrorDbExecutingQuery.Error())
+			return nil, fmt.Errorf("%w: %w", mir_v1.ErrorDbExecutingQuery, err)
 		}
 		return respDb, nil
 	}
@@ -315,13 +323,13 @@ func (s *surrealMirStore) DeleteDevice(t mir_v1.DeviceTarget) ([]mir_v1.Device, 
 	qList, vList := createListQueryForDevice(t, false)
 	respDbList, err := surreal.Query[[]mir_v1.Device](s.db, qList, vList)
 	if err != nil {
-		return nil, errors.Wrap(err, mir_v1.ErrorDbExecutingQuery.Error())
+		return nil, fmt.Errorf("%w: %w", mir_v1.ErrorDbExecutingQuery, err)
 	}
 
 	q, v := createDeleteQueryForDevice(t)
 	_, err = surreal.Query[[]mir_v1.Device](s.db, q, v)
 	if err != nil {
-		return nil, errors.Wrap(err, mir_v1.ErrorDbExecutingQuery.Error())
+		return nil, fmt.Errorf("%w: %w", mir_v1.ErrorDbExecutingQuery, err)
 	}
 
 	return respDbList, nil

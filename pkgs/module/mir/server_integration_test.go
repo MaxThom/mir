@@ -103,8 +103,8 @@ func TestServerRoutes_CreateDevice(t *testing.T) {
 		})
 
 	err := m.Client().CreateDevice().Subscribe(
-		func(msg *Msg, clientId string, d mir_v1.Device) (mir_v1.Device, error) {
-			return mir_v1.NewDevice().WithMeta(
+		func(msg *Msg, clientId string, d []mir_v1.Device) ([]mir_v1.Device, error) {
+			return []mir_v1.Device{mir_v1.NewDevice().WithMeta(
 				mir_v1.Meta{
 					Name:      testDevice.Meta.Name,
 					Namespace: testDevice.Meta.Namespace,
@@ -112,7 +112,7 @@ func TestServerRoutes_CreateDevice(t *testing.T) {
 				mir_v1.DeviceSpec{
 					DeviceId: testDevice.Spec.DeviceId,
 				},
-			), nil
+			)}, nil
 		})
 	assert.NilError(t, err)
 

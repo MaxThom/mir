@@ -3,6 +3,7 @@ package test_utils
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"strings"
 	"testing"
@@ -89,16 +90,18 @@ func DeleteDevicesWithLabelsPanic(b *nats.Conn, lbl map[string]string) {
 	}
 }
 
-func CreateDevices(bus *nats.Conn, devices []*mir_apiv1.CreateDeviceRequest) ([]*mir_apiv1.CreateDeviceResponse, error) {
-	responses := []*mir_apiv1.CreateDeviceResponse{}
-	for _, dev := range devices {
-		resp, err := core_client.PublishDeviceCreateRequest(bus, dev)
-		responses = append(responses, resp)
-		if err != nil {
-			return responses, err
-		}
+func CreateDevices(bus *nats.Conn, devices []*mir_apiv1.CreateDeviceRequest_Device) ([]*mir_apiv1.Device, error) {
+	resp, err := core_client.PublishDeviceCreateRequest(bus,
+		&mir_apiv1.CreateDeviceRequest{
+			Devices: devices,
+		})
+	if err != nil {
+		return nil, err
 	}
-	return responses, nil
+	if resp.GetError() != "" {
+		err = errors.New(resp.GetError())
+	}
+	return resp.GetOk().Devices, err
 }
 
 func ExecuteTestQueryForType[T any](t *testing.T, db *surreal.AutoReconnDB, query string, vars map[string]any) T {

@@ -155,7 +155,8 @@ func TestPublishStoreDeviceCreateManyAlreadyExist(t *testing.T) {
 	}
 	dResp, err := mirStore.CreateDevices(devs)
 	if err != nil {
-		t.Error(err)
+		assert.ErrorContains(t, err, "device with id create_dev_bulk_already__1 and name/namespace create_dev_bulk_already__1/mirstore already exist")
+		assert.ErrorContains(t, err, "device with id create_dev_bulk_already__0 and name/namespace create_dev_bulk_already__0/mirstore already exist")
 	}
 
 	// Assert
@@ -284,7 +285,8 @@ func TestPublishStoreDeviceCreateManyDuplicate(t *testing.T) {
 	// Act
 	dResp, err := mirStore.CreateDevices(devs)
 	if err != nil {
-		t.Error(err)
+		assert.ErrorContains(t, err, "device with id create_dev_bulk_duplicates__sameidnamens is duplicated")
+		assert.ErrorContains(t, err, "device with name/namespace create_dev_bulk_duplicates__samenamens/mirstore is duplicated")
 	}
 
 	// Assert

@@ -24,10 +24,8 @@ const (
 
 // Send a request to create a new device in the system
 type CreateDeviceRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Meta          *Meta                  `protobuf:"bytes,1,opt,name=meta,proto3" json:"meta,omitempty"`             // Represent the specifications that can be updated
-	Spec          *DeviceSpec            `protobuf:"bytes,2,opt,name=spec,proto3" json:"spec,omitempty"`             // Represent device twin specific config from Mir
-	Properties    *DeviceProperties      `protobuf:"bytes,3,opt,name=properties,proto3" json:"properties,omitempty"` // Represent set of device defined properties
+	state         protoimpl.MessageState        `protogen:"open.v1"`
+	Devices       []*CreateDeviceRequest_Device `protobuf:"bytes,1,rep,name=devices,proto3" json:"devices,omitempty"` // Represent the specifications that can be updated
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -62,36 +60,19 @@ func (*CreateDeviceRequest) Descriptor() ([]byte, []int) {
 	return file_mir_api_v1_core_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *CreateDeviceRequest) GetMeta() *Meta {
+func (x *CreateDeviceRequest) GetDevices() []*CreateDeviceRequest_Device {
 	if x != nil {
-		return x.Meta
+		return x.Devices
 	}
 	return nil
 }
 
-func (x *CreateDeviceRequest) GetSpec() *DeviceSpec {
-	if x != nil {
-		return x.Spec
-	}
-	return nil
-}
-
-func (x *CreateDeviceRequest) GetProperties() *DeviceProperties {
-	if x != nil {
-		return x.Properties
-	}
-	return nil
-}
-
-// Response to the create device request
+// Response to multiple create device request
 // Only the error or the response data will be set
 type CreateDeviceResponse struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Types that are valid to be assigned to Response:
-	//
-	//	*CreateDeviceResponse_Ok
-	//	*CreateDeviceResponse_Error
-	Response      isCreateDeviceResponse_Response `protobuf_oneof:"response"`
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Ok            *DeviceList            `protobuf:"bytes,1,opt,name=ok,proto3" json:"ok,omitempty"`       // devices that were created
+	Error         string                 `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"` // Error message if troubleshooting is needed
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -126,46 +107,19 @@ func (*CreateDeviceResponse) Descriptor() ([]byte, []int) {
 	return file_mir_api_v1_core_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *CreateDeviceResponse) GetResponse() isCreateDeviceResponse_Response {
+func (x *CreateDeviceResponse) GetOk() *DeviceList {
 	if x != nil {
-		return x.Response
-	}
-	return nil
-}
-
-func (x *CreateDeviceResponse) GetOk() *Device {
-	if x != nil {
-		if x, ok := x.Response.(*CreateDeviceResponse_Ok); ok {
-			return x.Ok
-		}
+		return x.Ok
 	}
 	return nil
 }
 
 func (x *CreateDeviceResponse) GetError() string {
 	if x != nil {
-		if x, ok := x.Response.(*CreateDeviceResponse_Error); ok {
-			return x.Error
-		}
+		return x.Error
 	}
 	return ""
 }
-
-type isCreateDeviceResponse_Response interface {
-	isCreateDeviceResponse_Response()
-}
-
-type CreateDeviceResponse_Ok struct {
-	Ok *Device `protobuf:"bytes,1,opt,name=ok,proto3,oneof"` // device that was created
-}
-
-type CreateDeviceResponse_Error struct {
-	Error string `protobuf:"bytes,2,opt,name=error,proto3,oneof"` // Error message if troubleshooting is needed
-}
-
-func (*CreateDeviceResponse_Ok) isCreateDeviceResponse_Response() {}
-
-func (*CreateDeviceResponse_Error) isCreateDeviceResponse_Response() {}
 
 // Send a request to update a device in the system
 // - Optional field, means can be nil
@@ -1341,6 +1295,58 @@ func (x *Schema) GetLastSchemaFetch() *Timestamp {
 	return nil
 }
 
+type CreateDeviceRequest_Device struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Meta          *Meta                  `protobuf:"bytes,1,opt,name=meta,proto3" json:"meta,omitempty"` // Represent the specifications that can be updated
+	Spec          *DeviceSpec            `protobuf:"bytes,2,opt,name=spec,proto3" json:"spec,omitempty"` // Represent device twin specific config from Mir
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateDeviceRequest_Device) Reset() {
+	*x = CreateDeviceRequest_Device{}
+	mi := &file_mir_api_v1_core_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateDeviceRequest_Device) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateDeviceRequest_Device) ProtoMessage() {}
+
+func (x *CreateDeviceRequest_Device) ProtoReflect() protoreflect.Message {
+	mi := &file_mir_api_v1_core_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateDeviceRequest_Device.ProtoReflect.Descriptor instead.
+func (*CreateDeviceRequest_Device) Descriptor() ([]byte, []int) {
+	return file_mir_api_v1_core_proto_rawDescGZIP(), []int{0, 0}
+}
+
+func (x *CreateDeviceRequest_Device) GetMeta() *Meta {
+	if x != nil {
+		return x.Meta
+	}
+	return nil
+}
+
+func (x *CreateDeviceRequest_Device) GetSpec() *DeviceSpec {
+	if x != nil {
+		return x.Spec
+	}
+	return nil
+}
+
 type UpdateDeviceRequest_Meta struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Name          *string                `protobuf:"bytes,1,opt,name=name,proto3,oneof" json:"name,omitempty"`                                                                                   // Name of the device
@@ -1353,7 +1359,7 @@ type UpdateDeviceRequest_Meta struct {
 
 func (x *UpdateDeviceRequest_Meta) Reset() {
 	*x = UpdateDeviceRequest_Meta{}
-	mi := &file_mir_api_v1_core_proto_msgTypes[20]
+	mi := &file_mir_api_v1_core_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1365,7 +1371,7 @@ func (x *UpdateDeviceRequest_Meta) String() string {
 func (*UpdateDeviceRequest_Meta) ProtoMessage() {}
 
 func (x *UpdateDeviceRequest_Meta) ProtoReflect() protoreflect.Message {
-	mi := &file_mir_api_v1_core_proto_msgTypes[20]
+	mi := &file_mir_api_v1_core_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1419,7 +1425,7 @@ type UpdateDeviceRequest_Spec struct {
 
 func (x *UpdateDeviceRequest_Spec) Reset() {
 	*x = UpdateDeviceRequest_Spec{}
-	mi := &file_mir_api_v1_core_proto_msgTypes[21]
+	mi := &file_mir_api_v1_core_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1431,7 +1437,7 @@ func (x *UpdateDeviceRequest_Spec) String() string {
 func (*UpdateDeviceRequest_Spec) ProtoMessage() {}
 
 func (x *UpdateDeviceRequest_Spec) ProtoReflect() protoreflect.Message {
-	mi := &file_mir_api_v1_core_proto_msgTypes[21]
+	mi := &file_mir_api_v1_core_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1470,7 +1476,7 @@ type UpdateDeviceRequest_Properties struct {
 
 func (x *UpdateDeviceRequest_Properties) Reset() {
 	*x = UpdateDeviceRequest_Properties{}
-	mi := &file_mir_api_v1_core_proto_msgTypes[22]
+	mi := &file_mir_api_v1_core_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1482,7 +1488,7 @@ func (x *UpdateDeviceRequest_Properties) String() string {
 func (*UpdateDeviceRequest_Properties) ProtoMessage() {}
 
 func (x *UpdateDeviceRequest_Properties) ProtoReflect() protoreflect.Message {
-	mi := &file_mir_api_v1_core_proto_msgTypes[22]
+	mi := &file_mir_api_v1_core_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1517,7 +1523,7 @@ type UpdateDeviceRequest_Status struct {
 
 func (x *UpdateDeviceRequest_Status) Reset() {
 	*x = UpdateDeviceRequest_Status{}
-	mi := &file_mir_api_v1_core_proto_msgTypes[23]
+	mi := &file_mir_api_v1_core_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1529,7 +1535,7 @@ func (x *UpdateDeviceRequest_Status) String() string {
 func (*UpdateDeviceRequest_Status) ProtoMessage() {}
 
 func (x *UpdateDeviceRequest_Status) ProtoReflect() protoreflect.Message {
-	mi := &file_mir_api_v1_core_proto_msgTypes[23]
+	mi := &file_mir_api_v1_core_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1584,7 +1590,7 @@ type UpdateDeviceRequest_Schema struct {
 
 func (x *UpdateDeviceRequest_Schema) Reset() {
 	*x = UpdateDeviceRequest_Schema{}
-	mi := &file_mir_api_v1_core_proto_msgTypes[24]
+	mi := &file_mir_api_v1_core_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1596,7 +1602,7 @@ func (x *UpdateDeviceRequest_Schema) String() string {
 func (*UpdateDeviceRequest_Schema) ProtoMessage() {}
 
 func (x *UpdateDeviceRequest_Schema) ProtoReflect() protoreflect.Message {
-	mi := &file_mir_api_v1_core_proto_msgTypes[24]
+	mi := &file_mir_api_v1_core_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1643,7 +1649,7 @@ type UpdateDeviceRequest_PropertiesTime struct {
 
 func (x *UpdateDeviceRequest_PropertiesTime) Reset() {
 	*x = UpdateDeviceRequest_PropertiesTime{}
-	mi := &file_mir_api_v1_core_proto_msgTypes[25]
+	mi := &file_mir_api_v1_core_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1655,7 +1661,7 @@ func (x *UpdateDeviceRequest_PropertiesTime) String() string {
 func (*UpdateDeviceRequest_PropertiesTime) ProtoMessage() {}
 
 func (x *UpdateDeviceRequest_PropertiesTime) ProtoReflect() protoreflect.Message {
-	mi := &file_mir_api_v1_core_proto_msgTypes[25]
+	mi := &file_mir_api_v1_core_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1690,18 +1696,15 @@ var File_mir_api_v1_core_proto protoreflect.FileDescriptor
 const file_mir_api_v1_core_proto_rawDesc = "" +
 	"\n" +
 	"\x15mir_api/v1/core.proto\x12\n" +
-	"mir_api.v1\x1a\x1cgoogle/protobuf/struct.proto\x1a\x17mir_api/v1/common.proto\"\xa5\x01\n" +
-	"\x13CreateDeviceRequest\x12$\n" +
+	"mir_api.v1\x1a\x1cgoogle/protobuf/struct.proto\x1a\x17mir_api/v1/common.proto\"\xb3\x01\n" +
+	"\x13CreateDeviceRequest\x12@\n" +
+	"\adevices\x18\x01 \x03(\v2&.mir_api.v1.CreateDeviceRequest.DeviceR\adevices\x1aZ\n" +
+	"\x06Device\x12$\n" +
 	"\x04meta\x18\x01 \x01(\v2\x10.mir_api.v1.MetaR\x04meta\x12*\n" +
-	"\x04spec\x18\x02 \x01(\v2\x16.mir_api.v1.DeviceSpecR\x04spec\x12<\n" +
-	"\n" +
-	"properties\x18\x03 \x01(\v2\x1c.mir_api.v1.DevicePropertiesR\n" +
-	"properties\"`\n" +
-	"\x14CreateDeviceResponse\x12$\n" +
-	"\x02ok\x18\x01 \x01(\v2\x12.mir_api.v1.DeviceH\x00R\x02ok\x12\x16\n" +
-	"\x05error\x18\x02 \x01(\tH\x00R\x05errorB\n" +
-	"\n" +
-	"\bresponse\"\xeb\r\n" +
+	"\x04spec\x18\x02 \x01(\v2\x16.mir_api.v1.DeviceSpecR\x04spec\"T\n" +
+	"\x14CreateDeviceResponse\x12&\n" +
+	"\x02ok\x18\x01 \x01(\v2\x16.mir_api.v1.DeviceListR\x02ok\x12\x14\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error\"\xeb\r\n" +
 	"\x13UpdateDeviceRequest\x122\n" +
 	"\atargets\x18\x01 \x01(\v2\x18.mir_api.v1.DeviceTargetR\atargets\x128\n" +
 	"\x04meta\x18\x02 \x01(\v2$.mir_api.v1.UpdateDeviceRequest.MetaR\x04meta\x128\n" +
@@ -1857,7 +1860,7 @@ func file_mir_api_v1_core_proto_rawDescGZIP() []byte {
 	return file_mir_api_v1_core_proto_rawDescData
 }
 
-var file_mir_api_v1_core_proto_msgTypes = make([]protoimpl.MessageInfo, 33)
+var file_mir_api_v1_core_proto_msgTypes = make([]protoimpl.MessageInfo, 34)
 var file_mir_api_v1_core_proto_goTypes = []any{
 	(*CreateDeviceRequest)(nil),                // 0: mir_api.v1.CreateDeviceRequest
 	(*CreateDeviceResponse)(nil),               // 1: mir_api.v1.CreateDeviceResponse
@@ -1879,73 +1882,74 @@ var file_mir_api_v1_core_proto_goTypes = []any{
 	(*DeviceStatusEvent)(nil),                  // 17: mir_api.v1.DeviceStatusEvent
 	(*PropertiesTime)(nil),                     // 18: mir_api.v1.PropertiesTime
 	(*Schema)(nil),                             // 19: mir_api.v1.Schema
-	(*UpdateDeviceRequest_Meta)(nil),           // 20: mir_api.v1.UpdateDeviceRequest.Meta
-	(*UpdateDeviceRequest_Spec)(nil),           // 21: mir_api.v1.UpdateDeviceRequest.Spec
-	(*UpdateDeviceRequest_Properties)(nil),     // 22: mir_api.v1.UpdateDeviceRequest.Properties
-	(*UpdateDeviceRequest_Status)(nil),         // 23: mir_api.v1.UpdateDeviceRequest.Status
-	(*UpdateDeviceRequest_Schema)(nil),         // 24: mir_api.v1.UpdateDeviceRequest.Schema
-	(*UpdateDeviceRequest_PropertiesTime)(nil), // 25: mir_api.v1.UpdateDeviceRequest.PropertiesTime
-	nil,                     // 26: mir_api.v1.UpdateDeviceRequest.Meta.LabelsEntry
-	nil,                     // 27: mir_api.v1.UpdateDeviceRequest.Meta.AnnotationsEntry
-	nil,                     // 28: mir_api.v1.UpdateDeviceRequest.PropertiesTime.DesiredEntry
-	nil,                     // 29: mir_api.v1.UpdateDeviceRequest.PropertiesTime.ReportedEntry
-	nil,                     // 30: mir_api.v1.DeviceTarget.LabelsEntry
-	nil,                     // 31: mir_api.v1.PropertiesTime.DesiredEntry
-	nil,                     // 32: mir_api.v1.PropertiesTime.ReportedEntry
-	(*Meta)(nil),            // 33: mir_api.v1.Meta
+	(*CreateDeviceRequest_Device)(nil),         // 20: mir_api.v1.CreateDeviceRequest.Device
+	(*UpdateDeviceRequest_Meta)(nil),           // 21: mir_api.v1.UpdateDeviceRequest.Meta
+	(*UpdateDeviceRequest_Spec)(nil),           // 22: mir_api.v1.UpdateDeviceRequest.Spec
+	(*UpdateDeviceRequest_Properties)(nil),     // 23: mir_api.v1.UpdateDeviceRequest.Properties
+	(*UpdateDeviceRequest_Status)(nil),         // 24: mir_api.v1.UpdateDeviceRequest.Status
+	(*UpdateDeviceRequest_Schema)(nil),         // 25: mir_api.v1.UpdateDeviceRequest.Schema
+	(*UpdateDeviceRequest_PropertiesTime)(nil), // 26: mir_api.v1.UpdateDeviceRequest.PropertiesTime
+	nil,                     // 27: mir_api.v1.UpdateDeviceRequest.Meta.LabelsEntry
+	nil,                     // 28: mir_api.v1.UpdateDeviceRequest.Meta.AnnotationsEntry
+	nil,                     // 29: mir_api.v1.UpdateDeviceRequest.PropertiesTime.DesiredEntry
+	nil,                     // 30: mir_api.v1.UpdateDeviceRequest.PropertiesTime.ReportedEntry
+	nil,                     // 31: mir_api.v1.DeviceTarget.LabelsEntry
+	nil,                     // 32: mir_api.v1.PropertiesTime.DesiredEntry
+	nil,                     // 33: mir_api.v1.PropertiesTime.ReportedEntry
 	(*structpb.Struct)(nil), // 34: google.protobuf.Struct
-	(*Timestamp)(nil),       // 35: mir_api.v1.Timestamp
-	(*OptString)(nil),       // 36: mir_api.v1.OptString
+	(*Meta)(nil),            // 35: mir_api.v1.Meta
+	(*Timestamp)(nil),       // 36: mir_api.v1.Timestamp
+	(*OptString)(nil),       // 37: mir_api.v1.OptString
 }
 var file_mir_api_v1_core_proto_depIdxs = []int32{
-	33, // 0: mir_api.v1.CreateDeviceRequest.meta:type_name -> mir_api.v1.Meta
-	14, // 1: mir_api.v1.CreateDeviceRequest.spec:type_name -> mir_api.v1.DeviceSpec
-	15, // 2: mir_api.v1.CreateDeviceRequest.properties:type_name -> mir_api.v1.DeviceProperties
-	13, // 3: mir_api.v1.CreateDeviceResponse.ok:type_name -> mir_api.v1.Device
-	10, // 4: mir_api.v1.UpdateDeviceRequest.targets:type_name -> mir_api.v1.DeviceTarget
-	20, // 5: mir_api.v1.UpdateDeviceRequest.meta:type_name -> mir_api.v1.UpdateDeviceRequest.Meta
-	21, // 6: mir_api.v1.UpdateDeviceRequest.spec:type_name -> mir_api.v1.UpdateDeviceRequest.Spec
-	22, // 7: mir_api.v1.UpdateDeviceRequest.props:type_name -> mir_api.v1.UpdateDeviceRequest.Properties
-	23, // 8: mir_api.v1.UpdateDeviceRequest.status:type_name -> mir_api.v1.UpdateDeviceRequest.Status
-	11, // 9: mir_api.v1.UpdateDeviceResponse.ok:type_name -> mir_api.v1.DeviceList
-	10, // 10: mir_api.v1.MergeDeviceRequest.targets:type_name -> mir_api.v1.DeviceTarget
-	34, // 11: mir_api.v1.MergeDeviceRequest.device:type_name -> google.protobuf.Struct
-	11, // 12: mir_api.v1.MergeDeviceResponse.ok:type_name -> mir_api.v1.DeviceList
-	10, // 13: mir_api.v1.DeleteDeviceRequest.targets:type_name -> mir_api.v1.DeviceTarget
-	11, // 14: mir_api.v1.DeleteDeviceResponse.ok:type_name -> mir_api.v1.DeviceList
-	10, // 15: mir_api.v1.ListDeviceRequest.targets:type_name -> mir_api.v1.DeviceTarget
-	11, // 16: mir_api.v1.ListDeviceResponse.ok:type_name -> mir_api.v1.DeviceList
-	30, // 17: mir_api.v1.DeviceTarget.labels:type_name -> mir_api.v1.DeviceTarget.LabelsEntry
-	13, // 18: mir_api.v1.DeviceList.devices:type_name -> mir_api.v1.Device
-	33, // 19: mir_api.v1.Device.meta:type_name -> mir_api.v1.Meta
-	14, // 20: mir_api.v1.Device.spec:type_name -> mir_api.v1.DeviceSpec
-	15, // 21: mir_api.v1.Device.properties:type_name -> mir_api.v1.DeviceProperties
-	16, // 22: mir_api.v1.Device.status:type_name -> mir_api.v1.DeviceStatus
-	34, // 23: mir_api.v1.DeviceProperties.desired:type_name -> google.protobuf.Struct
-	34, // 24: mir_api.v1.DeviceProperties.reported:type_name -> google.protobuf.Struct
-	35, // 25: mir_api.v1.DeviceStatus.last_hearthbeat:type_name -> mir_api.v1.Timestamp
-	19, // 26: mir_api.v1.DeviceStatus.schema:type_name -> mir_api.v1.Schema
-	18, // 27: mir_api.v1.DeviceStatus.properties:type_name -> mir_api.v1.PropertiesTime
-	17, // 28: mir_api.v1.DeviceStatus.events:type_name -> mir_api.v1.DeviceStatusEvent
-	35, // 29: mir_api.v1.DeviceStatusEvent.first_at:type_name -> mir_api.v1.Timestamp
-	31, // 30: mir_api.v1.PropertiesTime.desired:type_name -> mir_api.v1.PropertiesTime.DesiredEntry
-	32, // 31: mir_api.v1.PropertiesTime.reported:type_name -> mir_api.v1.PropertiesTime.ReportedEntry
-	35, // 32: mir_api.v1.Schema.last_schema_fetch:type_name -> mir_api.v1.Timestamp
-	26, // 33: mir_api.v1.UpdateDeviceRequest.Meta.labels:type_name -> mir_api.v1.UpdateDeviceRequest.Meta.LabelsEntry
-	27, // 34: mir_api.v1.UpdateDeviceRequest.Meta.annotations:type_name -> mir_api.v1.UpdateDeviceRequest.Meta.AnnotationsEntry
+	20, // 0: mir_api.v1.CreateDeviceRequest.devices:type_name -> mir_api.v1.CreateDeviceRequest.Device
+	11, // 1: mir_api.v1.CreateDeviceResponse.ok:type_name -> mir_api.v1.DeviceList
+	10, // 2: mir_api.v1.UpdateDeviceRequest.targets:type_name -> mir_api.v1.DeviceTarget
+	21, // 3: mir_api.v1.UpdateDeviceRequest.meta:type_name -> mir_api.v1.UpdateDeviceRequest.Meta
+	22, // 4: mir_api.v1.UpdateDeviceRequest.spec:type_name -> mir_api.v1.UpdateDeviceRequest.Spec
+	23, // 5: mir_api.v1.UpdateDeviceRequest.props:type_name -> mir_api.v1.UpdateDeviceRequest.Properties
+	24, // 6: mir_api.v1.UpdateDeviceRequest.status:type_name -> mir_api.v1.UpdateDeviceRequest.Status
+	11, // 7: mir_api.v1.UpdateDeviceResponse.ok:type_name -> mir_api.v1.DeviceList
+	10, // 8: mir_api.v1.MergeDeviceRequest.targets:type_name -> mir_api.v1.DeviceTarget
+	34, // 9: mir_api.v1.MergeDeviceRequest.device:type_name -> google.protobuf.Struct
+	11, // 10: mir_api.v1.MergeDeviceResponse.ok:type_name -> mir_api.v1.DeviceList
+	10, // 11: mir_api.v1.DeleteDeviceRequest.targets:type_name -> mir_api.v1.DeviceTarget
+	11, // 12: mir_api.v1.DeleteDeviceResponse.ok:type_name -> mir_api.v1.DeviceList
+	10, // 13: mir_api.v1.ListDeviceRequest.targets:type_name -> mir_api.v1.DeviceTarget
+	11, // 14: mir_api.v1.ListDeviceResponse.ok:type_name -> mir_api.v1.DeviceList
+	31, // 15: mir_api.v1.DeviceTarget.labels:type_name -> mir_api.v1.DeviceTarget.LabelsEntry
+	13, // 16: mir_api.v1.DeviceList.devices:type_name -> mir_api.v1.Device
+	35, // 17: mir_api.v1.Device.meta:type_name -> mir_api.v1.Meta
+	14, // 18: mir_api.v1.Device.spec:type_name -> mir_api.v1.DeviceSpec
+	15, // 19: mir_api.v1.Device.properties:type_name -> mir_api.v1.DeviceProperties
+	16, // 20: mir_api.v1.Device.status:type_name -> mir_api.v1.DeviceStatus
+	34, // 21: mir_api.v1.DeviceProperties.desired:type_name -> google.protobuf.Struct
+	34, // 22: mir_api.v1.DeviceProperties.reported:type_name -> google.protobuf.Struct
+	36, // 23: mir_api.v1.DeviceStatus.last_hearthbeat:type_name -> mir_api.v1.Timestamp
+	19, // 24: mir_api.v1.DeviceStatus.schema:type_name -> mir_api.v1.Schema
+	18, // 25: mir_api.v1.DeviceStatus.properties:type_name -> mir_api.v1.PropertiesTime
+	17, // 26: mir_api.v1.DeviceStatus.events:type_name -> mir_api.v1.DeviceStatusEvent
+	36, // 27: mir_api.v1.DeviceStatusEvent.first_at:type_name -> mir_api.v1.Timestamp
+	32, // 28: mir_api.v1.PropertiesTime.desired:type_name -> mir_api.v1.PropertiesTime.DesiredEntry
+	33, // 29: mir_api.v1.PropertiesTime.reported:type_name -> mir_api.v1.PropertiesTime.ReportedEntry
+	36, // 30: mir_api.v1.Schema.last_schema_fetch:type_name -> mir_api.v1.Timestamp
+	35, // 31: mir_api.v1.CreateDeviceRequest.Device.meta:type_name -> mir_api.v1.Meta
+	14, // 32: mir_api.v1.CreateDeviceRequest.Device.spec:type_name -> mir_api.v1.DeviceSpec
+	27, // 33: mir_api.v1.UpdateDeviceRequest.Meta.labels:type_name -> mir_api.v1.UpdateDeviceRequest.Meta.LabelsEntry
+	28, // 34: mir_api.v1.UpdateDeviceRequest.Meta.annotations:type_name -> mir_api.v1.UpdateDeviceRequest.Meta.AnnotationsEntry
 	34, // 35: mir_api.v1.UpdateDeviceRequest.Properties.desired:type_name -> google.protobuf.Struct
-	35, // 36: mir_api.v1.UpdateDeviceRequest.Status.last_hearthbeat:type_name -> mir_api.v1.Timestamp
-	24, // 37: mir_api.v1.UpdateDeviceRequest.Status.schema:type_name -> mir_api.v1.UpdateDeviceRequest.Schema
-	25, // 38: mir_api.v1.UpdateDeviceRequest.Status.properties:type_name -> mir_api.v1.UpdateDeviceRequest.PropertiesTime
-	35, // 39: mir_api.v1.UpdateDeviceRequest.Schema.last_schema_fetch:type_name -> mir_api.v1.Timestamp
-	28, // 40: mir_api.v1.UpdateDeviceRequest.PropertiesTime.desired:type_name -> mir_api.v1.UpdateDeviceRequest.PropertiesTime.DesiredEntry
-	29, // 41: mir_api.v1.UpdateDeviceRequest.PropertiesTime.reported:type_name -> mir_api.v1.UpdateDeviceRequest.PropertiesTime.ReportedEntry
-	36, // 42: mir_api.v1.UpdateDeviceRequest.Meta.LabelsEntry.value:type_name -> mir_api.v1.OptString
-	36, // 43: mir_api.v1.UpdateDeviceRequest.Meta.AnnotationsEntry.value:type_name -> mir_api.v1.OptString
-	35, // 44: mir_api.v1.UpdateDeviceRequest.PropertiesTime.DesiredEntry.value:type_name -> mir_api.v1.Timestamp
-	35, // 45: mir_api.v1.UpdateDeviceRequest.PropertiesTime.ReportedEntry.value:type_name -> mir_api.v1.Timestamp
-	35, // 46: mir_api.v1.PropertiesTime.DesiredEntry.value:type_name -> mir_api.v1.Timestamp
-	35, // 47: mir_api.v1.PropertiesTime.ReportedEntry.value:type_name -> mir_api.v1.Timestamp
+	36, // 36: mir_api.v1.UpdateDeviceRequest.Status.last_hearthbeat:type_name -> mir_api.v1.Timestamp
+	25, // 37: mir_api.v1.UpdateDeviceRequest.Status.schema:type_name -> mir_api.v1.UpdateDeviceRequest.Schema
+	26, // 38: mir_api.v1.UpdateDeviceRequest.Status.properties:type_name -> mir_api.v1.UpdateDeviceRequest.PropertiesTime
+	36, // 39: mir_api.v1.UpdateDeviceRequest.Schema.last_schema_fetch:type_name -> mir_api.v1.Timestamp
+	29, // 40: mir_api.v1.UpdateDeviceRequest.PropertiesTime.desired:type_name -> mir_api.v1.UpdateDeviceRequest.PropertiesTime.DesiredEntry
+	30, // 41: mir_api.v1.UpdateDeviceRequest.PropertiesTime.reported:type_name -> mir_api.v1.UpdateDeviceRequest.PropertiesTime.ReportedEntry
+	37, // 42: mir_api.v1.UpdateDeviceRequest.Meta.LabelsEntry.value:type_name -> mir_api.v1.OptString
+	37, // 43: mir_api.v1.UpdateDeviceRequest.Meta.AnnotationsEntry.value:type_name -> mir_api.v1.OptString
+	36, // 44: mir_api.v1.UpdateDeviceRequest.PropertiesTime.DesiredEntry.value:type_name -> mir_api.v1.Timestamp
+	36, // 45: mir_api.v1.UpdateDeviceRequest.PropertiesTime.ReportedEntry.value:type_name -> mir_api.v1.Timestamp
+	36, // 46: mir_api.v1.PropertiesTime.DesiredEntry.value:type_name -> mir_api.v1.Timestamp
+	36, // 47: mir_api.v1.PropertiesTime.ReportedEntry.value:type_name -> mir_api.v1.Timestamp
 	48, // [48:48] is the sub-list for method output_type
 	48, // [48:48] is the sub-list for method input_type
 	48, // [48:48] is the sub-list for extension type_name
@@ -1959,10 +1963,6 @@ func file_mir_api_v1_core_proto_init() {
 		return
 	}
 	file_mir_api_v1_common_proto_init()
-	file_mir_api_v1_core_proto_msgTypes[1].OneofWrappers = []any{
-		(*CreateDeviceResponse_Ok)(nil),
-		(*CreateDeviceResponse_Error)(nil),
-	}
 	file_mir_api_v1_core_proto_msgTypes[3].OneofWrappers = []any{
 		(*UpdateDeviceResponse_Ok)(nil),
 		(*UpdateDeviceResponse_Error)(nil),
@@ -1979,17 +1979,17 @@ func file_mir_api_v1_core_proto_init() {
 		(*ListDeviceResponse_Ok)(nil),
 		(*ListDeviceResponse_Error)(nil),
 	}
-	file_mir_api_v1_core_proto_msgTypes[20].OneofWrappers = []any{}
 	file_mir_api_v1_core_proto_msgTypes[21].OneofWrappers = []any{}
-	file_mir_api_v1_core_proto_msgTypes[23].OneofWrappers = []any{}
+	file_mir_api_v1_core_proto_msgTypes[22].OneofWrappers = []any{}
 	file_mir_api_v1_core_proto_msgTypes[24].OneofWrappers = []any{}
+	file_mir_api_v1_core_proto_msgTypes[25].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_mir_api_v1_core_proto_rawDesc), len(file_mir_api_v1_core_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   33,
+			NumMessages:   34,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
