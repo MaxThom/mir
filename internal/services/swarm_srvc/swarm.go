@@ -124,9 +124,9 @@ func (s *SwarmService) Deploy(ctx context.Context) ([]*sync.WaitGroup, error) {
 func createSwarmForDeviceGroup(swarmCfg mir_v1.Swarm, bus *nats.Conn, mirCtx ui.Context, protoFiles map[string][]*descriptorpb.FileDescriptorProto) (swarm.Swarm, error) {
 	s := swarm.NewSwarm(bus)
 	for _, devGroup := range swarmCfg.Spec.Devices {
-		createReqs := make([]*mir_apiv1.CreateDeviceRequest_Device, devGroup.Count)
+		createReqs := make([]*mir_apiv1.NewDevice, devGroup.Count)
 		if devGroup.Count == 1 {
-			createReqs[0] = &mir_apiv1.CreateDeviceRequest_Device{
+			createReqs[0] = &mir_apiv1.NewDevice{
 				Meta: &mir_apiv1.Meta{
 					Name:        devGroup.Meta.Name,
 					Namespace:   devGroup.Meta.Namespace,
@@ -139,7 +139,7 @@ func createSwarmForDeviceGroup(swarmCfg mir_v1.Swarm, bus *nats.Conn, mirCtx ui.
 			}
 		} else {
 			for i := range devGroup.Count {
-				createReqs[i] = &mir_apiv1.CreateDeviceRequest_Device{
+				createReqs[i] = &mir_apiv1.NewDevice{
 					Meta: &mir_apiv1.Meta{
 						Name:        devGroup.Meta.Name + "__" + strconv.Itoa(i),
 						Namespace:   devGroup.Meta.Namespace,

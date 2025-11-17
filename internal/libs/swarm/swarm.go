@@ -109,7 +109,7 @@ type devicesBuilder struct {
 	tlsCert     string
 	caCert      string
 	logWriters  []io.Writer
-	deviceReqs  []*mir_apiv1.CreateDeviceRequest_Device
+	deviceReqs  []*mir_apiv1.NewDevice
 	deviceIds   []string
 	sch         []protoreflect.FileDescriptor
 	schProto    []*descriptorpb.FileDescriptorProto
@@ -126,7 +126,7 @@ type deviceBuilder struct {
 	caCert      string
 	logLevel    mirDevice.LogLevel
 	logWriters  []io.Writer
-	deviceReq   *mir_apiv1.CreateDeviceRequest_Device
+	deviceReq   *mir_apiv1.NewDevice
 	sch         []protoreflect.FileDescriptor
 	schProto    []*descriptorpb.FileDescriptorProto
 	cmd         []commandHandler
@@ -153,7 +153,7 @@ func (s *Swarm) AddDeviceWithIds(ids []string) *devicesBuilder {
 		},
 	}
 }
-func (s *Swarm) AddDevices(req ...*mir_apiv1.CreateDeviceRequest_Device) *devicesBuilder {
+func (s *Swarm) AddDevices(req ...*mir_apiv1.NewDevice) *devicesBuilder {
 	return &devicesBuilder{
 		deviceReqs: req,
 		s:          s,
@@ -164,7 +164,7 @@ func (s *Swarm) AddDevices(req ...*mir_apiv1.CreateDeviceRequest_Device) *device
 	}
 }
 
-func (s *Swarm) AddDevice(req *mir_apiv1.CreateDeviceRequest_Device) *deviceBuilder {
+func (s *Swarm) AddDevice(req *mir_apiv1.NewDevice) *deviceBuilder {
 	return &deviceBuilder{
 		deviceReq: req,
 		s:         s,
@@ -288,8 +288,8 @@ func (b *devicesBuilder) Incubate() ([]mir_v1.Device, error) {
 		b.s.Devices = append(b.s.Devices, dev)
 	}
 
-	resp, err := core_client.PublishDeviceCreateRequest(b.s.bus,
-		&mir_apiv1.CreateDeviceRequest{
+	resp, err := core_client.PublishDevicesCreateRequest(b.s.bus,
+		&mir_apiv1.CreateDevicesRequest{
 			Devices: b.deviceReqs,
 		})
 	if err != nil {
@@ -391,7 +391,7 @@ func (b *deviceBuilder) Incubate() (mir_v1.Device, error) {
 
 	resp, err := core_client.PublishDeviceCreateRequest(b.s.bus,
 		&mir_apiv1.CreateDeviceRequest{
-			Devices: []*mir_apiv1.CreateDeviceRequest_Device{b.deviceReq},
+			Device: b.deviceReq,
 		})
 	if err != nil {
 		return mir_v1.Device{}, err
@@ -399,8 +399,8 @@ func (b *deviceBuilder) Incubate() (mir_v1.Device, error) {
 	if resp.GetError() != "" {
 		return mir_v1.Device{}, errors.New(resp.GetError())
 	}
-	if resp.GetOk() == nil || len(resp.GetOk().Devices) == 0 {
+	if resp.GetOk() == nil {
 		return mir_v1.Device{}, nil
 	}
-	return mir_v1.NewDeviceListFromProtoDevices(resp.GetOk().Devices)[0], nil
+	return mir_v1.NewDeviceFromProtoDevice(resp.GetOk()), nil
 }

@@ -90,18 +90,32 @@ func DeleteDevicesWithLabelsPanic(b *nats.Conn, lbl map[string]string) {
 	}
 }
 
-func CreateDevices(bus *nats.Conn, devices []*mir_apiv1.CreateDeviceRequest_Device) ([]*mir_apiv1.Device, error) {
-	resp, err := core_client.PublishDeviceCreateRequest(bus,
-		&mir_apiv1.CreateDeviceRequest{
+func CreateDevices(bus *nats.Conn, devices []*mir_apiv1.NewDevice) ([]*mir_apiv1.Device, error) {
+	resp, err := core_client.PublishDevicesCreateRequest(bus,
+		&mir_apiv1.CreateDevicesRequest{
 			Devices: devices,
 		})
 	if err != nil {
 		return nil, err
 	}
 	if resp.GetError() != "" {
-		err = errors.New(resp.GetError())
+		return nil, errors.New(resp.GetError())
 	}
-	return resp.GetOk().Devices, err
+	return resp.GetOk().Devices, nil
+}
+
+func CreateDevice(bus *nats.Conn, device *mir_apiv1.NewDevice) (*mir_apiv1.Device, error) {
+	resp, err := core_client.PublishDeviceCreateRequest(bus,
+		&mir_apiv1.CreateDeviceRequest{
+			Device: device,
+		})
+	if err != nil {
+		return nil, err
+	}
+	if resp.GetError() != "" {
+		return nil, errors.New(resp.GetError())
+	}
+	return resp.GetOk(), nil
 }
 
 func ExecuteTestQueryForType[T any](t *testing.T, db *surreal.AutoReconnDB, query string, vars map[string]any) T {

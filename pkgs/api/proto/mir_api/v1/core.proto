@@ -9,12 +9,7 @@ import "mir_api/v1/common.proto";
   Send a request to create a new device in the system
 */
 message CreateDeviceRequest {
-    repeated Device devices = 1; // Represent the specifications that can be updated
-
-    message Device {
-        Meta meta = 1; // Represent the specifications that can be updated
-        DeviceSpec spec = 2; // Represent device twin specific config from Mir
-    }
+    NewDevice device = 1; // Represent the specifications that can be updated
 }
 
 /*
@@ -22,8 +17,28 @@ message CreateDeviceRequest {
   Only the error or the response data will be set
 */
 message CreateDeviceResponse {
-    DeviceList ok = 1; // devices that were created
-    string error = 2; // Error message if troubleshooting is needed
+    oneof response {
+        Device ok = 1; // device that were created
+        string error = 2; // Error message if troubleshooting is needed
+    }
+}
+
+/*
+  Send a request to create a new device in the system
+*/
+message CreateDevicesRequest {
+    repeated NewDevice devices = 1; // Represent the specifications that can be updated
+}
+
+/*
+  Response to multiple create device request
+  Only the error or the response data will be set
+*/
+message CreateDevicesResponse {
+    oneof response {
+        DeviceList ok = 1; // devices that were created
+        string error = 2; // Error message if troubleshooting is needed
+    }
 }
 
 /*
@@ -166,6 +181,11 @@ message Device {
   DeviceSpec spec = 4; // Represent device twin specific config from Mir
   DeviceProperties properties = 5; // Represent set of device defined properties
   DeviceStatus status = 6; // Represent the status reported by the Mir
+}
+
+message NewDevice {
+    Meta meta = 1; // Represent the specifications that can be updated
+    DeviceSpec spec = 2; // Represent device twin specific config from Mir
 }
 
 /*

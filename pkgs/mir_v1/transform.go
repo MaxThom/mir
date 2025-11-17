@@ -24,6 +24,15 @@ func NewDeviceListFromProtoDevices(d []*mir_apiv1.Device) []Device {
 	return p
 }
 
+func NewDeviceCreatedFromProtoDevices(d []*mir_apiv1.Device) []Device {
+	p := []Device{}
+	for _, v := range d {
+		dev := NewDeviceFromProtoDevice(v)
+		p = append(p, dev)
+	}
+	return p
+}
+
 func NewDeviceFromProtoDevice(d *mir_apiv1.Device) Device {
 	dev := NewDevice()
 	if d == nil {
@@ -334,8 +343,8 @@ func NewDeviceFromUpdateDeviceReq(d *mir_apiv1.UpdateDeviceRequest) Device {
 	return dev
 }
 
-func NewCreateDeviceReqFromDevice(d Device) *mir_apiv1.CreateDeviceRequest_Device {
-	return &mir_apiv1.CreateDeviceRequest_Device{
+func NewCreateDeviceReqFromDevice(d Device) *mir_apiv1.NewDevice {
+	return &mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Name:        d.Meta.Name,
 			Namespace:   d.Meta.Namespace,
@@ -349,10 +358,10 @@ func NewCreateDeviceReqFromDevice(d Device) *mir_apiv1.CreateDeviceRequest_Devic
 	}
 }
 
-func NewCreateDeviceReqFromDevices(d []Device) *mir_apiv1.CreateDeviceRequest {
-	req := &mir_apiv1.CreateDeviceRequest{}
+func NewCreateDeviceReqFromDevices(d []Device) []*mir_apiv1.NewDevice {
+	req := []*mir_apiv1.NewDevice{}
 	for _, dev := range d {
-		req.Devices = append(req.Devices, NewCreateDeviceReqFromDevice(dev))
+		req = append(req, NewCreateDeviceReqFromDevice(dev))
 	}
 	return req
 }
@@ -416,7 +425,7 @@ func DeviceToUpdateDeviceRequest(d Device) *mir_apiv1.UpdateDeviceRequest {
 	return devUpd
 }
 
-func NewCreateDeviceReqFromDeviceUpdateRequest(d *mir_apiv1.UpdateDeviceRequest) *mir_apiv1.CreateDeviceRequest {
+func NewCreateDeviceReqFromDeviceUpdateRequest(d *mir_apiv1.UpdateDeviceRequest) []*mir_apiv1.NewDevice {
 	toMap := func(m map[string]*mir_apiv1.OptString) map[string]string {
 		opt := map[string]string{}
 		for k, v := range m {
@@ -426,7 +435,7 @@ func NewCreateDeviceReqFromDeviceUpdateRequest(d *mir_apiv1.UpdateDeviceRequest)
 		}
 		return opt
 	}
-	dev := &mir_apiv1.CreateDeviceRequest_Device{
+	dev := &mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Labels:      toMap(d.Meta.Labels),
 			Annotations: toMap(d.Meta.Annotations),
@@ -449,23 +458,21 @@ func NewCreateDeviceReqFromDeviceUpdateRequest(d *mir_apiv1.UpdateDeviceRequest)
 			dev.Spec.Disabled = *d.Spec.Disabled
 		}
 	}
-	return &mir_apiv1.CreateDeviceRequest{
-		Devices: []*mir_apiv1.CreateDeviceRequest_Device{dev},
-	}
+	return []*mir_apiv1.NewDevice{dev}
 }
 
-func NewDevicesFromCreateDeviceReq(d *mir_apiv1.CreateDeviceRequest) []Device {
+func NewDevicesFromCreateDeviceReq(d []*mir_apiv1.NewDevice) []Device {
 	if d == nil {
 		return []Device{}
 	}
 	devs := []Device{}
-	for _, dev := range d.Devices {
+	for _, dev := range d {
 		devs = append(devs, NewDeviceFromCreateDeviceReq(dev))
 	}
 	return devs
 }
 
-func NewDeviceFromCreateDeviceReq(d *mir_apiv1.CreateDeviceRequest_Device) Device {
+func NewDeviceFromCreateDeviceReq(d *mir_apiv1.NewDevice) Device {
 	return Device{
 		Object: Object{
 			ApiVersion: "mir/v1alpha",

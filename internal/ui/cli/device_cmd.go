@@ -209,25 +209,32 @@ func (d *DeviceCreateCmd) Run(log zerolog.Logger, m *mir.Mir) error {
 		devs = append(devs, &dev)
 	}
 
-	list := []mir_v1.Device{}
-	var errs error
-	for _, d := range devs {
-		respD, err := m.Client().CreateDevice().Request(*d)
+	devsNew := []mir_v1.Device{}
+	if len(devs) == 1 {
+		respD, err := m.Client().CreateDevice().Request(*devs[0])
 		if err != nil {
-			errs = errors.Join(errs, err)
-		} else {
-			list = append(list, respD)
+			return err
+		}
+		devsNew = append(devsNew, respD)
+	} else {
+		list := []mir_v1.Device{}
+		for _, d := range devs {
+			list = append(list, *d)
+		}
+		devsNew, err = m.Client().CreateDevices().Request(list)
+		if err != nil {
+			return err
 		}
 	}
 
-	if len(list) > 0 {
-		if str, err := stringifyDevices(d.Output, list); err != nil {
+	if len(devsNew) > 0 {
+		if str, err := stringifyDevices(d.Output, devsNew); err != nil {
 			return fmt.Errorf("error marshalling response: %w", err)
 		} else {
 			fmt.Println(str)
 		}
 	}
-	return errs
+	return nil
 }
 
 func (d *DeviceUpdateCmd) Validate() error {

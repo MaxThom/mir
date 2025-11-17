@@ -76,7 +76,7 @@ func TestPublishCfgListRequest(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_list_cfg"
 	s := swarm.NewSwarm(mSdk.Bus)
-	if _, err := s.AddDevice(&mir_apiv1.CreateDeviceRequest_Device{
+	if _, err := s.AddDevice(&mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_cfg",
@@ -137,7 +137,7 @@ func TestPublishCfgListFiltersRequest(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_list_cfg_filters"
 	s := swarm.NewSwarm(mSdk.Bus)
-	if _, err := s.AddDevice(&mir_apiv1.CreateDeviceRequest_Device{
+	if _, err := s.AddDevice(&mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_cfg",
@@ -194,7 +194,7 @@ func TestPublishCfgRequest(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_send_cfg"
-	reqCreate := &mir_apiv1.CreateDeviceRequest_Device{
+	reqCreate := &mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_cfg",
@@ -248,7 +248,7 @@ func TestPublishCfgRequest(t *testing.T) {
 	// Act
 	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus,
 		&mir_apiv1.CreateDeviceRequest{
-			Devices: []*mir_apiv1.CreateDeviceRequest_Device{reqCreate},
+			Device: reqCreate,
 		})
 	if err != nil {
 		t.Error(err)
@@ -313,7 +313,7 @@ func TestPublishCfgJsonRequest(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_send_cfg_json"
-	reqCreate := &mir_apiv1.CreateDeviceRequest_Device{
+	reqCreate := &mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_cfg",
@@ -366,7 +366,7 @@ func TestPublishCfgJsonRequest(t *testing.T) {
 	// Act
 	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus,
 		&mir_apiv1.CreateDeviceRequest{
-			Devices: []*mir_apiv1.CreateDeviceRequest_Device{reqCreate},
+			Device: reqCreate,
 		})
 	if err != nil {
 		t.Error(err)
@@ -412,7 +412,7 @@ func TestPublishCfgCurrentValues(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_send_cfg_current_values"
 	nameNs := id + "/testing_cfg"
-	reqCreate := &mir_apiv1.CreateDeviceRequest_Device{
+	reqCreate := &mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_cfg",
@@ -474,7 +474,7 @@ func TestPublishCfgCurrentValues(t *testing.T) {
 	// Act
 	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus,
 		&mir_apiv1.CreateDeviceRequest{
-			Devices: []*mir_apiv1.CreateDeviceRequest_Device{reqCreate},
+			Device: reqCreate,
 		})
 	if err != nil {
 		t.Error(err)
@@ -538,7 +538,7 @@ func TestPublishCfgRequestCheckTime(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_send_cfg_time"
-	reqCreate := &mir_apiv1.CreateDeviceRequest_Device{
+	reqCreate := &mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_cfg",
@@ -597,7 +597,7 @@ func TestPublishCfgRequestCheckTime(t *testing.T) {
 	// Act
 	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus,
 		&mir_apiv1.CreateDeviceRequest{
-			Devices: []*mir_apiv1.CreateDeviceRequest_Device{reqCreate},
+			Device: reqCreate,
 		})
 	if err != nil {
 		t.Error(err)
@@ -654,7 +654,7 @@ func TestPublishCfgDoubleUpdateSendIfDifferent(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_send_cfg_json"
-	reqCreate := &mir_apiv1.CreateDeviceRequest_Device{
+	reqCreate := &mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_cfg",
@@ -720,7 +720,7 @@ func TestPublishCfgDoubleUpdateSendIfDifferent(t *testing.T) {
 	// Act
 	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus,
 		&mir_apiv1.CreateDeviceRequest{
-			Devices: []*mir_apiv1.CreateDeviceRequest_Device{reqCreate},
+			Device: reqCreate,
 		})
 	if err != nil {
 		t.Error(err)
@@ -774,7 +774,7 @@ func TestPublishCfgDoubleUpdateSendAlways(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_send_cfg_json"
-	reqCreate := &mir_apiv1.CreateDeviceRequest_Device{
+	reqCreate := &mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_cfg",
@@ -840,7 +840,7 @@ func TestPublishCfgDoubleUpdateSendAlways(t *testing.T) {
 	// Act
 	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus,
 		&mir_apiv1.CreateDeviceRequest{
-			Devices: []*mir_apiv1.CreateDeviceRequest_Device{reqCreate},
+			Device: reqCreate,
 		})
 	if err != nil {
 		t.Error(err)
@@ -895,7 +895,7 @@ func TestPublishCfgDoubleUpdateIsDifferent(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_send_cfg_json"
-	reqCreate := &mir_apiv1.CreateDeviceRequest_Device{
+	reqCreate := &mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_cfg",
@@ -969,7 +969,7 @@ func TestPublishCfgDoubleUpdateIsDifferent(t *testing.T) {
 	// Act
 	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus,
 		&mir_apiv1.CreateDeviceRequest{
-			Devices: []*mir_apiv1.CreateDeviceRequest_Device{reqCreate},
+			Device: reqCreate,
 		})
 	if err != nil {
 		t.Error(err)
@@ -1055,7 +1055,7 @@ func TestPublishCfgProtoDryRun(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "proto_dryrun_cfg"
-	reqCreate := &mir_apiv1.CreateDeviceRequest_Device{
+	reqCreate := &mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_cfg",
@@ -1099,7 +1099,7 @@ func TestPublishCfgProtoDryRun(t *testing.T) {
 	// Act
 	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus,
 		&mir_apiv1.CreateDeviceRequest{
-			Devices: []*mir_apiv1.CreateDeviceRequest_Device{reqCreate},
+			Device: reqCreate,
 		})
 	if err != nil {
 		t.Error(err)
@@ -1132,7 +1132,7 @@ func TestPublishCfgProtoInvalidPayload(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_send_cfg_invalid_payload"
-	reqCreate := &mir_apiv1.CreateDeviceRequest_Device{
+	reqCreate := &mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_cfg",
@@ -1189,7 +1189,7 @@ func TestPublishCfgProtoInvalidPayload(t *testing.T) {
 	// Act
 	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus,
 		&mir_apiv1.CreateDeviceRequest{
-			Devices: []*mir_apiv1.CreateDeviceRequest_Device{reqCreate},
+			Device: reqCreate,
 		})
 	if err != nil {
 		t.Error(err)
@@ -1223,7 +1223,7 @@ func TestPublishCfgRequestMultipleDevices(t *testing.T) {
 	swarm := swarm.NewSwarm(mSdk.Bus)
 	handlerCount := 0
 	chHdlr := make(chan struct{}, 4)
-	_, err := swarm.AddDevices(&mir_apiv1.CreateDeviceRequest_Device{
+	_, err := swarm.AddDevices(&mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Namespace: "testing_cfg",
 			Labels: map[string]string{
@@ -1236,7 +1236,7 @@ func TestPublishCfgRequestMultipleDevices(t *testing.T) {
 		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: "device_send_cfg_1",
 		},
-	}, &mir_apiv1.CreateDeviceRequest_Device{
+	}, &mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Namespace: "testing_cfg",
 			Labels: map[string]string{
@@ -1317,7 +1317,7 @@ func TestPublishCfgRequestMultipleDevicesOneNoHandler(t *testing.T) {
 	swarm := swarm.NewSwarm(mSdk.Bus)
 	handlerCount := 0
 	chHdlr := make(chan struct{}, 4)
-	if _, err := swarm.AddDevices(&mir_apiv1.CreateDeviceRequest_Device{
+	if _, err := swarm.AddDevices(&mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Namespace: "testing_cfg",
 			Labels: map[string]string{
@@ -1330,7 +1330,7 @@ func TestPublishCfgRequestMultipleDevicesOneNoHandler(t *testing.T) {
 		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: "device_send_cfg_1_no_handler",
 		},
-	}, &mir_apiv1.CreateDeviceRequest_Device{
+	}, &mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Namespace: "testing_cfg",
 			Labels: map[string]string{
@@ -1355,7 +1355,7 @@ func TestPublishCfgRequestMultipleDevicesOneNoHandler(t *testing.T) {
 		).Incubate(); err != nil {
 		t.Error(err)
 	}
-	if _, err := swarm.AddDevice(&mir_apiv1.CreateDeviceRequest_Device{
+	if _, err := swarm.AddDevice(&mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Namespace: "testing_cfg",
 			Labels: map[string]string{
@@ -1436,7 +1436,7 @@ func TestPublishCfgRequestMultipleDevicesJson(t *testing.T) {
 	handlerCount := 0
 	chHdlr := make(chan struct{}, 4)
 	_, err := swarm.AddDevices(
-		&mir_apiv1.CreateDeviceRequest_Device{
+		&mir_apiv1.NewDevice{
 			Meta: &mir_apiv1.Meta{
 				Namespace: "testing_cfg",
 				Labels: map[string]string{
@@ -1446,7 +1446,7 @@ func TestPublishCfgRequestMultipleDevicesJson(t *testing.T) {
 			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: "device_send_cfg_multi_json_1",
 			},
-		}, &mir_apiv1.CreateDeviceRequest_Device{
+		}, &mir_apiv1.NewDevice{
 			Meta: &mir_apiv1.Meta{
 				Namespace: "testing_cfg",
 				Labels: map[string]string{
@@ -1525,7 +1525,7 @@ func TestPublishCfgRequestMultipleDevicesDescriptorNotFound(t *testing.T) {
 	handlerCount := 0
 	chHdlr := make(chan struct{}, 2)
 	_, err := swarm.AddDevices(
-		&mir_apiv1.CreateDeviceRequest_Device{
+		&mir_apiv1.NewDevice{
 			Meta: &mir_apiv1.Meta{
 				Namespace: "testing_cfg",
 				Labels: map[string]string{
@@ -1535,7 +1535,7 @@ func TestPublishCfgRequestMultipleDevicesDescriptorNotFound(t *testing.T) {
 			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: "device_cfg_send_notfound_1",
 			},
-		}, &mir_apiv1.CreateDeviceRequest_Device{
+		}, &mir_apiv1.NewDevice{
 			Meta: &mir_apiv1.Meta{
 				Namespace: "testing_cfg",
 				Labels: map[string]string{
@@ -1605,7 +1605,7 @@ func TestPublishCfgRequestMultipleDevicesSingleDescriptorNotFoundForcePush(t *te
 	handlerCount := 0
 	chHdlr := make(chan struct{}, 2)
 	_, err := swarm.AddDevice(
-		&mir_apiv1.CreateDeviceRequest_Device{
+		&mir_apiv1.NewDevice{
 			Meta: &mir_apiv1.Meta{
 				Namespace: "testing_cfg",
 				Labels: map[string]string{
@@ -1626,7 +1626,7 @@ func TestPublishCfgRequestMultipleDevicesSingleDescriptorNotFoundForcePush(t *te
 			},
 		).Incubate()
 	_, err = swarm.AddDevice(
-		&mir_apiv1.CreateDeviceRequest_Device{
+		&mir_apiv1.NewDevice{
 			Meta: &mir_apiv1.Meta{
 				Namespace: "testing_cfg",
 				Labels: map[string]string{
@@ -1701,7 +1701,7 @@ func TestPublishCfgRequestMultipleDevicesJsonTemplate(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	swarm := swarm.NewSwarm(mSdk.Bus)
 	respD, err := swarm.AddDevices(
-		&mir_apiv1.CreateDeviceRequest_Device{
+		&mir_apiv1.NewDevice{
 			Meta: &mir_apiv1.Meta{
 				Namespace: "testing_cfg",
 				Labels: map[string]string{
@@ -1714,7 +1714,7 @@ func TestPublishCfgRequestMultipleDevicesJsonTemplate(t *testing.T) {
 			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: "device_send_cfg_multi_json_tlm_1",
 			},
-		}, &mir_apiv1.CreateDeviceRequest_Device{
+		}, &mir_apiv1.NewDevice{
 			Meta: &mir_apiv1.Meta{
 				Namespace: "testing_cfg",
 				Labels: map[string]string{
@@ -1771,7 +1771,7 @@ func TestPublishCfgRequestMultipleDevicesOneTimeoutJsonTemplate(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_send_cfg_multi_timeout_json_template_1"
-	reqCreate := &mir_apiv1.CreateDeviceRequest_Device{
+	reqCreate := &mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_cfg",
@@ -1795,7 +1795,7 @@ func TestPublishCfgRequestMultipleDevicesOneTimeoutJsonTemplate(t *testing.T) {
 	}
 
 	id2 := "device_send_cfg_multi_timeout_json_template_2"
-	reqCreate2 := &mir_apiv1.CreateDeviceRequest_Device{
+	reqCreate2 := &mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Name:      id2,
 			Namespace: "testing_cfg",
@@ -1824,14 +1824,14 @@ func TestPublishCfgRequestMultipleDevicesOneTimeoutJsonTemplate(t *testing.T) {
 	// Act
 	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus,
 		&mir_apiv1.CreateDeviceRequest{
-			Devices: []*mir_apiv1.CreateDeviceRequest_Device{reqCreate},
+			Device: reqCreate,
 		})
 	if err != nil {
 		t.Error(err)
 	}
 	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus,
 		&mir_apiv1.CreateDeviceRequest{
-			Devices: []*mir_apiv1.CreateDeviceRequest_Device{reqCreate2},
+			Device: reqCreate2,
 		})
 	if err != nil {
 		t.Error(err)
@@ -1870,7 +1870,7 @@ func TestPublishCfgJsonNameWithCurlyRequest(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_send_cfg_json_curly"
-	reqCreate := &mir_apiv1.CreateDeviceRequest_Device{
+	reqCreate := &mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_cfg",
@@ -1923,7 +1923,7 @@ func TestPublishCfgJsonNameWithCurlyRequest(t *testing.T) {
 	// Act
 	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus,
 		&mir_apiv1.CreateDeviceRequest{
-			Devices: []*mir_apiv1.CreateDeviceRequest_Device{reqCreate},
+			Device: reqCreate,
 		})
 	if err != nil {
 		t.Error(err)
@@ -2068,7 +2068,7 @@ func TestPublishDesiredPropertiesEvent(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_send_cfg_event"
-	reqCreate := &mir_apiv1.CreateDeviceRequest_Device{
+	reqCreate := &mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_cfg",
@@ -2133,7 +2133,7 @@ func TestPublishDesiredPropertiesEvent(t *testing.T) {
 	// Act
 	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus,
 		&mir_apiv1.CreateDeviceRequest{
-			Devices: []*mir_apiv1.CreateDeviceRequest_Device{reqCreate},
+			Device: reqCreate,
 		})
 	if err != nil {
 		t.Error(err)
@@ -2177,7 +2177,7 @@ func TestDesiredPropertiesDefaultWritten(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_request_desired_props_default"
-	reqCreate := &mir_apiv1.CreateDeviceRequest_Device{
+	reqCreate := &mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_cfg",
@@ -2209,7 +2209,7 @@ func TestDesiredPropertiesDefaultWritten(t *testing.T) {
 	// Act
 	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus,
 		&mir_apiv1.CreateDeviceRequest{
-			Devices: []*mir_apiv1.CreateDeviceRequest_Device{reqCreate},
+			Device: reqCreate,
 		})
 	if err != nil {
 		t.Error(err)
@@ -2278,7 +2278,7 @@ func TestDesiredPropertiesRequestFromDeviceOnBoot(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	id := "device_request_desired_props"
-	reqCreate := &mir_apiv1.CreateDeviceRequest_Device{
+	reqCreate := &mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_cfg",
@@ -2365,7 +2365,7 @@ func TestDesiredPropertiesRequestFromDeviceOnBoot(t *testing.T) {
 	// Act
 	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus,
 		&mir_apiv1.CreateDeviceRequest{
-			Devices: []*mir_apiv1.CreateDeviceRequest_Device{reqCreate},
+			Device: reqCreate,
 		})
 	if err != nil {
 		t.Error(err)

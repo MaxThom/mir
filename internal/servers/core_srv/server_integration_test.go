@@ -84,7 +84,7 @@ func TestPublishDeviceCreate(t *testing.T) {
 	id := "device_create_raw"
 	publishStream := "client." + id + ".core.v1alpha.create"
 	reqCreate := &mir_apiv1.CreateDeviceRequest{
-		Devices: []*mir_apiv1.CreateDeviceRequest_Device{{
+		Device: &mir_apiv1.NewDevice{
 			Meta: &mir_apiv1.Meta{
 				Name:      id,
 				Namespace: "testing_core",
@@ -101,7 +101,7 @@ func TestPublishDeviceCreate(t *testing.T) {
 			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: id,
 			},
-		}},
+		},
 	}
 
 	// Act
@@ -127,13 +127,13 @@ func TestPublishDeviceCreate(t *testing.T) {
 	}
 
 	// Assert
-	assert.Equal(t, reqCreate.Devices[0].Spec.DeviceId, respList.GetOk().Devices[0].Spec.DeviceId)
+	assert.Equal(t, reqCreate.Device.Spec.DeviceId, respList.GetOk().Devices[0].Spec.DeviceId)
 }
 
 func TestPublishDeviceCreateClient(t *testing.T) {
 	// Arrange
 	id := "device_create"
-	reqCreate := &mir_apiv1.CreateDeviceRequest_Device{
+	reqCreate := &mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_core",
@@ -164,10 +164,13 @@ func TestPublishDeviceCreateClient(t *testing.T) {
 	// Act
 	respCreate, err := core_client.PublishDeviceCreateRequest(mSdk.Bus,
 		&mir_apiv1.CreateDeviceRequest{
-			Devices: []*mir_apiv1.CreateDeviceRequest_Device{reqCreate},
+			Device: reqCreate,
 		})
 	if err != nil {
 		t.Error(err)
+	}
+	if respCreate.GetError() != "" {
+		t.Error(respCreate.GetError())
 	}
 	time.Sleep(1 * time.Second)
 
@@ -179,10 +182,13 @@ func TestPublishDeviceCreateClient(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+	if respList.GetError() != "" {
+		t.Error(respList.GetError())
+	}
 
 	// Assert
 	assert.Equal(t, reqCreate.Spec.DeviceId, respList.GetOk().Devices[0].Spec.DeviceId)
-	assert.Equal(t, respCreate.GetOk().Devices[0].Spec.DeviceId, respList.GetOk().Devices[0].Spec.DeviceId)
+	assert.Equal(t, respCreate.GetOk().Spec.DeviceId, respList.GetOk().Devices[0].Spec.DeviceId)
 	assert.Equal(t, 1, count)
 	s.Unsubscribe()
 }
@@ -190,7 +196,7 @@ func TestPublishDeviceCreateClient(t *testing.T) {
 func TestPublishDeviceCreateClientNoID(t *testing.T) {
 	// Arrange
 	id := ""
-	reqCreate := &mir_apiv1.CreateDeviceRequest_Device{
+	reqCreate := &mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_core",
@@ -212,18 +218,18 @@ func TestPublishDeviceCreateClientNoID(t *testing.T) {
 	// Act
 	resp, _ := core_client.PublishDeviceCreateRequest(mSdk.Bus,
 		&mir_apiv1.CreateDeviceRequest{
-			Devices: []*mir_apiv1.CreateDeviceRequest_Device{reqCreate},
+			Device: reqCreate,
 		})
 
 	// Assert
 	assert.Equal(t, resp.GetError() != "", true)
-	assert.Equal(t, resp.GetError(), "device at index 0 is missing its id")
+	assert.Equal(t, resp.GetError(), "device id is missing")
 }
 
 func TestPublishDeviceCreateClientNoNamespace(t *testing.T) {
 	// Arrange
 	id := "create_dev_no_namespace"
-	reqCreate := &mir_apiv1.CreateDeviceRequest_Device{
+	reqCreate := &mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "",
@@ -241,21 +247,24 @@ func TestPublishDeviceCreateClientNoNamespace(t *testing.T) {
 	// Act
 	respCreate, err := core_client.PublishDeviceCreateRequest(mSdk.Bus,
 		&mir_apiv1.CreateDeviceRequest{
-			Devices: []*mir_apiv1.CreateDeviceRequest_Device{reqCreate},
+			Device: reqCreate,
 		})
 	if err != nil {
 		t.Error(err)
 	}
+	if respCreate.GetError() != "" {
+		t.Error(respCreate.GetError())
+	}
 
 	// Assert
-	assert.Equal(t, reqCreate.Spec.DeviceId, respCreate.GetOk().Devices[0].Spec.DeviceId)
-	assert.Equal(t, respCreate.GetOk().Devices[0].Meta.Namespace, "default")
+	assert.Equal(t, reqCreate.Spec.DeviceId, respCreate.GetOk().Spec.DeviceId)
+	assert.Equal(t, respCreate.GetOk().Meta.Namespace, "default")
 }
 
 func TestPublishDeviceUpdateTargetIds(t *testing.T) {
 	// Arrange
 	id := "device_update_target_ids"
-	reqCreate := &mir_apiv1.CreateDeviceRequest_Device{
+	reqCreate := &mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_core",
@@ -317,7 +326,7 @@ func TestPublishDeviceUpdateTargetIds(t *testing.T) {
 	// Act
 	if _, err := core_client.PublishDeviceCreateRequest(mSdk.Bus,
 		&mir_apiv1.CreateDeviceRequest{
-			Devices: []*mir_apiv1.CreateDeviceRequest_Device{reqCreate},
+			Device: reqCreate,
 		}); err != nil {
 		t.Error(err)
 	}
@@ -347,7 +356,7 @@ func TestPublishDeviceUpdateTargetIds(t *testing.T) {
 func TestPublishDeviceUpdateTargetNames(t *testing.T) {
 	// Arrange
 	id := "device_update_target_names"
-	reqCreate := &mir_apiv1.CreateDeviceRequest_Device{
+	reqCreate := &mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_core",
@@ -400,7 +409,7 @@ func TestPublishDeviceUpdateTargetNames(t *testing.T) {
 	// Act
 	if _, err := core_client.PublishDeviceCreateRequest(mSdk.Bus,
 		&mir_apiv1.CreateDeviceRequest{
-			Devices: []*mir_apiv1.CreateDeviceRequest_Device{reqCreate},
+			Device: reqCreate,
 		}); err != nil {
 		t.Error(err)
 	}
@@ -428,7 +437,7 @@ func TestPublishDeviceUpdateTargetNamespace(t *testing.T) {
 	// Arrange
 	id := "device_update_target_namespace"
 	ns := "testing_" + id
-	reqCreate := &mir_apiv1.CreateDeviceRequest_Device{
+	reqCreate := &mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: ns,
@@ -481,7 +490,7 @@ func TestPublishDeviceUpdateTargetNamespace(t *testing.T) {
 	// Act
 	if _, err := core_client.PublishDeviceCreateRequest(mSdk.Bus,
 		&mir_apiv1.CreateDeviceRequest{
-			Devices: []*mir_apiv1.CreateDeviceRequest_Device{reqCreate},
+			Device: reqCreate,
 		}); err != nil {
 		t.Error(err)
 	}
@@ -538,7 +547,7 @@ func TestPublishDeviceUpdateTargetLabels(t *testing.T) {
 			},
 		},
 	}
-	reqCreate := []*mir_apiv1.CreateDeviceRequest_Device{
+	reqCreate := []*mir_apiv1.NewDevice{
 		{
 			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[0],
@@ -671,7 +680,7 @@ func TestPublishDeviceUpdateTargetMixs(t *testing.T) {
 			},
 		},
 	}
-	reqCreate := []*mir_apiv1.CreateDeviceRequest_Device{
+	reqCreate := []*mir_apiv1.NewDevice{
 		{
 			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[0],
@@ -783,7 +792,7 @@ func TestPublishDeviceDeleteTargetIds(t *testing.T) {
 			Ids: []string{deviceIds[0], deviceIds[1]},
 		},
 	}
-	reqCreate := []*mir_apiv1.CreateDeviceRequest_Device{
+	reqCreate := []*mir_apiv1.NewDevice{
 		{
 			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[0],
@@ -895,7 +904,7 @@ func TestPublishDeviceDeleteTargetNames(t *testing.T) {
 			Names: []string{deviceIds[0], deviceIds[1]},
 		},
 	}
-	reqCreate := []*mir_apiv1.CreateDeviceRequest_Device{
+	reqCreate := []*mir_apiv1.NewDevice{
 		{
 			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[0],
@@ -997,7 +1006,7 @@ func TestPublishDeviceDeleteTargetNamespace(t *testing.T) {
 			Namespaces: []string{ns},
 		},
 	}
-	reqCreate := []*mir_apiv1.CreateDeviceRequest_Device{
+	reqCreate := []*mir_apiv1.NewDevice{
 		{
 			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[0],
@@ -1099,7 +1108,7 @@ func TestPublishDeviceDeleteTargetLabels(t *testing.T) {
 	}
 
 	deviceIds := []string{"device_delete_target_lbls_1", "device_delete_target_lbls_2", "device_delete_target_lbls_3"}
-	reqCreate := []*mir_apiv1.CreateDeviceRequest_Device{
+	reqCreate := []*mir_apiv1.NewDevice{
 		{
 			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[0],
@@ -1196,7 +1205,7 @@ func TestPublishDeviceListTargetIds(t *testing.T) {
 		},
 	}
 
-	reqCreate := []*mir_apiv1.CreateDeviceRequest_Device{
+	reqCreate := []*mir_apiv1.NewDevice{
 		{
 			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[0],
@@ -1296,7 +1305,7 @@ func TestPublishDeviceListTargetNames(t *testing.T) {
 		},
 	}
 
-	reqCreate := []*mir_apiv1.CreateDeviceRequest_Device{
+	reqCreate := []*mir_apiv1.NewDevice{
 		{
 			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[0],
@@ -1397,7 +1406,7 @@ func TestPublishDeviceListTargetNamespace(t *testing.T) {
 		},
 	}
 
-	reqCreate := []*mir_apiv1.CreateDeviceRequest_Device{
+	reqCreate := []*mir_apiv1.NewDevice{
 		{
 			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[0],
@@ -1500,7 +1509,7 @@ func TestPublishDeviceListTargetLabels(t *testing.T) {
 	}
 
 	deviceIds := []string{"device_list_target_lbls_1", "device_list_target_lbls_2", "device_list_target_lbls_3"}
-	reqCreate := []*mir_apiv1.CreateDeviceRequest_Device{
+	reqCreate := []*mir_apiv1.NewDevice{
 		{
 			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[0],
@@ -1598,7 +1607,7 @@ func TestPublishDeviceListNoTarget(t *testing.T) {
 	}
 
 	deviceIds := []string{"device_list_target_no_1", "device_list_target_no_2", "device_list_target_no_3"}
-	reqCreate := []*mir_apiv1.CreateDeviceRequest_Device{
+	reqCreate := []*mir_apiv1.NewDevice{
 		{
 			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[0],
@@ -1680,7 +1689,7 @@ func TestPublishDeviceListNoTarget(t *testing.T) {
 func TestCreatedDeviceAlreadyExist(t *testing.T) {
 	// Arrange
 	deviceIds := []string{"device_already_exist_1", "device_already_exist_1"}
-	reqCreate := []*mir_apiv1.CreateDeviceRequest_Device{
+	reqCreate := []*mir_apiv1.NewDevice{
 		{
 			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[0],
@@ -1735,14 +1744,17 @@ func TestCreatedDeviceAlreadyExist(t *testing.T) {
 		})
 
 	// Act
-	respCreate, err := test_utils.CreateDevices(mSdk.Bus, reqCreate)
+	_, err := test_utils.CreateDevice(mSdk.Bus, reqCreate[0])
 	if err != nil {
-		assert.ErrorContains(t, err, "device with id device_already_exist_1 is duplicated")
+		t.Error(err)
 	}
 	time.Sleep(1 * time.Second)
+	_, err = test_utils.CreateDevice(mSdk.Bus, reqCreate[1])
+	if err != nil {
+		assert.ErrorContains(t, err, "device device_already_exist_1/testing_core with deviceId device_already_exist_1 already exist")
+	}
 
 	// Assert
-	assert.Equal(t, len(respCreate), 1)
 	assert.Equal(t, 1, count) // We create two devices, so only second one is not working
 	s.Unsubscribe()
 }
@@ -1780,7 +1792,7 @@ func TestDeleteNoTargetMetafield(t *testing.T) {
 func TestDeviceCreateDeviceIdAlreadyExist(t *testing.T) {
 	// Arrange
 	s := swarm.NewSwarm(mSdk.Bus)
-	build := s.AddDevices(&mir_apiv1.CreateDeviceRequest_Device{
+	build := s.AddDevices(&mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Name:      "create_dev_same_id_1",
 			Namespace: "testing_core",
@@ -1792,7 +1804,7 @@ func TestDeviceCreateDeviceIdAlreadyExist(t *testing.T) {
 		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: "0xf86cmd",
 		},
-	}, &mir_apiv1.CreateDeviceRequest_Device{
+	}, &mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Name:      "create_dev_same_id_2",
 			Namespace: "testing_core",
@@ -1819,7 +1831,7 @@ func TestDeviceCreateDeviceIdAlreadyExist(t *testing.T) {
 func TestDeviceCreateDeviceNameNsAlreadyExist(t *testing.T) {
 	// Arrange
 	s := swarm.NewSwarm(mSdk.Bus)
-	build := s.AddDevices(&mir_apiv1.CreateDeviceRequest_Device{
+	build := s.AddDevices(&mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Name:      "create_dev_same_id_3",
 			Namespace: "testing_core",
@@ -1831,7 +1843,7 @@ func TestDeviceCreateDeviceNameNsAlreadyExist(t *testing.T) {
 		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: "0xf86tlm",
 		},
-	}, &mir_apiv1.CreateDeviceRequest_Device{
+	}, &mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Name:      "create_dev_same_id_3",
 			Namespace: "testing_core",
@@ -1901,7 +1913,7 @@ func TestDeviceUpsertDevice(t *testing.T) {
 func TestDeviceUpdateManyTargetSameDeviceId(t *testing.T) {
 	// Arrange
 	s := swarm.NewSwarm(mSdk.Bus)
-	sb := s.AddDevices(&mir_apiv1.CreateDeviceRequest_Device{
+	sb := s.AddDevices(&mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Name:      "update_dev_sameid_1",
 			Namespace: "testing_core",
@@ -1913,7 +1925,7 @@ func TestDeviceUpdateManyTargetSameDeviceId(t *testing.T) {
 		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: "0xf86tlm24",
 		},
-	}, &mir_apiv1.CreateDeviceRequest_Device{
+	}, &mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Name:      "update_dev_sameid_2",
 			Namespace: "testing_core",
@@ -1955,7 +1967,7 @@ func TestDeviceUpdateManyTargetSameDeviceId(t *testing.T) {
 func TestDeviceUpdateManyTargetSameNameNoExist(t *testing.T) {
 	// Arrange
 	s := swarm.NewSwarm(mSdk.Bus)
-	sb := s.AddDevices(&mir_apiv1.CreateDeviceRequest_Device{
+	sb := s.AddDevices(&mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Name:      "update_dev_samename_noexist_1",
 			Namespace: "testing_core",
@@ -1967,7 +1979,7 @@ func TestDeviceUpdateManyTargetSameNameNoExist(t *testing.T) {
 		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: "0xf86tlm21",
 		},
-	}, &mir_apiv1.CreateDeviceRequest_Device{
+	}, &mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Name:      "update_dev_samename_noexist_2",
 			Namespace: "testing_core",
@@ -2008,7 +2020,7 @@ func TestDeviceUpdateManyTargetSameNameNoExist(t *testing.T) {
 func TestDeviceUpdateManyTargetSameNameOneExist(t *testing.T) {
 	// Arrange
 	s := swarm.NewSwarm(mSdk.Bus)
-	sb := s.AddDevices(&mir_apiv1.CreateDeviceRequest_Device{
+	sb := s.AddDevices(&mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Name:      "update_dev_samename_oneexist",
 			Namespace: "testing_core",
@@ -2020,7 +2032,7 @@ func TestDeviceUpdateManyTargetSameNameOneExist(t *testing.T) {
 		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: "0xf86tlm17",
 		},
-	}, &mir_apiv1.CreateDeviceRequest_Device{
+	}, &mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Name:      "samebloodyname",
 			Namespace: "testing_core",
@@ -2061,7 +2073,7 @@ func TestDeviceUpdateManyTargetSameNameOneExist(t *testing.T) {
 func TestDeviceUpdateManyTargetSameNamespaceNoExist(t *testing.T) {
 	// Arrange
 	s := swarm.NewSwarm(mSdk.Bus)
-	sb := s.AddDevices(&mir_apiv1.CreateDeviceRequest_Device{
+	sb := s.AddDevices(&mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Name:      "update_dev_ns_no_exist",
 			Namespace: "testing_core",
@@ -2073,7 +2085,7 @@ func TestDeviceUpdateManyTargetSameNamespaceNoExist(t *testing.T) {
 		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: "0xf86tlm12",
 		},
-	}, &mir_apiv1.CreateDeviceRequest_Device{
+	}, &mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Name:      "update_dev_ns_no_exist",
 			Namespace: "testing_core_2",
@@ -2114,7 +2126,7 @@ func TestDeviceUpdateManyTargetSameNamespaceNoExist(t *testing.T) {
 func TestDeviceUpdateManyTargetSameNamespaceOneExist(t *testing.T) {
 	// Arrange
 	s := swarm.NewSwarm(mSdk.Bus)
-	sb := s.AddDevices(&mir_apiv1.CreateDeviceRequest_Device{
+	sb := s.AddDevices(&mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Name:      "update_dev_ns_one_exist",
 			Namespace: "samebloodynamespace",
@@ -2125,7 +2137,7 @@ func TestDeviceUpdateManyTargetSameNamespaceOneExist(t *testing.T) {
 		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: "0xf86tlm7",
 		},
-	}, &mir_apiv1.CreateDeviceRequest_Device{
+	}, &mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Name:      "update_dev_ns_one_exist",
 			Namespace: "testing_core_2",
@@ -2166,7 +2178,7 @@ func TestDeviceUpdateManyTargetSameNamespaceOneExist(t *testing.T) {
 func TestDeviceUpdateManyTargetSameNameNamespaceNoExist(t *testing.T) {
 	// Arrange
 	s := swarm.NewSwarm(mSdk.Bus)
-	sb := s.AddDevices(&mir_apiv1.CreateDeviceRequest_Device{
+	sb := s.AddDevices(&mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Name:      "samebloodyname",
 			Namespace: "samebloodynamespace",
@@ -2178,7 +2190,7 @@ func TestDeviceUpdateManyTargetSameNameNamespaceNoExist(t *testing.T) {
 		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: "0xf86tlm14",
 		},
-	}, &mir_apiv1.CreateDeviceRequest_Device{
+	}, &mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Name:      "update_dev_same_namens_2",
 			Namespace: "testing_core_2",
@@ -2220,7 +2232,7 @@ func TestDeviceUpdateManyTargetSameNameNamespaceNoExist(t *testing.T) {
 func TestDeviceUpdateManyTargetSameNameNamespaceOneExist(t *testing.T) {
 	// Arrange
 	s := swarm.NewSwarm(mSdk.Bus)
-	sb := s.AddDevices(&mir_apiv1.CreateDeviceRequest_Device{
+	sb := s.AddDevices(&mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Name:      "update_dev_same_namens_one_1",
 			Namespace: "testing_core",
@@ -2232,7 +2244,7 @@ func TestDeviceUpdateManyTargetSameNameNamespaceOneExist(t *testing.T) {
 		Spec: &mir_apiv1.DeviceSpec{
 			DeviceId: "0xf86tlm15",
 		},
-	}, &mir_apiv1.CreateDeviceRequest_Device{
+	}, &mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Name:      "update_dev_same_namens_one_2",
 			Namespace: "testing_core_2",
@@ -2279,7 +2291,7 @@ func TestDeviceGoesOnline(t *testing.T) {
 			Ids: deviceIds,
 		},
 	}
-	reqCreate := []*mir_apiv1.CreateDeviceRequest_Device{
+	reqCreate := []*mir_apiv1.NewDevice{
 		{
 			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[0],
@@ -2348,7 +2360,7 @@ func TestDeviceGoesOffline(t *testing.T) {
 			Ids: deviceIds,
 		},
 	}
-	reqCreate := []*mir_apiv1.CreateDeviceRequest_Device{
+	reqCreate := []*mir_apiv1.NewDevice{
 		{
 			Meta: &mir_apiv1.Meta{
 				Name:      deviceIds[0],
@@ -2582,7 +2594,7 @@ func TestDeviceUpdateDesiredProperties(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	s := swarm.NewSwarm(mSdk.Bus)
 	id := "update_desired_props"
-	if _, err := s.AddDevice(&mir_apiv1.CreateDeviceRequest_Device{
+	if _, err := s.AddDevice(&mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_core",
@@ -2646,7 +2658,7 @@ func TestDeviceUpdateDesiredPropertiesDoubleSameUpdate(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	s := swarm.NewSwarm(mSdk.Bus)
 	id := "update_desired_props_double"
-	if _, err := s.AddDevice(&mir_apiv1.CreateDeviceRequest_Device{
+	if _, err := s.AddDevice(&mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_core",
@@ -2714,7 +2726,7 @@ func TestDeviceUpdateDesiredPropertiesInvalid(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	s := swarm.NewSwarm(mSdk.Bus)
 	id := "update_desired_props_invalid"
-	if _, err := s.AddDevice(&mir_apiv1.CreateDeviceRequest_Device{
+	if _, err := s.AddDevice(&mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Name:      id,
 			Namespace: "testing_core",
