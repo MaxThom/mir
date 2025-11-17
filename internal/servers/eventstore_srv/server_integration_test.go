@@ -220,7 +220,7 @@ func TestPublishListDeviceRequestWithEvents(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
 	s := swarm.NewSwarm(mSdk.Bus)
-	_, err := s.AddDevice(&mir_apiv1.CreateDeviceRequest_Device{
+	_, err := s.AddDevice(&mir_apiv1.NewDevice{
 		Meta: &mir_apiv1.Meta{
 			Namespace: "event_testing",
 		},

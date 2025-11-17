@@ -81,7 +81,7 @@ func TestPublishDeviceUpdateCache(t *testing.T) {
 	})
 
 	reqCreate := &mir_apiv1.CreateDeviceRequest{
-		Devices: []*mir_apiv1.CreateDeviceRequest_Device{{
+		Device: &mir_apiv1.NewDevice{
 			Meta: &mir_apiv1.Meta{
 				Name:      id,
 				Namespace: "testing_cmd",
@@ -92,7 +92,7 @@ func TestPublishDeviceUpdateCache(t *testing.T) {
 			Spec: &mir_apiv1.DeviceSpec{
 				DeviceId: id,
 			},
-		}},
+		},
 	}
 
 	dev, err := mirDevice.Builder().ExcludeSchemaOnLaunch().DeviceId(id).Store(mirDevice.StoreOptions{InMemory: true}).Target(busUrl).Schema(

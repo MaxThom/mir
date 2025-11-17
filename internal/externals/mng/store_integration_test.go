@@ -125,6 +125,54 @@ func TestPublishStoreDeviceCreateMany(t *testing.T) {
 	assert.Equal(t, len(dResp), count)
 }
 
+func TestPublishStoreDeviceCreateOne(t *testing.T) {
+	// Arrange
+	d := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
+		Name:      "create_dev_one",
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+	}).WithSpec(mir_v1.DeviceSpec{
+		DeviceId: "create_dev_one",
+		Disabled: boolPtr(true),
+	})
+
+	// Act
+	dResp, err := mirStore.CreateDevice(d)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, dResp.Spec.DeviceId, d.Spec.DeviceId)
+}
+
+func TestPublishStoreDeviceCreateAlreadyExist(t *testing.T) {
+	// Arrange
+	id := "create_dev_one_already"
+	d := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
+		Name:      id,
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+	}).WithSpec(mir_v1.DeviceSpec{
+		DeviceId: id,
+		Disabled: boolPtr(true),
+	})
+
+	// Act
+	_, err := mirStore.CreateDevice(d)
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = mirStore.CreateDevice(d)
+
+	// Assert
+	assert.ErrorContains(t, err, "device create_dev_one_already/mirstore with deviceId create_dev_one_already already exist")
+}
+
 func TestPublishStoreDeviceCreateManyAlreadyExist(t *testing.T) {
 	// Arrange
 	devs := []mir_v1.Device{}
@@ -290,16 +338,7 @@ func TestPublishStoreDeviceCreateManyDuplicate(t *testing.T) {
 	}
 
 	// Assert
-	assert.Equal(t, len(dResp), 7)
-	seen := make(map[string]bool)
-	for _, d := range dResp {
-		deviceIdKey := d.Spec.DeviceId
-		nameNsKey := d.Meta.Name + "/" + d.Meta.Namespace
-		// Check that we have not seen this deviceId or name/namespace before
-		assert.Assert(t, true, !seen[deviceIdKey] && !seen[nameNsKey])
-		seen[deviceIdKey] = true
-		seen[nameNsKey] = true
-	}
+	assert.Equal(t, len(dResp), 0)
 }
 
 func TestPublishStoreDeviceCreateMissingNameNamespace(t *testing.T) {

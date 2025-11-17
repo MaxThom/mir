@@ -160,6 +160,9 @@ func (s *CoreServer) Serve() error {
 	if err := s.m.Client().CreateDevice().QueueSubscribe(ServiceName, s.createDeviceSub); err != nil {
 		return err
 	}
+	if err := s.m.Client().CreateDevices().QueueSubscribe(ServiceName, s.createDevicesSub); err != nil {
+		return err
+	}
 	if err := s.m.Client().UpdateDevice().QueueSubscribe(ServiceName, s.updateDeviceSub); err != nil {
 		return err
 	}
@@ -204,14 +207,33 @@ func (s *CoreServer) Shutdown() error {
 	return nil
 }
 
-func (s *CoreServer) createDeviceSub(msg *mir.Msg, clientId string, d []mir_v1.Device) ([]mir_v1.Device, error) {
+func (s *CoreServer) createDeviceSub(msg *mir.Msg, clientId string, d mir_v1.Device) (mir_v1.Device, error) {
 	l.Debug().Str("route", "create").Str("payload", fmt.Sprintf("%v", d)).Msg("new device request")
+	requestTotal.WithLabelValues("create").Inc()
+
+	newDev, err := s.store.CreateDevice(d)
+	if err != nil {
+		l.Error().Err(err).Msg("error occure while creating device")
+		requestErrorTotal.WithLabelValues("create").Inc()
+	}
+
+	// Publish created events
+	if err := publishDeviceCreateEvent(s.m, msg, newDev); err != nil {
+		l.Warn().Err(err).Str("device_id", newDev.Spec.DeviceId).Msg("error occure while publishing device created event")
+	}
+
+	return newDev, err
+}
+
+func (s *CoreServer) createDevicesSub(msg *mir.Msg, clientId string, d []mir_v1.Device) ([]mir_v1.Device, error) {
+	l.Debug().Str("route", "create").Str("payload", fmt.Sprintf("%v", d)).Msg("new devices request")
 	requestTotal.WithLabelValues("create").Inc()
 
 	newDevs, err := s.store.CreateDevices(d)
 	if err != nil {
-		l.Error().Err(err).Msg("error occure while creating some devices")
+		l.Error().Err(err).Msg("error occure while creating devices")
 		requestErrorTotal.WithLabelValues("create").Inc()
+		return nil, fmt.Errorf("error creating devices: %w", err)
 	}
 
 	// Publish created events
@@ -443,7 +465,7 @@ func (s *CoreServer) hearthbeatOnlinePulsor() {
 			}))
 			newDevsId = append(newDevsId, string(id))
 		}
-		_, err := s.m.Client().CreateDevice().RequestMany(newDevs)
+		_, err := s.m.Client().CreateDevices().Request(newDevs)
 		if err != nil {
 			l.Error().Err(err).Strs("device_ids", newDevsId).Msg("could not automaticly provision new devices")
 		}

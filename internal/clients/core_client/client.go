@@ -14,10 +14,11 @@ import (
 )
 
 const (
-	CreateDeviceRequest clients.ClientSubject = "client.%s.core.v1alpha.create"
-	UpdateDeviceRequest clients.ClientSubject = "client.%s.core.v1alpha.update"
-	DeleteDeviceRequest clients.ClientSubject = "client.%s.core.v1alpha.delete"
-	ListDeviceRequest   clients.ClientSubject = "client.%s.core.v1alpha.list"
+	CreateDeviceRequest  clients.ClientSubject = "client.%s.core.v1alpha.create"
+	CreateDevicesRequest clients.ClientSubject = "client.%s.core.v1alpha.creates"
+	UpdateDeviceRequest  clients.ClientSubject = "client.%s.core.v1alpha.update"
+	DeleteDeviceRequest  clients.ClientSubject = "client.%s.core.v1alpha.delete"
+	ListDeviceRequest    clients.ClientSubject = "client.%s.core.v1alpha.list"
 
 	DeviceOnlineEvent  clients.ClientSubject = "event.%s.core.v1alpha.deviceonline"
 	DeviceOfflineEvent clients.ClientSubject = "event.%s.core.v1alpha.deviceoffline"
@@ -46,6 +47,26 @@ func PublishDeviceCreateRequest(bus *nats.Conn, req *mir_apiv1.CreateDeviceReque
 	err = proto.Unmarshal(resMsg.Data, resp)
 	if err != nil {
 		return &mir_apiv1.CreateDeviceResponse{}, err
+	}
+
+	return resp, nil
+}
+
+func PublishDevicesCreateRequest(bus *nats.Conn, req *mir_apiv1.CreateDevicesRequest) (*mir_apiv1.CreateDevicesResponse, error) {
+	bReq, err := proto.Marshal(req)
+	if err != nil {
+		return &mir_apiv1.CreateDevicesResponse{}, err
+	}
+
+	resMsg, err := bus.Request(CreateDevicesRequest.WithId("todo"), bReq, 7*time.Second)
+	if err != nil {
+		return &mir_apiv1.CreateDevicesResponse{}, err
+	}
+
+	resp := &mir_apiv1.CreateDevicesResponse{}
+	err = proto.Unmarshal(resMsg.Data, resp)
+	if err != nil {
+		return &mir_apiv1.CreateDevicesResponse{}, err
 	}
 
 	return resp, nil

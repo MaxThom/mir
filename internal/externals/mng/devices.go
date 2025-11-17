@@ -105,10 +105,8 @@ func (s *surrealMirStore) CreateDevices(devs []mir_v1.Device) ([]mir_v1.Device, 
 		}
 	}
 	devs = uniqueDevs
-
-	if len(devs) == 1 {
-		resp, err := s.CreateDevice(devs[0])
-		return []mir_v1.Device{resp}, errors.Join(errs, err)
+	if errs != nil {
+		return []mir_v1.Device{}, errs
 	}
 
 	// Check duplicates already in database
@@ -152,7 +150,7 @@ func (s *surrealMirStore) CreateDevices(devs []mir_v1.Device) ([]mir_v1.Device, 
 	if err != nil {
 		return []mir_v1.Device{}, fmt.Errorf("%w: %w", mir_v1.ErrorDbExecutingQuery, err)
 	}
-	return *respDb, errs
+	return *respDb, nil
 }
 
 // UpdateDevice This method is too OP

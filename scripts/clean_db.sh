@@ -13,6 +13,10 @@ while true; do
     done
 done
 
+# Sleep cause the deletion of devices create additional events
+# that we also want to delete
+sleep 3
+
 while true; do
     namespaces=$($bin event list -o json --limit 1000 | sed -n 's/.*"namespace": "\([^"]*\)".*/\1/p' | sort -u)
     if [ -z "$namespaces" ]; then

@@ -74,6 +74,10 @@ tx-serve:
 tx-full:
 	tmuxifier s ./.tmux/mir-full.session.sh
 
+# Start tmux layouts with local test setup
+tx-test:
+	tmuxifier s ./.tmux/mir-test.session.sh
+
 # Run supporting infra with docker
 infra:
 	docker compose -f infra/compose/local_support/compose.yaml up --force-recreate
