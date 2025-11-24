@@ -420,6 +420,7 @@ func (s *CoreServer) hearthbeatOnlinePulsor() {
 	s.hearthbeatsWriteBufferMu.Unlock()
 
 	degradedMode := false
+	l.Debug().Int("hearthbeat_count", len(tempBuffer)).Msg("processing hearthbeat online pulse")
 	devsResp, err := retry.RetryOnErrorContainsWithResult(func() ([]mir_v1.Device, error) {
 		res, err := s.store.UpdateDeviceHello(tempBuffer)
 		return res, err
@@ -483,7 +484,7 @@ func (s *CoreServer) hearthbeatOnlinePulsor() {
 	s.hearthbeatsMutex.Lock()
 	for _, dev := range devsResp {
 		if _, ok := s.hearthbeats[mir_v1.DeviceId(dev.Spec.DeviceId)]; !ok {
-			l.Info().Str("route", "hearthbeat").Str("event", "device_online").Msg(dev.Spec.DeviceId)
+			l.Trace().Str("route", "hearthbeat").Str("event", "device_online").Msg(dev.Spec.DeviceId)
 			if err := publishDeviceOnlineEvent(s.m, nil, dev); err != nil {
 				l.Warn().Err(err).Str("device_id", dev.Spec.DeviceId).Msg("error occure while publishing device online event")
 			}
