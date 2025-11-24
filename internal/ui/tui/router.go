@@ -54,7 +54,7 @@ func NewModel(ctx context.Context, log zerolog.Logger, m *mir.Mir, cfg ui.Config
 	}
 	return &Model{
 		ctx:          ctx,
-		currentRoute: "/",
+		currentRoute: "/devices",
 		routes:       routes,
 		m:            m,
 		cfg:          cfg,

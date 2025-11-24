@@ -36,7 +36,7 @@ func NewModel(ctx context.Context) *Model {
 }
 
 func (m *Model) InitWithData(d any) tea.Cmd {
-	dev, ok := d.(*mir_v1.Device)
+	dev, ok := d.(mir_v1.Device)
 	if !ok {
 		return tea.Batch(
 			msgs.ErrCmd(fmt.Errorf("no device specified"), 2*time.Second),
