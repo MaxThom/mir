@@ -33,10 +33,11 @@ var (
 
 const (
 	tableColStatus    = 0
-	tableColDeviceID  = 1
-	tableColName      = 2
-	tableColNamespace = 3
-	tableColLabels    = 4
+	tableColChecked   = 1
+	tableColDeviceID  = 2
+	tableColName      = 3
+	tableColNamespace = 4
+	tableColLabels    = 5
 
 	refreshInterval = time.Second * 10
 )
@@ -48,6 +49,7 @@ type Model struct {
 	searchInput textinput.Model
 	deleteInput textinput.Model
 	tableRowAll []table.Row
+	checkedRows map[string]bool
 	timer       timer.Model
 }
 
@@ -75,6 +77,7 @@ func NewModel(ctx context.Context) *Model {
 
 	columns := []table.Column{
 		{Title: "", Width: 2}, // Icon with status. online/offline/desabled
+		{Title: "", Width: 2}, // Icon with checked.
 		{Title: "id", Width: 20},
 		{Title: "name", Width: 25},
 		{Title: "namespace", Width: 25},
@@ -103,6 +106,7 @@ func NewModel(ctx context.Context) *Model {
 		searchInput: ti,
 		deleteInput: delti,
 		timer:       timer.New(refreshInterval),
+		checkedRows: make(map[string]bool),
 	}
 }
 
@@ -139,7 +143,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case msgs.DeviceListedMsg:
 		store.Devices = msg.Devices
 		var suggestions []string
-		m.tableRowAll, suggestions = devicesToRows(msg.Devices)
+		m.tableRowAll, suggestions = m.devicesToRows(msg.Devices)
 		m.searchInput.SetSuggestions(suggestions)
 		rows := filterTableRows(m.tableRowAll, m.searchInput.Value())
 		if store.ScreenHeight-10 < len(rows) {
@@ -169,6 +173,21 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if msg.Type == tea.KeyEnter {
 				m.table.Focus()
 				m.searchInput.Blur()
+
+				m.checkedRows = make(map[string]bool)
+				rows := m.table.Rows()
+				if m.searchInput.Value() != "" {
+					for i, r := range rows {
+						m.checkedRows[r[tableColDeviceID]] = true
+						rows[i][tableColChecked] = "✔"
+					}
+				} else {
+					for i, r := range rows {
+						delete(m.checkedRows, r[tableColDeviceID])
+						rows[i][tableColChecked] = ""
+					}
+				}
+				m.table.SetRows(rows)
 			} else {
 				m.searchInput, cmd = m.searchInput.Update(msg)
 				rows := filterTableRows(m.tableRowAll, m.searchInput.Value())
@@ -224,6 +243,17 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.table.Blur()
 				m.deleteInput.SetValue("")
 				m.deleteInput.Focus()
+			} else if msg.String() == tea.KeySpace.String() {
+				rows := m.table.Rows()
+				if checked, ok := m.checkedRows[m.table.SelectedRow()[tableColDeviceID]]; ok && checked {
+					m.checkedRows[m.table.SelectedRow()[tableColDeviceID]] = false
+					delete(m.checkedRows, m.table.SelectedRow()[tableColDeviceID])
+					rows[m.table.Cursor()][tableColChecked] = ""
+				} else {
+					m.checkedRows[m.table.SelectedRow()[tableColDeviceID]] = true
+					rows[m.table.Cursor()][tableColChecked] = "✔"
+				}
+				m.table.SetRows(rows)
 			} else {
 				m.table, cmd = m.table.Update(msg)
 			}
@@ -254,19 +284,23 @@ func (m *Model) View() string {
 type keyMap map[string]key.Binding
 
 func (k keyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k["search"], k["create"], k["edit"], k["schema"], k["delete"]}
+	return []key.Binding{k["search"], k["create"], k["edit"], k["delete"], k["schema"], k["tlm"], k["cmd"], k["cfg"]}
 }
 
 func (k keyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
-		{k["search"], k["create"]},
-		{k["edit"], k["delete"]},
-		{k["schema"]},
+		{k["search"], k["space"]},
+		{k["create"], k["edit"], k["delete"]},
+		{k["schema"], k["tlm"], k["cmd"], k["cfg"]},
 		{k["up"], k["down"]},
 	}
 }
 
 var keys = keyMap{
+	"space": key.NewBinding(
+		key.WithKeys(" "),
+		key.WithHelp("space", "select/deselect"),
+	),
 	"search": key.NewBinding(
 		key.WithKeys("/"),
 		key.WithHelp("/", "search"),
@@ -295,9 +329,21 @@ var keys = keyMap{
 		key.WithKeys("down", "j"),
 		key.WithHelp("↓/j", "move down"),
 	),
+	"tlm": key.NewBinding(
+		key.WithKeys("t"),
+		key.WithHelp("t", "telemetry"),
+	),
+	"cmd": key.NewBinding(
+		key.WithKeys("r"),
+		key.WithHelp("r", "command"),
+	),
+	"cfg": key.NewBinding(
+		key.WithKeys("p"),
+		key.WithHelp("p", "config"),
+	),
 }
 
-func devicesToRows(devices []mir_v1.Device) ([]table.Row, []string) {
+func (m *Model) devicesToRows(devices []mir_v1.Device) ([]table.Row, []string) {
 	rows := []table.Row{}
 	suggestions := []string{}
 	for _, d := range devices {
@@ -318,8 +364,13 @@ func devicesToRows(devices []mir_v1.Device) ([]table.Row, []string) {
 			status = "🔴"
 		}
 
+		checked := ""
+		if _, ok := m.checkedRows[d.Spec.DeviceId]; ok {
+			checked = "✔"
+		}
+
 		rows = append(rows, table.Row{
-			status, d.Spec.DeviceId, d.Meta.Name, d.Meta.Namespace, strings.Join(lbls, ","),
+			status, checked, d.Spec.DeviceId, d.Meta.Name, d.Meta.Namespace, strings.Join(lbls, ","),
 		})
 		suggestions = append(suggestions, d.Spec.DeviceId, d.Meta.Name, d.Meta.Namespace)
 		suggestions = append(suggestions, lbls...)
