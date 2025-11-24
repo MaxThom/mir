@@ -24,11 +24,12 @@ import (
 // IDEA wide option that show more fields
 
 var (
-	l                        zerolog.Logger
-	menuOption_device_create string = "/devices/create"
-	menuOption_device_edit   string = "/devices/edit"
-	menuOption_device_schema string = "/devices/schema"
-	v                        strings.Builder
+	l                           zerolog.Logger
+	menuOption_device_create    string = "/devices/create"
+	menuOption_device_edit      string = "/devices/edit"
+	menuOption_device_schema    string = "/devices/schema"
+	menuOption_device_telemetry string = "/devices/telemetry"
+	v                           strings.Builder
 )
 
 const (
@@ -254,6 +255,13 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					rows[m.table.Cursor()][tableColChecked] = "✔"
 				}
 				m.table.SetRows(rows)
+			} else if msg.String() == "t" {
+				devices, ok := m.getSelectedDevices()
+				if !ok {
+					return m, msgs.ErrCmd(fmt.Errorf("no device selected"), 2*time.Second)
+				}
+				return m, msgs.RouteChangeWithDataCmd(menuOption_device_telemetry, devices)
+
 			} else {
 				m.table, cmd = m.table.Update(msg)
 			}
@@ -433,6 +441,19 @@ func filterTableRows(rows []table.Row, filter string) []table.Row {
 	return filteredRows
 }
 
+func (m *Model) getSelectedDevices() ([]mir_v1.Device, bool) {
+	if len(m.checkedRows) == 0 {
+		d, ok := rowToDevice(m.table.SelectedRow())
+		return []mir_v1.Device{d}, ok
+	} else {
+		deviceIds := make([]string, 0, len(m.checkedRows))
+		for deviceId := range m.checkedRows {
+			deviceIds = append(deviceIds, deviceId)
+		}
+		return deviceIdsToDevices(deviceIds)
+	}
+}
+
 func rowToDevice(r table.Row) (mir_v1.Device, bool) {
 	if len(r) < 2 {
 		return mir_v1.Device{}, false
@@ -446,4 +467,18 @@ func rowToDevice(r table.Row) (mir_v1.Device, bool) {
 		}
 	}
 	return mir_v1.Device{}, false
+}
+
+func deviceIdsToDevices(ids []string) ([]mir_v1.Device, bool) {
+	devs := []mir_v1.Device{}
+	if store.Devices != nil {
+		for _, id := range ids {
+			for _, d := range store.Devices {
+				if id == d.Spec.DeviceId {
+					devs = append(devs, d)
+				}
+			}
+		}
+	}
+	return devs, len(devs) > 0
 }

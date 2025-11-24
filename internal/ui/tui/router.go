@@ -18,6 +18,7 @@ import (
 	device_edit "github.com/maxthom/mir/internal/ui/tui/pages/device/edit"
 	device_list "github.com/maxthom/mir/internal/ui/tui/pages/device/list"
 	device_schema "github.com/maxthom/mir/internal/ui/tui/pages/device/schema"
+	device_telemetry "github.com/maxthom/mir/internal/ui/tui/pages/device/tlm"
 	"github.com/maxthom/mir/internal/ui/tui/pages/mainmenu"
 	"github.com/maxthom/mir/internal/ui/tui/store"
 	"github.com/maxthom/mir/internal/ui/tui/styles"
@@ -44,13 +45,14 @@ func NewModel(ctx context.Context, log zerolog.Logger, m *mir.Mir, cfg ui.Config
 	log = log.With().Str("page", "router").Logger()
 	s := labelspinner.New(" 🛰️ ", styles.Mir.Render("Mir"), spinner.Dot)
 	routes := map[string]MirTeaModel{
-		"/":               mainmenu.NewModel(),
-		"/devices":        device_list.NewModel(ctx),
-		"/devices/create": device_create.NewModel(ctx),
-		"/devices/edit":   device_edit.NewModel(ctx),
-		"/devices/schema": device_schema.NewModel(ctx),
-		"/twins":          nil,
-		"/telemetry":      nil,
+		"/":                  mainmenu.NewModel(),
+		"/devices":           device_list.NewModel(ctx),
+		"/devices/create":    device_create.NewModel(ctx),
+		"/devices/edit":      device_edit.NewModel(ctx),
+		"/devices/schema":    device_schema.NewModel(ctx),
+		"/devices/telemetry": device_telemetry.NewModel(ctx),
+		"/twins":             nil,
+		"/telemetry":         nil,
 	}
 	return &Model{
 		ctx:          ctx,
