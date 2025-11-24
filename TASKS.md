@@ -10,35 +10,20 @@
 ### Features
 
 - [ ] MCP Server for Mir
+  - [ ] https://www.utcp.io  
 - [ ] TinyGo
 - [ ] Road to Production
   - [ ] update all dependencies
-  - [x] docs
   - [ ] alert & alarms
-  - [ ] perf test
+  - [ ] Tui
+    - [ ] Cfg
+    - [ ] Cmd
+    - [ ] Tlm
   - [x] swarm
     - [ ] test all query with high number of devices
       - [x] List
       - [ ] Tlm Grafana Link too long
       - [x] Bug start server must check to put offline ones
-    - [x] BUG why invalid wired format
-      - [x] Add logger to mir sdk
-      - [x] Deploy
-    - [x] Perf Improvements
-      - [x] protocfg/cmd schema protocache
-        - [x] need an event on device hello for schema
-              1. new schema update event maybe? no just use update
-              2. on hello received or on the buffer flush? buffer flush
-        - [x] change protocache to accept new schema even if not request before so its ready
-      - [x] Test hearthbeat with hello
-      - [x] prototlm/protocfg, if device dont exist, dont ask schema
-      - [x] Bulk create devices
-        - [x] Use for swarm
-      - [x] Stack Events and flush them every x seconds
-        - [x] With many create at the same time
-      - [x] Stack Hearbeaths and flush them every x seconds
-        - [x] With many update at the same time
-
   - [ ] autoreconnect
     - [ ] if modules are down
       - [ ] switch to jetstream for tlm, could be in memory TLM
