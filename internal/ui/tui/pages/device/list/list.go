@@ -150,7 +150,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if store.ScreenHeight-10 < len(rows) {
 			m.table.SetHeight(store.ScreenHeight - 10)
 		} else {
-			m.table.SetHeight(len(rows))
+			m.table.SetHeight(len(rows) + 1)
 		}
 		m.table.SetRows(rows)
 		if !msg.NoToast {

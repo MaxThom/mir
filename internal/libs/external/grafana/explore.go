@@ -2,8 +2,28 @@ package grafana
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/url"
+	"os/exec"
+	"runtime"
 )
+
+func OpenBrowser(url string) error {
+	var cmd *exec.Cmd
+
+	switch runtime.GOOS {
+	case "linux":
+		cmd = exec.Command("xdg-open", url)
+	case "windows":
+		cmd = exec.Command("rundll32", "url.dll,FileProtocolHandler", url)
+	case "darwin":
+		cmd = exec.Command("open", url)
+	default:
+		return fmt.Errorf("unsupported platform")
+	}
+
+	return cmd.Start()
+}
 
 func CreateExploreLink(host string, query string) string {
 	paneConfig := map[string]interface{}{

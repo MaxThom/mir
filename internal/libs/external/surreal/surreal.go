@@ -46,7 +46,10 @@ func Connect(ctx context.Context, url, namespace, database, user, password strin
 	db, err := connect(ctx, url, namespace, database, user, password, h)
 	if err != nil {
 		// Check for connection errors
-		if strings.Contains(err.Error(), "connection refused") || strings.Contains(err.Error(), "broken pipe") || strings.Contains(err.Error(), "context deadline exceeded") {
+		if strings.Contains(err.Error(), "connection refused") ||
+			strings.Contains(err.Error(), "broken pipe") ||
+			strings.Contains(err.Error(), "context deadline exceeded") ||
+			strings.Contains(err.Error(), "connection reset by peer") {
 			db.monitorAndReconnect()
 		}
 		return db, err
