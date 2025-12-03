@@ -4,11 +4,14 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/maxthom/mir/internal/ui"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/maxthom/mir/pkgs/module/mir"
 )
 
 var Bus *mir.Mir
+var MirCfg ui.Config
+var MirCtx ui.Context
 var Devices []mir_v1.Device
 var ScreenHeight, ScreenWidth int
 

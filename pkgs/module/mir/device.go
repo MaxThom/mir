@@ -14,6 +14,7 @@ import (
 	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/nats-io/nats.go"
+	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -190,7 +191,7 @@ func (r *schemaRoute) Request(deviceId string) (*mir_proto.MirProtoSchema, error
 		return nil, fmt.Errorf("error deserializing response: %w", err)
 	}
 	if sch.GetError() != "" {
-		return nil, fmt.Errorf(sch.GetError())
+		return nil, errors.New(sch.GetError())
 	}
 
 	return mir_proto.UnmarshalSchema(sch.GetSchema())

@@ -1,6 +1,8 @@
 package styles
 
-import "github.com/charmbracelet/lipgloss"
+import (
+	"github.com/charmbracelet/lipgloss"
+)
 
 // TODO research on how to create a
 // proper palette of colors with
@@ -23,4 +25,8 @@ var (
 	CursorUnderline = lipgloss.NewStyle().Underline(true)
 	Selection       = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF75B7"))
 	Subtext         = lipgloss.NewStyle().Foreground(lipgloss.Color("#605F63"))
+	SidePanel       = lipgloss.NewStyle().
+			Align(lipgloss.Left, lipgloss.Top).
+			Border(lipgloss.RoundedBorder(), true, true, true, true).
+			Foreground(Help.GetForeground())
 )
