@@ -74,11 +74,11 @@ func (d *CommandListCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) erro
 
 	tpls := map[string][]string{}
 	var sb strings.Builder
-	for devNameNs, cmds := range resp {
+	for _, cmds := range resp {
 		if cmds.Error != "" {
 			sb.WriteString(cmds.Error)
 		} else {
-			for _, cmd := range cmds.Commands {
+			for _, cmd := range cmds.CmdDescriptors {
 				sb.WriteString(cmd.Name)
 				sb.WriteString("{")
 				sb.WriteString(mapToSortedString(cmd.Labels))
@@ -97,7 +97,7 @@ func (d *CommandListCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) erro
 				}
 			}
 		}
-		tpls[sb.String()] = append(tpls[sb.String()], devNameNs)
+		tpls[sb.String()] = append(tpls[sb.String()], cmds.DevicesNamens...)
 		sb.Reset()
 	}
 

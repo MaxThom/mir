@@ -14,6 +14,7 @@ import (
 	"github.com/maxthom/mir/internal/ui/tui/components/labelspinner"
 	"github.com/maxthom/mir/internal/ui/tui/components/menu"
 	"github.com/maxthom/mir/internal/ui/tui/msgs"
+	device_commands "github.com/maxthom/mir/internal/ui/tui/pages/device/cmd"
 	device_create "github.com/maxthom/mir/internal/ui/tui/pages/device/create"
 	device_edit "github.com/maxthom/mir/internal/ui/tui/pages/device/edit"
 	device_list "github.com/maxthom/mir/internal/ui/tui/pages/device/list"
@@ -51,6 +52,7 @@ func NewModel(ctx context.Context, log zerolog.Logger, m *mir.Mir, cfg ui.Config
 		"/devices/edit":      device_edit.NewModel(ctx),
 		"/devices/schema":    device_schema.NewModel(ctx),
 		"/devices/telemetry": device_telemetry.NewModel(ctx),
+		"/devices/commands":  device_commands.NewModel(ctx),
 		"/twins":             nil,
 		"/telemetry":         nil,
 	}

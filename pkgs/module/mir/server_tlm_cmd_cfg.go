@@ -108,18 +108,18 @@ func (r *clientRoutes) ListCommands() *listCommandRoute {
 }
 
 // Subscribe to list command request
-func (r *listCommandRoute) Subscribe(f func(msg *Msg, clientId string, req *mir_apiv1.SendListCommandsRequest) (map[string]*mir_apiv1.Commands, error)) error {
+func (r *listCommandRoute) Subscribe(f func(msg *Msg, clientId string, req *mir_apiv1.SendListCommandsRequest) ([]*mir_apiv1.DevicesCommands, error)) error {
 	sbj := cmd_client.ListCommandsRequest.WithId("*")
 	return r.m.subscribe(sbj, r.handlerWrapper(f))
 }
 
 // Queue subscribe to list command request
-func (r *listCommandRoute) QueueSubscribe(queue string, f func(msg *Msg, clientId string, req *mir_apiv1.SendListCommandsRequest) (map[string]*mir_apiv1.Commands, error)) error {
+func (r *listCommandRoute) QueueSubscribe(queue string, f func(msg *Msg, clientId string, req *mir_apiv1.SendListCommandsRequest) ([]*mir_apiv1.DevicesCommands, error)) error {
 	sbj := cmd_client.ListCommandsRequest.WithId("*")
 	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
 }
 
-func (r *listCommandRoute) handlerWrapper(f func(msg *Msg, clientId string, req *mir_apiv1.SendListCommandsRequest) (map[string]*mir_apiv1.Commands, error)) nats.MsgHandler {
+func (r *listCommandRoute) handlerWrapper(f func(msg *Msg, clientId string, req *mir_apiv1.SendListCommandsRequest) ([]*mir_apiv1.DevicesCommands, error)) nats.MsgHandler {
 	return func(msg *nats.Msg) {
 		req := &mir_apiv1.SendListCommandsRequest{}
 		if err := proto.Unmarshal(msg.Data, req); err != nil {
@@ -141,8 +141,8 @@ func (r *listCommandRoute) handlerWrapper(f func(msg *Msg, clientId string, req 
 		// TODO log error here
 		err = r.m.sendReplyOrAck(msg, &mir_apiv1.SendListCommandsResponse{
 			Response: &mir_apiv1.SendListCommandsResponse_Ok{
-				Ok: &mir_apiv1.DevicesCommands{
-					DeviceCommands: resp,
+				Ok: &mir_apiv1.CommandsResponse{
+					DevicesCommands: resp,
 				},
 			},
 		})
@@ -155,28 +155,28 @@ func (r *listCommandRoute) handlerWrapper(f func(msg *Msg, clientId string, req 
 }
 
 // Request listing of command per device
-func (r *listCommandRoute) Request(req *mir_apiv1.SendListCommandsRequest) (map[string]*mir_apiv1.Commands, error) {
+func (r *listCommandRoute) Request(req *mir_apiv1.SendListCommandsRequest) ([]*mir_apiv1.DevicesCommands, error) {
 	sbj := cmd_client.ListCommandsRequest.WithId(r.m.GetInstanceName())
 	bReq, err := proto.Marshal(req)
 	if err != nil {
-		return map[string]*mir_apiv1.Commands{}, err
+		return []*mir_apiv1.DevicesCommands{}, err
 	}
 
 	resMsg, err := r.m.request(sbj, bReq, nil, defaultTimeout)
 	if err != nil {
-		return map[string]*mir_apiv1.Commands{}, err
+		return []*mir_apiv1.DevicesCommands{}, err
 	}
 
 	resp := &mir_apiv1.SendListCommandsResponse{}
 	err = proto.Unmarshal(resMsg.Data, resp)
 	if err != nil {
-		return map[string]*mir_apiv1.Commands{}, err
+		return []*mir_apiv1.DevicesCommands{}, err
 	}
 	if resp.GetError() != "" {
-		return map[string]*mir_apiv1.Commands{}, errors.New(resp.GetError())
+		return []*mir_apiv1.DevicesCommands{}, errors.New(resp.GetError())
 	}
 
-	return resp.GetOk().DeviceCommands, nil
+	return resp.GetOk().DevicesCommands, nil
 }
 
 /// SendCommand

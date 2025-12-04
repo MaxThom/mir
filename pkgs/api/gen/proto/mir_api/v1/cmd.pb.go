@@ -393,7 +393,7 @@ func (x *SendListCommandsResponse) GetResponse() isSendListCommandsResponse_Resp
 	return nil
 }
 
-func (x *SendListCommandsResponse) GetOk() *DevicesCommands {
+func (x *SendListCommandsResponse) GetOk() *CommandsResponse {
 	if x != nil {
 		if x, ok := x.Response.(*SendListCommandsResponse_Ok); ok {
 			return x.Ok
@@ -416,7 +416,7 @@ type isSendListCommandsResponse_Response interface {
 }
 
 type SendListCommandsResponse_Ok struct {
-	Ok *DevicesCommands `protobuf:"bytes,1,opt,name=ok,proto3,oneof"` // all commands per devices
+	Ok *CommandsResponse `protobuf:"bytes,1,opt,name=ok,proto3,oneof"` // all commands per devices
 }
 
 type SendListCommandsResponse_Error struct {
@@ -428,16 +428,63 @@ func (*SendListCommandsResponse_Ok) isSendListCommandsResponse_Response() {}
 func (*SendListCommandsResponse_Error) isSendListCommandsResponse_Response() {}
 
 // Map of device id and its list of commands
+type CommandsResponse struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	DevicesCommands []*DevicesCommands     `protobuf:"bytes,1,rep,name=devices_commands,json=devicesCommands,proto3" json:"devices_commands,omitempty"` // all commands per devices
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *CommandsResponse) Reset() {
+	*x = CommandsResponse{}
+	mi := &file_mir_api_v1_cmd_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CommandsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CommandsResponse) ProtoMessage() {}
+
+func (x *CommandsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_mir_api_v1_cmd_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CommandsResponse.ProtoReflect.Descriptor instead.
+func (*CommandsResponse) Descriptor() ([]byte, []int) {
+	return file_mir_api_v1_cmd_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *CommandsResponse) GetDevicesCommands() []*DevicesCommands {
+	if x != nil {
+		return x.DevicesCommands
+	}
+	return nil
+}
+
+// List of commands
 type DevicesCommands struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	DeviceCommands map[string]*Commands   `protobuf:"bytes,1,rep,name=device_commands,json=deviceCommands,proto3" json:"device_commands,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // all commands per devices
+	DevicesNamens  []string               `protobuf:"bytes,1,rep,name=devices_namens,json=devicesNamens,proto3" json:"devices_namens,omitempty"`    // List of devices that have this telemetry
+	CmdDescriptors []*CommandDescriptor   `protobuf:"bytes,2,rep,name=cmd_descriptors,json=cmdDescriptors,proto3" json:"cmd_descriptors,omitempty"` // Array of command descriptor
+	Error          string                 `protobuf:"bytes,3,opt,name=error,proto3" json:"error,omitempty"`                                         // HTTP like error if something went wrong
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
 
 func (x *DevicesCommands) Reset() {
 	*x = DevicesCommands{}
-	mi := &file_mir_api_v1_cmd_proto_msgTypes[4]
+	mi := &file_mir_api_v1_cmd_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -449,7 +496,7 @@ func (x *DevicesCommands) String() string {
 func (*DevicesCommands) ProtoMessage() {}
 
 func (x *DevicesCommands) ProtoReflect() protoreflect.Message {
-	mi := &file_mir_api_v1_cmd_proto_msgTypes[4]
+	mi := &file_mir_api_v1_cmd_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -462,63 +509,24 @@ func (x *DevicesCommands) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DevicesCommands.ProtoReflect.Descriptor instead.
 func (*DevicesCommands) Descriptor() ([]byte, []int) {
-	return file_mir_api_v1_cmd_proto_rawDescGZIP(), []int{4}
-}
-
-func (x *DevicesCommands) GetDeviceCommands() map[string]*Commands {
-	if x != nil {
-		return x.DeviceCommands
-	}
-	return nil
-}
-
-// List of commands
-type Commands struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Commands      []*CommandDescriptor   `protobuf:"bytes,1,rep,name=commands,proto3" json:"commands,omitempty"` // Array of command descriptor
-	Error         string                 `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`       // HTTP like error if something went wrong
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *Commands) Reset() {
-	*x = Commands{}
-	mi := &file_mir_api_v1_cmd_proto_msgTypes[5]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *Commands) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*Commands) ProtoMessage() {}
-
-func (x *Commands) ProtoReflect() protoreflect.Message {
-	mi := &file_mir_api_v1_cmd_proto_msgTypes[5]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use Commands.ProtoReflect.Descriptor instead.
-func (*Commands) Descriptor() ([]byte, []int) {
 	return file_mir_api_v1_cmd_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *Commands) GetCommands() []*CommandDescriptor {
+func (x *DevicesCommands) GetDevicesNamens() []string {
 	if x != nil {
-		return x.Commands
+		return x.DevicesNamens
 	}
 	return nil
 }
 
-func (x *Commands) GetError() string {
+func (x *DevicesCommands) GetCmdDescriptors() []*CommandDescriptor {
+	if x != nil {
+		return x.CmdDescriptors
+	}
+	return nil
+}
+
+func (x *DevicesCommands) GetError() string {
 	if x != nil {
 		return x.Error
 	}
@@ -765,20 +773,18 @@ const file_mir_api_v1_cmd_proto_rawDesc = "" +
 	"\x0erefresh_schema\x18\x03 \x01(\bR\rrefreshSchema\x1a?\n" +
 	"\x11FilterLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"m\n" +
-	"\x18SendListCommandsResponse\x12-\n" +
-	"\x02ok\x18\x01 \x01(\v2\x1b.mir_api.v1.DevicesCommandsH\x00R\x02ok\x12\x16\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"n\n" +
+	"\x18SendListCommandsResponse\x12.\n" +
+	"\x02ok\x18\x01 \x01(\v2\x1c.mir_api.v1.CommandsResponseH\x00R\x02ok\x12\x16\n" +
 	"\x05error\x18\x02 \x01(\tH\x00R\x05errorB\n" +
 	"\n" +
-	"\bresponse\"\xc4\x01\n" +
-	"\x0fDevicesCommands\x12X\n" +
-	"\x0fdevice_commands\x18\x01 \x03(\v2/.mir_api.v1.DevicesCommands.DeviceCommandsEntryR\x0edeviceCommands\x1aW\n" +
-	"\x13DeviceCommandsEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12*\n" +
-	"\x05value\x18\x02 \x01(\v2\x14.mir_api.v1.CommandsR\x05value:\x028\x01\"[\n" +
-	"\bCommands\x129\n" +
-	"\bcommands\x18\x01 \x03(\v2\x1d.mir_api.v1.CommandDescriptorR\bcommands\x12\x14\n" +
-	"\x05error\x18\x02 \x01(\tR\x05error\"\xd7\x01\n" +
+	"\bresponse\"Z\n" +
+	"\x10CommandsResponse\x12F\n" +
+	"\x10devices_commands\x18\x01 \x03(\v2\x1b.mir_api.v1.DevicesCommandsR\x0fdevicesCommands\"\x96\x01\n" +
+	"\x0fDevicesCommands\x12%\n" +
+	"\x0edevices_namens\x18\x01 \x03(\tR\rdevicesNamens\x12F\n" +
+	"\x0fcmd_descriptors\x18\x02 \x03(\v2\x1d.mir_api.v1.CommandDescriptorR\x0ecmdDescriptors\x12\x14\n" +
+	"\x05error\x18\x03 \x01(\tR\x05error\"\xd7\x01\n" +
 	"\x11CommandDescriptor\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12A\n" +
 	"\x06labels\x18\x02 \x03(\v2).mir_api.v1.CommandDescriptor.LabelsEntryR\x06labels\x12\x1a\n" +
@@ -809,45 +815,43 @@ func file_mir_api_v1_cmd_proto_rawDescGZIP() []byte {
 }
 
 var file_mir_api_v1_cmd_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_mir_api_v1_cmd_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_mir_api_v1_cmd_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_mir_api_v1_cmd_proto_goTypes = []any{
 	(CommandResponseStatus)(0),                   // 0: mir_api.v1.CommandResponseStatus
 	(*SendCommandRequest)(nil),                   // 1: mir_api.v1.SendCommandRequest
 	(*SendCommandResponse)(nil),                  // 2: mir_api.v1.SendCommandResponse
 	(*SendListCommandsRequest)(nil),              // 3: mir_api.v1.SendListCommandsRequest
 	(*SendListCommandsResponse)(nil),             // 4: mir_api.v1.SendListCommandsResponse
-	(*DevicesCommands)(nil),                      // 5: mir_api.v1.DevicesCommands
-	(*Commands)(nil),                             // 6: mir_api.v1.Commands
+	(*CommandsResponse)(nil),                     // 5: mir_api.v1.CommandsResponse
+	(*DevicesCommands)(nil),                      // 6: mir_api.v1.DevicesCommands
 	(*CommandDescriptor)(nil),                    // 7: mir_api.v1.CommandDescriptor
 	(*SendCommandResponse_CommandResponses)(nil), // 8: mir_api.v1.SendCommandResponse.CommandResponses
 	(*SendCommandResponse_CommandResponse)(nil),  // 9: mir_api.v1.SendCommandResponse.CommandResponse
 	nil,                  // 10: mir_api.v1.SendCommandResponse.CommandResponses.DeviceResponsesEntry
 	nil,                  // 11: mir_api.v1.SendListCommandsRequest.FilterLabelsEntry
-	nil,                  // 12: mir_api.v1.DevicesCommands.DeviceCommandsEntry
-	nil,                  // 13: mir_api.v1.CommandDescriptor.LabelsEntry
-	(*DeviceTarget)(nil), // 14: mir_api.v1.DeviceTarget
-	(Encoding)(0),        // 15: mir_api.v1.Encoding
+	nil,                  // 12: mir_api.v1.CommandDescriptor.LabelsEntry
+	(*DeviceTarget)(nil), // 13: mir_api.v1.DeviceTarget
+	(Encoding)(0),        // 14: mir_api.v1.Encoding
 }
 var file_mir_api_v1_cmd_proto_depIdxs = []int32{
-	14, // 0: mir_api.v1.SendCommandRequest.targets:type_name -> mir_api.v1.DeviceTarget
-	15, // 1: mir_api.v1.SendCommandRequest.payload_encoding:type_name -> mir_api.v1.Encoding
+	13, // 0: mir_api.v1.SendCommandRequest.targets:type_name -> mir_api.v1.DeviceTarget
+	14, // 1: mir_api.v1.SendCommandRequest.payload_encoding:type_name -> mir_api.v1.Encoding
 	8,  // 2: mir_api.v1.SendCommandResponse.ok:type_name -> mir_api.v1.SendCommandResponse.CommandResponses
-	14, // 3: mir_api.v1.SendListCommandsRequest.targets:type_name -> mir_api.v1.DeviceTarget
+	13, // 3: mir_api.v1.SendListCommandsRequest.targets:type_name -> mir_api.v1.DeviceTarget
 	11, // 4: mir_api.v1.SendListCommandsRequest.filter_labels:type_name -> mir_api.v1.SendListCommandsRequest.FilterLabelsEntry
-	5,  // 5: mir_api.v1.SendListCommandsResponse.ok:type_name -> mir_api.v1.DevicesCommands
-	12, // 6: mir_api.v1.DevicesCommands.device_commands:type_name -> mir_api.v1.DevicesCommands.DeviceCommandsEntry
-	7,  // 7: mir_api.v1.Commands.commands:type_name -> mir_api.v1.CommandDescriptor
-	13, // 8: mir_api.v1.CommandDescriptor.labels:type_name -> mir_api.v1.CommandDescriptor.LabelsEntry
+	5,  // 5: mir_api.v1.SendListCommandsResponse.ok:type_name -> mir_api.v1.CommandsResponse
+	6,  // 6: mir_api.v1.CommandsResponse.devices_commands:type_name -> mir_api.v1.DevicesCommands
+	7,  // 7: mir_api.v1.DevicesCommands.cmd_descriptors:type_name -> mir_api.v1.CommandDescriptor
+	12, // 8: mir_api.v1.CommandDescriptor.labels:type_name -> mir_api.v1.CommandDescriptor.LabelsEntry
 	10, // 9: mir_api.v1.SendCommandResponse.CommandResponses.device_responses:type_name -> mir_api.v1.SendCommandResponse.CommandResponses.DeviceResponsesEntry
-	15, // 10: mir_api.v1.SendCommandResponse.CommandResponses.encoding:type_name -> mir_api.v1.Encoding
+	14, // 10: mir_api.v1.SendCommandResponse.CommandResponses.encoding:type_name -> mir_api.v1.Encoding
 	0,  // 11: mir_api.v1.SendCommandResponse.CommandResponse.status:type_name -> mir_api.v1.CommandResponseStatus
 	9,  // 12: mir_api.v1.SendCommandResponse.CommandResponses.DeviceResponsesEntry.value:type_name -> mir_api.v1.SendCommandResponse.CommandResponse
-	6,  // 13: mir_api.v1.DevicesCommands.DeviceCommandsEntry.value:type_name -> mir_api.v1.Commands
-	14, // [14:14] is the sub-list for method output_type
-	14, // [14:14] is the sub-list for method input_type
-	14, // [14:14] is the sub-list for extension type_name
-	14, // [14:14] is the sub-list for extension extendee
-	0,  // [0:14] is the sub-list for field type_name
+	13, // [13:13] is the sub-list for method output_type
+	13, // [13:13] is the sub-list for method input_type
+	13, // [13:13] is the sub-list for extension type_name
+	13, // [13:13] is the sub-list for extension extendee
+	0,  // [0:13] is the sub-list for field type_name
 }
 
 func init() { file_mir_api_v1_cmd_proto_init() }
@@ -871,7 +875,7 @@ func file_mir_api_v1_cmd_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_mir_api_v1_cmd_proto_rawDesc), len(file_mir_api_v1_cmd_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   13,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

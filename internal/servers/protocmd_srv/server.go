@@ -12,6 +12,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/api/metrics"
 	"github.com/maxthom/mir/internal/libs/external/surreal"
 	"github.com/maxthom/mir/internal/libs/proto/json_template"
+	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
 	"github.com/maxthom/mir/internal/services/schema_cache"
 	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
@@ -377,7 +378,14 @@ func (s *ProtoCmdServer) sendCommandToDevices(msg *mir.Msg, req *mir_apiv1.SendC
 	return devResp, nil
 }
 
-func (s *ProtoCmdServer) listCommandsSub(msg *mir.Msg, clientId string, req *mir_apiv1.SendListCommandsRequest) (map[string]*mir_apiv1.Commands, error) {
+type schemaPerDevices struct {
+	sch        *mir_proto.MirProtoSchema
+	err        error
+	devsId     []string
+	devsNameNs []string
+}
+
+func (s *ProtoCmdServer) listCommandsSub(msg *mir.Msg, clientId string, req *mir_apiv1.SendListCommandsRequest) ([]*mir_apiv1.DevicesCommands, error) {
 	l.Info().Any("req", req).Msg("list command request")
 	requestTotal.WithLabelValues("list").Inc()
 	degradedMode := false
@@ -404,7 +412,8 @@ func (s *ProtoCmdServer) listCommandsSub(msg *mir.Msg, clientId string, req *mir
 		}
 	}
 
-	devsCmds := make(map[string]*mir_apiv1.Commands)
+	devsCmd := []*mir_apiv1.DevicesCommands{}
+	devSchemas := []*schemaPerDevices{}
 	for _, dev := range devs {
 		nameNs := dev.GetNameNamespace()
 		if degradedMode {
@@ -412,31 +421,89 @@ func (s *ProtoCmdServer) listCommandsSub(msg *mir.Msg, clientId string, req *mir
 		}
 		reg, _, err := s.schStore.GetDeviceSchema(dev.Spec.DeviceId, req.RefreshSchema)
 		if err != nil {
-			devsCmds[nameNs] = &mir_apiv1.Commands{
-				Error: err.Error(),
+			found := false
+			for _, d := range devsCmd {
+				if d.Error == err.Error() {
+					d.DevicesNamens = append(d.DevicesNamens, nameNs)
+					found = true
+				}
+			}
+			if !found {
+				devsCmd = append(devsCmd, &mir_apiv1.DevicesCommands{
+					DevicesNamens: []string{nameNs},
+					Error:         err.Error(),
+				})
 			}
 			continue
 		}
-
-		cmds, err := reg.GetCommandsList(req.FilterLabels)
-		if err != nil {
-			devsCmds[nameNs] = &mir_apiv1.Commands{
-				Error: err.Error(),
+		found := false
+		for _, sch := range devSchemas {
+			if mir_proto.AreSchemaEqual(sch.sch, reg) {
+				sch.devsId = append(sch.devsId, dev.Spec.DeviceId)
+				sch.devsNameNs = append(sch.devsNameNs, nameNs)
+				found = true
 			}
-			continue
-		}
 
-		cmdsList := []*mir_apiv1.CommandDescriptor{}
-		for _, cmd := range cmds {
-			cmdsList = append(cmdsList, cmd)
 		}
-		devsCmds[nameNs] = &mir_apiv1.Commands{
-			Commands: cmdsList,
+		if !found {
+			devSchemas = append(devSchemas, &schemaPerDevices{
+				sch:        reg,
+				devsId:     []string{dev.Spec.DeviceId},
+				devsNameNs: []string{nameNs},
+			})
 		}
 	}
 
+	for _, sch := range devSchemas {
+		cmds, err := sch.sch.GetCommandsList(req.FilterLabels)
+		if err != nil {
+			devsCmd = append(devsCmd, &mir_apiv1.DevicesCommands{
+				DevicesNamens: sch.devsNameNs,
+				Error:         err.Error(),
+			})
+			requestErrorTotal.WithLabelValues("list").Inc()
+			continue
+		}
+
+		devsCmd = append(devsCmd, &mir_apiv1.DevicesCommands{
+			DevicesNamens:  sch.devsNameNs,
+			CmdDescriptors: cmds,
+		})
+	}
+
+	// devsCmds := make(map[string]*mir_apiv1.Commands)
+	// for _, dev := range devs {
+	// 	nameNs := dev.GetNameNamespace()
+	// 	if degradedMode {
+	// 		nameNs = dev.Spec.DeviceId
+	// 	}
+	// 	reg, _, err := s.schStore.GetDeviceSchema(dev.Spec.DeviceId, req.RefreshSchema)
+	// 	if err != nil {
+	// 		devsCmds[nameNs] = &mir_apiv1.Commands{
+	// 			Error: err.Error(),
+	// 		}
+	// 		continue
+	// 	}
+
+	// 	cmds, err := reg.GetCommandsList(req.FilterLabels)
+	// 	if err != nil {
+	// 		devsCmds[nameNs] = &mir_apiv1.Commands{
+	// 			Error: err.Error(),
+	// 		}
+	// 		continue
+	// 	}
+
+	// 	cmdsList := []*mir_apiv1.CommandDescriptor{}
+	// 	for _, cmd := range cmds {
+	// 		cmdsList = append(cmdsList, cmd)
+	// 	}
+	// 	devsCmds[nameNs] = &mir_apiv1.Commands{
+	// 		Commands: cmdsList,
+	// 	}
+	// }
+
 	l.Info().Msg("list command request processed successfully")
-	return devsCmds, nil
+	return devsCmd, nil
 }
 
 func publishCommandEvent(m *mir.Mir, msg *mir.Msg, name, namespace string, cmd *mir_apiv1.SendCommandResponse_CommandResponse) error {
