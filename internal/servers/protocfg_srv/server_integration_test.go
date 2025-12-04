@@ -112,19 +112,19 @@ func TestPublishCfgListRequest(t *testing.T) {
 	}
 
 	// Assert
-	dev := respListCfg.GetOk().DeviceConfigs[id+"/testing_cfg"]
-	assert.Equal(t, dev.Error, "")
-	assert.Equal(t, len(dev.Configs), 4)
-	assert.Equal(t, dev.Configs[0].Name, "protocfg_test.v1.Conduit")
-	assert.Equal(t, dev.Configs[0].Labels["building"], "A")
-	assert.Equal(t, dev.Configs[0].Labels["floor"], "1")
-	assert.Equal(t, dev.Configs[1].Name, "protocfg_test.v1.PowerLevel")
-	assert.Equal(t, dev.Configs[1].Labels["building"], "A")
-	assert.Equal(t, dev.Configs[1].Labels["floor"], "2")
-	assert.Equal(t, dev.Configs[2].Name, "protocfg_test.v1.Coordinate")
-	assert.Equal(t, len(dev.Configs[2].Labels), 0)
-	assert.Equal(t, dev.Configs[3].Name, "protocfg_test.v1.Destination")
-	assert.Equal(t, len(dev.Configs[3].Labels), 0)
+	dev := respListCfg.GetOk().DeviceConfigs[0].CfgDescriptors
+	assert.Equal(t, dev[0].Error, "")
+	assert.Equal(t, len(dev), 4)
+	assert.Equal(t, dev[0].Name, "protocfg_test.v1.Conduit")
+	assert.Equal(t, dev[0].Labels["building"], "A")
+	assert.Equal(t, dev[0].Labels["floor"], "1")
+	assert.Equal(t, dev[1].Name, "protocfg_test.v1.PowerLevel")
+	assert.Equal(t, dev[1].Labels["building"], "A")
+	assert.Equal(t, dev[1].Labels["floor"], "2")
+	assert.Equal(t, dev[2].Name, "protocfg_test.v1.Coordinate")
+	assert.Equal(t, len(dev[2].Labels), 0)
+	assert.Equal(t, dev[3].Name, "protocfg_test.v1.Destination")
+	assert.Equal(t, len(dev[3].Labels), 0)
 
 	cancel()
 	for _, wg := range wgs {
@@ -177,12 +177,12 @@ func TestPublishCfgListFiltersRequest(t *testing.T) {
 
 	// Assert
 	fmt.Println(respListCmd)
-	dev := respListCmd.GetOk().DeviceConfigs[id+"/testing_cfg"]
+	dev := respListCmd.GetOk().DeviceConfigs[0]
 	assert.Equal(t, dev.Error, "")
-	assert.Equal(t, len(dev.Configs), 1)
-	assert.Equal(t, dev.Configs[0].Name, "protocfg_test.v1.PowerLevel")
-	assert.Equal(t, dev.Configs[0].Labels["building"], "A")
-	assert.Equal(t, dev.Configs[0].Labels["floor"], "2")
+	assert.Equal(t, len(dev.CfgDescriptors), 1)
+	assert.Equal(t, dev.CfgDescriptors[0].Name, "protocfg_test.v1.PowerLevel")
+	assert.Equal(t, dev.CfgDescriptors[0].Labels["building"], "A")
+	assert.Equal(t, dev.CfgDescriptors[0].Labels["floor"], "2")
 
 	cancel()
 	for _, wg := range wgs {
