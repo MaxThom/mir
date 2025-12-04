@@ -74,11 +74,11 @@ func (d *ConfigListCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) error
 
 	tpls := map[string][]string{}
 	var sb strings.Builder
-	for devNameNs, cmds := range resp {
+	for _, cmds := range resp {
 		if cmds.Error != "" {
 			sb.WriteString(cmds.Error)
 		} else {
-			for _, cmd := range cmds.Configs {
+			for _, cmd := range cmds.CfgDescriptors {
 				sb.WriteString(cmd.Name)
 				sb.WriteString("{")
 				sb.WriteString(mapToSortedString(cmd.Labels))
@@ -101,7 +101,11 @@ func (d *ConfigListCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) error
 				}
 			}
 		}
-		tpls[sb.String()] = append(tpls[sb.String()], devNameNs)
+		devsTitle := cmds.DevicesNamens
+		if len(cmds.DevicesNamens) > 3 {
+			devsTitle = []string{strings.Join(cmds.DevicesNamens[0:3], ", ") + " & " + fmt.Sprintf("%d more", len(cmds.DevicesNamens)-3)}
+		}
+		tpls[sb.String()] = append(tpls[sb.String()], devsTitle...)
 		sb.Reset()
 	}
 

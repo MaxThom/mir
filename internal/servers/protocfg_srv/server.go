@@ -14,6 +14,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/api/metrics"
 	"github.com/maxthom/mir/internal/libs/external/surreal"
 	"github.com/maxthom/mir/internal/libs/proto/json_template"
+	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
 	"github.com/maxthom/mir/internal/services/schema_cache"
 	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
@@ -135,7 +136,14 @@ func (s *ProtoCfgServer) Shutdown() error {
 	return nil
 }
 
-func (s *ProtoCfgServer) listCfgSub(msg *mir.Msg, clientId string, req *mir_apiv1.SendListConfigRequest) (map[string]*mir_apiv1.Configs, error) {
+type schemaPerDevices struct {
+	sch        *mir_proto.MirProtoSchema
+	err        error
+	devsId     []string
+	devsNameNs []string
+}
+
+func (s *ProtoCfgServer) listCfgSub(msg *mir.Msg, clientId string, req *mir_apiv1.SendListConfigRequest) ([]*mir_apiv1.DevicesConfigs, error) {
 	l.Info().Any("req", req).Msg("list config request")
 	requestTotal.WithLabelValues("list").Inc()
 	degradedMode := false
@@ -162,7 +170,8 @@ func (s *ProtoCfgServer) listCfgSub(msg *mir.Msg, clientId string, req *mir_apiv
 		}
 	}
 
-	devsCmds := make(map[string]*mir_apiv1.Configs)
+	devsCfg := []*mir_apiv1.DevicesConfigs{}
+	devSchemas := []*schemaPerDevices{}
 	for _, dev := range devs {
 		nameNs := dev.GetNameNamespace()
 		if degradedMode {
@@ -170,43 +179,101 @@ func (s *ProtoCfgServer) listCfgSub(msg *mir.Msg, clientId string, req *mir_apiv
 		}
 		reg, _, err := s.schStore.GetDeviceSchema(dev.Spec.DeviceId, req.RefreshSchema)
 		if err != nil {
-			devsCmds[nameNs] = &mir_apiv1.Configs{
-				Error: err.Error(),
+			found := false
+			for _, d := range devsCfg {
+				if d.Error == err.Error() {
+					d.DevicesNamens = append(d.DevicesNamens, nameNs)
+					found = true
+				}
+			}
+			if !found {
+				devsCfg = append(devsCfg, &mir_apiv1.DevicesConfigs{
+					DevicesNamens: []string{nameNs},
+					Error:         err.Error(),
+				})
 			}
 			continue
 		}
-
-		cfgs, err := reg.GetConfigList(req.FilterLabels)
-		if err != nil {
-			devsCmds[nameNs] = &mir_apiv1.Configs{
-				Error: err.Error(),
+		found := false
+		for _, sch := range devSchemas {
+			if mir_proto.AreSchemaEqual(sch.sch, reg) {
+				sch.devsId = append(sch.devsId, dev.Spec.DeviceId)
+				sch.devsNameNs = append(sch.devsNameNs, nameNs)
+				found = true
 			}
-			continue
-		}
 
-		cfgList := []*mir_apiv1.ConfigDescriptor{}
-		for _, cfg := range cfgs {
-			if v, ok := dev.Properties.Desired[cfg.Name]; ok {
-				b, err := json.Marshal(v)
-				if err != nil {
-					cfg.Error = err.Error()
-				} else {
-					cfg.Values = string(b)
-				}
-			} else {
-				if degradedMode {
-					cfg.Values = errors.New("{\"err\": \"can't retrieve config in degraded mode\"}").Error()
-				}
-			}
-			cfgList = append(cfgList, cfg)
 		}
-		devsCmds[nameNs] = &mir_apiv1.Configs{
-			Configs: cfgList,
+		if !found {
+			devSchemas = append(devSchemas, &schemaPerDevices{
+				sch:        reg,
+				devsId:     []string{dev.Spec.DeviceId},
+				devsNameNs: []string{nameNs},
+			})
 		}
 	}
 
+	for _, sch := range devSchemas {
+		cmds, err := sch.sch.GetConfigList(req.FilterLabels)
+		if err != nil {
+			devsCfg = append(devsCfg, &mir_apiv1.DevicesConfigs{
+				DevicesNamens: sch.devsNameNs,
+				Error:         err.Error(),
+			})
+			requestErrorTotal.WithLabelValues("list").Inc()
+			continue
+		}
+
+		devsCfg = append(devsCfg, &mir_apiv1.DevicesConfigs{
+			DevicesNamens:  sch.devsNameNs,
+			CfgDescriptors: cmds,
+		})
+	}
+
+	// devsCmds := make(map[string]*mir_apiv1.Configs)
+	// for _, dev := range devs {
+	// 	nameNs := dev.GetNameNamespace()
+	// 	if degradedMode {
+	// 		nameNs = dev.Spec.DeviceId
+	// 	}
+	// 	reg, _, err := s.schStore.GetDeviceSchema(dev.Spec.DeviceId, req.RefreshSchema)
+	// 	if err != nil {
+	// 		devsCmds[nameNs] = &mir_apiv1.Configs{
+	// 			Error: err.Error(),
+	// 		}
+	// 		continue
+	// 	}
+
+	// 	cfgs, err := reg.GetConfigList(req.FilterLabels)
+	// 	if err != nil {
+	// 		devsCmds[nameNs] = &mir_apiv1.Configs{
+	// 			Error: err.Error(),
+	// 		}
+	// 		continue
+	// 	}
+
+	// 	cfgList := []*mir_apiv1.ConfigDescriptor{}
+	// 	for _, cfg := range cfgs {
+	// 		if v, ok := dev.Properties.Desired[cfg.Name]; ok {
+	// 			b, err := json.Marshal(v)
+	// 			if err != nil {
+	// 				cfg.Error = err.Error()
+	// 			} else {
+	// 				cfg.Values = string(b)
+	// 			}
+	// 		} else {
+	// 			if degradedMode {
+	// 				cfg.Values = errors.New("{\"err\": \"can't retrieve config in degraded mode\"}").Error()
+	// 			}
+	// 		}
+	// 		cfgList = append(cfgList, cfg)
+	// 	}
+	// 	devsCmds[nameNs] = &mir_apiv1.Configs{
+	// 		Configs: cfgList,
+	// 	}
+	// }
+
 	l.Info().Msg("list config request processed successfully")
-	return devsCmds, nil
+	return devsCfg, nil
 }
 
 func (s *ProtoCfgServer) sendConfigSub(msg *mir.Msg, clientId string, req *mir_apiv1.SendConfigRequest) (*mir_apiv1.SendConfigResponse_ConfigResponses, error) {

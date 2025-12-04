@@ -471,37 +471,6 @@ func (s *ProtoCmdServer) listCommandsSub(msg *mir.Msg, clientId string, req *mir
 		})
 	}
 
-	// devsCmds := make(map[string]*mir_apiv1.Commands)
-	// for _, dev := range devs {
-	// 	nameNs := dev.GetNameNamespace()
-	// 	if degradedMode {
-	// 		nameNs = dev.Spec.DeviceId
-	// 	}
-	// 	reg, _, err := s.schStore.GetDeviceSchema(dev.Spec.DeviceId, req.RefreshSchema)
-	// 	if err != nil {
-	// 		devsCmds[nameNs] = &mir_apiv1.Commands{
-	// 			Error: err.Error(),
-	// 		}
-	// 		continue
-	// 	}
-
-	// 	cmds, err := reg.GetCommandsList(req.FilterLabels)
-	// 	if err != nil {
-	// 		devsCmds[nameNs] = &mir_apiv1.Commands{
-	// 			Error: err.Error(),
-	// 		}
-	// 		continue
-	// 	}
-
-	// 	cmdsList := []*mir_apiv1.CommandDescriptor{}
-	// 	for _, cmd := range cmds {
-	// 		cmdsList = append(cmdsList, cmd)
-	// 	}
-	// 	devsCmds[nameNs] = &mir_apiv1.Commands{
-	// 		Commands: cmdsList,
-	// 	}
-	// }
-
 	l.Info().Msg("list command request processed successfully")
 	return devsCmd, nil
 }

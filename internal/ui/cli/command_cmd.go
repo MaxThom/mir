@@ -97,7 +97,11 @@ func (d *CommandListCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) erro
 				}
 			}
 		}
-		tpls[sb.String()] = append(tpls[sb.String()], cmds.DevicesNamens...)
+		devsTitle := cmds.DevicesNamens
+		if len(cmds.DevicesNamens) > 3 {
+			devsTitle = []string{strings.Join(cmds.DevicesNamens[0:3], ", ") + " & " + fmt.Sprintf("%d more", len(cmds.DevicesNamens)-3)}
+		}
+		tpls[sb.String()] = append(tpls[sb.String()], devsTitle...)
 		sb.Reset()
 	}
 
