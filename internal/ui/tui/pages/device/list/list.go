@@ -29,6 +29,7 @@ var (
 	menuOption_device_edit      string = "/devices/edit"
 	menuOption_device_schema    string = "/devices/schema"
 	menuOption_device_telemetry string = "/devices/telemetry"
+	menuOption_device_commands  string = "/devices/commands"
 	v                           strings.Builder
 )
 
@@ -261,7 +262,12 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, msgs.ErrCmd(fmt.Errorf("no device selected"), 2*time.Second)
 				}
 				return m, msgs.RouteChangeWithDataCmd(menuOption_device_telemetry, devices)
-
+			} else if msg.String() == "r" {
+				devices, ok := m.getSelectedDevices()
+				if !ok {
+					return m, msgs.ErrCmd(fmt.Errorf("no device selected"), 2*time.Second)
+				}
+				return m, msgs.RouteChangeWithDataCmd(menuOption_device_commands, devices)
 			} else {
 				m.table, cmd = m.table.Update(msg)
 			}

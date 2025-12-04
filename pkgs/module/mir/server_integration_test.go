@@ -338,9 +338,10 @@ func TestServerRoutes_ListTelemetry(t *testing.T) {
 
 func TestServerRoutes_ListCommand(t *testing.T) {
 	deviceID := "test-server-listcmd"
-	testCommands := map[string]*mir_apiv1.Commands{
-		"test-server-listcmd": {
-			Commands: []*mir_apiv1.CommandDescriptor{
+	testCommands := []*mir_apiv1.DevicesCommands{
+		{
+			DevicesNamens: []string{"test-server-listcmd"},
+			CmdDescriptors: []*mir_apiv1.CommandDescriptor{
 				{
 					Name: "cmd_test",
 				},
@@ -349,7 +350,7 @@ func TestServerRoutes_ListCommand(t *testing.T) {
 	}
 
 	err := m.Client().ListCommands().Subscribe(
-		func(msg *Msg, clientId string, req *mir_apiv1.SendListCommandsRequest) (map[string]*mir_apiv1.Commands, error) {
+		func(msg *Msg, clientId string, req *mir_apiv1.SendListCommandsRequest) ([]*mir_apiv1.DevicesCommands, error) {
 			return testCommands, nil
 		},
 	)
@@ -361,7 +362,7 @@ func TestServerRoutes_ListCommand(t *testing.T) {
 		},
 	})
 	assert.NilError(t, err)
-	assert.Equal(t, resp[deviceID].Commands[0].Name, testCommands[deviceID].Commands[0].Name)
+	assert.Equal(t, resp[0].DevicesNamens[0], testCommands[0].DevicesNamens[0])
 }
 
 func TestServerRoutes_SendCommand(t *testing.T) {

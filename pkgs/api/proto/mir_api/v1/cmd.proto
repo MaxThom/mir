@@ -65,20 +65,21 @@ message SendListCommandsRequest {
 
 message SendListCommandsResponse {
   oneof response {
-  	DevicesCommands ok = 1; // all commands per devices
+  	CommandsResponse ok = 1; // all commands per devices
     string error = 2;  // error if something went wrong
   }
 }
 
 // Map of device id and its list of commands
-message DevicesCommands {
-	map<string, Commands> device_commands = 1; // all commands per devices
+message CommandsResponse {
+	repeated DevicesCommands devices_commands = 1; // all commands per devices
 }
 
 // List of commands
-message Commands {
-	repeated CommandDescriptor commands = 1; // Array of command descriptor
-	string error = 2; // HTTP like error if something went wrong
+message DevicesCommands {
+    repeated string devices_namens = 1; // List of devices that have this telemetry
+	repeated CommandDescriptor cmd_descriptors = 2; // Array of command descriptor
+	string error = 3; // HTTP like error if something went wrong
 }
 
 // Descriptor of a command

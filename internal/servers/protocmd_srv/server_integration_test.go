@@ -109,19 +109,19 @@ func TestPublishCmdListRequest(t *testing.T) {
 	}
 
 	// Assert
-	dev := respListCmd.GetOk().DeviceCommands[id+"/testing_cmd"]
+	dev := respListCmd.GetOk().DevicesCommands[0]
 	assert.Equal(t, dev.Error, "")
-	assert.Equal(t, len(dev.Commands), 4)
-	assert.Equal(t, dev.Commands[0].Name, "protocmd_test.v1.Command")
-	assert.Equal(t, dev.Commands[0].Labels["building"], "A")
-	assert.Equal(t, dev.Commands[0].Labels["floor"], "1")
-	assert.Equal(t, dev.Commands[1].Name, "protocmd_test.v1.ChangePower")
-	assert.Equal(t, dev.Commands[1].Labels["building"], "A")
-	assert.Equal(t, dev.Commands[1].Labels["floor"], "2")
-	assert.Equal(t, dev.Commands[2].Name, "protocmd_test.v1.SetTargetVector")
-	assert.Equal(t, len(dev.Commands[2].Labels), 0)
-	assert.Equal(t, dev.Commands[3].Name, "protocmd_test.v1.SetDestination")
-	assert.Equal(t, len(dev.Commands[3].Labels), 0)
+	assert.Equal(t, len(dev.CmdDescriptors), 4)
+	assert.Equal(t, dev.CmdDescriptors[0].Name, "protocmd_test.v1.Command")
+	assert.Equal(t, dev.CmdDescriptors[0].Labels["building"], "A")
+	assert.Equal(t, dev.CmdDescriptors[0].Labels["floor"], "1")
+	assert.Equal(t, dev.CmdDescriptors[1].Name, "protocmd_test.v1.ChangePower")
+	assert.Equal(t, dev.CmdDescriptors[1].Labels["building"], "A")
+	assert.Equal(t, dev.CmdDescriptors[1].Labels["floor"], "2")
+	assert.Equal(t, dev.CmdDescriptors[2].Name, "protocmd_test.v1.SetTargetVector")
+	assert.Equal(t, len(dev.CmdDescriptors[2].Labels), 0)
+	assert.Equal(t, dev.CmdDescriptors[3].Name, "protocmd_test.v1.SetDestination")
+	assert.Equal(t, len(dev.CmdDescriptors[3].Labels), 0)
 
 	cancel()
 	for _, wg := range wgs {
@@ -173,12 +173,12 @@ func TestPublishCmdListFiltersRequest(t *testing.T) {
 	}
 
 	// Assert
-	dev := respListCmd.GetOk().DeviceCommands[id+"/testing_cmd"]
+	dev := respListCmd.GetOk().DevicesCommands[0]
 	assert.Equal(t, dev.Error, "")
-	assert.Equal(t, len(dev.Commands), 1)
-	assert.Equal(t, dev.Commands[0].Name, "protocmd_test.v1.ChangePower")
-	assert.Equal(t, dev.Commands[0].Labels["building"], "A")
-	assert.Equal(t, dev.Commands[0].Labels["floor"], "2")
+	assert.Equal(t, len(dev.CmdDescriptors), 1)
+	assert.Equal(t, dev.CmdDescriptors[0].Name, "protocmd_test.v1.ChangePower")
+	assert.Equal(t, dev.CmdDescriptors[0].Labels["building"], "A")
+	assert.Equal(t, dev.CmdDescriptors[0].Labels["floor"], "2")
 
 	cancel()
 	for _, wg := range wgs {
