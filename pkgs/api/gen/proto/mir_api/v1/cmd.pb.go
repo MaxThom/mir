@@ -476,8 +476,9 @@ func (x *CommandsResponse) GetDevicesCommands() []*DevicesCommands {
 type DevicesCommands struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	DevicesNamens  []string               `protobuf:"bytes,1,rep,name=devices_namens,json=devicesNamens,proto3" json:"devices_namens,omitempty"`    // List of devices that have this telemetry
-	CmdDescriptors []*CommandDescriptor   `protobuf:"bytes,2,rep,name=cmd_descriptors,json=cmdDescriptors,proto3" json:"cmd_descriptors,omitempty"` // Array of command descriptor
-	Error          string                 `protobuf:"bytes,3,opt,name=error,proto3" json:"error,omitempty"`                                         // HTTP like error if something went wrong
+	DevicesId      []string               `protobuf:"bytes,2,rep,name=devices_id,json=devicesId,proto3" json:"devices_id,omitempty"`                // List of devices that have this telemetry
+	CmdDescriptors []*CommandDescriptor   `protobuf:"bytes,3,rep,name=cmd_descriptors,json=cmdDescriptors,proto3" json:"cmd_descriptors,omitempty"` // Array of command descriptor
+	Error          string                 `protobuf:"bytes,4,opt,name=error,proto3" json:"error,omitempty"`                                         // HTTP like error if something went wrong
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -515,6 +516,13 @@ func (*DevicesCommands) Descriptor() ([]byte, []int) {
 func (x *DevicesCommands) GetDevicesNamens() []string {
 	if x != nil {
 		return x.DevicesNamens
+	}
+	return nil
+}
+
+func (x *DevicesCommands) GetDevicesId() []string {
+	if x != nil {
+		return x.DevicesId
 	}
 	return nil
 }
@@ -780,11 +788,13 @@ const file_mir_api_v1_cmd_proto_rawDesc = "" +
 	"\n" +
 	"\bresponse\"Z\n" +
 	"\x10CommandsResponse\x12F\n" +
-	"\x10devices_commands\x18\x01 \x03(\v2\x1b.mir_api.v1.DevicesCommandsR\x0fdevicesCommands\"\x96\x01\n" +
+	"\x10devices_commands\x18\x01 \x03(\v2\x1b.mir_api.v1.DevicesCommandsR\x0fdevicesCommands\"\xb5\x01\n" +
 	"\x0fDevicesCommands\x12%\n" +
-	"\x0edevices_namens\x18\x01 \x03(\tR\rdevicesNamens\x12F\n" +
-	"\x0fcmd_descriptors\x18\x02 \x03(\v2\x1d.mir_api.v1.CommandDescriptorR\x0ecmdDescriptors\x12\x14\n" +
-	"\x05error\x18\x03 \x01(\tR\x05error\"\xd7\x01\n" +
+	"\x0edevices_namens\x18\x01 \x03(\tR\rdevicesNamens\x12\x1d\n" +
+	"\n" +
+	"devices_id\x18\x02 \x03(\tR\tdevicesId\x12F\n" +
+	"\x0fcmd_descriptors\x18\x03 \x03(\v2\x1d.mir_api.v1.CommandDescriptorR\x0ecmdDescriptors\x12\x14\n" +
+	"\x05error\x18\x04 \x01(\tR\x05error\"\xd7\x01\n" +
 	"\x11CommandDescriptor\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12A\n" +
 	"\x06labels\x18\x02 \x03(\v2).mir_api.v1.CommandDescriptor.LabelsEntryR\x06labels\x12\x1a\n" +

@@ -15,6 +15,7 @@ import (
 	"github.com/maxthom/mir/internal/ui/tui/components/menu"
 	"github.com/maxthom/mir/internal/ui/tui/msgs"
 	device_commands "github.com/maxthom/mir/internal/ui/tui/pages/device/cmd"
+	device_command_response "github.com/maxthom/mir/internal/ui/tui/pages/device/cmd/response"
 	device_create "github.com/maxthom/mir/internal/ui/tui/pages/device/create"
 	device_edit "github.com/maxthom/mir/internal/ui/tui/pages/device/edit"
 	device_list "github.com/maxthom/mir/internal/ui/tui/pages/device/list"
@@ -30,6 +31,8 @@ var v strings.Builder
 
 type MirTeaModel interface {
 	InitWithData(d any) tea.Cmd
+	ResumeWithData(d any) tea.Cmd
+	Resume() tea.Cmd
 	tea.Model
 }
 
@@ -46,15 +49,16 @@ func NewModel(ctx context.Context, log zerolog.Logger, m *mir.Mir, cfg ui.Config
 	log = log.With().Str("page", "router").Logger()
 	s := labelspinner.New(" 🛰️ ", styles.Mir.Render("Mir"), spinner.Dot)
 	routes := map[string]MirTeaModel{
-		"/":                  mainmenu.NewModel(),
-		"/devices":           device_list.NewModel(ctx),
-		"/devices/create":    device_create.NewModel(ctx),
-		"/devices/edit":      device_edit.NewModel(ctx),
-		"/devices/schema":    device_schema.NewModel(ctx),
-		"/devices/telemetry": device_telemetry.NewModel(ctx),
-		"/devices/commands":  device_commands.NewModel(ctx),
-		"/twins":             nil,
-		"/telemetry":         nil,
+		"/":                           mainmenu.NewModel(),
+		"/devices":                    device_list.NewModel(ctx),
+		"/devices/create":             device_create.NewModel(ctx),
+		"/devices/edit":               device_edit.NewModel(ctx),
+		"/devices/schema":             device_schema.NewModel(ctx),
+		"/devices/telemetry":          device_telemetry.NewModel(ctx),
+		"/devices/commands":           device_commands.NewModel(ctx),
+		"/devices/commands/responses": device_command_response.NewModel(ctx),
+		"/twins":                      nil,
+		"/telemetry":                  nil,
 	}
 	return &Model{
 		ctx:          ctx,
@@ -67,7 +71,7 @@ func NewModel(ctx context.Context, log zerolog.Logger, m *mir.Mir, cfg ui.Config
 }
 
 func (m *Model) Init() tea.Cmd {
-	return tea.Batch(msgs.ReqMsgCmd("connecting to Mir ...standby"), m.connectToMir())
+	return tea.Sequence(tea.ClearScreen, tea.Batch(msgs.ReqMsgCmd("connecting to Mir ...standby", msgs.DefaultTimeout), m.connectToMir()))
 }
 
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -76,10 +80,20 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		store.ScreenWidth = msg.Width
 		store.ScreenHeight = msg.Height
 	case msgs.ReqMsg:
-		m.lblSpinner.UpdateLabel(styles.Info.Render(string(msg)))
-		return m, m.lblSpinner.Start()
+		var cmd tea.Cmd
+		if msg.Timeout != 0 {
+			cmd = m.lblSpinner.UpdateLabelWithTimeout(styles.Info.Render(msg.Msg), msg.Timeout)
+		} else {
+			m.lblSpinner.UpdateLabel(styles.Info.Render(msg.Msg))
+		}
+		return m, tea.Batch(m.lblSpinner.Start(), cmd)
 	case msgs.ResMsg:
-		cmd := m.lblSpinner.UpdateLabelWithTimeout(styles.Info.Render(msg), 2*time.Second)
+		var cmd tea.Cmd
+		if msg.Timeout != 0 {
+			cmd = m.lblSpinner.UpdateLabelWithTimeout(styles.Info.Render(msg.Msg), msg.Timeout)
+		} else {
+			m.lblSpinner.UpdateLabel(styles.Info.Render(msg.Msg))
+		}
 		return m, tea.Batch(m.lblSpinner.Stop(), cmd)
 	case msgs.ErrMsg:
 		if msg.Timeout != 0 {
@@ -93,9 +107,20 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.routes[m.currentRoute] == nil {
 			m.currentRoute = "/"
 			return m, m.lblSpinner.UpdateLabelWithTimeout(styles.Error.Render("not implemented yet"), 2*time.Second)
-		} else {
-			// TODO add route param to say if init or not
+		} else if msg.Data != nil {
 			return m, m.routes[m.currentRoute].InitWithData(msg.Data)
+		} else {
+			return m, m.routes[m.currentRoute].Init()
+		}
+	case msgs.RouteResumeMsg:
+		m.currentRoute = msg.Route
+		if m.routes[m.currentRoute] == nil {
+			m.currentRoute = "/"
+			return m, m.lblSpinner.UpdateLabelWithTimeout(styles.Error.Render("not implemented yet"), 2*time.Second)
+		} else if msg.Data == nil {
+			return m, m.routes[m.currentRoute].ResumeWithData(msg.Data)
+		} else {
+			return m, m.routes[m.currentRoute].Resume()
 		}
 	case tea.KeyMsg:
 		var cmd tea.Cmd
@@ -103,7 +128,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case msg.Type == tea.KeyCtrlC:
 			return m, tea.Quit
 		case msg.Type == tea.KeyEscape:
-			return m, msgs.RouteChangeCmd(removeLastSegment(m.currentRoute))
+			return m, msgs.RouteResume(removeLastSegment(m.currentRoute))
 		default:
 			rm, cmd := m.routes[m.currentRoute].Update(msg)
 			m.routes[m.currentRoute] = rm.(MirTeaModel)
@@ -144,6 +169,6 @@ func removeLastSegment(path string) string {
 func (m *Model) connectToMir() tea.Cmd {
 	return func() tea.Msg {
 		store.Bus = m.m
-		return msgs.ResMsg("connected to Mir")
+		return msgs.ResMsgCmd("connected to Mir", msgs.DefaultTimeout)
 	}
 }

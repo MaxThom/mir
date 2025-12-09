@@ -156,7 +156,7 @@ func (s *ProtoCfgServer) listCfgSub(msg *mir.Msg, clientId string, req *mir_apiv
 	if err != nil {
 		if strings.Contains(err.Error(), surreal.ErrDatabaseDisconnected.Error()) {
 			degradedMode = true
-			if !t.HasOnlyIdsTarget() {
+			if !t.HasOnlyIdsTarget() && degradedMode {
 				return nil, fmt.Errorf("running in degraded mode as database is disconnected, only device ids can be used")
 			}
 			devs = []mir_v1.Device{}
@@ -174,21 +174,21 @@ func (s *ProtoCfgServer) listCfgSub(msg *mir.Msg, clientId string, req *mir_apiv
 	devSchemas := []*schemaPerDevices{}
 	for _, dev := range devs {
 		nameNs := dev.GetNameNamespace()
-		if degradedMode {
-			nameNs = dev.Spec.DeviceId
-		}
+		id := dev.Spec.DeviceId
 		reg, _, err := s.schStore.GetDeviceSchema(dev.Spec.DeviceId, req.RefreshSchema)
 		if err != nil {
 			found := false
 			for _, d := range devsCfg {
 				if d.Error == err.Error() {
 					d.DevicesNamens = append(d.DevicesNamens, nameNs)
+					d.DevicesId = append(d.DevicesId, nameNs)
 					found = true
 				}
 			}
 			if !found {
 				devsCfg = append(devsCfg, &mir_apiv1.DevicesConfigs{
 					DevicesNamens: []string{nameNs},
+					DevicesId:     []string{id},
 					Error:         err.Error(),
 				})
 			}
@@ -217,6 +217,7 @@ func (s *ProtoCfgServer) listCfgSub(msg *mir.Msg, clientId string, req *mir_apiv
 		if err != nil {
 			devsCfg = append(devsCfg, &mir_apiv1.DevicesConfigs{
 				DevicesNamens: sch.devsNameNs,
+				DevicesId:     sch.devsId,
 				Error:         err.Error(),
 			})
 			requestErrorTotal.WithLabelValues("list").Inc()
@@ -225,52 +226,10 @@ func (s *ProtoCfgServer) listCfgSub(msg *mir.Msg, clientId string, req *mir_apiv
 
 		devsCfg = append(devsCfg, &mir_apiv1.DevicesConfigs{
 			DevicesNamens:  sch.devsNameNs,
+			DevicesId:      sch.devsId,
 			CfgDescriptors: cmds,
 		})
 	}
-
-	// devsCmds := make(map[string]*mir_apiv1.Configs)
-	// for _, dev := range devs {
-	// 	nameNs := dev.GetNameNamespace()
-	// 	if degradedMode {
-	// 		nameNs = dev.Spec.DeviceId
-	// 	}
-	// 	reg, _, err := s.schStore.GetDeviceSchema(dev.Spec.DeviceId, req.RefreshSchema)
-	// 	if err != nil {
-	// 		devsCmds[nameNs] = &mir_apiv1.Configs{
-	// 			Error: err.Error(),
-	// 		}
-	// 		continue
-	// 	}
-
-	// 	cfgs, err := reg.GetConfigList(req.FilterLabels)
-	// 	if err != nil {
-	// 		devsCmds[nameNs] = &mir_apiv1.Configs{
-	// 			Error: err.Error(),
-	// 		}
-	// 		continue
-	// 	}
-
-	// 	cfgList := []*mir_apiv1.ConfigDescriptor{}
-	// 	for _, cfg := range cfgs {
-	// 		if v, ok := dev.Properties.Desired[cfg.Name]; ok {
-	// 			b, err := json.Marshal(v)
-	// 			if err != nil {
-	// 				cfg.Error = err.Error()
-	// 			} else {
-	// 				cfg.Values = string(b)
-	// 			}
-	// 		} else {
-	// 			if degradedMode {
-	// 				cfg.Values = errors.New("{\"err\": \"can't retrieve config in degraded mode\"}").Error()
-	// 			}
-	// 		}
-	// 		cfgList = append(cfgList, cfg)
-	// 	}
-	// 	devsCmds[nameNs] = &mir_apiv1.Configs{
-	// 		Configs: cfgList,
-	// 	}
-	// }
 
 	l.Info().Msg("list config request processed successfully")
 	return devsCfg, nil

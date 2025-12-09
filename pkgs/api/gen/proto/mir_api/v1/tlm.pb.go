@@ -220,8 +220,9 @@ func (x *TelemetryResponse) GetDevicesTelemetry() []*DevicesTelemetry {
 type DevicesTelemetry struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	DevicesNamens  []string               `protobuf:"bytes,1,rep,name=devices_namens,json=devicesNamens,proto3" json:"devices_namens,omitempty"`    // List of devices that have this telemetry
-	TlmDescriptors []*TelemetryDescriptor `protobuf:"bytes,2,rep,name=tlm_descriptors,json=tlmDescriptors,proto3" json:"tlm_descriptors,omitempty"` // Array of telemetry descriptor
-	Error          string                 `protobuf:"bytes,3,opt,name=error,proto3" json:"error,omitempty"`                                         // List of devices with the same error if something went wrong
+	DevicesId      []string               `protobuf:"bytes,2,rep,name=devices_id,json=devicesId,proto3" json:"devices_id,omitempty"`                // List of devices that have this telemetry
+	TlmDescriptors []*TelemetryDescriptor `protobuf:"bytes,3,rep,name=tlm_descriptors,json=tlmDescriptors,proto3" json:"tlm_descriptors,omitempty"` // Array of telemetry descriptor
+	Error          string                 `protobuf:"bytes,4,opt,name=error,proto3" json:"error,omitempty"`                                         // List of devices with the same error if something went wrong
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -259,6 +260,13 @@ func (*DevicesTelemetry) Descriptor() ([]byte, []int) {
 func (x *DevicesTelemetry) GetDevicesNamens() []string {
 	if x != nil {
 		return x.DevicesNamens
+	}
+	return nil
+}
+
+func (x *DevicesTelemetry) GetDevicesId() []string {
+	if x != nil {
+		return x.DevicesId
 	}
 	return nil
 }
@@ -374,11 +382,13 @@ const file_mir_api_v1_tlm_proto_rawDesc = "" +
 	"\n" +
 	"\bresponse\"^\n" +
 	"\x11TelemetryResponse\x12I\n" +
-	"\x11devices_telemetry\x18\x01 \x03(\v2\x1c.mir_api.v1.DevicesTelemetryR\x10devicesTelemetry\"\x99\x01\n" +
+	"\x11devices_telemetry\x18\x01 \x03(\v2\x1c.mir_api.v1.DevicesTelemetryR\x10devicesTelemetry\"\xb8\x01\n" +
 	"\x10DevicesTelemetry\x12%\n" +
-	"\x0edevices_namens\x18\x01 \x03(\tR\rdevicesNamens\x12H\n" +
-	"\x0ftlm_descriptors\x18\x02 \x03(\v2\x1f.mir_api.v1.TelemetryDescriptorR\x0etlmDescriptors\x12\x14\n" +
-	"\x05error\x18\x03 \x01(\tR\x05error\"\xfc\x01\n" +
+	"\x0edevices_namens\x18\x01 \x03(\tR\rdevicesNamens\x12\x1d\n" +
+	"\n" +
+	"devices_id\x18\x02 \x03(\tR\tdevicesId\x12H\n" +
+	"\x0ftlm_descriptors\x18\x03 \x03(\v2\x1f.mir_api.v1.TelemetryDescriptorR\x0etlmDescriptors\x12\x14\n" +
+	"\x05error\x18\x04 \x01(\tR\x05error\"\xfc\x01\n" +
 	"\x13TelemetryDescriptor\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12C\n" +
 	"\x06labels\x18\x02 \x03(\v2+.mir_api.v1.TelemetryDescriptor.LabelsEntryR\x06labels\x12\x16\n" +

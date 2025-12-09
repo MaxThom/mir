@@ -25,8 +25,9 @@ message TelemetryResponse {
 // List of telemetry
 message DevicesTelemetry {
     repeated string devices_namens = 1; // List of devices that have this telemetry
-	repeated TelemetryDescriptor tlm_descriptors = 2; // Array of telemetry descriptor
-	string error = 3;// List of devices with the same error if something went wrong
+    repeated string devices_id = 2; // List of devices that have this telemetry
+	repeated TelemetryDescriptor tlm_descriptors = 3; // Array of telemetry descriptor
+	string error = 4;// List of devices with the same error if something went wrong
 }
 
 // Descriptor of a command

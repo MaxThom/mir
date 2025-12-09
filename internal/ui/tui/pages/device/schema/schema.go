@@ -74,6 +74,14 @@ func (m *Model) Init() tea.Cmd {
 	return msgs.OpenEditorCmd(msgs.FileTypeYAML, rj, headerComments)
 }
 
+func (m Model) Resume() tea.Cmd {
+	return nil
+}
+
+func (m Model) ResumeWithData(d any) tea.Cmd {
+	return nil
+}
+
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {

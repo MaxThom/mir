@@ -398,7 +398,7 @@ func (s *ProtoCmdServer) listCommandsSub(msg *mir.Msg, clientId string, req *mir
 	if err != nil {
 		if strings.Contains(err.Error(), surreal.ErrDatabaseDisconnected.Error()) {
 			degradedMode = true
-			if !t.HasOnlyIdsTarget() {
+			if !t.HasOnlyIdsTarget() && degradedMode {
 				return nil, fmt.Errorf("running in degraded mode as database is disconnected, only device ids can be used")
 			}
 			devs = []mir_v1.Device{}
@@ -416,21 +416,21 @@ func (s *ProtoCmdServer) listCommandsSub(msg *mir.Msg, clientId string, req *mir
 	devSchemas := []*schemaPerDevices{}
 	for _, dev := range devs {
 		nameNs := dev.GetNameNamespace()
-		if degradedMode {
-			nameNs = dev.Spec.DeviceId
-		}
+		id := dev.Spec.DeviceId
 		reg, _, err := s.schStore.GetDeviceSchema(dev.Spec.DeviceId, req.RefreshSchema)
 		if err != nil {
 			found := false
 			for _, d := range devsCmd {
 				if d.Error == err.Error() {
 					d.DevicesNamens = append(d.DevicesNamens, nameNs)
+					d.DevicesId = append(d.DevicesId, id)
 					found = true
 				}
 			}
 			if !found {
 				devsCmd = append(devsCmd, &mir_apiv1.DevicesCommands{
 					DevicesNamens: []string{nameNs},
+					DevicesId:     []string{id},
 					Error:         err.Error(),
 				})
 			}
@@ -459,6 +459,7 @@ func (s *ProtoCmdServer) listCommandsSub(msg *mir.Msg, clientId string, req *mir
 		if err != nil {
 			devsCmd = append(devsCmd, &mir_apiv1.DevicesCommands{
 				DevicesNamens: sch.devsNameNs,
+				DevicesId:     sch.devsId,
 				Error:         err.Error(),
 			})
 			requestErrorTotal.WithLabelValues("list").Inc()
@@ -467,6 +468,7 @@ func (s *ProtoCmdServer) listCommandsSub(msg *mir.Msg, clientId string, req *mir
 
 		devsCmd = append(devsCmd, &mir_apiv1.DevicesCommands{
 			DevicesNamens:  sch.devsNameNs,
+			DevicesId:      sch.devsId,
 			CmdDescriptors: cmds,
 		})
 	}

@@ -479,8 +479,9 @@ func (x *ConfigsResponse) GetDeviceConfigs() []*DevicesConfigs {
 type DevicesConfigs struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	DevicesNamens  []string               `protobuf:"bytes,1,rep,name=devices_namens,json=devicesNamens,proto3" json:"devices_namens,omitempty"`    // List of devices that have this telemetry
-	CfgDescriptors []*ConfigDescriptor    `protobuf:"bytes,2,rep,name=cfg_descriptors,json=cfgDescriptors,proto3" json:"cfg_descriptors,omitempty"` // Array of config descriptor
-	Error          string                 `protobuf:"bytes,3,opt,name=error,proto3" json:"error,omitempty"`                                         // error if something went wrong
+	DevicesId      []string               `protobuf:"bytes,2,rep,name=devices_id,json=devicesId,proto3" json:"devices_id,omitempty"`                // List of devices that have this telemetry
+	CfgDescriptors []*ConfigDescriptor    `protobuf:"bytes,3,rep,name=cfg_descriptors,json=cfgDescriptors,proto3" json:"cfg_descriptors,omitempty"` // Array of config descriptor
+	Error          string                 `protobuf:"bytes,4,opt,name=error,proto3" json:"error,omitempty"`                                         // error if something went wrong
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -518,6 +519,13 @@ func (*DevicesConfigs) Descriptor() ([]byte, []int) {
 func (x *DevicesConfigs) GetDevicesNamens() []string {
 	if x != nil {
 		return x.DevicesNamens
+	}
+	return nil
+}
+
+func (x *DevicesConfigs) GetDevicesId() []string {
+	if x != nil {
+		return x.DevicesId
 	}
 	return nil
 }
@@ -791,11 +799,13 @@ const file_mir_api_v1_cfg_proto_rawDesc = "" +
 	"\n" +
 	"\bresponse\"T\n" +
 	"\x0fConfigsResponse\x12A\n" +
-	"\x0edevice_configs\x18\x01 \x03(\v2\x1a.mir_api.v1.DevicesConfigsR\rdeviceConfigs\"\x94\x01\n" +
+	"\x0edevice_configs\x18\x01 \x03(\v2\x1a.mir_api.v1.DevicesConfigsR\rdeviceConfigs\"\xb3\x01\n" +
 	"\x0eDevicesConfigs\x12%\n" +
-	"\x0edevices_namens\x18\x01 \x03(\tR\rdevicesNamens\x12E\n" +
-	"\x0fcfg_descriptors\x18\x02 \x03(\v2\x1c.mir_api.v1.ConfigDescriptorR\x0ecfgDescriptors\x12\x14\n" +
-	"\x05error\x18\x03 \x01(\tR\x05error\"\xed\x01\n" +
+	"\x0edevices_namens\x18\x01 \x03(\tR\rdevicesNamens\x12\x1d\n" +
+	"\n" +
+	"devices_id\x18\x02 \x03(\tR\tdevicesId\x12E\n" +
+	"\x0fcfg_descriptors\x18\x03 \x03(\v2\x1c.mir_api.v1.ConfigDescriptorR\x0ecfgDescriptors\x12\x14\n" +
+	"\x05error\x18\x04 \x01(\tR\x05error\"\xed\x01\n" +
 	"\x10ConfigDescriptor\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12@\n" +
 	"\x06labels\x18\x02 \x03(\v2(.mir_api.v1.ConfigDescriptor.LabelsEntryR\x06labels\x12\x1a\n" +

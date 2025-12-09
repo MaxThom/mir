@@ -77,8 +77,16 @@ func (m *Model) Init() tea.Cmd {
 	)
 }
 
+func (m Model) Resume() tea.Cmd {
+	return nil
+}
+
+func (m Model) ResumeWithData(d any) tea.Cmd {
+	return nil
+}
+
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var cmd tea.Cmd
+	var tlm tea.Cmd
 	switch msg := msg.(type) {
 	case msgs.DeviceTelemetryListedMsg:
 		l.Debug().Int("count", len(msg.Telemetry)).Msg("received device telemetry list")
@@ -88,6 +96,19 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			gc := group_menu.GroupChoice{
 				Choices: []group_menu.Option{},
 			}
+
+			if len(tlm.DevicesNamens) > 3 {
+				gc.Label = strings.Join(tlm.DevicesNamens[0:3], ", ") + " & " + strconv.Itoa(len(tlm.DevicesNamens)-3) + " more"
+			} else if len(tlm.DevicesNamens) == 0 {
+				if len(tlm.DevicesId) > 3 {
+					gc.Label = strings.Join(tlm.DevicesId[0:3], ", ") + " & " + strconv.Itoa(len(tlm.DevicesId)-3) + " more"
+				} else {
+					gc.Label = strings.Join(tlm.DevicesId, ", ")
+				}
+			} else {
+				gc.Label = strings.Join(tlm.DevicesNamens, ", ")
+			}
+
 			if len(tlm.DevicesNamens) > 3 {
 				gc.Label = strings.Join(tlm.DevicesNamens[0:3], ", ") + " & " + strconv.Itoa(len(tlm.DevicesNamens)-3) + " more"
 			} else {
@@ -116,11 +137,11 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			groupchoice = append(groupchoice, gc)
 		}
 		m.menu = group_menu.New(groupchoice)
-		return m, msgs.ResMsgCmd(fmt.Sprintf("%d telemetry fetched", len(msg.Telemetry)))
+		return m, msgs.ResMsgCmd(fmt.Sprintf("%d telemetry fetched", len(msg.Telemetry)), msgs.DefaultTimeout)
 	case msgs.EditorFinishedMsg:
 		return m, nil
 	case tea.KeyMsg:
-		m.help, cmd = m.help.Update(msg)
+		m.help, tlm = m.help.Update(msg)
 		if msg.String() == "g" {
 			i, j := m.menu.GetCursor()
 			tlmQuery := m.telemetry[i].TlmDescriptors[j].ExploreQuery
@@ -138,9 +159,9 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, msgs.OpenEditorCmd(msgs.FileTypeYAML, []byte(tlmQuery), []string{})
 			}
 		} else {
-			m.menu, cmd = m.menu.Update(msg)
+			m.menu, tlm = m.menu.Update(msg)
 		}
-		return m, cmd
+		return m, tlm
 	}
 
 	return m, nil

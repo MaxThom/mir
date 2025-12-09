@@ -226,7 +226,7 @@ func (s *ProtoTlmServer) handleTelemetryListRequest(msg *mir.Msg, clientId strin
 	if err != nil {
 		if strings.Contains(err.Error(), surreal.ErrDatabaseDisconnected.Error()) {
 			degradedMode = true
-			if !t.HasOnlyIdsTarget() {
+			if !t.HasOnlyIdsTarget() && degradedMode {
 				return nil, fmt.Errorf("running in degraded mode as database is disconnected, only device ids can be used")
 			}
 			devs = []mir_v1.Device{}
@@ -244,21 +244,21 @@ func (s *ProtoTlmServer) handleTelemetryListRequest(msg *mir.Msg, clientId strin
 	devSchemas := []*schemaPerDevices{}
 	for _, dev := range devs {
 		nameNs := dev.GetNameNamespace()
-		if degradedMode {
-			nameNs = dev.Spec.DeviceId
-		}
+		id := dev.Spec.DeviceId
 		reg, _, err := s.schStore.GetDeviceSchema(dev.Spec.DeviceId, req.RefreshSchema)
 		if err != nil {
 			found := false
 			for _, d := range devsTlm {
 				if d.Error == err.Error() {
 					d.DevicesNamens = append(d.DevicesNamens, nameNs)
+					d.DevicesId = append(d.DevicesId, id)
 					found = true
 				}
 			}
 			if !found {
 				devsTlm = append(devsTlm, &mir_apiv1.DevicesTelemetry{
 					DevicesNamens: []string{nameNs},
+					DevicesId:     []string{id},
 					Error:         err.Error(),
 				})
 			}
@@ -287,6 +287,7 @@ func (s *ProtoTlmServer) handleTelemetryListRequest(msg *mir.Msg, clientId strin
 		if err != nil {
 			devsTlm = append(devsTlm, &mir_apiv1.DevicesTelemetry{
 				DevicesNamens: sch.devsNameNs,
+				DevicesId:     sch.devsId,
 				Error:         err.Error(),
 			})
 			requestErrorTotal.WithLabelValues("list").Inc()
@@ -303,6 +304,7 @@ func (s *ProtoTlmServer) handleTelemetryListRequest(msg *mir.Msg, clientId strin
 		}
 		devsTlm = append(devsTlm, &mir_apiv1.DevicesTelemetry{
 			DevicesNamens:  sch.devsNameNs,
+			DevicesId:      sch.devsId,
 			TlmDescriptors: tlms,
 		})
 	}

@@ -6,14 +6,28 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+var (
+	DefaultTimeout = 2 * time.Second
+)
+
 type (
-	ReqMsg string
-	ResMsg = string
+	ReqMsg struct {
+		Msg     string
+		Timeout time.Duration
+	}
+	ResMsg struct {
+		Msg     string
+		Timeout time.Duration
+	}
 	ErrMsg struct {
 		Err     error
 		Timeout time.Duration
 	}
 	RouteChangeMsg struct {
+		Route string
+		Data  any
+	}
+	RouteResumeMsg struct {
 		Route string
 		Data  any
 	}
@@ -44,14 +58,26 @@ func RouteChangeWithDataCmd(route string, data any) tea.Cmd {
 	}
 }
 
-func ReqMsgCmd(msg string) tea.Cmd {
+func RouteResume(route string) tea.Cmd {
 	return func() tea.Msg {
-		return ReqMsg(msg)
+		return RouteResumeMsg{Route: route, Data: nil}
 	}
 }
 
-func ResMsgCmd(msg string) tea.Cmd {
+func RouteResumeWithData(route string, data any) tea.Cmd {
 	return func() tea.Msg {
-		return ResMsg(msg)
+		return RouteResumeMsg{Route: route, Data: data}
+	}
+}
+
+func ReqMsgCmd(msg string, t time.Duration) tea.Cmd {
+	return func() tea.Msg {
+		return ReqMsg{msg, t}
+	}
+}
+
+func ResMsgCmd(msg string, t time.Duration) tea.Cmd {
+	return func() tea.Msg {
+		return ResMsg{msg, t}
 	}
 }
