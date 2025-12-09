@@ -13,11 +13,16 @@ type (
 	OptionSelectedMsg struct {
 		Option OptionValue
 	}
+	CursorMovedMsg struct {
+		Position  int
+		Direction int
+	}
 )
 type Model struct {
-	cursor  int
-	choice  OptionValue
-	choices []Option
+	cursor    int
+	direction int
+	choice    OptionValue
+	choices   []Option
 }
 type OptionValue = string
 type Option struct {
@@ -46,17 +51,19 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 
 		case "down", "j", "tab":
 			m.cursor++
+			m.direction = 1
 			if m.cursor >= len(m.choices) {
 				m.cursor = 0
 			}
-			return m, nil
+			return m, m.cursorMoved(m.cursor, m.direction)
 
 		case "up", "k", "shift+tab":
 			m.cursor--
+			m.direction = -1
 			if m.cursor < 0 {
 				m.cursor = len(m.choices) - 1
 			}
-			return m, nil
+			return m, m.cursorMoved(m.cursor, m.direction)
 		}
 	}
 	return m, nil
@@ -98,4 +105,25 @@ func (m Model) optionSelectedCmd(v OptionValue) tea.Cmd {
 			v,
 		}
 	}
+}
+
+func (m Model) cursorMoved(pos int, direction int) tea.Cmd {
+	return func() tea.Msg {
+		return CursorMovedMsg{
+			Position:  pos,
+			Direction: direction,
+		}
+	}
+}
+
+func (m Model) GetCursor() int {
+	return m.cursor
+}
+
+func (m Model) GetChoice() Option {
+	return m.choices[m.cursor]
+}
+
+func (m Model) GetDirection() int {
+	return m.direction
 }

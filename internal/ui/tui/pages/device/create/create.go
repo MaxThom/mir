@@ -138,6 +138,14 @@ func (m *Model) Init() tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
+func (m Model) Resume() tea.Cmd {
+	return nil
+}
+
+func (m Model) ResumeWithData(d any) tea.Cmd {
+	return nil
+}
+
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd = make([]tea.Cmd, len(m.inputs))
 	switch msg := msg.(type) {
@@ -169,7 +177,8 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						Disabled: &dis,
 					})
 				req.Meta.Annotations["mir/device/description"] = m.inputs[description].GetValue()
-				return m, tea.Batch(msgs.ReqMsgCmd("creating device..."), msgs.CreateMirDevice(store.Bus, req))
+				return m, tea.Batch(msgs.ReqMsgCmd("creating device...", msgs.DefaultTimeout), msgs.CreateMirDevice(store.Bus, req))
+
 			}
 		} else if msg.Label == "Create with random uuid" {
 			t, err := uuid.NewRandom()
@@ -187,7 +196,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else {
 			s = fmt.Sprintf("%d devices created", len(msg.Devices))
 		}
-		return m, tea.Batch(msgs.ResMsgCmd(s))
+		return m, tea.Batch(msgs.ResMsgCmd(s, msgs.DefaultTimeout))
 
 	case tea.KeyMsg:
 		switch msg.Type {

@@ -78,8 +78,9 @@ message CommandsResponse {
 // List of commands
 message DevicesCommands {
     repeated string devices_namens = 1; // List of devices that have this telemetry
-	repeated CommandDescriptor cmd_descriptors = 2; // Array of command descriptor
-	string error = 3; // HTTP like error if something went wrong
+    repeated string devices_id = 2; // List of devices that have this telemetry
+	repeated CommandDescriptor cmd_descriptors = 3; // Array of command descriptor
+	string error = 4; // HTTP like error if something went wrong
 }
 
 // Descriptor of a command

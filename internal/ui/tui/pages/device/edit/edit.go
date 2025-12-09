@@ -64,6 +64,14 @@ func (m *Model) Init() tea.Cmd {
 	return msgs.OpenEditorCmd(msgs.FileTypeYAML, rj, headerComments)
 }
 
+func (m Model) Resume() tea.Cmd {
+	return nil
+}
+
+func (m Model) ResumeWithData(d any) tea.Cmd {
+	return nil
+}
+
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
@@ -72,7 +80,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if len(msg.Devices) > 0 {
 			rsp = fmt.Sprintf("device '%s' edited successfully", msg.Devices[0].Spec.DeviceId)
 		}
-		return m, tea.Batch(msgs.ResMsgCmd(rsp), msgs.RouteChangeWithDataCmd("/devices", device_list.InputData{SilentFetch: true}))
+		return m, tea.Batch(msgs.ResMsgCmd(rsp, msgs.DefaultTimeout), msgs.RouteChangeWithDataCmd("/devices", device_list.InputData{SilentFetch: true}))
 	case msgs.EditorFinishedMsg:
 		var cmds []tea.Cmd
 		if msg.Err != nil {

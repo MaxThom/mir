@@ -80,9 +80,9 @@ func (d *ConfigListCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) error
 		} else {
 			for _, cmd := range cmds.CfgDescriptors {
 				sb.WriteString(cmd.Name)
-				sb.WriteString("{")
-				sb.WriteString(mapToSortedString(cmd.Labels))
-				sb.WriteString("}\n")
+				// sb.WriteString("{")
+				// sb.WriteString(mapToSortedString(cmd.Labels))
+				// sb.WriteString("}\n")
 				if cmd.Error != "" {
 					sb.WriteString(cmd.Error)
 					sb.WriteString("\n")

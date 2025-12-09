@@ -2,6 +2,7 @@ package device_commands
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strconv"
@@ -10,7 +11,6 @@ import (
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/maxthom/mir/internal/libs/external/grafana"
 	"github.com/maxthom/mir/internal/ui/tui/components/group_menu"
 	mir_help "github.com/maxthom/mir/internal/ui/tui/components/help"
 	"github.com/maxthom/mir/internal/ui/tui/msgs"
@@ -27,7 +27,9 @@ var (
 	v strings.Builder
 )
 
-const ()
+const (
+	menuOption_device_command_response string = "/devices/commands/responses"
+)
 
 type Model struct {
 	ctx      context.Context
@@ -35,19 +37,20 @@ type Model struct {
 	devices  []mir_v1.Device
 	commands []*mir_apiv1.DevicesCommands
 	menu     group_menu.Model
+	readOnly bool
 }
 
 type InputData struct {
 }
 
 func NewModel(ctx context.Context) *Model {
-	l = log.With().Str("page", "device_tlm_list").Logger()
+	l = log.With().Str("page", "device_cmd_list").Logger()
 
 	return &Model{
-		ctx:  ctx,
-		help: mir_help.New(keys, []string{}, "mir device commands"),
-		menu: group_menu.New(nil),
-	}
+		ctx:      ctx,
+		help:     mir_help.New(keys, []string{}, "mir device commands"),
+		menu:     group_menu.New(nil),
+		readOnly: true}
 }
 
 func (m *Model) InitWithData(d any) tea.Cmd {
@@ -75,20 +78,32 @@ func (m *Model) Init() tea.Cmd {
 	)
 }
 
+func (m Model) Resume() tea.Cmd {
+	return nil
+}
+
+func (m Model) ResumeWithData(d any) tea.Cmd {
+	return nil
+}
+
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case msgs.DeviceCommandListedMsg:
-		l.Debug().Int("count", len(msg.Commands)).Msg("received device commands list")
 		m.commands = msg.Commands
 		groupchoice := []group_menu.GroupChoice{}
-		l.Info().Any("test", m.commands).Msg("asd")
 		for _, cmd := range m.commands {
 			gc := group_menu.GroupChoice{
 				Choices: []group_menu.Option{},
 			}
 			if len(cmd.DevicesNamens) > 3 {
 				gc.Label = strings.Join(cmd.DevicesNamens[0:3], ", ") + " & " + strconv.Itoa(len(cmd.DevicesNamens)-3) + " more"
+			} else if len(cmd.DevicesNamens) == 0 {
+				if len(cmd.DevicesId) > 3 {
+					gc.Label = strings.Join(cmd.DevicesId[0:3], ", ") + " & " + strconv.Itoa(len(cmd.DevicesId)-3) + " more"
+				} else {
+					gc.Label = strings.Join(cmd.DevicesId, ", ")
+				}
 			} else {
 				gc.Label = strings.Join(cmd.DevicesNamens, ", ")
 			}
@@ -102,10 +117,15 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				var sb strings.Builder
 				for _, desc := range cmd.CmdDescriptors {
 					sb.Reset()
-					sb.WriteString("      ")
-					// sb.WriteString(strings.Join(desc.Fields, "\n      "))
+					if len(desc.Labels) == 0 {
+						sb.WriteString("    {}")
+					} else {
+						sb.WriteString("    {\n      ")
+						sb.WriteString(mapToSortedString(desc.Labels, "\n      "))
+						sb.WriteString("\n    }")
+					}
 					gc.Choices = append(gc.Choices, group_menu.Option{
-						Label:       fmt.Sprintf("%s{%s}", desc.Name, mapToSortedString(desc.Labels)),
+						Label:       desc.Name,
 						Description: desc.Error,
 						Value:       desc.Name,
 						Details:     sb.String(),
@@ -115,27 +135,53 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			groupchoice = append(groupchoice, gc)
 		}
 		m.menu = group_menu.New(groupchoice)
-		return m, msgs.ResMsgCmd(fmt.Sprintf("%d commands fetched", len(msg.Commands)))
+		return m, msgs.ResMsgCmd(fmt.Sprintf("%d commands fetched", len(msg.Commands)), msgs.DefaultTimeout)
 	case msgs.EditorFinishedMsg:
-		return m, nil
+		if m.readOnly {
+			return m, tea.ClearScreen
+		}
+		i, j := m.menu.GetCursor()
+		c := m.commands[i].CmdDescriptors[j]
+		t := mir_apiv1.DeviceTarget{
+			Ids: m.commands[i].DevicesId,
+		}
+		devCmds := mir_apiv1.SendCommandRequest{
+			Name:            c.Name,
+			Payload:         json.RawMessage(msg.Content),
+			PayloadEncoding: mir_apiv1.Encoding_ENCODING_JSON,
+			Targets:         &t,
+		}
+		return m, tea.Sequence(tea.ClearScreen, tea.Batch(
+			msgs.RouteChangeWithDataCmd(menuOption_device_command_response, &devCmds),
+		))
 	case tea.KeyMsg:
 		m.help, cmd = m.help.Update(msg)
-		if msg.String() == "g" {
-			// i, j := m.menu.GetCursor()
-			tlmQuery := "" // m.commands[i].TlmDescriptors[j].ExploreQuery
-			if tlmQuery != "" {
-				if err := grafana.OpenBrowser(grafana.CreateExploreLink(store.MirCtx.Grafana, tlmQuery)); err != nil {
-					return m, msgs.ErrCmd(fmt.Errorf("failed to open grafana link: %w", err), 2*time.Second)
+		if msg.String() == "q" || msg.String() == "r" {
+			i, j := m.menu.GetCursor()
+			cmdDesc := m.commands[i].CmdDescriptors[j]
+			query, err := prettyPrintJSON(cmdDesc.Template)
+			if err != nil {
+				query = err.Error()
+			}
+			if query != "" {
+				headers := []string{}
+				if msg.String() == "q" {
+					m.readOnly = true
+					headers = []string{
+						"READ-ONLY MODE: Command will not be sent",
+						cmdDesc.Name + "{" + mapToSortedString(cmdDesc.Labels, ", ") + "}",
+					}
+				} else {
+					headers = []string{
+						"SEND MODE: Command will be sent",
+						cmdDesc.Name + "{" + mapToSortedString(cmdDesc.Labels, ", ") + "}",
+					}
+					m.readOnly = false
 				}
-			} else {
-				return m, msgs.ErrCmd(fmt.Errorf("no grafana query available for this telemetry"), 2*time.Second)
+				return m, msgs.OpenEditorCmd(msgs.FileTypeJSON, []byte(query), headers)
 			}
-		} else if msg.String() == "q" {
-			// i, j := m.menu.GetCursor()
-			tlmQuery := "" // km.telemetry[i].TlmDescriptors[j].ExploreQuery
-			if tlmQuery != "" {
-				return m, msgs.OpenEditorCmd(msgs.FileTypeYAML, []byte(tlmQuery), []string{})
-			}
+		} else if msg.String() == "l" {
+			return m, msgs.RouteResume(menuOption_device_command_response)
 		} else {
 			m.menu, cmd = m.menu.Update(msg)
 		}
@@ -149,18 +195,6 @@ func (m *Model) View() string {
 	v.Reset()
 	v.WriteString("\n")
 
-	// q := ""
-	// i, j := m.menu.GetCursor()
-	// if len(m.telemetry) > i && len(m.telemetry[i].TlmDescriptors) > j {
-	// TODO in a future, the side panel will be a tlm chart
-	// q = m.telemetry[i].TlmDescriptors[j].ExploreQuery
-	// q = "{" + mapToSortedString(m.telemetry[i].TlmDescriptors[j].Labels) + "}\n"
-	// q += lipgloss.NewStyle().Bold(true).Render("Fields")
-	// q += "\n• " + strings.Join(m.telemetry[i].TlmDescriptors[j].Fields, "\n• ")
-	// q = styles.SidePanel.Render(q)
-	// }
-	// v.WriteString(lipgloss.JoinHorizontal(lipgloss.Top, m.menu.View(), "          ", q))
-
 	v.WriteString(m.menu.View())
 	v.WriteString(m.help.View())
 	return v.String()
@@ -169,31 +203,35 @@ func (m *Model) View() string {
 type keyMap map[string]key.Binding
 
 func (k keyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k["space"], k["grafana"], k["query"]}
+	return []key.Binding{k["space"], k["send"], k["show"], k["last"]}
 }
 
 func (k keyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
-		{k["space"], k["grafana"], k["query"]},
+		{k["space"], k["send"], k["show"], k["last"]},
 	}
 }
 
 var keys = keyMap{
 	"space": key.NewBinding(
 		key.WithKeys(" "),
-		key.WithHelp("space", "fields"),
+		key.WithHelp("space", "labels"),
 	),
-	"grafana": key.NewBinding(
-		key.WithKeys("g"),
-		key.WithHelp("g", "grafana"),
-	),
-	"query": key.NewBinding(
+	"show": key.NewBinding(
 		key.WithKeys("q"),
-		key.WithHelp("q", "query"),
+		key.WithHelp("q", "show template"),
+	),
+	"send": key.NewBinding(
+		key.WithKeys("r"),
+		key.WithHelp("r", "send command"),
+	),
+	"last": key.NewBinding(
+		key.WithKeys("l"),
+		key.WithHelp("l", "show last response"),
 	),
 }
 
-func mapToSortedString(m map[string]string) string {
+func mapToSortedString(m map[string]string, separator string) string {
 	if len(m) == 0 {
 		return ""
 	}
@@ -209,11 +247,25 @@ func mapToSortedString(m map[string]string) string {
 	var sb strings.Builder
 	for i, k := range keys {
 		if i > 0 {
-			sb.WriteString(", ")
+			sb.WriteString(separator)
 		}
 		sb.WriteString(k)
 		sb.WriteString("=")
 		sb.WriteString(m[k])
 	}
 	return sb.String()
+}
+
+func prettyPrintJSON(jsonStr string) (string, error) {
+	var obj any
+	if err := json.Unmarshal([]byte(jsonStr), &obj); err != nil {
+		return "", err
+	}
+
+	prettyJSON, err := json.MarshalIndent(obj, "", "  ")
+	if err != nil {
+		return "", err
+	}
+
+	return string(prettyJSON), nil
 }

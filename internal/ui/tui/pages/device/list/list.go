@@ -131,7 +131,15 @@ func (m *Model) InitWithData(d any) tea.Cmd {
 }
 
 func (m *Model) Init() tea.Cmd {
-	return tea.Batch(m.timer.Init(), msgs.ReqMsgCmd("fetching devices..."), msgs.ListMirDevices(store.Bus))
+	return tea.Batch(m.timer.Init(), msgs.ReqMsgCmd("fetching devices...", 2*time.Second), msgs.ListMirDevices(store.Bus))
+}
+
+func (m Model) Resume() tea.Cmd {
+	return nil
+}
+
+func (m Model) ResumeWithData(d any) tea.Cmd {
+	return nil
 }
 
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -155,14 +163,14 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.table.SetRows(rows)
 		if !msg.NoToast {
-			return m, msgs.ResMsgCmd(fmt.Sprintf("%d devices fetched", len(msg.Devices)))
+			return m, msgs.ResMsgCmd(fmt.Sprintf("%d devices fetched", len(msg.Devices)), msgs.DefaultTimeout)
 		}
 	case msgs.DeviceDeleteMsg:
 		rsp := "device deleted successfully"
 		if len(msg.Devices) > 0 {
 			rsp = fmt.Sprintf("device '%s' deleted", msg.Devices[0].Spec.DeviceId)
 		}
-		return m, tea.Batch(msgs.ListMirDevicesSilently(store.Bus), msgs.ResMsgCmd(rsp))
+		return m, tea.Batch(msgs.ListMirDevicesSilently(store.Bus), msgs.ResMsgCmd(rsp, msgs.DefaultTimeout))
 	case timer.TickMsg:
 		var cmd tea.Cmd
 		m.timer, cmd = m.timer.Update(msg)
@@ -213,7 +221,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, msgs.ErrCmd(fmt.Errorf("no device selected"), 2*time.Second)
 				}
 				return m, tea.Batch(
-					msgs.ReqMsgCmd("deleting device "+device.Spec.DeviceId+"..."),
+					msgs.ReqMsgCmd("deleting device "+device.Spec.DeviceId+"...", msgs.DefaultTimeout),
 					msgs.DeleteMirDevice(store.Bus, mir_v1.DeviceTarget{
 						Ids: []string{device.Spec.DeviceId},
 					}))
