@@ -132,6 +132,111 @@ func TestPublishCfgListRequest(t *testing.T) {
 	}
 }
 
+func TestPublishCfgListRequestWithValues(t *testing.T) {
+	// Arrange
+	ctx, cancel := context.WithCancel(context.Background())
+	id := "device_list_cfg_values"
+	s := swarm.NewSwarm(mSdk.Bus)
+	if _, err := s.AddDevice(&mir_apiv1.NewDevice{
+		Meta: &mir_apiv1.Meta{
+			Name:      id,
+			Namespace: "testing_cfg",
+			Labels: map[string]string{
+				"testing": "cfg",
+			},
+			Annotations: map[string]string{
+				"mir/device/description": "hello world of devices !",
+			},
+		},
+		Spec: &mir_apiv1.DeviceSpec{
+			DeviceId: id,
+		},
+	}).WithSchema(protocfg_testv1.File_protocfg_test_v1_cfg_proto).Incubate(); err != nil {
+		t.Error(err)
+	}
+	p := protocfg_testv1.PowerLevel{
+		Power: 5,
+	}
+	payloadBytes, err := protojson.Marshal(&p)
+	if err != nil {
+		t.Error(err)
+	}
+
+	reqCfg := &mir_apiv1.SendConfigRequest{
+		Targets: &mir_apiv1.DeviceTarget{
+			Ids: []string{id},
+		},
+		Name:            string(p.ProtoReflect().Descriptor().FullName()),
+		PayloadEncoding: mir_apiv1.Encoding_ENCODING_JSON,
+		Payload:         payloadBytes,
+		RefreshSchema:   true,
+	}
+
+	// Act
+	wgs, err := s.Deploy(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+
+	respCfg, err := cfg_client.PublishSendConfigRequest(mSdk.Bus, reqCfg)
+	if err != nil {
+		t.Error(err)
+	} else if respCfg.GetError() != "" {
+		t.Error(respCfg.GetError())
+	}
+
+	time.Sleep(1 * time.Second)
+	respListCfg, err := cfg_client.PublishListConfigRequest(mSdk.Bus, &mir_apiv1.SendListConfigRequest{
+		Targets:       mir_v1.MirDeviceTargetToProtoDeviceTarget(s.ToTarget()),
+		FilterLabels:  map[string]string{},
+		RefreshSchema: false,
+	})
+	if err != nil {
+		t.Error(err)
+	} else if respListCfg.GetError() != "" {
+		t.Error(respListCfg.GetError())
+	}
+
+	// Assert
+	cfgDesc := respListCfg.GetOk().DeviceConfigs[0].CfgDescriptors
+	assert.Equal(t, cfgDesc[0].Error, "")
+	assert.Equal(t, len(cfgDesc), 4)
+	assert.Equal(t, cfgDesc[0].Name, "protocfg_test.v1.Conduit")
+	assert.Equal(t, cfgDesc[0].Labels["building"], "A")
+	assert.Equal(t, cfgDesc[0].Labels["floor"], "1")
+	assert.Equal(t, cfgDesc[1].Name, "protocfg_test.v1.PowerLevel")
+	assert.Equal(t, cfgDesc[1].Labels["building"], "A")
+	assert.Equal(t, cfgDesc[1].Labels["floor"], "2")
+	assert.Equal(t, cfgDesc[2].Name, "protocfg_test.v1.Coordinate")
+	assert.Equal(t, len(cfgDesc[2].Labels), 0)
+	assert.Equal(t, cfgDesc[3].Name, "protocfg_test.v1.Destination")
+	assert.Equal(t, len(cfgDesc[3].Labels), 0)
+
+	cfgValues := respListCfg.GetOk().DeviceConfigs[0].CfgValues
+	assert.Equal(t, len(cfgValues), 1)
+	assert.Equal(t, cfgValues[0].Id.DeviceId, id)
+	assert.Equal(t, cfgValues[0].Id.Name, id)
+	assert.Equal(t, cfgValues[0].Id.Namespace, "testing_cfg")
+	assert.Equal(t, len(cfgValues[0].Values), 4)
+
+	val, ok := cfgValues[0].Values["protocfg_test.v1.PowerLevel"]
+	assert.Equal(t, ok, true)
+	assert.Equal(t, val, "{\"power\":5}")
+	val, ok = cfgValues[0].Values["protocfg_test.v1.Conduit"]
+	assert.Equal(t, ok, true)
+	assert.Equal(t, val, "{\"gazLevel\":0,\"power\":0,\"valveOpen\":false}")
+	val, ok = cfgValues[0].Values["protocfg_test.v1.Coordinate"]
+	assert.Equal(t, ok, true)
+	assert.Equal(t, val, "{\"x\":0,\"y\":0,\"z\":0}")
+	val, ok = cfgValues[0].Values["protocfg_test.v1.Destination"]
+	assert.Equal(t, ok, true)
+	assert.Equal(t, val, "{\"name\":\"\",\"pos\":{\"x\":0,\"y\":0,\"z\":0}}")
+
+	cancel()
+	for _, wg := range wgs {
+		wg.Wait()
+	}
+}
 func TestPublishCfgListFiltersRequest(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
