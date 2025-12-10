@@ -69,6 +69,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		return m, cmd
 	case timer.TimeoutMsg:
 		m.lbl = m.placeholder
+		m.IsSpinning = false
 	}
 	return m, nil
 }

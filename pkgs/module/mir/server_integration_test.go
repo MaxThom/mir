@@ -311,7 +311,7 @@ func TestServerRoutes_ListTelemetry(t *testing.T) {
 	deviceID := "test-server-listtlm"
 	testTelemetry := []*mir_apiv1.DevicesTelemetry{
 		{
-			DevicesNamens: []string{deviceID},
+			Ids: []*mir_apiv1.DeviceIdPair{{DeviceId: deviceID}},
 			TlmDescriptors: []*mir_apiv1.TelemetryDescriptor{
 				{
 					Name: "test",
@@ -333,14 +333,14 @@ func TestServerRoutes_ListTelemetry(t *testing.T) {
 		},
 	})
 	assert.NilError(t, err)
-	assert.Equal(t, resp[0].DevicesNamens[0], deviceID)
+	assert.Equal(t, resp[0].Ids[0].DeviceId, deviceID)
 }
 
 func TestServerRoutes_ListCommand(t *testing.T) {
 	deviceID := "test-server-listcmd"
 	testCommands := []*mir_apiv1.DevicesCommands{
 		{
-			DevicesNamens: []string{"test-server-listcmd"},
+			Ids: []*mir_apiv1.DeviceIdPair{{DeviceId: deviceID}},
 			CmdDescriptors: []*mir_apiv1.CommandDescriptor{
 				{
 					Name: "cmd_test",
@@ -362,7 +362,7 @@ func TestServerRoutes_ListCommand(t *testing.T) {
 		},
 	})
 	assert.NilError(t, err)
-	assert.Equal(t, resp[0].DevicesNamens[0], testCommands[0].DevicesNamens[0])
+	assert.Equal(t, resp[0].Ids[0].DeviceId, testCommands[0].Ids[0].DeviceId)
 }
 
 func TestServerRoutes_SendCommand(t *testing.T) {

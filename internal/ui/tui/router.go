@@ -14,6 +14,9 @@ import (
 	"github.com/maxthom/mir/internal/ui/tui/components/labelspinner"
 	"github.com/maxthom/mir/internal/ui/tui/components/menu"
 	"github.com/maxthom/mir/internal/ui/tui/msgs"
+	device_configuration "github.com/maxthom/mir/internal/ui/tui/pages/device/cfg"
+	device_configuration_response "github.com/maxthom/mir/internal/ui/tui/pages/device/cfg/response"
+	device_configuration_values "github.com/maxthom/mir/internal/ui/tui/pages/device/cfg/values"
 	device_commands "github.com/maxthom/mir/internal/ui/tui/pages/device/cmd"
 	device_command_response "github.com/maxthom/mir/internal/ui/tui/pages/device/cmd/response"
 	device_create "github.com/maxthom/mir/internal/ui/tui/pages/device/create"
@@ -49,16 +52,19 @@ func NewModel(ctx context.Context, log zerolog.Logger, m *mir.Mir, cfg ui.Config
 	log = log.With().Str("page", "router").Logger()
 	s := labelspinner.New(" 🛰️ ", styles.Mir.Render("Mir"), spinner.Dot)
 	routes := map[string]MirTeaModel{
-		"/":                           mainmenu.NewModel(),
-		"/devices":                    device_list.NewModel(ctx),
-		"/devices/create":             device_create.NewModel(ctx),
-		"/devices/edit":               device_edit.NewModel(ctx),
-		"/devices/schema":             device_schema.NewModel(ctx),
-		"/devices/telemetry":          device_telemetry.NewModel(ctx),
-		"/devices/commands":           device_commands.NewModel(ctx),
-		"/devices/commands/responses": device_command_response.NewModel(ctx),
-		"/twins":                      nil,
-		"/telemetry":                  nil,
+		"/":                                mainmenu.NewModel(),
+		"/devices":                         device_list.NewModel(ctx),
+		"/devices/create":                  device_create.NewModel(ctx),
+		"/devices/edit":                    device_edit.NewModel(ctx),
+		"/devices/schema":                  device_schema.NewModel(ctx),
+		"/devices/telemetry":               device_telemetry.NewModel(ctx),
+		"/devices/commands":                device_commands.NewModel(ctx),
+		"/devices/commands/responses":      device_command_response.NewModel(ctx),
+		"/devices/configuration":           device_configuration.NewModel(ctx),
+		"/devices/configuration/responses": device_configuration_response.NewModel(ctx),
+		"/devices/configuration/values":    device_configuration_values.NewModel(ctx),
+		"/twins":                           nil,
+		"/telemetry":                       nil,
 	}
 	return &Model{
 		ctx:          ctx,

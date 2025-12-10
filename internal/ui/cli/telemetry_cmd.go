@@ -76,8 +76,21 @@ func (d *TelemetryListCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) er
 		} else {
 			i += 1
 			sb.WriteString(fmt.Sprintf("%d. ", i))
-			sb.WriteString(strings.Join(tlms.DevicesNamens, ", "))
-			sb.WriteString("\n")
+
+			devsTitle := []string{}
+			for _, devId := range tlms.Ids {
+				if devId.Name == "" && devId.Namespace == "" {
+					devsTitle = append(devsTitle, devId.DeviceId)
+				} else {
+					devsTitle = append(devsTitle, devId.Name+"/"+devId.Namespace)
+				}
+			}
+			if len(devsTitle) > 10 {
+				sb.WriteString(strings.Join(devsTitle[0:10], ", ") + " & " + fmt.Sprintf("%d more", len(devsTitle)-10))
+			} else {
+				sb.WriteString(strings.Join(devsTitle, ", "))
+			}
+
 			for _, tlm := range tlms.TlmDescriptors {
 				sb.WriteString(tlm.Name)
 				sb.WriteString("{")
@@ -108,7 +121,21 @@ func (d *TelemetryListCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) er
 	for _, tlms := range tlmsErr {
 		i += 1
 		sb.WriteString(fmt.Sprintf("%d. ", i))
-		sb.WriteString(strings.Join(tlms.DevicesNamens, ", "))
+
+		devsTitle := []string{}
+		for _, devId := range tlms.Ids {
+			if devId.Name == "" && devId.Namespace == "" {
+				devsTitle = append(devsTitle, devId.DeviceId)
+			} else {
+				devsTitle = append(devsTitle, devId.Name+"/"+devId.Namespace)
+			}
+		}
+		if len(devsTitle) > 10 {
+			sb.WriteString(strings.Join(devsTitle[0:10], ", ") + " & " + fmt.Sprintf("%d more", len(devsTitle)-10))
+		} else {
+			sb.WriteString(strings.Join(devsTitle, ", "))
+		}
+
 		sb.WriteString("\n")
 		sb.WriteString(tlms.Error)
 	}

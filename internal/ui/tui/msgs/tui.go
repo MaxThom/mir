@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	DefaultTimeout = 2 * time.Second
+	DefaultTimeout = 5 * time.Second
 )
 
 type (

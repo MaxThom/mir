@@ -379,10 +379,9 @@ func (s *ProtoCmdServer) sendCommandToDevices(msg *mir.Msg, req *mir_apiv1.SendC
 }
 
 type schemaPerDevices struct {
-	sch        *mir_proto.MirProtoSchema
-	err        error
-	devsId     []string
-	devsNameNs []string
+	sch    *mir_proto.MirProtoSchema
+	err    error
+	devsId []*mir_apiv1.DeviceIdPair
 }
 
 func (s *ProtoCmdServer) listCommandsSub(msg *mir.Msg, clientId string, req *mir_apiv1.SendListCommandsRequest) ([]*mir_apiv1.DevicesCommands, error) {
@@ -415,23 +414,30 @@ func (s *ProtoCmdServer) listCommandsSub(msg *mir.Msg, clientId string, req *mir
 	devsCmd := []*mir_apiv1.DevicesCommands{}
 	devSchemas := []*schemaPerDevices{}
 	for _, dev := range devs {
-		nameNs := dev.GetNameNamespace()
 		id := dev.Spec.DeviceId
 		reg, _, err := s.schStore.GetDeviceSchema(dev.Spec.DeviceId, req.RefreshSchema)
 		if err != nil {
 			found := false
 			for _, d := range devsCmd {
 				if d.Error == err.Error() {
-					d.DevicesNamens = append(d.DevicesNamens, nameNs)
-					d.DevicesId = append(d.DevicesId, id)
+					d.Ids = append(d.Ids, &mir_apiv1.DeviceIdPair{
+						DeviceId:  id,
+						Name:      dev.GetNameNs().Name,
+						Namespace: dev.GetNameNs().Namespace,
+					})
 					found = true
 				}
 			}
 			if !found {
 				devsCmd = append(devsCmd, &mir_apiv1.DevicesCommands{
-					DevicesNamens: []string{nameNs},
-					DevicesId:     []string{id},
-					Error:         err.Error(),
+					Ids: []*mir_apiv1.DeviceIdPair{
+						{
+							DeviceId:  id,
+							Name:      dev.GetNameNs().Name,
+							Namespace: dev.GetNameNs().Namespace,
+						},
+					},
+					Error: err.Error(),
 				})
 			}
 			continue
@@ -439,17 +445,23 @@ func (s *ProtoCmdServer) listCommandsSub(msg *mir.Msg, clientId string, req *mir
 		found := false
 		for _, sch := range devSchemas {
 			if mir_proto.AreSchemaEqual(sch.sch, reg) {
-				sch.devsId = append(sch.devsId, dev.Spec.DeviceId)
-				sch.devsNameNs = append(sch.devsNameNs, nameNs)
+				sch.devsId = append(sch.devsId, &mir_apiv1.DeviceIdPair{
+					DeviceId:  dev.Spec.DeviceId,
+					Name:      dev.GetNameNs().Name,
+					Namespace: dev.GetNameNs().Namespace,
+				})
 				found = true
 			}
 
 		}
 		if !found {
 			devSchemas = append(devSchemas, &schemaPerDevices{
-				sch:        reg,
-				devsId:     []string{dev.Spec.DeviceId},
-				devsNameNs: []string{nameNs},
+				sch: reg,
+				devsId: []*mir_apiv1.DeviceIdPair{{
+					DeviceId:  dev.Spec.DeviceId,
+					Name:      dev.GetNameNs().Name,
+					Namespace: dev.GetNameNs().Namespace,
+				}},
 			})
 		}
 	}
@@ -458,17 +470,15 @@ func (s *ProtoCmdServer) listCommandsSub(msg *mir.Msg, clientId string, req *mir
 		cmds, err := sch.sch.GetCommandsList(req.FilterLabels)
 		if err != nil {
 			devsCmd = append(devsCmd, &mir_apiv1.DevicesCommands{
-				DevicesNamens: sch.devsNameNs,
-				DevicesId:     sch.devsId,
-				Error:         err.Error(),
+				Ids:   sch.devsId,
+				Error: err.Error(),
 			})
 			requestErrorTotal.WithLabelValues("list").Inc()
 			continue
 		}
 
 		devsCmd = append(devsCmd, &mir_apiv1.DevicesCommands{
-			DevicesNamens:  sch.devsNameNs,
-			DevicesId:      sch.devsId,
+			Ids:            sch.devsId,
 			CmdDescriptors: cmds,
 		})
 	}

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
@@ -16,6 +15,7 @@ import (
 	"github.com/maxthom/mir/internal/ui/tui/msgs"
 	device_list "github.com/maxthom/mir/internal/ui/tui/pages/device/list"
 	"github.com/maxthom/mir/internal/ui/tui/store"
+	"github.com/maxthom/mir/internal/ui/tui/styles"
 	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/rs/zerolog"
@@ -97,22 +97,18 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				Choices: []group_menu.Option{},
 			}
 
-			if len(tlm.DevicesNamens) > 3 {
-				gc.Label = strings.Join(tlm.DevicesNamens[0:3], ", ") + " & " + strconv.Itoa(len(tlm.DevicesNamens)-3) + " more"
-			} else if len(tlm.DevicesNamens) == 0 {
-				if len(tlm.DevicesId) > 3 {
-					gc.Label = strings.Join(tlm.DevicesId[0:3], ", ") + " & " + strconv.Itoa(len(tlm.DevicesId)-3) + " more"
+			devsTitle := []string{}
+			for _, devId := range tlm.Ids {
+				if devId.Name == "" && devId.Namespace == "" {
+					devsTitle = append(devsTitle, devId.DeviceId)
 				} else {
-					gc.Label = strings.Join(tlm.DevicesId, ", ")
+					devsTitle = append(devsTitle, devId.Name+"/"+devId.Namespace)
 				}
-			} else {
-				gc.Label = strings.Join(tlm.DevicesNamens, ", ")
 			}
-
-			if len(tlm.DevicesNamens) > 3 {
-				gc.Label = strings.Join(tlm.DevicesNamens[0:3], ", ") + " & " + strconv.Itoa(len(tlm.DevicesNamens)-3) + " more"
+			if len(devsTitle) > 3 {
+				gc.Label = strings.Join(devsTitle[0:3], ", ") + " & " + fmt.Sprintf("%d more", len(devsTitle)-3)
 			} else {
-				gc.Label = strings.Join(tlm.DevicesNamens, ", ")
+				gc.Label = strings.Join(devsTitle, ", ")
 			}
 
 			if tlm.Error != "" {
@@ -170,19 +166,8 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *Model) View() string {
 	v.Reset()
 	v.WriteString("\n")
-
-	// q := ""
-	i, j := m.menu.GetCursor()
-	if len(m.telemetry) > i && len(m.telemetry[i].TlmDescriptors) > j {
-		// TODO in a future, the side panel will be a tlm chart
-		// q = m.telemetry[i].TlmDescriptors[j].ExploreQuery
-		// q = "{" + mapToSortedString(m.telemetry[i].TlmDescriptors[j].Labels) + "}\n"
-		// q += lipgloss.NewStyle().Bold(true).Render("Fields")
-		// q += "\n• " + strings.Join(m.telemetry[i].TlmDescriptors[j].Fields, "\n• ")
-		// q = styles.SidePanel.Render(q)
-	}
-	// v.WriteString(lipgloss.JoinHorizontal(lipgloss.Top, m.menu.View(), "          ", q))
-
+	header := styles.Help.Bold(false).Render(fmt.Sprintf("Telemetry list for %d devices", len(m.devices)))
+	v.WriteString(header + "\n\n")
 	v.WriteString(m.menu.View())
 	v.WriteString(m.help.View())
 	return v.String()

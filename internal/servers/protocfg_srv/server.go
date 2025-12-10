@@ -17,7 +17,6 @@ import (
 	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
 	"github.com/maxthom/mir/internal/services/schema_cache"
 	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
-	devicev1 "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/pkg/errors"
@@ -86,11 +85,7 @@ var (
 		Help:      "Total number of reported properties error requests from devices",
 	})
 
-	devMirErrType = devicev1.Error{}
-	devMirErrStr  = string(devMirErrType.ProtoReflect().Descriptor().FullName())
-
-	l            zerolog.Logger
-	offlineAfter = time.Second * 30
+	l zerolog.Logger
 )
 
 func init() {
@@ -137,10 +132,9 @@ func (s *ProtoCfgServer) Shutdown() error {
 }
 
 type schemaPerDevices struct {
-	sch        *mir_proto.MirProtoSchema
-	err        error
-	devsId     []string
-	devsNameNs []string
+	sch     *mir_proto.MirProtoSchema
+	err     error
+	devsIds []*mir_apiv1.DevicesConfigs_ConfigValues
 }
 
 func (s *ProtoCfgServer) listCfgSub(msg *mir.Msg, clientId string, req *mir_apiv1.SendListConfigRequest) ([]*mir_apiv1.DevicesConfigs, error) {
@@ -173,41 +167,83 @@ func (s *ProtoCfgServer) listCfgSub(msg *mir.Msg, clientId string, req *mir_apiv
 	devsCfg := []*mir_apiv1.DevicesConfigs{}
 	devSchemas := []*schemaPerDevices{}
 	for _, dev := range devs {
-		nameNs := dev.GetNameNamespace()
-		id := dev.Spec.DeviceId
+		cfgList := []*mir_apiv1.ConfigDescriptor{}
 		reg, _, err := s.schStore.GetDeviceSchema(dev.Spec.DeviceId, req.RefreshSchema)
+		if err == nil {
+			cfgList, err = reg.GetConfigList(req.FilterLabels)
+		}
 		if err != nil {
 			found := false
 			for _, d := range devsCfg {
+				// If an error and exist in the schema list, append
 				if d.Error == err.Error() {
-					d.DevicesNamens = append(d.DevicesNamens, nameNs)
-					d.DevicesId = append(d.DevicesId, nameNs)
+					d.CfgValues = append(d.CfgValues, &mir_apiv1.DevicesConfigs_ConfigValues{
+						Id: &mir_apiv1.DeviceIdPair{
+							Name:      dev.GetNameNs().Name,
+							Namespace: dev.GetNameNs().Namespace,
+							DeviceId:  dev.Spec.DeviceId,
+						},
+					})
 					found = true
 				}
 			}
 			if !found {
 				devsCfg = append(devsCfg, &mir_apiv1.DevicesConfigs{
-					DevicesNamens: []string{nameNs},
-					DevicesId:     []string{id},
-					Error:         err.Error(),
+					CfgValues: []*mir_apiv1.DevicesConfigs_ConfigValues{
+						{
+							Id: &mir_apiv1.DeviceIdPair{
+								Name:      dev.GetNameNs().Name,
+								Namespace: dev.GetNameNs().Namespace,
+								DeviceId:  dev.Spec.DeviceId,
+							},
+						},
+					},
+					Error: err.Error(),
 				})
 			}
 			continue
 		}
 		found := false
+
+		devCfgValues := &mir_apiv1.DevicesConfigs_ConfigValues{
+			Id: &mir_apiv1.DeviceIdPair{
+				Name:      dev.GetNameNs().Name,
+				Namespace: dev.GetNameNs().Namespace,
+				DeviceId:  dev.Spec.DeviceId,
+			},
+			Values: map[string]string{},
+		}
+		for _, cfg := range cfgList {
+			if v, ok := dev.Properties.Desired[cfg.Name]; ok {
+				b, err := json.Marshal(v)
+				if err != nil {
+					devCfgValues.Values[cfg.Name] = errors.Errorf("{\"err\": \"%s\"}", err.Error()).Error()
+				} else {
+					devCfgValues.Values[cfg.Name] = string(b)
+					l.Debug().Str("device_id", dev.Spec.DeviceId).Str("config_name", cfg.Name).Msg("retrieved config from device desired properties")
+				}
+			} else {
+				if degradedMode {
+					devCfgValues.Values[cfg.Name] = errors.New("{\"err\": \"can't retrieve config in degraded mode\"}").Error()
+				} else {
+					devCfgValues.Values[cfg.Name] = cfg.Template
+				}
+			}
+		}
+
 		for _, sch := range devSchemas {
 			if mir_proto.AreSchemaEqual(sch.sch, reg) {
-				sch.devsId = append(sch.devsId, dev.Spec.DeviceId)
-				sch.devsNameNs = append(sch.devsNameNs, nameNs)
+				sch.devsIds = append(sch.devsIds, devCfgValues)
 				found = true
 			}
 
 		}
 		if !found {
 			devSchemas = append(devSchemas, &schemaPerDevices{
-				sch:        reg,
-				devsId:     []string{dev.Spec.DeviceId},
-				devsNameNs: []string{nameNs},
+				sch: reg,
+				devsIds: []*mir_apiv1.DevicesConfigs_ConfigValues{
+					devCfgValues,
+				},
 			})
 		}
 	}
@@ -216,17 +252,16 @@ func (s *ProtoCfgServer) listCfgSub(msg *mir.Msg, clientId string, req *mir_apiv
 		cmds, err := sch.sch.GetConfigList(req.FilterLabels)
 		if err != nil {
 			devsCfg = append(devsCfg, &mir_apiv1.DevicesConfigs{
-				DevicesNamens: sch.devsNameNs,
-				DevicesId:     sch.devsId,
-				Error:         err.Error(),
+				CfgValues: sch.devsIds,
+				Error:     err.Error(),
 			})
+
 			requestErrorTotal.WithLabelValues("list").Inc()
 			continue
 		}
 
 		devsCfg = append(devsCfg, &mir_apiv1.DevicesConfigs{
-			DevicesNamens:  sch.devsNameNs,
-			DevicesId:      sch.devsId,
+			CfgValues:      sch.devsIds,
 			CfgDescriptors: cmds,
 		})
 	}

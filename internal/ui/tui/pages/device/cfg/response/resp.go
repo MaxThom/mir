@@ -1,4 +1,4 @@
-package device_command_response
+package device_configuration_current
 
 import (
 	"context"
@@ -33,8 +33,8 @@ const ()
 type Model struct {
 	ctx     context.Context
 	help    mir_help.Model
-	cmdReq  *mir_apiv1.SendCommandRequest
-	cmdResp map[string]*mir_apiv1.SendCommandResponse_CommandResponse
+	cfgReq  *mir_apiv1.SendConfigRequest
+	cfgResp map[string]*mir_apiv1.SendConfigResponse_ConfigResponse
 	vp      viewport.Model
 	list    menu.Model
 }
@@ -43,7 +43,7 @@ type InputData struct {
 }
 
 func NewModel(ctx context.Context) *Model {
-	l = log.With().Str("page", "device_cmd_resp").Logger()
+	l = log.With().Str("page", "device_cfg_resp").Logger()
 
 	vp := viewport.New(store.ScreenWidth, store.ScreenHeight)
 	vp.Style = lipgloss.NewStyle().
@@ -53,26 +53,26 @@ func NewModel(ctx context.Context) *Model {
 
 	return &Model{
 		ctx:  ctx,
-		help: mir_help.New(keys, []string{}, "mir command responses"),
+		help: mir_help.New(keys, []string{}, "mir config responses"),
 		vp:   vp,
 	}
 }
 
 func (m *Model) InitWithData(d any) tea.Cmd {
 	m.vp.Height = store.ScreenHeight - 5
-	m.vp.Width = 75 //store.ScreenWidth - 5
-	req, ok := d.(*mir_apiv1.SendCommandRequest)
+	m.vp.Width = 75
+	req, ok := d.(*mir_apiv1.SendConfigRequest)
 	if !ok {
 		return tea.Batch(
-			msgs.ErrCmd(fmt.Errorf("no command specified"), 2*time.Second),
-			msgs.RouteResume("/devices/commands"),
+			msgs.ErrCmd(fmt.Errorf("no config specified"), 2*time.Second),
+			msgs.RouteResume("/devices/configs"),
 		)
 	}
-	m.cmdReq = req
+	m.cfgReq = req
 
 	return tea.Batch(
-		msgs.ReqMsgCmd("Command '"+req.Name+"' sent to "+strconv.Itoa(len(req.Targets.Ids))+" devices", msgs.DefaultTimeout),
-		msgs.SendMirDeviceCommands(store.Bus, req),
+		msgs.ReqMsgCmd("Config '"+req.Name+"' sent to "+strconv.Itoa(len(req.Targets.Ids))+" devices", msgs.DefaultTimeout),
+		msgs.SendMirDeviceConfigs(store.Bus, req),
 	)
 }
 
@@ -86,8 +86,8 @@ func (m Model) ResumeWithData(d any) tea.Cmd {
 
 func (m *Model) Init() tea.Cmd {
 	return tea.Batch(
-		msgs.ErrCmd(fmt.Errorf("no command specified"), 2*time.Second),
-		msgs.RouteResume("/devices/commands"),
+		msgs.ErrCmd(fmt.Errorf("no configs specified"), 2*time.Second),
+		msgs.RouteResume("/devices/configs"),
 	)
 }
 
@@ -101,10 +101,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.vp.Width = msg.Width - 4
 		m.vp.Height = msg.Height - 8
-	case msgs.DeviceCommandSentMsg:
-		m.cmdResp = msg.CommandsResponse
-		m.list = menu.New(m.renderCmdResp(m.cmdResp))
-		cmdRes = msgs.ResMsgCmd(strconv.Itoa(len(msg.CommandsResponse))+" command responses received", 5*time.Second)
+	case msgs.DeviceConfigSentMsg:
+		m.cfgResp = msg.ConfigsResponses
+		m.list = menu.New(m.renderCmdResp(m.cfgResp))
+		cmdRes = msgs.ResMsgCmd(strconv.Itoa(len(msg.ConfigsResponses))+" config responses received", 5*time.Second)
 	case tea.KeyMsg:
 		m.help, cmdKey = m.help.Update(msg)
 		m.list, cmdList = m.list.Update(msg)
@@ -115,7 +115,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				lineCount := len(strings.Split(m.list.GetChoice().Description, "\n"))
 				if mv.Position == 0 {
 					m.vp.GotoTop()
-				} else if len(m.cmdResp)-1 == mv.Position {
+				} else if len(m.cfgResp)-1 == mv.Position {
 					m.vp.GotoBottom()
 				} else {
 					m.vp.ScrollDown(mv.Direction * lineCount)
@@ -123,19 +123,19 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 		if msg.String() == "r" {
-			return m, m.InitWithData(m.cmdReq)
+			return m, m.InitWithData(m.cfgReq)
 		} else if msg.String() == "e" {
 			errorIds := []string{}
-			for _, resp := range m.cmdResp {
-				if resp.Status == mir_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_ERROR {
+			for _, resp := range m.cfgResp {
+				if resp.Status == mir_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_ERROR {
 					errorIds = append(errorIds, resp.DeviceId)
 				}
 			}
 			if len(errorIds) > 0 {
-				m.cmdReq.Targets.Ids = errorIds
-				return m, m.InitWithData(m.cmdReq)
+				m.cfgReq.Targets.Ids = errorIds
+				return m, m.InitWithData(m.cfgReq)
 			} else {
-				return m, msgs.ResMsgCmd("No commands in error", 5*time.Second)
+				return m, msgs.ResMsgCmd("No config in error", 5*time.Second)
 			}
 		}
 	}
@@ -146,14 +146,14 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *Model) View() string {
 	v.Reset()
-	header := styles.Help.Bold(false).Render(fmt.Sprintf("Command responses for %d devices\n", len(m.cmdResp)))
+	header := styles.Help.Bold(false).Render(fmt.Sprintf("Configuration responses for %d devices\n", len(m.cfgResp)))
 	m.vp.SetContent(header + m.list.View())
 	v.WriteString(m.vp.View())
 	v.WriteString(m.help.View())
 	return v.String()
 }
 
-func (m *Model) renderCmdResp(resps map[string]*mir_apiv1.SendCommandResponse_CommandResponse) []menu.Option {
+func (m *Model) renderCmdResp(resps map[string]*mir_apiv1.SendConfigResponse_ConfigResponse) []menu.Option {
 	i := 1
 	choices := []menu.Option{}
 	for k, v := range resps {
@@ -201,15 +201,15 @@ func (m *Model) renderCmdResp(resps map[string]*mir_apiv1.SendCommandResponse_Co
 		lbl := lipgloss.NewStyle().Bold(true).Render(fmt.Sprintf("%d. %s", i, k))
 		st := ""
 		switch v.Status {
-		case mir_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_SUCCESS:
+		case mir_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_SUCCESS:
 			st = lipgloss.NewStyle().Foreground(lipgloss.Color("34")).Render("SUCCESS")
-		case mir_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_ERROR:
+		case mir_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_ERROR:
 			st = lipgloss.NewStyle().Foreground(lipgloss.Color("160")).Render("ERROR")
-		case mir_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_PENDING:
+		case mir_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_PENDING:
 			st = lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Render("PENDING")
-		case mir_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_VALIDATED:
+		case mir_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_VALIDATED:
 			st = lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Render("VALIDATED")
-		case mir_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_UNSPECIFIED:
+		case mir_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_UNSPECIFIED:
 			st = lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Render("UNSPECIFIED")
 		}
 

@@ -1,0 +1,177 @@
+apiVersion: mir/v1alpha
+kind: swarm
+meta:
+  name: "productiontest"
+  namespace: "testing"
+  labels:
+    environment: "staging"
+  annotations:
+    created-by: "mir-swarm"
+    purpose: "many-tlm-cfg-cmd"
+swarm:
+  logLevel: debug
+  deployBatchSize: 1
+  devices:
+    # Environmental sensor fleet
+    - count: 5
+      meta:
+        name: env-func
+        namespace: swarm_func
+        annotations:
+          location: "antigua"
+        labels:
+          swarm: "true"
+          type: "guatemala"
+      telemetry:
+        - name: Environment
+          interval: 10s
+          tags:
+            unit_system: "metric"
+          fields:
+            - temperature
+            - humidity
+            - pressure
+        - name: AirQuality
+          interval: 30s
+          fields:
+            - co2
+            - voc
+      commands:
+        - name: Calibrate
+          delay: 3s
+          fields:
+            - calibrationMode
+        - name: FactoryReset
+          delay: 7s
+          fields:
+            - resetMode
+      properties:
+        - name: SensorConfig
+          delay: 1s
+          fields:
+            - sampleRate
+            - enabled
+        - name: DeviceConfig
+          delay: 5s
+          fields:
+            - light
+            - powerInput
+    # Power sensor fleet
+    - count: 5
+      meta:
+        name: power-func
+        namespace: swarm_func
+        annotations:
+          location: "antigua"
+        labels:
+          swarm: "true"
+          type: "flores"
+      telemetry:
+        - name: PowerMetrics
+          interval: 5s
+          tags:
+            unit_system: "metric"
+          fields:
+            - consumption
+        - name: AirQuality
+          interval: 30s
+          fields:
+            - co2
+            - voc
+      commands:
+        - name: ResetMetrics
+          delay: 1s
+          fields:
+            - resetType
+        - name: FactoryReset
+          delay: 7s
+          fields:
+            - resetMode
+      properties:
+        - name: SensorConfig
+          delay: 1s
+          fields:
+            - sampleRate
+            - enabled
+        - name: DeviceConfig
+          delay: 5s
+          fields:
+            - light
+            - powerInput
+
+  # Field definitions
+  fields:
+    # Environmental sensors
+    - name: temperature
+      type: float64
+      tags:
+        unit: "C"
+      generator:
+        expr: "22 + 3*sin(t/12)"
+    - name: humidity
+      type: float64
+      tags:
+        unit: "%"
+      generator:
+        expr: "60 + 15*cos(t/18) + 2"
+    - name: pressure
+      type: float64
+      tags:
+        unit: "Pa"
+      generator:
+        expr: "101325 + 100*sin(t/30)"
+    - name: co2
+      type: float64
+      tags:
+        unit: "ppm"
+      generator:
+        expr: "400 + 50*sin(t/60)"
+    - name: voc
+      type: float64
+      tags:
+        unit: "ppb"
+      generator:
+        expr: "100 + 30*cos(t/40)"
+    # Power monitoring
+    - name: consumption
+      type: message
+      fields:
+        - power
+        - energy
+    - name: power
+      type: float64
+      tags:
+        unit: "W"
+      generator:
+        expr: "100 + 30*cos(t/40)"
+    - name: energy
+      type: float64
+      tags:
+        unit: "kWh"
+      generator:
+        expr: "t/36"
+    # Command/config fields
+    - name: calibrationMode
+      type: int32
+      tags:
+        description: "Calibration mode: 0=auto, 1=manual"
+    - name: resetMode
+      type: int32
+      tags:
+        description: "Reset mode: 0=soft, 1=hard"
+    - name: sampleRate
+      type: int32
+      tags:
+        unit: "Hz"
+    - name: enabled
+      type: bool
+    - name: resetType
+      type: string
+    - name: powerInput
+      type: int32
+      tags:
+        unit: "Amps"
+    - name: light
+      type: int32
+      tags:
+        unit: "Kelvin"
