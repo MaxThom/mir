@@ -477,11 +477,10 @@ func (x *ConfigsResponse) GetDeviceConfigs() []*DevicesConfigs {
 
 // List of config
 type DevicesConfigs struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	DevicesNamens  []string               `protobuf:"bytes,1,rep,name=devices_namens,json=devicesNamens,proto3" json:"devices_namens,omitempty"`    // List of devices that have this telemetry
-	DevicesId      []string               `protobuf:"bytes,2,rep,name=devices_id,json=devicesId,proto3" json:"devices_id,omitempty"`                // List of devices that have this telemetry
-	CfgDescriptors []*ConfigDescriptor    `protobuf:"bytes,3,rep,name=cfg_descriptors,json=cfgDescriptors,proto3" json:"cfg_descriptors,omitempty"` // Array of config descriptor
-	Error          string                 `protobuf:"bytes,4,opt,name=error,proto3" json:"error,omitempty"`                                         // error if something went wrong
+	state          protoimpl.MessageState         `protogen:"open.v1"`
+	CfgValues      []*DevicesConfigs_ConfigValues `protobuf:"bytes,1,rep,name=cfg_values,json=cfgValues,proto3" json:"cfg_values,omitempty"`                // List of devices that have those config with their respective values
+	CfgDescriptors []*ConfigDescriptor            `protobuf:"bytes,2,rep,name=cfg_descriptors,json=cfgDescriptors,proto3" json:"cfg_descriptors,omitempty"` // Array of config descriptor
+	Error          string                         `protobuf:"bytes,3,opt,name=error,proto3" json:"error,omitempty"`                                         // error if something went wrong
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -516,16 +515,9 @@ func (*DevicesConfigs) Descriptor() ([]byte, []int) {
 	return file_mir_api_v1_cfg_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *DevicesConfigs) GetDevicesNamens() []string {
+func (x *DevicesConfigs) GetCfgValues() []*DevicesConfigs_ConfigValues {
 	if x != nil {
-		return x.DevicesNamens
-	}
-	return nil
-}
-
-func (x *DevicesConfigs) GetDevicesId() []string {
-	if x != nil {
-		return x.DevicesId
+		return x.CfgValues
 	}
 	return nil
 }
@@ -550,8 +542,7 @@ type ConfigDescriptor struct {
 	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`                                                                               // Name of config
 	Labels        map[string]string      `protobuf:"bytes,2,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // Labels are used to tag a config
 	Template      string                 `protobuf:"bytes,3,opt,name=template,proto3" json:"template,omitempty"`                                                                       // JSON payload boilerplate for an example
-	Values        string                 `protobuf:"bytes,4,opt,name=values,proto3" json:"values,omitempty"`                                                                           // JSON payload of values
-	Error         string                 `protobuf:"bytes,5,opt,name=error,proto3" json:"error,omitempty"`                                                                             // error if something went wrong
+	Error         string                 `protobuf:"bytes,4,opt,name=error,proto3" json:"error,omitempty"`                                                                             // error if something went wrong
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -603,13 +594,6 @@ func (x *ConfigDescriptor) GetLabels() map[string]string {
 func (x *ConfigDescriptor) GetTemplate() string {
 	if x != nil {
 		return x.Template
-	}
-	return ""
-}
-
-func (x *ConfigDescriptor) GetValues() string {
-	if x != nil {
-		return x.Values
 	}
 	return ""
 }
@@ -749,6 +733,66 @@ func (x *SendConfigResponse_ConfigResponse) GetError() string {
 	return ""
 }
 
+type DevicesConfigs_ConfigValues struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            *DeviceIdPair          `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`                                                                                   // device identification
+	Values        map[string]string      `protobuf:"bytes,2,rep,name=values,proto3" json:"values,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // JSON payload of values for each cfg name
+	Error         string                 `protobuf:"bytes,3,opt,name=error,proto3" json:"error,omitempty"`                                                                             // error if something went wrong
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DevicesConfigs_ConfigValues) Reset() {
+	*x = DevicesConfigs_ConfigValues{}
+	mi := &file_mir_api_v1_cfg_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DevicesConfigs_ConfigValues) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DevicesConfigs_ConfigValues) ProtoMessage() {}
+
+func (x *DevicesConfigs_ConfigValues) ProtoReflect() protoreflect.Message {
+	mi := &file_mir_api_v1_cfg_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DevicesConfigs_ConfigValues.ProtoReflect.Descriptor instead.
+func (*DevicesConfigs_ConfigValues) Descriptor() ([]byte, []int) {
+	return file_mir_api_v1_cfg_proto_rawDescGZIP(), []int{5, 0}
+}
+
+func (x *DevicesConfigs_ConfigValues) GetId() *DeviceIdPair {
+	if x != nil {
+		return x.Id
+	}
+	return nil
+}
+
+func (x *DevicesConfigs_ConfigValues) GetValues() map[string]string {
+	if x != nil {
+		return x.Values
+	}
+	return nil
+}
+
+func (x *DevicesConfigs_ConfigValues) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
 var File_mir_api_v1_cfg_proto protoreflect.FileDescriptor
 
 const file_mir_api_v1_cfg_proto_rawDesc = "" +
@@ -799,19 +843,24 @@ const file_mir_api_v1_cfg_proto_rawDesc = "" +
 	"\n" +
 	"\bresponse\"T\n" +
 	"\x0fConfigsResponse\x12A\n" +
-	"\x0edevice_configs\x18\x01 \x03(\v2\x1a.mir_api.v1.DevicesConfigsR\rdeviceConfigs\"\xb3\x01\n" +
-	"\x0eDevicesConfigs\x12%\n" +
-	"\x0edevices_namens\x18\x01 \x03(\tR\rdevicesNamens\x12\x1d\n" +
+	"\x0edevice_configs\x18\x01 \x03(\v2\x1a.mir_api.v1.DevicesConfigsR\rdeviceConfigs\"\x8e\x03\n" +
+	"\x0eDevicesConfigs\x12F\n" +
 	"\n" +
-	"devices_id\x18\x02 \x03(\tR\tdevicesId\x12E\n" +
-	"\x0fcfg_descriptors\x18\x03 \x03(\v2\x1c.mir_api.v1.ConfigDescriptorR\x0ecfgDescriptors\x12\x14\n" +
-	"\x05error\x18\x04 \x01(\tR\x05error\"\xed\x01\n" +
+	"cfg_values\x18\x01 \x03(\v2'.mir_api.v1.DevicesConfigs.ConfigValuesR\tcfgValues\x12E\n" +
+	"\x0fcfg_descriptors\x18\x02 \x03(\v2\x1c.mir_api.v1.ConfigDescriptorR\x0ecfgDescriptors\x12\x14\n" +
+	"\x05error\x18\x03 \x01(\tR\x05error\x1a\xd6\x01\n" +
+	"\fConfigValues\x12(\n" +
+	"\x02id\x18\x01 \x01(\v2\x18.mir_api.v1.DeviceIdPairR\x02id\x12K\n" +
+	"\x06values\x18\x02 \x03(\v23.mir_api.v1.DevicesConfigs.ConfigValues.ValuesEntryR\x06values\x12\x14\n" +
+	"\x05error\x18\x03 \x01(\tR\x05error\x1a9\n" +
+	"\vValuesEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xd5\x01\n" +
 	"\x10ConfigDescriptor\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12@\n" +
 	"\x06labels\x18\x02 \x03(\v2(.mir_api.v1.ConfigDescriptor.LabelsEntryR\x06labels\x12\x1a\n" +
-	"\btemplate\x18\x03 \x01(\tR\btemplate\x12\x16\n" +
-	"\x06values\x18\x04 \x01(\tR\x06values\x12\x14\n" +
-	"\x05error\x18\x05 \x01(\tR\x05error\x1a9\n" +
+	"\btemplate\x18\x03 \x01(\tR\btemplate\x12\x14\n" +
+	"\x05error\x18\x04 \x01(\tR\x05error\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*\xf3\x01\n" +
@@ -838,7 +887,7 @@ func file_mir_api_v1_cfg_proto_rawDescGZIP() []byte {
 }
 
 var file_mir_api_v1_cfg_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_mir_api_v1_cfg_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_mir_api_v1_cfg_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_mir_api_v1_cfg_proto_goTypes = []any{
 	(ConfigResponseStatus)(0),                  // 0: mir_api.v1.ConfigResponseStatus
 	(*SendConfigRequest)(nil),                  // 1: mir_api.v1.SendConfigRequest
@@ -850,31 +899,37 @@ var file_mir_api_v1_cfg_proto_goTypes = []any{
 	(*ConfigDescriptor)(nil),                   // 7: mir_api.v1.ConfigDescriptor
 	(*SendConfigResponse_ConfigResponses)(nil), // 8: mir_api.v1.SendConfigResponse.ConfigResponses
 	(*SendConfigResponse_ConfigResponse)(nil),  // 9: mir_api.v1.SendConfigResponse.ConfigResponse
-	nil,                  // 10: mir_api.v1.SendConfigResponse.ConfigResponses.DeviceResponsesEntry
-	nil,                  // 11: mir_api.v1.SendListConfigRequest.FilterLabelsEntry
-	nil,                  // 12: mir_api.v1.ConfigDescriptor.LabelsEntry
-	(*DeviceTarget)(nil), // 13: mir_api.v1.DeviceTarget
-	(Encoding)(0),        // 14: mir_api.v1.Encoding
+	nil,                                 // 10: mir_api.v1.SendConfigResponse.ConfigResponses.DeviceResponsesEntry
+	nil,                                 // 11: mir_api.v1.SendListConfigRequest.FilterLabelsEntry
+	(*DevicesConfigs_ConfigValues)(nil), // 12: mir_api.v1.DevicesConfigs.ConfigValues
+	nil,                                 // 13: mir_api.v1.DevicesConfigs.ConfigValues.ValuesEntry
+	nil,                                 // 14: mir_api.v1.ConfigDescriptor.LabelsEntry
+	(*DeviceTarget)(nil),                // 15: mir_api.v1.DeviceTarget
+	(Encoding)(0),                       // 16: mir_api.v1.Encoding
+	(*DeviceIdPair)(nil),                // 17: mir_api.v1.DeviceIdPair
 }
 var file_mir_api_v1_cfg_proto_depIdxs = []int32{
-	13, // 0: mir_api.v1.SendConfigRequest.targets:type_name -> mir_api.v1.DeviceTarget
-	14, // 1: mir_api.v1.SendConfigRequest.payload_encoding:type_name -> mir_api.v1.Encoding
+	15, // 0: mir_api.v1.SendConfigRequest.targets:type_name -> mir_api.v1.DeviceTarget
+	16, // 1: mir_api.v1.SendConfigRequest.payload_encoding:type_name -> mir_api.v1.Encoding
 	8,  // 2: mir_api.v1.SendConfigResponse.ok:type_name -> mir_api.v1.SendConfigResponse.ConfigResponses
-	13, // 3: mir_api.v1.SendListConfigRequest.targets:type_name -> mir_api.v1.DeviceTarget
+	15, // 3: mir_api.v1.SendListConfigRequest.targets:type_name -> mir_api.v1.DeviceTarget
 	11, // 4: mir_api.v1.SendListConfigRequest.filter_labels:type_name -> mir_api.v1.SendListConfigRequest.FilterLabelsEntry
 	5,  // 5: mir_api.v1.SendListConfigResponse.ok:type_name -> mir_api.v1.ConfigsResponse
 	6,  // 6: mir_api.v1.ConfigsResponse.device_configs:type_name -> mir_api.v1.DevicesConfigs
-	7,  // 7: mir_api.v1.DevicesConfigs.cfg_descriptors:type_name -> mir_api.v1.ConfigDescriptor
-	12, // 8: mir_api.v1.ConfigDescriptor.labels:type_name -> mir_api.v1.ConfigDescriptor.LabelsEntry
-	10, // 9: mir_api.v1.SendConfigResponse.ConfigResponses.device_responses:type_name -> mir_api.v1.SendConfigResponse.ConfigResponses.DeviceResponsesEntry
-	14, // 10: mir_api.v1.SendConfigResponse.ConfigResponses.encoding:type_name -> mir_api.v1.Encoding
-	0,  // 11: mir_api.v1.SendConfigResponse.ConfigResponse.status:type_name -> mir_api.v1.ConfigResponseStatus
-	9,  // 12: mir_api.v1.SendConfigResponse.ConfigResponses.DeviceResponsesEntry.value:type_name -> mir_api.v1.SendConfigResponse.ConfigResponse
-	13, // [13:13] is the sub-list for method output_type
-	13, // [13:13] is the sub-list for method input_type
-	13, // [13:13] is the sub-list for extension type_name
-	13, // [13:13] is the sub-list for extension extendee
-	0,  // [0:13] is the sub-list for field type_name
+	12, // 7: mir_api.v1.DevicesConfigs.cfg_values:type_name -> mir_api.v1.DevicesConfigs.ConfigValues
+	7,  // 8: mir_api.v1.DevicesConfigs.cfg_descriptors:type_name -> mir_api.v1.ConfigDescriptor
+	14, // 9: mir_api.v1.ConfigDescriptor.labels:type_name -> mir_api.v1.ConfigDescriptor.LabelsEntry
+	10, // 10: mir_api.v1.SendConfigResponse.ConfigResponses.device_responses:type_name -> mir_api.v1.SendConfigResponse.ConfigResponses.DeviceResponsesEntry
+	16, // 11: mir_api.v1.SendConfigResponse.ConfigResponses.encoding:type_name -> mir_api.v1.Encoding
+	0,  // 12: mir_api.v1.SendConfigResponse.ConfigResponse.status:type_name -> mir_api.v1.ConfigResponseStatus
+	9,  // 13: mir_api.v1.SendConfigResponse.ConfigResponses.DeviceResponsesEntry.value:type_name -> mir_api.v1.SendConfigResponse.ConfigResponse
+	17, // 14: mir_api.v1.DevicesConfigs.ConfigValues.id:type_name -> mir_api.v1.DeviceIdPair
+	13, // 15: mir_api.v1.DevicesConfigs.ConfigValues.values:type_name -> mir_api.v1.DevicesConfigs.ConfigValues.ValuesEntry
+	16, // [16:16] is the sub-list for method output_type
+	16, // [16:16] is the sub-list for method input_type
+	16, // [16:16] is the sub-list for extension type_name
+	16, // [16:16] is the sub-list for extension extendee
+	0,  // [0:16] is the sub-list for field type_name
 }
 
 func init() { file_mir_api_v1_cfg_proto_init() }
@@ -898,7 +953,7 @@ func file_mir_api_v1_cfg_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_mir_api_v1_cfg_proto_rawDesc), len(file_mir_api_v1_cfg_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   12,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

@@ -24,13 +24,14 @@ import (
 // IDEA wide option that show more fields
 
 var (
-	l                           zerolog.Logger
-	menuOption_device_create    string = "/devices/create"
-	menuOption_device_edit      string = "/devices/edit"
-	menuOption_device_schema    string = "/devices/schema"
-	menuOption_device_telemetry string = "/devices/telemetry"
-	menuOption_device_commands  string = "/devices/commands"
-	v                           strings.Builder
+	l                               zerolog.Logger
+	menuOption_device_create        string = "/devices/create"
+	menuOption_device_edit          string = "/devices/edit"
+	menuOption_device_schema        string = "/devices/schema"
+	menuOption_device_telemetry     string = "/devices/telemetry"
+	menuOption_device_commands      string = "/devices/commands"
+	menuOption_device_configuration string = "/devices/configuration"
+	v                               strings.Builder
 )
 
 const (
@@ -118,7 +119,7 @@ func (m *Model) InitWithData(d any) tea.Cmd {
 	m.searchInput.SetValue("")
 	if a, ok := d.(InputData); ok {
 		if a.SilentFetch {
-			return tea.Batch(m.timer.Init(), msgs.ListMirDevicesSilently(store.Bus))
+			return tea.Batch(m.timer.Init(), msgs.ListMirDevicesSilently(store.Bus, mir_v1.DeviceTarget{}))
 		} else {
 			return m.Init()
 		}
@@ -131,7 +132,7 @@ func (m *Model) InitWithData(d any) tea.Cmd {
 }
 
 func (m *Model) Init() tea.Cmd {
-	return tea.Batch(m.timer.Init(), msgs.ReqMsgCmd("fetching devices...", 2*time.Second), msgs.ListMirDevices(store.Bus))
+	return tea.Batch(m.timer.Init(), msgs.ReqMsgCmd("fetching devices...", 2*time.Second), msgs.ListMirDevices(store.Bus, mir_v1.DeviceTarget{}))
 }
 
 func (m Model) Resume() tea.Cmd {
@@ -170,14 +171,14 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if len(msg.Devices) > 0 {
 			rsp = fmt.Sprintf("device '%s' deleted", msg.Devices[0].Spec.DeviceId)
 		}
-		return m, tea.Batch(msgs.ListMirDevicesSilently(store.Bus), msgs.ResMsgCmd(rsp, msgs.DefaultTimeout))
+		return m, tea.Batch(msgs.ListMirDevicesSilently(store.Bus, mir_v1.DeviceTarget{}), msgs.ResMsgCmd(rsp, msgs.DefaultTimeout))
 	case timer.TickMsg:
 		var cmd tea.Cmd
 		m.timer, cmd = m.timer.Update(msg)
 		return m, cmd
 	case timer.TimeoutMsg:
 		m.timer = timer.New(refreshInterval)
-		return m, tea.Batch(m.timer.Init(), msgs.ListMirDevicesSilently(store.Bus))
+		return m, tea.Batch(m.timer.Init(), msgs.ListMirDevicesSilently(store.Bus, mir_v1.DeviceTarget{}))
 	case tea.KeyMsg:
 		if m.searchInput.Focused() {
 			if msg.Type == tea.KeyEnter {
@@ -235,7 +236,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else if msg.String() == "/" {
 				m.table.Blur()
 				m.searchInput.Focus()
-			} else if msg.String() == "c" {
+			} else if msg.String() == "n" {
 				return m, msgs.RouteChangeCmd(menuOption_device_create)
 			} else if msg.String() == "e" {
 				device, ok := rowToDevice(m.table.SelectedRow())
@@ -270,12 +271,18 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, msgs.ErrCmd(fmt.Errorf("no device selected"), 2*time.Second)
 				}
 				return m, msgs.RouteChangeWithDataCmd(menuOption_device_telemetry, devices)
-			} else if msg.String() == "r" {
+			} else if msg.String() == "c" {
 				devices, ok := m.getSelectedDevices()
 				if !ok {
 					return m, msgs.ErrCmd(fmt.Errorf("no device selected"), 2*time.Second)
 				}
 				return m, msgs.RouteChangeWithDataCmd(menuOption_device_commands, devices)
+			} else if msg.String() == "p" {
+				devices, ok := m.getSelectedDevices()
+				if !ok {
+					return m, msgs.ErrCmd(fmt.Errorf("no device selected"), 2*time.Second)
+				}
+				return m, msgs.RouteChangeWithDataCmd(menuOption_device_configuration, devices)
 			} else {
 				m.table, cmd = m.table.Update(msg)
 			}
@@ -328,8 +335,8 @@ var keys = keyMap{
 		key.WithHelp("/", "search"),
 	),
 	"create": key.NewBinding(
-		key.WithKeys("c"),
-		key.WithHelp("c", "create"),
+		key.WithKeys("n"),
+		key.WithHelp("n", "create"),
 	),
 	"edit": key.NewBinding(
 		key.WithKeys("e"),
@@ -356,8 +363,8 @@ var keys = keyMap{
 		key.WithHelp("t", "telemetry"),
 	),
 	"cmd": key.NewBinding(
-		key.WithKeys("r"),
-		key.WithHelp("r", "command"),
+		key.WithKeys("c"),
+		key.WithHelp("c", "command"),
 	),
 	"cfg": key.NewBinding(
 		key.WithKeys("p"),

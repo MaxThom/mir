@@ -219,10 +219,9 @@ func (x *TelemetryResponse) GetDevicesTelemetry() []*DevicesTelemetry {
 // List of telemetry
 type DevicesTelemetry struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	DevicesNamens  []string               `protobuf:"bytes,1,rep,name=devices_namens,json=devicesNamens,proto3" json:"devices_namens,omitempty"`    // List of devices that have this telemetry
-	DevicesId      []string               `protobuf:"bytes,2,rep,name=devices_id,json=devicesId,proto3" json:"devices_id,omitempty"`                // List of devices that have this telemetry
-	TlmDescriptors []*TelemetryDescriptor `protobuf:"bytes,3,rep,name=tlm_descriptors,json=tlmDescriptors,proto3" json:"tlm_descriptors,omitempty"` // Array of telemetry descriptor
-	Error          string                 `protobuf:"bytes,4,opt,name=error,proto3" json:"error,omitempty"`                                         // List of devices with the same error if something went wrong
+	Ids            []*DeviceIdPair        `protobuf:"bytes,1,rep,name=ids,proto3" json:"ids,omitempty"`                                             // List of devices that have those telemetry
+	TlmDescriptors []*TelemetryDescriptor `protobuf:"bytes,2,rep,name=tlm_descriptors,json=tlmDescriptors,proto3" json:"tlm_descriptors,omitempty"` // Array of telemetry descriptor
+	Error          string                 `protobuf:"bytes,3,opt,name=error,proto3" json:"error,omitempty"`                                         // List of devices with the same error if something went wrong
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -257,16 +256,9 @@ func (*DevicesTelemetry) Descriptor() ([]byte, []int) {
 	return file_mir_api_v1_tlm_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *DevicesTelemetry) GetDevicesNamens() []string {
+func (x *DevicesTelemetry) GetIds() []*DeviceIdPair {
 	if x != nil {
-		return x.DevicesNamens
-	}
-	return nil
-}
-
-func (x *DevicesTelemetry) GetDevicesId() []string {
-	if x != nil {
-		return x.DevicesId
+		return x.Ids
 	}
 	return nil
 }
@@ -367,7 +359,7 @@ var File_mir_api_v1_tlm_proto protoreflect.FileDescriptor
 const file_mir_api_v1_tlm_proto_rawDesc = "" +
 	"\n" +
 	"\x14mir_api/v1/tlm.proto\x12\n" +
-	"mir_api.v1\x1a\x15mir_api/v1/core.proto\"\xa2\x02\n" +
+	"mir_api.v1\x1a\x15mir_api/v1/core.proto\x1a\x17mir_api/v1/common.proto\"\xa2\x02\n" +
 	"\x18SendListTelemetryRequest\x122\n" +
 	"\atargets\x18\x01 \x01(\v2\x18.mir_api.v1.DeviceTargetR\atargets\x12\"\n" +
 	"\fmeasurements\x18\x02 \x03(\tR\fmeasurements\x12K\n" +
@@ -382,13 +374,11 @@ const file_mir_api_v1_tlm_proto_rawDesc = "" +
 	"\n" +
 	"\bresponse\"^\n" +
 	"\x11TelemetryResponse\x12I\n" +
-	"\x11devices_telemetry\x18\x01 \x03(\v2\x1c.mir_api.v1.DevicesTelemetryR\x10devicesTelemetry\"\xb8\x01\n" +
-	"\x10DevicesTelemetry\x12%\n" +
-	"\x0edevices_namens\x18\x01 \x03(\tR\rdevicesNamens\x12\x1d\n" +
-	"\n" +
-	"devices_id\x18\x02 \x03(\tR\tdevicesId\x12H\n" +
-	"\x0ftlm_descriptors\x18\x03 \x03(\v2\x1f.mir_api.v1.TelemetryDescriptorR\x0etlmDescriptors\x12\x14\n" +
-	"\x05error\x18\x04 \x01(\tR\x05error\"\xfc\x01\n" +
+	"\x11devices_telemetry\x18\x01 \x03(\v2\x1c.mir_api.v1.DevicesTelemetryR\x10devicesTelemetry\"\x9e\x01\n" +
+	"\x10DevicesTelemetry\x12*\n" +
+	"\x03ids\x18\x01 \x03(\v2\x18.mir_api.v1.DeviceIdPairR\x03ids\x12H\n" +
+	"\x0ftlm_descriptors\x18\x02 \x03(\v2\x1f.mir_api.v1.TelemetryDescriptorR\x0etlmDescriptors\x12\x14\n" +
+	"\x05error\x18\x03 \x01(\tR\x05error\"\xfc\x01\n" +
 	"\x13TelemetryDescriptor\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12C\n" +
 	"\x06labels\x18\x02 \x03(\v2+.mir_api.v1.TelemetryDescriptor.LabelsEntryR\x06labels\x12\x16\n" +
@@ -423,19 +413,21 @@ var file_mir_api_v1_tlm_proto_goTypes = []any{
 	nil,                               // 5: mir_api.v1.SendListTelemetryRequest.FiltersEntry
 	nil,                               // 6: mir_api.v1.TelemetryDescriptor.LabelsEntry
 	(*DeviceTarget)(nil),              // 7: mir_api.v1.DeviceTarget
+	(*DeviceIdPair)(nil),              // 8: mir_api.v1.DeviceIdPair
 }
 var file_mir_api_v1_tlm_proto_depIdxs = []int32{
 	7, // 0: mir_api.v1.SendListTelemetryRequest.targets:type_name -> mir_api.v1.DeviceTarget
 	5, // 1: mir_api.v1.SendListTelemetryRequest.filters:type_name -> mir_api.v1.SendListTelemetryRequest.FiltersEntry
 	2, // 2: mir_api.v1.SendListTelemetryResponse.ok:type_name -> mir_api.v1.TelemetryResponse
 	3, // 3: mir_api.v1.TelemetryResponse.devices_telemetry:type_name -> mir_api.v1.DevicesTelemetry
-	4, // 4: mir_api.v1.DevicesTelemetry.tlm_descriptors:type_name -> mir_api.v1.TelemetryDescriptor
-	6, // 5: mir_api.v1.TelemetryDescriptor.labels:type_name -> mir_api.v1.TelemetryDescriptor.LabelsEntry
-	6, // [6:6] is the sub-list for method output_type
-	6, // [6:6] is the sub-list for method input_type
-	6, // [6:6] is the sub-list for extension type_name
-	6, // [6:6] is the sub-list for extension extendee
-	0, // [0:6] is the sub-list for field type_name
+	8, // 4: mir_api.v1.DevicesTelemetry.ids:type_name -> mir_api.v1.DeviceIdPair
+	4, // 5: mir_api.v1.DevicesTelemetry.tlm_descriptors:type_name -> mir_api.v1.TelemetryDescriptor
+	6, // 6: mir_api.v1.TelemetryDescriptor.labels:type_name -> mir_api.v1.TelemetryDescriptor.LabelsEntry
+	7, // [7:7] is the sub-list for method output_type
+	7, // [7:7] is the sub-list for method input_type
+	7, // [7:7] is the sub-list for extension type_name
+	7, // [7:7] is the sub-list for extension extendee
+	0, // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_mir_api_v1_tlm_proto_init() }
@@ -444,6 +436,7 @@ func file_mir_api_v1_tlm_proto_init() {
 		return
 	}
 	file_mir_api_v1_core_proto_init()
+	file_mir_api_v1_common_proto_init()
 	file_mir_api_v1_tlm_proto_msgTypes[1].OneofWrappers = []any{
 		(*SendListTelemetryResponse_Ok)(nil),
 		(*SendListTelemetryResponse_Error)(nil),

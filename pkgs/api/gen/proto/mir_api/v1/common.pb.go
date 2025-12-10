@@ -123,6 +123,67 @@ func (x *NameNamespace) GetNamespace() string {
 	return ""
 }
 
+// Represent a device identifiers
+type DeviceIdPair struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	DeviceId      string                 `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"` // device unique id
+	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`                         // device name
+	Namespace     string                 `protobuf:"bytes,3,opt,name=namespace,proto3" json:"namespace,omitempty"`               // device namespace
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeviceIdPair) Reset() {
+	*x = DeviceIdPair{}
+	mi := &file_mir_api_v1_common_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeviceIdPair) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeviceIdPair) ProtoMessage() {}
+
+func (x *DeviceIdPair) ProtoReflect() protoreflect.Message {
+	mi := &file_mir_api_v1_common_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeviceIdPair.ProtoReflect.Descriptor instead.
+func (*DeviceIdPair) Descriptor() ([]byte, []int) {
+	return file_mir_api_v1_common_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *DeviceIdPair) GetDeviceId() string {
+	if x != nil {
+		return x.DeviceId
+	}
+	return ""
+}
+
+func (x *DeviceIdPair) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *DeviceIdPair) GetNamespace() string {
+	if x != nil {
+		return x.Namespace
+	}
+	return ""
+}
+
 // Used to have a optional value in maps to mark the key for deletion
 type OptString struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -133,7 +194,7 @@ type OptString struct {
 
 func (x *OptString) Reset() {
 	*x = OptString{}
-	mi := &file_mir_api_v1_common_proto_msgTypes[1]
+	mi := &file_mir_api_v1_common_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -145,7 +206,7 @@ func (x *OptString) String() string {
 func (*OptString) ProtoMessage() {}
 
 func (x *OptString) ProtoReflect() protoreflect.Message {
-	mi := &file_mir_api_v1_common_proto_msgTypes[1]
+	mi := &file_mir_api_v1_common_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -158,7 +219,7 @@ func (x *OptString) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OptString.ProtoReflect.Descriptor instead.
 func (*OptString) Descriptor() ([]byte, []int) {
-	return file_mir_api_v1_common_proto_rawDescGZIP(), []int{1}
+	return file_mir_api_v1_common_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *OptString) GetValue() string {
@@ -180,7 +241,7 @@ type Error struct {
 
 func (x *Error) Reset() {
 	*x = Error{}
-	mi := &file_mir_api_v1_common_proto_msgTypes[2]
+	mi := &file_mir_api_v1_common_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -192,7 +253,7 @@ func (x *Error) String() string {
 func (*Error) ProtoMessage() {}
 
 func (x *Error) ProtoReflect() protoreflect.Message {
-	mi := &file_mir_api_v1_common_proto_msgTypes[2]
+	mi := &file_mir_api_v1_common_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -205,7 +266,7 @@ func (x *Error) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Error.ProtoReflect.Descriptor instead.
 func (*Error) Descriptor() ([]byte, []int) {
-	return file_mir_api_v1_common_proto_rawDescGZIP(), []int{2}
+	return file_mir_api_v1_common_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *Error) GetCode() uint32 {
@@ -246,7 +307,7 @@ type Timestamp struct {
 
 func (x *Timestamp) Reset() {
 	*x = Timestamp{}
-	mi := &file_mir_api_v1_common_proto_msgTypes[3]
+	mi := &file_mir_api_v1_common_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -258,7 +319,7 @@ func (x *Timestamp) String() string {
 func (*Timestamp) ProtoMessage() {}
 
 func (x *Timestamp) ProtoReflect() protoreflect.Message {
-	mi := &file_mir_api_v1_common_proto_msgTypes[3]
+	mi := &file_mir_api_v1_common_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -271,7 +332,7 @@ func (x *Timestamp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Timestamp.ProtoReflect.Descriptor instead.
 func (*Timestamp) Descriptor() ([]byte, []int) {
-	return file_mir_api_v1_common_proto_rawDescGZIP(), []int{3}
+	return file_mir_api_v1_common_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *Timestamp) GetSeconds() int64 {
@@ -300,7 +361,7 @@ type Object struct {
 
 func (x *Object) Reset() {
 	*x = Object{}
-	mi := &file_mir_api_v1_common_proto_msgTypes[4]
+	mi := &file_mir_api_v1_common_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -312,7 +373,7 @@ func (x *Object) String() string {
 func (*Object) ProtoMessage() {}
 
 func (x *Object) ProtoReflect() protoreflect.Message {
-	mi := &file_mir_api_v1_common_proto_msgTypes[4]
+	mi := &file_mir_api_v1_common_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -325,7 +386,7 @@ func (x *Object) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Object.ProtoReflect.Descriptor instead.
 func (*Object) Descriptor() ([]byte, []int) {
-	return file_mir_api_v1_common_proto_rawDescGZIP(), []int{4}
+	return file_mir_api_v1_common_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *Object) GetApiVersion() string {
@@ -363,7 +424,7 @@ type Meta struct {
 
 func (x *Meta) Reset() {
 	*x = Meta{}
-	mi := &file_mir_api_v1_common_proto_msgTypes[5]
+	mi := &file_mir_api_v1_common_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -375,7 +436,7 @@ func (x *Meta) String() string {
 func (*Meta) ProtoMessage() {}
 
 func (x *Meta) ProtoReflect() protoreflect.Message {
-	mi := &file_mir_api_v1_common_proto_msgTypes[5]
+	mi := &file_mir_api_v1_common_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -388,7 +449,7 @@ func (x *Meta) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Meta.ProtoReflect.Descriptor instead.
 func (*Meta) Descriptor() ([]byte, []int) {
-	return file_mir_api_v1_common_proto_rawDescGZIP(), []int{5}
+	return file_mir_api_v1_common_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *Meta) GetName() string {
@@ -432,7 +493,7 @@ type MetaUpdate struct {
 
 func (x *MetaUpdate) Reset() {
 	*x = MetaUpdate{}
-	mi := &file_mir_api_v1_common_proto_msgTypes[6]
+	mi := &file_mir_api_v1_common_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -444,7 +505,7 @@ func (x *MetaUpdate) String() string {
 func (*MetaUpdate) ProtoMessage() {}
 
 func (x *MetaUpdate) ProtoReflect() protoreflect.Message {
-	mi := &file_mir_api_v1_common_proto_msgTypes[6]
+	mi := &file_mir_api_v1_common_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -457,7 +518,7 @@ func (x *MetaUpdate) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MetaUpdate.ProtoReflect.Descriptor instead.
 func (*MetaUpdate) Descriptor() ([]byte, []int) {
-	return file_mir_api_v1_common_proto_rawDescGZIP(), []int{6}
+	return file_mir_api_v1_common_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *MetaUpdate) GetName() string {
@@ -501,7 +562,7 @@ type Targets struct {
 
 func (x *Targets) Reset() {
 	*x = Targets{}
-	mi := &file_mir_api_v1_common_proto_msgTypes[7]
+	mi := &file_mir_api_v1_common_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -513,7 +574,7 @@ func (x *Targets) String() string {
 func (*Targets) ProtoMessage() {}
 
 func (x *Targets) ProtoReflect() protoreflect.Message {
-	mi := &file_mir_api_v1_common_proto_msgTypes[7]
+	mi := &file_mir_api_v1_common_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -526,7 +587,7 @@ func (x *Targets) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Targets.ProtoReflect.Descriptor instead.
 func (*Targets) Descriptor() ([]byte, []int) {
-	return file_mir_api_v1_common_proto_rawDescGZIP(), []int{7}
+	return file_mir_api_v1_common_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *Targets) GetNames() []string {
@@ -560,7 +621,7 @@ type DateFilter struct {
 
 func (x *DateFilter) Reset() {
 	*x = DateFilter{}
-	mi := &file_mir_api_v1_common_proto_msgTypes[8]
+	mi := &file_mir_api_v1_common_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -572,7 +633,7 @@ func (x *DateFilter) String() string {
 func (*DateFilter) ProtoMessage() {}
 
 func (x *DateFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_mir_api_v1_common_proto_msgTypes[8]
+	mi := &file_mir_api_v1_common_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -585,7 +646,7 @@ func (x *DateFilter) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DateFilter.ProtoReflect.Descriptor instead.
 func (*DateFilter) Descriptor() ([]byte, []int) {
-	return file_mir_api_v1_common_proto_rawDescGZIP(), []int{8}
+	return file_mir_api_v1_common_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *DateFilter) GetFrom() *Timestamp {
@@ -610,7 +671,11 @@ const file_mir_api_v1_common_proto_rawDesc = "" +
 	"mir_api.v1\"A\n" +
 	"\rNameNamespace\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1c\n" +
-	"\tnamespace\x18\x02 \x01(\tR\tnamespace\"0\n" +
+	"\tnamespace\x18\x02 \x01(\tR\tnamespace\"]\n" +
+	"\fDeviceIdPair\x12\x1b\n" +
+	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1c\n" +
+	"\tnamespace\x18\x03 \x01(\tR\tnamespace\"0\n" +
 	"\tOptString\x12\x19\n" +
 	"\x05value\x18\x01 \x01(\tH\x00R\x05value\x88\x01\x01B\b\n" +
 	"\x06_value\"O\n" +
@@ -685,35 +750,36 @@ func file_mir_api_v1_common_proto_rawDescGZIP() []byte {
 }
 
 var file_mir_api_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_mir_api_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
+var file_mir_api_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
 var file_mir_api_v1_common_proto_goTypes = []any{
 	(Encoding)(0),         // 0: mir_api.v1.Encoding
 	(*NameNamespace)(nil), // 1: mir_api.v1.NameNamespace
-	(*OptString)(nil),     // 2: mir_api.v1.OptString
-	(*Error)(nil),         // 3: mir_api.v1.Error
-	(*Timestamp)(nil),     // 4: mir_api.v1.Timestamp
-	(*Object)(nil),        // 5: mir_api.v1.Object
-	(*Meta)(nil),          // 6: mir_api.v1.Meta
-	(*MetaUpdate)(nil),    // 7: mir_api.v1.MetaUpdate
-	(*Targets)(nil),       // 8: mir_api.v1.Targets
-	(*DateFilter)(nil),    // 9: mir_api.v1.DateFilter
-	nil,                   // 10: mir_api.v1.Meta.LabelsEntry
-	nil,                   // 11: mir_api.v1.Meta.AnnotationsEntry
-	nil,                   // 12: mir_api.v1.MetaUpdate.LabelsEntry
-	nil,                   // 13: mir_api.v1.MetaUpdate.AnnotationsEntry
-	nil,                   // 14: mir_api.v1.Targets.LabelsEntry
+	(*DeviceIdPair)(nil),  // 2: mir_api.v1.DeviceIdPair
+	(*OptString)(nil),     // 3: mir_api.v1.OptString
+	(*Error)(nil),         // 4: mir_api.v1.Error
+	(*Timestamp)(nil),     // 5: mir_api.v1.Timestamp
+	(*Object)(nil),        // 6: mir_api.v1.Object
+	(*Meta)(nil),          // 7: mir_api.v1.Meta
+	(*MetaUpdate)(nil),    // 8: mir_api.v1.MetaUpdate
+	(*Targets)(nil),       // 9: mir_api.v1.Targets
+	(*DateFilter)(nil),    // 10: mir_api.v1.DateFilter
+	nil,                   // 11: mir_api.v1.Meta.LabelsEntry
+	nil,                   // 12: mir_api.v1.Meta.AnnotationsEntry
+	nil,                   // 13: mir_api.v1.MetaUpdate.LabelsEntry
+	nil,                   // 14: mir_api.v1.MetaUpdate.AnnotationsEntry
+	nil,                   // 15: mir_api.v1.Targets.LabelsEntry
 }
 var file_mir_api_v1_common_proto_depIdxs = []int32{
-	6,  // 0: mir_api.v1.Object.meta:type_name -> mir_api.v1.Meta
-	10, // 1: mir_api.v1.Meta.labels:type_name -> mir_api.v1.Meta.LabelsEntry
-	11, // 2: mir_api.v1.Meta.annotations:type_name -> mir_api.v1.Meta.AnnotationsEntry
-	12, // 3: mir_api.v1.MetaUpdate.labels:type_name -> mir_api.v1.MetaUpdate.LabelsEntry
-	13, // 4: mir_api.v1.MetaUpdate.annotations:type_name -> mir_api.v1.MetaUpdate.AnnotationsEntry
-	14, // 5: mir_api.v1.Targets.labels:type_name -> mir_api.v1.Targets.LabelsEntry
-	4,  // 6: mir_api.v1.DateFilter.from:type_name -> mir_api.v1.Timestamp
-	4,  // 7: mir_api.v1.DateFilter.to:type_name -> mir_api.v1.Timestamp
-	2,  // 8: mir_api.v1.MetaUpdate.LabelsEntry.value:type_name -> mir_api.v1.OptString
-	2,  // 9: mir_api.v1.MetaUpdate.AnnotationsEntry.value:type_name -> mir_api.v1.OptString
+	7,  // 0: mir_api.v1.Object.meta:type_name -> mir_api.v1.Meta
+	11, // 1: mir_api.v1.Meta.labels:type_name -> mir_api.v1.Meta.LabelsEntry
+	12, // 2: mir_api.v1.Meta.annotations:type_name -> mir_api.v1.Meta.AnnotationsEntry
+	13, // 3: mir_api.v1.MetaUpdate.labels:type_name -> mir_api.v1.MetaUpdate.LabelsEntry
+	14, // 4: mir_api.v1.MetaUpdate.annotations:type_name -> mir_api.v1.MetaUpdate.AnnotationsEntry
+	15, // 5: mir_api.v1.Targets.labels:type_name -> mir_api.v1.Targets.LabelsEntry
+	5,  // 6: mir_api.v1.DateFilter.from:type_name -> mir_api.v1.Timestamp
+	5,  // 7: mir_api.v1.DateFilter.to:type_name -> mir_api.v1.Timestamp
+	3,  // 8: mir_api.v1.MetaUpdate.LabelsEntry.value:type_name -> mir_api.v1.OptString
+	3,  // 9: mir_api.v1.MetaUpdate.AnnotationsEntry.value:type_name -> mir_api.v1.OptString
 	10, // [10:10] is the sub-list for method output_type
 	10, // [10:10] is the sub-list for method input_type
 	10, // [10:10] is the sub-list for extension type_name
@@ -726,15 +792,15 @@ func file_mir_api_v1_common_proto_init() {
 	if File_mir_api_v1_common_proto != nil {
 		return
 	}
-	file_mir_api_v1_common_proto_msgTypes[1].OneofWrappers = []any{}
-	file_mir_api_v1_common_proto_msgTypes[6].OneofWrappers = []any{}
+	file_mir_api_v1_common_proto_msgTypes[2].OneofWrappers = []any{}
+	file_mir_api_v1_common_proto_msgTypes[7].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_mir_api_v1_common_proto_rawDesc), len(file_mir_api_v1_common_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   14,
+			NumMessages:   15,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

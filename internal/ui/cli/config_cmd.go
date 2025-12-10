@@ -80,17 +80,15 @@ func (d *ConfigListCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) error
 		} else {
 			for _, cmd := range cmds.CfgDescriptors {
 				sb.WriteString(cmd.Name)
-				// sb.WriteString("{")
-				// sb.WriteString(mapToSortedString(cmd.Labels))
-				// sb.WriteString("}\n")
+				// sb.WriteString("\n")
+				sb.WriteString("{")
+				sb.WriteString(mapToSortedString(cmd.Labels))
+				sb.WriteString("}\n")
 				if cmd.Error != "" {
 					sb.WriteString(cmd.Error)
 					sb.WriteString("\n")
-				} else if d.ShowJsonTemplate || d.ShowCurrentValues {
+				} else if d.ShowJsonTemplate {
 					js := cmd.Template
-					if d.ShowCurrentValues {
-						js = cmd.Values
-					}
 					var prettyJSON bytes.Buffer
 					if err = json.Indent(&prettyJSON, []byte(js), "", "  "); err != nil {
 						sb.WriteString(err.Error())
@@ -98,21 +96,55 @@ func (d *ConfigListCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) error
 						sb.WriteString(prettyJSON.String())
 					}
 					sb.WriteString("\n")
+				} else if d.ShowCurrentValues {
+					var sbDev strings.Builder
+					for _, devCfg := range cmds.CfgValues {
+						sbDev.WriteString(sb.String())
+						js := devCfg.Values[cmd.Name]
+						if js == "" {
+							js = cmd.Template
+						}
+						var prettyJSON bytes.Buffer
+						if err = json.Indent(&prettyJSON, []byte(js), "", "  "); err != nil {
+							sbDev.WriteString(err.Error())
+						} else {
+							sbDev.WriteString(prettyJSON.String())
+						}
+						sbDev.WriteString("\n")
+						devTitle := ""
+						if devCfg.Id.Name == "" && devCfg.Id.Namespace == "" {
+							devTitle = devCfg.Id.DeviceId
+						} else {
+							devTitle = devCfg.Id.Name + "/" + devCfg.Id.Namespace
+						}
+						tpls[sbDev.String()] = append(tpls[sbDev.String()], devTitle)
+						sbDev.Reset()
+					}
+				}
+				if !d.ShowCurrentValues {
+					devsTitle := []string{}
+					for _, devCfg := range cmds.CfgValues {
+						if devCfg.Id.Name == "" && devCfg.Id.Namespace == "" {
+							devsTitle = append(devsTitle, devCfg.Id.DeviceId)
+						} else {
+							devsTitle = append(devsTitle, devCfg.Id.Name+"/"+devCfg.Id.Namespace)
+						}
+					}
+					tpls[sb.String()] = append(tpls[sb.String()], devsTitle...)
 				}
 			}
 		}
-		devsTitle := cmds.DevicesNamens
-		if len(cmds.DevicesNamens) > 3 {
-			devsTitle = []string{strings.Join(cmds.DevicesNamens[0:3], ", ") + " & " + fmt.Sprintf("%d more", len(cmds.DevicesNamens)-3)}
-		}
-		tpls[sb.String()] = append(tpls[sb.String()], devsTitle...)
 		sb.Reset()
 	}
 
 	i := 1
 	for k, v := range tpls {
 		sb.WriteString(fmt.Sprintf("%d. ", i))
-		sb.WriteString(strings.Join(v, ", "))
+		if len(v) > 10 {
+			sb.WriteString(strings.Join(v[0:10], ", ") + " & " + fmt.Sprintf("%d more", len(v)-10))
+		} else {
+			sb.WriteString(strings.Join(v, ", "))
+		}
 		sb.WriteString("\n")
 		sb.WriteString(k)
 		sb.WriteString("\n")

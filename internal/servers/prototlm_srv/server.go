@@ -210,10 +210,9 @@ func (s *ProtoTlmServer) handleDeviceUpdate(deviceId string, device mir_v1.Devic
 }
 
 type schemaPerDevices struct {
-	sch        *mir_proto.MirProtoSchema
-	err        error
-	devsId     []string
-	devsNameNs []string
+	sch    *mir_proto.MirProtoSchema
+	err    error
+	devsId []*mir_apiv1.DeviceIdPair
 }
 
 func (s *ProtoTlmServer) handleTelemetryListRequest(msg *mir.Msg, clientId string, req *mir_apiv1.SendListTelemetryRequest) ([]*mir_apiv1.DevicesTelemetry, error) {
@@ -243,23 +242,28 @@ func (s *ProtoTlmServer) handleTelemetryListRequest(msg *mir.Msg, clientId strin
 	devsTlm := []*mir_apiv1.DevicesTelemetry{}
 	devSchemas := []*schemaPerDevices{}
 	for _, dev := range devs {
-		nameNs := dev.GetNameNamespace()
 		id := dev.Spec.DeviceId
 		reg, _, err := s.schStore.GetDeviceSchema(dev.Spec.DeviceId, req.RefreshSchema)
 		if err != nil {
 			found := false
 			for _, d := range devsTlm {
 				if d.Error == err.Error() {
-					d.DevicesNamens = append(d.DevicesNamens, nameNs)
-					d.DevicesId = append(d.DevicesId, id)
+					d.Ids = append(d.Ids, &mir_apiv1.DeviceIdPair{
+						DeviceId:  id,
+						Name:      dev.Meta.Name,
+						Namespace: dev.Meta.Namespace,
+					})
 					found = true
 				}
 			}
 			if !found {
 				devsTlm = append(devsTlm, &mir_apiv1.DevicesTelemetry{
-					DevicesNamens: []string{nameNs},
-					DevicesId:     []string{id},
-					Error:         err.Error(),
+					Ids: []*mir_apiv1.DeviceIdPair{{
+						DeviceId:  id,
+						Name:      dev.Meta.Name,
+						Namespace: dev.Meta.Namespace,
+					}},
+					Error: err.Error(),
 				})
 			}
 			continue
@@ -267,17 +271,23 @@ func (s *ProtoTlmServer) handleTelemetryListRequest(msg *mir.Msg, clientId strin
 		found := false
 		for _, sch := range devSchemas {
 			if mir_proto.AreSchemaEqual(sch.sch, reg) {
-				sch.devsId = append(sch.devsId, dev.Spec.DeviceId)
-				sch.devsNameNs = append(sch.devsNameNs, nameNs)
+				sch.devsId = append(sch.devsId, &mir_apiv1.DeviceIdPair{
+					DeviceId:  id,
+					Name:      dev.Meta.Name,
+					Namespace: dev.Meta.Namespace,
+				})
 				found = true
 			}
 
 		}
 		if !found {
 			devSchemas = append(devSchemas, &schemaPerDevices{
-				sch:        reg,
-				devsId:     []string{dev.Spec.DeviceId},
-				devsNameNs: []string{nameNs},
+				sch: reg,
+				devsId: []*mir_apiv1.DeviceIdPair{{
+					DeviceId:  id,
+					Name:      dev.Meta.Name,
+					Namespace: dev.Meta.Namespace,
+				}},
 			})
 		}
 	}
@@ -286,25 +296,27 @@ func (s *ProtoTlmServer) handleTelemetryListRequest(msg *mir.Msg, clientId strin
 		tlms, err := sch.sch.GetTelemetryList(req.Measurements, req.Filters)
 		if err != nil {
 			devsTlm = append(devsTlm, &mir_apiv1.DevicesTelemetry{
-				DevicesNamens: sch.devsNameNs,
-				DevicesId:     sch.devsId,
-				Error:         err.Error(),
+				Ids:   sch.devsId,
+				Error: err.Error(),
 			})
 			requestErrorTotal.WithLabelValues("list").Inc()
 			continue
 		}
 
+		ids := []string{}
+		for _, id := range sch.devsId {
+			ids = append(ids, id.DeviceId)
+		}
 		for _, tlm := range tlms {
 			tlm.Fields, err = s.tlmStore.RetrieveMeasurementsFields(s.ctx, tlm.Name)
 			if err != nil {
 				tlm.Error = err.Error()
 				continue
 			}
-			tlm.ExploreQuery = s.tlmStore.GetExploreQuery(sch.devsId, tlm.Name)
+			tlm.ExploreQuery = s.tlmStore.GetExploreQuery(ids, tlm.Name)
 		}
 		devsTlm = append(devsTlm, &mir_apiv1.DevicesTelemetry{
-			DevicesNamens:  sch.devsNameNs,
-			DevicesId:      sch.devsId,
+			Ids:            sch.devsId,
 			TlmDescriptors: tlms,
 		})
 	}

@@ -475,10 +475,9 @@ func (x *CommandsResponse) GetDevicesCommands() []*DevicesCommands {
 // List of commands
 type DevicesCommands struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	DevicesNamens  []string               `protobuf:"bytes,1,rep,name=devices_namens,json=devicesNamens,proto3" json:"devices_namens,omitempty"`    // List of devices that have this telemetry
-	DevicesId      []string               `protobuf:"bytes,2,rep,name=devices_id,json=devicesId,proto3" json:"devices_id,omitempty"`                // List of devices that have this telemetry
-	CmdDescriptors []*CommandDescriptor   `protobuf:"bytes,3,rep,name=cmd_descriptors,json=cmdDescriptors,proto3" json:"cmd_descriptors,omitempty"` // Array of command descriptor
-	Error          string                 `protobuf:"bytes,4,opt,name=error,proto3" json:"error,omitempty"`                                         // HTTP like error if something went wrong
+	Ids            []*DeviceIdPair        `protobuf:"bytes,1,rep,name=ids,proto3" json:"ids,omitempty"`                                             // List of devices that have those commands
+	CmdDescriptors []*CommandDescriptor   `protobuf:"bytes,2,rep,name=cmd_descriptors,json=cmdDescriptors,proto3" json:"cmd_descriptors,omitempty"` // Array of command descriptor
+	Error          string                 `protobuf:"bytes,3,opt,name=error,proto3" json:"error,omitempty"`                                         // HTTP like error if something went wrong
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -513,16 +512,9 @@ func (*DevicesCommands) Descriptor() ([]byte, []int) {
 	return file_mir_api_v1_cmd_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *DevicesCommands) GetDevicesNamens() []string {
+func (x *DevicesCommands) GetIds() []*DeviceIdPair {
 	if x != nil {
-		return x.DevicesNamens
-	}
-	return nil
-}
-
-func (x *DevicesCommands) GetDevicesId() []string {
-	if x != nil {
-		return x.DevicesId
+		return x.Ids
 	}
 	return nil
 }
@@ -788,13 +780,11 @@ const file_mir_api_v1_cmd_proto_rawDesc = "" +
 	"\n" +
 	"\bresponse\"Z\n" +
 	"\x10CommandsResponse\x12F\n" +
-	"\x10devices_commands\x18\x01 \x03(\v2\x1b.mir_api.v1.DevicesCommandsR\x0fdevicesCommands\"\xb5\x01\n" +
-	"\x0fDevicesCommands\x12%\n" +
-	"\x0edevices_namens\x18\x01 \x03(\tR\rdevicesNamens\x12\x1d\n" +
-	"\n" +
-	"devices_id\x18\x02 \x03(\tR\tdevicesId\x12F\n" +
-	"\x0fcmd_descriptors\x18\x03 \x03(\v2\x1d.mir_api.v1.CommandDescriptorR\x0ecmdDescriptors\x12\x14\n" +
-	"\x05error\x18\x04 \x01(\tR\x05error\"\xd7\x01\n" +
+	"\x10devices_commands\x18\x01 \x03(\v2\x1b.mir_api.v1.DevicesCommandsR\x0fdevicesCommands\"\x9b\x01\n" +
+	"\x0fDevicesCommands\x12*\n" +
+	"\x03ids\x18\x01 \x03(\v2\x18.mir_api.v1.DeviceIdPairR\x03ids\x12F\n" +
+	"\x0fcmd_descriptors\x18\x02 \x03(\v2\x1d.mir_api.v1.CommandDescriptorR\x0ecmdDescriptors\x12\x14\n" +
+	"\x05error\x18\x03 \x01(\tR\x05error\"\xd7\x01\n" +
 	"\x11CommandDescriptor\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12A\n" +
 	"\x06labels\x18\x02 \x03(\v2).mir_api.v1.CommandDescriptor.LabelsEntryR\x06labels\x12\x1a\n" +
@@ -842,6 +832,7 @@ var file_mir_api_v1_cmd_proto_goTypes = []any{
 	nil,                  // 12: mir_api.v1.CommandDescriptor.LabelsEntry
 	(*DeviceTarget)(nil), // 13: mir_api.v1.DeviceTarget
 	(Encoding)(0),        // 14: mir_api.v1.Encoding
+	(*DeviceIdPair)(nil), // 15: mir_api.v1.DeviceIdPair
 }
 var file_mir_api_v1_cmd_proto_depIdxs = []int32{
 	13, // 0: mir_api.v1.SendCommandRequest.targets:type_name -> mir_api.v1.DeviceTarget
@@ -851,17 +842,18 @@ var file_mir_api_v1_cmd_proto_depIdxs = []int32{
 	11, // 4: mir_api.v1.SendListCommandsRequest.filter_labels:type_name -> mir_api.v1.SendListCommandsRequest.FilterLabelsEntry
 	5,  // 5: mir_api.v1.SendListCommandsResponse.ok:type_name -> mir_api.v1.CommandsResponse
 	6,  // 6: mir_api.v1.CommandsResponse.devices_commands:type_name -> mir_api.v1.DevicesCommands
-	7,  // 7: mir_api.v1.DevicesCommands.cmd_descriptors:type_name -> mir_api.v1.CommandDescriptor
-	12, // 8: mir_api.v1.CommandDescriptor.labels:type_name -> mir_api.v1.CommandDescriptor.LabelsEntry
-	10, // 9: mir_api.v1.SendCommandResponse.CommandResponses.device_responses:type_name -> mir_api.v1.SendCommandResponse.CommandResponses.DeviceResponsesEntry
-	14, // 10: mir_api.v1.SendCommandResponse.CommandResponses.encoding:type_name -> mir_api.v1.Encoding
-	0,  // 11: mir_api.v1.SendCommandResponse.CommandResponse.status:type_name -> mir_api.v1.CommandResponseStatus
-	9,  // 12: mir_api.v1.SendCommandResponse.CommandResponses.DeviceResponsesEntry.value:type_name -> mir_api.v1.SendCommandResponse.CommandResponse
-	13, // [13:13] is the sub-list for method output_type
-	13, // [13:13] is the sub-list for method input_type
-	13, // [13:13] is the sub-list for extension type_name
-	13, // [13:13] is the sub-list for extension extendee
-	0,  // [0:13] is the sub-list for field type_name
+	15, // 7: mir_api.v1.DevicesCommands.ids:type_name -> mir_api.v1.DeviceIdPair
+	7,  // 8: mir_api.v1.DevicesCommands.cmd_descriptors:type_name -> mir_api.v1.CommandDescriptor
+	12, // 9: mir_api.v1.CommandDescriptor.labels:type_name -> mir_api.v1.CommandDescriptor.LabelsEntry
+	10, // 10: mir_api.v1.SendCommandResponse.CommandResponses.device_responses:type_name -> mir_api.v1.SendCommandResponse.CommandResponses.DeviceResponsesEntry
+	14, // 11: mir_api.v1.SendCommandResponse.CommandResponses.encoding:type_name -> mir_api.v1.Encoding
+	0,  // 12: mir_api.v1.SendCommandResponse.CommandResponse.status:type_name -> mir_api.v1.CommandResponseStatus
+	9,  // 13: mir_api.v1.SendCommandResponse.CommandResponses.DeviceResponsesEntry.value:type_name -> mir_api.v1.SendCommandResponse.CommandResponse
+	14, // [14:14] is the sub-list for method output_type
+	14, // [14:14] is the sub-list for method input_type
+	14, // [14:14] is the sub-list for extension type_name
+	14, // [14:14] is the sub-list for extension extendee
+	0,  // [0:14] is the sub-list for field type_name
 }
 
 func init() { file_mir_api_v1_cmd_proto_init() }

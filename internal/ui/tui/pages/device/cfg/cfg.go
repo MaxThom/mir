@@ -1,4 +1,4 @@
-package device_commands
+package device_configuration
 
 import (
 	"context"
@@ -13,6 +13,7 @@ import (
 	"github.com/maxthom/mir/internal/ui/tui/components/group_menu"
 	mir_help "github.com/maxthom/mir/internal/ui/tui/components/help"
 	"github.com/maxthom/mir/internal/ui/tui/msgs"
+	device_configuration_values "github.com/maxthom/mir/internal/ui/tui/pages/device/cfg/values"
 	device_list "github.com/maxthom/mir/internal/ui/tui/pages/device/list"
 	"github.com/maxthom/mir/internal/ui/tui/store"
 	"github.com/maxthom/mir/internal/ui/tui/styles"
@@ -28,14 +29,15 @@ var (
 )
 
 const (
-	menuOption_device_command_response string = "/devices/commands/responses"
+	menuOption_device_config_response string = "/devices/configuration/responses"
+	menuOption_device_config_values   string = "/devices/configuration/values"
 )
 
 type Model struct {
 	ctx      context.Context
 	help     mir_help.Model
 	devices  []mir_v1.Device
-	commands []*mir_apiv1.DevicesCommands
+	configs  []*mir_apiv1.DevicesConfigs
 	menu     group_menu.Model
 	readOnly bool
 }
@@ -44,13 +46,14 @@ type InputData struct {
 }
 
 func NewModel(ctx context.Context) *Model {
-	l = log.With().Str("page", "device_cmd_list").Logger()
+	l = log.With().Str("page", "device_cfg_list").Logger()
 
 	return &Model{
 		ctx:      ctx,
-		help:     mir_help.New(keys, []string{}, "mir device commands"),
+		help:     mir_help.New(keys, []string{}, "mir device configuration"),
 		menu:     group_menu.New(nil),
-		readOnly: true}
+		readOnly: true,
+	}
 }
 
 func (m *Model) InitWithData(d any) tea.Cmd {
@@ -68,7 +71,7 @@ func (m *Model) InitWithData(d any) tea.Cmd {
 		target.Ids = append(target.Ids, d.Spec.DeviceId)
 	}
 
-	return msgs.ListMirDeviceCommands(store.Bus, &target)
+	return msgs.ListMirDeviceConfigs(store.Bus, &target)
 }
 
 func (m *Model) Init() tea.Cmd {
@@ -89,36 +92,36 @@ func (m Model) ResumeWithData(d any) tea.Cmd {
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
-	case msgs.DeviceCommandListedMsg:
-		m.commands = msg.Commands
+	case msgs.DeviceConfigListedMsg:
+		m.configs = msg.Configs
 		groupchoice := []group_menu.GroupChoice{}
-		for _, cmd := range m.commands {
+		for _, cfg := range m.configs {
 			gc := group_menu.GroupChoice{
 				Choices: []group_menu.Option{},
 			}
 
 			devsTitle := []string{}
-			for _, devId := range cmd.Ids {
-				if devId.Name == "" && devId.Namespace == "" {
-					devsTitle = append(devsTitle, devId.DeviceId)
+			for _, devCfg := range cfg.CfgValues {
+				if devCfg.Id.Name == "" && devCfg.Id.Namespace == "" {
+					devsTitle = append(devsTitle, devCfg.Id.DeviceId)
 				} else {
-					devsTitle = append(devsTitle, devId.Name+"/"+devId.Namespace)
+					devsTitle = append(devsTitle, devCfg.Id.Name+"/"+devCfg.Id.Namespace)
 				}
 			}
 			if len(devsTitle) > 3 {
-				gc.Label = strings.Join(devsTitle[0:3], ", ") + " & " + fmt.Sprintf("%d more", len(devsTitle)-3)
+				gc.Label = strings.Join(devsTitle[0:3], ", ") + " & " + fmt.Sprintf("%d more", len(cfg.CfgValues)-3)
 			} else {
 				gc.Label = strings.Join(devsTitle, ", ")
 			}
 
-			if cmd.Error != "" {
+			if cfg.Error != "" {
 				gc.Choices = append(gc.Choices, group_menu.Option{
 					Label:       "error",
-					Description: cmd.Error,
+					Description: cfg.Error,
 				})
-			} else if len(cmd.CmdDescriptors) > 0 {
+			} else if len(cfg.CfgDescriptors) > 0 {
 				var sb strings.Builder
-				for _, desc := range cmd.CmdDescriptors {
+				for _, desc := range cfg.CfgDescriptors {
 					sb.Reset()
 					if len(desc.Labels) == 0 {
 						sb.WriteString("    {}")
@@ -138,57 +141,70 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			groupchoice = append(groupchoice, gc)
 		}
 		m.menu = group_menu.New(groupchoice)
-		return m, msgs.ResMsgCmd(fmt.Sprintf("%d commands fetched", len(msg.Commands)), msgs.DefaultTimeout)
+		return m, msgs.ResMsgCmd(fmt.Sprintf("%d configs fetched", len(msg.Configs)), msgs.DefaultTimeout)
 	case msgs.EditorFinishedMsg:
 		if m.readOnly {
 			return m, tea.ClearScreen
 		}
 		i, j := m.menu.GetCursor()
-		c := m.commands[i].CmdDescriptors[j]
+		c := m.configs[i].CfgDescriptors[j]
 		ids := []string{}
-		for _, devId := range m.commands[i].Ids {
-			ids = append(ids, devId.DeviceId)
+		for _, devCfg := range m.configs[i].CfgValues {
+			ids = append(ids, devCfg.Id.DeviceId)
 		}
 		t := mir_apiv1.DeviceTarget{
 			Ids: ids,
 		}
-		devCmds := mir_apiv1.SendCommandRequest{
+		devCmds := mir_apiv1.SendConfigRequest{
 			Name:            c.Name,
 			Payload:         json.RawMessage(msg.Content),
 			PayloadEncoding: mir_apiv1.Encoding_ENCODING_JSON,
 			Targets:         &t,
 		}
 		return m, tea.Sequence(tea.ClearScreen, tea.Batch(
-			msgs.RouteChangeWithDataCmd(menuOption_device_command_response, &devCmds),
+			msgs.RouteChangeWithDataCmd(menuOption_device_config_response, &devCmds),
 		))
 	case tea.KeyMsg:
 		m.help, cmd = m.help.Update(msg)
 		if msg.String() == "q" || msg.String() == "r" {
 			i, j := m.menu.GetCursor()
-			cmdDesc := m.commands[i].CmdDescriptors[j]
-			query, err := prettyPrintJSON(cmdDesc.Template)
+			cfgDesc := m.configs[i].CfgDescriptors[j]
+			query, err := prettyPrintJSON(cfgDesc.Template)
 			if err != nil {
 				query = err.Error()
 			}
 			if query != "" {
 				headers := []string{}
-				if msg.String() == "q" {
+				if msg.String() == "q" || msg.String() == "c" {
 					m.readOnly = true
 					headers = []string{
-						"READ-ONLY MODE: Command will not be sent",
-						cmdDesc.Name + "{" + mapToSortedString(cmdDesc.Labels, ", ") + "}",
+						"READ-ONLY MODE: Config will not be sent",
+						cfgDesc.Name + "{" + mapToSortedString(cfgDesc.Labels, ", ") + "}",
 					}
 				} else {
 					headers = []string{
-						"SEND MODE: Command will be sent",
-						cmdDesc.Name + "{" + mapToSortedString(cmdDesc.Labels, ", ") + "}",
+						"SEND MODE: Config will be sent",
+						cfgDesc.Name + "{" + mapToSortedString(cfgDesc.Labels, ", ") + "}",
 					}
 					m.readOnly = false
 				}
 				return m, msgs.OpenEditorCmd(msgs.FileTypeJSON, []byte(query), headers)
 			}
 		} else if msg.String() == "l" {
-			return m, msgs.RouteResume(menuOption_device_command_response)
+			return m, msgs.RouteResume(menuOption_device_config_response)
+		} else if msg.String() == "c" {
+			i, j := m.menu.GetCursor()
+			cfgName := m.configs[i].CfgDescriptors[j].Name
+			t := mir_apiv1.DeviceTarget{}
+			for _, devCfg := range m.configs[i].CfgValues {
+				t.Ids = append(t.Ids, devCfg.Id.DeviceId)
+			}
+
+			return m, msgs.RouteChangeWithDataCmd(menuOption_device_config_values, &device_configuration_values.InputData{
+				// DevCfgs: devCfgs,
+				Targets: &t,
+				CfgName: cfgName,
+			})
 		} else {
 			m.menu, cmd = m.menu.Update(msg)
 		}
@@ -201,8 +217,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *Model) View() string {
 	v.Reset()
 	v.WriteString("\n")
-
-	header := styles.Help.Bold(false).Render(fmt.Sprintf("Command list for %d devices", len(m.devices)))
+	header := styles.Help.Bold(false).Render(fmt.Sprintf("Configuration list for %d devices", len(m.devices)))
 	v.WriteString(header + "\n\n")
 	v.WriteString(m.menu.View())
 	v.WriteString(m.help.View())
@@ -212,12 +227,13 @@ func (m *Model) View() string {
 type keyMap map[string]key.Binding
 
 func (k keyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k["space"], k["send"], k["show"], k["last"]}
+	return []key.Binding{k["space"], k["send"], k["current"], k["show"], k["last"]}
 }
 
 func (k keyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
-		{k["space"], k["send"], k["show"], k["last"]},
+		{k["space"], k["send"]},
+		{k["current"], k["show"], k["last"]},
 	}
 }
 
@@ -232,7 +248,11 @@ var keys = keyMap{
 	),
 	"send": key.NewBinding(
 		key.WithKeys("r"),
-		key.WithHelp("r", "send command"),
+		key.WithHelp("r", "send config"),
+	),
+	"current": key.NewBinding(
+		key.WithKeys("c"),
+		key.WithHelp("c", "show current config"),
 	),
 	"last": key.NewBinding(
 		key.WithKeys("l"),

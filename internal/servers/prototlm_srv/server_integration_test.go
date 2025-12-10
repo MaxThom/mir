@@ -697,15 +697,19 @@ func TestPublishTelemetryListPairs(t *testing.T) {
 	tlmResp := resp.GetOk()
 
 	for _, dt := range tlmResp.DevicesTelemetry {
-		assert.Equal(t, 2, len(dt.DevicesNamens))
-		if slices.Contains(dt.DevicesNamens, "dev_tlm_list_1") &&
-			slices.Contains(dt.DevicesNamens, "dev_tlm_list_2") {
+		ids := []string{}
+		for _, id := range dt.Ids {
+			ids = append(ids, id.DeviceId)
+		}
+		assert.Equal(t, 2, len(dt.Ids))
+		if slices.Contains(ids, "dev_tlm_list_1") &&
+			slices.Contains(ids, "dev_tlm_list_2") {
 			assert.Equal(t, true, true)
-		} else if slices.Contains(dt.DevicesNamens, "dev_tlm_list_3") &&
-			slices.Contains(dt.DevicesNamens, "dev_tlm_list_4") {
+		} else if slices.Contains(ids, "dev_tlm_list_3") &&
+			slices.Contains(ids, "dev_tlm_list_4") {
 			assert.Equal(t, true, true)
-		} else if slices.Contains(dt.DevicesNamens, "dev_tlm_list_5") &&
-			slices.Contains(dt.DevicesNamens, "dev_tlm_list_6") {
+		} else if slices.Contains(ids, "dev_tlm_list_5") &&
+			slices.Contains(ids, "dev_tlm_list_6") {
 			assert.Equal(t, true, true)
 		} else {
 			assert.Assert(t, true, false)
@@ -760,10 +764,8 @@ func TestPublishTelemetryList(t *testing.T) {
 	// Assert
 	dt := resp.GetOk().DevicesTelemetry[0]
 
-	assert.Equal(t, 1, len(dt.DevicesNamens))
-	if slices.Contains(dt.DevicesNamens, "dev_tlm_listing_1") {
-		assert.Equal(t, true, true)
-	}
+	assert.Equal(t, 1, len(dt.Ids))
+	assert.Equal(t, dt.Ids[0].DeviceId, "dev_tlm_listing_1")
 	for _, td := range dt.TlmDescriptors {
 		if td.Name == "prototlm_test.v1.EnvTlm" {
 			assert.Equal(t, true, slices.Contains(td.Fields, "temperature"))
@@ -828,9 +830,7 @@ func TestPublishTelemetryListError(t *testing.T) {
 
 	// Assert
 	dt := resp.GetOk().DevicesTelemetry[0]
-	assert.Equal(t, 1, len(dt.DevicesNamens))
-	if slices.Contains(dt.DevicesNamens, "dev_tlm_list_offline") {
-		assert.Equal(t, true, true)
-	}
+	assert.Equal(t, 1, len(dt.Ids))
+	assert.Equal(t, dt.Ids[0].DeviceId, "dev_tlm_list_offline")
 	assert.Equal(t, dt.Error, "cannot reconcile device schema: error requesting device schema: error publishing request message: nats: no responders available for request")
 }

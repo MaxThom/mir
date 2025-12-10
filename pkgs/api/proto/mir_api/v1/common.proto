@@ -9,6 +9,13 @@ message NameNamespace {
     string namespace = 2;
 }
 
+// Represent a device identifiers
+message DeviceIdPair {
+    string device_id = 1; // device unique id
+    string name = 2; // device name
+    string namespace = 3; // device namespace
+}
+
 // Used to have a optional value in maps to mark the key for deletion
 message OptString {
   optional string value = 1;

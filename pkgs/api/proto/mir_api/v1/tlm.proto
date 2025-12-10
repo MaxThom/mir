@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package mir_api.v1;
 import "mir_api/v1/core.proto";
+import "mir_api/v1/common.proto";
 
 message SendListTelemetryRequest {
 	DeviceTarget targets = 1; // To target a set of devices, search using ids, labels and annotations
@@ -24,10 +25,9 @@ message TelemetryResponse {
 
 // List of telemetry
 message DevicesTelemetry {
-    repeated string devices_namens = 1; // List of devices that have this telemetry
-    repeated string devices_id = 2; // List of devices that have this telemetry
-	repeated TelemetryDescriptor tlm_descriptors = 3; // Array of telemetry descriptor
-	string error = 4;// List of devices with the same error if something went wrong
+    repeated DeviceIdPair ids = 1; // List of devices that have those telemetry
+	repeated TelemetryDescriptor tlm_descriptors = 2; // Array of telemetry descriptor
+	string error = 3;// List of devices with the same error if something went wrong
 }
 
 // Descriptor of a command

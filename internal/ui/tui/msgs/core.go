@@ -26,17 +26,17 @@ type (
 	}
 )
 
-func ListMirDevicesSilently(m *mir.Mir) tea.Cmd {
-	return listMirDevicesCmd(m, true)
+func ListMirDevicesSilently(m *mir.Mir, t mir_v1.DeviceTarget) tea.Cmd {
+	return listMirDevicesCmd(m, t, true)
 }
 
-func ListMirDevices(m *mir.Mir) tea.Cmd {
-	return listMirDevicesCmd(m, false)
+func ListMirDevices(m *mir.Mir, t mir_v1.DeviceTarget) tea.Cmd {
+	return listMirDevicesCmd(m, t, false)
 }
 
-func listMirDevicesCmd(m *mir.Mir, noToast bool) func() tea.Msg {
+func listMirDevicesCmd(m *mir.Mir, t mir_v1.DeviceTarget, noToast bool) func() tea.Msg {
 	return func() tea.Msg {
-		list, err := m.Client().ListDevice().Request(mir_v1.DeviceTarget{}, false)
+		list, err := m.Client().ListDevice().Request(t, false)
 		if err != nil {
 			return ErrMsg{Err: err}
 		}

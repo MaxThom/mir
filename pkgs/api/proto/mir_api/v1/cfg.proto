@@ -78,10 +78,15 @@ message ConfigsResponse {
 
 // List of config
 message DevicesConfigs {
-    repeated string devices_namens = 1; // List of devices that have this telemetry
-    repeated string devices_id = 2; // List of devices that have this telemetry
-	repeated ConfigDescriptor cfg_descriptors = 3; // Array of config descriptor
-	string error = 4; // error if something went wrong
+    repeated ConfigValues cfg_values = 1; // List of devices that have those config with their respective values
+    repeated ConfigDescriptor cfg_descriptors = 2; // Array of config descriptor
+	string error = 3; // error if something went wrong
+
+	message ConfigValues  {
+	    DeviceIdPair id = 1; // device identification
+        map<string, string> values = 2; // JSON payload of values for each cfg name
+        string error = 3; // error if something went wrong
+	}
 }
 
 // Descriptor of a config
@@ -89,6 +94,5 @@ message ConfigDescriptor {
 	string name = 1; // Name of config
 	map<string, string> labels = 2; // Labels are used to tag a config
 	string template = 3; // JSON payload boilerplate for an example
-	string values = 4; // JSON payload of values
-	string error = 5; // error if something went wrong
+	string error = 4; // error if something went wrong
 }

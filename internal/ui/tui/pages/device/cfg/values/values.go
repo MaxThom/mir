@@ -1,4 +1,4 @@
-package device_command_response
+package device_configuration_values
 
 import (
 	"context"
@@ -33,17 +33,20 @@ const ()
 type Model struct {
 	ctx     context.Context
 	help    mir_help.Model
-	cmdReq  *mir_apiv1.SendCommandRequest
-	cmdResp map[string]*mir_apiv1.SendCommandResponse_CommandResponse
+	devCfgs []*mir_apiv1.DevicesConfigs_ConfigValues
+	cfgName string
+	targets *mir_apiv1.DeviceTarget
 	vp      viewport.Model
 	list    menu.Model
 }
 
 type InputData struct {
+	CfgName string
+	Targets *mir_apiv1.DeviceTarget
 }
 
 func NewModel(ctx context.Context) *Model {
-	l = log.With().Str("page", "device_cmd_resp").Logger()
+	l = log.With().Str("page", "device_cfg_resp").Logger()
 
 	vp := viewport.New(store.ScreenWidth, store.ScreenHeight)
 	vp.Style = lipgloss.NewStyle().
@@ -53,26 +56,27 @@ func NewModel(ctx context.Context) *Model {
 
 	return &Model{
 		ctx:  ctx,
-		help: mir_help.New(keys, []string{}, "mir command responses"),
+		help: mir_help.New(keys, []string{}, "mir config responses"),
 		vp:   vp,
 	}
 }
 
 func (m *Model) InitWithData(d any) tea.Cmd {
 	m.vp.Height = store.ScreenHeight - 5
-	m.vp.Width = 75 //store.ScreenWidth - 5
-	req, ok := d.(*mir_apiv1.SendCommandRequest)
+	m.vp.Width = 75
+	req, ok := d.(*InputData)
 	if !ok {
 		return tea.Batch(
-			msgs.ErrCmd(fmt.Errorf("no command specified"), 2*time.Second),
-			msgs.RouteResume("/devices/commands"),
+			msgs.ErrCmd(fmt.Errorf("no config specified"), 2*time.Second),
+			msgs.RouteResume("/devices/configs"),
 		)
 	}
-	m.cmdReq = req
+	m.cfgName = req.CfgName
+	m.targets = req.Targets
 
 	return tea.Batch(
-		msgs.ReqMsgCmd("Command '"+req.Name+"' sent to "+strconv.Itoa(len(req.Targets.Ids))+" devices", msgs.DefaultTimeout),
-		msgs.SendMirDeviceCommands(store.Bus, req),
+		msgs.ReqMsgCmd("Config '"+req.CfgName+"' sent to "+strconv.Itoa(len(req.Targets.Ids))+" devices", msgs.DefaultTimeout),
+		msgs.ListMirDeviceConfigs(store.Bus, m.targets),
 	)
 }
 
@@ -86,8 +90,8 @@ func (m Model) ResumeWithData(d any) tea.Cmd {
 
 func (m *Model) Init() tea.Cmd {
 	return tea.Batch(
-		msgs.ErrCmd(fmt.Errorf("no command specified"), 2*time.Second),
-		msgs.RouteResume("/devices/commands"),
+		msgs.ErrCmd(fmt.Errorf("no configs specified"), 2*time.Second),
+		msgs.RouteResume("/devices/configs"),
 	)
 }
 
@@ -98,13 +102,16 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmdRes tea.Cmd
 
 	switch msg := msg.(type) {
+	case msgs.DeviceConfigListedMsg:
+		m.devCfgs = []*mir_apiv1.DevicesConfigs_ConfigValues{}
+		for _, cfg := range msg.Configs {
+			m.devCfgs = append(m.devCfgs, cfg.CfgValues...)
+		}
+		m.list = menu.New(m.renderCfgValues(m.cfgName, m.devCfgs))
+		cmdRes = msgs.ResMsgCmd(fmt.Sprintf("%d configs fetched on %d devices", len(msg.Configs), len(m.targets.Ids)), msgs.DefaultTimeout)
 	case tea.WindowSizeMsg:
 		m.vp.Width = msg.Width - 4
 		m.vp.Height = msg.Height - 8
-	case msgs.DeviceCommandSentMsg:
-		m.cmdResp = msg.CommandsResponse
-		m.list = menu.New(m.renderCmdResp(m.cmdResp))
-		cmdRes = msgs.ResMsgCmd(strconv.Itoa(len(msg.CommandsResponse))+" command responses received", 5*time.Second)
 	case tea.KeyMsg:
 		m.help, cmdKey = m.help.Update(msg)
 		m.list, cmdList = m.list.Update(msg)
@@ -115,51 +122,48 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				lineCount := len(strings.Split(m.list.GetChoice().Description, "\n"))
 				if mv.Position == 0 {
 					m.vp.GotoTop()
-				} else if len(m.cmdResp)-1 == mv.Position {
+				} else if len(m.devCfgs)-1 == mv.Position {
 					m.vp.GotoBottom()
 				} else {
 					m.vp.ScrollDown(mv.Direction * lineCount)
 				}
 			}
 		}
-		if msg.String() == "r" {
-			return m, m.InitWithData(m.cmdReq)
-		} else if msg.String() == "e" {
-			errorIds := []string{}
-			for _, resp := range m.cmdResp {
-				if resp.Status == mir_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_ERROR {
-					errorIds = append(errorIds, resp.DeviceId)
-				}
-			}
-			if len(errorIds) > 0 {
-				m.cmdReq.Targets.Ids = errorIds
-				return m, m.InitWithData(m.cmdReq)
-			} else {
-				return m, msgs.ResMsgCmd("No commands in error", 5*time.Second)
-			}
-		}
 	}
 
 	m.vp, cmdVp = m.vp.Update(msg)
-	return m, tea.Batch(cmdVp, cmdRes, cmdKey, cmdList)
+	return m, tea.Batch(cmdVp, cmdKey, cmdRes, cmdList)
 }
 
 func (m *Model) View() string {
 	v.Reset()
-	header := styles.Help.Bold(false).Render(fmt.Sprintf("Command responses for %d devices\n", len(m.cmdResp)))
+	header := styles.Help.Bold(false).Render(fmt.Sprintf("Configuration values for %d devices\n", len(m.targets.Ids)))
 	m.vp.SetContent(header + m.list.View())
 	v.WriteString(m.vp.View())
 	v.WriteString(m.help.View())
 	return v.String()
 }
 
-func (m *Model) renderCmdResp(resps map[string]*mir_apiv1.SendCommandResponse_CommandResponse) []menu.Option {
-	i := 1
+func (m *Model) renderCfgValues(cfgName string, cfgValues []*mir_apiv1.DevicesConfigs_ConfigValues) []menu.Option {
 	choices := []menu.Option{}
-	for k, v := range resps {
+	for i, v := range cfgValues {
+		nameNs := v.Id.Name + "/" + v.Id.Namespace
+		if nameNs == "/" {
+			nameNs = v.Id.DeviceId
+		}
+		lbl := lipgloss.NewStyle().Bold(true).Render(fmt.Sprintf("%d. %s", i+1, nameNs))
+
+		st := lipgloss.NewStyle().Foreground(lipgloss.Color("34")).Render("SUCCESS")
+		if v.Error != "" || len(v.Values) == 0 || cfgName == "" {
+			st = lipgloss.NewStyle().Foreground(lipgloss.Color("160")).Render("ERROR")
+		}
+
 		var sb strings.Builder
-		if v.Error != "" {
+		if v.Error != "" || len(v.Values) == 0 || cfgName == "" {
 			errorText := v.Error
+			if len(v.Values) == 0 || cfgName == "" {
+				errorText = fmt.Errorf("cannot find properties for '%s'. Please refresh page.", cfgName).Error()
+			}
 			if len(errorText) > 50 {
 				lines := []string{}
 				start := 0
@@ -185,40 +189,26 @@ func (m *Model) renderCmdResp(resps map[string]*mir_apiv1.SendCommandResponse_Co
 			} else {
 				sb.WriteString(errorText + "\n")
 			}
-		} else if len(v.Payload) > 0 {
-			sb.WriteString(v.Name)
+		} else {
+			val := v.Values[cfgName]
+			sb.WriteString(cfgName)
 			sb.WriteString("\n")
 
-			p, err := prettyPrintJSON(string(v.Payload))
+			p, err := prettyPrintJSON(string(val))
 			if err != nil {
 				sb.WriteString(errors.Wrap(err, "    error unmarshaling JSON in terminal").Error())
+				st = lipgloss.NewStyle().Foreground(lipgloss.Color("160")).Render("ERROR")
 			} else {
 				sb.WriteString("    " + p)
 			}
 		}
 		sb.WriteString("\n")
 
-		lbl := lipgloss.NewStyle().Bold(true).Render(fmt.Sprintf("%d. %s", i, k))
-		st := ""
-		switch v.Status {
-		case mir_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_SUCCESS:
-			st = lipgloss.NewStyle().Foreground(lipgloss.Color("34")).Render("SUCCESS")
-		case mir_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_ERROR:
-			st = lipgloss.NewStyle().Foreground(lipgloss.Color("160")).Render("ERROR")
-		case mir_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_PENDING:
-			st = lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Render("PENDING")
-		case mir_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_VALIDATED:
-			st = lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Render("VALIDATED")
-		case mir_apiv1.CommandResponseStatus_COMMAND_RESPONSE_STATUS_UNSPECIFIED:
-			st = lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Render("UNSPECIFIED")
-		}
-
 		choices = append(choices, menu.Option{
-			Value:       k,
+			Value:       nameNs,
 			Label:       lbl + " " + st,
 			Description: sb.String(),
 		})
-		i++
 	}
 	return choices
 }
@@ -240,22 +230,11 @@ func prettyPrintJSON(jsonStr string) (string, error) {
 type keyMap map[string]key.Binding
 
 func (k keyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k["again"], k["again_error"]}
+	return []key.Binding{}
 }
 
 func (k keyMap) FullHelp() [][]key.Binding {
-	return [][]key.Binding{
-		{k["again"], k["again_error"]},
-	}
+	return [][]key.Binding{}
 }
 
-var keys = keyMap{
-	"again": key.NewBinding(
-		key.WithKeys("r"),
-		key.WithHelp("r", "resend command"),
-	),
-	"again_error": key.NewBinding(
-		key.WithKeys("e"),
-		key.WithHelp("e", "resend command in error"),
-	),
-}
+var keys = keyMap{}

@@ -97,9 +97,14 @@ func (d *CommandListCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) erro
 				}
 			}
 		}
-		devsTitle := cmds.DevicesNamens
-		if len(cmds.DevicesNamens) > 3 {
-			devsTitle = []string{strings.Join(cmds.DevicesNamens[0:3], ", ") + " & " + fmt.Sprintf("%d more", len(cmds.DevicesNamens)-3)}
+
+		devsTitle := []string{}
+		for _, devId := range cmds.Ids {
+			if devId.Name == "" && devId.Namespace == "" {
+				devsTitle = append(devsTitle, devId.DeviceId)
+			} else {
+				devsTitle = append(devsTitle, devId.Name+"/"+devId.Namespace)
+			}
 		}
 		tpls[sb.String()] = append(tpls[sb.String()], devsTitle...)
 		sb.Reset()
@@ -108,7 +113,11 @@ func (d *CommandListCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) erro
 	i := 1
 	for k, v := range tpls {
 		sb.WriteString(fmt.Sprintf("%d. ", i))
-		sb.WriteString(strings.Join(v, ", "))
+		if len(v) > 10 {
+			sb.WriteString(strings.Join(v[0:10], ", ") + " & " + fmt.Sprintf("%d more", len(v)-10))
+		} else {
+			sb.WriteString(strings.Join(v, ", "))
+		}
 		sb.WriteString("\n")
 		sb.WriteString(k)
 		sb.WriteString("\n")
