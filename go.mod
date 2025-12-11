@@ -1,8 +1,6 @@
 module github.com/maxthom/mir
 
-go 1.24.0
-
-toolchain go1.24.5
+go 1.24.5
 
 require (
 	github.com/adrg/xdg v0.5.3
