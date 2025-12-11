@@ -29,12 +29,13 @@ var (
 )
 
 type Model struct {
-	ctx     context.Context
-	help    mir_help.Model
-	cfgReq  *mir_apiv1.SendConfigRequest
-	cfgResp map[string]*mir_apiv1.SendConfigResponse_ConfigResponse
-	vp      viewport.Model
-	list    menu.Model
+	ctx      context.Context
+	help     mir_help.Model
+	cfgReq   *mir_apiv1.SendConfigRequest
+	cfgResp  map[string]*mir_apiv1.SendConfigResponse_ConfigResponse
+	fetching bool
+	vp       viewport.Model
+	list     menu.Model
 }
 
 func NewModel(ctx context.Context) *Model {
@@ -64,6 +65,7 @@ func (m *Model) InitWithData(d any) tea.Cmd {
 		)
 	}
 	m.cfgReq = req
+	m.fetching = true
 
 	return tea.Batch(
 		msgs.ReqMsgCmd("Config '"+req.Name+"' sent to "+strconv.Itoa(len(req.Targets.Ids))+" devices", msgs.DefaultTimeout),
@@ -99,6 +101,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case msgs.DeviceConfigSentMsg:
 		m.cfgResp = msg.ConfigsResponses
 		m.list = menu.New(m.renderCmdResp(m.cfgResp))
+		m.fetching = false
 		cmdRes = msgs.ResMsgCmd(strconv.Itoa(len(msg.ConfigsResponses))+" config responses received", 5*time.Second)
 	case tea.KeyMsg:
 		m.help, cmdKey = m.help.Update(msg)
@@ -141,7 +144,12 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *Model) View() string {
 	v.Reset()
-	header := styles.Help.Bold(false).Render(fmt.Sprintf("Configuration responses for %d devices\n", len(m.cfgResp)))
+	header := ""
+	if m.fetching {
+		header = styles.Help.Bold(false).Render(fmt.Sprintf("Sending config '%s'...\n", m.cfgReq.Name))
+	} else {
+		header = styles.Help.Bold(false).Render(fmt.Sprintf("Configuration responses for %d devices\n", len(m.cfgResp)))
+	}
 	m.vp.SetContent(header + m.list.View())
 	v.WriteString(m.vp.View())
 	v.WriteString(m.help.View())

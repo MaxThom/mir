@@ -50,7 +50,7 @@ type Model struct {
 
 func NewModel(ctx context.Context, log zerolog.Logger, m *mir.Mir, cfg ui.Config) *Model {
 	log = log.With().Str("page", "router").Logger()
-	s := labelspinner.New(" 🛰️ ", styles.Mir.Render("Mir"), spinner.Dot)
+	s := labelspinner.New(" 🛰️ ", styles.Mir.Render("Mir ("+store.MirCtx.Name+")"), spinner.Dot)
 	routes := map[string]MirTeaModel{
 		"/":                                mainmenu.NewModel(),
 		"/devices":                         device_list.NewModel(ctx),
