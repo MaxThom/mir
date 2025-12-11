@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"sort"
 	"strings"
 	"time"
 
@@ -17,6 +16,7 @@ import (
 	device_list "github.com/maxthom/mir/internal/ui/tui/pages/device/list"
 	"github.com/maxthom/mir/internal/ui/tui/store"
 	"github.com/maxthom/mir/internal/ui/tui/styles"
+	"github.com/maxthom/mir/internal/ui/tui/utils"
 	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/rs/zerolog"
@@ -127,7 +127,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						sb.WriteString("    {}")
 					} else {
 						sb.WriteString("    {\n      ")
-						sb.WriteString(mapToSortedString(desc.Labels, "\n      "))
+						sb.WriteString(utils.MapToSortedString(desc.Labels, "\n      "))
 						sb.WriteString("\n    }")
 					}
 					gc.Choices = append(gc.Choices, group_menu.Option{
@@ -169,7 +169,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.String() == "q" || msg.String() == "r" {
 			i, j := m.menu.GetCursor()
 			cfgDesc := m.configs[i].CfgDescriptors[j]
-			query, err := prettyPrintJSON(cfgDesc.Template)
+			query, err := utils.FormatJSON(cfgDesc.Template, "", utils.DefaultJSONIndent)
 			if err != nil {
 				query = err.Error()
 			}
@@ -179,12 +179,12 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.readOnly = true
 					headers = []string{
 						"READ-ONLY MODE: Config will not be sent",
-						cfgDesc.Name + "{" + mapToSortedString(cfgDesc.Labels, ", ") + "}",
+						cfgDesc.Name + "{" + utils.MapToSortedString(cfgDesc.Labels, ", ") + "}",
 					}
 				} else {
 					headers = []string{
 						"SEND MODE: Config will be sent",
-						cfgDesc.Name + "{" + mapToSortedString(cfgDesc.Labels, ", ") + "}",
+						cfgDesc.Name + "{" + utils.MapToSortedString(cfgDesc.Labels, ", ") + "}",
 					}
 					m.readOnly = false
 				}
@@ -258,43 +258,4 @@ var keys = keyMap{
 		key.WithKeys("l"),
 		key.WithHelp("l", "show last response"),
 	),
-}
-
-func mapToSortedString(m map[string]string, separator string) string {
-	if len(m) == 0 {
-		return ""
-	}
-
-	// Get sorted keys
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	// Build sorted string
-	var sb strings.Builder
-	for i, k := range keys {
-		if i > 0 {
-			sb.WriteString(separator)
-		}
-		sb.WriteString(k)
-		sb.WriteString("=")
-		sb.WriteString(m[k])
-	}
-	return sb.String()
-}
-
-func prettyPrintJSON(jsonStr string) (string, error) {
-	var obj any
-	if err := json.Unmarshal([]byte(jsonStr), &obj); err != nil {
-		return "", err
-	}
-
-	prettyJSON, err := json.MarshalIndent(obj, "", "  ")
-	if err != nil {
-		return "", err
-	}
-
-	return string(prettyJSON), nil
 }
