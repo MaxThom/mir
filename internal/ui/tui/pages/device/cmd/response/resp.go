@@ -29,12 +29,13 @@ var (
 )
 
 type Model struct {
-	ctx     context.Context
-	help    mir_help.Model
-	cmdReq  *mir_apiv1.SendCommandRequest
-	cmdResp map[string]*mir_apiv1.SendCommandResponse_CommandResponse
-	vp      viewport.Model
-	list    menu.Model
+	ctx      context.Context
+	help     mir_help.Model
+	cmdReq   *mir_apiv1.SendCommandRequest
+	cmdResp  map[string]*mir_apiv1.SendCommandResponse_CommandResponse
+	fetching bool
+	vp       viewport.Model
+	list     menu.Model
 }
 
 func NewModel(ctx context.Context) *Model {
@@ -64,6 +65,7 @@ func (m *Model) InitWithData(d any) tea.Cmd {
 		)
 	}
 	m.cmdReq = req
+	m.fetching = true
 
 	return tea.Batch(
 		msgs.ReqMsgCmd("Command '"+req.Name+"' sent to "+strconv.Itoa(len(req.Targets.Ids))+" devices", msgs.DefaultTimeout),
@@ -99,6 +101,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case msgs.DeviceCommandSentMsg:
 		m.cmdResp = msg.CommandsResponse
 		m.list = menu.New(m.renderCmdResp(m.cmdResp))
+		m.fetching = false
 		cmdRes = msgs.ResMsgCmd(strconv.Itoa(len(msg.CommandsResponse))+" command responses received", 5*time.Second)
 	case tea.KeyMsg:
 		m.help, cmdKey = m.help.Update(msg)
@@ -141,7 +144,12 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *Model) View() string {
 	v.Reset()
-	header := styles.Help.Bold(false).Render(fmt.Sprintf("Command responses for %d devices\n", len(m.cmdResp)))
+	header := ""
+	if m.fetching {
+		header = styles.Help.Bold(false).Render(fmt.Sprintf("Sending command '%s'...\n", m.cmdReq.Name))
+	} else {
+		header = styles.Help.Bold(false).Render(fmt.Sprintf("Command responses for %d devices\n", len(m.cmdResp)))
+	}
 	m.vp.SetContent(header + m.list.View())
 	v.WriteString(m.vp.View())
 	v.WriteString(m.help.View())

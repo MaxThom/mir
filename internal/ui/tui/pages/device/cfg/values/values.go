@@ -29,13 +29,14 @@ var (
 )
 
 type Model struct {
-	ctx     context.Context
-	help    mir_help.Model
-	devCfgs []*mir_apiv1.DevicesConfigs_ConfigValues
-	cfgName string
-	targets *mir_apiv1.DeviceTarget
-	vp      viewport.Model
-	list    menu.Model
+	ctx      context.Context
+	help     mir_help.Model
+	devCfgs  []*mir_apiv1.DevicesConfigs_ConfigValues
+	cfgName  string
+	targets  *mir_apiv1.DeviceTarget
+	fetching bool
+	vp       viewport.Model
+	list     menu.Model
 }
 
 type InputData struct {
@@ -71,6 +72,7 @@ func (m *Model) InitWithData(d any) tea.Cmd {
 	}
 	m.cfgName = req.CfgName
 	m.targets = req.Targets
+	m.fetching = true
 
 	return tea.Batch(
 		msgs.ReqMsgCmd("Config '"+req.CfgName+"' sent to "+strconv.Itoa(len(req.Targets.Ids))+" devices", msgs.DefaultTimeout),
@@ -106,6 +108,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.devCfgs = append(m.devCfgs, cfg.CfgValues...)
 		}
 		m.list = menu.New(m.renderCfgValues(m.cfgName, m.devCfgs))
+		m.fetching = false
 		cmdRes = msgs.ResMsgCmd(fmt.Sprintf("%d configs fetched on %d devices", len(msg.Configs), len(m.targets.Ids)), msgs.DefaultTimeout)
 	case tea.WindowSizeMsg:
 		dims := utils.DefaultViewportDimensions()
@@ -135,7 +138,14 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *Model) View() string {
 	v.Reset()
-	header := styles.Help.Bold(false).Render(fmt.Sprintf("Configuration values for %d devices\n", len(m.targets.Ids)))
+
+	header := ""
+	if m.fetching {
+		header = styles.Help.Bold(false).Render(fmt.Sprintf("Fetching config '%s'...\n", m.cfgName))
+	} else {
+		header = styles.Help.Bold(false).Render(fmt.Sprintf("Configuration values for %d devices\n", len(m.targets.Ids)))
+	}
+
 	m.vp.SetContent(header + m.list.View())
 	v.WriteString(m.vp.View())
 	v.WriteString(m.help.View())
