@@ -4,10 +4,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// TODO research on how to create a
-// proper palette of colors with
-// accents and other things
-
 var (
 	Mir       = lipgloss.NewStyle().Foreground(lipgloss.Color("#C26BFF"))
 	Error     = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF0500"))
@@ -30,3 +26,23 @@ var (
 			Border(lipgloss.RoundedBorder(), true, true, true, true).
 			Foreground(Help.GetForeground())
 )
+
+// StatusColors defines standard colors for different statuses
+var StatusColors = struct {
+	Success   lipgloss.Color
+	Error     lipgloss.Color
+	Pending   lipgloss.Color
+	Warning   lipgloss.Color
+	Validated lipgloss.Color
+}{
+	Success:   lipgloss.Color("34"),
+	Error:     lipgloss.Color("160"),
+	Pending:   lipgloss.Color("214"),
+	Warning:   lipgloss.Color("214"),
+	Validated: lipgloss.Color("214"),
+}
+
+// RenderStatusBadge creates a colored status badge for the given text and color
+func RenderStatusBadge(text string, color lipgloss.Color) string {
+	return lipgloss.NewStyle().Foreground(color).Render(text)
+}

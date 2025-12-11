@@ -1,8 +1,7 @@
-package device_configuration_current
+package device_configuration_response
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -17,6 +16,7 @@ import (
 	"github.com/maxthom/mir/internal/ui/tui/msgs"
 	"github.com/maxthom/mir/internal/ui/tui/store"
 	"github.com/maxthom/mir/internal/ui/tui/styles"
+	"github.com/maxthom/mir/internal/ui/tui/utils"
 	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
@@ -28,8 +28,6 @@ var (
 	v strings.Builder
 )
 
-const ()
-
 type Model struct {
 	ctx     context.Context
 	help    mir_help.Model
@@ -37,9 +35,6 @@ type Model struct {
 	cfgResp map[string]*mir_apiv1.SendConfigResponse_ConfigResponse
 	vp      viewport.Model
 	list    menu.Model
-}
-
-type InputData struct {
 }
 
 func NewModel(ctx context.Context) *Model {
@@ -59,8 +54,8 @@ func NewModel(ctx context.Context) *Model {
 }
 
 func (m *Model) InitWithData(d any) tea.Cmd {
-	m.vp.Height = store.ScreenHeight - 5
-	m.vp.Width = 75
+	dims := utils.DefaultViewportDimensions()
+	utils.UpdateViewportSize(&m.vp, 75, store.ScreenHeight-5, dims)
 	req, ok := d.(*mir_apiv1.SendConfigRequest)
 	if !ok {
 		return tea.Batch(
@@ -99,8 +94,8 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		m.vp.Width = msg.Width - 4
-		m.vp.Height = msg.Height - 8
+		dims := utils.DefaultViewportDimensions()
+		utils.UpdateViewportSize(&m.vp, msg.Width, msg.Height, dims)
 	case msgs.DeviceConfigSentMsg:
 		m.cfgResp = msg.ConfigsResponses
 		m.list = menu.New(m.renderCmdResp(m.cfgResp))
@@ -160,28 +155,8 @@ func (m *Model) renderCmdResp(resps map[string]*mir_apiv1.SendConfigResponse_Con
 		var sb strings.Builder
 		if v.Error != "" {
 			errorText := v.Error
-			if len(errorText) > 50 {
-				lines := []string{}
-				start := 0
-				for start < len(errorText) {
-					end := start + 50
-					if end > len(errorText) {
-						end = len(errorText)
-					} else {
-						// Find the next space after position 30
-						spaceIdx := strings.IndexByte(errorText[end:], ' ')
-						if spaceIdx != -1 {
-							end += spaceIdx
-						}
-					}
-					lines = append(lines, errorText[start:end])
-					start = end
-					// Skip the space if we broke at one
-					if start < len(errorText) && errorText[start] == ' ' {
-						start++
-					}
-				}
-				sb.WriteString(strings.Join(lines, "\n    "))
+			if len(errorText) > utils.DefaultWrapWidth {
+				sb.WriteString(utils.WrapText(errorText, utils.DefaultWrapOptions()))
 			} else {
 				sb.WriteString(errorText + "\n")
 			}
@@ -189,7 +164,7 @@ func (m *Model) renderCmdResp(resps map[string]*mir_apiv1.SendConfigResponse_Con
 			sb.WriteString(v.Name)
 			sb.WriteString("\n")
 
-			p, err := prettyPrintJSON(string(v.Payload))
+			p, err := utils.FormatJSON(string(v.Payload), "    ", utils.DefaultJSONIndent)
 			if err != nil {
 				sb.WriteString(errors.Wrap(err, "    error unmarshaling JSON in terminal").Error())
 			} else {
@@ -199,19 +174,7 @@ func (m *Model) renderCmdResp(resps map[string]*mir_apiv1.SendConfigResponse_Con
 		sb.WriteString("\n")
 
 		lbl := lipgloss.NewStyle().Bold(true).Render(fmt.Sprintf("%d. %s", i, k))
-		st := ""
-		switch v.Status {
-		case mir_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_SUCCESS:
-			st = lipgloss.NewStyle().Foreground(lipgloss.Color("34")).Render("SUCCESS")
-		case mir_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_ERROR:
-			st = lipgloss.NewStyle().Foreground(lipgloss.Color("160")).Render("ERROR")
-		case mir_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_PENDING:
-			st = lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Render("PENDING")
-		case mir_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_VALIDATED:
-			st = lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Render("VALIDATED")
-		case mir_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_UNSPECIFIED:
-			st = lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Render("UNSPECIFIED")
-		}
+		st := GetConfigStatusBadge(v.Status)
 
 		choices = append(choices, menu.Option{
 			Value:       k,
@@ -223,18 +186,22 @@ func (m *Model) renderCmdResp(resps map[string]*mir_apiv1.SendConfigResponse_Con
 	return choices
 }
 
-func prettyPrintJSON(jsonStr string) (string, error) {
-	var obj any
-	if err := json.Unmarshal([]byte(jsonStr), &obj); err != nil {
-		return "", err
+// GetConfigStatusBadge returns a styled status badge for config responses
+func GetConfigStatusBadge(status mir_apiv1.ConfigResponseStatus) string {
+	switch status {
+	case mir_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_SUCCESS:
+		return styles.RenderStatusBadge("SUCCESS", styles.StatusColors.Success)
+	case mir_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_ERROR:
+		return styles.RenderStatusBadge("ERROR", styles.StatusColors.Error)
+	case mir_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_PENDING:
+		return styles.RenderStatusBadge("PENDING", styles.StatusColors.Pending)
+	case mir_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_VALIDATED:
+		return styles.RenderStatusBadge("VALIDATED", styles.StatusColors.Validated)
+	case mir_apiv1.ConfigResponseStatus_CONFIG_RESPONSE_STATUS_UNSPECIFIED:
+		return styles.RenderStatusBadge("UNSPECIFIED", styles.StatusColors.Warning)
+	default:
+		return styles.RenderStatusBadge("UNKNOWN", styles.StatusColors.Warning)
 	}
-
-	prettyJSON, err := json.MarshalIndent(obj, "    ", "  ")
-	if err != nil {
-		return "", err
-	}
-
-	return string(prettyJSON), nil
 }
 
 type keyMap map[string]key.Binding

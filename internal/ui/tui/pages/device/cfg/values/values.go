@@ -2,7 +2,6 @@ package device_configuration_values
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -17,6 +16,7 @@ import (
 	"github.com/maxthom/mir/internal/ui/tui/msgs"
 	"github.com/maxthom/mir/internal/ui/tui/store"
 	"github.com/maxthom/mir/internal/ui/tui/styles"
+	"github.com/maxthom/mir/internal/ui/tui/utils"
 	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
@@ -27,8 +27,6 @@ var (
 	l zerolog.Logger
 	v strings.Builder
 )
-
-const ()
 
 type Model struct {
 	ctx     context.Context
@@ -62,8 +60,8 @@ func NewModel(ctx context.Context) *Model {
 }
 
 func (m *Model) InitWithData(d any) tea.Cmd {
-	m.vp.Height = store.ScreenHeight - 5
-	m.vp.Width = 75
+	dims := utils.DefaultViewportDimensions()
+	utils.UpdateViewportSize(&m.vp, 75, store.ScreenHeight-5, dims)
 	req, ok := d.(*InputData)
 	if !ok {
 		return tea.Batch(
@@ -110,8 +108,8 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.list = menu.New(m.renderCfgValues(m.cfgName, m.devCfgs))
 		cmdRes = msgs.ResMsgCmd(fmt.Sprintf("%d configs fetched on %d devices", len(msg.Configs), len(m.targets.Ids)), msgs.DefaultTimeout)
 	case tea.WindowSizeMsg:
-		m.vp.Width = msg.Width - 4
-		m.vp.Height = msg.Height - 8
+		dims := utils.DefaultViewportDimensions()
+		utils.UpdateViewportSize(&m.vp, msg.Width, msg.Height, dims)
 	case tea.KeyMsg:
 		m.help, cmdKey = m.help.Update(msg)
 		m.list, cmdList = m.list.Update(msg)
@@ -164,28 +162,8 @@ func (m *Model) renderCfgValues(cfgName string, cfgValues []*mir_apiv1.DevicesCo
 			if len(v.Values) == 0 || cfgName == "" {
 				errorText = fmt.Errorf("cannot find properties for '%s'. Please refresh page.", cfgName).Error()
 			}
-			if len(errorText) > 50 {
-				lines := []string{}
-				start := 0
-				for start < len(errorText) {
-					end := start + 50
-					if end > len(errorText) {
-						end = len(errorText)
-					} else {
-						// Find the next space after position 30
-						spaceIdx := strings.IndexByte(errorText[end:], ' ')
-						if spaceIdx != -1 {
-							end += spaceIdx
-						}
-					}
-					lines = append(lines, errorText[start:end])
-					start = end
-					// Skip the space if we broke at one
-					if start < len(errorText) && errorText[start] == ' ' {
-						start++
-					}
-				}
-				sb.WriteString(strings.Join(lines, "\n    "))
+			if len(errorText) > utils.DefaultWrapWidth {
+				sb.WriteString(utils.WrapText(errorText, utils.DefaultWrapOptions()))
 			} else {
 				sb.WriteString(errorText + "\n")
 			}
@@ -194,7 +172,7 @@ func (m *Model) renderCfgValues(cfgName string, cfgValues []*mir_apiv1.DevicesCo
 			sb.WriteString(cfgName)
 			sb.WriteString("\n")
 
-			p, err := prettyPrintJSON(string(val))
+			p, err := utils.FormatJSON(string(val), "    ", utils.DefaultJSONIndent)
 			if err != nil {
 				sb.WriteString(errors.Wrap(err, "    error unmarshaling JSON in terminal").Error())
 				st = lipgloss.NewStyle().Foreground(lipgloss.Color("160")).Render("ERROR")
@@ -211,20 +189,6 @@ func (m *Model) renderCfgValues(cfgName string, cfgValues []*mir_apiv1.DevicesCo
 		})
 	}
 	return choices
-}
-
-func prettyPrintJSON(jsonStr string) (string, error) {
-	var obj any
-	if err := json.Unmarshal([]byte(jsonStr), &obj); err != nil {
-		return "", err
-	}
-
-	prettyJSON, err := json.MarshalIndent(obj, "    ", "  ")
-	if err != nil {
-		return "", err
-	}
-
-	return string(prettyJSON), nil
 }
 
 type keyMap map[string]key.Binding
