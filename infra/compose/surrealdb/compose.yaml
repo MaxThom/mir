@@ -6,6 +6,7 @@ services:
     volumes:
       - surrealdb_data:/var/lib/surrealdb
     user: root
+    restart: unless-stopped
     command:
       - start
       - surrealkv:/var/lib/surrealdb/mydatabase.db
