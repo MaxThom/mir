@@ -5,6 +5,7 @@ services:
   nats:
     image: nats:alpine
     command: -c /etc/nats/config.conf
+    restart: unless-stopped
     volumes:
       - ./config.conf:/etc/nats/config.conf:ro
       - ./resolver.conf:/etc/nats/resolver.conf:ro
@@ -19,6 +20,7 @@ services:
     ports:
       - "7777:7777"
     command: -varz -connz -routez -subz -prefix=nats -jsz all "http://nats:8222"
+    restart: unless-stopped
     depends_on:
       - nats
 

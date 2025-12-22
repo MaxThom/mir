@@ -11,7 +11,7 @@ import (
 )
 
 type InfraCmd struct {
-	IncludeMir bool     `short:"m" help:"Include Mir server"`
+	ExcludeMir bool     `short:"m" help:"Exclude Mir server"`
 	Up         UpCmd    `cmd:"" passthrough:"" help:"Run infra docker compose up"`
 	Down       DownCmd  `cmd:"" passthrough:"" help:"Run infra docker compose down"`
 	Ps         PsCmd    `cmd:"" passthrough:"" help:"Run infra docker compose ps"`
@@ -56,9 +56,9 @@ func (d *UpCmd) Validate() error {
 }
 
 func (d *UpCmd) Run(infraCmd *InfraCmd) error {
-	composePath := composeInfraPath
-	if infraCmd.IncludeMir {
-		composePath = composeInfraWithMirPath
+	composePath := composeInfraWithMirPath
+	if infraCmd.ExcludeMir {
+		composePath = composeInfraPath
 	}
 
 	var errs error
@@ -99,9 +99,9 @@ func (d *DownCmd) Validate() error {
 }
 
 func (d *DownCmd) Run(infraCmd *InfraCmd) error {
-	composePath := composeInfraPath
-	if infraCmd.IncludeMir {
-		composePath = composeInfraWithMirPath
+	composePath := composeInfraWithMirPath
+	if infraCmd.ExcludeMir {
+		composePath = composeInfraPath
 	}
 	var errs error
 	filePath := os.Getenv("XDG_CACHE_HOME")
@@ -159,9 +159,9 @@ func (d *PsCmd) Validate() error {
 }
 
 func (d *PsCmd) Run(infraCmd *InfraCmd) error {
-	composePath := composeInfraPath
-	if infraCmd.IncludeMir {
-		composePath = composeInfraWithMirPath
+	composePath := composeInfraWithMirPath
+	if infraCmd.ExcludeMir {
+		composePath = composeInfraPath
 	}
 	var errs error
 	filePath := os.Getenv("XDG_CACHE_HOME")
@@ -201,9 +201,9 @@ func (d *RmCmd) Validate() error {
 }
 
 func (d *RmCmd) Run(infraCmd *InfraCmd) error {
-	composePath := composeInfraPath
-	if infraCmd.IncludeMir {
-		composePath = composeInfraWithMirPath
+	composePath := composeInfraWithMirPath
+	if infraCmd.ExcludeMir {
+		composePath = composeInfraPath
 	}
 
 	var errs error

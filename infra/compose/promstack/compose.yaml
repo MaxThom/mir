@@ -10,6 +10,7 @@ services:
     volumes:
       - grafana_data:/var/lib/grafana
       - ./grafana_provisioning:/etc/grafana
+    restart: unless-stopped
   prometheus:
     image: prom/prometheus:latest
     network_mode: "host"
@@ -20,6 +21,7 @@ services:
       - "--config.file=/etc/prometheus/prometheus.yml"
     ports:
       - "9090:9090"
+    restart: unless-stopped
   alertmanager:
     image: prom/alertmanager:latest
     network_mode: "host"
@@ -31,10 +33,12 @@ services:
     command:
       - "--config.file=/etc/alertmanager/alertmanager.yml"
       - "--storage.path=/alertmanager"
+    restart: unless-stopped
   node-exporter:
     image: prom/node-exporter:latest
     ports:
       - "9100:9100"
+    restart: unless-stopped
   loki:
     image: grafana/loki:latest
     network_mode: "host"
@@ -44,6 +48,7 @@ services:
       - loki_data:/loki
       - ./loki_provisioning:/etc/loki
     command: -config.file=/etc/loki/loki-config.yaml
+    restart: unless-stopped
   promtail:
     image: grafana/promtail:latest
     network_mode: "host"
@@ -55,6 +60,7 @@ services:
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock
     command: -config.file=/etc/promtail/promtail-config.yaml
+    restart: unless-stopped
 
 volumes:
   grafana_data:

@@ -49,7 +49,8 @@ func Connect(ctx context.Context, url, namespace, database, user, password strin
 		if strings.Contains(err.Error(), "connection refused") ||
 			strings.Contains(err.Error(), "broken pipe") ||
 			strings.Contains(err.Error(), "context deadline exceeded") ||
-			strings.Contains(err.Error(), "connection reset by peer") {
+			strings.Contains(err.Error(), "connection reset by peer") ||
+			strings.Contains(err.Error(), "unexpected EOF") {
 			db.monitorAndReconnect()
 		}
 		return db, err

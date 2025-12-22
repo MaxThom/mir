@@ -6,3 +6,4 @@ services:
     volumes:
       - ./local-config.yaml:/home/mir/.config/mir/mir.yaml
     command: serve
+    restart: unless-stopped

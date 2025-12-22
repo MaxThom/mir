@@ -38,8 +38,8 @@ type (
 		Globals
 
 		Client  Client         `cmd:"" embed:"" help:"Test Mir ecosystem of servers and services"`
-		Serve   cli.ServeCmd   `cmd:"" help:"Serve Mir ecosystem of servers and services"`
-		Infra   cli.InfraCmd   `cmd:"" help:"Start and stop Mir supporting infrastructure"`
+		Serve   cli.ServeCmd   `cmd:"" help:"Serve Mir servers using binary"`
+		Infra   cli.InfraCmd   `cmd:"" help:"Start and stop Mir server & infrastructure using docker"`
 		Context cli.ContextCmd `cmd:"" aliases:"ctx" help:"Set and list contexts"`
 		Tools   cli.ToolsCmd   `cmd:"" aliases:"" help:"Various tools to interact with Mir ecosystem"`
 	}
