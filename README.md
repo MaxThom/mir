@@ -45,4 +45,7 @@ To work on the Mir system, clone the repository and follow local setup [guide](h
 
 # License
 
-Source code for MirHub is licensed under a Apache license 2.0
+- **Mir Server** is licensed under GPL v3
+- **Module SDK and Device SDK** (`/pkgs/module` and `/pkgs/device`) are licensed under Apache 2.0
+
+Applications built using the SDKs are not subject to GPL requirements.
