@@ -90,6 +90,7 @@ func (d *TelemetryListCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) er
 			} else {
 				sb.WriteString(strings.Join(devsTitle, ", "))
 			}
+			sb.WriteString("\n")
 
 			for _, tlm := range tlms.TlmDescriptors {
 				sb.WriteString(tlm.Name)
