@@ -1,4 +1,3 @@
-
 ld_flags := "-X 'github.com/maxthom/mir/internal/libs/build_meta.Version=$(git branch --show-current)-$(git rev-parse --short HEAD)' -X 'github.com/maxthom/mir/internal/libs/build_meta.User=$(id -u -n)' -X 'github.com/maxthom/mir/internal/libs/build_meta.Time=$(date -u)'"
 
 # Display recipes
@@ -7,31 +6,37 @@ default:
 
 # Build all
 build:
-	go build -ldflags="{{ld_flags}}" -o bin/mir cmds/mir/main.go
-	go build -ldflags="{{ld_flags}}" -o bin/core cmds/core/main.go
-	go build -ldflags="{{ld_flags}}" -o bin/prototlm cmds/prototlm/main.go
-	go build -ldflags="{{ld_flags}}" -o bin/protocmd cmds/protocmd/main.go
-	go build -ldflags="{{ld_flags}}" -o bin/eventstore cmds/eventstore/main.go
+    go build -ldflags="{{ ld_flags }}" -o bin/mir cmds/mir/main.go
+    go build -ldflags="{{ ld_flags }}" -o bin/core cmds/core/main.go
+    go build -ldflags="{{ ld_flags }}" -o bin/prototlm cmds/prototlm/main.go
+    go build -ldflags="{{ ld_flags }}" -o bin/protocmd cmds/protocmd/main.go
+    go build -ldflags="{{ ld_flags }}" -o bin/eventstore cmds/eventstore/main.go
 
 # Build Mir binary
 build-mir:
-	go build -ldflags="{{ld_flags}}" -o bin/mir cmds/mir/main.go
+    go build -ldflags="{{ ld_flags }}" -o bin/mir cmds/mir/main.go
 
 # Build a stripped Mir binary
 build-mir-tiny:
-    go build -ldflags="{{ld_flags}} -s -w" -trimpath -o bin/mir cmds/mir/main.go
+    go build -ldflags="{{ ld_flags }} -s -w" -trimpath -o bin/mir cmds/mir/main.go
+
+build-cockpit:
+    npm run build --prefix ./internal/ui/web
 
 # Run core module using Air
 run-core:
-	air -c .air/core.toml
+    air -c .air/core.toml
 
 # Run telemetry module using Air
 run-prototlm:
-	air -c .air/prototlm.toml
+    air -c .air/prototlm.toml
 
 # Run command module using Air
 run-protocmd:
-	air -c .air/protocmd.toml
+    air -c .air/protocmd.toml
+
+run-cockpit:
+    npm run dev --prefix ./internal/ui/web
 
 # See list of direct dependencies
 dep-list:
@@ -43,9 +48,9 @@ dep-update:
 
 # Test with coverage
 test:
-	mkdir -p ./.tmp
-	go test -coverprofile ./.tmp/coverage.out ./...
-	go tool cover -html ./.tmp/coverage.out
+    mkdir -p ./.tmp
+    go test -coverprofile ./.tmp/coverage.out ./...
+    go tool cover -html ./.tmp/coverage.out
 
 # Start test infra
 test-infra:
@@ -57,40 +62,40 @@ install: build-mir-tiny
 
 # Compile Mir to ARCH (amd64|arm64|arm32), OS (linux|windows) and SCP to host (<usr>:<ip>)
 install-scp host arch="arm64" os="linux":
-    GOOS={{os}} GOARCH={{arch}} go build -ldflags="-s -w {{ld_flags}}" -trimpath -o bin/mir_{{os}}_{{arch}} cmds/mir/main.go
-    scp bin/mir_{{os}}_{{arch}} {{host}}:mir_{{os}}_{{arch}}
-    ssh {{host}} "sudo cp mir_{{os}}_{{arch}} /usr/local/bin/mir && rm mir_{{os}}_{{arch}}"
-    rm bin/mir_{{os}}_{{arch}}
+    GOOS={{ os }} GOARCH={{ arch }} go build -ldflags="-s -w {{ ld_flags }}" -trimpath -o bin/mir_{{ os }}_{{ arch }} cmds/mir/main.go
+    scp bin/mir_{{ os }}_{{ arch }} {{ host }}:mir_{{ os }}_{{ arch }}
+    ssh {{ host }} "sudo cp mir_{{ os }}_{{ arch }} /usr/local/bin/mir && rm mir_{{ os }}_{{ arch }}"
+    rm bin/mir_{{ os }}_{{ arch }}
 
 # Start tmux layouts for local dev
 tx:
-	tmuxifier s ./.tmux/mir.session.sh
+    tmuxifier s ./.tmux/mir.session.sh
 
 # Start tmux layouts with mir in docker and serve using CLI
 tx-serve:
-	tmuxifier s ./.tmux/mir-serve.session.sh
+    tmuxifier s ./.tmux/mir-serve.session.sh
 
 # Start tmux layouts with mir in docker
 tx-full:
-	tmuxifier s ./.tmux/mir-full.session.sh
+    tmuxifier s ./.tmux/mir-full.session.sh
 
 # Start tmux layouts with local test setup
 tx-test:
-	tmuxifier s ./.tmux/mir-test.session.sh
+    tmuxifier s ./.tmux/mir-test.session.sh
 
 # Run supporting infra with docker
 infra:
-	docker compose -f infra/compose/local_support/compose.yaml up --force-recreate
+    docker compose -f infra/compose/local_support/compose.yaml up --force-recreate
 
 infra-down:
-	docker compose -f infra/compose/local_support/compose.yaml down
+    docker compose -f infra/compose/local_support/compose.yaml down
 
 # Run mir and supporting infra with docker
 local:
-	docker compose -f infra/compose/local_mir_support/compose.yaml up --force-recreate
+    docker compose -f infra/compose/local_mir_support/compose.yaml up --force-recreate
 
 local-down:
-	docker compose -f infra/compose/local_mir_support/compose.yaml down
+    docker compose -f infra/compose/local_mir_support/compose.yaml down
 
 docker-kill:
     docker stop "$(docker ps -a -q)"
@@ -99,15 +104,15 @@ docker-kill:
 
 # Build docker image
 docker-build tag="latest" platform="linux/amd64" version="0.0.0" user="$(id -u -n)" time="$(date -u)":
-    docker build -t ghcr.io/maxthom/mir:{{tag}} --build-arg BUILDPLATFORM={{platform}} --build-arg VERSION={{version}} --build-arg USER="{{user}}" --build-arg TIME="{{time}}" .
+    docker build -t ghcr.io/maxthom/mir:{{ tag }} --build-arg BUILDPLATFORM={{ platform }} --build-arg VERSION={{ version }} --build-arg USER="{{ user }}" --build-arg TIME="{{ time }}" .
 
 # Run docker Mir
 docker-run entry="serve":
-    docker run --network host mir:latest {{entry}}
+    docker run --network host mir:latest {{ entry }}
 
 # Run docker Mir with a config file
 docker-run-config entry="serve":
-    docker run -v $(pwd)/infra/compose/mir/local-config.yaml:/home/mir/.config/mir/mir.yaml --network host mir:latest {{entry}}
+    docker run -v $(pwd)/infra/compose/mir/local-config.yaml:/home/mir/.config/mir/mir.yaml --network host mir:latest {{ entry }}
 
 # Run docker Mir and enter the container
 docker-run-exec:
@@ -119,18 +124,18 @@ k3d-create:
 
 # Delete k3d cluster
 k3d-delete:
- k3d cluster delete mir-local-dev
+    k3d cluster delete mir-local-dev
 
 # Recreate k3d cluster
 k3d-recreate: k3d-delete k3d-create
 
 # Deploy mir
 k3d-mir instance="local":
-    cd infra/k8s/charts/mir && helm install {{instance}} . -f values-local-k3d.yaml
+    cd infra/k8s/charts/mir && helm install {{ instance }} . -f values-local-k3d.yaml
 
 # Run Mir book for local documentation
 book:
-	cd book && mdbook serve -p 5001
+    cd book && mdbook serve -p 5001
 
 # Follow logs written to file from Tui
 log:
@@ -138,28 +143,28 @@ log:
 
 # Seed the database with test data
 seed:
-	./scripts/seed.sh
+    ./scripts/seed.sh
 
 # Clean the database
 cleandb:
-	./scripts/clean_db.sh
+    ./scripts/clean_db.sh
 
 # Install development tools
 tooling:
-	./scripts/tooling.sh
+    ./scripts/tooling.sh
 
 # Run protogen for all protobuf generation
 protogen:
-	./scripts/protogen.sh
+    ./scripts/protogen.sh
 
 # Run the certificate manager script
 certs *args:
-    ./scripts/generate_certs.sh {{args}}
+    ./scripts/generate_certs.sh {{ args }}
 
 # Go code line count
 line-count:
-	find . -name '*.go' | xargs -I {} cat {} | wc -l
-	find . -name '*.go' ! -name '*.pb.go' | xargs -I {} cat {} | wc -l
+    find . -name '*.go' | xargs -I {} cat {} | wc -l
+    find . -name '*.go' ! -name '*.pb.go' | xargs -I {} cat {} | wc -l
 
 # Go test count
 test-count:
