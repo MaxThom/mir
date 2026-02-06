@@ -9,7 +9,9 @@
 	import CreditCardIcon from '@lucide/svelte/icons/credit-card';
 	import LogOutIcon from '@lucide/svelte/icons/log-out';
 	import SparklesIcon from '@lucide/svelte/icons/sparkles';
-	let { user }: { user: { name: string; email: string; avatar: string } } = $props();
+	import type { User } from '$lib/types';
+
+	let { user }: { user: User } = $props();
 	const sidebar = useSidebar();
 </script>
 
