@@ -6,9 +6,9 @@
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	// This should be `Component` after @lucide/svelte updates types
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	let { teams }: { teams: { name: string; logo: any; plan: string }[] } = $props();
+	let { contexts }: { contexts: { name: string; logo: any; plan: string }[] } = $props();
 	const sidebar = useSidebar();
-	let activeTeam = $state(teams[0]);
+	let activeContext = $state(contexts[0]);
 </script>
 
 <Sidebar.Menu>
@@ -24,13 +24,13 @@
 						<div
 							class="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground"
 						>
-							<activeTeam.logo class="size-4" />
+							<activeContext.logo class="size-4" />
 						</div>
 						<div class="grid flex-1 text-start text-sm leading-tight">
 							<span class="truncate font-medium">
-								{activeTeam.name}
+								{activeContext.name}
 							</span>
-							<span class="truncate text-xs">{activeTeam.plan}</span>
+							<span class="truncate text-xs">{activeContext.plan}</span>
 						</div>
 						<ChevronsUpDownIcon class="ms-auto" />
 					</Sidebar.MenuButton>
@@ -43,12 +43,12 @@
 				sideOffset={4}
 			>
 				<DropdownMenu.Label class="text-xs text-muted-foreground">Contexts</DropdownMenu.Label>
-				{#each teams as team, index (team.name)}
-					<DropdownMenu.Item onSelect={() => (activeTeam = team)} class="gap-2 p-2">
+				{#each contexts as context, index (context.name)}
+					<DropdownMenu.Item onSelect={() => (activeContext = context)} class="gap-2 p-2">
 						<div class="flex size-6 items-center justify-center rounded-md border">
-							<team.logo class="size-3.5 shrink-0" />
+							<context.logo class="size-3.5 shrink-0" />
 						</div>
-						{team.name}
+						{context.name}
 						<DropdownMenu.Shortcut>⌘{index + 1}</DropdownMenu.Shortcut>
 					</DropdownMenu.Item>
 				{/each}
