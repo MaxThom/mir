@@ -1,6 +1,12 @@
 <script lang="ts">
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
+	import { ModeWatcher } from 'mode-watcher';
+	import SunIcon from '@lucide/svelte/icons/sun';
+	import MoonIcon from '@lucide/svelte/icons/moon';
+
+	import { toggleMode } from 'mode-watcher';
+	import { Button } from '$lib/components/ui/button/index.js';
 
 	let { children } = $props();
 
@@ -20,11 +26,20 @@
 		>
 			<div class="flex items-center gap-2 px-4">
 				<Sidebar.Trigger class="-ms-1" />
+				<Button onclick={toggleMode} variant="" size="icon">
+					<SunIcon
+						class="h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-all! dark:scale-0 dark:-rotate-90"
+					/>
+					<MoonIcon
+						class="absolute h-[1.2rem] w-[1.2rem] scale-0 rotate-90 transition-all! dark:scale-100 dark:rotate-0"
+					/>
+					<span class="sr-only">Toggle theme</span>
+				</Button>
 				<Separator orientation="vertical" class="me-2 data-[orientation=vertical]:h-4" />
 				<Breadcrumb.Root>
 					<Breadcrumb.List>
 						<Breadcrumb.Item class="hidden md:block">
-							<Breadcrumb.Link href="##">Building Your Application</Breadcrumb.Link>
+							<Breadcrumb.Link href="/">Building Your Application</Breadcrumb.Link>
 						</Breadcrumb.Item>
 						<Breadcrumb.Separator class="hidden md:block" />
 						<Breadcrumb.Item>
@@ -35,6 +50,7 @@
 			</div>
 		</header>
 		<div class="flex flex-1 flex-col gap-4 p-4 pt-0">
+			<ModeWatcher />
 			{@render children()}
 			<!-- <div class="grid auto-rows-min gap-4 md:grid-cols-3">
 				<div class="aspect-video rounded-xl bg-muted/50"></div>

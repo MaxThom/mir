@@ -27,7 +27,7 @@
 			<Sidebar.MenuItem>
 				<Sidebar.MenuButton>
 					{#snippet child({ props })}
-						<a href={item.url} {...props}>
+						<a href={item.url} data-sveltekit-preload-data {...props}>
 							<item.icon />
 							<span>{item.name}</span>
 						</a>

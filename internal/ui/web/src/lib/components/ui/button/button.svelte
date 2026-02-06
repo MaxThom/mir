@@ -61,6 +61,7 @@
 		data-slot="button"
 		class={cn(buttonVariants({ variant, size }), className)}
 		href={disabled ? undefined : href}
+		data-sveltekit-preload-data={!disabled && href && !href.startsWith('http') && !href.startsWith('#') ? true : undefined}
 		aria-disabled={disabled}
 		role={disabled ? "link" : undefined}
 		tabindex={disabled ? -1 : undefined}
