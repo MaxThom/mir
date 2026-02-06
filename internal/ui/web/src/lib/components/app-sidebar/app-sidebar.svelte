@@ -5,7 +5,7 @@
 	import ContextSwitcher from './context-switcher.svelte';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import type { ComponentProps } from 'svelte';
-	import type { User, Context, NavItem } from './types';
+	import type { User, Context, NavItem } from '$lib/types';
 
 	type SidebarProps = ComponentProps<typeof Sidebar.Root> & {
 		user: User;

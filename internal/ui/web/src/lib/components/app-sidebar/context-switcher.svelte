@@ -4,11 +4,18 @@
 	import { useSidebar } from '$lib/components/ui/sidebar/index.js';
 	import ChevronsUpDownIcon from '@lucide/svelte/icons/chevrons-up-down';
 	import PlusIcon from '@lucide/svelte/icons/plus';
-	// This should be `Component` after @lucide/svelte updates types
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	let { contexts }: { contexts: { name: string; logo: any; plan: string }[] } = $props();
+	import type { Context } from '$lib/types';
+
+	let { contexts }: { contexts: Context[] } = $props();
 	const sidebar = useSidebar();
-	let activeContext = $state(contexts[0]);
+
+	// Initialize with first context (intentionally capturing initial value)
+	// eslint-disable-next-line svelte/state-referenced-locally
+	let activeContext = $state<Context>(contexts[0] || {
+		name: 'Default',
+		logo: null,
+		plan: 'Free'
+	});
 </script>
 
 <Sidebar.Menu>

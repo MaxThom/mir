@@ -6,7 +6,7 @@ import FileBraces from '@lucide/svelte/icons/file-braces';
 import CalendarSearch from '@lucide/svelte/icons/calendar-search';
 import GalleryVerticalEndIcon from '@lucide/svelte/icons/gallery-vertical-end';
 import SquareTerminalIcon from '@lucide/svelte/icons/square-terminal';
-import type { SidebarData } from '$lib/components/app-sidebar/types';
+import type { SidebarData } from '$lib/types';
 
 export const sidebarData: SidebarData = {
 	user: {
@@ -34,73 +34,69 @@ export const sidebarData: SidebarData = {
 	navMain: [
 		{
 			title: 'Dashboard',
-			url: '#',
+			url: '/dashboard',
 			icon: SquareTerminalIcon,
 			isActive: true,
 			items: []
 		},
 		{
 			title: 'Devices',
-			url: '#',
+			url: '/devices',
 			icon: BotIcon,
 			isActive: true,
 			items: [
 				{
+					title: 'All Devices',
+					url: '/devices'
+				},
+				{
 					title: 'Telemetry',
-					url: '#'
+					url: '/devices/telemetry'
 				},
 				{
 					title: 'Commands',
-					url: '#'
-				},
-				{
-					title: 'Configuration',
-					url: '#'
+					url: '/devices/commands'
 				}
 			]
 		},
 		{
 			title: 'Schemas',
-			url: '#',
+			url: '/schemas',
 			icon: FileBraces,
 			items: [
 				{
 					title: 'Explorer',
-					url: '#'
+					url: '/schemas'
 				}
 			]
 		},
 		{
 			title: 'Events',
-			url: '#',
+			url: '/events',
 			icon: CalendarSearch,
 			items: [
 				{
 					title: 'List',
-					url: '#'
+					url: '/events'
 				}
 			]
 		},
 		{
 			title: 'Documentation',
-			url: '#',
+			url: '/docs',
 			icon: BookOpenIcon,
 			items: [
 				{
 					title: 'Introduction',
-					url: '#'
+					url: '/docs/introduction'
 				},
 				{
 					title: 'Get Started',
-					url: '#'
+					url: '/docs/get-started'
 				},
 				{
 					title: 'Tutorials',
-					url: '#'
-				},
-				{
-					title: 'Changelog',
-					url: '#'
+					url: '/docs/tutorials'
 				}
 			]
 		}
