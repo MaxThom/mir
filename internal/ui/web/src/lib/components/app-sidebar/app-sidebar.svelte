@@ -2,13 +2,14 @@
 	import AudioWaveformIcon from '@lucide/svelte/icons/audio-waveform';
 	import BookOpenIcon from '@lucide/svelte/icons/book-open';
 	import BotIcon from '@lucide/svelte/icons/bot';
-	import ChartPieIcon from '@lucide/svelte/icons/chart-pie';
 	import CommandIcon from '@lucide/svelte/icons/command';
-	import FrameIcon from '@lucide/svelte/icons/frame';
+	import FileBraces from '@lucide/svelte/icons/file-braces';
+	import CalendarSearch from '@lucide/svelte/icons/calendar-search';
 	import GalleryVerticalEndIcon from '@lucide/svelte/icons/gallery-vertical-end';
-	import MapIcon from '@lucide/svelte/icons/map';
-	import Settings2Icon from '@lucide/svelte/icons/settings-2';
 	import SquareTerminalIcon from '@lucide/svelte/icons/square-terminal';
+	// import MirAlpha from '@lib/assets/mir_alpha_nocolor.svg';
+	// import MirAlphaIcon from '$lib/components/icons/mir_logo.svelte';
+	import MirAlphaLogo from '$lib/assets/mir_alpha.png';
 	// This is sample data.
 	const data = {
 		user: {
@@ -18,9 +19,9 @@
 		},
 		teams: [
 			{
-				name: 'Acme Inc',
+				name: 'Prod',
 				logo: GalleryVerticalEndIcon,
-				plan: 'Enterprise'
+				plan: 'Mir'
 			},
 			{
 				name: 'Acme Corp.',
@@ -35,40 +36,50 @@
 		],
 		navMain: [
 			{
-				title: 'Playground',
+				title: 'Dashboard',
 				url: '#',
 				icon: SquareTerminalIcon,
 				isActive: true,
+				items: []
+			},
+			{
+				title: 'Devices',
+				url: '#',
+				icon: BotIcon,
+				isActive: true,
 				items: [
 					{
-						title: 'History',
+						title: 'Telemetry',
 						url: '#'
 					},
 					{
-						title: 'Starred',
+						title: 'Commands',
 						url: '#'
 					},
 					{
-						title: 'Settings',
+						title: 'Configuration',
 						url: '#'
 					}
 				]
 			},
 			{
-				title: 'Models',
+				title: 'Schemas',
 				url: '#',
-				icon: BotIcon,
+				icon: FileBraces,
 				items: [
-					{
-						title: 'Genesis',
-						url: '#'
-					},
 					{
 						title: 'Explorer',
 						url: '#'
-					},
+					}
+				]
+			},
+			{
+				title: 'Events',
+				url: '#',
+				icon: CalendarSearch,
+				items: [
 					{
-						title: 'Quantum',
+						title: 'List',
 						url: '#'
 					}
 				]
@@ -95,48 +106,25 @@
 						url: '#'
 					}
 				]
-			},
-			{
-				title: 'Settings',
-				url: '#',
-				icon: Settings2Icon,
-				items: [
-					{
-						title: 'General',
-						url: '#'
-					},
-					{
-						title: 'Team',
-						url: '#'
-					},
-					{
-						title: 'Billing',
-						url: '#'
-					},
-					{
-						title: 'Limits',
-						url: '#'
-					}
-				]
-			}
-		],
-		projects: [
-			{
-				name: 'Design Engineering',
-				url: '#',
-				icon: FrameIcon
-			},
-			{
-				name: 'Sales & Marketing',
-				url: '#',
-				icon: ChartPieIcon
-			},
-			{
-				name: 'Travel',
-				url: '#',
-				icon: MapIcon
 			}
 		]
+		// projects: [
+		// 	{
+		// 		name: 'Design Engineering',
+		// 		url: '#',
+		// 		icon: FrameIcon
+		// 	},
+		// 	{
+		// 		name: 'Sales & Marketing',
+		// 		url: '#',
+		// 		icon: ChartPieIcon
+		// 	},
+		// 	{
+		// 		name: 'Travel',
+		// 		url: '#',
+		// 		icon: MapIcon
+		// 	}
+		// ]
 	};
 </script>
 
@@ -144,7 +132,7 @@
 	import NavMain from './nav-main.svelte';
 	import NavProjects from './nav-projects.svelte';
 	import NavUser from './nav-user.svelte';
-	import TeamSwitcher from './team-switcher.svelte';
+	import ContextSwitcher from './context-switcher.svelte';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import type { ComponentProps } from 'svelte';
 	let {
@@ -156,13 +144,16 @@
 
 <Sidebar.Root {collapsible} {...restProps}>
 	<Sidebar.Header>
-		<TeamSwitcher teams={data.teams} />
+		<ContextSwitcher teams={data.teams} />
 	</Sidebar.Header>
 	<Sidebar.Content>
 		<NavMain items={data.navMain} />
-		<NavProjects projects={data.projects} />
+		<!-- <NavProjects projects={data.projects} /> -->
 	</Sidebar.Content>
 	<Sidebar.Footer>
+		<div class="flex items-center justify-center">
+			<img src={MirAlphaLogo} alt="Mir Logo" class="w-48 items-center justify-center" />
+		</div>
 		<NavUser user={data.user} />
 	</Sidebar.Footer>
 	<Sidebar.Rail />
