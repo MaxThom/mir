@@ -14,19 +14,24 @@
 	import * as Breadcrumb from '$lib/components/ui/breadcrumb/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
+	import { sidebarData } from '$lib/data/sidebar-data';
 </script>
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
 
 <Sidebar.Provider>
-	<AppSidebar />
+	<AppSidebar
+		user={sidebarData.user}
+		contexts={sidebarData.contexts}
+		navMain={sidebarData.navMain}
+	/>
 	<Sidebar.Inset>
 		<header
 			class="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12"
 		>
 			<div class="flex items-center gap-2 px-4">
 				<Sidebar.Trigger class="-ms-1" />
-				<Button onclick={toggleMode} variant="" size="icon">
+				<Button onclick={toggleMode} variant="link" size="icon">
 					<SunIcon
 						class="h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-all! dark:scale-0 dark:-rotate-90"
 					/>
