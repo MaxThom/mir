@@ -20,8 +20,17 @@ build-mir:
 build-mir-tiny:
     go build -ldflags="{{ ld_flags }} -s -w" -trimpath -o bin/mir cmds/mir/main.go
 
-build-cockpit:
+# Build cockpit web UI (Svelte)
+build-cockpit-web:
     npm run build --prefix ./internal/ui/web
+
+# Build cockpit Go server binary
+build-cockpit-server:
+    rsync -a --delete internal/ui/web/build/ cmds/cockpit/build/
+    GOWORK=off go build -ldflags="{{ ld_flags }}" -o bin/cockpit ./cmds/cockpit
+
+# Build complete cockpit (web UI + Go server)
+build-cockpit: build-cockpit-web build-cockpit-server
 
 # Run core module using Air
 run-core:
@@ -35,8 +44,17 @@ run-prototlm:
 run-protocmd:
     air -c .air/protocmd.toml
 
-run-cockpit:
+# Run cockpit web UI in dev mode (Svelte dev server)
+run-cockpit-web:
     npm run dev --prefix ./internal/ui/web
+
+# Run cockpit Go server (requires build-cockpit-web first)
+run-cockpit-server:
+    ./bin/cockpit
+
+# Run cockpit Go server with Air for hot-reload
+run-cockpit:
+    air -c .air/cockpit.toml
 
 # See list of direct dependencies
 dep-list:
