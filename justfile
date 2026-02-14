@@ -5,19 +5,20 @@ default:
     just -l --unsorted
 
 # Build all
-build:
+build: build-cockpit
     go build -ldflags="{{ ld_flags }}" -o bin/mir cmds/mir/main.go
     go build -ldflags="{{ ld_flags }}" -o bin/core cmds/core/main.go
     go build -ldflags="{{ ld_flags }}" -o bin/prototlm cmds/prototlm/main.go
     go build -ldflags="{{ ld_flags }}" -o bin/protocmd cmds/protocmd/main.go
     go build -ldflags="{{ ld_flags }}" -o bin/eventstore cmds/eventstore/main.go
+    go build -ldflags="{{ ld_flags }}" -o bin/eventstore cmds/cockpit/main.go
 
 # Build Mir binary
-build-mir:
+build-mir: build-cockpit
     go build -ldflags="{{ ld_flags }}" -o bin/mir cmds/mir/main.go
 
 # Build a stripped Mir binary
-build-mir-tiny:
+build-mir-tiny: build-cockpit
     go build -ldflags="{{ ld_flags }} -s -w" -trimpath -o bin/mir cmds/mir/main.go
 
 # Build cockpit web UI (Svelte)
