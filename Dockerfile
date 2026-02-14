@@ -1,10 +1,16 @@
+ARG BUILDPLATFORM=linux/amd64
 # Web UI build stage
-FROM node:25-alpine AS web-builder
+# node 25 not available on arm7 and alpine
+# https://hub.docker.com/_/node
+FROM --platform=$BUILDPLATFORM node:22-alpine AS web-builder
 
 WORKDIR /build
 
-# Copy package files for better caching
+# Copy package files and config files for dependencies installation
 COPY internal/ui/web/package*.json ./internal/ui/web/
+COPY internal/ui/web/svelte.config.js ./internal/ui/web/
+COPY internal/ui/web/vite.config.ts ./internal/ui/web/
+COPY internal/ui/web/tsconfig.json ./internal/ui/web/
 RUN npm ci --prefix ./internal/ui/web
 
 # Copy web UI source and build
@@ -12,7 +18,6 @@ COPY internal/ui/web ./internal/ui/web
 RUN npm run build --prefix ./internal/ui/web
 
 # Build stage
-ARG BUILDPLATFORM=linux/amd64
 FROM --platform=$BUILDPLATFORM golang:1.24.5-alpine AS builder
 
 # Install build dependencies

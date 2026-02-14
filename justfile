@@ -118,15 +118,15 @@ docker-build tag="latest" platform="linux/amd64" version="0.0.0" user="$(id -u -
 
 # Run docker Mir
 docker-run entry="serve":
-    docker run --network host mir:latest {{ entry }}
+    docker run --network host ghcr.io/maxthom/mir:latest {{ entry }}
 
 # Run docker Mir with a config file
 docker-run-config entry="serve":
-    docker run -v $(pwd)/infra/compose/mir/local-config.yaml:/home/mir/.config/mir/mir.yaml --network host mir:latest {{ entry }}
+    docker run -v $(pwd)/infra/compose/mir/local-config.yaml:/home/mir/.config/mir/mir.yaml --network host ghcr.io/maxthom/mir:latest {{ entry }}
 
 # Run docker Mir and enter the container
 docker-run-exec:
-    docker run -v $(pwd)/infra/compose/mir/local-config.yaml:/home/mir/.config/mir/mir.yaml --network host -it --entrypoint /bin/sh mir:latest
+    docker run -v $(pwd)/infra/compose/mir/local-config.yaml:/home/mir/.config/mir/mir.yaml --network host -it --entrypoint /bin/sh ghcr.io/maxthom/mir:latest
 
 # Start k3d cluster for local k8s dev
 k3d-create:
