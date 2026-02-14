@@ -1,3 +1,16 @@
+# Web UI build stage
+FROM node:25-alpine AS web-builder
+
+WORKDIR /build
+
+# Copy package files for better caching
+COPY internal/ui/web/package*.json ./internal/ui/web/
+RUN npm ci --prefix ./internal/ui/web
+
+# Copy web UI source and build
+COPY internal/ui/web ./internal/ui/web
+RUN npm run build --prefix ./internal/ui/web
+
 # Build stage
 ARG BUILDPLATFORM=linux/amd64
 FROM --platform=$BUILDPLATFORM golang:1.24.5-alpine AS builder
@@ -14,6 +27,9 @@ RUN go mod download
 
 # Copy source code
 COPY . .
+
+# Copy built web UI from web-builder stage
+COPY --from=web-builder /build/internal/ui/web/build ./internal/ui/web/build
 
 # Build arguments for multi-platform support
 ARG TARGETOS=linux
