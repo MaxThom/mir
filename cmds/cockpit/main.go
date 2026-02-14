@@ -6,8 +6,6 @@ import (
 	"io/fs"
 	"net/http"
 	"os"
-	"path"
-	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -20,6 +18,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/boiler/mir_log"
 	"github.com/maxthom/mir/internal/libs/boiler/mir_signals"
 	"github.com/maxthom/mir/internal/libs/build_meta"
+	cockpit_srv "github.com/maxthom/mir/internal/servers/cockpit_srv"
 	"github.com/maxthom/mir/internal/ui"
 	"github.com/rs/zerolog"
 	"golang.org/x/net/http2"
@@ -136,10 +135,10 @@ func run(
 ) error {
 	ctx, cancel := mir_signals.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGINT)
 
-	// Setup HTTP routes
+	// Setup HTTP mux
 	mux := http.NewServeMux()
 
-	// Health & Metrics endpoints (these take precedence)
+	// Register health & metrics endpoints
 	metrics.RegisterRoutes(mux)
 	health.RegisterRoutes(mux)
 	pprof.RegisterRoutesIfEnvGoPprofSet(mux)
@@ -150,98 +149,56 @@ func run(
 		return fmt.Errorf("failed to get web filesystem: %w", err)
 	}
 
-	// SPA handler that serves static files and falls back to index.html
-	spaHandler := createSPAHandler(webFS, log)
-	mux.Handle("/", spaHandler)
-
-	// Apply middleware stack (order matters: outermost -> innermost)
-	// 1. Metrics (tracks all requests including middleware overhead)
-	// 2. Logging (logs after metrics tracking starts)
-	// 3. Security headers (applies to all responses)
-	// 4. CORS (handles cross-origin requests)
-	// 5. h2c (HTTP/2 support)
-	// 6. Handler (actual request processing)
-	handler := metricsMiddleware(mux)
-	handler = loggingMiddleware(log)(handler)
-	handler = securityHeadersMiddleware(handler)
-	handler = corsMiddleware(cfg.HttpServer.AllowedOrigins)(handler)
-
-	// WebServer with HTTP/2 support
-	server := &http.Server{
-		Addr:    fmt.Sprintf(":%d", cfg.HttpServer.Port),
-		Handler: h2c.NewHandler(handler, &http2.Server{}),
+	// Create cockpit server and register routes
+	cockpitSrv, err := cockpit_srv.NewCockpit(log, &cockpit_srv.Options{
+		AllowedOrigins: cfg.HttpServer.AllowedOrigins,
+		WebFS:          webFS,
+	})
+	if err != nil {
+		return err
 	}
 
+	// Register cockpit routes on the mux
+	cockpitSrv.RegisterRoutes(mux)
+
+	// Create HTTP server with HTTP/2 support
+	server := &http.Server{
+		Addr:    fmt.Sprintf(":%d", cfg.HttpServer.Port),
+		Handler: h2c.NewHandler(mux, &http2.Server{}),
+	}
+
+	// Start HTTP server in background
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		log.Info().Int("port", cfg.HttpServer.Port).Msg("starting cockpit web server")
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Err(err).Msg("")
+			log.Error().Err(err).Msg("http server error")
 			health.SetUnready()
 			mir_signals.Shutdown()
 		}
 		log.Debug().Msg("http server shutdown")
-		wg.Done()
 	}()
 
-	// Handle shutdown
 	log.Info().Msg(fmt.Sprintf("%s initialized - navigate to http://localhost:%d", AppName, cfg.HttpServer.Port))
 	health.SetReady()
+
+	// Wait for shutdown signal
 	mir_signals.WaitForOsSignals(func() {
 		cancel()
+		log.Info().Msg("shutting down cockpit server")
+
 		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer shutdownCancel()
+
 		if err := server.Shutdown(shutdownCtx); err != nil {
 			log.Error().Err(err).Msg("failed to gracefully shutdown server")
 		}
-		shutdownCancel()
+
 		wg.Wait()
-		log.Info().Msg("all system have shutdown gracefully")
+		log.Info().Msg("cockpit server shutdown complete")
 	})
 
 	return nil
-}
-
-// createSPAHandler creates a handler for serving a SPA
-// It serves static files if they exist, otherwise falls back to index.html
-func createSPAHandler(webFS fs.FS, log zerolog.Logger) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Clean the path
-		requestPath := path.Clean(r.URL.Path)
-
-		// Security: prevent directory traversal
-		if strings.Contains(requestPath, "..") {
-			log.Warn().Str("path", requestPath).Msg("attempted directory traversal")
-			http.Error(w, "Invalid path", http.StatusBadRequest)
-			return
-		}
-
-		// Try to open the file
-		filePath := strings.TrimPrefix(requestPath, "/")
-		file, err := webFS.Open(filePath)
-		if err == nil {
-			// File exists, check if it's a directory
-			stat, err := file.Stat()
-			file.Close()
-			if err == nil && !stat.IsDir() {
-				// It's a file, serve it with proper caching headers
-				w.Header().Set("Cache-Control", "public, max-age=31536000") // 1 year for assets
-				http.FileServer(http.FS(webFS)).ServeHTTP(w, r)
-				return
-			}
-		}
-
-		// File doesn't exist or is a directory, serve index.html for SPA routing
-		indexData, err := fs.ReadFile(webFS, "index.html")
-		if err != nil {
-			log.Error().Err(err).Msg("failed to read index.html")
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate") // Don't cache index.html
-		w.WriteHeader(http.StatusOK)
-		w.Write(indexData)
-	})
 }
