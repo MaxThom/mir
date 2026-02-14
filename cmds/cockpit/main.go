@@ -31,10 +31,9 @@ const (
 
 type (
 	CockpitConfig struct {
-		LogLevel       string
-		HttpServer     HttpServer
-		CurrentContext string       `yaml:"currentContext"`
-		Contexts       []ui.Context `yaml:"contexts"`
+		LogLevel   string
+		HttpServer HttpServer
+		Contexts   ui.Config `yaml:"contexts"`
 	}
 
 	HttpServer struct {
@@ -53,12 +52,14 @@ var (
 				"http://localhost:3021", // Self
 			},
 		},
-		CurrentContext: "local",
-		Contexts: []ui.Context{
-			{
-				Name:    "local",
-				Target:  "nats://localhost:4222",
-				Grafana: "localhost:3000",
+		Contexts: ui.Config{
+			CurrentContext: "local",
+			Contexts: []ui.Context{
+				{
+					Name:    "local",
+					Target:  "nats://localhost:4222",
+					Grafana: "localhost:3000",
+				},
 			},
 		},
 	}
@@ -153,6 +154,7 @@ func run(
 	cockpitSrv, err := cockpit_srv.NewCockpit(log, &cockpit_srv.Options{
 		AllowedOrigins: cfg.HttpServer.AllowedOrigins,
 		WebFS:          webFS,
+		Config:         cfg.Contexts,
 	})
 	if err != nil {
 		return err
