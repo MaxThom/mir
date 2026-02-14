@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"net/http"
 
+	"github.com/maxthom/mir/internal/ui"
 	"github.com/rs/zerolog"
 )
 
@@ -15,7 +16,8 @@ type CockpitServer struct {
 
 type Options struct {
 	AllowedOrigins []string
-	WebFS          fs.FS // Embedded web files
+	WebFS          fs.FS     // Embedded web files
+	Config         ui.Config // Cockpit configuration
 }
 
 func NewCockpit(logger zerolog.Logger, opts *Options) (*CockpitServer, error) {
@@ -35,6 +37,14 @@ func NewCockpit(logger zerolog.Logger, opts *Options) (*CockpitServer, error) {
 // RegisterRoutes registers cockpit HTTP handlers on the provided mux
 // The handlers are wrapped with middleware (metrics, logging, security, CORS)
 func (s *CockpitServer) RegisterRoutes(mux *http.ServeMux) {
+	// API endpoint - config endpoint with middleware
+	// Must be registered BEFORE the catch-all "/" route
+	apiHandler := metricsMiddleware(http.HandlerFunc(s.configHandler))
+	apiHandler = loggingMiddleware(s.log)(apiHandler)
+	apiHandler = securityHeadersMiddleware(apiHandler)
+	apiHandler = corsMiddleware(s.opts.AllowedOrigins)(apiHandler)
+	mux.Handle("/api/contexts", apiHandler)
+
 	// Create SPA handler that serves static files and falls back to index.html
 	spaHandler := createSPAHandler(s.opts.WebFS, s.log)
 

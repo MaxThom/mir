@@ -124,7 +124,7 @@ func (d *ServeCmd) Validate() error {
 	return nil
 }
 
-func (d *ServeCmd) Run(cfg ui.Config) error {
+func (d *ServeCmd) Run(ctx ui.Config) error {
 	if d.DisplayDefaultCfg {
 		out, err := yaml.Marshal(d.ServeConfig)
 		if err != nil {
@@ -172,7 +172,7 @@ func (d *ServeCmd) Run(cfg ui.Config) error {
 	log.Info().Str("config", string(prettyCfg)).Msg("")
 	metrics.RegisterMirMetrics(AppName, build_meta.GetShortVersion(), map[string]string{}, string(prettyCfg))
 
-	if err := d.run(context.Background(), log, d.ServeConfig); err != nil {
+	if err := d.run(context.Background(), log, d.ServeConfig, ctx); err != nil {
 		log.Error().Err(err).Msg("")
 		return err
 	}
@@ -183,6 +183,7 @@ func (d *ServeCmd) run(
 	ctx context.Context,
 	log zerolog.Logger,
 	cfg ServeConfig,
+	contexts ui.Config,
 ) error {
 	ctx, cancel := mir_signals.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGINT)
 
@@ -291,6 +292,7 @@ func (d *ServeCmd) run(
 	cockpitSrv, err := cockpit_srv.NewCockpit(log, &cockpit_srv.Options{
 		AllowedOrigins: cfg.Module.Cockpit.AllowedOrigins,
 		WebFS:          webFS,
+		Config:         contexts,
 	})
 	if err != nil {
 		return err
