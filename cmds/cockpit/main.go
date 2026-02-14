@@ -39,7 +39,8 @@ type (
 	}
 
 	HttpServer struct {
-		Port int
+		Port           int
+		AllowedOrigins []string `yaml:"allowedOrigins"` // CORS allowed origins (empty = allow all)
 	}
 )
 
@@ -48,6 +49,10 @@ var (
 		LogLevel: "info",
 		HttpServer: HttpServer{
 			Port: 3021,
+			AllowedOrigins: []string{
+				"http://localhost:5173", // Svelte dev server
+				"http://localhost:3021", // Self
+			},
 		},
 		CurrentContext: "local",
 		Contexts: []ui.Context{
@@ -149,10 +154,22 @@ func run(
 	spaHandler := createSPAHandler(webFS, log)
 	mux.Handle("/", spaHandler)
 
+	// Apply middleware stack (order matters: outermost -> innermost)
+	// 1. Metrics (tracks all requests including middleware overhead)
+	// 2. Logging (logs after metrics tracking starts)
+	// 3. Security headers (applies to all responses)
+	// 4. CORS (handles cross-origin requests)
+	// 5. h2c (HTTP/2 support)
+	// 6. Handler (actual request processing)
+	handler := metricsMiddleware(mux)
+	handler = loggingMiddleware(log)(handler)
+	handler = securityHeadersMiddleware(handler)
+	handler = corsMiddleware(cfg.HttpServer.AllowedOrigins)(handler)
+
 	// WebServer with HTTP/2 support
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.HttpServer.Port),
-		Handler: h2c.NewHandler(mux, &http2.Server{}),
+		Handler: h2c.NewHandler(handler, &http2.Server{}),
 	}
 
 	wg := &sync.WaitGroup{}
@@ -192,14 +209,23 @@ func createSPAHandler(webFS fs.FS, log zerolog.Logger) http.Handler {
 		// Clean the path
 		requestPath := path.Clean(r.URL.Path)
 
+		// Security: prevent directory traversal
+		if strings.Contains(requestPath, "..") {
+			log.Warn().Str("path", requestPath).Msg("attempted directory traversal")
+			http.Error(w, "Invalid path", http.StatusBadRequest)
+			return
+		}
+
 		// Try to open the file
-		file, err := webFS.Open(strings.TrimPrefix(requestPath, "/"))
+		filePath := strings.TrimPrefix(requestPath, "/")
+		file, err := webFS.Open(filePath)
 		if err == nil {
 			// File exists, check if it's a directory
 			stat, err := file.Stat()
 			file.Close()
 			if err == nil && !stat.IsDir() {
-				// It's a file, serve it
+				// It's a file, serve it with proper caching headers
+				w.Header().Set("Cache-Control", "public, max-age=31536000") // 1 year for assets
 				http.FileServer(http.FS(webFS)).ServeHTTP(w, r)
 				return
 			}
@@ -214,6 +240,7 @@ func createSPAHandler(webFS fs.FS, log zerolog.Logger) http.Handler {
 		}
 
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate") // Don't cache index.html
 		w.WriteHeader(http.StatusOK)
 		w.Write(indexData)
 	})
