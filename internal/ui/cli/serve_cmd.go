@@ -3,6 +3,7 @@ package cli
 import (
 	"context"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"os"
 	"strings"
@@ -21,6 +22,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/build_meta"
 	"github.com/maxthom/mir/internal/libs/external/influx"
 	"github.com/maxthom/mir/internal/libs/external/surreal"
+	cockpit_srv "github.com/maxthom/mir/internal/servers/cockpit_srv"
 	"github.com/maxthom/mir/internal/servers/core_srv"
 	"github.com/maxthom/mir/internal/servers/eventstore_srv"
 	"github.com/maxthom/mir/internal/servers/protocfg_srv"
@@ -40,12 +42,13 @@ type (
 		Mir     MirCfg     `embed:"" prefix:"mir." yaml:"mir"`
 		Surreal SurrealCfg `embed:"" prefix:"surreal." yaml:"surreal"`
 		Influx  InfluxCfg  `embed:"" prefix:"influx." yaml:"influx"`
-		Module  ModuleCfg  `embed:"" prefix:"event." yaml:"module"`
+		Module  ModuleCfg  `embed:"" prefix:"" yaml:"module"`
 	}
 
 	ModuleCfg struct {
 		Core       CoreCfg       `embed:"" prefix:"core." yaml:"core"`
-		EventStore EventStoreCfg `embed:"" prefix:"eventStore." yaml:"eventStore"`
+		EventStore EventStoreCfg `embed:"" prefix:"event." yaml:"event"`
+		Cockpit    CockpitCfg    `embed:"" prefix:"cockpit." yaml:"cockpit"`
 	}
 
 	CoreCfg struct {
@@ -56,6 +59,10 @@ type (
 
 	EventStoreCfg struct {
 		FlushInterval time.Duration `help:"Event store flush interval" default:"5s" yaml:"flushInterval"`
+	}
+
+	CockpitCfg struct {
+		AllowedOrigins []string `help:"CORS allowed origins" yaml:"allowedOrigins"`
 	}
 
 	MirCfg struct {
@@ -98,6 +105,7 @@ type ServeCmd struct {
 	Configuration     bool   `help:"Configuration module is for device properties" default:"true"`
 	Telemetry         bool   `help:"Telemetry module is for data ingestion and visualization" default:"true"`
 	Command           bool   `help:"Command module if for command and control" default:"true"`
+	Cockpit           bool   `help:"Cockpit web UI for device management and monitoring" default:"false"`
 	DisplayDefaultCfg bool   `name:"display-default-cfg" help:"Display default configuration. Can be piped to config file '> ~/.config/mir/mir.yaml'" default:"false"`
 	DisplayLoadedCfg  bool   `name:"display-cfg" help:"Display loaded configuration. Usefull for debug scenario" default:"false"`
 	ConfigFile        string `name:"server-config" help:"Set path for config path." default:"~/.config/mir/mir.yaml"`
@@ -273,6 +281,23 @@ func (d *ServeCmd) run(
 	metrics.RegisterRoutes(mux)
 	health.RegisterRoutes(mux)
 	pprof.RegisterRoutesIfEnvGoPprofSet(mux)
+
+	// Cockpit
+	webFS, err := fs.Sub(ui.CockpitBuildFS, "web/build")
+	if err != nil {
+		return fmt.Errorf("failed to get web filesystem: %w", err)
+	}
+
+	cockpitSrv, err := cockpit_srv.NewCockpit(log, &cockpit_srv.Options{
+		AllowedOrigins: cfg.Module.Cockpit.AllowedOrigins,
+		WebFS:          webFS,
+	})
+	if err != nil {
+		return err
+	}
+
+	// Register cockpit routes on the shared mux
+	cockpitSrv.RegisterRoutes(mux)
 
 	// WebServer
 	server := &http.Server{

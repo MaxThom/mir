@@ -58,3 +58,6 @@ scrape_configs:
   - job_name: "eventstore"
     static_configs:
       - targets: ["localhost:3020"]
+  - job_name: "cockpit"
+    static_configs:
+      - targets: ["localhost:3021"]
