@@ -1,10 +1,7 @@
-import AudioWaveformIcon from '@lucide/svelte/icons/audio-waveform';
 import BookOpenIcon from '@lucide/svelte/icons/book-open';
 import BotIcon from '@lucide/svelte/icons/bot';
-import CommandIcon from '@lucide/svelte/icons/command';
 import FileBraces from '@lucide/svelte/icons/file-braces';
 import CalendarSearch from '@lucide/svelte/icons/calendar-search';
-import GalleryVerticalEndIcon from '@lucide/svelte/icons/gallery-vertical-end';
 import SquareTerminalIcon from '@lucide/svelte/icons/square-terminal';
 import type { SidebarData } from '$lib/types';
 
@@ -14,23 +11,6 @@ export const sidebarData: SidebarData = {
 		email: 'm@example.com',
 		avatar: '/avatars/shadcn.jpg'
 	},
-	contexts: [
-		{
-			name: 'Prod',
-			logo: GalleryVerticalEndIcon,
-			plan: 'Mir'
-		},
-		{
-			name: 'Acme Corp.',
-			logo: AudioWaveformIcon,
-			plan: 'Startup'
-		},
-		{
-			name: 'Evil Corp.',
-			logo: CommandIcon,
-			plan: 'Free'
-		}
-	],
 	navMain: [
 		{
 			title: 'Dashboard',

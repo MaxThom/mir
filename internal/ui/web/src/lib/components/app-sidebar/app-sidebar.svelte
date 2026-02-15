@@ -5,17 +5,15 @@
 	import ContextSwitcher from './context-switcher.svelte';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import type { ComponentProps } from 'svelte';
-	import type { User, Context, NavItem } from '$lib/types';
+	import type { User, NavItem } from '$lib/types';
 
 	type SidebarProps = ComponentProps<typeof Sidebar.Root> & {
 		user: User;
-		contexts: Context[];
 		navMain: NavItem[];
 	};
 
 	let {
 		user,
-		contexts,
 		navMain,
 		ref = $bindable(null),
 		collapsible = 'icon',
@@ -25,7 +23,7 @@
 
 <Sidebar.Root {collapsible} {...restProps}>
 	<Sidebar.Header>
-		<ContextSwitcher {contexts} />
+		<ContextSwitcher />
 	</Sidebar.Header>
 	<Sidebar.Content>
 		<NavSection label="Platform" items={navMain} />

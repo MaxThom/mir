@@ -8,4 +8,4 @@ export type {
 	SidebarData
 } from './navigation';
 export type { Device, DeviceInput, DeviceStatus } from './device';
-export type { ApiResponse, PaginatedResponse, ApiError } from './api';
+export type { ApiResponse, PaginatedResponse, ApiError, ContextsResponse } from './api';

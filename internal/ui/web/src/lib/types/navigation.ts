@@ -1,11 +1,9 @@
-import type { Component } from 'svelte';
 import type { User } from './user';
 
 export type Context = {
 	name: string;
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	logo: any; // Component when @lucide/svelte updates types
-	plan: string;
+	target: string; // NATS URL
+	grafana: string; // Grafana URL
 };
 
 export type NavSubItem = {
@@ -32,6 +30,5 @@ export type NavMainProps = {
 
 export type SidebarData = {
 	user: User;
-	contexts: Context[];
 	navMain: NavItem[];
 };
