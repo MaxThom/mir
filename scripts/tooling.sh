@@ -18,6 +18,11 @@ check_rust() {
     return 0
 }
 
+# TODO install npm
+# vite: npm install -D vite
+# svelte:
+
+
 echo '-- Pre Install --'
 check_go
 check_rust

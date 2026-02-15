@@ -43,7 +43,7 @@ func (s *CockpitServer) RegisterRoutes(mux *http.ServeMux) {
 	apiHandler = loggingMiddleware(s.log)(apiHandler)
 	apiHandler = securityHeadersMiddleware(apiHandler)
 	apiHandler = corsMiddleware(s.opts.AllowedOrigins)(apiHandler)
-	mux.Handle("/api/contexts", apiHandler)
+	mux.Handle("/api/v1/contexts", apiHandler)
 
 	// Create SPA handler that serves static files and falls back to index.html
 	spaHandler := createSPAHandler(s.opts.WebFS, s.log)
