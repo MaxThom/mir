@@ -25,50 +25,111 @@ The Cockpit server embeds and serves the static files built from the Svelte web 
 
 ```bash
 # Build both the Svelte web UI and Go server binary
-just build-cockpit
+just build-cockpit-server
 ```
-
-### Build Components Separately
 
 ```bash
 # Build only the Svelte web UI
-just build-cockpit-web
-
-# Build only the Go server binary
-just build-cockpit-server
+just build-cockpit
 ```
 
 ## Running
 
-### Production Mode
+### Local Development
 
-Run the compiled server (requires building first):
+For the best development experience with hot module replacement (HMR) and instant feedback:
+
+**Step 1: Start the Go backend server**
 
 ```bash
-just build-cockpit
-./bin/cockpit
+# From project root
+go run cmds/cockpit/main.go
+
+# Or with hot-reload (Air)
+just run-cockpit-server
 ```
 
-### Development Mode
+The Go server runs on **port 3021** by default.
 
-**Option 1: Run Go server with hot-reload (Air)**
+**Step 2: Start the Vite dev server (in a new terminal)**
 
 ```bash
-# Build the web UI first
-just build-cockpit-web
+# Navigate to web UI directory
+cd internal/ui/web
 
-# Run Go server with Air for hot-reload
+# Start Vite dev server with HMR
+npm run dev
+
+# Or use justfile command
 just run-cockpit
 ```
 
-**Option 2: Run Svelte dev server (for web UI development)**
+The Vite dev server runs on **port 5173** with automatic proxy to port 3021.
+
+**Step 3: Open your browser**
+
+Navigate to `http://localhost:5173`
+
+**How it works:**
+- Frontend runs on port 5173 with instant HMR (edit Svelte files and see changes immediately)
+- API calls to `/api/*` are automatically proxied to the Go backend on port 3021
+- No CORS issues, no manual configuration needed
+- Your Svelte code uses relative URLs (`/api/...`) that work in both dev and production
+
+**Simplified workflow with tmux/tmuxifier:**
 
 ```bash
-# Run Vite dev server with HMR
-just run-cockpit-web
+# Start both servers in split panes
+tmux new-session \; \
+  send-keys 'go run cmds/cockpit/main.go' C-m \; \
+  split-window -h \; \
+  send-keys 'cd internal/ui/web && npm run dev' C-m
 ```
 
-> **Note**: During active web UI development, use `run-cockpit-web` to get Vite's hot module replacement. Once the UI is stable, build it and run the Go server.
+### Production Mode
+
+Production uses a single server that serves both the static Svelte build and API endpoints:
+
+**Step 1: Build everything**
+
+```bash
+# Build both web UI and Go server
+just build-cockpit-server
+```
+
+This creates:
+- `internal/ui/web/build/` - Static Svelte files (embedded in Go binary)
+- `bin/cockpit` - Single executable with embedded frontend
+
+**Step 2: Run the server**
+
+```bash
+./bin/cockpit
+```
+
+**Step 3: Open your browser**
+
+Navigate to `http://localhost:3021`
+
+**How it works:**
+- Single server on port 3021 serves everything
+- Static files served from embedded filesystem
+- API routes handled by same server
+- No proxy needed (same origin, no CORS)
+- Single binary deployment
+
+**Production deployment:**
+
+```bash
+# Copy binary to server
+scp bin/cockpit user@server:/usr/local/bin/
+
+# Run on server
+cockpit
+
+# Or with systemd
+sudo systemctl start cockpit
+```
 
 ## Configuration
 
@@ -86,10 +147,10 @@ The server can be configured via:
 ```yaml
 logLevel: "info"
 httpServer:
-  port: 3020
+  port: 3021
   allowedOrigins:
-    - "http://localhost:5173"  # Svelte dev server
-    - "http://localhost:3020"  # Self
+    - "http://localhost:5173"  # Svelte dev server (for development)
+    - "http://localhost:3021"  # Self
 ```
 
 **Note:** Leave `allowedOrigins` empty to allow all origins (development only). In production, specify exact origins.
@@ -243,27 +304,86 @@ Import the Cockpit dashboard from the monitoring directory or create your own wi
 
 ## Development Workflow
 
-1. **Web UI Development**:
-   ```bash
-   cd internal/ui/web
-   npm run dev
-   ```
-   This runs the Vite dev server on port 5173 with hot module replacement.
+### Recommended: Full Stack Development with HMR
 
-2. **Full Stack Development**:
-   ```bash
-   # Terminal 1: Build web UI
-   just build-cockpit-web
+Run both frontend and backend servers together:
 
-   # Terminal 2: Run Go server with Air
-   just run-cockpit
-   ```
+```bash
+# Terminal 1: Go backend on port 3021
+go run cmds/cockpit/main.go
 
-3. **Production Build**:
-   ```bash
-   just build-cockpit
-   ./bin/cockpit
-   ```
+# Terminal 2: Vite dev server on port 5173 (with proxy)
+cd internal/ui/web && npm run dev
+```
+
+Open `http://localhost:5173` for development with instant hot reload.
+
+**What you get:**
+- ⚡ Instant feedback - see Svelte changes immediately
+- 🔄 Auto-refresh on file save
+- 🌐 API proxy - calls to `/api/*` automatically route to Go backend
+- 🚫 No CORS issues
+- 💻 Same code works in production
+
+### Web UI Only Development
+
+If you're only working on the frontend and backend is stable:
+
+```bash
+cd internal/ui/web
+npm run dev
+```
+
+Make sure the Go backend is running on port 3021 for API calls to work.
+
+### Backend Only Development
+
+If you're only changing Go code:
+
+```bash
+# Option 1: Manual restart
+go run cmds/cockpit/main.go
+
+# Option 2: Hot reload with Air
+just run-cockpit
+```
+
+**Note:** You need to build the web UI first (`just build-cockpit-web`) for the embedded files to exist.
+
+### Production Build & Test
+
+Build and test the production bundle:
+
+```bash
+# Build everything
+just build-cockpit
+
+# Run production server
+./bin/cockpit
+```
+
+Open `http://localhost:3021` to test the production build.
+
+### Proxy Configuration
+
+The Vite dev server is configured to proxy API requests:
+
+**File:** `internal/ui/web/vite.config.ts`
+
+```typescript
+server: {
+  proxy: {
+    '/api': {
+      target: 'http://localhost:3021',
+      changeOrigin: true
+    }
+  }
+}
+```
+
+This configuration:
+- **Development**: Routes `/api/*` from port 5173 → 3021
+- **Production**: Not used (single server, no proxy needed)
 
 ## Architecture
 
@@ -321,7 +441,7 @@ Request
 
 ```
 ┌─────────────────────────────────────┐
-│     Cockpit Go Server (Port 3020)   │
+│     Cockpit Go Server (Port 3021)   │
 │                                     │
 │  Observability:                     │
 │  • Structured Logging (zerolog)     │
@@ -378,11 +498,24 @@ just build-cockpit-web
 
 ### Port already in use
 
-If port 3020 is already in use:
+If port 3021 is already in use:
 
 ```bash
 # Use a different port via environment variable
 MIR_HTTPSERVER_PORT=8080 ./bin/cockpit
+```
+
+**Note:** If you change the backend port, update the Vite proxy configuration in `internal/ui/web/vite.config.ts`:
+
+```typescript
+server: {
+  proxy: {
+    '/api': {
+      target: 'http://localhost:8080',  // Update to match your port
+      changeOrigin: true
+    }
+  }
+}
 ```
 
 ### SPA routing not working

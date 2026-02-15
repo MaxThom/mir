@@ -309,7 +309,7 @@ func (d *ServeCmd) run(
 
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
-	log.Info().Msgf("serve on :%d", cfg.Mir.HttpPort)
+	log.Info().Msgf("serve Cockpit on :%d", cfg.Mir.HttpPort)
 	go func() {
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Err(err).Msg("")
@@ -337,7 +337,7 @@ func (d *ServeCmd) run(
 	}
 
 	// Handle shutdown
-	log.Info().Msg(fmt.Sprintf("%s initialized", AppName))
+	log.Info().Msg(fmt.Sprintf("%s initialized", strings.ToUpper(AppName[:1])+AppName[1:]))
 	health.SetReady()
 	mir_signals.WaitForOsSignals(func() {
 		cancel()
