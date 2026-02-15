@@ -7,6 +7,7 @@
 
 	import { toggleMode } from 'mode-watcher';
 	import { Button } from '$lib/components/ui/button/index.js';
+	import { onMount } from 'svelte';
 
 	let { children } = $props();
 
@@ -15,16 +16,28 @@
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import { sidebarData } from '$lib/data/sidebar-data';
+	import { contextStore } from '$lib/stores/contexts.svelte';
+
+	onMount(async () => {
+		await contextStore.initialize();
+	});
 </script>
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
 
+{#if contextStore.error}
+	<div class="fixed top-0 left-0 right-0 bg-destructive/90 text-destructive-foreground p-4 z-50">
+		<div class="container flex items-center justify-between">
+			<p class="text-sm font-medium">Failed to load contexts: {contextStore.error}</p>
+			<Button onclick={() => contextStore.initialize()} variant="secondary" size="sm">
+				Retry
+			</Button>
+		</div>
+	</div>
+{/if}
+
 <Sidebar.Provider>
-	<AppSidebar
-		user={sidebarData.user}
-		contexts={sidebarData.contexts}
-		navMain={sidebarData.navMain}
-	/>
+	<AppSidebar user={sidebarData.user} navMain={sidebarData.navMain} />
 	<Sidebar.Inset>
 		<header
 			class="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12"

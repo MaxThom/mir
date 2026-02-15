@@ -19,3 +19,8 @@ export type ApiError = {
 	status: number;
 	details?: Record<string, unknown>;
 };
+
+export type ContextsResponse = {
+	currentContext: string;
+	contexts: import('./navigation').Context[];
+};
