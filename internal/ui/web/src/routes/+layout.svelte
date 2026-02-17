@@ -17,6 +17,11 @@
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import { sidebarData } from '$lib/data/sidebar-data';
 	import { contextStore } from '$lib/stores/contexts.svelte';
+	import { page } from '$app/stores';
+	import { generateBreadcrumbs } from '$lib/utils/breadcrumbs';
+
+	// Generate breadcrumbs from current pathname
+	let breadcrumbs = $derived(generateBreadcrumbs($page.url.pathname));
 
 	onMount(async () => {
 		await contextStore.initialize();
@@ -56,13 +61,18 @@
 				<Separator orientation="vertical" class="me-2 data-[orientation=vertical]:h-4" />
 				<Breadcrumb.Root>
 					<Breadcrumb.List>
-						<Breadcrumb.Item class="hidden md:block">
-							<Breadcrumb.Link href="/">Building Your Application</Breadcrumb.Link>
-						</Breadcrumb.Item>
-						<Breadcrumb.Separator class="hidden md:block" />
-						<Breadcrumb.Item>
-							<Breadcrumb.Page>Data Fetching</Breadcrumb.Page>
-						</Breadcrumb.Item>
+						{#each breadcrumbs as crumb, index}
+							<Breadcrumb.Item class="hidden md:block">
+								{#if crumb.isCurrentPage}
+									<Breadcrumb.Page>{crumb.label}</Breadcrumb.Page>
+								{:else}
+									<Breadcrumb.Link href={crumb.href}>{crumb.label}</Breadcrumb.Link>
+								{/if}
+							</Breadcrumb.Item>
+							{#if index < breadcrumbs.length - 1}
+								<Breadcrumb.Separator class="hidden md:block" />
+							{/if}
+						{/each}
 					</Breadcrumb.List>
 				</Breadcrumb.Root>
 			</div>
@@ -70,12 +80,6 @@
 		<div class="flex flex-1 flex-col gap-4 p-4 pt-0">
 			<ModeWatcher />
 			{@render children()}
-			<!-- <div class="grid auto-rows-min gap-4 md:grid-cols-3">
-				<div class="aspect-video rounded-xl bg-muted/50"></div>
-				<div class="aspect-video rounded-xl bg-muted/50"></div>
-				<div class="aspect-video rounded-xl bg-muted/50"></div>
-			</div>
-			<div class="min-h-screen flex-1 rounded-xl bg-muted/50 md:min-h-min"></div> -->
 		</div>
 	</Sidebar.Inset>
 </Sidebar.Provider>

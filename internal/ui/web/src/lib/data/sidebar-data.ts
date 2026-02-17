@@ -14,7 +14,7 @@ export const sidebarData: SidebarData = {
 	navMain: [
 		{
 			title: 'Dashboard',
-			url: '/dashboard',
+			url: '/',
 			icon: SquareTerminalIcon,
 			isActive: true,
 			items: []

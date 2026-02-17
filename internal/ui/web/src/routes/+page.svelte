@@ -8,5 +8,5 @@
 </script>
 
 <div class="flex min-h-screen items-center justify-center">
-	<p class="text-muted-foreground">Redirecting to dashboard...</p>
+	<p class="text-muted-foreground"></p>
 </div>
