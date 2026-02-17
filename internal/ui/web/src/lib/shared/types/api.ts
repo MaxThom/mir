@@ -22,5 +22,5 @@ export type ApiError = {
 
 export type ContextsResponse = {
 	currentContext: string;
-	contexts: import('./navigation').Context[];
+	contexts: import('$lib/domains/contexts/types/types').Context[];
 };

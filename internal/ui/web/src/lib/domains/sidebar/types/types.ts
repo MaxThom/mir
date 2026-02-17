@@ -1,15 +1,9 @@
-export type User = {
-	name: string;
-	email: string;
-	avatar: string;
-};
+import type { User } from '../../user/types/user';
+import type { Context } from '../../contexts/types/types';
 
-export type Context = {
-	name: string;
-	// This should be `Component` after @lucide/svelte updates types
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	logo: any;
-	plan: string;
+export type NavSubItem = {
+	title: string;
+	url: string;
 };
 
 export type NavItem = {
@@ -19,10 +13,7 @@ export type NavItem = {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	icon?: any;
 	isActive?: boolean;
-	items?: {
-		title: string;
-		url: string;
-	}[];
+	items?: NavSubItem[];
 };
 
 export type NavMainProps = {

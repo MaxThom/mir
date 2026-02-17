@@ -1,4 +1,4 @@
-import type { User } from '$lib/types';
+import type { User } from '../types/user';
 
 /**
  * User store for managing authentication state

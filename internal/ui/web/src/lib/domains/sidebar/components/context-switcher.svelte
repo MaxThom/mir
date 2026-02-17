@@ -5,8 +5,8 @@
 	import ChevronsUpDownIcon from '@lucide/svelte/icons/chevrons-up-down';
 	import ServerIcon from '@lucide/svelte/icons/server';
 	import CheckIcon from '@lucide/svelte/icons/check';
-	import { contextStore } from '$lib/stores/contexts.svelte';
-	import { formatNatsUrl } from '$lib/utils/url-formatters';
+	import { contextStore } from '../../contexts/stores/contexts.svelte';
+	import { formatNatsUrl } from '../../../shared/utils/url-formatters';
 
 	const sidebar = useSidebar();
 </script>
