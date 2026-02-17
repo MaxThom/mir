@@ -11,14 +11,14 @@
 
 	let { children } = $props();
 
-	import AppSidebar from '$lib/components/app-sidebar/app-sidebar.svelte';
+	import AppSidebar from '$lib/domains/sidebar/components/app-sidebar.svelte';
 	import * as Breadcrumb from '$lib/components/ui/breadcrumb/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
-	import { sidebarData } from '$lib/data/sidebar-data';
-	import { contextStore } from '$lib/stores/contexts.svelte';
+	import { sidebarData } from '$lib/domains/sidebar/data/sidebar-data';
+	import { contextStore } from '$lib/domains/contexts/stores/contexts.svelte';
 	import { page } from '$app/stores';
-	import { generateBreadcrumbs } from '$lib/utils/breadcrumbs';
+	import { generateBreadcrumbs } from '$lib/domains/breadcrumbs/utils/breadcrumbs';
 
 	// Generate breadcrumbs from current pathname
 	let breadcrumbs = $derived(generateBreadcrumbs($page.url.pathname));

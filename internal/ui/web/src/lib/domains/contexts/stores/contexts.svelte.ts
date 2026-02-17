@@ -1,5 +1,5 @@
-import type { Context } from '$lib/types';
-import { contextService } from '$lib/services/contexts';
+import type { Context } from '../types/types';
+import { contextService } from '../services/contexts';
 
 /**
  * Context store for managing Mir server contexts

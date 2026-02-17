@@ -1,5 +1,5 @@
-import type { ApiResponse, ApiError } from '$lib/types';
-import { API_CONFIG } from '$lib/constants';
+import type { ApiResponse, ApiError } from '../types/api';
+import { API_CONFIG } from '../constants/config';
 
 /**
  * Base API client for making HTTP requests

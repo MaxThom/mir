@@ -3,7 +3,7 @@ import BotIcon from '@lucide/svelte/icons/bot';
 import FileBraces from '@lucide/svelte/icons/file-braces';
 import CalendarSearch from '@lucide/svelte/icons/calendar-search';
 import SquareTerminalIcon from '@lucide/svelte/icons/square-terminal';
-import type { SidebarData } from '$lib/types';
+import type { SidebarData } from '../types/types';
 
 export const sidebarData: SidebarData = {
 	user: {
@@ -11,6 +11,7 @@ export const sidebarData: SidebarData = {
 		email: 'm@example.com',
 		avatar: '/avatars/shadcn.jpg'
 	},
+	contexts: [],
 	navMain: [
 		{
 			title: 'Dashboard',

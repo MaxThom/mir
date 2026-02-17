@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { HTMLAnchorAttributes } from "svelte/elements";
 	import type { Snippet } from "svelte";
-	import { cn, type WithElementRef } from "$lib/utils.js";
+	import { cn, type WithElementRef } from "$lib/shared/utils/utils";
 
 	let {
 		ref = $bindable(null),
@@ -18,7 +18,7 @@
 		"data-slot": "breadcrumb-link",
 		class: cn("hover:text-foreground transition-colors", className),
 		href,
-		"data-sveltekit-preload-data": href && !href.startsWith('http') && !href.startsWith('#') ? true : undefined,
+		"data-sveltekit-preload-data": (href && !href.startsWith('http') && !href.startsWith('#') ? "" : undefined) as "" | undefined,
 		...restProps,
 	});
 </script>

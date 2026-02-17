@@ -1,5 +1,5 @@
-import { api } from './api';
-import type { ApiResponse, ContextsResponse } from '$lib/types';
+import { api } from '../../../shared/services/api';
+import type { ApiResponse, ContextsResponse } from '../../../shared/types/api';
 
 /**
  * Context service for fetching Mir contexts from the API
