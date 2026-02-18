@@ -8,5 +8,10 @@ plugins:
   - local: protoc-gen-go
     out: pkgs/api/gen/proto
     opt: paths=source_relative
+  - local: protoc-gen-es
+    out: pkgs/web/src/gen/proto
+    opt:
+      - target=ts
+      - import_extension=none
 inputs:
   - directory: pkgs/api/proto

@@ -1,0 +1,44 @@
+{
+  "name": "@mir/sdk",
+  "version": "0.1.0",
+  "description": "TypeScript SDK for Mir IoT Hub",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc && vite build",
+    "test": "vitest",
+    "dev": "vite build --watch",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "mir",
+    "iot",
+    "nats",
+    "typescript",
+    "sdk",
+    "real-time"
+  ],
+  "author": "Mir IoT Hub",
+  "license": "MIT",
+  "dependencies": {
+    "@bufbuild/protobuf": "^2.2.2",
+    "nats.ws": "^1.30.0",
+    "fzstd": "^0.1.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1",
+    "vite-plugin-dts": "^4.3.0",
+    "vitest": "^4.0.18"
+  }
+}
