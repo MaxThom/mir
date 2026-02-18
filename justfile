@@ -168,6 +168,10 @@ tooling:
 protogen:
     ./scripts/protogen.sh
 
+# Build TypeScript SDK
+build-ts-sdk:
+    cd pkgs/web && npm install && npm run build
+
 # Run the certificate manager script
 certs *args:
     ./scripts/generate_certs.sh {{ args }}
