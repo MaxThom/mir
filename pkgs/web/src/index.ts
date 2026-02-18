@@ -4,9 +4,8 @@
  * TypeScript SDK for Mir IoT Hub - Real-time device communication via NATS
  */
 
-// Core exports (to be implemented in Phase 2)
-// export { Mir } from './core/mir';
-// export type { MirOptions } from './core/mir';
+export { Mir } from './mir.js';
+export type { MirOptions } from './mir.js';
 
 // Route exports (to be implemented in Phase 3)
 // export type { ClientRoutes } from './routes/client';
