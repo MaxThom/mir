@@ -22,12 +22,20 @@ build-mir-tiny: build-cockpit
     go build -ldflags="{{ ld_flags }} -s -w" -trimpath -o bin/mir cmds/mir/main.go
 
 # Build cockpit web UI (Svelte)
-build-cockpit:
+build-cockpit: build-ts-sdk
     npm run build --prefix ./internal/ui/web
 
 # Build cockpit Go server binary
 build-cockpit-server: build-cockpit
     go build -ldflags="{{ ld_flags }}" -o bin/cockpit ./cmds/cockpit
+
+# Build TypeScript SDK
+build-ts-sdk:
+    npm run build --prefix ./pkgs/web
+
+install-cockpit:
+    npm install --prefix ./pkgs/web
+    npm install --prefix ./internal/ui/web
 
 # Run core module using Air
 run-core:
@@ -167,10 +175,6 @@ tooling:
 # Run protogen for all protobuf generation
 protogen:
     ./scripts/protogen.sh
-
-# Build TypeScript SDK
-build-ts-sdk:
-    cd pkgs/web && npm install && npm run build
 
 # Run the certificate manager script
 certs *args:
