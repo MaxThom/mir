@@ -11,6 +11,7 @@ import type {
   MsgHdrs,
 } from "@nats-io/nats-core";
 import { ClientRoutes } from "./client";
+import { HeaderTrigger } from "./constants";
 
 export interface MirOptions extends WsConnectionOptions {}
 

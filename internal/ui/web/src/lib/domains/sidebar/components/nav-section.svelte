@@ -46,7 +46,7 @@
 										<Sidebar.MenuSubItem>
 											<Sidebar.MenuSubButton>
 												{#snippet child({ props })}
-													<a href={subItem.url} data-sveltekit-preload-data {...props}>
+													<a href={subItem.url} data-sveltekit-preload-data="" {...props}>
 														<span>{subItem.title}</span>
 													</a>
 												{/snippet}
@@ -62,7 +62,7 @@
 				<Sidebar.MenuItem>
 					<Sidebar.MenuButton tooltipContent={item.title}>
 						{#snippet child({ props })}
-							<a href={item.url} data-sveltekit-preload-data {...props}>
+							<a href={item.url} data-sveltekit-preload-data="" {...props}>
 								{#if item.icon}
 									<item.icon />
 								{/if}

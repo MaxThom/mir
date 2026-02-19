@@ -5,7 +5,7 @@ const HeaderZstdEncoding = "mir-zstd";
 
 // Trigger and routing headers
 const HeaderPreviousTrigger = "mir-previous-trigger";
-const HeaderTrigger = "mir-trigger-chain";
+export const HeaderTrigger = "mir-trigger-chain";
 const HeaderRoute = "mir-route";
 
 // Message metadata headers

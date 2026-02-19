@@ -7,7 +7,7 @@
 
 	import { toggleMode } from 'mode-watcher';
 	import { Button } from '$lib/components/ui/button/index.js';
-	import { onMount } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 
 	let { children } = $props();
 
@@ -17,6 +17,7 @@
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import { sidebarData } from '$lib/domains/sidebar/data/sidebar-data';
 	import { contextStore } from '$lib/domains/contexts/stores/contexts.svelte';
+	import { mirStore } from '$lib/domains/mir/stores/mir.svelte';
 	import { page } from '$app/stores';
 	import { generateBreadcrumbs } from '$lib/domains/breadcrumbs/utils/breadcrumbs';
 
@@ -25,6 +26,13 @@
 
 	onMount(async () => {
 		await contextStore.initialize();
+	});
+
+	$effect(() => {
+		const ctx = contextStore.activeContext;
+		if (ctx) {
+			untrack(() => mirStore.connect(ctx));
+		}
 	});
 </script>
 
