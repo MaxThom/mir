@@ -1,29 +1,24 @@
 <script lang="ts">
-	import type { Device } from '@mir/sdk';
+	import { mirStore } from '$lib/domains/mir/stores/mir.svelte';
+	import { deviceStore } from '$lib/domains/devices/stores/device.svelte';
 
-	let devices = $state<Device[]>([
-		{
-			apiVersion: 'v1alpha',
-			kind: 'Device',
-			meta: {
-				name: 'sensor-01',
-				namespace: 'default'
-			},
-			spec: {
-				deviceId: 'sensor-01',
-				disabled: false
-			},
-			status: {
-				online: true
-			}
-		} as unknown as Device
-	]);
+	$effect(() => {
+		if (mirStore.mir) {
+			deviceStore.loadDevices(mirStore.mir);
+		}
+	});
 </script>
 
 <div class="flex flex-col gap-2 p-4">
-	<ul>
-		{#each devices as device (device?.spec?.deviceId)}
-			<li>🛰️ {device.meta?.name}/{device.meta?.namespace}</li>
-		{/each}
-	</ul>
+	{#if deviceStore.isLoading}
+		<p>Loading devices...</p>
+	{:else if deviceStore.error}
+		<p>Error: {deviceStore.error}</p>
+	{:else}
+		<ul>
+			{#each deviceStore.devices as device (device?.spec?.deviceId)}
+				<li>🛰️ {device.meta?.name}/{device.meta?.namespace}</li>
+			{/each}
+		</ul>
+	{/if}
 </div>

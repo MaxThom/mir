@@ -5,10 +5,10 @@ import {
   ListDeviceRequestSchema,
   ListDeviceResponseSchema,
 } from "./gen/proto/mir_api/v1/core_pb";
-import { ClientSubject } from "./client";
+import { ClientSubject } from "./subjects";
 import { toBinary, fromBinary, create } from "@bufbuild/protobuf";
 
-const listDeviceRoute = new ClientSubject("core", "v1alpha", "listDevices", []);
+const listDeviceRoute = new ClientSubject("core", "v1alpha", "list", []);
 
 export class ListDevice {
   constructor(private readonly mir: Mir) {}
