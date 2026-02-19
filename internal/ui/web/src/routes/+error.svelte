@@ -2,7 +2,7 @@
 	import { page } from '$app/stores';
 	import * as Card from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
-	import { AlertCircle, Home, RefreshCw } from '@lucide/svelte/icons';
+	import { CircleAlert, House, RefreshCw } from '@lucide/svelte/icons';
 
 	function handleRefresh() {
 		window.location.reload();
@@ -13,7 +13,7 @@
 	<Card.Root class="w-full max-w-md">
 		<Card.Header>
 			<div class="flex items-center gap-2">
-				<AlertCircle class="h-6 w-6 text-destructive" />
+				<CircleAlert class="h-6 w-6 text-destructive" />
 				<Card.Title class="text-2xl">
 					{#if $page.status === 404}
 						Page Not Found
@@ -38,13 +38,13 @@
 
 			{#if $page.error?.message && $page.status !== 404}
 				<div class="rounded-lg bg-muted p-3">
-					<p class="text-sm font-mono">{$page.error.message}</p>
+					<p class="font-mono text-sm">{$page.error.message}</p>
 				</div>
 			{/if}
 		</Card.Content>
 		<Card.Footer class="flex gap-2">
 			<Button href="/" variant="default" class="flex-1">
-				<Home class="mr-2 h-4 w-4" />
+				<House class="mr-2 h-4 w-4" />
 				Go Home
 			</Button>
 			<Button onclick={handleRefresh} variant="outline" class="flex-1">
