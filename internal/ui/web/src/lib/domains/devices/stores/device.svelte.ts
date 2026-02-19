@@ -10,12 +10,18 @@ class DeviceStore {
 
 	private requestId = 0;
 
-	async loadDevices(mir: Mir) {
+	reset() {
+		this.devices = [];
+		this.isLoading = false;
+		this.error = null;
+	}
+
+	async loadDevices(mir: Mir, { reset = false } = {}) {
 		const id = ++this.requestId;
 
 		this.isLoading = true;
 		this.error = null;
-		this.devices = [];
+		if (reset) this.devices = [];
 
 		try {
 			const target = create(DeviceTargetSchema, {});

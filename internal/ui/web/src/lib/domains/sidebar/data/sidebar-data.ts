@@ -7,9 +7,9 @@ import type { SidebarData } from '../types/types';
 
 export const sidebarData: SidebarData = {
 	user: {
-		name: 'shadcn',
-		email: 'm@example.com',
-		avatar: '/avatars/shadcn.jpg'
+		name: 'maxthom',
+		email: 'maxthomassin@hotmail.com',
+		avatar: ''
 	},
 	contexts: [],
 	navMain: [
