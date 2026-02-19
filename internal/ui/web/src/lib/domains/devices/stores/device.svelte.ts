@@ -8,16 +8,30 @@ class DeviceStore {
 	isLoading = $state(false);
 	error = $state<string | null>(null);
 
+	private requestId = 0;
+
 	async loadDevices(mir: Mir) {
+		const id = ++this.requestId;
+
 		this.isLoading = true;
 		this.error = null;
+		this.devices = [];
+
 		try {
 			const target = create(DeviceTargetSchema, {});
-			this.devices = await mir.client().listDevices().request(target, false);
+			const devices = await mir.client().listDevices().request(target, false);
+
+			if (id !== this.requestId) return;
+
+			this.devices = devices;
 		} catch (err) {
-			this.error = err instanceof Error ? err.message : 'Failed to load devices';
+			if (id === this.requestId) {
+				this.error = err instanceof Error ? err.message : 'Failed to load devices';
+			}
 		} finally {
-			this.isLoading = false;
+			if (id === this.requestId) {
+				this.isLoading = false;
+			}
 		}
 	}
 }

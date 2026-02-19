@@ -11,31 +11,46 @@ class MirStore {
 	isConnecting = $state(false);
 	error = $state<string | null>(null);
 
+	private connectionId = 0;
+
 	get isConnected(): boolean {
 		return this.mir !== null;
 	}
 
 	async connect(ctx: Context) {
-		if (this.isConnecting) return;
+		const id = ++this.connectionId;
+
 		if (this.mir) {
 			await this.mir.disconnect();
 			this.mir = null;
 		}
+
 		this.isConnecting = true;
 		this.error = null;
+
 		try {
 			const wsUrl = toWsUrl(ctx.target);
-			this.mir = await Mir.connect('cockpit', wsUrl, {
-				maxReconnectAttempts: 0
-			});
+			const mir = await Mir.connect('cockpit', wsUrl, { maxReconnectAttempts: 0 });
+
+			if (id !== this.connectionId) {
+				await mir.disconnect();
+				return;
+			}
+
+			this.mir = mir;
 		} catch (err) {
-			this.error = err instanceof Error ? err.message : 'Connection failed';
+			if (id === this.connectionId) {
+				this.error = err instanceof Error ? err.message : 'Connection failed';
+			}
 		} finally {
-			this.isConnecting = false;
+			if (id === this.connectionId) {
+				this.isConnecting = false;
+			}
 		}
 	}
 
 	async disconnect() {
+		++this.connectionId;
 		if (this.mir) {
 			await this.mir.disconnect();
 			this.mir = null;

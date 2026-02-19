@@ -1,14 +1,14 @@
 // Encoding headers
-const HeaderRequestEncoding = "mir-request-encoding";
-const HeaderContentEncoding = "mir-content-encoding";
-const HeaderZstdEncoding = "mir-zstd";
+export const HeaderRequestEncoding = "mir-request-encoding";
+export const HeaderContentEncoding = "mir-content-encoding";
+export const HeaderZstdEncoding = "mir-zstd";
 
 // Trigger and routing headers
-const HeaderPreviousTrigger = "mir-previous-trigger";
+export const HeaderPreviousTrigger = "mir-previous-trigger";
 export const HeaderTrigger = "mir-trigger-chain";
-const HeaderRoute = "mir-route";
+export const HeaderRoute = "mir-route";
 
 // Message metadata headers
-const HeaderSubject = "mir-subject";
-const HeaderMsgName = "mir-msg";
-const HeaderTime = "mir-time";
+export const HeaderSubject = "mir-subject";
+export const HeaderMsgName = "mir-msg";
+export const HeaderTime = "mir-time";
