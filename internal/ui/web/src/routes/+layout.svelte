@@ -4,6 +4,8 @@
 	import { ModeWatcher } from 'mode-watcher';
 	import SunIcon from '@lucide/svelte/icons/sun';
 	import MoonIcon from '@lucide/svelte/icons/moon';
+	import UnplugIcon from '@lucide/svelte/icons/unplug';
+	import * as Empty from '$lib/components/ui/empty';
 
 	import { toggleMode } from 'mode-watcher';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -39,17 +41,15 @@
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
 
 {#if contextStore.error}
-	<div class="fixed top-0 left-0 right-0 bg-destructive/90 text-destructive-foreground p-4 z-50">
+	<div class="text-destructive-foreground fixed top-0 right-0 left-0 z-50 bg-destructive/90 p-4">
 		<div class="container flex items-center justify-between">
 			<p class="text-sm font-medium">Failed to load contexts: {contextStore.error}</p>
-			<Button onclick={() => contextStore.initialize()} variant="secondary" size="sm">
-				Retry
-			</Button>
+			<Button onclick={() => contextStore.initialize()} variant="secondary" size="sm">Retry</Button>
 		</div>
 	</div>
 {/if}
 
-<Sidebar.Provider>
+<Sidebar.Provider class="h-svh">
 	<AppSidebar user={sidebarData.user} navMain={sidebarData.navMain} />
 	<Sidebar.Inset>
 		<header
@@ -69,7 +69,7 @@
 				<Separator orientation="vertical" class="me-2 data-[orientation=vertical]:h-4" />
 				<Breadcrumb.Root>
 					<Breadcrumb.List>
-						{#each breadcrumbs as crumb, index}
+						{#each breadcrumbs as crumb, i (i)}
 							<Breadcrumb.Item class="hidden md:block">
 								{#if crumb.isCurrentPage}
 									<Breadcrumb.Page>{crumb.label}</Breadcrumb.Page>
@@ -77,7 +77,7 @@
 									<Breadcrumb.Link href={crumb.href}>{crumb.label}</Breadcrumb.Link>
 								{/if}
 							</Breadcrumb.Item>
-							{#if index < breadcrumbs.length - 1}
+							{#if i < breadcrumbs.length - 1}
 								<Breadcrumb.Separator class="hidden md:block" />
 							{/if}
 						{/each}
@@ -85,9 +85,21 @@
 				</Breadcrumb.Root>
 			</div>
 		</header>
-		<div class="flex flex-1 flex-col gap-4 p-4 pt-0">
+		<div class="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4 pt-0">
 			<ModeWatcher />
-			{@render children()}
+			{#if mirStore.error}
+				<Empty.Root>
+					<Empty.Header>
+						<Empty.Media variant="icon">
+							<UnplugIcon class="text-destructive" />
+						</Empty.Media>
+						<Empty.Title>Failed to connect to Mir Context</Empty.Title>
+						<Empty.Description>{mirStore.error}</Empty.Description>
+					</Empty.Header>
+				</Empty.Root>
+			{:else}
+				{@render children()}
+			{/if}
 		</div>
 	</Sidebar.Inset>
 </Sidebar.Provider>
