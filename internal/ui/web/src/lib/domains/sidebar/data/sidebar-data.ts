@@ -1,4 +1,3 @@
-import BookOpenIcon from '@lucide/svelte/icons/book-open';
 import BotIcon from '@lucide/svelte/icons/bot';
 import FileBraces from '@lucide/svelte/icons/file-braces';
 import CalendarSearch from '@lucide/svelte/icons/calendar-search';
@@ -27,7 +26,7 @@ export const sidebarData: SidebarData = {
 			isActive: true,
 			items: [
 				{
-					title: 'All Devices',
+					title: 'List',
 					url: '/devices'
 				},
 				{
@@ -59,25 +58,6 @@ export const sidebarData: SidebarData = {
 				{
 					title: 'List',
 					url: '/events'
-				}
-			]
-		},
-		{
-			title: 'Documentation',
-			url: '/docs',
-			icon: BookOpenIcon,
-			items: [
-				{
-					title: 'Introduction',
-					url: '/docs/introduction'
-				},
-				{
-					title: 'Get Started',
-					url: '/docs/get-started'
-				},
-				{
-					title: 'Tutorials',
-					url: '/docs/tutorials'
 				}
 			]
 		}

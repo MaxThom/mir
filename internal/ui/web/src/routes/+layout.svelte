@@ -5,6 +5,7 @@
 	import SunIcon from '@lucide/svelte/icons/sun';
 	import MoonIcon from '@lucide/svelte/icons/moon';
 	import UnplugIcon from '@lucide/svelte/icons/unplug';
+	import BookOpenIcon from '@lucide/svelte/icons/book-open';
 	import * as Empty from '$lib/components/ui/empty';
 
 	import { toggleMode } from 'mode-watcher';
@@ -20,11 +21,14 @@
 	import { sidebarData } from '$lib/domains/sidebar/data/sidebar-data';
 	import { contextStore } from '$lib/domains/contexts/stores/contexts.svelte';
 	import { mirStore } from '$lib/domains/mir/stores/mir.svelte';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { generateBreadcrumbs } from '$lib/domains/breadcrumbs/utils/breadcrumbs';
+	import { docsStore } from '$lib/domains/docs/stores/docs.svelte';
+	import DocDrawer from '$lib/domains/docs/components/doc-drawer.svelte';
 
 	// Generate breadcrumbs from current pathname
-	let breadcrumbs = $derived(generateBreadcrumbs($page.url.pathname));
+	let breadcrumbs = $derived(generateBreadcrumbs(page.url.pathname));
+	let docsContent = $derived(docsStore.getContent(page.url.pathname));
 
 	onMount(async () => {
 		await contextStore.initialize();
@@ -55,17 +59,8 @@
 		<header
 			class="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12"
 		>
-			<div class="flex items-center gap-2 px-4">
+			<div class="flex flex-1 items-center gap-2 px-4">
 				<Sidebar.Trigger class="-ms-1" />
-				<Button onclick={toggleMode} variant="ghost" size="icon" class="size-7">
-					<SunIcon
-						class="h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-all! dark:scale-0 dark:-rotate-90"
-					/>
-					<MoonIcon
-						class="absolute h-[1.2rem] w-[1.2rem] scale-0 rotate-90 transition-all! dark:scale-100 dark:rotate-0"
-					/>
-					<span class="sr-only">Toggle theme</span>
-				</Button>
 				<Separator orientation="vertical" class="me-2 data-[orientation=vertical]:h-4" />
 				<Breadcrumb.Root>
 					<Breadcrumb.List>
@@ -83,6 +78,22 @@
 						{/each}
 					</Breadcrumb.List>
 				</Breadcrumb.Root>
+			</div>
+			<div class="flex items-center gap-2 px-4">
+				<Separator orientation="vertical" class="data-[orientation=vertical]:h-4" />
+				<Button onclick={toggleMode} variant="ghost" size="icon" class="size-7">
+					<SunIcon
+						class="h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-all! dark:scale-0 dark:-rotate-90"
+					/>
+					<MoonIcon
+						class="absolute h-[1.2rem] w-[1.2rem] scale-0 rotate-90 transition-all! dark:scale-100 dark:rotate-0"
+					/>
+					<span class="sr-only">Toggle theme</span>
+				</Button>
+				<Button onclick={() => docsStore.toggle()} variant="ghost" size="icon" class="size-7">
+					<BookOpenIcon class="size-4" />
+					<span class="sr-only">Toggle documentation</span>
+				</Button>
 			</div>
 		</header>
 		<div class="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4 pt-0">
@@ -103,3 +114,4 @@
 		</div>
 	</Sidebar.Inset>
 </Sidebar.Provider>
+<DocDrawer Content={docsContent} />

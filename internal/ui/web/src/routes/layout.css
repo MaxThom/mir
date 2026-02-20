@@ -111,6 +111,23 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
+/* Shiki dual-theme: light by default, dark under .dark ancestor */
+.shiki,
+.shiki span {
+  color: var(--shiki-light);
+}
+
+.shiki {
+  background-color: var(--color-muted) !important;
+  @apply px-3 py-2 text-xs overflow-x-auto;
+}
+
+:is(.dark *) .shiki,
+:is(.dark *) .shiki span {
+  color: var(--shiki-dark) !important;
+  background-color: var(--shiki-dark-bg) !important;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
