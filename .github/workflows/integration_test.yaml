@@ -23,6 +23,12 @@ jobs:
         with:
           node-version: "25"
 
+      - name: Install WebSDK dependencies
+        run: npm install --prefix ./pkgs/web
+
+      - name: Build WebSDK
+        run: npm run build --prefix ./pkgs/web
+
       - name: Install Web UI dependencies
         run: npm install --prefix ./internal/ui/web
 
