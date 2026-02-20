@@ -57,7 +57,7 @@
 		>
 			<div class="flex items-center gap-2 px-4">
 				<Sidebar.Trigger class="-ms-1" />
-				<Button onclick={toggleMode} variant="link" size="icon">
+				<Button onclick={toggleMode} variant="ghost" size="icon" class="size-7">
 					<SunIcon
 						class="h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-all! dark:scale-0 dark:-rotate-90"
 					/>
