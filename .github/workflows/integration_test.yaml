@@ -8,7 +8,7 @@ on:
     branches: ["main"]
 
 jobs:
-  integration_test:
+  integation-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,25 +16,29 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: "1.24"
+          go-version-file: "go.mod"
+          cache: true
 
-      ## No test related to WebSDK and Web UI for now
-      # - name: Set up Node.js
-      #   uses: actions/setup-node@v4
-      #   with:
-      #     node-version: "25"
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "25"
+          cache: "npm"
+          cache-dependency-path: |
+            pkgs/web/package-lock.json
+            internal/ui/web/package-lock.json
 
-      # - name: Install Web SDK dependencies
-      #   run: npm install --prefix ./pkgs/web
+      - name: Install Web SDK dependencies
+        run: npm install --prefix ./pkgs/web
 
-      # - name: Build Web SDK
-      #   run: npm run build --prefix ./pkgs/web
+      - name: Build Web SDK
+        run: npm run build --prefix ./pkgs/web
 
-      # - name: Install Web UI dependencies
-      #   run: npm install --prefix ./internal/ui/web
+      - name: Install Web UI dependencies
+        run: npm install --prefix ./internal/ui/web
 
-      # - name: Build Web UI
-      #   run: npm run build --prefix ./internal/ui/web
+      - name: Build Web UI
+        run: npm run build --prefix ./internal/ui/web
 
       - name: Build Mir Server
         run: go build -v ./...
