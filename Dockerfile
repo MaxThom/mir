@@ -1,23 +1,31 @@
 ARG BUILDPLATFORM=linux/amd64
-# Web UI build stage
+### Web build stage
 # node 25 not available on arm7 and alpine
 # https://hub.docker.com/_/node
 FROM --platform=$BUILDPLATFORM node:22-alpine AS web-builder
 
 WORKDIR /build
 
-# Copy package files and config files for dependencies installation
+# WebSDK
+COPY pkgs/web/package*.json ./pkgs/web/
+COPY pkgs/web/vite.config.ts ./pkgs/web/
+COPY pkgs/web/tsconfig.json ./pkgs/web/
+RUN npm ci --prefix ./pkgs/web
+
+COPY pkgs/web/src ./pkgs/web/src
+RUN npm run build --prefix ./pkgs/web
+
+# Cockpit
 COPY internal/ui/web/package*.json ./internal/ui/web/
 COPY internal/ui/web/svelte.config.js ./internal/ui/web/
 COPY internal/ui/web/vite.config.ts ./internal/ui/web/
 COPY internal/ui/web/tsconfig.json ./internal/ui/web/
 RUN npm ci --prefix ./internal/ui/web
 
-# Copy web UI source and build
 COPY internal/ui/web ./internal/ui/web
 RUN npm run build --prefix ./internal/ui/web
 
-# Build stage
+#### Mir build stage
 FROM --platform=$BUILDPLATFORM golang:1.24.5-alpine AS builder
 
 # Install build dependencies
@@ -51,7 +59,7 @@ RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build \
     -o mir \
     cmds/mir/main.go
 
-# Runtime stage
+### Mir runtime stage
 FROM alpine:3.19
 
 # Add metadata labels
