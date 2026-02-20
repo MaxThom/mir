@@ -42,6 +42,13 @@ cat $README > $TEMP_FOLDER/windows-arm64/README.md
 cat $README > $TEMP_FOLDER/darwin-amd64/README.md
 cat $README > $TEMP_FOLDER/darwin-arm64/README.md
 
+# Web
+echo "Building Cockpit..."
+npm install --prefix ./pkgs/web
+npm run build --prefix ./pkgs/web
+npm install --prefix ./internal/ui/web
+npm run build --prefix ./internal/ui/web
+
 # Linux amd64
 echo "Building Linux amd64..."
 GOOS=linux GOARCH=amd64 go build -ldflags="$LD_FLAGS" -o "./$TEMP_FOLDER/linux-amd64/${OUTPUT_BINARY}" cmds/mir/main.go
