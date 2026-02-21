@@ -9,6 +9,7 @@ export type { MirOptions } from "./mir";
 
 export * from "./models";
 export * from "./server_core";
+export * from "./server_event";
 export * from "./client";
 
 // Package version

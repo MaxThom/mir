@@ -18,9 +18,8 @@ export const deviceGlobalFilterFn: FilterFn<Device> = (
 		.map(([k, v]) => `${k}=${v}`)
 		.join(' ')
 		.toLowerCase();
-	const hbSeconds = row.original.status?.lastHearthbeat?.seconds;
-	const heartbeat = hbSeconds
-		? new Date(Number(hbSeconds) * 1000).toLocaleString().toLowerCase()
+	const heartbeat = row.original.status?.lastHearthbeat
+		? row.original.status.lastHearthbeat.toLocaleString().toLowerCase()
 		: '';
 
 	return (

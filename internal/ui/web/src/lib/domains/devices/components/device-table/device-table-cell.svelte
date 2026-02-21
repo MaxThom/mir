@@ -74,10 +74,10 @@
 				<Tooltip.Trigger
 					class="cursor-default text-sm text-muted-foreground underline decoration-dotted underline-offset-2 hover:text-foreground"
 				>
-					{relativeTime((cell.getValue() as { seconds: bigint | number }).seconds)}
+					{relativeTime((cell.getValue() as Date).getTime() / 1000)}
 				</Tooltip.Trigger>
 				<Tooltip.Content side="left">
-					{formatFullDate((cell.getValue() as { seconds: bigint | number }).seconds)}
+					{formatFullDate((cell.getValue() as Date).getTime() / 1000)}
 				</Tooltip.Content>
 			</Tooltip.Root>
 		{:else}

@@ -41,15 +41,23 @@ import {
   EventStatusSchema as PEventStatusSchema,
 } from "./gen/proto/mir_api/v1/event_pb";
 
-import type {
-  Device,
+import {
+  Meta,
+  MirObject,
   DeviceTarget,
+  DeviceSpec,
+  DeviceProperties,
+  DeviceSchema,
+  DeviceStatus,
   DeviceStatusEvent,
   PropertiesTime,
-  MirObject,
+  Device,
+  EventSpec,
+  EventStatus,
   MirEvent,
-  EventType,
   EventTarget,
+  DateFilter,
+  type EventType,
 } from "./models";
 
 // ─── Timestamp ────────────────────────────────────────────────────────────────
@@ -71,23 +79,16 @@ export function dateToTimestamp(d: Date | undefined): Timestamp | undefined {
 // ─── Object ───────────────────────────────────────────────────────────────────
 
 export function objectFromProto(o: PObject | undefined): MirObject {
-  if (!o) {
-    return {
-      apiVersion: "mir/v1alpha",
-      kind: "",
-      meta: { name: "", namespace: "", labels: {}, annotations: {} },
-    };
-  }
-  return {
-    apiVersion: o.apiVersion,
-    kind: o.kind,
-    meta: {
-      name: o.meta?.name ?? "",
-      namespace: o.meta?.namespace ?? "",
-      labels: o.meta?.labels ?? {},
-      annotations: o.meta?.annotations ?? {},
-    },
-  };
+  return new MirObject({
+    apiVersion: o?.apiVersion ?? "mir/v1alpha",
+    kind: o?.kind ?? "",
+    meta: new Meta({
+      name: o?.meta?.name ?? "",
+      namespace: o?.meta?.namespace ?? "",
+      labels: o?.meta?.labels ?? {},
+      annotations: o?.meta?.annotations ?? {},
+    }),
+  });
 }
 
 export function objectToProto(o: MirObject): PObject {
@@ -108,12 +109,12 @@ export function objectToProto(o: MirObject): PObject {
 export function deviceTargetFromProto(
   t: PDeviceTarget | undefined,
 ): DeviceTarget {
-  return {
+  return new DeviceTarget({
     ids: t?.ids ?? [],
     names: t?.names ?? [],
     namespaces: t?.namespaces ?? [],
     labels: t?.labels ?? {},
-  };
+  });
 }
 
 export function deviceTargetToProto(t: DeviceTarget): PDeviceTarget {
@@ -142,7 +143,7 @@ function protoPropsTimeToModel(p: PPropertiesTime | undefined): PropertiesTime {
       if (d) reported[k] = d;
     }
   }
-  return { desired, reported };
+  return new PropertiesTime({ desired, reported });
 }
 
 function modelPropsTimeToProto(p: PropertiesTime): PPropertiesTime {
@@ -160,57 +161,47 @@ function modelPropsTimeToProto(p: PropertiesTime): PPropertiesTime {
 }
 
 export function deviceFromProto(d: PDevice | undefined): Device {
-  if (!d) {
-    return {
-      apiVersion: "mir/v1alpha",
-      kind: "device",
-      meta: { name: "", namespace: "", labels: {}, annotations: {} },
-      spec: { deviceId: "" },
-      properties: { desired: {}, reported: {} },
-      status: {
-        schema: { packageNames: [] },
-        properties: { desired: {}, reported: {} },
-        events: [],
-      },
-    };
-  }
+  if (!d) return new Device();
 
-  const events: DeviceStatusEvent[] = (d.status?.events ?? []).map((e) => ({
-    type: e.type as EventType,
-    reason: e.reason,
-    message: e.message,
-    firstAt: timestampToDate(e.firstAt),
-  }));
+  const events: DeviceStatusEvent[] = (d.status?.events ?? []).map(
+    (e) =>
+      new DeviceStatusEvent({
+        type: e.type as EventType,
+        reason: e.reason,
+        message: e.message,
+        firstAt: timestampToDate(e.firstAt),
+      }),
+  );
 
-  return {
+  return new Device({
     apiVersion: d.apiVersion,
     kind: d.kind,
-    meta: {
+    meta: new Meta({
       name: d.meta?.name ?? "",
       namespace: d.meta?.namespace ?? "",
       labels: d.meta?.labels ?? {},
       annotations: d.meta?.annotations ?? {},
-    },
-    spec: {
+    }),
+    spec: new DeviceSpec({
       deviceId: d.spec?.deviceId ?? "",
       disabled: d.spec?.disabled,
-    },
-    properties: {
+    }),
+    properties: new DeviceProperties({
       desired: (d.properties?.desired ?? {}) as Record<string, unknown>,
       reported: (d.properties?.reported ?? {}) as Record<string, unknown>,
-    },
-    status: {
+    }),
+    status: new DeviceStatus({
       online: d.status?.online,
       lastHearthbeat: timestampToDate(d.status?.lastHearthbeat),
-      schema: {
+      schema: new DeviceSchema({
         compressedSchema: d.status?.schema?.compressedSchema,
         packageNames: d.status?.schema?.packageNames ?? [],
         lastSchemaFetch: timestampToDate(d.status?.schema?.lastSchemaFetch),
-      },
+      }),
       properties: protoPropsTimeToModel(d.status?.properties),
       events,
-    },
-  };
+    }),
+  });
 }
 
 export function deviceToProto(d: Device): PDevice {
@@ -265,20 +256,7 @@ export function devicesToProto(devices: Device[]): PDevice[] {
 // ─── Event ────────────────────────────────────────────────────────────────────
 
 export function eventFromProto(e: PEvent | undefined): MirEvent {
-  if (!e) {
-    return {
-      apiVersion: "mir/v1alpha",
-      kind: "event",
-      meta: { name: "", namespace: "", labels: {}, annotations: {} },
-      spec: {
-        type: "normal",
-        reason: "",
-        message: "",
-        relatedObject: objectFromProto(undefined),
-      },
-      status: { count: 0 },
-    };
-  }
+  if (!e) return new MirEvent();
 
   let payload: unknown = undefined;
   if (e.spec?.jsonPayload && e.spec.jsonPayload.length > 0) {
@@ -289,28 +267,28 @@ export function eventFromProto(e: PEvent | undefined): MirEvent {
     }
   }
 
-  return {
+  return new MirEvent({
     apiVersion: e.object?.apiVersion ?? "mir/v1alpha",
     kind: e.object?.kind ?? "event",
-    meta: {
+    meta: new Meta({
       name: e.object?.meta?.name ?? "",
       namespace: e.object?.meta?.namespace ?? "",
       labels: e.object?.meta?.labels ?? {},
       annotations: e.object?.meta?.annotations ?? {},
-    },
-    spec: {
+    }),
+    spec: new EventSpec({
       type: (e.spec?.type ?? "normal") as EventType,
       reason: e.spec?.reason ?? "",
       message: e.spec?.message ?? "",
       payload,
       relatedObject: objectFromProto(e.spec?.relatedObject),
-    },
-    status: {
+    }),
+    status: new EventStatus({
       count: e.status?.count ?? 0,
       firstAt: timestampToDate(e.status?.firstAt),
       lastAt: timestampToDate(e.status?.lastAt),
-    },
-  };
+    }),
+  });
 }
 
 export function eventToProto(e: MirEvent): PEvent {
@@ -351,16 +329,16 @@ export function eventsToProto(events: MirEvent[]): PEvent[] {
 // ─── EventTarget ──────────────────────────────────────────────────────────────
 
 export function eventTargetFromProto(t: PEventTarget | undefined): EventTarget {
-  return {
+  return new EventTarget({
     names: t?.targets?.names ?? [],
     namespaces: t?.targets?.namespaces ?? [],
     labels: t?.targets?.labels ?? {},
-    dateFilter: {
+    dateFilter: new DateFilter({
       from: timestampToDate(t?.filterDate?.from) ?? new Date(0),
       to: timestampToDate(t?.filterDate?.to) ?? new Date(0),
-    },
+    }),
     limit: t?.filterLimit ?? 0,
-  };
+  });
 }
 
 export function eventTargetToProto(t: EventTarget): PEventTarget {

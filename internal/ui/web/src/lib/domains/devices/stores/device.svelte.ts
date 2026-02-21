@@ -1,14 +1,5 @@
-import type { Device } from '@mir/sdk';
-import {
-	DeviceTargetSchema,
-	UpdateDeviceRequestSchema,
-	UpdateDeviceResponseSchema,
-	DeleteDeviceRequestSchema,
-	DeleteDeviceResponseSchema,
-	type UpdateDeviceRequest
-} from '@mir/sdk';
-import { create, toBinary, fromBinary } from '@bufbuild/protobuf';
 import type { Mir } from '@mir/sdk';
+import { Device, DeviceTarget } from '@mir/sdk';
 
 class DeviceStore {
 	devices = $state<Device[]>([]);
@@ -46,20 +37,19 @@ class DeviceStore {
 		this.deviceError = null;
 
 		try {
-			const cached = this.devices.find((d) => d.spec?.deviceId === deviceId);
+			const cached = this.devices.find((d) => d.spec.deviceId === deviceId);
 			if (cached) {
 				this.selectedDevice = cached;
 				this.isLoadingDevice = false;
 				return;
 			}
 
-			const target = create(DeviceTargetSchema, {});
-			const devices = await mir.client().listDevices().request(target, false);
+			const devices = await mir.client().listDevices().request(new DeviceTarget(), false);
 
 			if (id !== this.deviceRequestId) return;
 
 			this.devices = devices;
-			this.selectedDevice = devices.find((d) => d.spec?.deviceId === deviceId) ?? null;
+			this.selectedDevice = devices.find((d) => d.spec.deviceId === deviceId) ?? null;
 			if (!this.selectedDevice) this.deviceError = 'Device not found';
 		} catch (err) {
 			if (id === this.deviceRequestId) {
@@ -72,26 +62,18 @@ class DeviceStore {
 		}
 	}
 
-	async updateDevice(mir: Mir, request: UpdateDeviceRequest) {
+	async updateDevice(mir: Mir, device: Device) {
 		this.isUpdating = true;
 		this.updateError = null;
 
 		try {
-			const subject = `client.${mir.getInstanceName()}.core.v1alpha.update`;
-			const payload = toBinary(UpdateDeviceRequestSchema, request);
-			const msg = await mir.request(subject, payload);
-			const response = fromBinary(UpdateDeviceResponseSchema, msg.data);
-
-			if (response.response.case === 'ok') {
-				const updated = response.response.value.devices[0];
-				if (updated) {
-					this.selectedDevice = updated;
-					this.devices = this.devices.map((d) =>
-						d.spec?.deviceId === updated.spec?.deviceId ? updated : d
-					);
-				}
-			} else if (response.response.case === 'error') {
-				throw new Error(response.response.value);
+			const updated = await mir.client().updateDevices().requestSingle(device);
+			const first = updated[0];
+			if (first) {
+				this.selectedDevice = first;
+				this.devices = this.devices.map((d) =>
+					d.spec.deviceId === first.spec.deviceId ? first : d
+				);
 			}
 		} catch (err) {
 			this.updateError = err instanceof Error ? err.message : 'Failed to update device';
@@ -104,16 +86,10 @@ class DeviceStore {
 	async deleteDevice(mir: Mir, deviceId: string) {
 		this.isDeleting = true;
 		this.deleteError = null;
+
 		try {
-			const request = create(DeleteDeviceRequestSchema, {
-				targets: create(DeviceTargetSchema, { ids: [deviceId] })
-			});
-			const subject = `client.${mir.getInstanceName()}.core.v1alpha.delete`;
-			const payload = toBinary(DeleteDeviceRequestSchema, request);
-			const msg = await mir.request(subject, payload);
-			const response = fromBinary(DeleteDeviceResponseSchema, msg.data);
-			if (response.response.case === 'error') throw new Error(response.response.value);
-			this.devices = this.devices.filter((d) => d.spec?.deviceId !== deviceId);
+			await mir.client().deleteDevices().request(new DeviceTarget({ ids: [deviceId] }));
+			this.devices = this.devices.filter((d) => d.spec.deviceId !== deviceId);
 			this.selectedDevice = null;
 		} catch (err) {
 			this.deleteError = err instanceof Error ? err.message : 'Failed to delete device';
@@ -131,8 +107,7 @@ class DeviceStore {
 		if (reset) this.devices = [];
 
 		try {
-			const target = create(DeviceTargetSchema, {});
-			const devices = await mir.client().listDevices().request(target, false);
+			const devices = await mir.client().listDevices().request(new DeviceTarget(), false);
 
 			if (id !== this.requestId) return;
 
