@@ -27,7 +27,9 @@
 
 <Table.Cell class={cell.column.id === 'actions' ? 'w-px pr-2 whitespace-nowrap' : ''}>
 	{#if cell.column.id === 'name'}
-		<span class="font-medium">{cell.getValue() ?? '—'}</span>
+		<a href="/devices/{row.original.spec?.deviceId}" class="font-medium hover:underline">
+			{cell.getValue() ?? '—'}
+		</a>
 	{:else if cell.column.id === 'namespace'}
 		<Badge variant="outline" class="font-mono text-xs font-normal">
 			{cell.getValue() ?? '—'}

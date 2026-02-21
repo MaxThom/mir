@@ -3,6 +3,8 @@ import {
 	DeviceTargetSchema,
 	UpdateDeviceRequestSchema,
 	UpdateDeviceResponseSchema,
+	DeleteDeviceRequestSchema,
+	DeleteDeviceResponseSchema,
 	type UpdateDeviceRequest
 } from '@mir/sdk';
 import { create, toBinary, fromBinary } from '@bufbuild/protobuf';
@@ -19,6 +21,9 @@ class DeviceStore {
 
 	isUpdating = $state(false);
 	updateError = $state<string | null>(null);
+
+	isDeleting = $state(false);
+	deleteError = $state<string | null>(null);
 
 	private requestId = 0;
 	private deviceRequestId = 0;
@@ -93,6 +98,28 @@ class DeviceStore {
 			throw err;
 		} finally {
 			this.isUpdating = false;
+		}
+	}
+
+	async deleteDevice(mir: Mir, deviceId: string) {
+		this.isDeleting = true;
+		this.deleteError = null;
+		try {
+			const request = create(DeleteDeviceRequestSchema, {
+				targets: create(DeviceTargetSchema, { ids: [deviceId] })
+			});
+			const subject = `client.${mir.getInstanceName()}.core.v1alpha.delete`;
+			const payload = toBinary(DeleteDeviceRequestSchema, request);
+			const msg = await mir.request(subject, payload);
+			const response = fromBinary(DeleteDeviceResponseSchema, msg.data);
+			if (response.response.case === 'error') throw new Error(response.response.value);
+			this.devices = this.devices.filter((d) => d.spec?.deviceId !== deviceId);
+			this.selectedDevice = null;
+		} catch (err) {
+			this.deleteError = err instanceof Error ? err.message : 'Failed to delete device';
+			throw err;
+		} finally {
+			this.isDeleting = false;
 		}
 	}
 
