@@ -159,7 +159,7 @@
 								<span
 									class="absolute top-full left-0 z-50 mt-1 text-xs font-medium whitespace-nowrap text-destructive"
 								>
-									Type <span class="font-mono">name/namespace</span> to confirm.
+									Type <span class="font-mono">name/namespace</span> to confirm deletion.
 								</span>
 							</div>
 							<Button
