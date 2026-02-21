@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { setContext } from 'svelte';
+	import { setContext, tick } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { mirStore } from '$lib/domains/mir/stores/mir.svelte';
 	import { deviceStore } from '$lib/domains/devices/stores/device.svelte';
@@ -8,7 +8,6 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { Spinner } from '$lib/components/ui/spinner';
-	import * as Empty from '$lib/components/ui/empty';
 	import { Separator } from '$lib/components/ui/separator';
 	import { cn } from '$lib/utils';
 	import { relativeTime, formatFullDate } from '$lib/shared/utils/time';
@@ -74,6 +73,7 @@
 		if (!mirStore.mir || !device?.spec?.deviceId) return;
 		try {
 			await deviceStore.deleteDevice(mirStore.mir, device.spec.deviceId);
+			await tick();
 			goto('/devices');
 		} catch {
 			// error shown inline via deviceStore.deleteError
@@ -134,10 +134,10 @@
 						<Tooltip.Trigger
 							class="cursor-default text-xs text-muted-foreground underline decoration-dotted underline-offset-2 hover:text-foreground"
 						>
-							♥ {relativeTime(device.status.lastHearthbeat.seconds)}
+							♥ {relativeTime(device.status.lastHearthbeat.getTime() / 1000)}
 						</Tooltip.Trigger>
 						<Tooltip.Content>
-							Last heartbeat: {formatFullDate(device.status.lastHearthbeat.seconds)}
+							Last heartbeat: {formatFullDate(device.status.lastHearthbeat.getTime() / 1000)}
 						</Tooltip.Content>
 					</Tooltip.Root>
 				{/if}

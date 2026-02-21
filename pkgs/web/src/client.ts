@@ -6,6 +6,7 @@ import {
   UpdateDevice,
   CreateDevices,
 } from "./server_core";
+import { ListEvent } from "./server_event";
 export { ClientSubject } from "./types.js";
 
 export class ClientRoutes {
@@ -26,5 +27,8 @@ export class ClientRoutes {
   }
   createsDevices(): CreateDevices {
     return new CreateDevices(this.mir);
+  }
+  listEvents(): ListEvent {
+    return new ListEvent(this.mir);
   }
 }
