@@ -18,7 +18,12 @@
 	import { cn } from '$lib/utils';
 	import { relativeTime, formatFullDate } from '$lib/shared/utils/time';
 	import * as Tooltip from '$lib/components/ui/tooltip';
+	import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
+	import { EditorView, basicSetup } from 'codemirror';
+	import { yaml as yamlLang } from '@codemirror/lang-yaml';
+	import { oneDark } from '@codemirror/theme-one-dark';
 	import PencilIcon from '@lucide/svelte/icons/pencil';
+	import FileCode2Icon from '@lucide/svelte/icons/file-code-2';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import XIcon from '@lucide/svelte/icons/x';
 	import PlusIcon from '@lucide/svelte/icons/plus';
@@ -98,6 +103,134 @@
 		}
 	}
 
+	// ── YAML editor state ────────────────────────────────────────────────────────
+	let isYamlEditing = $state(false);
+	let yamlContent = $state('');
+	let yamlError = $state<string | null>(null);
+	let isYamlSaving = $state(false);
+	let cmEditorEl = $state<HTMLElement | null>(null);
+	let cmView: EditorView | null = null;
+
+	function tsToIso(ts?: { seconds: bigint }): string | undefined {
+		if (!ts) return undefined;
+		return new Date(Number(ts.seconds) * 1000).toISOString();
+	}
+
+	function openYamlEditor() {
+		if (!device) return;
+
+		const obj: Record<string, unknown> = {
+			apiVersion: device.apiVersion || 'v1',
+			kind: device.kind || 'Device',
+			metadata: {
+				name: device.meta?.name ?? '',
+				namespace: device.meta?.namespace ?? '',
+				...(Object.keys(device.meta?.labels ?? {}).length
+					? { labels: device.meta!.labels }
+					: {}),
+				...(Object.keys(device.meta?.annotations ?? {}).length
+					? { annotations: device.meta!.annotations }
+					: {})
+			},
+			spec: {
+				deviceId: device.spec?.deviceId ?? '',
+				disabled: device.spec?.disabled ?? false
+			}
+		};
+
+		// properties (desired / reported) — read-only on save
+		const desired = device.properties?.desired ?? {};
+		const reported = device.properties?.reported ?? {};
+		if (Object.keys(desired).length || Object.keys(reported).length) {
+			obj.properties = {
+				...(Object.keys(desired).length ? { desired } : {}),
+				...(Object.keys(reported).length ? { reported } : {})
+			};
+		}
+
+		// status — read-only on save
+		const s = device.status;
+		if (s) {
+			obj.status = {
+				online: s.online,
+				...(s.lastHearthbeat ? { lastHeartbeat: tsToIso(s.lastHearthbeat) } : {}),
+				...(s.schema?.packageNames?.length
+					? { schema: { packages: s.schema.packageNames } }
+					: {})
+			};
+		}
+
+		yamlContent = stringifyYaml(obj, { lineWidth: 0 });
+		yamlError = null;
+		isYamlEditing = true;
+	}
+
+	function cancelYaml() {
+		isYamlEditing = false;
+		yamlError = null;
+		cmView?.destroy();
+		cmView = null;
+	}
+
+	async function saveYaml() {
+		if (!mirStore.mir || !device) return;
+		isYamlSaving = true;
+		yamlError = null;
+		try {
+			const text = cmView ? cmView.state.doc.toString() : yamlContent;
+			const parsed = parseYaml(text) as Record<string, unknown>;
+			const meta = (parsed.metadata ?? parsed.meta ?? {}) as Record<string, unknown>;
+			const spec = (parsed.spec ?? {}) as Record<string, unknown>;
+
+			const origLabels = device.meta?.labels ?? {};
+			const newLabelsRaw = (meta.labels ?? {}) as Record<string, string>;
+			const newLabelsMap: Record<string, OptString> = {};
+			for (const [k, v] of Object.entries(newLabelsRaw))
+				newLabelsMap[k] = create(OptStringSchema, { value: String(v) });
+			for (const k of Object.keys(origLabels))
+				if (!(k in newLabelsMap)) newLabelsMap[k] = create(OptStringSchema, {});
+
+			const origAnnotations = device.meta?.annotations ?? {};
+			const newAnnotationsRaw = (meta.annotations ?? {}) as Record<string, string>;
+			const newAnnotationsMap: Record<string, OptString> = {};
+			for (const [k, v] of Object.entries(newAnnotationsRaw))
+				newAnnotationsMap[k] = create(OptStringSchema, { value: String(v) });
+			for (const k of Object.keys(origAnnotations))
+				if (!(k in newAnnotationsMap)) newAnnotationsMap[k] = create(OptStringSchema, {});
+
+			const request: UpdateDeviceRequest = create(UpdateDeviceRequestSchema, {
+				targets: create(DeviceTargetSchema, { ids: [device.spec?.deviceId ?? ''] }),
+				meta: create(UpdateDeviceRequest_MetaSchema, {
+					name: String(meta.name ?? '').trim() || undefined,
+					namespace: String(meta.namespace ?? '').trim() || undefined,
+					labels: newLabelsMap,
+					annotations: newAnnotationsMap
+				}),
+				spec: create(UpdateDeviceRequest_SpecSchema, {
+					disabled: Boolean(spec.disabled ?? false)
+				})
+			});
+
+			await deviceStore.updateDevice(mirStore.mir, request);
+			cancelYaml();
+		} catch (err) {
+			yamlError = err instanceof Error ? err.message : 'Failed to save';
+		} finally {
+			isYamlSaving = false;
+		}
+	}
+
+	$effect(() => {
+		if (isYamlEditing && cmEditorEl) {
+			cmView?.destroy();
+			cmView = new EditorView({
+				doc: yamlContent,
+				extensions: [basicSetup, yamlLang(), oneDark],
+				parent: cmEditorEl
+			});
+		}
+	});
+
 	// ── Events ───────────────────────────────────────────────────────────────────
 	$effect(() => {
 		if (mirStore.mir && device?.meta?.name) {
@@ -162,7 +295,47 @@
 		<div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
 			<!-- ── Device card ──────────────────────────────────────────────────────── -->
 			<Card.Root class="gap-0 py-4">
-				<Card.Content class="space-y-2 px-6">
+				{#if isYamlEditing}
+					<!-- ── YAML editor mode ── -->
+					<Card.Content class="flex flex-col gap-2 px-6">
+						<div class="flex items-center justify-between">
+							<p class="text-xs font-medium tracking-wide text-muted-foreground uppercase">YAML</p>
+							<div class="flex items-center gap-1">
+								<Button
+									variant="ghost"
+									size="sm"
+									onclick={saveYaml}
+									disabled={isYamlSaving}
+									class="h-7 gap-1 text-xs"
+								>
+									{#if isYamlSaving}<Spinner class="size-3" />{:else}<CheckIcon class="size-3" />{/if}
+									Save
+								</Button>
+								<Button
+									variant="ghost"
+									size="sm"
+									onclick={cancelYaml}
+									disabled={isYamlSaving}
+									class="h-7 gap-1 text-xs"
+								>
+									<XIcon class="size-3" />
+									Cancel
+								</Button>
+							</div>
+						</div>
+						{#if yamlError}
+							<p class="rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">
+								{yamlError}
+							</p>
+						{/if}
+						<div
+							bind:this={cmEditorEl}
+							class="overflow-hidden rounded-md border border-input [&_.cm-editor]:min-h-64 [&_.cm-editor]:outline-none [&_.cm-scroller]:font-mono [&_.cm-scroller]:text-xs"
+						></div>
+					</Card.Content>
+				{:else}
+					<!-- ── Normal meta/spec/status view ── -->
+					<Card.Content class="space-y-2 px-6">
 					<!-- ── Meta (+ controls) ── -->
 					<div class="flex items-center justify-between">
 						<p class="text-xs font-medium tracking-wide text-muted-foreground uppercase">Meta</p>
@@ -198,6 +371,10 @@
 								<Button variant="ghost" size="icon-sm" onclick={startEdit} class="size-7">
 									<PencilIcon class="size-3.5" />
 									<span class="sr-only">Edit device</span>
+								</Button>
+								<Button variant="ghost" size="icon-sm" onclick={openYamlEditor} class="size-7">
+									<FileCode2Icon class="size-3.5" />
+									<span class="sr-only">Edit as YAML</span>
 								</Button>
 							</div>
 						{/if}
@@ -459,6 +636,7 @@
 						</div>
 					</div>
 				</Card.Content>
+				{/if}
 			</Card.Root>
 
 			<!-- ── Properties card ────────────────────────────────────────────────── -->
