@@ -24,6 +24,7 @@
 	import { generateBreadcrumbs } from '$lib/domains/breadcrumbs/utils/breadcrumbs';
 	import { docsStore } from '$lib/domains/docs/stores/docs.svelte';
 	import DocDrawer from '$lib/domains/docs/components/doc-drawer.svelte';
+	import { editorPrefs } from '$lib/shared/stores/editor-prefs.svelte';
 
 	// Generate breadcrumbs from current pathname
 	let breadcrumbs = $derived(generateBreadcrumbs(page.url.pathname));
@@ -78,6 +79,9 @@
 			</div>
 			<div class="flex items-center gap-2 px-4">
 				<Separator orientation="vertical" class="data-[orientation=vertical]:h-4" />
+				<Button onclick={() => editorPrefs.setUtc(!editorPrefs.utc)} variant="ghost" class="h-7 w-12 px-2 font-mono text-[10px]">
+					{editorPrefs.utc ? 'UTC' : 'LOCAL'}
+				</Button>
 				<Button onclick={toggleMode} variant="ghost" size="icon" class="size-7">
 					<SunIcon
 						class="h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-all! dark:scale-0 dark:-rotate-90"

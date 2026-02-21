@@ -11,6 +11,7 @@
 	import { Separator } from '$lib/components/ui/separator';
 	import { cn } from '$lib/utils';
 	import { relativeTime, formatFullDate } from '$lib/shared/utils/time';
+	import { editorPrefs } from '$lib/shared/stores/editor-prefs.svelte';
 	import { Input } from '$lib/components/ui/input';
 	import UnplugIcon from '@lucide/svelte/icons/unplug';
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
@@ -137,7 +138,7 @@
 							♥ {relativeTime(device.status.lastHearthbeat.getTime() / 1000)}
 						</Tooltip.Trigger>
 						<Tooltip.Content>
-							Last heartbeat: {formatFullDate(device.status.lastHearthbeat.getTime() / 1000)}
+							Last heartbeat: {formatFullDate(device.status.lastHearthbeat.getTime() / 1000, editorPrefs.utc)}
 						</Tooltip.Content>
 					</Tooltip.Root>
 				{/if}

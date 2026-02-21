@@ -8,6 +8,8 @@ export function relativeTime(seconds: bigint | number): string {
 	return `${Math.floor(hours / 24)}d ago`;
 }
 
-export function formatFullDate(seconds: bigint | number): string {
-	return new Date(Number(seconds) * 1000).toLocaleString();
+export function formatFullDate(seconds: bigint | number, utc = false): string {
+	const date = new Date(Number(seconds) * 1000);
+	if (utc) return date.toLocaleString(undefined, { timeZone: 'UTC' }) + ' UTC';
+	return date.toLocaleString();
 }

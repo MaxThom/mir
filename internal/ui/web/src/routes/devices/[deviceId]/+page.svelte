@@ -647,7 +647,7 @@
 											{relativeTime(device.status.lastHearthbeat.getTime() / 1000)}
 										</Tooltip.Trigger>
 										<Tooltip.Content>
-											{formatFullDate(device.status.lastHearthbeat.getTime() / 1000)}
+											{formatFullDate(device.status.lastHearthbeat.getTime() / 1000, editorPrefs.utc)}
 										</Tooltip.Content>
 									</Tooltip.Root>
 								{:else}
@@ -674,7 +674,7 @@
 												fetched {relativeTime(device.status.schema.lastSchemaFetch.getTime() / 1000)}
 											</Tooltip.Trigger>
 											<Tooltip.Content>
-												{formatFullDate(device.status.schema.lastSchemaFetch.getTime() / 1000)}
+												{formatFullDate(device.status.schema.lastSchemaFetch.getTime() / 1000, editorPrefs.utc)}
 											</Tooltip.Content>
 										</Tooltip.Root>
 									{/if}
@@ -709,9 +709,12 @@
 													<div class="flex items-center gap-1.5">
 														<span class="font-mono text-xs text-muted-foreground">{k}</span>
 														{#if device?.status?.properties?.desired?.[k]}
-															<span class="text-[10px] text-muted-foreground/60">
-																{relativeTime(device.status.properties.desired[k].getTime() / 1000)}
-															</span>
+															<Tooltip.Root>
+																<Tooltip.Trigger class="cursor-default text-[10px] text-muted-foreground/60 underline decoration-dotted underline-offset-2">
+																	{relativeTime(device.status.properties.desired[k].getTime() / 1000)}
+																</Tooltip.Trigger>
+																<Tooltip.Content>{formatFullDate(device.status.properties.desired[k].getTime() / 1000, editorPrefs.utc)}</Tooltip.Content>
+															</Tooltip.Root>
 														{/if}
 													</div>
 													<JsonValue value={v} />
@@ -740,9 +743,12 @@
 															<CircleCheckBigIcon class="size-3 text-emerald-500" />
 														{/if}
 														{#if device?.status?.properties?.reported?.[k]}
-															<span class="text-[10px] text-muted-foreground/60">
-																{relativeTime(device.status.properties.reported[k].getTime() / 1000)}
-															</span>
+															<Tooltip.Root>
+																<Tooltip.Trigger class="cursor-default text-[10px] text-muted-foreground/60 underline decoration-dotted underline-offset-2">
+																	{relativeTime(device.status.properties.reported[k].getTime() / 1000)}
+																</Tooltip.Trigger>
+																<Tooltip.Content>{formatFullDate(device.status.properties.reported[k].getTime() / 1000, editorPrefs.utc)}</Tooltip.Content>
+															</Tooltip.Root>
 														{/if}
 													</div>
 													<JsonValue value={v} />
@@ -812,7 +818,7 @@
 												{relativeTime(event.status.lastAt.getTime() / 1000)}
 											</Tooltip.Trigger>
 											<Tooltip.Content
-												>{formatFullDate(event.status.lastAt.getTime() / 1000)}</Tooltip.Content
+												>{formatFullDate(event.status.lastAt.getTime() / 1000, editorPrefs.utc)}</Tooltip.Content
 											>
 										</Tooltip.Root>
 									{/if}

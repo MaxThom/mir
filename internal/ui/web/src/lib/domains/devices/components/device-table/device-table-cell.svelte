@@ -13,6 +13,7 @@
 	import { cn } from '$lib/utils';
 	import type { Device } from '@mir/sdk';
 	import { relativeTime, formatFullDate } from '$lib/shared/utils/time';
+	import { editorPrefs } from '$lib/shared/stores/editor-prefs.svelte';
 
 	const DEVICE_ACTIONS = [
 		{ icon: ActivityIcon, label: 'Telemetry', path: 'telemetry' },
@@ -77,7 +78,7 @@
 					{relativeTime((cell.getValue() as Date).getTime() / 1000)}
 				</Tooltip.Trigger>
 				<Tooltip.Content side="left">
-					{formatFullDate((cell.getValue() as Date).getTime() / 1000)}
+					{formatFullDate((cell.getValue() as Date).getTime() / 1000, editorPrefs.utc)}
 				</Tooltip.Content>
 			</Tooltip.Root>
 		{:else}
