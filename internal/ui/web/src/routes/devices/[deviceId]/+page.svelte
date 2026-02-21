@@ -38,6 +38,7 @@
 	import { eventStore } from '$lib/domains/events/stores/event.svelte';
 	import { JsonValue } from '$lib/components/ui/json-value';
 	import { editorPrefs } from '$lib/shared/stores/editor-prefs.svelte';
+	import { mode } from 'mode-watcher';
 
 	const ctx = getContext<{ device: Device | null }>('device');
 	let device = $derived(ctx.device);
@@ -118,6 +119,7 @@
 	let cmView: EditorView | null = null;
 	const vimCompartment = new Compartment();
 	const langCompartment = new Compartment();
+	const themeCompartment = new Compartment();
 
 	function tsToIso(ts?: { seconds: bigint }): string | undefined {
 		if (!ts) return undefined;
@@ -261,12 +263,19 @@
 				extensions: [
 					vimCompartment.of(isVimMode ? vim() : []),
 					langCompartment.of(isJsonMode ? jsonLang() : yamlLang()),
-					basicSetup,
-					oneDark
+					themeCompartment.of(mode.current === 'dark' ? oneDark : []),
+					basicSetup
 				],
 				parent: cmEditorEl
 			});
 			cmView.focus();
+		}
+	});
+
+	$effect(() => {
+		const isDark = mode.current === 'dark';
+		if (cmView) {
+			cmView.dispatch({ effects: themeCompartment.reconfigure(isDark ? oneDark : []) });
 		}
 	});
 
