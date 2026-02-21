@@ -266,6 +266,7 @@
 				],
 				parent: cmEditorEl
 			});
+			cmView.focus();
 		}
 	});
 
