@@ -20,8 +20,11 @@
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 	import { EditorView, basicSetup } from 'codemirror';
+	import { Compartment } from '@codemirror/state';
 	import { yaml as yamlLang } from '@codemirror/lang-yaml';
+	import { json as jsonLang } from '@codemirror/lang-json';
 	import { oneDark } from '@codemirror/theme-one-dark';
+	import { vim, Vim } from '@replit/codemirror-vim';
 	import PencilIcon from '@lucide/svelte/icons/pencil';
 	import FileCode2Icon from '@lucide/svelte/icons/file-code-2';
 	import CheckIcon from '@lucide/svelte/icons/check';
@@ -34,6 +37,7 @@
 	import { deviceStore } from '$lib/domains/devices/stores/device.svelte';
 	import { eventStore } from '$lib/domains/events/stores/event.svelte';
 	import { JsonValue } from '$lib/components/ui/json-value';
+	import { editorPrefs } from '$lib/shared/stores/editor-prefs.svelte';
 
 	const ctx = getContext<{ device: Device | null }>('device');
 	let device = $derived(ctx.device);
@@ -108,8 +112,12 @@
 	let yamlContent = $state('');
 	let yamlError = $state<string | null>(null);
 	let isYamlSaving = $state(false);
+	let isVimMode = $derived(editorPrefs.vim);
+	let isJsonMode = $derived(editorPrefs.json);
 	let cmEditorEl = $state<HTMLElement | null>(null);
 	let cmView: EditorView | null = null;
+	const vimCompartment = new Compartment();
+	const langCompartment = new Compartment();
 
 	function tsToIso(ts?: { seconds: bigint }): string | undefined {
 		if (!ts) return undefined;
@@ -160,7 +168,9 @@
 			};
 		}
 
-		yamlContent = stringifyYaml(obj, { lineWidth: 0 });
+		yamlContent = isJsonMode
+			? JSON.stringify(obj, null, 2)
+			: stringifyYaml(obj, { lineWidth: 0 });
 		yamlError = null;
 		isYamlEditing = true;
 	}
@@ -178,7 +188,7 @@
 		yamlError = null;
 		try {
 			const text = cmView ? cmView.state.doc.toString() : yamlContent;
-			const parsed = parseYaml(text) as Record<string, unknown>;
+			const parsed = (isJsonMode ? JSON.parse(text) : parseYaml(text)) as Record<string, unknown>;
 			const meta = (parsed.metadata ?? parsed.meta ?? {}) as Record<string, unknown>;
 			const spec = (parsed.spec ?? {}) as Record<string, unknown>;
 
@@ -220,12 +230,40 @@
 		}
 	}
 
+	function toggleVim() {
+		editorPrefs.setVim(!isVimMode);
+		cmView?.dispatch({
+			effects: vimCompartment.reconfigure(!isVimMode ? vim() : [])
+		});
+	}
+
+	function toggleFormat() {
+		if (!cmView) return;
+		const text = cmView.state.doc.toString();
+		try {
+			yamlContent = isJsonMode
+				? stringifyYaml(JSON.parse(text), { lineWidth: 0 })
+				: JSON.stringify(parseYaml(text), null, 2);
+		} catch {
+			yamlContent = text;
+		}
+		editorPrefs.setJson(!isJsonMode);
+		// $effect batches both state changes and recreates the editor with new content + language
+	}
+
 	$effect(() => {
 		if (isYamlEditing && cmEditorEl) {
+			Vim.defineEx('write', 'w', () => saveYaml());
+			Vim.defineEx('quit', 'q', () => cancelYaml());
 			cmView?.destroy();
 			cmView = new EditorView({
 				doc: yamlContent,
-				extensions: [basicSetup, yamlLang(), oneDark],
+				extensions: [
+					vimCompartment.of(isVimMode ? vim() : []),
+					langCompartment.of(isJsonMode ? jsonLang() : yamlLang()),
+					basicSetup,
+					oneDark
+				],
 				parent: cmEditorEl
 			});
 		}
@@ -299,7 +337,30 @@
 					<!-- ── YAML editor mode ── -->
 					<Card.Content class="flex flex-col gap-2 px-6">
 						<div class="flex items-center justify-between">
-							<p class="text-xs font-medium tracking-wide text-muted-foreground uppercase">YAML</p>
+							<div class="flex items-center gap-2">
+								<div class="flex overflow-hidden rounded border border-input font-mono text-[10px]">
+									<button
+										onclick={() => isJsonMode && toggleFormat()}
+										class="px-2 py-0.5 transition-colors {!isJsonMode
+											? 'bg-secondary text-secondary-foreground'
+											: 'text-muted-foreground hover:text-foreground'}"
+									>YAML</button>
+									<button
+										onclick={() => !isJsonMode && toggleFormat()}
+										class="px-2 py-0.5 transition-colors {isJsonMode
+											? 'bg-secondary text-secondary-foreground'
+											: 'text-muted-foreground hover:text-foreground'}"
+									>JSON</button>
+								</div>
+								<button
+									onclick={toggleVim}
+									class="rounded px-2 py-0.5 font-mono text-[10px] transition-colors {isVimMode
+										? 'bg-secondary text-secondary-foreground'
+										: 'text-muted-foreground hover:text-foreground'}"
+								>
+									VIM
+								</button>
+							</div>
 							<div class="flex items-center gap-1">
 								<Button
 									variant="ghost"
