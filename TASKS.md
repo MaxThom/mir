@@ -6,6 +6,7 @@
 
 - [ ] Add deviceid to badger
 - [ ] core bug with reconnect of loading devices
+- [ ] boolean false not get written in db
 
 ### Features
 

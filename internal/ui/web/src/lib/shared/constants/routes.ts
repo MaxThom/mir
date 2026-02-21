@@ -9,6 +9,11 @@ export const ROUTES = {
 	DEVICES: {
 		LIST: '/devices',
 		DETAIL: (id: string) => `/devices/${id}`,
+		TELEMETRY: (id: string) => `/devices/${id}/telemetry`,
+		COMMANDS: (id: string) => `/devices/${id}/commands`,
+		CONFIG: (id: string) => `/devices/${id}/configuration`,
+		EVENTS: (id: string) => `/devices/${id}/events`,
+		SCHEMA: (id: string) => `/devices/${id}/schema`,
 		CREATE: '/devices/create'
 	},
 	SCHEMAS: {
