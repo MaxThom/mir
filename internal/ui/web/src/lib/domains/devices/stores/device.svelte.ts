@@ -1,5 +1,6 @@
 import type { Mir } from '@mir/sdk';
 import { Device, DeviceTarget } from '@mir/sdk';
+import { activityStore } from '$lib/domains/activity/stores/activity.svelte';
 
 class DeviceStore {
 	devices = $state<Device[]>([]);
@@ -77,8 +78,22 @@ class DeviceStore {
 					d.spec.deviceId === first.spec.deviceId ? first : d
 				);
 			}
+			activityStore.add({
+				kind: 'success',
+				category: 'Device',
+				title: 'Updated',
+				request: device,
+				response: first
+			});
 		} catch (err) {
 			this.updateError = err instanceof Error ? err.message : 'Failed to update device';
+			activityStore.add({
+				kind: 'error',
+				category: 'Device',
+				title: 'Update Failed',
+				request: device,
+				error: err instanceof Error ? err.message : String(err)
+			});
 			throw err;
 		} finally {
 			this.isUpdating = false;
@@ -90,11 +105,25 @@ class DeviceStore {
 		this.deleteError = null;
 
 		try {
-			await mir.client().deleteDevices().request(new DeviceTarget({ ids: [deviceId] }));
+			const deleted = await mir.client().deleteDevices().request(new DeviceTarget({ ids: [deviceId] }));
 			this.devices = this.devices.filter((d) => d.spec.deviceId !== deviceId);
 			this.selectedDevice = null;
+			activityStore.add({
+				kind: 'success',
+				category: 'Device',
+				title: 'Deleted',
+				request: { deviceId },
+				response: deleted
+			});
 		} catch (err) {
 			this.deleteError = err instanceof Error ? err.message : 'Failed to delete device';
+			activityStore.add({
+				kind: 'error',
+				category: 'Device',
+				title: 'Delete Failed',
+				request: { deviceId },
+				error: err instanceof Error ? err.message : String(err)
+			});
 			throw err;
 		} finally {
 			this.isDeleting = false;
