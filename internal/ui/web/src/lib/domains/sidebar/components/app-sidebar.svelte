@@ -3,7 +3,7 @@
 	import NavSection from './nav-section.svelte';
 	import NavUser from './nav-user.svelte';
 	import ContextSwitcher from './context-switcher.svelte';
-	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
+	import * as Sidebar from '$lib/shared/components/shadcn/sidebar/index.js';
 	import type { ComponentProps } from 'svelte';
 	import type { User } from '../../user/types/user';
 	import type { NavItem } from '../types/types';

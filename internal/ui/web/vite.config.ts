@@ -8,6 +8,10 @@ import { resolve } from 'path';
 export default defineConfig({
 	plugins: [tailwindcss(), sveltekit(), devtoolsJson()],
 
+	build: {
+		chunkSizeWarningLimit: 1000
+	},
+
 	resolve: {
 		alias: {
 			'@mir/sdk': resolve(__dirname, '../../../pkgs/web/src/index.ts')

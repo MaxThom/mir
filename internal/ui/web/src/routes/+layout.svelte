@@ -5,18 +5,18 @@
 	import MoonIcon from '@lucide/svelte/icons/moon';
 	import UnplugIcon from '@lucide/svelte/icons/unplug';
 	import BookOpenIcon from '@lucide/svelte/icons/book-open';
-	import * as Empty from '$lib/components/ui/empty';
+	import * as Empty from '$lib/shared/components/shadcn/empty';
 
 	import { toggleMode } from 'mode-watcher';
-	import { Button } from '$lib/components/ui/button/index.js';
+	import { Button } from '$lib/shared/components/shadcn/button/index.js';
 	import { onMount, untrack } from 'svelte';
 
 	let { children } = $props();
 
 	import AppSidebar from '$lib/domains/sidebar/components/app-sidebar.svelte';
-	import * as Breadcrumb from '$lib/components/ui/breadcrumb/index.js';
-	import { Separator } from '$lib/components/ui/separator/index.js';
-	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
+	import * as Breadcrumb from '$lib/shared/components/shadcn/breadcrumb/index.js';
+	import { Separator } from '$lib/shared/components/shadcn/separator/index.js';
+	import * as Sidebar from '$lib/shared/components/shadcn/sidebar/index.js';
 	import { sidebarData } from '$lib/domains/sidebar/data/sidebar-data';
 	import { contextStore } from '$lib/domains/contexts/stores/contexts.svelte';
 	import { mirStore } from '$lib/domains/mir/stores/mir.svelte';

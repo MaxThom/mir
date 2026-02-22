@@ -5,11 +5,11 @@
 	import SettingsIcon from '@lucide/svelte/icons/settings';
 	import ListIcon from '@lucide/svelte/icons/list';
 	import BracesIcon from '@lucide/svelte/icons/braces';
-	import * as Table from '$lib/components/ui/table';
-	import * as Tooltip from '$lib/components/ui/tooltip';
-	import * as ButtonGroup from '$lib/components/ui/button-group';
-	import { Badge } from '$lib/components/ui/badge';
-	import { Button } from '$lib/components/ui/button';
+	import * as Table from '$lib/shared/components/shadcn/table';
+	import * as Tooltip from '$lib/shared/components/shadcn/tooltip';
+	import * as ButtonGroup from '$lib/shared/components/shadcn/button-group';
+	import { Badge } from '$lib/shared/components/shadcn/badge';
+	import { Button } from '$lib/shared/components/shadcn/button';
 	import { cn } from '$lib/utils';
 	import type { Device } from '@mir/sdk';
 	import { relativeTime, formatFullDate } from '$lib/shared/utils/time';

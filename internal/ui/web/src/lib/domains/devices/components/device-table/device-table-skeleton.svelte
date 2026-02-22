@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { Skeleton } from '$lib/components/ui/skeleton';
-	import * as Table from '$lib/components/ui/table';
+	import { Skeleton } from '$lib/shared/components/shadcn/skeleton';
+	import * as Table from '$lib/shared/components/shadcn/table';
 	import { deviceColumns } from './device-columns';
 </script>
 

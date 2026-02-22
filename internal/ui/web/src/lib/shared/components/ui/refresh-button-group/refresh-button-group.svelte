@@ -1,10 +1,10 @@
 <script lang="ts">
 	import RefreshCwIcon from '@lucide/svelte/icons/refresh-cw';
 	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
-	import { Button } from '$lib/components/ui/button';
-	import * as ButtonGroup from '$lib/components/ui/button-group';
-	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-	import { Spinner } from '$lib/components/ui/spinner';
+	import { Button } from '$lib/shared/components/shadcn/button';
+	import * as ButtonGroup from '$lib/shared/components/shadcn/button-group';
+	import * as DropdownMenu from '$lib/shared/components/shadcn/dropdown-menu';
+	import { Spinner } from '$lib/shared/components/shadcn/spinner';
 	import { cn } from '$lib/utils';
 
 	let {
