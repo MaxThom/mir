@@ -128,6 +128,19 @@
   background-color: var(--shiki-dark-bg) !important;
 }
 
+/* Sonner: color only the description text per toast type */
+[data-sonner-toast][data-type='error'] [data-description] {
+  color: var(--destructive) !important;
+}
+
+[data-sonner-toast][data-type='success'] [data-description] {
+  color: oklch(0.45 0.15 149.6) !important;
+}
+
+:is(.dark *) [data-sonner-toast][data-type='success'] [data-description] {
+  color: oklch(0.72 0.19 149.6) !important;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
