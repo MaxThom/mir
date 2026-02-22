@@ -238,13 +238,6 @@
 					</div>
 				{/if}
 			</div>
-
-			{#if deviceStore.updateError}
-				<p class="rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">
-					{deviceStore.updateError}
-				</p>
-			{/if}
-
 			<!-- Name -->
 			<div class="flex items-center justify-between gap-4">
 				<span class="w-28 shrink-0 text-sm text-muted-foreground">Name</span>

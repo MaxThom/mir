@@ -6,6 +6,7 @@
 	import UnplugIcon from '@lucide/svelte/icons/unplug';
 	import BookOpenIcon from '@lucide/svelte/icons/book-open';
 	import { ActivityLog } from '$lib/domains/activity/components/activity-log';
+	import { Toaster } from '$lib/shared/components/shadcn/sonner';
 	import * as Empty from '$lib/shared/components/shadcn/empty';
 
 	import { toggleMode } from 'mode-watcher';
@@ -118,3 +119,4 @@
 	</Sidebar.Inset>
 </Sidebar.Provider>
 <DocDrawer Content={docsContent} />
+<Toaster position="bottom-left" duration={8000} />

@@ -114,8 +114,8 @@
 
 				<div class="ml-auto flex items-center gap-2">
 					<DeleteButton
-						confirmValue="{device?.meta?.name}/{device?.meta?.namespace}"
-						confirmHint="Type &quot;name/namespace&quot; to confirm deletion."
+						confirmValue="{device?.meta?.name}/{device?.meta.namespace}"
+						confirmHint="Type &quot;{device?.meta?.name}/{device?.meta?.namespace}&quot; to confirm deletion."
 						error={deviceStore.deleteError}
 						isDeleting={deviceStore.isDeleting}
 						onconfirm={async () => {
