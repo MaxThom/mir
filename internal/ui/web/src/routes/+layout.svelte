@@ -5,6 +5,7 @@
 	import MoonIcon from '@lucide/svelte/icons/moon';
 	import UnplugIcon from '@lucide/svelte/icons/unplug';
 	import BookOpenIcon from '@lucide/svelte/icons/book-open';
+	import { ActivityLog } from '$lib/domains/activity/components/activity-log';
 	import * as Empty from '$lib/shared/components/shadcn/empty';
 
 	import { toggleMode } from 'mode-watcher';
@@ -59,6 +60,7 @@
 		>
 			<div class="flex flex-1 items-center gap-2 px-4">
 				<Sidebar.Trigger class="-ms-1" />
+				<ActivityLog />
 				<Separator orientation="vertical" class="me-2 data-[orientation=vertical]:h-4" />
 				<Breadcrumb.Root>
 					<Breadcrumb.List>

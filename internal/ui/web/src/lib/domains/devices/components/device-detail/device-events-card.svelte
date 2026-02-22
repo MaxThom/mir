@@ -8,9 +8,12 @@
 	import { editorPrefs } from '$lib/shared/stores/editor-prefs.svelte';
 	import { getHighlighter } from '$lib/shared/utils/highlighter';
 	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
+	import CopyIcon from '@lucide/svelte/icons/copy';
+	import CheckIcon from '@lucide/svelte/icons/check';
 
 	let expandedEvents = new SvelteSet<number>();
 	let highlightedPayloads = $state<Record<number, string>>({});
+	let copiedIndex = $state<number | null>(null);
 
 	function toggleEvent(i: number) {
 		if (expandedEvents.has(i)) {
@@ -38,6 +41,13 @@
 			lang: 'json',
 			themes: { light: 'github-light', dark: 'github-dark' },
 			defaultColor: false
+		});
+	}
+
+	function copyPayload(i: number, payload: string) {
+		navigator.clipboard.writeText(payload).then(() => {
+			copiedIndex = i;
+			setTimeout(() => (copiedIndex = null), 2000);
 		});
 	}
 </script>
@@ -114,8 +124,19 @@
 								{/if}
 								{#if payload}
 									<div
-										class="overflow-hidden rounded border border-border text-[10px] leading-relaxed [&>pre]:px-3 [&>pre]:py-2 [&>pre]:break-all [&>pre]:whitespace-pre-wrap"
+										class="group relative overflow-hidden rounded border border-border text-[10px] leading-relaxed [&>pre]:px-3 [&>pre]:py-2 [&>pre]:break-all [&>pre]:whitespace-pre-wrap"
 									>
+										<button
+											onclick={() => copyPayload(i, payload)}
+											aria-label="Copy"
+											class="absolute top-1.5 right-1.5 z-10 rounded p-0.5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-foreground"
+										>
+											{#if copiedIndex === i}
+												<CheckIcon class="size-3 text-emerald-500" />
+											{:else}
+												<CopyIcon class="size-3" />
+											{/if}
+										</button>
 										{#if highlightedPayloads[i]}
 											<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 											{@html highlightedPayloads[i]}

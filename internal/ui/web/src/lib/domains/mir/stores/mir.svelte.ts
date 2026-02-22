@@ -1,5 +1,6 @@
 import { Mir } from '@mir/sdk';
 import type { Context } from '../../contexts/types/types';
+import { activityStore } from '$lib/domains/activity/stores/activity.svelte';
 
 // Converts "nats://host:port" → "ws://host:9222"
 function toWsUrl(natsTarget: string): string {
@@ -38,10 +39,22 @@ class MirStore {
 			}
 
 			this.mir = mir;
+			activityStore.add({
+				kind: 'success',
+				category: 'Connection',
+				title: 'Connected',
+				request: { context: ctx.name }
+			});
 		} catch (err) {
 			if (id === this.connectionId) {
 				this.error = err instanceof Error ? err.message : 'Connection failed';
 			}
+			activityStore.add({
+				kind: 'error',
+				category: 'Connection',
+				title: 'Connection Failed',
+				error: err instanceof Error ? err.message : String(err)
+			});
 		} finally {
 			if (id === this.connectionId) {
 				this.isConnecting = false;
@@ -54,6 +67,7 @@ class MirStore {
 		if (this.mir) {
 			await this.mir.disconnect();
 			this.mir = null;
+			activityStore.add({ kind: 'info', category: 'Connection', title: 'Disconnected' });
 		}
 	}
 }
