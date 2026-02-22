@@ -295,6 +295,8 @@ func NewDeviceFromUpdateDeviceReq(d *mir_apiv1.UpdateDeviceRequest) Device {
 			for k, v := range d.Meta.Labels {
 				if v != nil && v.Value != nil {
 					dev.Meta.Labels[k] = *v.Value
+				} else {
+					dev.Meta.Labels[k] = ""
 				}
 			}
 		}
@@ -303,6 +305,8 @@ func NewDeviceFromUpdateDeviceReq(d *mir_apiv1.UpdateDeviceRequest) Device {
 			for k, v := range d.Meta.Annotations {
 				if v != nil && v.Value != nil {
 					dev.Meta.Annotations[k] = *v.Value
+				} else {
+					dev.Meta.Annotations[k] = ""
 				}
 			}
 		}

@@ -31,17 +31,19 @@ class DeviceStore {
 		this.deviceError = null;
 	}
 
-	async loadDevice(mir: Mir, deviceId: string) {
+	async loadDevice(mir: Mir, deviceId: string, forceRefresh = false) {
 		const id = ++this.deviceRequestId;
 		this.isLoadingDevice = true;
 		this.deviceError = null;
 
 		try {
-			const cached = this.devices.find((d) => d.spec.deviceId === deviceId);
-			if (cached) {
-				this.selectedDevice = cached;
-				this.isLoadingDevice = false;
-				return;
+			if (!forceRefresh) {
+				const cached = this.devices.find((d) => d.spec.deviceId === deviceId);
+				if (cached) {
+					this.selectedDevice = cached;
+					this.isLoadingDevice = false;
+					return;
+				}
 			}
 
 			const devices = await mir.client().listDevices().request(new DeviceTarget(), false);
