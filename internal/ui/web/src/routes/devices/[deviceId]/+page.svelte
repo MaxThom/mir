@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { getContext } from 'svelte';
+	import { SvelteSet } from 'svelte/reactivity';
 	import { Device, Meta, DeviceSpec } from '@mir/sdk';
 	import * as Card from '$lib/components/ui/card';
 	import { Badge } from '$lib/components/ui/badge';
@@ -178,16 +179,13 @@
 			const origLabels = device.meta?.labels ?? {};
 			const newLabelsRaw = (meta.labels ?? {}) as Record<string, string>;
 			const newLabels: Record<string, string> = {};
-			for (const [k, v] of Object.entries(newLabelsRaw))
-				newLabels[k] = String(v);
-			for (const k of Object.keys(origLabels))
-				if (!(k in newLabels)) newLabels[k] = 'null';
+			for (const [k, v] of Object.entries(newLabelsRaw)) newLabels[k] = String(v);
+			for (const k of Object.keys(origLabels)) if (!(k in newLabels)) newLabels[k] = 'null';
 
 			const origAnnotations = device.meta?.annotations ?? {};
 			const newAnnotationsRaw = (meta.annotations ?? {}) as Record<string, string>;
 			const newAnnotations: Record<string, string> = {};
-			for (const [k, v] of Object.entries(newAnnotationsRaw))
-				newAnnotations[k] = String(v);
+			for (const [k, v] of Object.entries(newAnnotationsRaw)) newAnnotations[k] = String(v);
 			for (const k of Object.keys(origAnnotations))
 				if (!(k in newAnnotations)) newAnnotations[k] = 'null';
 
@@ -263,22 +261,23 @@
 
 	// ── Events ───────────────────────────────────────────────────────────────────
 	$effect(() => {
-		if (mirStore.mir && device?.meta?.name) {
-			eventStore.loadEvents(mirStore.mir, device.meta.name);
+		if (mirStore.mir && device?.spec?.deviceId) {
+			eventStore.loadEvents(mirStore.mir, device.meta.name, device.meta.namespace);
 		} else {
 			eventStore.reset();
 		}
 	});
 
-	let expandedEvents = $state(new Set<number>());
+	let expandedEvents = new SvelteSet<number>();
 
 	function toggleEvent(i: number) {
 		if (expandedEvents.has(i)) {
 			expandedEvents.delete(i);
 		} else {
 			expandedEvents.add(i);
+			const payload = formatPayload(eventStore.events[i]?.spec?.payload);
+			if (payload) highlightPayload(i, payload);
 		}
-		expandedEvents = new Set(expandedEvents);
 	}
 
 	function formatPayload(payload: unknown): string {
@@ -647,7 +646,10 @@
 											{relativeTime(device.status.lastHearthbeat.getTime() / 1000)}
 										</Tooltip.Trigger>
 										<Tooltip.Content>
-											{formatFullDate(device.status.lastHearthbeat.getTime() / 1000, editorPrefs.utc)}
+											{formatFullDate(
+												device.status.lastHearthbeat.getTime() / 1000,
+												editorPrefs.utc
+											)}
 										</Tooltip.Content>
 									</Tooltip.Root>
 								{:else}
@@ -671,10 +673,15 @@
 											<Tooltip.Trigger
 												class="mt-0.5 cursor-default text-xs text-muted-foreground underline decoration-dotted underline-offset-2 hover:text-foreground"
 											>
-												fetched {relativeTime(device.status.schema.lastSchemaFetch.getTime() / 1000)}
+												fetched {relativeTime(
+													device.status.schema.lastSchemaFetch.getTime() / 1000
+												)}
 											</Tooltip.Trigger>
 											<Tooltip.Content>
-												{formatFullDate(device.status.schema.lastSchemaFetch.getTime() / 1000, editorPrefs.utc)}
+												{formatFullDate(
+													device.status.schema.lastSchemaFetch.getTime() / 1000,
+													editorPrefs.utc
+												)}
 											</Tooltip.Content>
 										</Tooltip.Root>
 									{/if}
@@ -710,10 +717,19 @@
 														<span class="font-mono text-xs text-muted-foreground">{k}</span>
 														{#if device?.status?.properties?.desired?.[k]}
 															<Tooltip.Root>
-																<Tooltip.Trigger class="cursor-default text-[10px] text-muted-foreground/60 underline decoration-dotted underline-offset-2">
-																	{relativeTime(device.status.properties.desired[k].getTime() / 1000)}
+																<Tooltip.Trigger
+																	class="cursor-default text-[10px] text-muted-foreground/60 underline decoration-dotted underline-offset-2"
+																>
+																	{relativeTime(
+																		device.status.properties.desired[k].getTime() / 1000
+																	)}
 																</Tooltip.Trigger>
-																<Tooltip.Content>{formatFullDate(device.status.properties.desired[k].getTime() / 1000, editorPrefs.utc)}</Tooltip.Content>
+																<Tooltip.Content
+																	>{formatFullDate(
+																		device.status.properties.desired[k].getTime() / 1000,
+																		editorPrefs.utc
+																	)}</Tooltip.Content
+																>
 															</Tooltip.Root>
 														{/if}
 													</div>
@@ -744,10 +760,19 @@
 														{/if}
 														{#if device?.status?.properties?.reported?.[k]}
 															<Tooltip.Root>
-																<Tooltip.Trigger class="cursor-default text-[10px] text-muted-foreground/60 underline decoration-dotted underline-offset-2">
-																	{relativeTime(device.status.properties.reported[k].getTime() / 1000)}
+																<Tooltip.Trigger
+																	class="cursor-default text-[10px] text-muted-foreground/60 underline decoration-dotted underline-offset-2"
+																>
+																	{relativeTime(
+																		device.status.properties.reported[k].getTime() / 1000
+																	)}
 																</Tooltip.Trigger>
-																<Tooltip.Content>{formatFullDate(device.status.properties.reported[k].getTime() / 1000, editorPrefs.utc)}</Tooltip.Content>
+																<Tooltip.Content
+																	>{formatFullDate(
+																		device.status.properties.reported[k].getTime() / 1000,
+																		editorPrefs.utc
+																	)}</Tooltip.Content
+																>
 															</Tooltip.Root>
 														{/if}
 													</div>
@@ -818,7 +843,10 @@
 												{relativeTime(event.status.lastAt.getTime() / 1000)}
 											</Tooltip.Trigger>
 											<Tooltip.Content
-												>{formatFullDate(event.status.lastAt.getTime() / 1000, editorPrefs.utc)}</Tooltip.Content
+												>{formatFullDate(
+													event.status.lastAt.getTime() / 1000,
+													editorPrefs.utc
+												)}</Tooltip.Content
 											>
 										</Tooltip.Root>
 									{/if}
@@ -834,7 +862,6 @@
 											</p>
 										{/if}
 										{#if payload}
-											{@const _ = highlightPayload(i, payload)}
 											<div
 												class="overflow-hidden rounded border border-border text-[10px] leading-relaxed [&>pre]:px-3 [&>pre]:py-2 [&>pre]:break-all [&>pre]:whitespace-pre-wrap"
 											>
