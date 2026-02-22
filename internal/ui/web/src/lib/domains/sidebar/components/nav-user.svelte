@@ -1,8 +1,8 @@
 <script lang="ts">
-	import * as Avatar from '$lib/components/ui/avatar/index.js';
-	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
-	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
-	import { useSidebar } from '$lib/components/ui/sidebar/index.js';
+	import * as Avatar from '$lib/shared/components/shadcn/avatar/index.js';
+	import * as DropdownMenu from '$lib/shared/components/shadcn/dropdown-menu/index.js';
+	import * as Sidebar from '$lib/shared/components/shadcn/sidebar/index.js';
+	import { useSidebar } from '$lib/shared/components/shadcn/sidebar/index.js';
 	import BadgeCheckIcon from '@lucide/svelte/icons/badge-check';
 	import BellIcon from '@lucide/svelte/icons/bell';
 	import ChevronsUpDownIcon from '@lucide/svelte/icons/chevrons-up-down';

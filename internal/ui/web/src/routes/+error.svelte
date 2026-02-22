@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import * as Empty from '$lib/components/ui/empty';
-	import { Button } from '$lib/components/ui/button';
+	import * as Empty from '$lib/shared/components/shadcn/empty';
+	import { Button } from '$lib/shared/components/shadcn/button';
 	import { CircleAlert, House, RefreshCw } from '@lucide/svelte/icons';
 
 	function handleRefresh() {

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import * as Sheet from "$lib/components/ui/sheet/index.js";
+	import * as Sheet from "$lib/shared/components/shadcn/sheet/index.js";
 	import { cn, type WithElementRef } from "$lib/shared/utils/utils";
 	import type { HTMLAttributes } from "svelte/elements";
 	import { SIDEBAR_WIDTH_MOBILE } from "./constants.js";

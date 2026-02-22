@@ -1,7 +1,7 @@
 <script lang="ts">
-	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
-	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
-	import { useSidebar } from '$lib/components/ui/sidebar/index.js';
+	import * as DropdownMenu from '$lib/shared/components/shadcn/dropdown-menu/index.js';
+	import * as Sidebar from '$lib/shared/components/shadcn/sidebar/index.js';
+	import { useSidebar } from '$lib/shared/components/shadcn/sidebar/index.js';
 	import ChevronsUpDownIcon from '@lucide/svelte/icons/chevrons-up-down';
 	import ServerIcon from '@lucide/svelte/icons/server';
 	import CheckIcon from '@lucide/svelte/icons/check';

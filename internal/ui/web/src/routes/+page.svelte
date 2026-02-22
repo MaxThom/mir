@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import * as Empty from '$lib/components/ui/empty';
+	import * as Empty from '$lib/shared/components/shadcn/empty';
 	import SatelliteDishIcon from '@lucide/svelte/icons/satellite-dish';
 
 	onMount(() => {

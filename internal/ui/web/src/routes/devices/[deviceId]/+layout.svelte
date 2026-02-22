@@ -5,19 +5,17 @@
 	import { mirStore } from '$lib/domains/mir/stores/mir.svelte';
 	import { deviceStore } from '$lib/domains/devices/stores/device.svelte';
 	import { ROUTES } from '$lib/shared/constants/routes';
-	import { Badge } from '$lib/components/ui/badge';
-	import { Button } from '$lib/components/ui/button';
-	import { Spinner } from '$lib/components/ui/spinner';
-	import { Separator } from '$lib/components/ui/separator';
+	import { Badge } from '$lib/shared/components/shadcn/badge';
+	import { Spinner } from '$lib/shared/components/shadcn/spinner';
+	import { Separator } from '$lib/shared/components/shadcn/separator';
 	import { cn } from '$lib/utils';
 	import { relativeTime, formatFullDate } from '$lib/shared/utils/time';
 	import { editorPrefs } from '$lib/shared/stores/editor-prefs.svelte';
-	import { Input } from '$lib/components/ui/input';
 	import UnplugIcon from '@lucide/svelte/icons/unplug';
-	import Trash2Icon from '@lucide/svelte/icons/trash-2';
-	import XIcon from '@lucide/svelte/icons/x';
-	import { RefreshButtonGroup } from '$lib/components/ui/refresh-button-group';
-	import * as Tooltip from '$lib/components/ui/tooltip';
+	import { RefreshButtonGroup } from '$lib/shared/components/ui/refresh-button-group';
+	import { DeleteButton } from '$lib/shared/components/ui/delete-button';
+	import * as Tooltip from '$lib/shared/components/shadcn/tooltip';
+	import { resolve } from '$app/paths';
 
 	let { children } = $props();
 
@@ -54,37 +52,6 @@
 			deviceStore.loadDevice(mirStore.mir, deviceId);
 		}
 	}
-
-	// ── Delete confirmation ──────────────────────────────────────────────────────
-	let isConfirmingDelete = $state(false);
-	let deleteConfirmText = $state('');
-
-	function startDelete() {
-		deleteConfirmText = '';
-		deviceStore.deleteError = null;
-		isConfirmingDelete = true;
-	}
-
-	function cancelDelete() {
-		isConfirmingDelete = false;
-		deviceStore.deleteError = null;
-	}
-
-	async function confirmDelete() {
-		if (!mirStore.mir || !device?.spec?.deviceId) return;
-		try {
-			await deviceStore.deleteDevice(mirStore.mir, device.spec.deviceId);
-			await tick();
-			goto('/devices');
-		} catch {
-			// error shown inline via deviceStore.deleteError
-		}
-	}
-
-	let deleteNameMatches = $derived(
-		deleteConfirmText ===
-			`${deviceStore.selectedDevice?.meta?.name}/${deviceStore.selectedDevice?.meta?.namespace}`
-	);
 
 	setContext('device', {
 		get device() {
@@ -138,56 +105,26 @@
 							♥ {relativeTime(device.status.lastHearthbeat.getTime() / 1000)}
 						</Tooltip.Trigger>
 						<Tooltip.Content>
-							Last heartbeat: {formatFullDate(device.status.lastHearthbeat.getTime() / 1000, editorPrefs.utc)}
+							Last heartbeat: {formatFullDate(
+								device.status.lastHearthbeat.getTime() / 1000,
+								editorPrefs.utc
+							)}
 						</Tooltip.Content>
 					</Tooltip.Root>
 				{/if}
 
 				<div class="ml-auto flex items-center gap-2">
-					{#if isConfirmingDelete}
-						<div class="flex items-center gap-1.5">
-							{#if deviceStore.deleteError}
-								<span class="text-xs text-destructive">{deviceStore.deleteError}</span>
-							{/if}
-							<div class="relative">
-								<Input
-									bind:value={deleteConfirmText}
-									placeholder="{device?.meta?.name}/{device?.meta?.namespace}"
-									class="h-7 w-48 font-mono text-xs"
-									autofocus
-									onkeydown={(e) => e.key === 'Escape' && cancelDelete()}
-								/>
-								<span
-									class="absolute top-full left-0 z-50 mt-1 text-xs font-medium whitespace-nowrap text-destructive"
-								>
-									Type <span class="font-mono">name/namespace</span> to confirm deletion.
-								</span>
-							</div>
-							<Button
-								variant="destructive"
-								size="sm"
-								class="h-7 text-xs"
-								onclick={confirmDelete}
-								disabled={!deleteNameMatches || deviceStore.isDeleting}
-							>
-								{#if deviceStore.isDeleting}<Spinner class="mr-1 size-3" />{/if}
-								Delete
-							</Button>
-							<Button variant="ghost" size="icon-sm" class="size-7" onclick={cancelDelete}>
-								<XIcon class="size-3.5" />
-							</Button>
-						</div>
-					{:else}
-						<Button
-							variant="ghost"
-							size="icon-sm"
-							class="text-destructive hover:text-destructive"
-							onclick={startDelete}
-						>
-							<Trash2Icon class="size-3.5" />
-							<span class="sr-only">Delete device</span>
-						</Button>
-					{/if}
+					<DeleteButton
+						confirmValue="{device?.meta?.name}/{device?.meta?.namespace}"
+						confirmHint="Type &quot;name/namespace&quot; to confirm deletion."
+						error={deviceStore.deleteError}
+						isDeleting={deviceStore.isDeleting}
+						onconfirm={async () => {
+							await deviceStore.deleteDevice(mirStore.mir!, device!.spec!.deviceId!);
+							await tick();
+							goto(resolve('/devices'));
+						}}
+					/>
 					<RefreshButtonGroup isLoading={deviceStore.isLoadingDevice} onRefresh={handleRefresh} />
 				</div>
 			</div>

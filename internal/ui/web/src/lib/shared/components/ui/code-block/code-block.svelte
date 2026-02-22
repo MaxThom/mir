@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { getHighlighter } from '$lib/utils/highlighter';
+	import { getHighlighter } from '$lib/shared/utils/highlighter';
 	import { Copy, Check } from '@lucide/svelte';
 
 	let { title, code, lang }: { title?: string; code: string; lang: 'go' | 'bash' | 'typescript' } =
@@ -62,6 +62,7 @@
 		</div>
 	</div>
 	{#if highlighted}
+		<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 		{@html highlighted}
 	{:else}
 		<pre class="overflow-x-auto bg-muted px-3 py-2 font-mono text-xs">{code}</pre>

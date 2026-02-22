@@ -1,8 +1,8 @@
 <script lang="ts">
-	import * as Sheet from '$lib/components/ui/sheet/index.js';
-	import * as Tabs from '$lib/components/ui/tabs/index.js';
-	import { Separator } from '$lib/components/ui/separator/index.js';
-	import CodeBlock from '$lib/components/ui/code-block/code-block.svelte';
+	import * as Sheet from '$lib/shared/components/shadcn/sheet/index.js';
+	import * as Tabs from '$lib/shared/components/shadcn/tabs/index.js';
+	import { Separator } from '$lib/shared/components/shadcn/separator/index.js';
+	import CodeBlock from '$lib/shared/components/ui/code-block/code-block.svelte';
 	import { docsStore } from '../stores/docs.svelte';
 	import type { DocTab } from '../types/docs';
 </script>

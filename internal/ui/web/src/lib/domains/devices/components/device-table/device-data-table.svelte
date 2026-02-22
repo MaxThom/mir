@@ -16,10 +16,10 @@
 	import ArrowUpDownIcon from '@lucide/svelte/icons/arrow-up-down';
 	import CircleAlertIcon from '@lucide/svelte/icons/circle-alert';
 	import SatelliteDishIcon from '@lucide/svelte/icons/satellite-dish';
-	import * as Table from '$lib/components/ui/table';
-	import * as Empty from '$lib/components/ui/empty';
-	import * as Card from '$lib/components/ui/card';
-	import * as Tooltip from '$lib/components/ui/tooltip';
+	import * as Table from '$lib/shared/components/shadcn/table';
+	import * as Empty from '$lib/shared/components/shadcn/empty';
+	import * as Card from '$lib/shared/components/shadcn/card';
+	import * as Tooltip from '$lib/shared/components/shadcn/tooltip';
 	import { cn } from '$lib/utils';
 	import type { Device } from '@mir/sdk';
 	import { deviceColumns, deviceGlobalFilterFn } from './device-columns';

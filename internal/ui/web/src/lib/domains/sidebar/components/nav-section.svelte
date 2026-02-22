@@ -1,6 +1,6 @@
 <script lang="ts">
-	import * as Collapsible from '$lib/components/ui/collapsible/index.js';
-	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
+	import * as Collapsible from '$lib/shared/components/shadcn/collapsible/index.js';
+	import * as Sidebar from '$lib/shared/components/shadcn/sidebar/index.js';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import { resolve } from '$app/paths';
 	import type { NavMainProps, NavItem } from '../types/types';

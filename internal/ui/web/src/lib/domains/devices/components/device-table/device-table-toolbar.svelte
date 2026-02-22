@@ -1,8 +1,8 @@
 <script lang="ts">
 	import SearchIcon from '@lucide/svelte/icons/search';
-	import { Input } from '$lib/components/ui/input';
-	import { Badge } from '$lib/components/ui/badge';
-	import { RefreshButtonGroup } from '$lib/components/ui/refresh-button-group';
+	import { Input } from '$lib/shared/components/shadcn/input';
+	import { Badge } from '$lib/shared/components/shadcn/badge';
+	import { RefreshButtonGroup } from '$lib/shared/components/ui/refresh-button-group';
 
 	let {
 		deviceCount,
