@@ -1,13 +1,8 @@
-import { createHighlighter, type Highlighter } from 'shiki';
+import { getSingletonHighlighter } from 'shiki';
 
-let promise: Promise<Highlighter> | null = null;
-
-export function getHighlighter(): Promise<Highlighter> {
-	if (!promise) {
-		promise = createHighlighter({
-			themes: ['github-light', 'github-dark'],
-			langs: ['go', 'bash', 'typescript', 'json']
-		});
-	}
-	return promise;
+export function getHighlighter() {
+	return getSingletonHighlighter({
+		themes: ['github-light', 'github-dark'],
+		langs: ['go', 'bash', 'typescript', 'json']
+	});
 }

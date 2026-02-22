@@ -334,8 +334,8 @@ export function eventTargetFromProto(t: PEventTarget | undefined): EventTarget {
     namespaces: t?.targets?.namespaces ?? [],
     labels: t?.targets?.labels ?? {},
     dateFilter: new DateFilter({
-      from: timestampToDate(t?.filterDate?.from) ?? new Date(0),
-      to: timestampToDate(t?.filterDate?.to) ?? new Date(0),
+      from: timestampToDate(t?.filterDate?.from),
+      to: timestampToDate(t?.filterDate?.to),
     }),
     limit: t?.filterLimit ?? 0,
   });

@@ -13,12 +13,12 @@ class EventStore {
 		this.error = null;
 	}
 
-	async loadEvents(mir: Mir, deviceName: string) {
+	async loadEvents(mir: Mir, name: string, namespace: string) {
 		const id = ++this.requestId;
 		this.isLoading = true;
 		this.error = null;
 		try {
-			const target = new EventTarget({ names: [deviceName], limit: 50 });
+			const target = new EventTarget({ names: [name], namespaces: [namespace], limit: 50 });
 			const events = await mir.client().listEvents().request(target);
 
 			if (id !== this.requestId) return;

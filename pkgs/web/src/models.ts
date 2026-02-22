@@ -45,8 +45,8 @@ export class ObjectTarget {
 }
 
 export class DateFilter {
-  from = new Date(0);
-  to = new Date(0);
+  from?: Date;
+  to?: Date;
 
   constructor(data?: Partial<DateFilter>) {
     if (data) Object.assign(this, data);
