@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Device, Meta, DeviceSpec } from '@mir/sdk';
+	import { Device, Meta, DeviceSpec, DeviceProperties } from '@mir/sdk';
 	import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 	import * as Card from '$lib/shared/components/shadcn/card';
 	import { Badge } from '$lib/shared/components/shadcn/badge';
@@ -14,6 +14,7 @@
 	import { deviceStore } from '$lib/domains/devices/stores/device.svelte';
 	import { mirStore } from '$lib/domains/mir/stores/mir.svelte';
 	import { editorPrefs } from '$lib/shared/stores/editor-prefs.svelte';
+	import { setDeviceLabels } from '../../utils/device';
 	import PencilIcon from '@lucide/svelte/icons/pencil';
 	import FileCode2Icon from '@lucide/svelte/icons/file-code-2';
 	import CheckIcon from '@lucide/svelte/icons/check';
@@ -57,24 +58,8 @@
 	async function saveEdit() {
 		if (!mirStore.mir) return;
 
-		const origLabels = device.meta?.labels ?? {};
-		const newLabels: Record<string, string> = {};
-		for (const { key, value } of editLabels.filter((l) => l.key.trim())) {
-			newLabels[key.trim()] = value;
-		}
-		for (const key of Object.keys(origLabels)) {
-			if (!(key in newLabels)) newLabels[key] = 'null';
-		}
-
-		const origAnnotations = device.meta?.annotations ?? {};
-		const newAnnotations: Record<string, string> = {};
-		for (const { key, value } of editAnnotations.filter((a) => a.key.trim())) {
-			newAnnotations[key.trim()] = value;
-		}
-		for (const key of Object.keys(origAnnotations)) {
-			if (!(key in newAnnotations)) newAnnotations[key] = 'null';
-		}
-
+		const newLabels = setDeviceLabels(device.meta?.labels ?? {}, editLabels);
+		const newAnnotations = setDeviceLabels(device.meta?.annotations ?? {}, editAnnotations);
 		const updated = new Device({
 			...device,
 			meta: new Meta({
@@ -94,13 +79,13 @@
 		}
 	}
 
-	// ── YAML editor state ────────────────────────────────────────────────────────
-	let isYamlEditing = $state(false);
-	let yamlContent = $state('');
-	let isYamlSaving = $state(false);
-	let yamlError = $state<string | null>(null);
+	// ── Code editor state ────────────────────────────────────────────────────────
+	let isCodeEditing = $state(false);
+	let codeContent = $state('');
+	let isCodeSaving = $state(false);
+	let codeError = $state<string | null>(null);
 
-	function openYamlEditor() {
+	function openCodeEditor() {
 		const isJsonMode = editorPrefs.json;
 		const obj: Record<string, unknown> = {
 			apiVersion: device.apiVersion || 'v1',
@@ -137,74 +122,74 @@
 			};
 		}
 
-		yamlContent = isJsonMode ? JSON.stringify(obj, null, 2) : stringifyYaml(obj, { lineWidth: 0 });
-		yamlError = null;
-		isYamlEditing = true;
+		codeContent = isJsonMode ? JSON.stringify(obj, null, 2) : stringifyYaml(obj, { lineWidth: 0 });
+		codeError = null;
+		isCodeEditing = true;
 	}
 
-	function cancelYaml() {
-		isYamlEditing = false;
-		yamlError = null;
+	function cancelCode() {
+		isCodeEditing = false;
+		codeError = null;
 	}
 
-	async function saveYaml(text: string) {
+	async function saveCode(text: string) {
 		if (!mirStore.mir) return;
-		isYamlSaving = true;
-		yamlError = null;
+		isCodeSaving = true;
+		codeError = null;
 		try {
-			const parsed = (
-				editorPrefs.json ? JSON.parse(text) : parseYaml(text)
-			) as Record<string, unknown>;
+			const parsed = (editorPrefs.json ? JSON.parse(text) : parseYaml(text)) as Record<
+				string,
+				unknown
+			>;
 			const meta = (parsed.metadata ?? parsed.meta ?? {}) as Record<string, unknown>;
 			const spec = (parsed.spec ?? {}) as Record<string, unknown>;
+			const parsedProps = (parsed.properties ?? {}) as Record<string, unknown>;
 
-			const origLabels = device.meta?.labels ?? {};
-			const newLabelsRaw = (meta.labels ?? {}) as Record<string, string>;
-			const newLabels: Record<string, string> = {};
-			for (const [k, v] of Object.entries(newLabelsRaw)) newLabels[k] = String(v);
-			for (const k of Object.keys(origLabels)) if (!(k in newLabels)) newLabels[k] = 'null';
-
-			const origAnnotations = device.meta?.annotations ?? {};
-			const newAnnotationsRaw = (meta.annotations ?? {}) as Record<string, string>;
-			const newAnnotations: Record<string, string> = {};
-			for (const [k, v] of Object.entries(newAnnotationsRaw)) newAnnotations[k] = String(v);
-			for (const k of Object.keys(origAnnotations))
-				if (!(k in newAnnotations)) newAnnotations[k] = 'null';
+			const toEditLabels = (raw: unknown) =>
+				Object.entries((raw ?? {}) as Record<string, string>).map(([key, value]) => ({
+					key,
+					value: String(value)
+				}));
 
 			const updated = new Device({
 				...device,
 				meta: new Meta({
 					name: String(meta.name ?? '').trim() || device.meta.name,
 					namespace: String(meta.namespace ?? '').trim() || device.meta.namespace,
-					labels: newLabels,
-					annotations: newAnnotations
+					labels: setDeviceLabels(device.meta?.labels ?? {}, toEditLabels(meta.labels)),
+					annotations: setDeviceLabels(device.meta?.annotations ?? {}, toEditLabels(meta.annotations))
 				}),
 				spec: new DeviceSpec({
 					deviceId: device.spec.deviceId,
 					disabled: Boolean(spec.disabled ?? false)
+				}),
+				properties: new DeviceProperties({
+					desired: ('desired' in parsedProps
+						? parsedProps.desired
+						: device.properties?.desired ?? {}) as Record<string, unknown>
 				})
 			});
 
 			await deviceStore.updateDevice(mirStore.mir, updated);
-			cancelYaml();
+			cancelCode();
 		} catch (err) {
-			yamlError = err instanceof Error ? err.message : 'Failed to save';
+			codeError = err instanceof Error ? err.message : 'Failed to save';
 		} finally {
-			isYamlSaving = false;
+			isCodeSaving = false;
 		}
 	}
 </script>
 
 <Card.Root class="gap-0 py-4">
-	{#if isYamlEditing}
-		<!-- ── YAML editor mode ── -->
+	{#if isCodeEditing}
+		<!-- ── Code editor mode ── -->
 		<Card.Content class="flex flex-col gap-2 px-6">
 			<CodeEditor
-				content={yamlContent}
-				onSave={saveYaml}
-				onCancel={cancelYaml}
-				isSaving={isYamlSaving}
-				error={yamlError}
+				content={codeContent}
+				onSave={saveCode}
+				onCancel={cancelCode}
+				isSaving={isCodeSaving}
+				error={codeError}
 			/>
 		</Card.Content>
 	{:else}
@@ -246,9 +231,9 @@
 							<PencilIcon class="size-3.5" />
 							<span class="sr-only">Edit device</span>
 						</Button>
-						<Button variant="ghost" size="icon-sm" onclick={openYamlEditor} class="size-7">
+						<Button variant="ghost" size="icon-sm" onclick={openCodeEditor} class="size-7">
 							<FileCode2Icon class="size-3.5" />
-							<span class="sr-only">Edit as YAML</span>
+							<span class="sr-only">Edit as YAML/JSON</span>
 						</Button>
 					</div>
 				{/if}
@@ -289,7 +274,12 @@
 				<span class="w-28 shrink-0 pt-0.5 text-sm text-muted-foreground">Labels</span>
 				<div class="flex-1">
 					{#if isEditing}
-						<KeyValueEditor bind:items={editLabels} isEditing variant="badge" addLabel="Add label" />
+						<KeyValueEditor
+							bind:items={editLabels}
+							isEditing
+							variant="badge"
+							addLabel="Add label"
+						/>
 					{:else}
 						<KeyValueEditor items={viewLabels} variant="badge" />
 					{/if}
@@ -308,7 +298,7 @@
 							addLabel="Add annotation"
 						/>
 					{:else}
-						<KeyValueEditor items={viewAnnotations} variant="list" />
+						<div class="mt-1"><KeyValueEditor items={viewAnnotations} variant="list" /></div>
 					{/if}
 				</div>
 			</div>

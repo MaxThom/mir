@@ -141,8 +141,8 @@ export class UpdateDevice {
     const sbj = updateDeviceRoute.WithId(this.mir.getInstanceName());
     const t: DeviceTarget = {
       ids: [d.spec.deviceId],
-      names: [d.meta.name],
-      namespaces: [d.meta.namespace],
+      names: [],
+      namespaces: [],
       labels: {},
     };
 
@@ -156,7 +156,7 @@ export class UpdateDevice {
             k,
             create(
               OptStringSchema,
-              v.toLowerCase() === "null" ? {} : { value: v },
+              v.toLowerCase() === "null" ? undefined : { value: v },
             ),
           ]),
         ),
@@ -165,7 +165,7 @@ export class UpdateDevice {
             k,
             create(
               OptStringSchema,
-              v.toLowerCase() === "null" ? {} : { value: v },
+              v.toLowerCase() === "null" ? undefined : { value: v },
             ),
           ]),
         ),

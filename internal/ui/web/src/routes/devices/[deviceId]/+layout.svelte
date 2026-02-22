@@ -48,8 +48,7 @@
 
 	function handleRefresh() {
 		if (mirStore.mir && deviceId) {
-			deviceStore.resetDevice();
-			deviceStore.loadDevice(mirStore.mir, deviceId);
+			deviceStore.loadDevice(mirStore.mir, deviceId, true);
 		}
 	}
 

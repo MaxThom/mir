@@ -6,6 +6,7 @@
 	import * as DropdownMenu from '$lib/shared/components/shadcn/dropdown-menu';
 	import { Spinner } from '$lib/shared/components/shadcn/spinner';
 	import { cn } from '$lib/utils';
+	import { editorPrefs } from '$lib/shared/stores/editor-prefs.svelte';
 
 	let {
 		isLoading = false,
@@ -23,12 +24,11 @@
 		{ value: 60, label: '1m' }
 	] as const;
 
-	let refreshInterval = $state(10);
-	let intervalLabel = $derived(INTERVALS.find((i) => i.value === refreshInterval)?.label ?? '10s');
+	let intervalLabel = $derived(INTERVALS.find((i) => i.value === editorPrefs.refreshInterval)?.label ?? '10s');
 
 	$effect(() => {
-		if (refreshInterval === 0 || !onRefresh) return;
-		const id = setInterval(() => onRefresh?.(), refreshInterval * 1000);
+		if (editorPrefs.refreshInterval === 0 || !onRefresh) return;
+		const id = setInterval(() => onRefresh?.(), editorPrefs.refreshInterval * 1000);
 		return () => clearInterval(id);
 	});
 </script>
@@ -58,8 +58,8 @@
 		<DropdownMenu.Content align="end" class="min-w-24">
 			{#each INTERVALS as interval (interval.value)}
 				<DropdownMenu.Item
-					class={cn('text-xs', refreshInterval === interval.value && 'font-medium')}
-					onclick={() => (refreshInterval = interval.value)}
+					class={cn('text-xs', editorPrefs.refreshInterval === interval.value && 'font-medium')}
+					onclick={() => editorPrefs.setRefreshInterval(interval.value)}
 				>
 					{interval.label}
 				</DropdownMenu.Item>
