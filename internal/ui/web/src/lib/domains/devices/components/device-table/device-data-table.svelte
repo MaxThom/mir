@@ -138,7 +138,7 @@
 										{#if header.column.getCanSort()}
 											<button
 												onclick={header.column.getToggleSortingHandler()}
-												class="flex cursor-pointer items-center gap-1.5 transition-colors hover:text-foreground"
+												class="flex cursor-pointer items-center gap-1.5 uppercase transition-colors hover:text-foreground"
 											>
 												{header.column.columnDef.header as string}
 												{#if header.column.getIsSorted() === 'asc'}

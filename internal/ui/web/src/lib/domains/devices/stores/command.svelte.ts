@@ -63,9 +63,13 @@ class CommandStore {
 		}
 	}
 
-	reset() {
+	clearResponse() {
 		this.response = null;
 		this.sendError = null;
+	}
+
+	reset() {
+		this.clearResponse();
 		this.commands = [];
 	}
 }
