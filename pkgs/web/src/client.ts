@@ -7,6 +7,7 @@ import {
   CreateDevices,
 } from "./server_core";
 import { ListEvent } from "./server_event";
+import { ListCommands, SendCommand } from "./server_cmd";
 export { ClientSubject } from "./types.js";
 
 export class ClientRoutes {
@@ -30,5 +31,11 @@ export class ClientRoutes {
   }
   listEvents(): ListEvent {
     return new ListEvent(this.mir);
+  }
+  listCommands(): ListCommands {
+    return new ListCommands(this.mir);
+  }
+  sendCommand(): SendCommand {
+    return new SendCommand(this.mir);
   }
 }
