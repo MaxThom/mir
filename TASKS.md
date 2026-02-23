@@ -13,18 +13,19 @@
 - [ ] MCP Server for Mir
   - [ ] https://www.utcp.io  
 - [ ] TinyGo
+- [ ] Cockpit
+  - [ ] New cmd for refresh schema with button next to Delete
+  - [ ] cfg
+  - [ ] tlm
+  - [ ] tlm with charts
+    - [ ] fe
+    - [ ] be
+  - [ ] device list improvement
+    - [ ] select multiple device
+    - [ ] collapsible with device view
 - [ ] Road to Production
   - [ ] update all dependencies
   - [ ] alert & alarms
-  - [ ] Tui
-    - [ ] Cfg
-    - [ ] Cmd
-    - [ ] Tlm
-  - [x] swarm
-    - [ ] test all query with high number of devices
-      - [x] List
-      - [ ] Tlm Grafana Link too long
-      - [x] Bug start server must check to put offline ones
   - [ ] autoreconnect
     - [ ] if modules are down
       - [ ] switch to jetstream for tlm, could be in memory TLM

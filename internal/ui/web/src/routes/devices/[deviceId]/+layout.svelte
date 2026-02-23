@@ -23,9 +23,9 @@
 
 	const TABS = [
 		{ label: 'Overview', href: (id: string) => ROUTES.DEVICES.DETAIL(id) },
+		{ label: 'Configuration', href: (id: string) => ROUTES.DEVICES.CONFIG(id) },
 		{ label: 'Telemetry', href: (id: string) => ROUTES.DEVICES.TELEMETRY(id) },
 		{ label: 'Commands', href: (id: string) => ROUTES.DEVICES.COMMANDS(id) },
-		{ label: 'Config', href: (id: string) => ROUTES.DEVICES.CONFIG(id) },
 		{ label: 'Events', href: (id: string) => ROUTES.DEVICES.EVENTS(id) },
 		{ label: 'Schema', href: (id: string) => ROUTES.DEVICES.SCHEMA(id) }
 	];
@@ -121,7 +121,8 @@
 				<div class="ml-auto flex items-center gap-2">
 					<DeleteButton
 						confirmValue="{device?.meta?.name}/{device?.meta.namespace}"
-						confirmHint="Type &quot;{device?.meta?.name}/{device?.meta?.namespace}&quot; to confirm deletion."
+						confirmHint="Type &quot;{device?.meta?.name}/{device?.meta
+							?.namespace}&quot; to confirm deletion."
 						error={deviceStore.deleteError}
 						isDeleting={deviceStore.isDeleting}
 						onconfirm={async () => {

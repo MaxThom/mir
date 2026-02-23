@@ -16,7 +16,7 @@ export { CommandResponseStatus } from "./gen/proto/mir_api/v1/cmd_pb";
 
 // ─── SDK types ────────────────────────────────────────────────────────────────
 
-export type DeviceId = {
+type DeviceId = {
   id: string;
   name: string;
   namespace: string;
