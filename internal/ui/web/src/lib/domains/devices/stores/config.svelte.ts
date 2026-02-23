@@ -63,9 +63,13 @@ class ConfigStore {
 		}
 	}
 
-	reset() {
+	clearResponse() {
 		this.response = null;
 		this.sendError = null;
+	}
+
+	reset() {
+		this.clearResponse();
 		this.configs = [];
 	}
 }

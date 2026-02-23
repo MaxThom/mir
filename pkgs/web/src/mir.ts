@@ -82,7 +82,6 @@ export class Mir {
       timeout: timeout,
     };
 
-    console.log(headers);
     return this.bus.request(subject, payload, reqOpts);
   }
 

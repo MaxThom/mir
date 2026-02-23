@@ -59,7 +59,7 @@
 
 	function selectConfig(desc: ConfigDescriptor) {
 		selectedConfig = desc;
-		configStore.reset();
+		configStore.clearResponse();
 	}
 
 	function handleSend(dryRun: boolean, text: string) {
@@ -132,7 +132,7 @@
 				response={configStore.response}
 				{statusLabel}
 				{statusClass}
-				onClear={() => configStore.reset()}
+				onClear={() => configStore.clearResponse()}
 			/>
 		{/if}
 	</div>

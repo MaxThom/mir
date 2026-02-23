@@ -47,7 +47,7 @@
 	function selectCommand(desc: CommandDescriptor) {
 		selectedCommand = desc;
 		editorContent = prettyJson(desc.template || '{}');
-		commandStore.reset();
+		commandStore.clearResponse();
 	}
 
 	function handleSend(dryRun: boolean, text: string) {
@@ -116,7 +116,7 @@
 				response={commandStore.response}
 				{statusLabel}
 				{statusClass}
-				onClear={() => commandStore.reset()}
+				onClear={() => commandStore.clearResponse()}
 			/>
 		{/if}
 	</div>
