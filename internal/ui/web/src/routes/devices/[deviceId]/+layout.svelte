@@ -46,15 +46,21 @@
 		}
 	});
 
+	let tabRefreshFn = $state<(() => void) | null>(null);
+
 	function handleRefresh() {
 		if (mirStore.mir && deviceId) {
 			deviceStore.loadDevice(mirStore.mir, deviceId, true);
+			tabRefreshFn?.();
 		}
 	}
 
 	setContext('device', {
 		get device() {
 			return deviceStore.selectedDevice;
+		},
+		setTabRefresh(fn: (() => void) | null) {
+			tabRefreshFn = fn;
 		}
 	});
 
