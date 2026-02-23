@@ -12,7 +12,7 @@
 		statusClass,
 		onClear
 	}: {
-		response: Map<string, ResponseEntry>;
+		response: Map<string, ResponseEntry> | null;
 		statusLabel: (status: number) => string;
 		statusClass: (status: number) => string;
 		onClear: () => void;
@@ -41,7 +41,7 @@
 	}
 
 	$effect(() => {
-		const entries = [...response.entries()];
+		const entries = [...(response ?? new Map()).entries()];
 		getHighlighter().then((hl) => {
 			const next = new SvelteMap<string, string>();
 			for (const [devId, r] of entries) {
@@ -77,8 +77,11 @@
 
 	<!-- Response entries -->
 	<div class="flex-1 overflow-y-auto p-4">
+		{#if !response || response.size === 0}
+			<p class="text-xs text-muted-foreground">No response yet.</p>
+		{/if}
 		<div class="flex flex-col gap-3">
-			{#each [...response.entries()] as [devId, resp] (devId)}
+			{#each [...(response ?? new Map()).entries()] as [devId, resp] (devId)}
 				<div class="rounded-lg border p-3">
 					<div class="mb-2 flex items-center gap-2">
 						<span class="font-mono text-xs text-muted-foreground">{devId}</span>

@@ -107,19 +107,17 @@
 				name={selectedCommand.name}
 				nameError={selectedCommand.error}
 				value={editorContent}
-				hasResponse={commandStore.response !== null}
+				hasResponse={true}
 				isSending={commandStore.isSending}
 				sendError={commandStore.sendError}
 				onSend={handleSend}
 			/>
-			{#if commandStore.response !== null}
-				<ResponsePanel
-					response={commandStore.response}
-					{statusLabel}
-					{statusClass}
-					onClear={() => commandStore.reset()}
-				/>
-			{/if}
+			<ResponsePanel
+				response={commandStore.response}
+				{statusLabel}
+				{statusClass}
+				onClear={() => commandStore.reset()}
+			/>
 		{/if}
 	</div>
 </div>

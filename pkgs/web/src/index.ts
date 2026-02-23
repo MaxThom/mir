@@ -11,6 +11,7 @@ export * from "./models";
 export * from "./server_core";
 export * from "./server_event";
 export * from "./server_cmd";
+export * from "./server_cfg";
 export * from "./client";
 
 // Package version
