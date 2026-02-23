@@ -9,8 +9,12 @@
 
 	let { device }: { device: Device } = $props();
 
-	let desiredProps = $derived(Object.entries(device?.properties?.desired ?? {}));
-	let reportedProps = $derived(Object.entries(device?.properties?.reported ?? {}));
+	let desiredProps = $derived(
+		Object.entries(device?.properties?.desired ?? {}).sort(([a], [b]) => a.localeCompare(b))
+	);
+	let reportedProps = $derived(
+		Object.entries(device?.properties?.reported ?? {}).sort(([a], [b]) => a.localeCompare(b))
+	);
 
 	function isMatchingDesired(key: string, reportedVal: unknown): boolean {
 		const desired = (device?.properties?.desired ?? {}) as Record<string, unknown>;

@@ -88,7 +88,7 @@
 							{/if}{desc.name}</span
 						>
 						<div class="flex flex-wrap gap-1">
-							{#each Object.entries(desc.labels ?? {}) as [k, v] (k)}
+							{#each Object.entries(desc.labels ?? {}).sort(([a], [b]) => a.localeCompare(b)) as [k, v] (k)}
 								<span
 									class="rounded-sm border border-border/60 bg-muted/60 px-1.5 py-px font-mono text-[11px] text-muted-foreground"
 								>

@@ -8,6 +8,7 @@ import {
 } from "./server_core";
 import { ListEvent } from "./server_event";
 import { ListCommands, SendCommand } from "./server_cmd";
+import { ListConfigs, SendConfig } from "./server_cfg";
 export { ClientSubject } from "./types.js";
 
 export class ClientRoutes {
@@ -37,5 +38,11 @@ export class ClientRoutes {
   }
   sendCommand(): SendCommand {
     return new SendCommand(this.mir);
+  }
+  listConfigs(): ListConfigs {
+    return new ListConfigs(this.mir);
+  }
+  sendConfig(): SendConfig {
+    return new SendConfig(this.mir);
   }
 }

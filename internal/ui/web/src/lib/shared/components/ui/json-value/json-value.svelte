@@ -8,7 +8,7 @@
 
 	let entries = $derived<[string, unknown][] | null>(
 		isObject
-			? Object.entries(value as Record<string, unknown>)
+			? Object.entries(value as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b))
 			: isArray
 				? (value as unknown[]).map((v, i) => [String(i), v] as [string, unknown])
 				: null
@@ -18,12 +18,19 @@
 {#if entries !== null && entries.length > 0}
 	<div class="border-l border-border/40 pl-2">
 		{#each entries as [k, v] (k)}
-			<div class="flex gap-1.5">
-				<span class="shrink-0 font-mono text-xs text-muted-foreground">{k}:</span>
-				<span class="min-w-0 font-mono text-xs">
+			{#if v !== null && typeof v === 'object'}
+				<div class="flex flex-col">
+					<span class="shrink-0 font-mono text-xs text-muted-foreground">{k}:</span>
 					<JsonValue value={v} />
-				</span>
-			</div>
+				</div>
+			{:else}
+				<div class="flex gap-1.5">
+					<span class="shrink-0 font-mono text-xs text-muted-foreground">{k}:</span>
+					<span class="min-w-0 font-mono text-xs">
+						<JsonValue value={v} />
+					</span>
+				</div>
+			{/if}
 		{/each}
 	</div>
 {:else if value === null || value === undefined}
