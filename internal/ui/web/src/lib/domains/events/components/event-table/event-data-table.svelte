@@ -57,16 +57,6 @@
 	let typeFilter = $state<TypeFilter>('all');
 	let dateRange = $state<DateRange | undefined>(undefined);
 	let reasonFilter = new SvelteSet<string>();
-	const seenReasons = new Set<string>(); // plain Set — not reactive, no cycle risk
-
-	$effect(() => {
-		for (const reason of allReasons) {
-			if (!seenReasons.has(reason)) {
-				seenReasons.add(reason);
-				reasonFilter.add(reason);
-			}
-		}
-	});
 
 	// Payload highlight state
 	let highlightedPayloads = $state<Record<string, string>>({});
@@ -132,7 +122,7 @@
 
 	// Create the table ONCE — never recreated on data/state changes
 	const table = createTable({
-		data: filteredEvents,
+		data: [] as MirEvent[],
 		columns: eventColumns,
 		getCoreRowModel: getCoreRowModel(),
 		getFilteredRowModel: getFilteredRowModel(),
@@ -177,27 +167,27 @@
 
 	// Re-read from the stable table instance whenever it's been updated
 	let headerGroups = $derived.by(() => {
-		tableVersion;
+		void tableVersion;
 		return table.getHeaderGroups();
 	});
 	let rows = $derived.by(() => {
-		tableVersion;
+		void tableVersion;
 		return table.getRowModel().rows;
 	});
 	let filteredRowCount = $derived.by(() => {
-		tableVersion;
+		void tableVersion;
 		return table.getFilteredRowModel().rows.length;
 	});
 	let pageCount = $derived.by(() => {
-		tableVersion;
+		void tableVersion;
 		return table.getPageCount();
 	});
 	let canPreviousPage = $derived.by(() => {
-		tableVersion;
+		void tableVersion;
 		return table.getCanPreviousPage();
 	});
 	let canNextPage = $derived.by(() => {
-		tableVersion;
+		void tableVersion;
 		return table.getCanNextPage();
 	});
 
@@ -318,9 +308,9 @@
 				</Table.Header>
 				<Table.Body>
 					{#if isLoading && events.length === 0}
-						{#each Array(5) as _, i (i)}
+						{#each Array(5), i (i)}
 							<Table.Row class="hover:bg-transparent">
-								{#each eventColumns as _, j (j)}
+								{#each eventColumns, j (j)}
 									<Table.Cell>
 										<div class="h-4 animate-pulse rounded bg-muted"></div>
 									</Table.Cell>
