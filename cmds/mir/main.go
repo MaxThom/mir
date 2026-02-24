@@ -85,7 +85,10 @@ func main() {
 			"version": build_meta.GetLongVersion(),
 		},
 		kong.Bind(logFile),
+		kong.Bind(zerolog.Logger{}),
+		kong.Bind(ui.Context{}),
 	)
+	SetParams(kongCtx, c.Globals, logFile)
 
 	err := kongCtx.Run()
 	if err != nil {
@@ -94,8 +97,7 @@ func main() {
 	}
 }
 
-func (d *CLI) BeforeApply(k *kong.Context, logFile *os.File) error {
-
+func SetParams(k *kong.Context, d Globals, logFile *os.File) error {
 	// Config
 	cfg := ui.NewDefaultConfig()
 	errCfg, lookupFiles, foundFiles := mir_config.New(AppName,
@@ -114,6 +116,9 @@ func (d *CLI) BeforeApply(k *kong.Context, logFile *os.File) error {
 
 	if d.LogLevel != "" {
 		cfg.LogLevel = d.LogLevel
+	}
+	if d.Debug {
+		cfg.LogLevel = "debug"
 	}
 
 	if d.Ctx != "" {
