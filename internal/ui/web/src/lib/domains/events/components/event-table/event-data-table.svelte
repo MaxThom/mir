@@ -288,14 +288,15 @@
 								>
 									{#if !header.isPlaceholder && header.column.id !== 'expand'}
 										{#if header.column.getCanSort()}
+											{@const sortEntry = sorting.find((s) => s.id === header.column.id)}
 											<button
 												onclick={header.column.getToggleSortingHandler()}
 												class="flex cursor-pointer items-center gap-1.5 uppercase transition-colors hover:text-foreground"
 											>
 												{header.column.columnDef.header as string}
-												{#if header.column.getIsSorted() === 'asc'}
+												{#if sortEntry && !sortEntry.desc}
 													<ArrowUpIcon class="h-3 w-3" />
-												{:else if header.column.getIsSorted() === 'desc'}
+												{:else if sortEntry?.desc}
 													<ArrowDownIcon class="h-3 w-3" />
 												{:else}
 													<ArrowUpDownIcon class="h-3 w-3 opacity-40" />
@@ -324,7 +325,7 @@
 					{:else}
 						{#each rows as row, i (i)}
 							{@const event = row.original}
-							{@const isExpanded = row.getIsExpanded()}
+							{@const isExpanded = expanded === true || !!(expanded as Record<string, boolean>)?.[row.id]}
 							{@const payload = formatPayload(event.spec?.payload)}
 							{@const key = rowKey(row.id)}
 
