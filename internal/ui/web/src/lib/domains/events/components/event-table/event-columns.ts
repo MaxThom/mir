@@ -29,7 +29,7 @@ export const eventColumns = [
 	col.accessor((e) => e.spec?.type ?? 'normal', {
 		id: 'type',
 		header: 'Type',
-		enableSorting: false,
+		enableSorting: true,
 		enableGlobalFilter: false,
 	}),
 	col.accessor((e) => e.spec?.reason ?? '', {
