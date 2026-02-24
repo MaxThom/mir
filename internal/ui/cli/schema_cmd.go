@@ -3,6 +3,8 @@ package cli
 import (
 	"fmt"
 	"os"
+	"strings"
+	"time"
 
 	"github.com/maxthom/mir/internal/libs/compression/zstd"
 	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
@@ -19,6 +21,7 @@ import (
 type SchemaCmd struct {
 	Upload  SchemaUploadCmd  `cmd:"" help:"Upload schema of a set of devices. To generate: 'protoc <proto_files...> --descriptor_set_out=./<file_name>.bproto --include_imports'"`
 	Explore SchemaExploreCmd `cmd:"" help:"Explore a device schema"`
+	Refresh SchemaRefreshCmd `cmd:"" help:"Refresh schema from device"`
 }
 
 type SchemaUploadCmd struct {
@@ -34,6 +37,12 @@ type SchemaExploreCmd struct {
 	IncludeMirImports bool   `short:"i" help:"includes Mir proto dependencies" default:"false"`
 	Target            `embed:"" prefix:"target."`
 	NameNs            string `name:"name/namespace" arg:"" optional:"" help:"edit single device"`
+}
+
+type SchemaRefreshCmd struct {
+	Output string `short:"o" help:"output format for response [pretty|json|yaml]" default:"pretty"`
+	Target `embed:"" prefix:"target."`
+	NameNs string `name:"name/namespace" arg:"" optional:"" help:"edit single device"`
 }
 
 func (d *SchemaUploadCmd) Validate() error {
@@ -216,4 +225,102 @@ func (d *SchemaExploreCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) er
 	}
 
 	return nil
+}
+
+func (d *SchemaRefreshCmd) Validate() error {
+	err := MirInvalidInputError{
+		Details: []string{},
+	}
+
+	if len(d.Target.Ids) == 0 &&
+		len(d.Target.Names) == 0 &&
+		len(d.Target.Namespaces) == 0 &&
+		len(d.Target.Labels) == 0 &&
+		d.NameNs == "" {
+		err.Details = append(err.Details, "Must specify targets")
+	}
+
+	if d.NameNs != "" {
+		d.Target = getTargetFromNameNs(d.NameNs)
+	}
+
+	if len(err.Details) > 0 {
+		return err
+	}
+	return nil
+}
+
+type DevSchemaOutput struct {
+	NameNs          string
+	PackageNames    []string
+	LastSchemaFetch time.Time
+	Status          string
+	ErrMsg          string
+}
+
+func (d *SchemaRefreshCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) error {
+	list, err := m.Client().RefreshSchema().Request(mir_v1.DeviceTarget{
+		Ids:        d.Target.Ids,
+		Names:      d.Target.Names,
+		Namespaces: d.Target.Namespaces,
+		Labels:     d.Target.Labels,
+	})
+	if err != nil {
+		return fmt.Errorf("error publishing device refresh schema request: %w", err)
+	}
+
+	if len(list) == 0 {
+		e := MirDeviceNotFoundError{
+			Targets: &mir_apiv1.DeviceTarget{
+				Ids:        d.Target.Ids,
+				Names:      d.Target.Names,
+				Namespaces: d.Target.Namespaces,
+				Labels:     d.Target.Labels,
+			},
+		}
+		return e
+	}
+
+	output := make([]DevSchemaOutput, len(list))
+	for i, d := range list {
+		nameNs := fmt.Sprintf("%s/%s", d.Device.Meta.Name, d.Device.Meta.Namespace)
+		status := "success"
+		if d.Error != "" {
+			status = "failure"
+		}
+		output[i] = DevSchemaOutput{
+			NameNs:          nameNs,
+			PackageNames:    d.Device.Status.Schema.PackageNames,
+			Status:          status,
+			LastSchemaFetch: d.Device.Status.Schema.LastSchemaFetch.UTC(),
+			ErrMsg:          d.Error,
+		}
+	}
+
+	switch d.Output {
+	case "pretty":
+		fmt.Println(prettyRefreshSchema(output))
+	case "json", "yaml":
+		if out, e := marshalResponse(d.Output, output); e != nil {
+			return fmt.Errorf("error marshalling response: %w", e)
+		} else {
+			fmt.Println(out)
+		}
+	default:
+		return fmt.Errorf("invalid output format: %s", d.Output)
+	}
+
+	return nil
+}
+
+func prettyRefreshSchema(devs []DevSchemaOutput) string {
+	format := "%-45s %-8s %-24s %-40s %s\n"
+	timeFormat := "2006-01-02 15:04:05 UTC"
+	var sb strings.Builder
+	fmt.Fprintf(&sb, format, "NAMESPACE/NAME", "STATUS", "LAST_SCHEMA_FETCH", "PACKAGE_NAMES", "ERROR")
+
+	for _, d := range devs {
+		fmt.Fprintf(&sb, format, d.NameNs, d.Status, d.LastSchemaFetch.Format(timeFormat), strings.Join(d.PackageNames, ","), d.ErrMsg)
+	}
+	return sb.String()
 }

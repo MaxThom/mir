@@ -178,7 +178,7 @@ func (r *deviceRoutes) Schema() *schemaRoute {
 	return &schemaRoute{m: r.m}
 }
 
-// Request device schema
+// Request device schema from the device as a request reply
 func (r *schemaRoute) Request(deviceId string) (*mir_proto.MirProtoSchema, error) {
 	sbj := device_client.SchemaRequest.WithId(deviceId)
 	resp, err := r.m.requestWithCompression(sbj, []byte{}, nil, 7*time.Second)
@@ -198,6 +198,8 @@ func (r *schemaRoute) Request(deviceId string) (*mir_proto.MirProtoSchema, error
 }
 
 // Subscribe to device schema stream
+// Previously used to listen to schema update on device boot, but this is now
+// in the device hello message
 // To listen to all devices, use deviceId = "" or deviceId = "*"
 // You are responsible of acknowledging the message
 func (r *schemaRoute) Subscribe(deviceId string, h func(msg *Msg, deviceId string, schema *mir_proto.MirProtoSchema, err error)) error {
@@ -209,6 +211,8 @@ func (r *schemaRoute) Subscribe(deviceId string, h func(msg *Msg, deviceId strin
 }
 
 // Subscribe to device schema stream
+// Previously used to listen to schema update on device boot, but this is now
+// in the device hello message
 // To listen to all devices, use deviceId = "" or deviceId = "*"
 // You are responsible of acknowledging the message
 func (r *schemaRoute) QueueSubscribe(queue string, deviceId string, h func(msg *Msg, deviceId string, schema *mir_proto.MirProtoSchema, err error)) error {

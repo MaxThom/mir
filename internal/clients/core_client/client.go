@@ -19,6 +19,7 @@ const (
 	UpdateDeviceRequest  clients.ClientSubject = "client.%s.core.v1alpha.update"
 	DeleteDeviceRequest  clients.ClientSubject = "client.%s.core.v1alpha.delete"
 	ListDeviceRequest    clients.ClientSubject = "client.%s.core.v1alpha.list"
+	RefreshSchemaRequest clients.ClientSubject = "client.%s.core.v1alpha.schema"
 
 	DeviceOnlineEvent  clients.ClientSubject = "event.%s.core.v1alpha.deviceonline"
 	DeviceOfflineEvent clients.ClientSubject = "event.%s.core.v1alpha.deviceoffline"

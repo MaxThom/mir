@@ -560,3 +560,108 @@ func (r *listDeviceRoute) Request(t mir_v1.DeviceTarget, includeEvents bool) ([]
 
 	return mir_v1.NewDeviceListFromProtoDevices(resp.GetOk().Devices), nil
 }
+
+/// RefreshSchema
+
+type refreshSchemaRoute struct {
+	m *Mir
+}
+
+type DeviceWithError struct {
+	Device mir_v1.Device
+	Error  string
+}
+
+// Refresh the schema by fetching it from the device and updating it in the system
+func (r *clientRoutes) RefreshSchema() *refreshSchemaRoute {
+	return &refreshSchemaRoute{m: r.m}
+}
+
+// Subscribe to refresh schema routes
+func (r *refreshSchemaRoute) Subscribe(f func(msg *Msg, clientId string, t mir_v1.DeviceTarget) ([]DeviceWithError, error)) error {
+	sbj := core_client.RefreshSchemaRequest.WithId("*")
+	return r.m.subscribe(sbj, r.handlerWrapper(f))
+}
+
+// Queue subscribe to refresh schema routes
+func (r *refreshSchemaRoute) QueueSubscribe(queue string, f func(msg *Msg, clientId string, t mir_v1.DeviceTarget) ([]DeviceWithError, error)) error {
+	sbj := core_client.RefreshSchemaRequest.WithId("*")
+	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
+}
+
+func (r *refreshSchemaRoute) handlerWrapper(f func(msg *Msg, clientId string, t mir_v1.DeviceTarget) ([]DeviceWithError, error)) nats.MsgHandler {
+	return func(msg *nats.Msg) {
+		req := &mir_apiv1.RefreshDeviceSchemaRequest{}
+		if err := proto.Unmarshal(msg.Data, req); err != nil {
+			// TODO log error here
+			_ = r.m.sendReplyOrAck(msg, &mir_apiv1.RefreshDeviceSchemaResponse{Response: &mir_apiv1.RefreshDeviceSchemaResponse_Error{
+				Error: err.Error(),
+			}})
+			return
+		}
+
+		resp, err := f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), mir_v1.ProtoDeviceTargetToMirDeviceTarget(req.Targets))
+		if err != nil {
+			err = r.m.sendReplyOrAck(msg, &mir_apiv1.RefreshDeviceSchemaResponse{Response: &mir_apiv1.RefreshDeviceSchemaResponse_Error{
+				Error: err.Error(),
+			}})
+			return
+		}
+
+		devs := make([]*mir_apiv1.DeviceWithError, len(resp))
+		for i, d := range resp {
+			devs[i] = &mir_apiv1.DeviceWithError{
+				Device: mir_v1.NewProtoDeviceFromDevice(d.Device),
+				Error:  d.Error,
+			}
+		}
+
+		// TODO log error here
+		err = r.m.sendReplyOrAck(msg, &mir_apiv1.RefreshDeviceSchemaResponse{
+			Response: &mir_apiv1.RefreshDeviceSchemaResponse_Ok{
+				Ok: &mir_apiv1.DeviceListWithError{Devices: devs},
+			},
+		})
+		if err != nil {
+			err = r.m.sendReplyOrAck(msg, &mir_apiv1.RefreshDeviceSchemaResponse{Response: &mir_apiv1.RefreshDeviceSchemaResponse_Error{
+				Error: err.Error(),
+			}})
+		}
+	}
+}
+
+// Request refresh of the schema of a device
+func (r *refreshSchemaRoute) Request(t mir_v1.DeviceTarget) ([]DeviceWithError, error) {
+	sbj := core_client.RefreshSchemaRequest.WithId(r.m.GetInstanceName())
+	req := &mir_apiv1.RefreshDeviceSchemaRequest{
+		Targets: mir_v1.MirDeviceTargetToProtoDeviceTarget(t),
+	}
+	bReq, err := proto.Marshal(req)
+	if err != nil {
+		return []DeviceWithError{}, err
+	}
+
+	resMsg, err := r.m.request(sbj, bReq, nil, defaultTimeout)
+	if err != nil {
+		return []DeviceWithError{}, err
+	}
+
+	resp := &mir_apiv1.RefreshDeviceSchemaResponse{}
+	err = proto.Unmarshal(resMsg.Data, resp)
+	if err != nil {
+		return []DeviceWithError{}, err
+	}
+	if resp.GetError() != "" {
+		return []DeviceWithError{}, errors.New(resp.GetError())
+	}
+
+	newDevs := make([]DeviceWithError, len(resp.GetOk().Devices))
+	for i, d := range resp.GetOk().Devices {
+		newDevs[i] = DeviceWithError{
+			Device: mir_v1.NewDeviceFromProtoDevice(d.GetDevice()),
+			Error:  d.GetError(),
+		}
+	}
+
+	return newDevs, nil
+}
