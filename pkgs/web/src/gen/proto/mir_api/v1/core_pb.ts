@@ -13,7 +13,7 @@ import type { JsonObject, Message } from "@bufbuild/protobuf";
  * Describes the file mir_api/v1/core.proto.
  */
 export const file_mir_api_v1_core: GenFile = /*@__PURE__*/
-  fileDesc("ChVtaXJfYXBpL3YxL2NvcmUucHJvdG8SCm1pcl9hcGkudjEiPAoTQ3JlYXRlRGV2aWNlUmVxdWVzdBIlCgZkZXZpY2UYASABKAsyFS5taXJfYXBpLnYxLk5ld0RldmljZSJVChRDcmVhdGVEZXZpY2VSZXNwb25zZRIgCgJvaxgBIAEoCzISLm1pcl9hcGkudjEuRGV2aWNlSAASDwoFZXJyb3IYAiABKAlIAEIKCghyZXNwb25zZSI+ChRDcmVhdGVEZXZpY2VzUmVxdWVzdBImCgdkZXZpY2VzGAEgAygLMhUubWlyX2FwaS52MS5OZXdEZXZpY2UiWgoVQ3JlYXRlRGV2aWNlc1Jlc3BvbnNlEiQKAm9rGAEgASgLMhYubWlyX2FwaS52MS5EZXZpY2VMaXN0SAASDwoFZXJyb3IYAiABKAlIAEIKCghyZXNwb25zZSLkCwoTVXBkYXRlRGV2aWNlUmVxdWVzdBIpCgd0YXJnZXRzGAEgASgLMhgubWlyX2FwaS52MS5EZXZpY2VUYXJnZXQSMgoEbWV0YRgCIAEoCzIkLm1pcl9hcGkudjEuVXBkYXRlRGV2aWNlUmVxdWVzdC5NZXRhEjIKBHNwZWMYAyABKAsyJC5taXJfYXBpLnYxLlVwZGF0ZURldmljZVJlcXVlc3QuU3BlYxI5CgVwcm9wcxgEIAEoCzIqLm1pcl9hcGkudjEuVXBkYXRlRGV2aWNlUmVxdWVzdC5Qcm9wZXJ0aWVzEjYKBnN0YXR1cxgFIAEoCzImLm1pcl9hcGkudjEuVXBkYXRlRGV2aWNlUmVxdWVzdC5TdGF0dXMa5wIKBE1ldGESEQoEbmFtZRgBIAEoCUgAiAEBEhYKCW5hbWVzcGFjZRgCIAEoCUgBiAEBEkAKBmxhYmVscxgDIAMoCzIwLm1pcl9hcGkudjEuVXBkYXRlRGV2aWNlUmVxdWVzdC5NZXRhLkxhYmVsc0VudHJ5EkoKC2Fubm90YXRpb25zGAQgAygLMjUubWlyX2FwaS52MS5VcGRhdGVEZXZpY2VSZXF1ZXN0Lk1ldGEuQW5ub3RhdGlvbnNFbnRyeRpECgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSJAoFdmFsdWUYAiABKAsyFS5taXJfYXBpLnYxLk9wdFN0cmluZzoCOAEaSQoQQW5ub3RhdGlvbnNFbnRyeRILCgNrZXkYASABKAkSJAoFdmFsdWUYAiABKAsyFS5taXJfYXBpLnYxLk9wdFN0cmluZzoCOAFCBwoFX25hbWVCDAoKX25hbWVzcGFjZRpQCgRTcGVjEhYKCWRldmljZV9pZBgBIAEoCUgAiAEBEhUKCGRpc2FibGVkGAIgASgISAGIAQFCDAoKX2RldmljZV9pZEILCglfZGlzYWJsZWQaNgoKUHJvcGVydGllcxIoCgdkZXNpcmVkGAEgASgLMhcuZ29vZ2xlLnByb3RvYnVmLlN0cnVjdBrtAQoGU3RhdHVzEhMKBm9ubGluZRgBIAEoCEgAiAEBEjMKD2xhc3RfaGVhcnRoYmVhdBgCIAEoCzIVLm1pcl9hcGkudjEuVGltZXN0YW1wSAGIAQESNgoGc2NoZW1hGAMgASgLMiYubWlyX2FwaS52MS5VcGRhdGVEZXZpY2VSZXF1ZXN0LlNjaGVtYRJCCgpwcm9wZXJ0aWVzGAQgASgLMi4ubWlyX2FwaS52MS5VcGRhdGVEZXZpY2VSZXF1ZXN0LlByb3BlcnRpZXNUaW1lQgkKB19vbmxpbmVCEgoQX2xhc3RfaGVhcnRoYmVhdBqiAQoGU2NoZW1hEh4KEWNvbXByZXNzZWRfc2NoZW1hGAEgASgMSACIAQESFQoNcGFja2FnZV9uYW1lcxgCIAMoCRI1ChFsYXN0X3NjaGVtYV9mZXRjaBgDIAEoCzIVLm1pcl9hcGkudjEuVGltZXN0YW1wSAGIAQFCFAoSX2NvbXByZXNzZWRfc2NoZW1hQhQKEl9sYXN0X3NjaGVtYV9mZXRjaBq9AgoOUHJvcGVydGllc1RpbWUSTAoHZGVzaXJlZBgBIAMoCzI7Lm1pcl9hcGkudjEuVXBkYXRlRGV2aWNlUmVxdWVzdC5Qcm9wZXJ0aWVzVGltZS5EZXNpcmVkRW50cnkSTgoIcmVwb3J0ZWQYAiADKAsyPC5taXJfYXBpLnYxLlVwZGF0ZURldmljZVJlcXVlc3QuUHJvcGVydGllc1RpbWUuUmVwb3J0ZWRFbnRyeRpFCgxEZXNpcmVkRW50cnkSCwoDa2V5GAEgASgJEiQKBXZhbHVlGAIgASgLMhUubWlyX2FwaS52MS5UaW1lc3RhbXA6AjgBGkYKDVJlcG9ydGVkRW50cnkSCwoDa2V5GAEgASgJEiQKBXZhbHVlGAIgASgLMhUubWlyX2FwaS52MS5UaW1lc3RhbXA6AjgBIlkKFFVwZGF0ZURldmljZVJlc3BvbnNlEiQKAm9rGAEgASgLMhYubWlyX2FwaS52MS5EZXZpY2VMaXN0SAASDwoFZXJyb3IYAiABKAlIAEIKCghyZXNwb25zZSJoChJNZXJnZURldmljZVJlcXVlc3QSKQoHdGFyZ2V0cxgBIAEoCzIYLm1pcl9hcGkudjEuRGV2aWNlVGFyZ2V0EicKBmRldmljZRgCIAEoCzIXLmdvb2dsZS5wcm90b2J1Zi5TdHJ1Y3QiWAoTTWVyZ2VEZXZpY2VSZXNwb25zZRIkCgJvaxgBIAEoCzIWLm1pcl9hcGkudjEuRGV2aWNlTGlzdEgAEg8KBWVycm9yGAIgASgJSABCCgoIcmVzcG9uc2UiQAoTRGVsZXRlRGV2aWNlUmVxdWVzdBIpCgd0YXJnZXRzGAEgASgLMhgubWlyX2FwaS52MS5EZXZpY2VUYXJnZXQiWQoURGVsZXRlRGV2aWNlUmVzcG9uc2USJAoCb2sYASABKAsyFi5taXJfYXBpLnYxLkRldmljZUxpc3RIABIPCgVlcnJvchgCIAEoCUgAQgoKCHJlc3BvbnNlIlYKEUxpc3REZXZpY2VSZXF1ZXN0EikKB3RhcmdldHMYASABKAsyGC5taXJfYXBpLnYxLkRldmljZVRhcmdldBIWCg5pbmNsdWRlX2V2ZW50cxgCIAEoCCJXChJMaXN0RGV2aWNlUmVzcG9uc2USJAoCb2sYASABKAsyFi5taXJfYXBpLnYxLkRldmljZUxpc3RIABIPCgVlcnJvchgCIAEoCUgAQgoKCHJlc3BvbnNlIqMBCgxEZXZpY2VUYXJnZXQSDQoFbmFtZXMYASADKAkSEgoKbmFtZXNwYWNlcxgCIAMoCRI0CgZsYWJlbHMYAyADKAsyJC5taXJfYXBpLnYxLkRldmljZVRhcmdldC5MYWJlbHNFbnRyeRILCgNpZHMYBCADKAkaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASIxCgpEZXZpY2VMaXN0EiMKB2RldmljZXMYASADKAsyEi5taXJfYXBpLnYxLkRldmljZSIiCgxEZXZpY2VJZExpc3QSEgoKZGV2aWNlX2lkcxgBIAMoCSLNAQoGRGV2aWNlEhMKC2FwaV92ZXJzaW9uGAEgASgJEgwKBGtpbmQYAiABKAkSHgoEbWV0YRgDIAEoCzIQLm1pcl9hcGkudjEuTWV0YRIkCgRzcGVjGAQgASgLMhYubWlyX2FwaS52MS5EZXZpY2VTcGVjEjAKCnByb3BlcnRpZXMYBSABKAsyHC5taXJfYXBpLnYxLkRldmljZVByb3BlcnRpZXMSKAoGc3RhdHVzGAYgASgLMhgubWlyX2FwaS52MS5EZXZpY2VTdGF0dXMiUQoJTmV3RGV2aWNlEh4KBG1ldGEYASABKAsyEC5taXJfYXBpLnYxLk1ldGESJAoEc3BlYxgCIAEoCzIWLm1pcl9hcGkudjEuRGV2aWNlU3BlYyIxCgpEZXZpY2VTcGVjEhEKCWRldmljZV9pZBgBIAEoCRIQCghkaXNhYmxlZBgCIAEoCCJnChBEZXZpY2VQcm9wZXJ0aWVzEigKB2Rlc2lyZWQYASABKAsyFy5nb29nbGUucHJvdG9idWYuU3RydWN0EikKCHJlcG9ydGVkGAIgASgLMhcuZ29vZ2xlLnByb3RvYnVmLlN0cnVjdCLRAQoMRGV2aWNlU3RhdHVzEi4KD2xhc3RfaGVhcnRoYmVhdBgBIAEoCzIVLm1pcl9hcGkudjEuVGltZXN0YW1wEg4KBm9ubGluZRgCIAEoCBIiCgZzY2hlbWEYAyABKAsyEi5taXJfYXBpLnYxLlNjaGVtYRIuCgpwcm9wZXJ0aWVzGAQgASgLMhoubWlyX2FwaS52MS5Qcm9wZXJ0aWVzVGltZRItCgZldmVudHMYBSADKAsyHS5taXJfYXBpLnYxLkRldmljZVN0YXR1c0V2ZW50ImsKEURldmljZVN0YXR1c0V2ZW50EgwKBHR5cGUYASABKAkSDgoGcmVhc29uGAIgASgJEg8KB21lc3NhZ2UYAyABKAkSJwoIZmlyc3RfYXQYBCABKAsyFS5taXJfYXBpLnYxLlRpbWVzdGFtcCKVAgoOUHJvcGVydGllc1RpbWUSOAoHZGVzaXJlZBgBIAMoCzInLm1pcl9hcGkudjEuUHJvcGVydGllc1RpbWUuRGVzaXJlZEVudHJ5EjoKCHJlcG9ydGVkGAIgAygLMigubWlyX2FwaS52MS5Qcm9wZXJ0aWVzVGltZS5SZXBvcnRlZEVudHJ5GkUKDERlc2lyZWRFbnRyeRILCgNrZXkYASABKAkSJAoFdmFsdWUYAiABKAsyFS5taXJfYXBpLnYxLlRpbWVzdGFtcDoCOAEaRgoNUmVwb3J0ZWRFbnRyeRILCgNrZXkYASABKAkSJAoFdmFsdWUYAiABKAsyFS5taXJfYXBpLnYxLlRpbWVzdGFtcDoCOAEibAoGU2NoZW1hEhkKEWNvbXByZXNzZWRfc2NoZW1hGAEgASgMEhUKDXBhY2thZ2VfbmFtZXMYAiADKAkSMAoRbGFzdF9zY2hlbWFfZmV0Y2gYAyABKAsyFS5taXJfYXBpLnYxLlRpbWVzdGFtcEKgAQoOY29tLm1pcl9hcGkudjFCCUNvcmVQcm90b1ABWj5naXRodWIuY29tL21heHRob20vbWlyL3BrZ3MvYXBpL2dlbi9wcm90by9taXJfYXBpL3YxO21pcl9hcGl2MaICA01YWKoCCU1pckFwaS5WMcoCCU1pckFwaVxWMeICFU1pckFwaVxWMVxHUEJNZXRhZGF0YeoCCk1pckFwaTo6VjFiBnByb3RvMw", [file_google_protobuf_struct, file_mir_api_v1_common]);
+  fileDesc("ChVtaXJfYXBpL3YxL2NvcmUucHJvdG8SCm1pcl9hcGkudjEiPAoTQ3JlYXRlRGV2aWNlUmVxdWVzdBIlCgZkZXZpY2UYASABKAsyFS5taXJfYXBpLnYxLk5ld0RldmljZSJVChRDcmVhdGVEZXZpY2VSZXNwb25zZRIgCgJvaxgBIAEoCzISLm1pcl9hcGkudjEuRGV2aWNlSAASDwoFZXJyb3IYAiABKAlIAEIKCghyZXNwb25zZSI+ChRDcmVhdGVEZXZpY2VzUmVxdWVzdBImCgdkZXZpY2VzGAEgAygLMhUubWlyX2FwaS52MS5OZXdEZXZpY2UiWgoVQ3JlYXRlRGV2aWNlc1Jlc3BvbnNlEiQKAm9rGAEgASgLMhYubWlyX2FwaS52MS5EZXZpY2VMaXN0SAASDwoFZXJyb3IYAiABKAlIAEIKCghyZXNwb25zZSLkCwoTVXBkYXRlRGV2aWNlUmVxdWVzdBIpCgd0YXJnZXRzGAEgASgLMhgubWlyX2FwaS52MS5EZXZpY2VUYXJnZXQSMgoEbWV0YRgCIAEoCzIkLm1pcl9hcGkudjEuVXBkYXRlRGV2aWNlUmVxdWVzdC5NZXRhEjIKBHNwZWMYAyABKAsyJC5taXJfYXBpLnYxLlVwZGF0ZURldmljZVJlcXVlc3QuU3BlYxI5CgVwcm9wcxgEIAEoCzIqLm1pcl9hcGkudjEuVXBkYXRlRGV2aWNlUmVxdWVzdC5Qcm9wZXJ0aWVzEjYKBnN0YXR1cxgFIAEoCzImLm1pcl9hcGkudjEuVXBkYXRlRGV2aWNlUmVxdWVzdC5TdGF0dXMa5wIKBE1ldGESEQoEbmFtZRgBIAEoCUgAiAEBEhYKCW5hbWVzcGFjZRgCIAEoCUgBiAEBEkAKBmxhYmVscxgDIAMoCzIwLm1pcl9hcGkudjEuVXBkYXRlRGV2aWNlUmVxdWVzdC5NZXRhLkxhYmVsc0VudHJ5EkoKC2Fubm90YXRpb25zGAQgAygLMjUubWlyX2FwaS52MS5VcGRhdGVEZXZpY2VSZXF1ZXN0Lk1ldGEuQW5ub3RhdGlvbnNFbnRyeRpECgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSJAoFdmFsdWUYAiABKAsyFS5taXJfYXBpLnYxLk9wdFN0cmluZzoCOAEaSQoQQW5ub3RhdGlvbnNFbnRyeRILCgNrZXkYASABKAkSJAoFdmFsdWUYAiABKAsyFS5taXJfYXBpLnYxLk9wdFN0cmluZzoCOAFCBwoFX25hbWVCDAoKX25hbWVzcGFjZRpQCgRTcGVjEhYKCWRldmljZV9pZBgBIAEoCUgAiAEBEhUKCGRpc2FibGVkGAIgASgISAGIAQFCDAoKX2RldmljZV9pZEILCglfZGlzYWJsZWQaNgoKUHJvcGVydGllcxIoCgdkZXNpcmVkGAEgASgLMhcuZ29vZ2xlLnByb3RvYnVmLlN0cnVjdBrtAQoGU3RhdHVzEhMKBm9ubGluZRgBIAEoCEgAiAEBEjMKD2xhc3RfaGVhcnRoYmVhdBgCIAEoCzIVLm1pcl9hcGkudjEuVGltZXN0YW1wSAGIAQESNgoGc2NoZW1hGAMgASgLMiYubWlyX2FwaS52MS5VcGRhdGVEZXZpY2VSZXF1ZXN0LlNjaGVtYRJCCgpwcm9wZXJ0aWVzGAQgASgLMi4ubWlyX2FwaS52MS5VcGRhdGVEZXZpY2VSZXF1ZXN0LlByb3BlcnRpZXNUaW1lQgkKB19vbmxpbmVCEgoQX2xhc3RfaGVhcnRoYmVhdBqiAQoGU2NoZW1hEh4KEWNvbXByZXNzZWRfc2NoZW1hGAEgASgMSACIAQESFQoNcGFja2FnZV9uYW1lcxgCIAMoCRI1ChFsYXN0X3NjaGVtYV9mZXRjaBgDIAEoCzIVLm1pcl9hcGkudjEuVGltZXN0YW1wSAGIAQFCFAoSX2NvbXByZXNzZWRfc2NoZW1hQhQKEl9sYXN0X3NjaGVtYV9mZXRjaBq9AgoOUHJvcGVydGllc1RpbWUSTAoHZGVzaXJlZBgBIAMoCzI7Lm1pcl9hcGkudjEuVXBkYXRlRGV2aWNlUmVxdWVzdC5Qcm9wZXJ0aWVzVGltZS5EZXNpcmVkRW50cnkSTgoIcmVwb3J0ZWQYAiADKAsyPC5taXJfYXBpLnYxLlVwZGF0ZURldmljZVJlcXVlc3QuUHJvcGVydGllc1RpbWUuUmVwb3J0ZWRFbnRyeRpFCgxEZXNpcmVkRW50cnkSCwoDa2V5GAEgASgJEiQKBXZhbHVlGAIgASgLMhUubWlyX2FwaS52MS5UaW1lc3RhbXA6AjgBGkYKDVJlcG9ydGVkRW50cnkSCwoDa2V5GAEgASgJEiQKBXZhbHVlGAIgASgLMhUubWlyX2FwaS52MS5UaW1lc3RhbXA6AjgBIlkKFFVwZGF0ZURldmljZVJlc3BvbnNlEiQKAm9rGAEgASgLMhYubWlyX2FwaS52MS5EZXZpY2VMaXN0SAASDwoFZXJyb3IYAiABKAlIAEIKCghyZXNwb25zZSJoChJNZXJnZURldmljZVJlcXVlc3QSKQoHdGFyZ2V0cxgBIAEoCzIYLm1pcl9hcGkudjEuRGV2aWNlVGFyZ2V0EicKBmRldmljZRgCIAEoCzIXLmdvb2dsZS5wcm90b2J1Zi5TdHJ1Y3QiWAoTTWVyZ2VEZXZpY2VSZXNwb25zZRIkCgJvaxgBIAEoCzIWLm1pcl9hcGkudjEuRGV2aWNlTGlzdEgAEg8KBWVycm9yGAIgASgJSABCCgoIcmVzcG9uc2UiQAoTRGVsZXRlRGV2aWNlUmVxdWVzdBIpCgd0YXJnZXRzGAEgASgLMhgubWlyX2FwaS52MS5EZXZpY2VUYXJnZXQiWQoURGVsZXRlRGV2aWNlUmVzcG9uc2USJAoCb2sYASABKAsyFi5taXJfYXBpLnYxLkRldmljZUxpc3RIABIPCgVlcnJvchgCIAEoCUgAQgoKCHJlc3BvbnNlIlYKEUxpc3REZXZpY2VSZXF1ZXN0EikKB3RhcmdldHMYASABKAsyGC5taXJfYXBpLnYxLkRldmljZVRhcmdldBIWCg5pbmNsdWRlX2V2ZW50cxgCIAEoCCJXChJMaXN0RGV2aWNlUmVzcG9uc2USJAoCb2sYASABKAsyFi5taXJfYXBpLnYxLkRldmljZUxpc3RIABIPCgVlcnJvchgCIAEoCUgAQgoKCHJlc3BvbnNlIkcKGlJlZnJlc2hEZXZpY2VTY2hlbWFSZXF1ZXN0EikKB3RhcmdldHMYASABKAsyGC5taXJfYXBpLnYxLkRldmljZVRhcmdldCJpChtSZWZyZXNoRGV2aWNlU2NoZW1hUmVzcG9uc2USLQoCb2sYASABKAsyHy5taXJfYXBpLnYxLkRldmljZUxpc3RXaXRoRXJyb3JIABIPCgVlcnJvchgCIAEoCUgAQgoKCHJlc3BvbnNlIqMBCgxEZXZpY2VUYXJnZXQSDQoFbmFtZXMYASADKAkSEgoKbmFtZXNwYWNlcxgCIAMoCRI0CgZsYWJlbHMYAyADKAsyJC5taXJfYXBpLnYxLkRldmljZVRhcmdldC5MYWJlbHNFbnRyeRILCgNpZHMYBCADKAkaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASIxCgpEZXZpY2VMaXN0EiMKB2RldmljZXMYASADKAsyEi5taXJfYXBpLnYxLkRldmljZSJDChNEZXZpY2VMaXN0V2l0aEVycm9yEiwKB2RldmljZXMYASADKAsyGy5taXJfYXBpLnYxLkRldmljZVdpdGhFcnJvciJECg9EZXZpY2VXaXRoRXJyb3ISIgoGZGV2aWNlGAEgASgLMhIubWlyX2FwaS52MS5EZXZpY2USDQoFZXJyb3IYAiABKAkiIgoMRGV2aWNlSWRMaXN0EhIKCmRldmljZV9pZHMYASADKAkizQEKBkRldmljZRITCgthcGlfdmVyc2lvbhgBIAEoCRIMCgRraW5kGAIgASgJEh4KBG1ldGEYAyABKAsyEC5taXJfYXBpLnYxLk1ldGESJAoEc3BlYxgEIAEoCzIWLm1pcl9hcGkudjEuRGV2aWNlU3BlYxIwCgpwcm9wZXJ0aWVzGAUgASgLMhwubWlyX2FwaS52MS5EZXZpY2VQcm9wZXJ0aWVzEigKBnN0YXR1cxgGIAEoCzIYLm1pcl9hcGkudjEuRGV2aWNlU3RhdHVzIlEKCU5ld0RldmljZRIeCgRtZXRhGAEgASgLMhAubWlyX2FwaS52MS5NZXRhEiQKBHNwZWMYAiABKAsyFi5taXJfYXBpLnYxLkRldmljZVNwZWMiMQoKRGV2aWNlU3BlYxIRCglkZXZpY2VfaWQYASABKAkSEAoIZGlzYWJsZWQYAiABKAgiZwoQRGV2aWNlUHJvcGVydGllcxIoCgdkZXNpcmVkGAEgASgLMhcuZ29vZ2xlLnByb3RvYnVmLlN0cnVjdBIpCghyZXBvcnRlZBgCIAEoCzIXLmdvb2dsZS5wcm90b2J1Zi5TdHJ1Y3Qi0QEKDERldmljZVN0YXR1cxIuCg9sYXN0X2hlYXJ0aGJlYXQYASABKAsyFS5taXJfYXBpLnYxLlRpbWVzdGFtcBIOCgZvbmxpbmUYAiABKAgSIgoGc2NoZW1hGAMgASgLMhIubWlyX2FwaS52MS5TY2hlbWESLgoKcHJvcGVydGllcxgEIAEoCzIaLm1pcl9hcGkudjEuUHJvcGVydGllc1RpbWUSLQoGZXZlbnRzGAUgAygLMh0ubWlyX2FwaS52MS5EZXZpY2VTdGF0dXNFdmVudCJrChFEZXZpY2VTdGF0dXNFdmVudBIMCgR0eXBlGAEgASgJEg4KBnJlYXNvbhgCIAEoCRIPCgdtZXNzYWdlGAMgASgJEicKCGZpcnN0X2F0GAQgASgLMhUubWlyX2FwaS52MS5UaW1lc3RhbXAilQIKDlByb3BlcnRpZXNUaW1lEjgKB2Rlc2lyZWQYASADKAsyJy5taXJfYXBpLnYxLlByb3BlcnRpZXNUaW1lLkRlc2lyZWRFbnRyeRI6CghyZXBvcnRlZBgCIAMoCzIoLm1pcl9hcGkudjEuUHJvcGVydGllc1RpbWUuUmVwb3J0ZWRFbnRyeRpFCgxEZXNpcmVkRW50cnkSCwoDa2V5GAEgASgJEiQKBXZhbHVlGAIgASgLMhUubWlyX2FwaS52MS5UaW1lc3RhbXA6AjgBGkYKDVJlcG9ydGVkRW50cnkSCwoDa2V5GAEgASgJEiQKBXZhbHVlGAIgASgLMhUubWlyX2FwaS52MS5UaW1lc3RhbXA6AjgBImwKBlNjaGVtYRIZChFjb21wcmVzc2VkX3NjaGVtYRgBIAEoDBIVCg1wYWNrYWdlX25hbWVzGAIgAygJEjAKEWxhc3Rfc2NoZW1hX2ZldGNoGAMgASgLMhUubWlyX2FwaS52MS5UaW1lc3RhbXBCoAEKDmNvbS5taXJfYXBpLnYxQglDb3JlUHJvdG9QAVo+Z2l0aHViLmNvbS9tYXh0aG9tL21pci9wa2dzL2FwaS9nZW4vcHJvdG8vbWlyX2FwaS92MTttaXJfYXBpdjGiAgNNWFiqAglNaXJBcGkuVjHKAglNaXJBcGlcVjHiAhVNaXJBcGlcVjFcR1BCTWV0YWRhdGHqAgpNaXJBcGk6OlYxYgZwcm90bzM", [file_google_protobuf_struct, file_mir_api_v1_common]);
 
 /**
  *
@@ -583,6 +583,66 @@ export const ListDeviceResponseSchema: GenMessage<ListDeviceResponse> = /*@__PUR
 
 /**
  *
+ * Send a request to refresh device schema in the system
+ *
+ * @generated from message mir_api.v1.RefreshDeviceSchemaRequest
+ */
+export type RefreshDeviceSchemaRequest = Message<"mir_api.v1.RefreshDeviceSchemaRequest"> & {
+  /**
+   * To target a set of devices, search using ids, labels and annotations
+   *
+   * @generated from field: mir_api.v1.DeviceTarget targets = 1;
+   */
+  targets?: DeviceTarget;
+};
+
+/**
+ * Describes the message mir_api.v1.RefreshDeviceSchemaRequest.
+ * Use `create(RefreshDeviceSchemaRequestSchema)` to create a new message.
+ */
+export const RefreshDeviceSchemaRequestSchema: GenMessage<RefreshDeviceSchemaRequest> = /*@__PURE__*/
+  messageDesc(file_mir_api_v1_core, 12);
+
+/**
+ *
+ * Response to refresh device schema request
+ * If the device schema can't be fetched from the device,
+ * it will show the latest schema in the db
+ *
+ * @generated from message mir_api.v1.RefreshDeviceSchemaResponse
+ */
+export type RefreshDeviceSchemaResponse = Message<"mir_api.v1.RefreshDeviceSchemaResponse"> & {
+  /**
+   * @generated from oneof mir_api.v1.RefreshDeviceSchemaResponse.response
+   */
+  response: {
+    /**
+     * Devices with schema updated
+     *
+     * @generated from field: mir_api.v1.DeviceListWithError ok = 1;
+     */
+    value: DeviceListWithError;
+    case: "ok";
+  } | {
+    /**
+     * Error message if troubleshooting is needed
+     *
+     * @generated from field: string error = 2;
+     */
+    value: string;
+    case: "error";
+  } | { case: undefined; value?: undefined };
+};
+
+/**
+ * Describes the message mir_api.v1.RefreshDeviceSchemaResponse.
+ * Use `create(RefreshDeviceSchemaResponseSchema)` to create a new message.
+ */
+export const RefreshDeviceSchemaResponseSchema: GenMessage<RefreshDeviceSchemaResponse> = /*@__PURE__*/
+  messageDesc(file_mir_api_v1_core, 13);
+
+/**
+ *
  * Targets is used to target a set of devices using
  * a combination of ids, labels and annotations
  *
@@ -623,7 +683,7 @@ export type DeviceTarget = Message<"mir_api.v1.DeviceTarget"> & {
  * Use `create(DeviceTargetSchema)` to create a new message.
  */
 export const DeviceTargetSchema: GenMessage<DeviceTarget> = /*@__PURE__*/
-  messageDesc(file_mir_api_v1_core, 12);
+  messageDesc(file_mir_api_v1_core, 14);
 
 /**
  *
@@ -643,7 +703,54 @@ export type DeviceList = Message<"mir_api.v1.DeviceList"> & {
  * Use `create(DeviceListSchema)` to create a new message.
  */
 export const DeviceListSchema: GenMessage<DeviceList> = /*@__PURE__*/
-  messageDesc(file_mir_api_v1_core, 13);
+  messageDesc(file_mir_api_v1_core, 15);
+
+/**
+ *
+ * A set of devices with error field to represent if something went wrong during the operation
+ *
+ * @generated from message mir_api.v1.DeviceListWithError
+ */
+export type DeviceListWithError = Message<"mir_api.v1.DeviceListWithError"> & {
+  /**
+   * @generated from field: repeated mir_api.v1.DeviceWithError devices = 1;
+   */
+  devices: DeviceWithError[];
+};
+
+/**
+ * Describes the message mir_api.v1.DeviceListWithError.
+ * Use `create(DeviceListWithErrorSchema)` to create a new message.
+ */
+export const DeviceListWithErrorSchema: GenMessage<DeviceListWithError> = /*@__PURE__*/
+  messageDesc(file_mir_api_v1_core, 16);
+
+/**
+ *
+ * A device with error field to represent if something went wrong during the operation
+ *
+ * @generated from message mir_api.v1.DeviceWithError
+ */
+export type DeviceWithError = Message<"mir_api.v1.DeviceWithError"> & {
+  /**
+   * @generated from field: mir_api.v1.Device device = 1;
+   */
+  device?: Device;
+
+  /**
+   * HTTP like error if something went wrong
+   *
+   * @generated from field: string error = 2;
+   */
+  error: string;
+};
+
+/**
+ * Describes the message mir_api.v1.DeviceWithError.
+ * Use `create(DeviceWithErrorSchema)` to create a new message.
+ */
+export const DeviceWithErrorSchema: GenMessage<DeviceWithError> = /*@__PURE__*/
+  messageDesc(file_mir_api_v1_core, 17);
 
 /**
  *
@@ -663,7 +770,7 @@ export type DeviceIdList = Message<"mir_api.v1.DeviceIdList"> & {
  * Use `create(DeviceIdListSchema)` to create a new message.
  */
 export const DeviceIdListSchema: GenMessage<DeviceIdList> = /*@__PURE__*/
-  messageDesc(file_mir_api_v1_core, 14);
+  messageDesc(file_mir_api_v1_core, 18);
 
 /**
  *
@@ -720,7 +827,7 @@ export type Device = Message<"mir_api.v1.Device"> & {
  * Use `create(DeviceSchema)` to create a new message.
  */
 export const DeviceSchema: GenMessage<Device> = /*@__PURE__*/
-  messageDesc(file_mir_api_v1_core, 15);
+  messageDesc(file_mir_api_v1_core, 19);
 
 /**
  * @generated from message mir_api.v1.NewDevice
@@ -746,7 +853,7 @@ export type NewDevice = Message<"mir_api.v1.NewDevice"> & {
  * Use `create(NewDeviceSchema)` to create a new message.
  */
 export const NewDeviceSchema: GenMessage<NewDevice> = /*@__PURE__*/
-  messageDesc(file_mir_api_v1_core, 16);
+  messageDesc(file_mir_api_v1_core, 20);
 
 /**
  *
@@ -775,7 +882,7 @@ export type DeviceSpec = Message<"mir_api.v1.DeviceSpec"> & {
  * Use `create(DeviceSpecSchema)` to create a new message.
  */
 export const DeviceSpecSchema: GenMessage<DeviceSpec> = /*@__PURE__*/
-  messageDesc(file_mir_api_v1_core, 17);
+  messageDesc(file_mir_api_v1_core, 21);
 
 /**
  *
@@ -801,7 +908,7 @@ export type DeviceProperties = Message<"mir_api.v1.DeviceProperties"> & {
  * Use `create(DevicePropertiesSchema)` to create a new message.
  */
 export const DevicePropertiesSchema: GenMessage<DeviceProperties> = /*@__PURE__*/
-  messageDesc(file_mir_api_v1_core, 18);
+  messageDesc(file_mir_api_v1_core, 22);
 
 /**
  *
@@ -851,7 +958,7 @@ export type DeviceStatus = Message<"mir_api.v1.DeviceStatus"> & {
  * Use `create(DeviceStatusSchema)` to create a new message.
  */
 export const DeviceStatusSchema: GenMessage<DeviceStatus> = /*@__PURE__*/
-  messageDesc(file_mir_api_v1_core, 19);
+  messageDesc(file_mir_api_v1_core, 23);
 
 /**
  * @generated from message mir_api.v1.DeviceStatusEvent
@@ -883,7 +990,7 @@ export type DeviceStatusEvent = Message<"mir_api.v1.DeviceStatusEvent"> & {
  * Use `create(DeviceStatusEventSchema)` to create a new message.
  */
 export const DeviceStatusEventSchema: GenMessage<DeviceStatusEvent> = /*@__PURE__*/
-  messageDesc(file_mir_api_v1_core, 20);
+  messageDesc(file_mir_api_v1_core, 24);
 
 /**
  *
@@ -912,7 +1019,7 @@ export type PropertiesTime = Message<"mir_api.v1.PropertiesTime"> & {
  * Use `create(PropertiesTimeSchema)` to create a new message.
  */
 export const PropertiesTimeSchema: GenMessage<PropertiesTime> = /*@__PURE__*/
-  messageDesc(file_mir_api_v1_core, 21);
+  messageDesc(file_mir_api_v1_core, 25);
 
 /**
  * @generated from message mir_api.v1.Schema
@@ -945,5 +1052,5 @@ export type Schema = Message<"mir_api.v1.Schema"> & {
  * Use `create(SchemaSchema)` to create a new message.
  */
 export const SchemaSchema: GenMessage<Schema> = /*@__PURE__*/
-  messageDesc(file_mir_api_v1_core, 22);
+  messageDesc(file_mir_api_v1_core, 26);
 

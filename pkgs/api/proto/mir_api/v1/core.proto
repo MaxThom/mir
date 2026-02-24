@@ -6,46 +6,46 @@ import "google/protobuf/struct.proto";
 import "mir_api/v1/common.proto";
 
 /*
-  Send a request to create a new device in the system
+   Send a request to create a new device in the system
 */
 message CreateDeviceRequest {
-    NewDevice device = 1; // Represent the specifications that can be updated
+  NewDevice device = 1; // Represent the specifications that can be updated
 }
 
 /*
-  Response to multiple create device request
-  Only the error or the response data will be set
+   Response to multiple create device request
+   Only the error or the response data will be set
 */
 message CreateDeviceResponse {
-    oneof response {
-        Device ok = 1; // device that were created
-        string error = 2; // Error message if troubleshooting is needed
-    }
+  oneof response {
+    Device ok = 1; // device that were created
+    string error = 2; // Error message if troubleshooting is needed
+  }
 }
 
 /*
-  Send a request to create a new device in the system
+   Send a request to create a new device in the system
 */
 message CreateDevicesRequest {
-    repeated NewDevice devices = 1; // Represent the specifications that can be updated
+  repeated NewDevice devices = 1; // Represent the specifications that can be updated
 }
 
 /*
-  Response to multiple create device request
-  Only the error or the response data will be set
+   Response to multiple create device request
+   Only the error or the response data will be set
 */
 message CreateDevicesResponse {
-    oneof response {
-        DeviceList ok = 1; // devices that were created
-        string error = 2; // Error message if troubleshooting is needed
-    }
+  oneof response {
+    DeviceList ok = 1; // devices that were created
+    string error = 2; // Error message if troubleshooting is needed
+  }
 }
 
 /*
-  Send a request to update a device in the system
-  - Optional field, means can be nil
-  - when nil, mean we do not need to set them
-  - when nil, for a map value, it means mark for deletion
+   Send a request to update a device in the system
+   - Optional field, means can be nil
+   - when nil, mean we do not need to set them
+   - when nil, for a map value, it means mark for deletion
 */
 message UpdateDeviceRequest {
   DeviceTarget targets = 1; // To target a set of devices, search using ids, labels and annotations
@@ -75,19 +75,19 @@ message UpdateDeviceRequest {
     PropertiesTime properties = 4; // Time of last update for properties
   }
   message Schema {
-	optional bytes compressed_schema = 1; // Schema in bytes
-	repeated string package_names = 2; // Packages names in schema
-	optional Timestamp last_schema_fetch = 3; // Last request for a schema update from device
+    optional bytes compressed_schema = 1; // Schema in bytes
+    repeated string package_names = 2; // Packages names in schema
+    optional Timestamp last_schema_fetch = 3; // Last request for a schema update from device
   }
   message PropertiesTime {
-      map<string, Timestamp> desired = 1; // Each desired properties time of last update
-      map<string, Timestamp> reported = 2; // Each reported properties time of last update
+    map<string, Timestamp> desired = 1; // Each desired properties time of last update
+    map<string, Timestamp> reported = 2; // Each reported properties time of last update
   }
 }
 
 /*
-  Response to the create device request
-  Only the error or the response data will be set
+   Response to the create device request
+   Only the error or the response data will be set
 */
 message UpdateDeviceResponse {
   oneof response {
@@ -97,9 +97,9 @@ message UpdateDeviceResponse {
 }
 
 message MergeDeviceRequest {
-    DeviceTarget targets = 1; // To target a set of devices, search using ids, labels and annotations
+  DeviceTarget targets = 1; // To target a set of devices, search using ids, labels and annotations
 
-    google.protobuf.Struct device = 2;
+  google.protobuf.Struct device = 2;
 }
 
 message MergeDeviceResponse {
@@ -110,15 +110,15 @@ message MergeDeviceResponse {
 }
 
 /*
-  Send a request to delete a device in the system
+   Send a request to delete a device in the system
 */
 message DeleteDeviceRequest {
   DeviceTarget targets = 1; // To target a set of devices, search using ids, labels and annotations
 }
 
 /*
-  Response to the create device request
-  Only the error or the response data will be set
+   Response to the create device request
+   Only the error or the response data will be set
 */
 message DeleteDeviceResponse {
   oneof response {
@@ -128,7 +128,7 @@ message DeleteDeviceResponse {
 }
 
 /*
-  Send a request to list devices in the system
+   Send a request to list devices in the system
 */
 message ListDeviceRequest {
   DeviceTarget targets = 1; // To target a set of devices, search using ids, labels and annotations
@@ -136,8 +136,8 @@ message ListDeviceRequest {
 }
 
 /*
-  Response to the create device request
-  Only the error or the response data will be set
+   Response to the create device request
+   Only the error or the response data will be set
 */
 message ListDeviceResponse {
   oneof response {
@@ -147,8 +147,27 @@ message ListDeviceResponse {
 }
 
 /*
-  Targets is used to target a set of devices using
-  a combination of ids, labels and annotations
+   Send a request to refresh device schema in the system
+*/
+message RefreshDeviceSchemaRequest {
+  DeviceTarget targets = 1; // To target a set of devices, search using ids, labels and annotations
+}
+
+/*
+   Response to refresh device schema request
+   If the device schema can't be fetched from the device,
+   it will show the latest schema in the db
+*/
+message RefreshDeviceSchemaResponse {
+  oneof response {
+    DeviceListWithError ok = 1; // Devices with schema updated
+    string error = 2; // Error message if troubleshooting is needed
+  }
+}
+
+/*
+   Targets is used to target a set of devices using
+   a combination of ids, labels and annotations
 */
 message DeviceTarget {
   repeated string names = 1; // names of the objects
@@ -158,21 +177,36 @@ message DeviceTarget {
 }
 
 /*
-* A set of devices
-*/
+ * A set of devices
+ */
 message DeviceList {
   repeated Device devices = 1;
 }
 
 /*
-* A set of devices with only their Id
-*/
+ * A set of devices with error field to represent if something went wrong during the operation
+ */
+message DeviceListWithError {
+  repeated DeviceWithError devices = 1;
+}
+
+/*
+ * A device with error field to represent if something went wrong during the operation
+ */
+message DeviceWithError {
+  Device device = 1;
+  string error = 2; // HTTP like error if something went wrong
+}
+
+/*
+ * A set of devices with only their Id
+ */
 message DeviceIdList {
   repeated string device_ids = 1;
 }
 
 /*
-  Represent a device in the system
+   Represent a device in the system
 */
 message Device {
   string api_version = 1; // Current version of the spec
@@ -184,30 +218,30 @@ message Device {
 }
 
 message NewDevice {
-    Meta meta = 1; // Represent the specifications that can be updated
-    DeviceSpec spec = 2; // Represent device twin specific config from Mir
+  Meta meta = 1; // Represent the specifications that can be updated
+  DeviceSpec spec = 2; // Represent device twin specific config from Mir
 }
 
 /*
-* Represent configuration from Mir itself for the twin specifically
-*/
+ * Represent configuration from Mir itself for the twin specifically
+ */
 message DeviceSpec {
-    string device_id = 1; // Represent the Mir id of the device
-    bool disabled = 2; // If disabled, device will be cut off from communication
+  string device_id = 1; // Represent the Mir id of the device
+  bool disabled = 2; // If disabled, device will be cut off from communication
 }
 
 /*
-* Devices desired properties from the users
-* and reported properties from the devices
-*/
+ * Devices desired properties from the users
+ * and reported properties from the devices
+ */
 message DeviceProperties {
-    google.protobuf.Struct desired = 1;
-    google.protobuf.Struct reported = 2;
+  google.protobuf.Struct desired = 1;
+  google.protobuf.Struct reported = 2;
 }
 
 /*
-* Status fields describe the device conditions monitored by Mir
-*/
+ * Status fields describe the device conditions monitored by Mir
+ */
 message DeviceStatus {
   Timestamp last_hearthbeat = 1; // Represent the time when the last hearthbeat was received
   bool online = 2; // The device is online and sending heathbeath signal
@@ -217,23 +251,22 @@ message DeviceStatus {
 }
 
 message DeviceStatusEvent {
-    string type = 1;
-    string reason = 2;
-    string message = 3;
-    Timestamp first_at = 4;
+  string type = 1;
+  string reason = 2;
+  string message = 3;
+  Timestamp first_at = 4;
 }
 
-
 /*
-* Devices properties time of last update
-*/
+ * Devices properties time of last update
+ */
 message PropertiesTime {
-    map<string, Timestamp> desired = 1; // Each desired properties time of last update
-    map<string, Timestamp> reported = 2; // Each reported properties time of last update
+  map<string, Timestamp> desired = 1; // Each desired properties time of last update
+  map<string, Timestamp> reported = 2; // Each reported properties time of last update
 }
 
 message Schema {
-	bytes compressed_schema = 1; // Schema in bytes
-	repeated string package_names = 2; // Packages names in schema
-	Timestamp last_schema_fetch = 3; // Last request for a schema update from device
+  bytes compressed_schema = 1; // Schema in bytes
+  repeated string package_names = 2; // Packages names in schema
+  Timestamp last_schema_fetch = 3; // Last request for a schema update from device
 }

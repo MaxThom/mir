@@ -189,6 +189,9 @@ func (s *CoreServer) Serve() error {
 	if err := s.m.Device().Schema().QueueSubscribe(ServiceName, "*", s.schemaSub); err != nil {
 		return err
 	}
+	if err := s.m.Client().RefreshSchema().QueueSubscribe(ServiceName, s.schemaRefreshSub); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -546,6 +549,7 @@ func (s *CoreServer) hearthbeatSub(msg *mir.Msg, deviceId string, hello mir_v1.D
 	msg.Ack()
 }
 
+// Sub on the device sending it's schema by himself
 func (s *CoreServer) schemaSub(msg *mir.Msg, deviceId string, sch *mir_proto.MirProtoSchema, err error) {
 	if err != nil {
 		l.Error().Err(err).Msg("upstream error in sdk")
@@ -581,6 +585,73 @@ func (s *CoreServer) schemaSub(msg *mir.Msg, deviceId string, sch *mir_proto.Mir
 	}
 
 	msg.Ack()
+}
+
+// Sub on clients requesting a schema refresh from the devices
+func (s *CoreServer) schemaRefreshSub(msg *mir.Msg, clientId string, t mir_v1.DeviceTarget) ([]mir.DeviceWithError, error) {
+	l.Debug().Str("client_id", clientId).Str("route", "schema_refresh").Str("payload", fmt.Sprintf("%v", t)).Msg("schema refresh request")
+	requestTotal.WithLabelValues("schema_refresh").Inc()
+	degradedMode := false
+
+	errs := []string{}
+	if len(t.Ids) == 0 &&
+		len(t.Names) == 0 &&
+		len(t.Namespaces) == 0 &&
+		len(t.Labels) == 0 {
+		errs = append(errs, mir_v1.ErrorNoDeviceTargetProvided.Error())
+	}
+
+	if len(errs) > 0 {
+		l.Error().Err(fmt.Errorf("%w: %s", mir_v1.ErrorBadRequest, strings.Join(errs, ", "))).Msg("")
+		requestErrorTotal.WithLabelValues("schema_refresh").Inc()
+		return nil, fmt.Errorf("%w: %s", mir_v1.ErrorBadRequest, errs)
+	}
+
+	devs, err := s.store.ListDevice(t, false)
+	if err != nil {
+		if strings.Contains(err.Error(), surreal.ErrDatabaseDisconnected.Error()) {
+			degradedMode = true
+			if !t.HasOnlyIdsTarget() {
+				return nil, fmt.Errorf("running in degraded mode as database is disconnected, only device ids can be used")
+			}
+			devs = []mir_v1.Device{}
+			for _, i := range t.Ids {
+				devs = append(devs, mir_v1.NewDevice().WithId(i))
+			}
+		} else {
+			return nil, err
+		}
+	} else if len(devs) == 0 {
+		return nil, mng.ErrorNoDeviceFound
+	}
+
+	devsUpd := make([]mir.DeviceWithError, len(devs))
+	for i, d := range devs {
+		l.Debug().Str("route", "schema_refresh").Str("device_id", d.Spec.DeviceId).Msg("fetching schema from device")
+		sch, err := s.m.Device().Schema().Request(d.Spec.DeviceId)
+		newDev := d.WithSchema(sch, time.Now().UTC())
+		devsUpd[i] = mir.DeviceWithError{
+			Device: newDev,
+		}
+		if err != nil {
+			l.Error().Err(err).Str("device_id", d.Spec.DeviceId).Msg("error fetching schema from device")
+			devsUpd[i].Error = err.Error()
+		} else if !degradedMode {
+			// Update the store with the new schema
+			_, err := s.m.Client().UpdateDevice().Request(
+				mir_v1.DeviceTarget{
+					Ids: []string{d.Spec.DeviceId},
+				},
+				newDev,
+			)
+			if err != nil {
+				l.Error().Err(err).Str("device_id", d.Spec.DeviceId).Msg("error updating device with new schema")
+				devsUpd[i].Error = err.Error()
+			}
+		}
+	}
+
+	return devsUpd, nil
 }
 
 func publishDeviceOnlineEvent(m *mir.Mir, msg *mir.Msg, d mir_v1.Device) error {
