@@ -13,6 +13,7 @@ import (
 	"github.com/maxthom/mir/internal/clients/core_client"
 	"github.com/maxthom/mir/internal/externals/mng"
 	"github.com/maxthom/mir/internal/libs/api/metrics"
+	"github.com/maxthom/mir/internal/libs/external"
 	"github.com/maxthom/mir/internal/libs/external/surreal"
 	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
 	"github.com/maxthom/mir/internal/libs/retry"
@@ -113,35 +114,6 @@ func NewCore(logger zerolog.Logger, m *mir.Mir, store mng.MirStore, opts *Option
 		opts.DeviceOfflineAfter = 30 * time.Second
 	}
 
-	hearbeats := map[mir_v1.DeviceId]time.Time{}
-
-	// Preload hearthbeat map. Required in case the
-	// app is down while a device is also, but report as online
-	// because it went offline when the app was down
-	devices, err := store.ListDevice(mir_v1.DeviceTarget{}, false)
-	if err != nil {
-		l.Error().Err(err).Msg("error occure while executing list query")
-	}
-	timeNow := time.Now().UTC()
-	for _, d := range devices {
-		// We only add the online ones
-		// This way, the pulse doesnt do a check on offline device
-		// When an offline device sends a first pulse, it get added
-		// to the map.
-		// If a device becomes offline, it's removed from the map
-		if d.Status.Online != nil && *d.Status.Online {
-			// Edge case, device will be set to offline on next pulsor offline cycle
-			if d.Status.LastHearthbeat == nil {
-				hearbeats[mir_v1.DeviceId(d.Spec.DeviceId)] = timeNow
-			} else {
-				hearbeats[mir_v1.DeviceId(d.Spec.DeviceId)] = d.Status.LastHearthbeat.Time
-			}
-			deviceStatusCount.WithLabelValues("online").Inc()
-		} else {
-			deviceStatusCount.WithLabelValues("offline").Inc()
-		}
-	}
-
 	ctx, cancelFn := context.WithCancel(context.Background())
 	return &CoreServer{
 		ctx:                    ctx,
@@ -149,7 +121,7 @@ func NewCore(logger zerolog.Logger, m *mir.Mir, store mng.MirStore, opts *Option
 		wg:                     &sync.WaitGroup{},
 		m:                      m,
 		store:                  store,
-		hearthbeats:            hearbeats,
+		hearthbeats:            make(map[mir_v1.DeviceId]time.Time),
 		hearthbeatsWriteBuffer: make(map[mir_v1.DeviceId]mir_v1.DeviceHello),
 		opts:                   *opts,
 	}, nil
@@ -157,6 +129,45 @@ func NewCore(logger zerolog.Logger, m *mir.Mir, store mng.MirStore, opts *Option
 
 // Using the db and bus, listen for telemetry, deserialize using proto and push to line protocol db
 func (s *CoreServer) Serve() error {
+	l.Debug().Msg("loading hearthbeat map")
+	s.loadHearthbeatMap()
+	s.wg.Add(1)
+	go func() {
+		defer s.wg.Done()
+		for {
+			select {
+			case <-s.ctx.Done():
+				l.Debug().Msg("shutting down db status listener")
+				return
+			case status := <-s.store.StatusSubscribe():
+				if status == external.StatusConnected {
+					l.Debug().Msg("db reconnected, reloading hearthbeat map")
+					s.loadHearthbeatMap()
+				}
+			}
+		}
+	}()
+
+	s.wg.Add(1)
+	go func() {
+		offlineTicker := time.NewTicker(s.opts.DeviceOfflineFlush)
+		onlineTicker := time.NewTicker(s.opts.DeviceOnlineFlush)
+		defer offlineTicker.Stop()
+		defer onlineTicker.Stop()
+		defer s.wg.Done()
+		for {
+			select {
+			case <-s.ctx.Done():
+				l.Debug().Msg("shutting down pulsor task")
+				return
+			case <-offlineTicker.C:
+				s.hearthbeatOfflinePulsor(s.opts.DeviceOfflineAfter)
+			case <-onlineTicker.C:
+				s.hearthbeatOnlinePulsor()
+			}
+		}
+	}()
+
 	if err := s.m.Client().CreateDevice().QueueSubscribe(ServiceName, s.createDeviceSub); err != nil {
 		return err
 	}
@@ -179,26 +190,42 @@ func (s *CoreServer) Serve() error {
 		return err
 	}
 
-	s.wg.Add(1)
-	go func() {
-		offlineTicker := time.NewTicker(s.opts.DeviceOfflineFlush)
-		onlineTicker := time.NewTicker(s.opts.DeviceOnlineFlush)
-		defer offlineTicker.Stop()
-		defer onlineTicker.Stop()
-		defer s.wg.Done()
-		for {
-			select {
-			case <-s.ctx.Done():
-				l.Debug().Msg("shutting down pulsor task")
-				return
-			case <-offlineTicker.C:
-				s.hearthbeatOfflinePulsor(s.opts.DeviceOfflineAfter)
-			case <-onlineTicker.C:
-				s.hearthbeatOnlinePulsor()
-			}
-		}
-	}()
 	return nil
+}
+
+func (s *CoreServer) loadHearthbeatMap() {
+	// Preload hearthbeat map. Required in case the
+	// app is down while a device is also, but report as online
+	// because it went offline when the app was down
+	devices, err := s.store.ListDevice(mir_v1.DeviceTarget{}, false)
+	if err != nil {
+		l.Error().Err(err).Msg("error occure while executing list query")
+	}
+	timeNow := time.Now().UTC()
+	s.hearthbeatsMutex.Lock()
+	defer s.hearthbeatsMutex.Unlock()
+	deviceStatusCount.WithLabelValues("online").Set(0)
+	deviceStatusCount.WithLabelValues("offline").Set(0)
+	for _, d := range devices {
+		// We only add the online ones
+		// This way, the pulse doesnt do a check on offline device
+		// When an offline device sends a first pulse, it get added
+		// to the map.
+		// If a device becomes offline, it's removed from the map
+		if d.Status.Online != nil && *d.Status.Online {
+			if _, ok := s.hearthbeats[mir_v1.DeviceId(d.Spec.DeviceId)]; !ok {
+				// Edge case, device will be set to offline on next pulsor offline cycle
+				if d.Status.LastHearthbeat == nil {
+					s.hearthbeats[mir_v1.DeviceId(d.Spec.DeviceId)] = timeNow
+				} else {
+					s.hearthbeats[mir_v1.DeviceId(d.Spec.DeviceId)] = d.Status.LastHearthbeat.Time
+				}
+			}
+			deviceStatusCount.WithLabelValues("online").Inc()
+		} else {
+			deviceStatusCount.WithLabelValues("offline").Inc()
+		}
+	}
 }
 
 func (s *CoreServer) Shutdown() error {

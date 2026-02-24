@@ -5,8 +5,7 @@
 ### Bug
 
 - [ ] Add deviceid to badger
-- [ ] core bug with reconnect of loading devices
-- [ ] boolean false not get written in db
+- [ ] boolean false not get written in db, properties default not getting written
 
 ### Features
 
