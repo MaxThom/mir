@@ -14,6 +14,19 @@
 
 	export type TypeFilter = 'all' | 'normal' | 'warning';
 
+	type Props = {
+		eventCount: number;
+		globalFilter: string;
+		typeFilter: TypeFilter;
+		dateRange: DateRange | undefined;
+		allReasons: string[];
+		reasonFilter: Set<string>;
+		onglobalfilterchange: (value: string) => void;
+		ontypefilterchange: (value: TypeFilter) => void;
+		ondaterangechange: (value: DateRange | undefined) => void;
+		onreasonfiltertoggle: (reason: string) => void;
+	};
+
 	let {
 		eventCount,
 		globalFilter,
@@ -25,18 +38,7 @@
 		ontypefilterchange,
 		ondaterangechange,
 		onreasonfiltertoggle
-	}: {
-		eventCount: number;
-		globalFilter: string;
-		typeFilter: TypeFilter;
-		dateRange: DateRange | undefined;
-		allReasons: string[];
-		reasonFilter: Set<string>;
-		onglobalfilterchange: (value: string) => void;
-		ontypefilterchange: (value: TypeFilter) => void;
-		ondaterangechange: (value: DateRange | undefined) => void;
-		onreasonfiltertoggle: (reason: string) => void;
-	} = $props();
+	}: Props = $props();
 
 	const typeOptions: { value: TypeFilter; label: string }[] = [
 		{ value: 'all', label: 'All' },
@@ -56,7 +58,7 @@
 
 	let hasDateRange = $derived(!!dateRange?.start && !!dateRange?.end);
 
-	let calendarValue = $state<DateRange | undefined>(undefined);
+	let calendarValue = $derived<DateRange | undefined>(undefined);
 
 	// Keep the calendar in sync when the parent resets the range (e.g. X button)
 	$effect(() => {
@@ -119,7 +121,10 @@
 				<Button
 					variant="ghost"
 					size="sm"
-					class="h-7 rounded-none px-2.5 text-xs first:rounded-l-md last:rounded-r-md {typeFilter === opt.value ? 'bg-muted font-medium text-foreground' : 'text-muted-foreground'}"
+					class="h-7 rounded-none px-2.5 text-xs first:rounded-l-md last:rounded-r-md {typeFilter ===
+					opt.value
+						? 'bg-muted font-medium text-foreground'
+						: 'text-muted-foreground'}"
 					onclick={() => ontypefilterchange(opt.value)}
 				>
 					{opt.label}
