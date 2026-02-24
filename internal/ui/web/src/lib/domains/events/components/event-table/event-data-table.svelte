@@ -29,7 +29,7 @@
 	import { Badge } from '$lib/shared/components/shadcn/badge';
 	import { cn } from '$lib/utils';
 	import type { MirEvent } from '@mir/sdk';
-	import { SvelteDate, SvelteSet } from 'svelte/reactivity';
+	import { SvelteSet } from 'svelte/reactivity';
 	import { eventColumns, eventGlobalFilterFn } from './event-columns';
 	import EventTableToolbar from './event-table-toolbar.svelte';
 	import type { TypeFilter } from './event-table-toolbar.svelte';
@@ -43,11 +43,15 @@
 	let {
 		events,
 		isLoading = false,
-		error = null
+		hasLoaded = false,
+		error = null,
+		onrefetch
 	}: {
 		events: MirEvent[];
 		isLoading?: boolean;
+		hasLoaded?: boolean;
 		error?: string | null;
+		onrefetch?: (from?: Date, to?: Date) => void;
 	} = $props();
 
 	let sorting = $state<SortingState>([{ id: 'lastAt', desc: true }]);
@@ -69,15 +73,6 @@
 	let filteredEvents = $derived.by(() => {
 		let evts = events;
 		if (typeFilter !== 'all') evts = evts.filter((e) => e.spec?.type === typeFilter);
-		if (dateRange?.start && dateRange?.end) {
-			const tz = getLocalTimeZone();
-			const start = dateRange.start.toDate(tz);
-			const end = new SvelteDate(dateRange.end.toDate(tz));
-			end.setHours(23, 59, 59, 999);
-			evts = evts.filter(
-				(e) => e.status?.lastAt && e.status.lastAt >= start && e.status.lastAt <= end
-			);
-		}
 		if (reasonFilter.size > 0) evts = evts.filter((e) => reasonFilter.has(e.spec?.reason ?? ''));
 		return evts;
 	});
@@ -249,6 +244,15 @@
 		ondaterangechange={(v) => {
 			dateRange = v;
 			pagination = { ...pagination, pageIndex: 0 };
+			if (v?.start && v?.end) {
+				const tz = getLocalTimeZone();
+				const from = v.start.toDate(tz);
+				const to = v.end.toDate(tz);
+				to.setHours(23, 59, 59, 999);
+				onrefetch?.(from, to);
+			} else {
+				onrefetch?.();
+			}
 		}}
 		onreasonfiltertoggle={(reason) => {
 			if (reasonFilter.has(reason)) reasonFilter.delete(reason);
@@ -307,7 +311,7 @@
 					{/each}
 				</Table.Header>
 				<Table.Body>
-					{#if isLoading && events.length === 0}
+					{#if isLoading && !hasLoaded}
 						{#each Array(5), i (i)}
 							<Table.Row class="hover:bg-transparent">
 								{#each eventColumns, j (j)}
