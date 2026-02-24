@@ -20,7 +20,7 @@
 
 	deviceCtx.setTabRefresh(() => {
 		if (mirStore.mir && deviceName) {
-			eventStore.loadEvents(mirStore.mir, deviceName, deviceNamespace, 200);
+			eventStore.loadEvents(mirStore.mir, deviceName, deviceNamespace, 200, eventStore.lastFrom, eventStore.lastTo);
 		}
 	});
 	onDestroy(() => deviceCtx.setTabRefresh(null));
@@ -36,5 +36,11 @@
 <EventDataTable
 	events={eventStore.events}
 	isLoading={eventStore.isLoading}
+	hasLoaded={eventStore.hasLoaded}
 	error={eventStore.error}
+	onrefetch={(from, to) => {
+		if (mirStore.mir && deviceName) {
+			eventStore.loadEvents(mirStore.mir, deviceName, deviceNamespace, 200, from, to);
+		}
+	}}
 />
