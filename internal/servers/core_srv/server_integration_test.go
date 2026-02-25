@@ -2,6 +2,7 @@ package core_srv
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"slices"
@@ -2586,6 +2587,95 @@ EvtLoop:
 	s.Unsubscribe()
 	u.Unsubscribe()
 	c.Unsubscribe()
+}
+
+func TestDeviceRefreshSchema(t *testing.T) {
+	// Arrange
+	ctx, cancel := context.WithCancel(context.Background())
+	s := swarm.NewSwarm(mSdk.Bus)
+	id := "refresh_schema"
+	if _, err := s.AddDevice(&mir_apiv1.NewDevice{
+		Meta: &mir_apiv1.Meta{
+			Name:      id,
+			Namespace: "testing_core",
+			Labels: map[string]string{
+				"testing": "core",
+			},
+		},
+		Spec: &mir_apiv1.DeviceSpec{
+			DeviceId: id,
+		},
+	}).WithStoreOptions(mirDev.StoreOptions{InMemory: true}).
+		WithSchema(core_testv1.File_core_test_v1_core_proto).
+		Incubate(); err != nil {
+		t.Error(err)
+	}
+
+	// Act
+	wgs, err := s.Deploy(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+
+	time.Sleep(3 * time.Second)
+	devs, err := mSdk.Client().RefreshSchema().Request(s.ToTarget())
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	timeNow := time.Now().UTC()
+	timeDiff := timeNow.Sub(devs[0].Device.Status.Schema.LastSchemaFetch.Time)
+
+	assert.Equal(t, "", devs[0].Error)
+	assert.Equal(t, true, timeDiff.Seconds() < 20)
+
+	cancel()
+	for _, wg := range wgs {
+		wg.Wait()
+	}
+}
+
+func TestDeviceRefreshSchemaNoReach(t *testing.T) {
+	// Arrange
+	s := swarm.NewSwarm(mSdk.Bus)
+	id := "refresh_schema_noreach"
+	if _, err := s.AddDevice(&mir_apiv1.NewDevice{
+		Meta: &mir_apiv1.Meta{
+			Name:      id,
+			Namespace: "testing_core",
+			Labels: map[string]string{
+				"testing": "core",
+			},
+		},
+		Spec: &mir_apiv1.DeviceSpec{
+			DeviceId: id,
+		},
+	}).WithStoreOptions(mirDev.StoreOptions{InMemory: true}).
+		WithSchema(core_testv1.File_core_test_v1_core_proto).
+		Incubate(); err != nil {
+		t.Error(err)
+	}
+
+	time.Sleep(3 * time.Second)
+	devs, err := mSdk.Client().RefreshSchema().Request(s.ToTarget())
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.ErrorContains(t, errors.New(devs[0].Error), "cannot reconcile device schema: error requesting device schema: error publishing request message: nats: no responders available for request")
+	assert.Equal(t, true, devs[0].Device.Status.Schema.LastSchemaFetch.Time.IsZero())
+}
+
+func TestDeviceRefreshSchemaNoTarget(t *testing.T) {
+	// Arrange
+
+	// Act
+	_, err := mSdk.Client().RefreshSchema().Request(mir_v1.DeviceTarget{})
+
+	// Assert
+	assert.ErrorContains(t, err, "No device target provided")
 }
 
 func TestDeviceUpdateDesiredProperties(t *testing.T) {

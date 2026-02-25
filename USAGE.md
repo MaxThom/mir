@@ -12,6 +12,8 @@ pprof -seconds 10 -http=localhost:8181 http://localhost:3015/debug/pprof/profile
 just tx-test
 # on terminal
 just test
+# clean data
+just cleandb
 ```
 
 1. Start the supporting infrastructure:
