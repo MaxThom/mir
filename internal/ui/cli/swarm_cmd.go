@@ -116,7 +116,7 @@ func launchSwarm(ctx context.Context, m *mSdk.Mir, logLvl mir.LogLevel, mirCtx u
 	_, err := s.AddDeviceWithIds(ids).
 		WithSchema(swarmv1.File_swarm_v1_demo_proto).
 		WithLogLevel(logLvl).
-		WithPrettyLogger(false).
+		WithPrettyLogger(true).
 		WithCredentials(mirCtx.Credentials).
 		WithCerticate(mirCtx.TlsCert, mirCtx.TlsKey).
 		WithCA(mirCtx.RootCA).

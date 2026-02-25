@@ -321,13 +321,13 @@ func TestServerRoutes_ListTelemetry(t *testing.T) {
 	}
 
 	err := m.Client().ListTelemetry().Subscribe(
-		func(msg *Msg, clientId string, req *mir_apiv1.SendListTelemetryRequest) ([]*mir_apiv1.DevicesTelemetry, error) {
+		func(msg *Msg, clientId string, req *mir_apiv1.ListTelemetryRequest) ([]*mir_apiv1.DevicesTelemetry, error) {
 			return testTelemetry, nil
 		},
 	)
 	assert.NilError(t, err)
 
-	resp, err := m.Client().ListTelemetry().Request(&mir_apiv1.SendListTelemetryRequest{
+	resp, err := m.Client().ListTelemetry().Request(&mir_apiv1.ListTelemetryRequest{
 		Targets: &mir_apiv1.DeviceTarget{
 			Ids: []string{deviceID},
 		},

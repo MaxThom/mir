@@ -21,30 +21,119 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type SendListTelemetryRequest struct {
+// In protobuf binary encoding, only set fields are written. Unset fields take zero bytes on the wire.
+type DataType int32
+
+const (
+	DataType_DATA_TYPE_UNSPECIFIED DataType = 0
+	DataType_DATA_TYPE_INT32       DataType = 1
+	DataType_DATA_TYPE_INT64       DataType = 2
+	DataType_DATA_TYPE_SINT32      DataType = 3
+	DataType_DATA_TYPE_SINT64      DataType = 4
+	DataType_DATA_TYPE_UINT32      DataType = 5
+	DataType_DATA_TYPE_UINT64      DataType = 6
+	DataType_DATA_TYPE_FIXED32     DataType = 7
+	DataType_DATA_TYPE_FIXED64     DataType = 8
+	DataType_DATA_TYPE_SFIXED32    DataType = 9
+	DataType_DATA_TYPE_SFIXED64    DataType = 10
+	DataType_DATA_TYPE_FLOAT       DataType = 11
+	DataType_DATA_TYPE_DOUBLE      DataType = 12
+	DataType_DATA_TYPE_BOOL        DataType = 13
+	DataType_DATA_TYPE_STRING      DataType = 14
+	DataType_DATA_TYPE_BYTES       DataType = 15
+)
+
+// Enum value maps for DataType.
+var (
+	DataType_name = map[int32]string{
+		0:  "DATA_TYPE_UNSPECIFIED",
+		1:  "DATA_TYPE_INT32",
+		2:  "DATA_TYPE_INT64",
+		3:  "DATA_TYPE_SINT32",
+		4:  "DATA_TYPE_SINT64",
+		5:  "DATA_TYPE_UINT32",
+		6:  "DATA_TYPE_UINT64",
+		7:  "DATA_TYPE_FIXED32",
+		8:  "DATA_TYPE_FIXED64",
+		9:  "DATA_TYPE_SFIXED32",
+		10: "DATA_TYPE_SFIXED64",
+		11: "DATA_TYPE_FLOAT",
+		12: "DATA_TYPE_DOUBLE",
+		13: "DATA_TYPE_BOOL",
+		14: "DATA_TYPE_STRING",
+		15: "DATA_TYPE_BYTES",
+	}
+	DataType_value = map[string]int32{
+		"DATA_TYPE_UNSPECIFIED": 0,
+		"DATA_TYPE_INT32":       1,
+		"DATA_TYPE_INT64":       2,
+		"DATA_TYPE_SINT32":      3,
+		"DATA_TYPE_SINT64":      4,
+		"DATA_TYPE_UINT32":      5,
+		"DATA_TYPE_UINT64":      6,
+		"DATA_TYPE_FIXED32":     7,
+		"DATA_TYPE_FIXED64":     8,
+		"DATA_TYPE_SFIXED32":    9,
+		"DATA_TYPE_SFIXED64":    10,
+		"DATA_TYPE_FLOAT":       11,
+		"DATA_TYPE_DOUBLE":      12,
+		"DATA_TYPE_BOOL":        13,
+		"DATA_TYPE_STRING":      14,
+		"DATA_TYPE_BYTES":       15,
+	}
+)
+
+func (x DataType) Enum() *DataType {
+	p := new(DataType)
+	*p = x
+	return p
+}
+
+func (x DataType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (DataType) Descriptor() protoreflect.EnumDescriptor {
+	return file_mir_api_v1_tlm_proto_enumTypes[0].Descriptor()
+}
+
+func (DataType) Type() protoreflect.EnumType {
+	return &file_mir_api_v1_tlm_proto_enumTypes[0]
+}
+
+func (x DataType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use DataType.Descriptor instead.
+func (DataType) EnumDescriptor() ([]byte, []int) {
+	return file_mir_api_v1_tlm_proto_rawDescGZIP(), []int{0}
+}
+
+type ListTelemetryRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Targets       *DeviceTarget          `protobuf:"bytes,1,opt,name=targets,proto3" json:"targets,omitempty"`                                                                           // To target a set of devices, search using ids, labels and annotations
-	Measurements  []string               `protobuf:"bytes,2,rep,name=measurements,proto3" json:"measurements,omitempty"`                                                                 // List of measurements to exapend
+	Measurements  []string               `protobuf:"bytes,2,rep,name=measurements,proto3" json:"measurements,omitempty"`                                                                 // List of measurements to expand
 	Filters       map[string]string      `protobuf:"bytes,3,rep,name=filters,proto3" json:"filters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // Filter measurements by labels, if key has no value, expand to see all options
 	RefreshSchema bool                   `protobuf:"varint,4,opt,name=refresh_schema,json=refreshSchema,proto3" json:"refresh_schema,omitempty"`                                         // Force a schema refresh from the device
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *SendListTelemetryRequest) Reset() {
-	*x = SendListTelemetryRequest{}
+func (x *ListTelemetryRequest) Reset() {
+	*x = ListTelemetryRequest{}
 	mi := &file_mir_api_v1_tlm_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *SendListTelemetryRequest) String() string {
+func (x *ListTelemetryRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SendListTelemetryRequest) ProtoMessage() {}
+func (*ListTelemetryRequest) ProtoMessage() {}
 
-func (x *SendListTelemetryRequest) ProtoReflect() protoreflect.Message {
+func (x *ListTelemetryRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_mir_api_v1_tlm_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -56,64 +145,64 @@ func (x *SendListTelemetryRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SendListTelemetryRequest.ProtoReflect.Descriptor instead.
-func (*SendListTelemetryRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use ListTelemetryRequest.ProtoReflect.Descriptor instead.
+func (*ListTelemetryRequest) Descriptor() ([]byte, []int) {
 	return file_mir_api_v1_tlm_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *SendListTelemetryRequest) GetTargets() *DeviceTarget {
+func (x *ListTelemetryRequest) GetTargets() *DeviceTarget {
 	if x != nil {
 		return x.Targets
 	}
 	return nil
 }
 
-func (x *SendListTelemetryRequest) GetMeasurements() []string {
+func (x *ListTelemetryRequest) GetMeasurements() []string {
 	if x != nil {
 		return x.Measurements
 	}
 	return nil
 }
 
-func (x *SendListTelemetryRequest) GetFilters() map[string]string {
+func (x *ListTelemetryRequest) GetFilters() map[string]string {
 	if x != nil {
 		return x.Filters
 	}
 	return nil
 }
 
-func (x *SendListTelemetryRequest) GetRefreshSchema() bool {
+func (x *ListTelemetryRequest) GetRefreshSchema() bool {
 	if x != nil {
 		return x.RefreshSchema
 	}
 	return false
 }
 
-type SendListTelemetryResponse struct {
+type ListTelemetryResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Types that are valid to be assigned to Response:
 	//
-	//	*SendListTelemetryResponse_Ok
-	//	*SendListTelemetryResponse_Error
-	Response      isSendListTelemetryResponse_Response `protobuf_oneof:"response"`
+	//	*ListTelemetryResponse_Ok
+	//	*ListTelemetryResponse_Error
+	Response      isListTelemetryResponse_Response `protobuf_oneof:"response"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *SendListTelemetryResponse) Reset() {
-	*x = SendListTelemetryResponse{}
+func (x *ListTelemetryResponse) Reset() {
+	*x = ListTelemetryResponse{}
 	mi := &file_mir_api_v1_tlm_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *SendListTelemetryResponse) String() string {
+func (x *ListTelemetryResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SendListTelemetryResponse) ProtoMessage() {}
+func (*ListTelemetryResponse) ProtoMessage() {}
 
-func (x *SendListTelemetryResponse) ProtoReflect() protoreflect.Message {
+func (x *ListTelemetryResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_mir_api_v1_tlm_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -125,51 +214,269 @@ func (x *SendListTelemetryResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SendListTelemetryResponse.ProtoReflect.Descriptor instead.
-func (*SendListTelemetryResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use ListTelemetryResponse.ProtoReflect.Descriptor instead.
+func (*ListTelemetryResponse) Descriptor() ([]byte, []int) {
 	return file_mir_api_v1_tlm_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *SendListTelemetryResponse) GetResponse() isSendListTelemetryResponse_Response {
+func (x *ListTelemetryResponse) GetResponse() isListTelemetryResponse_Response {
 	if x != nil {
 		return x.Response
 	}
 	return nil
 }
 
-func (x *SendListTelemetryResponse) GetOk() *TelemetryResponse {
+func (x *ListTelemetryResponse) GetOk() *TelemetryResponse {
 	if x != nil {
-		if x, ok := x.Response.(*SendListTelemetryResponse_Ok); ok {
+		if x, ok := x.Response.(*ListTelemetryResponse_Ok); ok {
 			return x.Ok
 		}
 	}
 	return nil
 }
 
-func (x *SendListTelemetryResponse) GetError() string {
+func (x *ListTelemetryResponse) GetError() string {
 	if x != nil {
-		if x, ok := x.Response.(*SendListTelemetryResponse_Error); ok {
+		if x, ok := x.Response.(*ListTelemetryResponse_Error); ok {
 			return x.Error
 		}
 	}
 	return ""
 }
 
-type isSendListTelemetryResponse_Response interface {
-	isSendListTelemetryResponse_Response()
+type isListTelemetryResponse_Response interface {
+	isListTelemetryResponse_Response()
 }
 
-type SendListTelemetryResponse_Ok struct {
+type ListTelemetryResponse_Ok struct {
 	Ok *TelemetryResponse `protobuf:"bytes,1,opt,name=ok,proto3,oneof"` // all telemetry per devices
 }
 
-type SendListTelemetryResponse_Error struct {
+type ListTelemetryResponse_Error struct {
 	Error string `protobuf:"bytes,2,opt,name=error,proto3,oneof"` // error if something went wrong
 }
 
-func (*SendListTelemetryResponse_Ok) isSendListTelemetryResponse_Response() {}
+func (*ListTelemetryResponse_Ok) isListTelemetryResponse_Response() {}
 
-func (*SendListTelemetryResponse_Error) isSendListTelemetryResponse_Response() {}
+func (*ListTelemetryResponse_Error) isListTelemetryResponse_Response() {}
+
+type QueryTelemetryRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Targets       *DeviceTarget          `protobuf:"bytes,1,opt,name=targets,proto3" json:"targets,omitempty"`                      // To target a set of devices, search using ids, labels and annotations
+	Measurement   string                 `protobuf:"bytes,2,opt,name=measurement,proto3" json:"measurement,omitempty"`              // Measurement to query
+	Fields        []string               `protobuf:"bytes,3,rep,name=fields,proto3" json:"fields,omitempty"`                        // List of fields to query, if empty, query all fields
+	StartTime     *Timestamp             `protobuf:"bytes,4,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"` // Start time of the query
+	EndTime       *Timestamp             `protobuf:"bytes,5,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`       // End time of the query
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *QueryTelemetryRequest) Reset() {
+	*x = QueryTelemetryRequest{}
+	mi := &file_mir_api_v1_tlm_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QueryTelemetryRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryTelemetryRequest) ProtoMessage() {}
+
+func (x *QueryTelemetryRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_mir_api_v1_tlm_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QueryTelemetryRequest.ProtoReflect.Descriptor instead.
+func (*QueryTelemetryRequest) Descriptor() ([]byte, []int) {
+	return file_mir_api_v1_tlm_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *QueryTelemetryRequest) GetTargets() *DeviceTarget {
+	if x != nil {
+		return x.Targets
+	}
+	return nil
+}
+
+func (x *QueryTelemetryRequest) GetMeasurement() string {
+	if x != nil {
+		return x.Measurement
+	}
+	return ""
+}
+
+func (x *QueryTelemetryRequest) GetFields() []string {
+	if x != nil {
+		return x.Fields
+	}
+	return nil
+}
+
+func (x *QueryTelemetryRequest) GetStartTime() *Timestamp {
+	if x != nil {
+		return x.StartTime
+	}
+	return nil
+}
+
+func (x *QueryTelemetryRequest) GetEndTime() *Timestamp {
+	if x != nil {
+		return x.EndTime
+	}
+	return nil
+}
+
+type QueryTelemetryResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Types that are valid to be assigned to Response:
+	//
+	//	*QueryTelemetryResponse_Ok
+	//	*QueryTelemetryResponse_Error
+	Response      isQueryTelemetryResponse_Response `protobuf_oneof:"response"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *QueryTelemetryResponse) Reset() {
+	*x = QueryTelemetryResponse{}
+	mi := &file_mir_api_v1_tlm_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QueryTelemetryResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryTelemetryResponse) ProtoMessage() {}
+
+func (x *QueryTelemetryResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_mir_api_v1_tlm_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QueryTelemetryResponse.ProtoReflect.Descriptor instead.
+func (*QueryTelemetryResponse) Descriptor() ([]byte, []int) {
+	return file_mir_api_v1_tlm_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *QueryTelemetryResponse) GetResponse() isQueryTelemetryResponse_Response {
+	if x != nil {
+		return x.Response
+	}
+	return nil
+}
+
+func (x *QueryTelemetryResponse) GetOk() *QueryTelemetry {
+	if x != nil {
+		if x, ok := x.Response.(*QueryTelemetryResponse_Ok); ok {
+			return x.Ok
+		}
+	}
+	return nil
+}
+
+func (x *QueryTelemetryResponse) GetError() string {
+	if x != nil {
+		if x, ok := x.Response.(*QueryTelemetryResponse_Error); ok {
+			return x.Error
+		}
+	}
+	return ""
+}
+
+type isQueryTelemetryResponse_Response interface {
+	isQueryTelemetryResponse_Response()
+}
+
+type QueryTelemetryResponse_Ok struct {
+	Ok *QueryTelemetry `protobuf:"bytes,1,opt,name=ok,proto3,oneof"` // all telemetry per devices
+}
+
+type QueryTelemetryResponse_Error struct {
+	Error string `protobuf:"bytes,2,opt,name=error,proto3,oneof"` // error if something went wrong
+}
+
+func (*QueryTelemetryResponse_Ok) isQueryTelemetryResponse_Response() {}
+
+func (*QueryTelemetryResponse_Error) isQueryTelemetryResponse_Response() {}
+
+type QueryTelemetry struct {
+	state         protoimpl.MessageState          `protogen:"open.v1"`
+	Headers       []string                        `protobuf:"bytes,1,rep,name=headers,proto3" json:"headers,omitempty"`                                    // List of telemetry headers
+	Datatype      []DataType                      `protobuf:"varint,2,rep,packed,name=datatype,proto3,enum=mir_api.v1.DataType" json:"datatype,omitempty"` // List of telemetry data type
+	Datapoints    []*QueryTelemetry_TelemetryData `protobuf:"bytes,3,rep,name=datapoints,proto3" json:"datapoints,omitempty"`                              // List of telemetry data, order is the same as headers
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *QueryTelemetry) Reset() {
+	*x = QueryTelemetry{}
+	mi := &file_mir_api_v1_tlm_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QueryTelemetry) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryTelemetry) ProtoMessage() {}
+
+func (x *QueryTelemetry) ProtoReflect() protoreflect.Message {
+	mi := &file_mir_api_v1_tlm_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QueryTelemetry.ProtoReflect.Descriptor instead.
+func (*QueryTelemetry) Descriptor() ([]byte, []int) {
+	return file_mir_api_v1_tlm_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *QueryTelemetry) GetHeaders() []string {
+	if x != nil {
+		return x.Headers
+	}
+	return nil
+}
+
+func (x *QueryTelemetry) GetDatatype() []DataType {
+	if x != nil {
+		return x.Datatype
+	}
+	return nil
+}
+
+func (x *QueryTelemetry) GetDatapoints() []*QueryTelemetry_TelemetryData {
+	if x != nil {
+		return x.Datapoints
+	}
+	return nil
+}
 
 // Map of device id and its list of telemetry
 type TelemetryResponse struct {
@@ -181,7 +488,7 @@ type TelemetryResponse struct {
 
 func (x *TelemetryResponse) Reset() {
 	*x = TelemetryResponse{}
-	mi := &file_mir_api_v1_tlm_proto_msgTypes[2]
+	mi := &file_mir_api_v1_tlm_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -193,7 +500,7 @@ func (x *TelemetryResponse) String() string {
 func (*TelemetryResponse) ProtoMessage() {}
 
 func (x *TelemetryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_mir_api_v1_tlm_proto_msgTypes[2]
+	mi := &file_mir_api_v1_tlm_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -206,7 +513,7 @@ func (x *TelemetryResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TelemetryResponse.ProtoReflect.Descriptor instead.
 func (*TelemetryResponse) Descriptor() ([]byte, []int) {
-	return file_mir_api_v1_tlm_proto_rawDescGZIP(), []int{2}
+	return file_mir_api_v1_tlm_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *TelemetryResponse) GetDevicesTelemetry() []*DevicesTelemetry {
@@ -228,7 +535,7 @@ type DevicesTelemetry struct {
 
 func (x *DevicesTelemetry) Reset() {
 	*x = DevicesTelemetry{}
-	mi := &file_mir_api_v1_tlm_proto_msgTypes[3]
+	mi := &file_mir_api_v1_tlm_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -240,7 +547,7 @@ func (x *DevicesTelemetry) String() string {
 func (*DevicesTelemetry) ProtoMessage() {}
 
 func (x *DevicesTelemetry) ProtoReflect() protoreflect.Message {
-	mi := &file_mir_api_v1_tlm_proto_msgTypes[3]
+	mi := &file_mir_api_v1_tlm_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -253,7 +560,7 @@ func (x *DevicesTelemetry) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DevicesTelemetry.ProtoReflect.Descriptor instead.
 func (*DevicesTelemetry) Descriptor() ([]byte, []int) {
-	return file_mir_api_v1_tlm_proto_rawDescGZIP(), []int{3}
+	return file_mir_api_v1_tlm_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *DevicesTelemetry) GetIds() []*DeviceIdPair {
@@ -291,7 +598,7 @@ type TelemetryDescriptor struct {
 
 func (x *TelemetryDescriptor) Reset() {
 	*x = TelemetryDescriptor{}
-	mi := &file_mir_api_v1_tlm_proto_msgTypes[4]
+	mi := &file_mir_api_v1_tlm_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -303,7 +610,7 @@ func (x *TelemetryDescriptor) String() string {
 func (*TelemetryDescriptor) ProtoMessage() {}
 
 func (x *TelemetryDescriptor) ProtoReflect() protoreflect.Message {
-	mi := &file_mir_api_v1_tlm_proto_msgTypes[4]
+	mi := &file_mir_api_v1_tlm_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -316,7 +623,7 @@ func (x *TelemetryDescriptor) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TelemetryDescriptor.ProtoReflect.Descriptor instead.
 func (*TelemetryDescriptor) Descriptor() ([]byte, []int) {
-	return file_mir_api_v1_tlm_proto_rawDescGZIP(), []int{4}
+	return file_mir_api_v1_tlm_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *TelemetryDescriptor) GetName() string {
@@ -354,25 +661,276 @@ func (x *TelemetryDescriptor) GetError() string {
 	return ""
 }
 
+type QueryTelemetry_TelemetryData struct {
+	state         protoimpl.MessageState                    `protogen:"open.v1"`
+	Timestamp     *Timestamp                                `protobuf:"bytes,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"` // Timestamp of the telemetry data
+	Values        []*QueryTelemetry_TelemetryData_DataPoint `protobuf:"bytes,2,rep,name=values,proto3" json:"values,omitempty"`       // List of telemetry data, order is the same as headers
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *QueryTelemetry_TelemetryData) Reset() {
+	*x = QueryTelemetry_TelemetryData{}
+	mi := &file_mir_api_v1_tlm_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QueryTelemetry_TelemetryData) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryTelemetry_TelemetryData) ProtoMessage() {}
+
+func (x *QueryTelemetry_TelemetryData) ProtoReflect() protoreflect.Message {
+	mi := &file_mir_api_v1_tlm_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QueryTelemetry_TelemetryData.ProtoReflect.Descriptor instead.
+func (*QueryTelemetry_TelemetryData) Descriptor() ([]byte, []int) {
+	return file_mir_api_v1_tlm_proto_rawDescGZIP(), []int{4, 0}
+}
+
+func (x *QueryTelemetry_TelemetryData) GetTimestamp() *Timestamp {
+	if x != nil {
+		return x.Timestamp
+	}
+	return nil
+}
+
+func (x *QueryTelemetry_TelemetryData) GetValues() []*QueryTelemetry_TelemetryData_DataPoint {
+	if x != nil {
+		return x.Values
+	}
+	return nil
+}
+
+type QueryTelemetry_TelemetryData_DataPoint struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ValueInt32    int32                  `protobuf:"varint,2,opt,name=value_int32,json=valueInt32,proto3" json:"value_int32,omitempty"`
+	ValueInt64    int64                  `protobuf:"varint,3,opt,name=value_int64,json=valueInt64,proto3" json:"value_int64,omitempty"`
+	ValueSint32   int32                  `protobuf:"zigzag32,4,opt,name=value_sint32,json=valueSint32,proto3" json:"value_sint32,omitempty"`
+	ValueSint64   int64                  `protobuf:"zigzag64,5,opt,name=value_sint64,json=valueSint64,proto3" json:"value_sint64,omitempty"`
+	ValueUint32   uint32                 `protobuf:"varint,6,opt,name=value_uint32,json=valueUint32,proto3" json:"value_uint32,omitempty"`
+	ValueUint64   uint64                 `protobuf:"varint,7,opt,name=value_uint64,json=valueUint64,proto3" json:"value_uint64,omitempty"`
+	ValueFixed32  uint32                 `protobuf:"fixed32,8,opt,name=value_fixed32,json=valueFixed32,proto3" json:"value_fixed32,omitempty"`
+	ValueFixed64  uint64                 `protobuf:"fixed64,9,opt,name=value_fixed64,json=valueFixed64,proto3" json:"value_fixed64,omitempty"`
+	ValueSfixed32 int32                  `protobuf:"fixed32,10,opt,name=value_sfixed32,json=valueSfixed32,proto3" json:"value_sfixed32,omitempty"`
+	ValueSfixed64 int64                  `protobuf:"fixed64,11,opt,name=value_sfixed64,json=valueSfixed64,proto3" json:"value_sfixed64,omitempty"`
+	ValueFloat    float32                `protobuf:"fixed32,12,opt,name=value_float,json=valueFloat,proto3" json:"value_float,omitempty"`
+	ValueDouble   float64                `protobuf:"fixed64,13,opt,name=value_double,json=valueDouble,proto3" json:"value_double,omitempty"`
+	ValueBool     bool                   `protobuf:"varint,14,opt,name=value_bool,json=valueBool,proto3" json:"value_bool,omitempty"`
+	ValueString   string                 `protobuf:"bytes,15,opt,name=value_string,json=valueString,proto3" json:"value_string,omitempty"`
+	ValueBytes    []byte                 `protobuf:"bytes,16,opt,name=value_bytes,json=valueBytes,proto3" json:"value_bytes,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *QueryTelemetry_TelemetryData_DataPoint) Reset() {
+	*x = QueryTelemetry_TelemetryData_DataPoint{}
+	mi := &file_mir_api_v1_tlm_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QueryTelemetry_TelemetryData_DataPoint) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryTelemetry_TelemetryData_DataPoint) ProtoMessage() {}
+
+func (x *QueryTelemetry_TelemetryData_DataPoint) ProtoReflect() protoreflect.Message {
+	mi := &file_mir_api_v1_tlm_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QueryTelemetry_TelemetryData_DataPoint.ProtoReflect.Descriptor instead.
+func (*QueryTelemetry_TelemetryData_DataPoint) Descriptor() ([]byte, []int) {
+	return file_mir_api_v1_tlm_proto_rawDescGZIP(), []int{4, 0, 0}
+}
+
+func (x *QueryTelemetry_TelemetryData_DataPoint) GetValueInt32() int32 {
+	if x != nil {
+		return x.ValueInt32
+	}
+	return 0
+}
+
+func (x *QueryTelemetry_TelemetryData_DataPoint) GetValueInt64() int64 {
+	if x != nil {
+		return x.ValueInt64
+	}
+	return 0
+}
+
+func (x *QueryTelemetry_TelemetryData_DataPoint) GetValueSint32() int32 {
+	if x != nil {
+		return x.ValueSint32
+	}
+	return 0
+}
+
+func (x *QueryTelemetry_TelemetryData_DataPoint) GetValueSint64() int64 {
+	if x != nil {
+		return x.ValueSint64
+	}
+	return 0
+}
+
+func (x *QueryTelemetry_TelemetryData_DataPoint) GetValueUint32() uint32 {
+	if x != nil {
+		return x.ValueUint32
+	}
+	return 0
+}
+
+func (x *QueryTelemetry_TelemetryData_DataPoint) GetValueUint64() uint64 {
+	if x != nil {
+		return x.ValueUint64
+	}
+	return 0
+}
+
+func (x *QueryTelemetry_TelemetryData_DataPoint) GetValueFixed32() uint32 {
+	if x != nil {
+		return x.ValueFixed32
+	}
+	return 0
+}
+
+func (x *QueryTelemetry_TelemetryData_DataPoint) GetValueFixed64() uint64 {
+	if x != nil {
+		return x.ValueFixed64
+	}
+	return 0
+}
+
+func (x *QueryTelemetry_TelemetryData_DataPoint) GetValueSfixed32() int32 {
+	if x != nil {
+		return x.ValueSfixed32
+	}
+	return 0
+}
+
+func (x *QueryTelemetry_TelemetryData_DataPoint) GetValueSfixed64() int64 {
+	if x != nil {
+		return x.ValueSfixed64
+	}
+	return 0
+}
+
+func (x *QueryTelemetry_TelemetryData_DataPoint) GetValueFloat() float32 {
+	if x != nil {
+		return x.ValueFloat
+	}
+	return 0
+}
+
+func (x *QueryTelemetry_TelemetryData_DataPoint) GetValueDouble() float64 {
+	if x != nil {
+		return x.ValueDouble
+	}
+	return 0
+}
+
+func (x *QueryTelemetry_TelemetryData_DataPoint) GetValueBool() bool {
+	if x != nil {
+		return x.ValueBool
+	}
+	return false
+}
+
+func (x *QueryTelemetry_TelemetryData_DataPoint) GetValueString() string {
+	if x != nil {
+		return x.ValueString
+	}
+	return ""
+}
+
+func (x *QueryTelemetry_TelemetryData_DataPoint) GetValueBytes() []byte {
+	if x != nil {
+		return x.ValueBytes
+	}
+	return nil
+}
+
 var File_mir_api_v1_tlm_proto protoreflect.FileDescriptor
 
 const file_mir_api_v1_tlm_proto_rawDesc = "" +
 	"\n" +
 	"\x14mir_api/v1/tlm.proto\x12\n" +
-	"mir_api.v1\x1a\x15mir_api/v1/core.proto\x1a\x17mir_api/v1/common.proto\"\xa2\x02\n" +
-	"\x18SendListTelemetryRequest\x122\n" +
+	"mir_api.v1\x1a\x17mir_api/v1/common.proto\x1a\x15mir_api/v1/core.proto\"\x9a\x02\n" +
+	"\x14ListTelemetryRequest\x122\n" +
 	"\atargets\x18\x01 \x01(\v2\x18.mir_api.v1.DeviceTargetR\atargets\x12\"\n" +
-	"\fmeasurements\x18\x02 \x03(\tR\fmeasurements\x12K\n" +
-	"\afilters\x18\x03 \x03(\v21.mir_api.v1.SendListTelemetryRequest.FiltersEntryR\afilters\x12%\n" +
+	"\fmeasurements\x18\x02 \x03(\tR\fmeasurements\x12G\n" +
+	"\afilters\x18\x03 \x03(\v2-.mir_api.v1.ListTelemetryRequest.FiltersEntryR\afilters\x12%\n" +
 	"\x0erefresh_schema\x18\x04 \x01(\bR\rrefreshSchema\x1a:\n" +
 	"\fFiltersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"p\n" +
-	"\x19SendListTelemetryResponse\x12/\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"l\n" +
+	"\x15ListTelemetryResponse\x12/\n" +
 	"\x02ok\x18\x01 \x01(\v2\x1d.mir_api.v1.TelemetryResponseH\x00R\x02ok\x12\x16\n" +
 	"\x05error\x18\x02 \x01(\tH\x00R\x05errorB\n" +
 	"\n" +
-	"\bresponse\"^\n" +
+	"\bresponse\"\xed\x01\n" +
+	"\x15QueryTelemetryRequest\x122\n" +
+	"\atargets\x18\x01 \x01(\v2\x18.mir_api.v1.DeviceTargetR\atargets\x12 \n" +
+	"\vmeasurement\x18\x02 \x01(\tR\vmeasurement\x12\x16\n" +
+	"\x06fields\x18\x03 \x03(\tR\x06fields\x124\n" +
+	"\n" +
+	"start_time\x18\x04 \x01(\v2\x15.mir_api.v1.TimestampR\tstartTime\x120\n" +
+	"\bend_time\x18\x05 \x01(\v2\x15.mir_api.v1.TimestampR\aendTime\"j\n" +
+	"\x16QueryTelemetryResponse\x12,\n" +
+	"\x02ok\x18\x01 \x01(\v2\x1a.mir_api.v1.QueryTelemetryH\x00R\x02ok\x12\x16\n" +
+	"\x05error\x18\x02 \x01(\tH\x00R\x05errorB\n" +
+	"\n" +
+	"\bresponse\"\xd4\x06\n" +
+	"\x0eQueryTelemetry\x12\x18\n" +
+	"\aheaders\x18\x01 \x03(\tR\aheaders\x120\n" +
+	"\bdatatype\x18\x02 \x03(\x0e2\x14.mir_api.v1.DataTypeR\bdatatype\x12H\n" +
+	"\n" +
+	"datapoints\x18\x03 \x03(\v2(.mir_api.v1.QueryTelemetry.TelemetryDataR\n" +
+	"datapoints\x1a\xab\x05\n" +
+	"\rTelemetryData\x123\n" +
+	"\ttimestamp\x18\x01 \x01(\v2\x15.mir_api.v1.TimestampR\ttimestamp\x12J\n" +
+	"\x06values\x18\x02 \x03(\v22.mir_api.v1.QueryTelemetry.TelemetryData.DataPointR\x06values\x1a\x98\x04\n" +
+	"\tDataPoint\x12\x1f\n" +
+	"\vvalue_int32\x18\x02 \x01(\x05R\n" +
+	"valueInt32\x12\x1f\n" +
+	"\vvalue_int64\x18\x03 \x01(\x03R\n" +
+	"valueInt64\x12!\n" +
+	"\fvalue_sint32\x18\x04 \x01(\x11R\vvalueSint32\x12!\n" +
+	"\fvalue_sint64\x18\x05 \x01(\x12R\vvalueSint64\x12!\n" +
+	"\fvalue_uint32\x18\x06 \x01(\rR\vvalueUint32\x12!\n" +
+	"\fvalue_uint64\x18\a \x01(\x04R\vvalueUint64\x12#\n" +
+	"\rvalue_fixed32\x18\b \x01(\aR\fvalueFixed32\x12#\n" +
+	"\rvalue_fixed64\x18\t \x01(\x06R\fvalueFixed64\x12%\n" +
+	"\x0evalue_sfixed32\x18\n" +
+	" \x01(\x0fR\rvalueSfixed32\x12%\n" +
+	"\x0evalue_sfixed64\x18\v \x01(\x10R\rvalueSfixed64\x12\x1f\n" +
+	"\vvalue_float\x18\f \x01(\x02R\n" +
+	"valueFloat\x12!\n" +
+	"\fvalue_double\x18\r \x01(\x01R\vvalueDouble\x12\x1d\n" +
+	"\n" +
+	"value_bool\x18\x0e \x01(\bR\tvalueBool\x12!\n" +
+	"\fvalue_string\x18\x0f \x01(\tR\vvalueString\x12\x1f\n" +
+	"\vvalue_bytes\x18\x10 \x01(\fR\n" +
+	"valueBytes\"^\n" +
 	"\x11TelemetryResponse\x12I\n" +
 	"\x11devices_telemetry\x18\x01 \x03(\v2\x1c.mir_api.v1.DevicesTelemetryR\x10devicesTelemetry\"\x9e\x01\n" +
 	"\x10DevicesTelemetry\x12*\n" +
@@ -387,7 +945,25 @@ const file_mir_api_v1_tlm_proto_rawDesc = "" +
 	"\x05error\x18\x05 \x01(\tR\x05error\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x9f\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*\xef\x02\n" +
+	"\bDataType\x12\x19\n" +
+	"\x15DATA_TYPE_UNSPECIFIED\x10\x00\x12\x13\n" +
+	"\x0fDATA_TYPE_INT32\x10\x01\x12\x13\n" +
+	"\x0fDATA_TYPE_INT64\x10\x02\x12\x14\n" +
+	"\x10DATA_TYPE_SINT32\x10\x03\x12\x14\n" +
+	"\x10DATA_TYPE_SINT64\x10\x04\x12\x14\n" +
+	"\x10DATA_TYPE_UINT32\x10\x05\x12\x14\n" +
+	"\x10DATA_TYPE_UINT64\x10\x06\x12\x15\n" +
+	"\x11DATA_TYPE_FIXED32\x10\a\x12\x15\n" +
+	"\x11DATA_TYPE_FIXED64\x10\b\x12\x16\n" +
+	"\x12DATA_TYPE_SFIXED32\x10\t\x12\x16\n" +
+	"\x12DATA_TYPE_SFIXED64\x10\n" +
+	"\x12\x13\n" +
+	"\x0fDATA_TYPE_FLOAT\x10\v\x12\x14\n" +
+	"\x10DATA_TYPE_DOUBLE\x10\f\x12\x12\n" +
+	"\x0eDATA_TYPE_BOOL\x10\r\x12\x14\n" +
+	"\x10DATA_TYPE_STRING\x10\x0e\x12\x13\n" +
+	"\x0fDATA_TYPE_BYTES\x10\x0fB\x9f\x01\n" +
 	"\x0ecom.mir_api.v1B\bTlmProtoP\x01Z>github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1;mir_apiv1\xa2\x02\x03MXX\xaa\x02\tMirApi.V1\xca\x02\tMirApi\\V1\xe2\x02\x15MirApi\\V1\\GPBMetadata\xea\x02\n" +
 	"MirApi::V1b\x06proto3"
 
@@ -403,31 +979,47 @@ func file_mir_api_v1_tlm_proto_rawDescGZIP() []byte {
 	return file_mir_api_v1_tlm_proto_rawDescData
 }
 
-var file_mir_api_v1_tlm_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_mir_api_v1_tlm_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_mir_api_v1_tlm_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_mir_api_v1_tlm_proto_goTypes = []any{
-	(*SendListTelemetryRequest)(nil),  // 0: mir_api.v1.SendListTelemetryRequest
-	(*SendListTelemetryResponse)(nil), // 1: mir_api.v1.SendListTelemetryResponse
-	(*TelemetryResponse)(nil),         // 2: mir_api.v1.TelemetryResponse
-	(*DevicesTelemetry)(nil),          // 3: mir_api.v1.DevicesTelemetry
-	(*TelemetryDescriptor)(nil),       // 4: mir_api.v1.TelemetryDescriptor
-	nil,                               // 5: mir_api.v1.SendListTelemetryRequest.FiltersEntry
-	nil,                               // 6: mir_api.v1.TelemetryDescriptor.LabelsEntry
-	(*DeviceTarget)(nil),              // 7: mir_api.v1.DeviceTarget
-	(*DeviceIdPair)(nil),              // 8: mir_api.v1.DeviceIdPair
+	(DataType)(0),                                  // 0: mir_api.v1.DataType
+	(*ListTelemetryRequest)(nil),                   // 1: mir_api.v1.ListTelemetryRequest
+	(*ListTelemetryResponse)(nil),                  // 2: mir_api.v1.ListTelemetryResponse
+	(*QueryTelemetryRequest)(nil),                  // 3: mir_api.v1.QueryTelemetryRequest
+	(*QueryTelemetryResponse)(nil),                 // 4: mir_api.v1.QueryTelemetryResponse
+	(*QueryTelemetry)(nil),                         // 5: mir_api.v1.QueryTelemetry
+	(*TelemetryResponse)(nil),                      // 6: mir_api.v1.TelemetryResponse
+	(*DevicesTelemetry)(nil),                       // 7: mir_api.v1.DevicesTelemetry
+	(*TelemetryDescriptor)(nil),                    // 8: mir_api.v1.TelemetryDescriptor
+	nil,                                            // 9: mir_api.v1.ListTelemetryRequest.FiltersEntry
+	(*QueryTelemetry_TelemetryData)(nil),           // 10: mir_api.v1.QueryTelemetry.TelemetryData
+	(*QueryTelemetry_TelemetryData_DataPoint)(nil), // 11: mir_api.v1.QueryTelemetry.TelemetryData.DataPoint
+	nil,                  // 12: mir_api.v1.TelemetryDescriptor.LabelsEntry
+	(*DeviceTarget)(nil), // 13: mir_api.v1.DeviceTarget
+	(*Timestamp)(nil),    // 14: mir_api.v1.Timestamp
+	(*DeviceIdPair)(nil), // 15: mir_api.v1.DeviceIdPair
 }
 var file_mir_api_v1_tlm_proto_depIdxs = []int32{
-	7, // 0: mir_api.v1.SendListTelemetryRequest.targets:type_name -> mir_api.v1.DeviceTarget
-	5, // 1: mir_api.v1.SendListTelemetryRequest.filters:type_name -> mir_api.v1.SendListTelemetryRequest.FiltersEntry
-	2, // 2: mir_api.v1.SendListTelemetryResponse.ok:type_name -> mir_api.v1.TelemetryResponse
-	3, // 3: mir_api.v1.TelemetryResponse.devices_telemetry:type_name -> mir_api.v1.DevicesTelemetry
-	8, // 4: mir_api.v1.DevicesTelemetry.ids:type_name -> mir_api.v1.DeviceIdPair
-	4, // 5: mir_api.v1.DevicesTelemetry.tlm_descriptors:type_name -> mir_api.v1.TelemetryDescriptor
-	6, // 6: mir_api.v1.TelemetryDescriptor.labels:type_name -> mir_api.v1.TelemetryDescriptor.LabelsEntry
-	7, // [7:7] is the sub-list for method output_type
-	7, // [7:7] is the sub-list for method input_type
-	7, // [7:7] is the sub-list for extension type_name
-	7, // [7:7] is the sub-list for extension extendee
-	0, // [0:7] is the sub-list for field type_name
+	13, // 0: mir_api.v1.ListTelemetryRequest.targets:type_name -> mir_api.v1.DeviceTarget
+	9,  // 1: mir_api.v1.ListTelemetryRequest.filters:type_name -> mir_api.v1.ListTelemetryRequest.FiltersEntry
+	6,  // 2: mir_api.v1.ListTelemetryResponse.ok:type_name -> mir_api.v1.TelemetryResponse
+	13, // 3: mir_api.v1.QueryTelemetryRequest.targets:type_name -> mir_api.v1.DeviceTarget
+	14, // 4: mir_api.v1.QueryTelemetryRequest.start_time:type_name -> mir_api.v1.Timestamp
+	14, // 5: mir_api.v1.QueryTelemetryRequest.end_time:type_name -> mir_api.v1.Timestamp
+	5,  // 6: mir_api.v1.QueryTelemetryResponse.ok:type_name -> mir_api.v1.QueryTelemetry
+	0,  // 7: mir_api.v1.QueryTelemetry.datatype:type_name -> mir_api.v1.DataType
+	10, // 8: mir_api.v1.QueryTelemetry.datapoints:type_name -> mir_api.v1.QueryTelemetry.TelemetryData
+	7,  // 9: mir_api.v1.TelemetryResponse.devices_telemetry:type_name -> mir_api.v1.DevicesTelemetry
+	15, // 10: mir_api.v1.DevicesTelemetry.ids:type_name -> mir_api.v1.DeviceIdPair
+	8,  // 11: mir_api.v1.DevicesTelemetry.tlm_descriptors:type_name -> mir_api.v1.TelemetryDescriptor
+	12, // 12: mir_api.v1.TelemetryDescriptor.labels:type_name -> mir_api.v1.TelemetryDescriptor.LabelsEntry
+	14, // 13: mir_api.v1.QueryTelemetry.TelemetryData.timestamp:type_name -> mir_api.v1.Timestamp
+	11, // 14: mir_api.v1.QueryTelemetry.TelemetryData.values:type_name -> mir_api.v1.QueryTelemetry.TelemetryData.DataPoint
+	15, // [15:15] is the sub-list for method output_type
+	15, // [15:15] is the sub-list for method input_type
+	15, // [15:15] is the sub-list for extension type_name
+	15, // [15:15] is the sub-list for extension extendee
+	0,  // [0:15] is the sub-list for field type_name
 }
 
 func init() { file_mir_api_v1_tlm_proto_init() }
@@ -435,24 +1027,29 @@ func file_mir_api_v1_tlm_proto_init() {
 	if File_mir_api_v1_tlm_proto != nil {
 		return
 	}
-	file_mir_api_v1_core_proto_init()
 	file_mir_api_v1_common_proto_init()
+	file_mir_api_v1_core_proto_init()
 	file_mir_api_v1_tlm_proto_msgTypes[1].OneofWrappers = []any{
-		(*SendListTelemetryResponse_Ok)(nil),
-		(*SendListTelemetryResponse_Error)(nil),
+		(*ListTelemetryResponse_Ok)(nil),
+		(*ListTelemetryResponse_Error)(nil),
+	}
+	file_mir_api_v1_tlm_proto_msgTypes[3].OneofWrappers = []any{
+		(*QueryTelemetryResponse_Ok)(nil),
+		(*QueryTelemetryResponse_Error)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_mir_api_v1_tlm_proto_rawDesc), len(file_mir_api_v1_tlm_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   7,
+			NumEnums:      1,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_mir_api_v1_tlm_proto_goTypes,
 		DependencyIndexes: file_mir_api_v1_tlm_proto_depIdxs,
+		EnumInfos:         file_mir_api_v1_tlm_proto_enumTypes,
 		MessageInfos:      file_mir_api_v1_tlm_proto_msgTypes,
 	}.Build()
 	File_mir_api_v1_tlm_proto = out.File

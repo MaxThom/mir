@@ -683,7 +683,7 @@ func TestPublishTelemetryListPairs(t *testing.T) {
 		t.Error(err)
 	}
 
-	resp, err := tlm_client.PublishTelemetryListRequest(mSdk.Bus, &mir_apiv1.SendListTelemetryRequest{
+	resp, err := tlm_client.PublishTelemetryListRequest(mSdk.Bus, &mir_apiv1.ListTelemetryRequest{
 		Targets: &mir_apiv1.DeviceTarget{
 			Ids: s.ToTarget().Ids,
 		},
@@ -751,7 +751,7 @@ func TestPublishTelemetryList(t *testing.T) {
 		t.Error(err)
 	}
 
-	resp, err := tlm_client.PublishTelemetryListRequest(mSdk.Bus, &mir_apiv1.SendListTelemetryRequest{
+	resp, err := tlm_client.PublishTelemetryListRequest(mSdk.Bus, &mir_apiv1.ListTelemetryRequest{
 		Targets: &mir_apiv1.DeviceTarget{
 			Ids: s.ToTarget().Ids,
 		},
@@ -818,7 +818,7 @@ func TestPublishTelemetryListError(t *testing.T) {
 	}
 
 	// Act
-	resp, err := tlm_client.PublishTelemetryListRequest(mSdk.Bus, &mir_apiv1.SendListTelemetryRequest{
+	resp, err := tlm_client.PublishTelemetryListRequest(mSdk.Bus, &mir_apiv1.ListTelemetryRequest{
 		Targets: &mir_apiv1.DeviceTarget{
 			Ids: []string{"dev_tlm_list_offline"},
 		},

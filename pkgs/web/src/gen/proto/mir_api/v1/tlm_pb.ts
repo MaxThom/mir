@@ -2,24 +2,24 @@
 // @generated from file mir_api/v1/tlm.proto (package mir_api.v1, syntax proto3)
 /* eslint-disable */
 
-import type { GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
-import { fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
+import type { GenEnum, GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
+import { enumDesc, fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
+import type { DeviceIdPair, Timestamp } from "./common_pb";
+import { file_mir_api_v1_common } from "./common_pb";
 import type { DeviceTarget } from "./core_pb";
 import { file_mir_api_v1_core } from "./core_pb";
-import type { DeviceIdPair } from "./common_pb";
-import { file_mir_api_v1_common } from "./common_pb";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file mir_api/v1/tlm.proto.
  */
 export const file_mir_api_v1_tlm: GenFile = /*@__PURE__*/
-  fileDesc("ChRtaXJfYXBpL3YxL3RsbS5wcm90bxIKbWlyX2FwaS52MSLnAQoYU2VuZExpc3RUZWxlbWV0cnlSZXF1ZXN0EikKB3RhcmdldHMYASABKAsyGC5taXJfYXBpLnYxLkRldmljZVRhcmdldBIUCgxtZWFzdXJlbWVudHMYAiADKAkSQgoHZmlsdGVycxgDIAMoCzIxLm1pcl9hcGkudjEuU2VuZExpc3RUZWxlbWV0cnlSZXF1ZXN0LkZpbHRlcnNFbnRyeRIWCg5yZWZyZXNoX3NjaGVtYRgEIAEoCBouCgxGaWx0ZXJzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASJlChlTZW5kTGlzdFRlbGVtZXRyeVJlc3BvbnNlEisKAm9rGAEgASgLMh0ubWlyX2FwaS52MS5UZWxlbWV0cnlSZXNwb25zZUgAEg8KBWVycm9yGAIgASgJSABCCgoIcmVzcG9uc2UiTAoRVGVsZW1ldHJ5UmVzcG9uc2USNwoRZGV2aWNlc190ZWxlbWV0cnkYASADKAsyHC5taXJfYXBpLnYxLkRldmljZXNUZWxlbWV0cnkiggEKEERldmljZXNUZWxlbWV0cnkSJQoDaWRzGAEgAygLMhgubWlyX2FwaS52MS5EZXZpY2VJZFBhaXISOAoPdGxtX2Rlc2NyaXB0b3JzGAIgAygLMh8ubWlyX2FwaS52MS5UZWxlbWV0cnlEZXNjcmlwdG9yEg0KBWVycm9yGAMgASgJIsUBChNUZWxlbWV0cnlEZXNjcmlwdG9yEgwKBG5hbWUYASABKAkSOwoGbGFiZWxzGAIgAygLMisubWlyX2FwaS52MS5UZWxlbWV0cnlEZXNjcmlwdG9yLkxhYmVsc0VudHJ5Eg4KBmZpZWxkcxgDIAMoCRIVCg1leHBsb3JlX3F1ZXJ5GAQgASgJEg0KBWVycm9yGAUgASgJGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAFCnwEKDmNvbS5taXJfYXBpLnYxQghUbG1Qcm90b1ABWj5naXRodWIuY29tL21heHRob20vbWlyL3BrZ3MvYXBpL2dlbi9wcm90by9taXJfYXBpL3YxO21pcl9hcGl2MaICA01YWKoCCU1pckFwaS5WMcoCCU1pckFwaVxWMeICFU1pckFwaVxWMVxHUEJNZXRhZGF0YeoCCk1pckFwaTo6VjFiBnByb3RvMw", [file_mir_api_v1_core, file_mir_api_v1_common]);
+  fileDesc("ChRtaXJfYXBpL3YxL3RsbS5wcm90bxIKbWlyX2FwaS52MSLfAQoUTGlzdFRlbGVtZXRyeVJlcXVlc3QSKQoHdGFyZ2V0cxgBIAEoCzIYLm1pcl9hcGkudjEuRGV2aWNlVGFyZ2V0EhQKDG1lYXN1cmVtZW50cxgCIAMoCRI+CgdmaWx0ZXJzGAMgAygLMi0ubWlyX2FwaS52MS5MaXN0VGVsZW1ldHJ5UmVxdWVzdC5GaWx0ZXJzRW50cnkSFgoOcmVmcmVzaF9zY2hlbWEYBCABKAgaLgoMRmlsdGVyc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiYQoVTGlzdFRlbGVtZXRyeVJlc3BvbnNlEisKAm9rGAEgASgLMh0ubWlyX2FwaS52MS5UZWxlbWV0cnlSZXNwb25zZUgAEg8KBWVycm9yGAIgASgJSABCCgoIcmVzcG9uc2UiuwEKFVF1ZXJ5VGVsZW1ldHJ5UmVxdWVzdBIpCgd0YXJnZXRzGAEgASgLMhgubWlyX2FwaS52MS5EZXZpY2VUYXJnZXQSEwoLbWVhc3VyZW1lbnQYAiABKAkSDgoGZmllbGRzGAMgAygJEikKCnN0YXJ0X3RpbWUYBCABKAsyFS5taXJfYXBpLnYxLlRpbWVzdGFtcBInCghlbmRfdGltZRgFIAEoCzIVLm1pcl9hcGkudjEuVGltZXN0YW1wIl8KFlF1ZXJ5VGVsZW1ldHJ5UmVzcG9uc2USKAoCb2sYASABKAsyGi5taXJfYXBpLnYxLlF1ZXJ5VGVsZW1ldHJ5SAASDwoFZXJyb3IYAiABKAlIAEIKCghyZXNwb25zZSLfBAoOUXVlcnlUZWxlbWV0cnkSDwoHaGVhZGVycxgBIAMoCRImCghkYXRhdHlwZRgCIAMoDjIULm1pcl9hcGkudjEuRGF0YVR5cGUSPAoKZGF0YXBvaW50cxgDIAMoCzIoLm1pcl9hcGkudjEuUXVlcnlUZWxlbWV0cnkuVGVsZW1ldHJ5RGF0YRrVAwoNVGVsZW1ldHJ5RGF0YRIoCgl0aW1lc3RhbXAYASABKAsyFS5taXJfYXBpLnYxLlRpbWVzdGFtcBJCCgZ2YWx1ZXMYAiADKAsyMi5taXJfYXBpLnYxLlF1ZXJ5VGVsZW1ldHJ5LlRlbGVtZXRyeURhdGEuRGF0YVBvaW50GtUCCglEYXRhUG9pbnQSEwoLdmFsdWVfaW50MzIYAiABKAUSEwoLdmFsdWVfaW50NjQYAyABKAMSFAoMdmFsdWVfc2ludDMyGAQgASgREhQKDHZhbHVlX3NpbnQ2NBgFIAEoEhIUCgx2YWx1ZV91aW50MzIYBiABKA0SFAoMdmFsdWVfdWludDY0GAcgASgEEhUKDXZhbHVlX2ZpeGVkMzIYCCABKAcSFQoNdmFsdWVfZml4ZWQ2NBgJIAEoBhIWCg52YWx1ZV9zZml4ZWQzMhgKIAEoDxIWCg52YWx1ZV9zZml4ZWQ2NBgLIAEoEBITCgt2YWx1ZV9mbG9hdBgMIAEoAhIUCgx2YWx1ZV9kb3VibGUYDSABKAESEgoKdmFsdWVfYm9vbBgOIAEoCBIUCgx2YWx1ZV9zdHJpbmcYDyABKAkSEwoLdmFsdWVfYnl0ZXMYECABKAwiTAoRVGVsZW1ldHJ5UmVzcG9uc2USNwoRZGV2aWNlc190ZWxlbWV0cnkYASADKAsyHC5taXJfYXBpLnYxLkRldmljZXNUZWxlbWV0cnkiggEKEERldmljZXNUZWxlbWV0cnkSJQoDaWRzGAEgAygLMhgubWlyX2FwaS52MS5EZXZpY2VJZFBhaXISOAoPdGxtX2Rlc2NyaXB0b3JzGAIgAygLMh8ubWlyX2FwaS52MS5UZWxlbWV0cnlEZXNjcmlwdG9yEg0KBWVycm9yGAMgASgJIsUBChNUZWxlbWV0cnlEZXNjcmlwdG9yEgwKBG5hbWUYASABKAkSOwoGbGFiZWxzGAIgAygLMisubWlyX2FwaS52MS5UZWxlbWV0cnlEZXNjcmlwdG9yLkxhYmVsc0VudHJ5Eg4KBmZpZWxkcxgDIAMoCRIVCg1leHBsb3JlX3F1ZXJ5GAQgASgJEg0KBWVycm9yGAUgASgJGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEq7wIKCERhdGFUeXBlEhkKFURBVEFfVFlQRV9VTlNQRUNJRklFRBAAEhMKD0RBVEFfVFlQRV9JTlQzMhABEhMKD0RBVEFfVFlQRV9JTlQ2NBACEhQKEERBVEFfVFlQRV9TSU5UMzIQAxIUChBEQVRBX1RZUEVfU0lOVDY0EAQSFAoQREFUQV9UWVBFX1VJTlQzMhAFEhQKEERBVEFfVFlQRV9VSU5UNjQQBhIVChFEQVRBX1RZUEVfRklYRUQzMhAHEhUKEURBVEFfVFlQRV9GSVhFRDY0EAgSFgoSREFUQV9UWVBFX1NGSVhFRDMyEAkSFgoSREFUQV9UWVBFX1NGSVhFRDY0EAoSEwoPREFUQV9UWVBFX0ZMT0FUEAsSFAoQREFUQV9UWVBFX0RPVUJMRRAMEhIKDkRBVEFfVFlQRV9CT09MEA0SFAoQREFUQV9UWVBFX1NUUklORxAOEhMKD0RBVEFfVFlQRV9CWVRFUxAPQp8BCg5jb20ubWlyX2FwaS52MUIIVGxtUHJvdG9QAVo+Z2l0aHViLmNvbS9tYXh0aG9tL21pci9wa2dzL2FwaS9nZW4vcHJvdG8vbWlyX2FwaS92MTttaXJfYXBpdjGiAgNNWFiqAglNaXJBcGkuVjHKAglNaXJBcGlcVjHiAhVNaXJBcGlcVjFcR1BCTWV0YWRhdGHqAgpNaXJBcGk6OlYxYgZwcm90bzM", [file_mir_api_v1_common, file_mir_api_v1_core]);
 
 /**
- * @generated from message mir_api.v1.SendListTelemetryRequest
+ * @generated from message mir_api.v1.ListTelemetryRequest
  */
-export type SendListTelemetryRequest = Message<"mir_api.v1.SendListTelemetryRequest"> & {
+export type ListTelemetryRequest = Message<"mir_api.v1.ListTelemetryRequest"> & {
   /**
    * To target a set of devices, search using ids, labels and annotations
    *
@@ -28,7 +28,7 @@ export type SendListTelemetryRequest = Message<"mir_api.v1.SendListTelemetryRequ
   targets?: DeviceTarget;
 
   /**
-   * List of measurements to exapend
+   * List of measurements to expand
    *
    * @generated from field: repeated string measurements = 2;
    */
@@ -50,18 +50,18 @@ export type SendListTelemetryRequest = Message<"mir_api.v1.SendListTelemetryRequ
 };
 
 /**
- * Describes the message mir_api.v1.SendListTelemetryRequest.
- * Use `create(SendListTelemetryRequestSchema)` to create a new message.
+ * Describes the message mir_api.v1.ListTelemetryRequest.
+ * Use `create(ListTelemetryRequestSchema)` to create a new message.
  */
-export const SendListTelemetryRequestSchema: GenMessage<SendListTelemetryRequest> = /*@__PURE__*/
+export const ListTelemetryRequestSchema: GenMessage<ListTelemetryRequest> = /*@__PURE__*/
   messageDesc(file_mir_api_v1_tlm, 0);
 
 /**
- * @generated from message mir_api.v1.SendListTelemetryResponse
+ * @generated from message mir_api.v1.ListTelemetryResponse
  */
-export type SendListTelemetryResponse = Message<"mir_api.v1.SendListTelemetryResponse"> & {
+export type ListTelemetryResponse = Message<"mir_api.v1.ListTelemetryResponse"> & {
   /**
-   * @generated from oneof mir_api.v1.SendListTelemetryResponse.response
+   * @generated from oneof mir_api.v1.ListTelemetryResponse.response
    */
   response: {
     /**
@@ -83,11 +83,237 @@ export type SendListTelemetryResponse = Message<"mir_api.v1.SendListTelemetryRes
 };
 
 /**
- * Describes the message mir_api.v1.SendListTelemetryResponse.
- * Use `create(SendListTelemetryResponseSchema)` to create a new message.
+ * Describes the message mir_api.v1.ListTelemetryResponse.
+ * Use `create(ListTelemetryResponseSchema)` to create a new message.
  */
-export const SendListTelemetryResponseSchema: GenMessage<SendListTelemetryResponse> = /*@__PURE__*/
+export const ListTelemetryResponseSchema: GenMessage<ListTelemetryResponse> = /*@__PURE__*/
   messageDesc(file_mir_api_v1_tlm, 1);
+
+/**
+ * @generated from message mir_api.v1.QueryTelemetryRequest
+ */
+export type QueryTelemetryRequest = Message<"mir_api.v1.QueryTelemetryRequest"> & {
+  /**
+   * To target a set of devices, search using ids, labels and annotations
+   *
+   * @generated from field: mir_api.v1.DeviceTarget targets = 1;
+   */
+  targets?: DeviceTarget;
+
+  /**
+   * Measurement to query
+   *
+   * @generated from field: string measurement = 2;
+   */
+  measurement: string;
+
+  /**
+   * List of fields to query, if empty, query all fields
+   *
+   * @generated from field: repeated string fields = 3;
+   */
+  fields: string[];
+
+  /**
+   * Start time of the query
+   *
+   * @generated from field: mir_api.v1.Timestamp start_time = 4;
+   */
+  startTime?: Timestamp;
+
+  /**
+   * End time of the query
+   *
+   * @generated from field: mir_api.v1.Timestamp end_time = 5;
+   */
+  endTime?: Timestamp;
+};
+
+/**
+ * Describes the message mir_api.v1.QueryTelemetryRequest.
+ * Use `create(QueryTelemetryRequestSchema)` to create a new message.
+ */
+export const QueryTelemetryRequestSchema: GenMessage<QueryTelemetryRequest> = /*@__PURE__*/
+  messageDesc(file_mir_api_v1_tlm, 2);
+
+/**
+ * @generated from message mir_api.v1.QueryTelemetryResponse
+ */
+export type QueryTelemetryResponse = Message<"mir_api.v1.QueryTelemetryResponse"> & {
+  /**
+   * @generated from oneof mir_api.v1.QueryTelemetryResponse.response
+   */
+  response: {
+    /**
+     * all telemetry per devices
+     *
+     * @generated from field: mir_api.v1.QueryTelemetry ok = 1;
+     */
+    value: QueryTelemetry;
+    case: "ok";
+  } | {
+    /**
+     * error if something went wrong
+     *
+     * @generated from field: string error = 2;
+     */
+    value: string;
+    case: "error";
+  } | { case: undefined; value?: undefined };
+};
+
+/**
+ * Describes the message mir_api.v1.QueryTelemetryResponse.
+ * Use `create(QueryTelemetryResponseSchema)` to create a new message.
+ */
+export const QueryTelemetryResponseSchema: GenMessage<QueryTelemetryResponse> = /*@__PURE__*/
+  messageDesc(file_mir_api_v1_tlm, 3);
+
+/**
+ * @generated from message mir_api.v1.QueryTelemetry
+ */
+export type QueryTelemetry = Message<"mir_api.v1.QueryTelemetry"> & {
+  /**
+   * List of telemetry headers
+   *
+   * @generated from field: repeated string headers = 1;
+   */
+  headers: string[];
+
+  /**
+   * List of telemetry data type
+   *
+   * @generated from field: repeated mir_api.v1.DataType datatype = 2;
+   */
+  datatype: DataType[];
+
+  /**
+   * List of telemetry data, order is the same as headers
+   *
+   * @generated from field: repeated mir_api.v1.QueryTelemetry.TelemetryData datapoints = 3;
+   */
+  datapoints: QueryTelemetry_TelemetryData[];
+};
+
+/**
+ * Describes the message mir_api.v1.QueryTelemetry.
+ * Use `create(QueryTelemetrySchema)` to create a new message.
+ */
+export const QueryTelemetrySchema: GenMessage<QueryTelemetry> = /*@__PURE__*/
+  messageDesc(file_mir_api_v1_tlm, 4);
+
+/**
+ * @generated from message mir_api.v1.QueryTelemetry.TelemetryData
+ */
+export type QueryTelemetry_TelemetryData = Message<"mir_api.v1.QueryTelemetry.TelemetryData"> & {
+  /**
+   * Timestamp of the telemetry data
+   *
+   * @generated from field: mir_api.v1.Timestamp timestamp = 1;
+   */
+  timestamp?: Timestamp;
+
+  /**
+   * List of telemetry data, order is the same as headers
+   *
+   * @generated from field: repeated mir_api.v1.QueryTelemetry.TelemetryData.DataPoint values = 2;
+   */
+  values: QueryTelemetry_TelemetryData_DataPoint[];
+};
+
+/**
+ * Describes the message mir_api.v1.QueryTelemetry.TelemetryData.
+ * Use `create(QueryTelemetry_TelemetryDataSchema)` to create a new message.
+ */
+export const QueryTelemetry_TelemetryDataSchema: GenMessage<QueryTelemetry_TelemetryData> = /*@__PURE__*/
+  messageDesc(file_mir_api_v1_tlm, 4, 0);
+
+/**
+ * @generated from message mir_api.v1.QueryTelemetry.TelemetryData.DataPoint
+ */
+export type QueryTelemetry_TelemetryData_DataPoint = Message<"mir_api.v1.QueryTelemetry.TelemetryData.DataPoint"> & {
+  /**
+   * @generated from field: int32 value_int32 = 2;
+   */
+  valueInt32: number;
+
+  /**
+   * @generated from field: int64 value_int64 = 3;
+   */
+  valueInt64: bigint;
+
+  /**
+   * @generated from field: sint32 value_sint32 = 4;
+   */
+  valueSint32: number;
+
+  /**
+   * @generated from field: sint64 value_sint64 = 5;
+   */
+  valueSint64: bigint;
+
+  /**
+   * @generated from field: uint32 value_uint32 = 6;
+   */
+  valueUint32: number;
+
+  /**
+   * @generated from field: uint64 value_uint64 = 7;
+   */
+  valueUint64: bigint;
+
+  /**
+   * @generated from field: fixed32 value_fixed32 = 8;
+   */
+  valueFixed32: number;
+
+  /**
+   * @generated from field: fixed64 value_fixed64 = 9;
+   */
+  valueFixed64: bigint;
+
+  /**
+   * @generated from field: sfixed32 value_sfixed32 = 10;
+   */
+  valueSfixed32: number;
+
+  /**
+   * @generated from field: sfixed64 value_sfixed64 = 11;
+   */
+  valueSfixed64: bigint;
+
+  /**
+   * @generated from field: float value_float = 12;
+   */
+  valueFloat: number;
+
+  /**
+   * @generated from field: double value_double = 13;
+   */
+  valueDouble: number;
+
+  /**
+   * @generated from field: bool value_bool = 14;
+   */
+  valueBool: boolean;
+
+  /**
+   * @generated from field: string value_string = 15;
+   */
+  valueString: string;
+
+  /**
+   * @generated from field: bytes value_bytes = 16;
+   */
+  valueBytes: Uint8Array;
+};
+
+/**
+ * Describes the message mir_api.v1.QueryTelemetry.TelemetryData.DataPoint.
+ * Use `create(QueryTelemetry_TelemetryData_DataPointSchema)` to create a new message.
+ */
+export const QueryTelemetry_TelemetryData_DataPointSchema: GenMessage<QueryTelemetry_TelemetryData_DataPoint> = /*@__PURE__*/
+  messageDesc(file_mir_api_v1_tlm, 4, 0, 0);
 
 /**
  * Map of device id and its list of telemetry
@@ -108,7 +334,7 @@ export type TelemetryResponse = Message<"mir_api.v1.TelemetryResponse"> & {
  * Use `create(TelemetryResponseSchema)` to create a new message.
  */
 export const TelemetryResponseSchema: GenMessage<TelemetryResponse> = /*@__PURE__*/
-  messageDesc(file_mir_api_v1_tlm, 2);
+  messageDesc(file_mir_api_v1_tlm, 5);
 
 /**
  * List of telemetry
@@ -143,7 +369,7 @@ export type DevicesTelemetry = Message<"mir_api.v1.DevicesTelemetry"> & {
  * Use `create(DevicesTelemetrySchema)` to create a new message.
  */
 export const DevicesTelemetrySchema: GenMessage<DevicesTelemetry> = /*@__PURE__*/
-  messageDesc(file_mir_api_v1_tlm, 3);
+  messageDesc(file_mir_api_v1_tlm, 6);
 
 /**
  * Descriptor of a command
@@ -192,5 +418,98 @@ export type TelemetryDescriptor = Message<"mir_api.v1.TelemetryDescriptor"> & {
  * Use `create(TelemetryDescriptorSchema)` to create a new message.
  */
 export const TelemetryDescriptorSchema: GenMessage<TelemetryDescriptor> = /*@__PURE__*/
-  messageDesc(file_mir_api_v1_tlm, 4);
+  messageDesc(file_mir_api_v1_tlm, 7);
+
+/**
+ * In protobuf binary encoding, only set fields are written. Unset fields take zero bytes on the wire.
+ *
+ * @generated from enum mir_api.v1.DataType
+ */
+export enum DataType {
+  /**
+   * @generated from enum value: DATA_TYPE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: DATA_TYPE_INT32 = 1;
+   */
+  INT32 = 1,
+
+  /**
+   * @generated from enum value: DATA_TYPE_INT64 = 2;
+   */
+  INT64 = 2,
+
+  /**
+   * @generated from enum value: DATA_TYPE_SINT32 = 3;
+   */
+  SINT32 = 3,
+
+  /**
+   * @generated from enum value: DATA_TYPE_SINT64 = 4;
+   */
+  SINT64 = 4,
+
+  /**
+   * @generated from enum value: DATA_TYPE_UINT32 = 5;
+   */
+  UINT32 = 5,
+
+  /**
+   * @generated from enum value: DATA_TYPE_UINT64 = 6;
+   */
+  UINT64 = 6,
+
+  /**
+   * @generated from enum value: DATA_TYPE_FIXED32 = 7;
+   */
+  FIXED32 = 7,
+
+  /**
+   * @generated from enum value: DATA_TYPE_FIXED64 = 8;
+   */
+  FIXED64 = 8,
+
+  /**
+   * @generated from enum value: DATA_TYPE_SFIXED32 = 9;
+   */
+  SFIXED32 = 9,
+
+  /**
+   * @generated from enum value: DATA_TYPE_SFIXED64 = 10;
+   */
+  SFIXED64 = 10,
+
+  /**
+   * @generated from enum value: DATA_TYPE_FLOAT = 11;
+   */
+  FLOAT = 11,
+
+  /**
+   * @generated from enum value: DATA_TYPE_DOUBLE = 12;
+   */
+  DOUBLE = 12,
+
+  /**
+   * @generated from enum value: DATA_TYPE_BOOL = 13;
+   */
+  BOOL = 13,
+
+  /**
+   * @generated from enum value: DATA_TYPE_STRING = 14;
+   */
+  STRING = 14,
+
+  /**
+   * @generated from enum value: DATA_TYPE_BYTES = 15;
+   */
+  BYTES = 15,
+}
+
+/**
+ * Describes the enum mir_api.v1.DataType.
+ */
+export const DataTypeSchema: GenEnum<DataType> = /*@__PURE__*/
+  enumDesc(file_mir_api_v1_tlm, 0);
 
