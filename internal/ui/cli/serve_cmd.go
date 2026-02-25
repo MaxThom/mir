@@ -242,7 +242,12 @@ func (d *ServeCmd) run(
 	}
 
 	// Services
-	coreSrv, err := core_srv.NewCore(log, m, mng.NewSurrealMirStore(db),
+	cc, err := schema_cache.NewMirSchemaCache(log, m)
+	if err != nil {
+		return err
+	}
+
+	coreSrv, err := core_srv.NewCore(log, m, mng.NewSurrealMirStore(db), cc,
 		&core_srv.Options{
 			DeviceOnlineFlush:  cfg.Module.Core.DeviceOnlineFlush,
 			DeviceOfflineFlush: cfg.Module.Core.DeviceOfflineFlush,
@@ -252,11 +257,6 @@ func (d *ServeCmd) run(
 		return err
 	}
 
-	// Services
-	cc, err := schema_cache.NewMirSchemaCache(log, m)
-	if err != nil {
-		return err
-	}
 	cfgSrv, err := protocfg_srv.NewProtoCfg(log, m, mng.NewSurrealMirStore(db), cc)
 	if err != nil {
 		return err

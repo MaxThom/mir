@@ -17,6 +17,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/external/surreal"
 	"github.com/maxthom/mir/internal/libs/proto/mir_proto"
 	"github.com/maxthom/mir/internal/libs/retry"
+	"github.com/maxthom/mir/internal/services/schema_cache"
 	"github.com/maxthom/mir/pkgs/mir_v1"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/prometheus/client_golang/prometheus"
@@ -45,6 +46,7 @@ type CoreServer struct {
 	wg                       *sync.WaitGroup
 	m                        *mir.Mir
 	store                    mng.MirStore
+	schStore                 *schema_cache.MirSchemaCache
 	hearthbeats              map[mir_v1.DeviceId]time.Time
 	hearthbeatsMutex         sync.RWMutex
 	hearthbeatsWriteBuffer   map[mir_v1.DeviceId]mir_v1.DeviceHello
@@ -95,7 +97,7 @@ func init() {
 	deviceStatusCount.With(prometheus.Labels{"status": "offline"}).Add(0)
 }
 
-func NewCore(logger zerolog.Logger, m *mir.Mir, store mng.MirStore, opts *Options) (*CoreServer, error) {
+func NewCore(logger zerolog.Logger, m *mir.Mir, store mng.MirStore, schemaCache *schema_cache.MirSchemaCache, opts *Options) (*CoreServer, error) {
 	l = logger.With().Str("srv", "core_server").Logger()
 	if opts == nil {
 		opts = &Options{
@@ -121,6 +123,7 @@ func NewCore(logger zerolog.Logger, m *mir.Mir, store mng.MirStore, opts *Option
 		wg:                     &sync.WaitGroup{},
 		m:                      m,
 		store:                  store,
+		schStore:               schemaCache,
 		hearthbeats:            make(map[mir_v1.DeviceId]time.Time),
 		hearthbeatsWriteBuffer: make(map[mir_v1.DeviceId]mir_v1.DeviceHello),
 		opts:                   *opts,
@@ -591,7 +594,6 @@ func (s *CoreServer) schemaSub(msg *mir.Msg, deviceId string, sch *mir_proto.Mir
 func (s *CoreServer) schemaRefreshSub(msg *mir.Msg, clientId string, t mir_v1.DeviceTarget) ([]mir.DeviceWithError, error) {
 	l.Debug().Str("client_id", clientId).Str("route", "schema_refresh").Str("payload", fmt.Sprintf("%v", t)).Msg("schema refresh request")
 	requestTotal.WithLabelValues("schema_refresh").Inc()
-	degradedMode := false
 
 	errs := []string{}
 	if len(t.Ids) == 0 &&
@@ -610,7 +612,6 @@ func (s *CoreServer) schemaRefreshSub(msg *mir.Msg, clientId string, t mir_v1.De
 	devs, err := s.store.ListDevice(t, false)
 	if err != nil {
 		if strings.Contains(err.Error(), surreal.ErrDatabaseDisconnected.Error()) {
-			degradedMode = true
 			if !t.HasOnlyIdsTarget() {
 				return nil, fmt.Errorf("running in degraded mode as database is disconnected, only device ids can be used")
 			}
@@ -628,26 +629,17 @@ func (s *CoreServer) schemaRefreshSub(msg *mir.Msg, clientId string, t mir_v1.De
 	devsUpd := make([]mir.DeviceWithError, len(devs))
 	for i, d := range devs {
 		l.Debug().Str("route", "schema_refresh").Str("device_id", d.Spec.DeviceId).Msg("fetching schema from device")
-		sch, err := s.m.Device().Schema().Request(d.Spec.DeviceId)
-		newDev := d.WithSchema(sch, time.Now().UTC())
+		_, newDev, err := s.schStore.GetDeviceSchema(d.Spec.DeviceId, true)
+		// Mean device could not be reached
+		if newDev.Spec.DeviceId == "" {
+			newDev = d
+		}
 		devsUpd[i] = mir.DeviceWithError{
 			Device: newDev,
 		}
 		if err != nil {
 			l.Error().Err(err).Str("device_id", d.Spec.DeviceId).Msg("error fetching schema from device")
 			devsUpd[i].Error = err.Error()
-		} else if !degradedMode {
-			// Update the store with the new schema
-			_, err := s.m.Client().UpdateDevice().Request(
-				mir_v1.DeviceTarget{
-					Ids: []string{d.Spec.DeviceId},
-				},
-				newDev,
-			)
-			if err != nil {
-				l.Error().Err(err).Str("device_id", d.Spec.DeviceId).Msg("error updating device with new schema")
-				devsUpd[i].Error = err.Error()
-			}
 		}
 	}
 
