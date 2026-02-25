@@ -1,40 +1,105 @@
 syntax = "proto3";
 
 package mir_api.v1;
-import "mir_api/v1/core.proto";
-import "mir_api/v1/common.proto";
 
-message SendListTelemetryRequest {
-	DeviceTarget targets = 1; // To target a set of devices, search using ids, labels and annotations
-	repeated string measurements = 2; // List of measurements to exapend
-	map<string, string> filters= 3; // Filter measurements by labels, if key has no value, expand to see all options
-	bool refresh_schema = 4; // Force a schema refresh from the device
+import "mir_api/v1/common.proto";
+import "mir_api/v1/core.proto";
+
+message ListTelemetryRequest {
+  DeviceTarget targets = 1; // To target a set of devices, search using ids, labels and annotations
+  repeated string measurements = 2; // List of measurements to expand
+  map<string, string> filters = 3; // Filter measurements by labels, if key has no value, expand to see all options
+  bool refresh_schema = 4; // Force a schema refresh from the device
 }
 
-message SendListTelemetryResponse {
+message ListTelemetryResponse {
   oneof response {
-  	TelemetryResponse ok = 1; // all telemetry per devices
-    string error = 2;  // error if something went wrong
+    TelemetryResponse ok = 1; // all telemetry per devices
+    string error = 2; // error if something went wrong
   }
+}
+
+message QueryTelemetryRequest {
+  DeviceTarget targets = 1; // To target a set of devices, search using ids, labels and annotations
+  string measurement = 2; // Measurement to query
+  repeated string fields = 3; // List of fields to query, if empty, query all fields
+  Timestamp start_time = 4; // Start time of the query
+  Timestamp end_time = 5; // End time of the query
+}
+
+message QueryTelemetryResponse {
+  oneof response {
+    QueryTelemetry ok = 1; // all telemetry per devices
+    string error = 2; // error if something went wrong
+  }
+}
+
+message QueryTelemetry {
+  repeated string headers = 1; // List of telemetry headers
+  repeated DataType datatype = 2; // List of telemetry data type
+  repeated TelemetryData datapoints = 3; // List of telemetry data, order is the same as headers
+
+  message TelemetryData {
+    Timestamp timestamp = 1; // Timestamp of the telemetry data
+    repeated DataPoint values = 2; // List of telemetry data, order is the same as headers
+
+    message DataPoint {
+      int32 value_int32 = 2;
+      int64 value_int64 = 3;
+      sint32 value_sint32 = 4;
+      sint64 value_sint64 = 5;
+      uint32 value_uint32 = 6;
+      uint64 value_uint64 = 7;
+      fixed32 value_fixed32 = 8;
+      fixed64 value_fixed64 = 9;
+      sfixed32 value_sfixed32 = 10;
+      sfixed64 value_sfixed64 = 11;
+      float value_float = 12;
+      double value_double = 13;
+      bool value_bool = 14;
+      string value_string = 15;
+      bytes value_bytes = 16;
+    }
+  }
+}
+
+// In protobuf binary encoding, only set fields are written. Unset fields take zero bytes on the wire.
+enum DataType {
+  DATA_TYPE_UNSPECIFIED = 0;
+  DATA_TYPE_INT32 = 1;
+  DATA_TYPE_INT64 = 2;
+  DATA_TYPE_SINT32 = 3;
+  DATA_TYPE_SINT64 = 4;
+  DATA_TYPE_UINT32 = 5;
+  DATA_TYPE_UINT64 = 6;
+  DATA_TYPE_FIXED32 = 7;
+  DATA_TYPE_FIXED64 = 8;
+  DATA_TYPE_SFIXED32 = 9;
+  DATA_TYPE_SFIXED64 = 10;
+  DATA_TYPE_FLOAT = 11;
+  DATA_TYPE_DOUBLE = 12;
+  DATA_TYPE_BOOL = 13;
+  DATA_TYPE_STRING = 14;
+  DATA_TYPE_BYTES = 15;
 }
 
 // Map of device id and its list of telemetry
 message TelemetryResponse {
-	repeated DevicesTelemetry devices_telemetry = 1; // all telemetry with associated devices
+  repeated DevicesTelemetry devices_telemetry = 1; // all telemetry with associated devices
 }
 
 // List of telemetry
 message DevicesTelemetry {
-    repeated DeviceIdPair ids = 1; // List of devices that have those telemetry
-	repeated TelemetryDescriptor tlm_descriptors = 2; // Array of telemetry descriptor
-	string error = 3;// List of devices with the same error if something went wrong
+  repeated DeviceIdPair ids = 1; // List of devices that have those telemetry
+  repeated TelemetryDescriptor tlm_descriptors = 2; // Array of telemetry descriptor
+  string error = 3; // List of devices with the same error if something went wrong
 }
 
 // Descriptor of a command
 message TelemetryDescriptor {
-	string name = 1; // Name of telemetry
-	map<string, string> labels = 2; // Labels are used to tag a telemetry
-	repeated string fields = 3; // Fields are all the data channel of a telemetry
-	string explore_query = 4; // Grafana query to explore the telemetry
-	string error = 5; // HTTP like error if something went wrong
+  string name = 1; // Name of telemetry
+  map<string, string> labels = 2; // Labels are used to tag a telemetry
+  repeated string fields = 3; // Fields are all the data channel of a telemetry
+  string explore_query = 4; // Grafana query to explore the telemetry
+  string error = 5; // HTTP like error if something went wrong
 }

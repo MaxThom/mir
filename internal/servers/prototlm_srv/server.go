@@ -134,6 +134,9 @@ func (s *ProtoTlmServer) Serve() error {
 	if err := s.m.Client().ListTelemetry().QueueSubscribe(ServiceName, s.handleTelemetryListRequest); err != nil {
 		return fmt.Errorf("cannot listen to device telemetry list request: %w", err)
 	}
+	if err := s.m.Client().QueryTelemetry().QueueSubscribe(ServiceName, s.handleTelemetryQueryRequest); err != nil {
+		return fmt.Errorf("cannot listen to device telemetry query request: %w", err)
+	}
 	return nil
 }
 
@@ -215,7 +218,7 @@ type schemaPerDevices struct {
 	devsId []*mir_apiv1.DeviceIdPair
 }
 
-func (s *ProtoTlmServer) handleTelemetryListRequest(msg *mir.Msg, clientId string, req *mir_apiv1.SendListTelemetryRequest) ([]*mir_apiv1.DevicesTelemetry, error) {
+func (s *ProtoTlmServer) handleTelemetryListRequest(msg *mir.Msg, clientId string, req *mir_apiv1.ListTelemetryRequest) ([]*mir_apiv1.DevicesTelemetry, error) {
 	l.Info().Any("req", req).Msg("list telemetry request")
 	requestTotal.WithLabelValues("list").Inc()
 	degradedMode := false
@@ -323,6 +326,15 @@ func (s *ProtoTlmServer) handleTelemetryListRequest(msg *mir.Msg, clientId strin
 
 	l.Info().Msg("list command request processed successfully")
 	return devsTlm, nil
+}
+
+func (s *ProtoTlmServer) handleTelemetryQueryRequest(msg *mir.Msg, clientId string, req *mir_apiv1.QueryTelemetryRequest) (*mir_apiv1.QueryTelemetry, error) {
+	l.Info().Any("req", req).Msg("query telemetry request")
+	requestTotal.WithLabelValues("query").Inc()
+
+	// TODO cmd so I can test with something
+
+	return nil, nil
 }
 
 // TODO have some device info

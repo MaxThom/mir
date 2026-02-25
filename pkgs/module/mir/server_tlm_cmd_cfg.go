@@ -26,23 +26,23 @@ func (r *clientRoutes) ListTelemetry() *listTelemetryRoute {
 }
 
 // Subscribe to list telemetry request
-func (r *listTelemetryRoute) Subscribe(f func(msg *Msg, clientId string, req *mir_apiv1.SendListTelemetryRequest) ([]*mir_apiv1.DevicesTelemetry, error)) error {
+func (r *listTelemetryRoute) Subscribe(f func(msg *Msg, clientId string, req *mir_apiv1.ListTelemetryRequest) ([]*mir_apiv1.DevicesTelemetry, error)) error {
 	sbj := tlm_client.TelemetryListRequest.WithId("*")
 	return r.m.subscribe(sbj, r.handlerWrapper(f))
 }
 
 // Queue subscribe to list telemetry request
-func (r *listTelemetryRoute) QueueSubscribe(queue string, f func(msg *Msg, clientId string, req *mir_apiv1.SendListTelemetryRequest) ([]*mir_apiv1.DevicesTelemetry, error)) error {
+func (r *listTelemetryRoute) QueueSubscribe(queue string, f func(msg *Msg, clientId string, req *mir_apiv1.ListTelemetryRequest) ([]*mir_apiv1.DevicesTelemetry, error)) error {
 	sbj := tlm_client.TelemetryListRequest.WithId("*")
 	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
 }
 
-func (r *listTelemetryRoute) handlerWrapper(f func(msg *Msg, clientId string, req *mir_apiv1.SendListTelemetryRequest) ([]*mir_apiv1.DevicesTelemetry, error)) nats.MsgHandler {
+func (r *listTelemetryRoute) handlerWrapper(f func(msg *Msg, clientId string, req *mir_apiv1.ListTelemetryRequest) ([]*mir_apiv1.DevicesTelemetry, error)) nats.MsgHandler {
 	return func(msg *nats.Msg) {
-		req := &mir_apiv1.SendListTelemetryRequest{}
+		req := &mir_apiv1.ListTelemetryRequest{}
 		if err := proto.Unmarshal(msg.Data, req); err != nil {
 			// TODO log error here
-			_ = r.m.sendReplyOrAck(msg, &mir_apiv1.SendListTelemetryResponse{Response: &mir_apiv1.SendListTelemetryResponse_Error{
+			_ = r.m.sendReplyOrAck(msg, &mir_apiv1.ListTelemetryResponse{Response: &mir_apiv1.ListTelemetryResponse_Error{
 				Error: err.Error(),
 			}})
 			return
@@ -50,21 +50,21 @@ func (r *listTelemetryRoute) handlerWrapper(f func(msg *Msg, clientId string, re
 
 		resp, err := f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), req)
 		if err != nil {
-			err = r.m.sendReplyOrAck(msg, &mir_apiv1.SendListTelemetryResponse{Response: &mir_apiv1.SendListTelemetryResponse_Error{
+			err = r.m.sendReplyOrAck(msg, &mir_apiv1.ListTelemetryResponse{Response: &mir_apiv1.ListTelemetryResponse_Error{
 				Error: err.Error(),
 			}})
 			return
 		}
 		// TODO log error here
-		err = r.m.sendReplyOrAck(msg, &mir_apiv1.SendListTelemetryResponse{
-			Response: &mir_apiv1.SendListTelemetryResponse_Ok{
+		err = r.m.sendReplyOrAck(msg, &mir_apiv1.ListTelemetryResponse{
+			Response: &mir_apiv1.ListTelemetryResponse_Ok{
 				Ok: &mir_apiv1.TelemetryResponse{
 					DevicesTelemetry: resp,
 				},
 			},
 		})
 		if err != nil {
-			err = r.m.sendReplyOrAck(msg, &mir_apiv1.SendListTelemetryResponse{Response: &mir_apiv1.SendListTelemetryResponse_Error{
+			err = r.m.sendReplyOrAck(msg, &mir_apiv1.ListTelemetryResponse{Response: &mir_apiv1.ListTelemetryResponse_Error{
 				Error: err.Error(),
 			}})
 		}
@@ -72,7 +72,7 @@ func (r *listTelemetryRoute) handlerWrapper(f func(msg *Msg, clientId string, re
 }
 
 // Request listing of telemetry per device
-func (r *listTelemetryRoute) Request(req *mir_apiv1.SendListTelemetryRequest) ([]*mir_apiv1.DevicesTelemetry, error) {
+func (r *listTelemetryRoute) Request(req *mir_apiv1.ListTelemetryRequest) ([]*mir_apiv1.DevicesTelemetry, error) {
 	sbj := tlm_client.TelemetryListRequest.WithId(r.m.GetInstanceName())
 	bReq, err := proto.Marshal(req)
 	if err != nil {
@@ -84,7 +84,7 @@ func (r *listTelemetryRoute) Request(req *mir_apiv1.SendListTelemetryRequest) ([
 		return []*mir_apiv1.DevicesTelemetry{}, err
 	}
 
-	resp := &mir_apiv1.SendListTelemetryResponse{}
+	resp := &mir_apiv1.ListTelemetryResponse{}
 	err = proto.Unmarshal(resMsg.Data, resp)
 	if err != nil {
 		return []*mir_apiv1.DevicesTelemetry{}, err
@@ -94,6 +94,86 @@ func (r *listTelemetryRoute) Request(req *mir_apiv1.SendListTelemetryRequest) ([
 	}
 
 	return resp.GetOk().DevicesTelemetry, nil
+}
+
+/// QueryTelemetry
+
+type queryTelemetryRoute struct {
+	m *Mir
+}
+
+// Query device telemetry
+func (r *clientRoutes) QueryTelemetry() *queryTelemetryRoute {
+	return &queryTelemetryRoute{m: r.m}
+}
+
+// Subscribe to query telemetry request
+func (r *queryTelemetryRoute) Subscribe(f func(msg *Msg, clientId string, req *mir_apiv1.QueryTelemetryRequest) (*mir_apiv1.QueryTelemetry, error)) error {
+	sbj := tlm_client.TelemetryQueryRequest.WithId("*")
+	return r.m.subscribe(sbj, r.handlerWrapper(f))
+}
+
+// Queue subscribe to query telemetry request
+func (r *queryTelemetryRoute) QueueSubscribe(queue string, f func(msg *Msg, clientId string, req *mir_apiv1.QueryTelemetryRequest) (*mir_apiv1.QueryTelemetry, error)) error {
+	sbj := tlm_client.TelemetryQueryRequest.WithId("*")
+	return r.m.queueSubscribe(queue, sbj, r.handlerWrapper(f))
+}
+
+func (r *queryTelemetryRoute) handlerWrapper(f func(msg *Msg, clientId string, req *mir_apiv1.QueryTelemetryRequest) (*mir_apiv1.QueryTelemetry, error)) nats.MsgHandler {
+	return func(msg *nats.Msg) {
+		req := &mir_apiv1.QueryTelemetryRequest{}
+		if err := proto.Unmarshal(msg.Data, req); err != nil {
+			// TODO log error here
+			_ = r.m.sendReplyOrAck(msg, &mir_apiv1.QueryTelemetryResponse{Response: &mir_apiv1.QueryTelemetryResponse_Error{
+				Error: err.Error(),
+			}})
+			return
+		}
+
+		resp, err := f(&Msg{msg}, clients.ClientSubject(msg.Subject).GetId(), req)
+		if err != nil {
+			err = r.m.sendReplyOrAck(msg, &mir_apiv1.QueryTelemetryResponse{Response: &mir_apiv1.QueryTelemetryResponse_Error{
+				Error: err.Error(),
+			}})
+			return
+		}
+		// TODO log error here
+		err = r.m.sendReplyOrAck(msg, &mir_apiv1.QueryTelemetryResponse{
+			Response: &mir_apiv1.QueryTelemetryResponse_Ok{
+				Ok: resp,
+			},
+		})
+		if err != nil {
+			err = r.m.sendReplyOrAck(msg, &mir_apiv1.QueryTelemetryResponse{Response: &mir_apiv1.QueryTelemetryResponse_Error{
+				Error: err.Error(),
+			}})
+		}
+	}
+}
+
+// Request query of telemetry per device
+func (r *queryTelemetryRoute) Request(req *mir_apiv1.QueryTelemetryRequest) (*mir_apiv1.QueryTelemetry, error) {
+	sbj := tlm_client.TelemetryQueryRequest.WithId(r.m.GetInstanceName())
+	bReq, err := proto.Marshal(req)
+	if err != nil {
+		return &mir_apiv1.QueryTelemetry{}, err
+	}
+
+	resMsg, err := r.m.request(sbj, bReq, nil, defaultTimeout)
+	if err != nil {
+		return &mir_apiv1.QueryTelemetry{}, err
+	}
+
+	resp := &mir_apiv1.QueryTelemetryResponse{}
+	err = proto.Unmarshal(resMsg.Data, resp)
+	if err != nil {
+		return &mir_apiv1.QueryTelemetry{}, err
+	}
+	if resp.GetError() != "" {
+		return &mir_apiv1.QueryTelemetry{}, errors.New(resp.GetError())
+	}
+
+	return resp.GetOk(), nil
 }
 
 /// ListCommand

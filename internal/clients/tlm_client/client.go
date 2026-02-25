@@ -13,7 +13,8 @@ import (
 const (
 	TelemetryDeviceStream clients.ClientSubject = "device.%s.tlm.v1alpha.proto"
 
-	TelemetryListRequest clients.ClientSubject = "client.%s.tlm.v1alpha.list"
+	TelemetryListRequest  clients.ClientSubject = "client.%s.tlm.v1alpha.list"
+	TelemetryQueryRequest clients.ClientSubject = "client.%s.tlm.v1alpha.query"
 )
 
 func PublishTelemetryStream(bus *nats.Conn, deviceId string, t protoreflect.ProtoMessage) error {
@@ -40,7 +41,7 @@ func GetTelemetryStreamMsg(deviceId string, t protoreflect.ProtoMessage) (*nats.
 	}, nil
 }
 
-func PublishTelemetryListRequest(bus *nats.Conn, req *mir_apiv1.SendListTelemetryRequest) (*mir_apiv1.SendListTelemetryResponse, error) {
+func PublishTelemetryListRequest(bus *nats.Conn, req *mir_apiv1.ListTelemetryRequest) (*mir_apiv1.ListTelemetryResponse, error) {
 	b, err := proto.Marshal(req)
 	if err != nil {
 		return nil, err
@@ -52,7 +53,7 @@ func PublishTelemetryListRequest(bus *nats.Conn, req *mir_apiv1.SendListTelemetr
 		return nil, err
 	}
 
-	resp := &mir_apiv1.SendListTelemetryResponse{}
+	resp := &mir_apiv1.ListTelemetryResponse{}
 	err = proto.Unmarshal(resMsg.Data, resp)
 	if err != nil {
 		return nil, err

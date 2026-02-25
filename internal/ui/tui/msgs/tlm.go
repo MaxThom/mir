@@ -19,7 +19,7 @@ func ListMirDeviceTelemetry(m *mir.Mir, t *mir_apiv1.DeviceTarget) tea.Cmd {
 
 func listMirDeviceTelemetryCmd(m *mir.Mir, t *mir_apiv1.DeviceTarget) func() tea.Msg {
 	return func() tea.Msg {
-		list, err := m.Client().ListTelemetry().Request(&mir_apiv1.SendListTelemetryRequest{Targets: t})
+		list, err := m.Client().ListTelemetry().Request(&mir_apiv1.ListTelemetryRequest{Targets: t})
 		if err != nil {
 			return ErrMsg{Err: err}
 		}

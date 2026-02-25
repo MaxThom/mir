@@ -154,7 +154,7 @@ func createSwarmForDeviceGroup(swarmCfg mir_v1.Swarm, bus *nats.Conn, mirCtx ui.
 		}
 		_, err := s.AddDevices(createReqs...).
 			WithLogLevel(mir.LogLevel(swarmCfg.Spec.LogLevel)).
-			WithPrettyLogger(false).
+			WithPrettyLogger(true).
 			WithCredentials(mirCtx.Credentials).
 			WithCerticate(mirCtx.TlsCert, mirCtx.TlsKey).
 			WithCA(mirCtx.RootCA).
