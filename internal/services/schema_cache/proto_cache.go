@@ -18,8 +18,6 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/dynamicpb"
-
-	surrealdbModels "github.com/surrealdb/surrealdb.go/pkg/models"
 )
 
 var (
@@ -186,34 +184,25 @@ func (c *MirSchemaCache) reconcileDeviceSchema(deviceId string, forceDeviceFetch
 	if err != nil {
 		return mir_v1.Device{}, nil, err
 	}
-	compressSch, err := sch.CompressSchema()
-	if err != nil {
-		return mir_v1.Device{}, nil, err
-	}
 
-	timeNow := time.Now().UTC()
+	devUpd := mir_v1.NewDevice().WithId(deviceId).WithSchema(sch, time.Now().UTC())
 	devResp, err := c.m.Client().UpdateDevice().Request(
 		mir_v1.DeviceTarget{
 			Ids: []string{deviceId},
 		},
-		mir_v1.NewDevice().WithStatus(mir_v1.DeviceStatus{
-			Schema: mir_v1.Schema{
-				CompressedSchema: compressSch,
-				PackageNames:     sch.GetPackageList(),
-				LastSchemaFetch:  &surrealdbModels.CustomDateTime{Time: timeNow},
-			},
-		}),
+		devUpd,
 	)
+
 	if err != nil {
 		if strings.Contains(err.Error(), surreal.ErrDatabaseDisconnected.Error()) {
 			schemaReconcileTotal.WithLabelValues("device").Inc()
 			l.Info().Str("device_id", deviceId).Msgf("reconciled schema for %s from device", deviceId)
-			return mir_v1.NewDevice().WithId(deviceId), sch, nil
+			return devUpd, sch, nil
 		}
-		return mir_v1.Device{}, nil, fmt.Errorf("error updating device: %w", err)
+		return devUpd, nil, fmt.Errorf("error updating device: %w", err)
 	}
 	if len(devResp) == 0 {
-		return mir_v1.Device{}, nil, fmt.Errorf("no device found")
+		return devUpd, nil, fmt.Errorf("no device found to update")
 	}
 
 	schemaReconcileTotal.WithLabelValues("device").Inc()

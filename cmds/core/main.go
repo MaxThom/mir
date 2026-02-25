@@ -21,6 +21,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/build_meta"
 	"github.com/maxthom/mir/internal/libs/external/surreal"
 	"github.com/maxthom/mir/internal/servers/core_srv"
+	"github.com/maxthom/mir/internal/services/schema_cache"
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/rs/zerolog"
 	"golang.org/x/net/http2"
@@ -204,7 +205,11 @@ func run(
 	log.Info().Err(m.Bus.LastError()).Str("url", cfg.DataBusServer.Url).Str("status", m.Bus.Status().String()).Msg("msg bus status")
 
 	// Services
-	coreSrv, err := core_srv.NewCore(log, m, mng.NewSurrealMirStore(db), &core_srv.Options{
+	cc, err := schema_cache.NewMirSchemaCache(log, m)
+	if err != nil {
+		return err
+	}
+	coreSrv, err := core_srv.NewCore(log, m, mng.NewSurrealMirStore(db), cc, &core_srv.Options{
 		DeviceOnlineFlush:  cfg.DeviceOnlineFlush,
 		DeviceOfflineFlush: cfg.DeviceOfflineFlush,
 		DeviceOfflineAfter: cfg.DeviceOfflineAfter,
