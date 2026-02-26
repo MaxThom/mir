@@ -41,6 +41,7 @@ const (
 	DataType_DATA_TYPE_BOOL        DataType = 13
 	DataType_DATA_TYPE_STRING      DataType = 14
 	DataType_DATA_TYPE_BYTES       DataType = 15
+	DataType_DATA_TYPE_TIMESTAMP   DataType = 16
 )
 
 // Enum value maps for DataType.
@@ -62,6 +63,7 @@ var (
 		13: "DATA_TYPE_BOOL",
 		14: "DATA_TYPE_STRING",
 		15: "DATA_TYPE_BYTES",
+		16: "DATA_TYPE_TIMESTAMP",
 	}
 	DataType_value = map[string]int32{
 		"DATA_TYPE_UNSPECIFIED": 0,
@@ -80,6 +82,7 @@ var (
 		"DATA_TYPE_BOOL":        13,
 		"DATA_TYPE_STRING":      14,
 		"DATA_TYPE_BYTES":       15,
+		"DATA_TYPE_TIMESTAMP":   16,
 	}
 )
 
@@ -419,10 +422,10 @@ func (*QueryTelemetryResponse_Ok) isQueryTelemetryResponse_Response() {}
 func (*QueryTelemetryResponse_Error) isQueryTelemetryResponse_Response() {}
 
 type QueryTelemetry struct {
-	state         protoimpl.MessageState          `protogen:"open.v1"`
-	Headers       []string                        `protobuf:"bytes,1,rep,name=headers,proto3" json:"headers,omitempty"`                                    // List of telemetry headers
-	Datatype      []DataType                      `protobuf:"varint,2,rep,packed,name=datatype,proto3,enum=mir_api.v1.DataType" json:"datatype,omitempty"` // List of telemetry data type
-	Datapoints    []*QueryTelemetry_TelemetryData `protobuf:"bytes,3,rep,name=datapoints,proto3" json:"datapoints,omitempty"`                              // List of telemetry data, order is the same as headers
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Headers       []string               `protobuf:"bytes,1,rep,name=headers,proto3" json:"headers,omitempty"`                                      // List of telemetry headers
+	Datatypes     []DataType             `protobuf:"varint,2,rep,packed,name=datatypes,proto3,enum=mir_api.v1.DataType" json:"datatypes,omitempty"` // List of telemetry data type
+	Rows          []*QueryTelemetry_Row  `protobuf:"bytes,3,rep,name=rows,proto3" json:"rows,omitempty"`                                            // List of telemetry data, order is the same as headers
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -464,16 +467,16 @@ func (x *QueryTelemetry) GetHeaders() []string {
 	return nil
 }
 
-func (x *QueryTelemetry) GetDatatype() []DataType {
+func (x *QueryTelemetry) GetDatatypes() []DataType {
 	if x != nil {
-		return x.Datatype
+		return x.Datatypes
 	}
 	return nil
 }
 
-func (x *QueryTelemetry) GetDatapoints() []*QueryTelemetry_TelemetryData {
+func (x *QueryTelemetry) GetRows() []*QueryTelemetry_Row {
 	if x != nil {
-		return x.Datapoints
+		return x.Rows
 	}
 	return nil
 }
@@ -661,28 +664,28 @@ func (x *TelemetryDescriptor) GetError() string {
 	return ""
 }
 
-type QueryTelemetry_TelemetryData struct {
-	state         protoimpl.MessageState                    `protogen:"open.v1"`
-	Timestamp     *Timestamp                                `protobuf:"bytes,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"` // Timestamp of the telemetry data
-	Values        []*QueryTelemetry_TelemetryData_DataPoint `protobuf:"bytes,2,rep,name=values,proto3" json:"values,omitempty"`       // List of telemetry data, order is the same as headers
+type QueryTelemetry_Row struct {
+	state         protoimpl.MessageState          `protogen:"open.v1"`
+	Timestamp     *Timestamp                      `protobuf:"bytes,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`   // Timestamp of the telemetry data
+	Datapoints    []*QueryTelemetry_Row_DataPoint `protobuf:"bytes,2,rep,name=datapoints,proto3" json:"datapoints,omitempty"` // List of telemetry data, order is the same as headers
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *QueryTelemetry_TelemetryData) Reset() {
-	*x = QueryTelemetry_TelemetryData{}
+func (x *QueryTelemetry_Row) Reset() {
+	*x = QueryTelemetry_Row{}
 	mi := &file_mir_api_v1_tlm_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *QueryTelemetry_TelemetryData) String() string {
+func (x *QueryTelemetry_Row) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*QueryTelemetry_TelemetryData) ProtoMessage() {}
+func (*QueryTelemetry_Row) ProtoMessage() {}
 
-func (x *QueryTelemetry_TelemetryData) ProtoReflect() protoreflect.Message {
+func (x *QueryTelemetry_Row) ProtoReflect() protoreflect.Message {
 	mi := &file_mir_api_v1_tlm_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -694,60 +697,66 @@ func (x *QueryTelemetry_TelemetryData) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use QueryTelemetry_TelemetryData.ProtoReflect.Descriptor instead.
-func (*QueryTelemetry_TelemetryData) Descriptor() ([]byte, []int) {
+// Deprecated: Use QueryTelemetry_Row.ProtoReflect.Descriptor instead.
+func (*QueryTelemetry_Row) Descriptor() ([]byte, []int) {
 	return file_mir_api_v1_tlm_proto_rawDescGZIP(), []int{4, 0}
 }
 
-func (x *QueryTelemetry_TelemetryData) GetTimestamp() *Timestamp {
+func (x *QueryTelemetry_Row) GetTimestamp() *Timestamp {
 	if x != nil {
 		return x.Timestamp
 	}
 	return nil
 }
 
-func (x *QueryTelemetry_TelemetryData) GetValues() []*QueryTelemetry_TelemetryData_DataPoint {
+func (x *QueryTelemetry_Row) GetDatapoints() []*QueryTelemetry_Row_DataPoint {
 	if x != nil {
-		return x.Values
+		return x.Datapoints
 	}
 	return nil
 }
 
-type QueryTelemetry_TelemetryData_DataPoint struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	ValueInt32    int32                  `protobuf:"varint,2,opt,name=value_int32,json=valueInt32,proto3" json:"value_int32,omitempty"`
-	ValueInt64    int64                  `protobuf:"varint,3,opt,name=value_int64,json=valueInt64,proto3" json:"value_int64,omitempty"`
-	ValueSint32   int32                  `protobuf:"zigzag32,4,opt,name=value_sint32,json=valueSint32,proto3" json:"value_sint32,omitempty"`
-	ValueSint64   int64                  `protobuf:"zigzag64,5,opt,name=value_sint64,json=valueSint64,proto3" json:"value_sint64,omitempty"`
-	ValueUint32   uint32                 `protobuf:"varint,6,opt,name=value_uint32,json=valueUint32,proto3" json:"value_uint32,omitempty"`
-	ValueUint64   uint64                 `protobuf:"varint,7,opt,name=value_uint64,json=valueUint64,proto3" json:"value_uint64,omitempty"`
-	ValueFixed32  uint32                 `protobuf:"fixed32,8,opt,name=value_fixed32,json=valueFixed32,proto3" json:"value_fixed32,omitempty"`
-	ValueFixed64  uint64                 `protobuf:"fixed64,9,opt,name=value_fixed64,json=valueFixed64,proto3" json:"value_fixed64,omitempty"`
-	ValueSfixed32 int32                  `protobuf:"fixed32,10,opt,name=value_sfixed32,json=valueSfixed32,proto3" json:"value_sfixed32,omitempty"`
-	ValueSfixed64 int64                  `protobuf:"fixed64,11,opt,name=value_sfixed64,json=valueSfixed64,proto3" json:"value_sfixed64,omitempty"`
-	ValueFloat    float32                `protobuf:"fixed32,12,opt,name=value_float,json=valueFloat,proto3" json:"value_float,omitempty"`
-	ValueDouble   float64                `protobuf:"fixed64,13,opt,name=value_double,json=valueDouble,proto3" json:"value_double,omitempty"`
-	ValueBool     bool                   `protobuf:"varint,14,opt,name=value_bool,json=valueBool,proto3" json:"value_bool,omitempty"`
-	ValueString   string                 `protobuf:"bytes,15,opt,name=value_string,json=valueString,proto3" json:"value_string,omitempty"`
-	ValueBytes    []byte                 `protobuf:"bytes,16,opt,name=value_bytes,json=valueBytes,proto3" json:"value_bytes,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+type QueryTelemetry_Row_DataPoint struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// A plain int32 field with value 0 → 0 bytes (not encoded at all).
+	// An optional int32 field with value 0 → 2 bytes (tag + varint 0 must be written to signal presence).
+	// An optional int32 field that is absent → 0 bytes (same as plain field, nil is not encoded).
+	// So the cost only applies when the value is explicitly set to its default (e.g., 0, false, ""). In all other cases, the wire size is identical to a
+	// plain field.
+	ValueInt32     *int32     `protobuf:"varint,1,opt,name=value_int32,json=valueInt32,proto3,oneof" json:"value_int32,omitempty"`
+	ValueInt64     *int64     `protobuf:"varint,2,opt,name=value_int64,json=valueInt64,proto3,oneof" json:"value_int64,omitempty"`
+	ValueSint32    *int32     `protobuf:"zigzag32,3,opt,name=value_sint32,json=valueSint32,proto3,oneof" json:"value_sint32,omitempty"`
+	ValueSint64    *int64     `protobuf:"zigzag64,4,opt,name=value_sint64,json=valueSint64,proto3,oneof" json:"value_sint64,omitempty"`
+	ValueUint32    *uint32    `protobuf:"varint,5,opt,name=value_uint32,json=valueUint32,proto3,oneof" json:"value_uint32,omitempty"`
+	ValueUint64    *uint64    `protobuf:"varint,6,opt,name=value_uint64,json=valueUint64,proto3,oneof" json:"value_uint64,omitempty"`
+	ValueFixed32   *uint32    `protobuf:"fixed32,7,opt,name=value_fixed32,json=valueFixed32,proto3,oneof" json:"value_fixed32,omitempty"`
+	ValueFixed64   *uint64    `protobuf:"fixed64,8,opt,name=value_fixed64,json=valueFixed64,proto3,oneof" json:"value_fixed64,omitempty"`
+	ValueSfixed32  *int32     `protobuf:"fixed32,9,opt,name=value_sfixed32,json=valueSfixed32,proto3,oneof" json:"value_sfixed32,omitempty"`
+	ValueSfixed64  *int64     `protobuf:"fixed64,10,opt,name=value_sfixed64,json=valueSfixed64,proto3,oneof" json:"value_sfixed64,omitempty"`
+	ValueFloat     *float32   `protobuf:"fixed32,11,opt,name=value_float,json=valueFloat,proto3,oneof" json:"value_float,omitempty"`
+	ValueDouble    *float64   `protobuf:"fixed64,12,opt,name=value_double,json=valueDouble,proto3,oneof" json:"value_double,omitempty"`
+	ValueBool      *bool      `protobuf:"varint,13,opt,name=value_bool,json=valueBool,proto3,oneof" json:"value_bool,omitempty"`
+	ValueString    *string    `protobuf:"bytes,14,opt,name=value_string,json=valueString,proto3,oneof" json:"value_string,omitempty"`
+	ValueBytes     []byte     `protobuf:"bytes,15,opt,name=value_bytes,json=valueBytes,proto3,oneof" json:"value_bytes,omitempty"`
+	ValueTimestamp *Timestamp `protobuf:"bytes,16,opt,name=value_timestamp,json=valueTimestamp,proto3,oneof" json:"value_timestamp,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
-func (x *QueryTelemetry_TelemetryData_DataPoint) Reset() {
-	*x = QueryTelemetry_TelemetryData_DataPoint{}
+func (x *QueryTelemetry_Row_DataPoint) Reset() {
+	*x = QueryTelemetry_Row_DataPoint{}
 	mi := &file_mir_api_v1_tlm_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *QueryTelemetry_TelemetryData_DataPoint) String() string {
+func (x *QueryTelemetry_Row_DataPoint) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*QueryTelemetry_TelemetryData_DataPoint) ProtoMessage() {}
+func (*QueryTelemetry_Row_DataPoint) ProtoMessage() {}
 
-func (x *QueryTelemetry_TelemetryData_DataPoint) ProtoReflect() protoreflect.Message {
+func (x *QueryTelemetry_Row_DataPoint) ProtoReflect() protoreflect.Message {
 	mi := &file_mir_api_v1_tlm_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -759,112 +768,119 @@ func (x *QueryTelemetry_TelemetryData_DataPoint) ProtoReflect() protoreflect.Mes
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use QueryTelemetry_TelemetryData_DataPoint.ProtoReflect.Descriptor instead.
-func (*QueryTelemetry_TelemetryData_DataPoint) Descriptor() ([]byte, []int) {
+// Deprecated: Use QueryTelemetry_Row_DataPoint.ProtoReflect.Descriptor instead.
+func (*QueryTelemetry_Row_DataPoint) Descriptor() ([]byte, []int) {
 	return file_mir_api_v1_tlm_proto_rawDescGZIP(), []int{4, 0, 0}
 }
 
-func (x *QueryTelemetry_TelemetryData_DataPoint) GetValueInt32() int32 {
-	if x != nil {
-		return x.ValueInt32
+func (x *QueryTelemetry_Row_DataPoint) GetValueInt32() int32 {
+	if x != nil && x.ValueInt32 != nil {
+		return *x.ValueInt32
 	}
 	return 0
 }
 
-func (x *QueryTelemetry_TelemetryData_DataPoint) GetValueInt64() int64 {
-	if x != nil {
-		return x.ValueInt64
+func (x *QueryTelemetry_Row_DataPoint) GetValueInt64() int64 {
+	if x != nil && x.ValueInt64 != nil {
+		return *x.ValueInt64
 	}
 	return 0
 }
 
-func (x *QueryTelemetry_TelemetryData_DataPoint) GetValueSint32() int32 {
-	if x != nil {
-		return x.ValueSint32
+func (x *QueryTelemetry_Row_DataPoint) GetValueSint32() int32 {
+	if x != nil && x.ValueSint32 != nil {
+		return *x.ValueSint32
 	}
 	return 0
 }
 
-func (x *QueryTelemetry_TelemetryData_DataPoint) GetValueSint64() int64 {
-	if x != nil {
-		return x.ValueSint64
+func (x *QueryTelemetry_Row_DataPoint) GetValueSint64() int64 {
+	if x != nil && x.ValueSint64 != nil {
+		return *x.ValueSint64
 	}
 	return 0
 }
 
-func (x *QueryTelemetry_TelemetryData_DataPoint) GetValueUint32() uint32 {
-	if x != nil {
-		return x.ValueUint32
+func (x *QueryTelemetry_Row_DataPoint) GetValueUint32() uint32 {
+	if x != nil && x.ValueUint32 != nil {
+		return *x.ValueUint32
 	}
 	return 0
 }
 
-func (x *QueryTelemetry_TelemetryData_DataPoint) GetValueUint64() uint64 {
-	if x != nil {
-		return x.ValueUint64
+func (x *QueryTelemetry_Row_DataPoint) GetValueUint64() uint64 {
+	if x != nil && x.ValueUint64 != nil {
+		return *x.ValueUint64
 	}
 	return 0
 }
 
-func (x *QueryTelemetry_TelemetryData_DataPoint) GetValueFixed32() uint32 {
-	if x != nil {
-		return x.ValueFixed32
+func (x *QueryTelemetry_Row_DataPoint) GetValueFixed32() uint32 {
+	if x != nil && x.ValueFixed32 != nil {
+		return *x.ValueFixed32
 	}
 	return 0
 }
 
-func (x *QueryTelemetry_TelemetryData_DataPoint) GetValueFixed64() uint64 {
-	if x != nil {
-		return x.ValueFixed64
+func (x *QueryTelemetry_Row_DataPoint) GetValueFixed64() uint64 {
+	if x != nil && x.ValueFixed64 != nil {
+		return *x.ValueFixed64
 	}
 	return 0
 }
 
-func (x *QueryTelemetry_TelemetryData_DataPoint) GetValueSfixed32() int32 {
-	if x != nil {
-		return x.ValueSfixed32
+func (x *QueryTelemetry_Row_DataPoint) GetValueSfixed32() int32 {
+	if x != nil && x.ValueSfixed32 != nil {
+		return *x.ValueSfixed32
 	}
 	return 0
 }
 
-func (x *QueryTelemetry_TelemetryData_DataPoint) GetValueSfixed64() int64 {
-	if x != nil {
-		return x.ValueSfixed64
+func (x *QueryTelemetry_Row_DataPoint) GetValueSfixed64() int64 {
+	if x != nil && x.ValueSfixed64 != nil {
+		return *x.ValueSfixed64
 	}
 	return 0
 }
 
-func (x *QueryTelemetry_TelemetryData_DataPoint) GetValueFloat() float32 {
-	if x != nil {
-		return x.ValueFloat
+func (x *QueryTelemetry_Row_DataPoint) GetValueFloat() float32 {
+	if x != nil && x.ValueFloat != nil {
+		return *x.ValueFloat
 	}
 	return 0
 }
 
-func (x *QueryTelemetry_TelemetryData_DataPoint) GetValueDouble() float64 {
-	if x != nil {
-		return x.ValueDouble
+func (x *QueryTelemetry_Row_DataPoint) GetValueDouble() float64 {
+	if x != nil && x.ValueDouble != nil {
+		return *x.ValueDouble
 	}
 	return 0
 }
 
-func (x *QueryTelemetry_TelemetryData_DataPoint) GetValueBool() bool {
-	if x != nil {
-		return x.ValueBool
+func (x *QueryTelemetry_Row_DataPoint) GetValueBool() bool {
+	if x != nil && x.ValueBool != nil {
+		return *x.ValueBool
 	}
 	return false
 }
 
-func (x *QueryTelemetry_TelemetryData_DataPoint) GetValueString() string {
-	if x != nil {
-		return x.ValueString
+func (x *QueryTelemetry_Row_DataPoint) GetValueString() string {
+	if x != nil && x.ValueString != nil {
+		return *x.ValueString
 	}
 	return ""
 }
 
-func (x *QueryTelemetry_TelemetryData_DataPoint) GetValueBytes() []byte {
+func (x *QueryTelemetry_Row_DataPoint) GetValueBytes() []byte {
 	if x != nil {
 		return x.ValueBytes
+	}
+	return nil
+}
+
+func (x *QueryTelemetry_Row_DataPoint) GetValueTimestamp() *Timestamp {
+	if x != nil {
+		return x.ValueTimestamp
 	}
 	return nil
 }
@@ -899,38 +915,56 @@ const file_mir_api_v1_tlm_proto_rawDesc = "" +
 	"\x02ok\x18\x01 \x01(\v2\x1a.mir_api.v1.QueryTelemetryH\x00R\x02ok\x12\x16\n" +
 	"\x05error\x18\x02 \x01(\tH\x00R\x05errorB\n" +
 	"\n" +
-	"\bresponse\"\xd4\x06\n" +
+	"\bresponse\"\xd7\t\n" +
 	"\x0eQueryTelemetry\x12\x18\n" +
-	"\aheaders\x18\x01 \x03(\tR\aheaders\x120\n" +
-	"\bdatatype\x18\x02 \x03(\x0e2\x14.mir_api.v1.DataTypeR\bdatatype\x12H\n" +
+	"\aheaders\x18\x01 \x03(\tR\aheaders\x122\n" +
+	"\tdatatypes\x18\x02 \x03(\x0e2\x14.mir_api.v1.DataTypeR\tdatatypes\x122\n" +
+	"\x04rows\x18\x03 \x03(\v2\x1e.mir_api.v1.QueryTelemetry.RowR\x04rows\x1a\xc2\b\n" +
+	"\x03Row\x123\n" +
+	"\ttimestamp\x18\x01 \x01(\v2\x15.mir_api.v1.TimestampR\ttimestamp\x12H\n" +
 	"\n" +
-	"datapoints\x18\x03 \x03(\v2(.mir_api.v1.QueryTelemetry.TelemetryDataR\n" +
-	"datapoints\x1a\xab\x05\n" +
-	"\rTelemetryData\x123\n" +
-	"\ttimestamp\x18\x01 \x01(\v2\x15.mir_api.v1.TimestampR\ttimestamp\x12J\n" +
-	"\x06values\x18\x02 \x03(\v22.mir_api.v1.QueryTelemetry.TelemetryData.DataPointR\x06values\x1a\x98\x04\n" +
-	"\tDataPoint\x12\x1f\n" +
-	"\vvalue_int32\x18\x02 \x01(\x05R\n" +
-	"valueInt32\x12\x1f\n" +
-	"\vvalue_int64\x18\x03 \x01(\x03R\n" +
-	"valueInt64\x12!\n" +
-	"\fvalue_sint32\x18\x04 \x01(\x11R\vvalueSint32\x12!\n" +
-	"\fvalue_sint64\x18\x05 \x01(\x12R\vvalueSint64\x12!\n" +
-	"\fvalue_uint32\x18\x06 \x01(\rR\vvalueUint32\x12!\n" +
-	"\fvalue_uint64\x18\a \x01(\x04R\vvalueUint64\x12#\n" +
-	"\rvalue_fixed32\x18\b \x01(\aR\fvalueFixed32\x12#\n" +
-	"\rvalue_fixed64\x18\t \x01(\x06R\fvalueFixed64\x12%\n" +
-	"\x0evalue_sfixed32\x18\n" +
-	" \x01(\x0fR\rvalueSfixed32\x12%\n" +
-	"\x0evalue_sfixed64\x18\v \x01(\x10R\rvalueSfixed64\x12\x1f\n" +
-	"\vvalue_float\x18\f \x01(\x02R\n" +
-	"valueFloat\x12!\n" +
-	"\fvalue_double\x18\r \x01(\x01R\vvalueDouble\x12\x1d\n" +
+	"datapoints\x18\x02 \x03(\v2(.mir_api.v1.QueryTelemetry.Row.DataPointR\n" +
+	"datapoints\x1a\xbb\a\n" +
+	"\tDataPoint\x12$\n" +
+	"\vvalue_int32\x18\x01 \x01(\x05H\x00R\n" +
+	"valueInt32\x88\x01\x01\x12$\n" +
+	"\vvalue_int64\x18\x02 \x01(\x03H\x01R\n" +
+	"valueInt64\x88\x01\x01\x12&\n" +
+	"\fvalue_sint32\x18\x03 \x01(\x11H\x02R\vvalueSint32\x88\x01\x01\x12&\n" +
+	"\fvalue_sint64\x18\x04 \x01(\x12H\x03R\vvalueSint64\x88\x01\x01\x12&\n" +
+	"\fvalue_uint32\x18\x05 \x01(\rH\x04R\vvalueUint32\x88\x01\x01\x12&\n" +
+	"\fvalue_uint64\x18\x06 \x01(\x04H\x05R\vvalueUint64\x88\x01\x01\x12(\n" +
+	"\rvalue_fixed32\x18\a \x01(\aH\x06R\fvalueFixed32\x88\x01\x01\x12(\n" +
+	"\rvalue_fixed64\x18\b \x01(\x06H\aR\fvalueFixed64\x88\x01\x01\x12*\n" +
+	"\x0evalue_sfixed32\x18\t \x01(\x0fH\bR\rvalueSfixed32\x88\x01\x01\x12*\n" +
+	"\x0evalue_sfixed64\x18\n" +
+	" \x01(\x10H\tR\rvalueSfixed64\x88\x01\x01\x12$\n" +
+	"\vvalue_float\x18\v \x01(\x02H\n" +
+	"R\n" +
+	"valueFloat\x88\x01\x01\x12&\n" +
+	"\fvalue_double\x18\f \x01(\x01H\vR\vvalueDouble\x88\x01\x01\x12\"\n" +
 	"\n" +
-	"value_bool\x18\x0e \x01(\bR\tvalueBool\x12!\n" +
-	"\fvalue_string\x18\x0f \x01(\tR\vvalueString\x12\x1f\n" +
-	"\vvalue_bytes\x18\x10 \x01(\fR\n" +
-	"valueBytes\"^\n" +
+	"value_bool\x18\r \x01(\bH\fR\tvalueBool\x88\x01\x01\x12&\n" +
+	"\fvalue_string\x18\x0e \x01(\tH\rR\vvalueString\x88\x01\x01\x12$\n" +
+	"\vvalue_bytes\x18\x0f \x01(\fH\x0eR\n" +
+	"valueBytes\x88\x01\x01\x12C\n" +
+	"\x0fvalue_timestamp\x18\x10 \x01(\v2\x15.mir_api.v1.TimestampH\x0fR\x0evalueTimestamp\x88\x01\x01B\x0e\n" +
+	"\f_value_int32B\x0e\n" +
+	"\f_value_int64B\x0f\n" +
+	"\r_value_sint32B\x0f\n" +
+	"\r_value_sint64B\x0f\n" +
+	"\r_value_uint32B\x0f\n" +
+	"\r_value_uint64B\x10\n" +
+	"\x0e_value_fixed32B\x10\n" +
+	"\x0e_value_fixed64B\x11\n" +
+	"\x0f_value_sfixed32B\x11\n" +
+	"\x0f_value_sfixed64B\x0e\n" +
+	"\f_value_floatB\x0f\n" +
+	"\r_value_doubleB\r\n" +
+	"\v_value_boolB\x0f\n" +
+	"\r_value_stringB\x0e\n" +
+	"\f_value_bytesB\x12\n" +
+	"\x10_value_timestamp\"^\n" +
 	"\x11TelemetryResponse\x12I\n" +
 	"\x11devices_telemetry\x18\x01 \x03(\v2\x1c.mir_api.v1.DevicesTelemetryR\x10devicesTelemetry\"\x9e\x01\n" +
 	"\x10DevicesTelemetry\x12*\n" +
@@ -945,7 +979,7 @@ const file_mir_api_v1_tlm_proto_rawDesc = "" +
 	"\x05error\x18\x05 \x01(\tR\x05error\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*\xef\x02\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*\x88\x03\n" +
 	"\bDataType\x12\x19\n" +
 	"\x15DATA_TYPE_UNSPECIFIED\x10\x00\x12\x13\n" +
 	"\x0fDATA_TYPE_INT32\x10\x01\x12\x13\n" +
@@ -963,7 +997,8 @@ const file_mir_api_v1_tlm_proto_rawDesc = "" +
 	"\x10DATA_TYPE_DOUBLE\x10\f\x12\x12\n" +
 	"\x0eDATA_TYPE_BOOL\x10\r\x12\x14\n" +
 	"\x10DATA_TYPE_STRING\x10\x0e\x12\x13\n" +
-	"\x0fDATA_TYPE_BYTES\x10\x0fB\x9f\x01\n" +
+	"\x0fDATA_TYPE_BYTES\x10\x0f\x12\x17\n" +
+	"\x13DATA_TYPE_TIMESTAMP\x10\x10B\x9f\x01\n" +
 	"\x0ecom.mir_api.v1B\bTlmProtoP\x01Z>github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1;mir_apiv1\xa2\x02\x03MXX\xaa\x02\tMirApi.V1\xca\x02\tMirApi\\V1\xe2\x02\x15MirApi\\V1\\GPBMetadata\xea\x02\n" +
 	"MirApi::V1b\x06proto3"
 
@@ -982,22 +1017,22 @@ func file_mir_api_v1_tlm_proto_rawDescGZIP() []byte {
 var file_mir_api_v1_tlm_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_mir_api_v1_tlm_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_mir_api_v1_tlm_proto_goTypes = []any{
-	(DataType)(0),                                  // 0: mir_api.v1.DataType
-	(*ListTelemetryRequest)(nil),                   // 1: mir_api.v1.ListTelemetryRequest
-	(*ListTelemetryResponse)(nil),                  // 2: mir_api.v1.ListTelemetryResponse
-	(*QueryTelemetryRequest)(nil),                  // 3: mir_api.v1.QueryTelemetryRequest
-	(*QueryTelemetryResponse)(nil),                 // 4: mir_api.v1.QueryTelemetryResponse
-	(*QueryTelemetry)(nil),                         // 5: mir_api.v1.QueryTelemetry
-	(*TelemetryResponse)(nil),                      // 6: mir_api.v1.TelemetryResponse
-	(*DevicesTelemetry)(nil),                       // 7: mir_api.v1.DevicesTelemetry
-	(*TelemetryDescriptor)(nil),                    // 8: mir_api.v1.TelemetryDescriptor
-	nil,                                            // 9: mir_api.v1.ListTelemetryRequest.FiltersEntry
-	(*QueryTelemetry_TelemetryData)(nil),           // 10: mir_api.v1.QueryTelemetry.TelemetryData
-	(*QueryTelemetry_TelemetryData_DataPoint)(nil), // 11: mir_api.v1.QueryTelemetry.TelemetryData.DataPoint
-	nil,                  // 12: mir_api.v1.TelemetryDescriptor.LabelsEntry
-	(*DeviceTarget)(nil), // 13: mir_api.v1.DeviceTarget
-	(*Timestamp)(nil),    // 14: mir_api.v1.Timestamp
-	(*DeviceIdPair)(nil), // 15: mir_api.v1.DeviceIdPair
+	(DataType)(0),                        // 0: mir_api.v1.DataType
+	(*ListTelemetryRequest)(nil),         // 1: mir_api.v1.ListTelemetryRequest
+	(*ListTelemetryResponse)(nil),        // 2: mir_api.v1.ListTelemetryResponse
+	(*QueryTelemetryRequest)(nil),        // 3: mir_api.v1.QueryTelemetryRequest
+	(*QueryTelemetryResponse)(nil),       // 4: mir_api.v1.QueryTelemetryResponse
+	(*QueryTelemetry)(nil),               // 5: mir_api.v1.QueryTelemetry
+	(*TelemetryResponse)(nil),            // 6: mir_api.v1.TelemetryResponse
+	(*DevicesTelemetry)(nil),             // 7: mir_api.v1.DevicesTelemetry
+	(*TelemetryDescriptor)(nil),          // 8: mir_api.v1.TelemetryDescriptor
+	nil,                                  // 9: mir_api.v1.ListTelemetryRequest.FiltersEntry
+	(*QueryTelemetry_Row)(nil),           // 10: mir_api.v1.QueryTelemetry.Row
+	(*QueryTelemetry_Row_DataPoint)(nil), // 11: mir_api.v1.QueryTelemetry.Row.DataPoint
+	nil,                                  // 12: mir_api.v1.TelemetryDescriptor.LabelsEntry
+	(*DeviceTarget)(nil),                 // 13: mir_api.v1.DeviceTarget
+	(*Timestamp)(nil),                    // 14: mir_api.v1.Timestamp
+	(*DeviceIdPair)(nil),                 // 15: mir_api.v1.DeviceIdPair
 }
 var file_mir_api_v1_tlm_proto_depIdxs = []int32{
 	13, // 0: mir_api.v1.ListTelemetryRequest.targets:type_name -> mir_api.v1.DeviceTarget
@@ -1007,19 +1042,20 @@ var file_mir_api_v1_tlm_proto_depIdxs = []int32{
 	14, // 4: mir_api.v1.QueryTelemetryRequest.start_time:type_name -> mir_api.v1.Timestamp
 	14, // 5: mir_api.v1.QueryTelemetryRequest.end_time:type_name -> mir_api.v1.Timestamp
 	5,  // 6: mir_api.v1.QueryTelemetryResponse.ok:type_name -> mir_api.v1.QueryTelemetry
-	0,  // 7: mir_api.v1.QueryTelemetry.datatype:type_name -> mir_api.v1.DataType
-	10, // 8: mir_api.v1.QueryTelemetry.datapoints:type_name -> mir_api.v1.QueryTelemetry.TelemetryData
+	0,  // 7: mir_api.v1.QueryTelemetry.datatypes:type_name -> mir_api.v1.DataType
+	10, // 8: mir_api.v1.QueryTelemetry.rows:type_name -> mir_api.v1.QueryTelemetry.Row
 	7,  // 9: mir_api.v1.TelemetryResponse.devices_telemetry:type_name -> mir_api.v1.DevicesTelemetry
 	15, // 10: mir_api.v1.DevicesTelemetry.ids:type_name -> mir_api.v1.DeviceIdPair
 	8,  // 11: mir_api.v1.DevicesTelemetry.tlm_descriptors:type_name -> mir_api.v1.TelemetryDescriptor
 	12, // 12: mir_api.v1.TelemetryDescriptor.labels:type_name -> mir_api.v1.TelemetryDescriptor.LabelsEntry
-	14, // 13: mir_api.v1.QueryTelemetry.TelemetryData.timestamp:type_name -> mir_api.v1.Timestamp
-	11, // 14: mir_api.v1.QueryTelemetry.TelemetryData.values:type_name -> mir_api.v1.QueryTelemetry.TelemetryData.DataPoint
-	15, // [15:15] is the sub-list for method output_type
-	15, // [15:15] is the sub-list for method input_type
-	15, // [15:15] is the sub-list for extension type_name
-	15, // [15:15] is the sub-list for extension extendee
-	0,  // [0:15] is the sub-list for field type_name
+	14, // 13: mir_api.v1.QueryTelemetry.Row.timestamp:type_name -> mir_api.v1.Timestamp
+	11, // 14: mir_api.v1.QueryTelemetry.Row.datapoints:type_name -> mir_api.v1.QueryTelemetry.Row.DataPoint
+	14, // 15: mir_api.v1.QueryTelemetry.Row.DataPoint.value_timestamp:type_name -> mir_api.v1.Timestamp
+	16, // [16:16] is the sub-list for method output_type
+	16, // [16:16] is the sub-list for method input_type
+	16, // [16:16] is the sub-list for extension type_name
+	16, // [16:16] is the sub-list for extension extendee
+	0,  // [0:16] is the sub-list for field type_name
 }
 
 func init() { file_mir_api_v1_tlm_proto_init() }
@@ -1037,6 +1073,7 @@ func file_mir_api_v1_tlm_proto_init() {
 		(*QueryTelemetryResponse_Ok)(nil),
 		(*QueryTelemetryResponse_Error)(nil),
 	}
+	file_mir_api_v1_tlm_proto_msgTypes[10].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

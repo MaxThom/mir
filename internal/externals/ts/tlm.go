@@ -2,16 +2,21 @@ package ts
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/influxdata/influxdb-client-go/v2/api"
 	"github.com/maxthom/mir/internal/libs/external/influx"
+	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
+	"github.com/maxthom/mir/pkgs/mir_v1"
 )
 
 type TelemetryStore interface {
 	RetrieveMeasurementsFields(ctx context.Context, measurement string) ([]string, error)
+	Query(ctx context.Context, ids []string, measurement string, fields []string, start time.Time, end time.Time) (*mir_apiv1.QueryTelemetry, error)
 	GetExploreQuery(ids []string, measurement string) string
 	WriteDatapoint(string)
 	Errors() <-chan error
@@ -117,4 +122,192 @@ func (s *influxTelemetryStore) GetExploreQuery(ids []string, measurement string)
 	sb.WriteString("\n")
 	sb.WriteString(fmt.Sprintf(`  |> filter(fn: (r) => r["_measurement"] == "%s")`, measurement))
 	return sb.String()
+}
+
+// TODO
+// [ ] integration tests
+func (s *influxTelemetryStore) Query(ctx context.Context, ids []string, measurement string, fields []string, start time.Time, end time.Time) (*mir_apiv1.QueryTelemetry, error) {
+	values := mir_apiv1.QueryTelemetry{}
+
+	// Build and Execute Flux query
+	qry := generateInfluxQuery(s.bucket, ids, measurement, fields, start, end)
+	result, err := s.querier.Query(context.Background(), qry)
+	if err != nil {
+		return nil, err
+	}
+	if result.Err() != nil {
+		return nil, fmt.Errorf("query parsing error: %w\n", result.Err())
+	}
+
+	// Parse Results
+	// We always get _time and __id as the first 2 columns,
+	// then the rest of the fields that do not start with _
+	// __ are Mir system fields, we could add more
+	// _ are Influx system fields, we ignore all of them except _time
+	setFns := []func(val any) *mir_apiv1.QueryTelemetry_Row_DataPoint{}
+	for result.Next() {
+		// Influx can return multiple table, but the query we built
+		// with pivot should always return only one
+		// We parse the headers and generate the conversion functions
+		// once then we use it for every row
+		if result.TableChanged() {
+			// Timestamp
+			dt, setFn, err := generateDataConvFn("time")
+			if err != nil {
+				return nil, fmt.Errorf("unsupported data type '%s' for column '%s'", "time", "_time")
+			}
+			values.Headers = append(values.Headers, "_time")
+			values.Datatypes = append(values.Datatypes, dt)
+			setFns = append(setFns, setFn)
+
+			// DeviceIds
+			dt, setFn, err = generateDataConvFn("string")
+			if err != nil {
+				return nil, fmt.Errorf("unsupported data type '%s' for column '%s'", "string", "__id")
+			}
+			values.Headers = append(values.Headers, "__id")
+			values.Datatypes = append(values.Datatypes, dt)
+			setFns = append(setFns, setFn)
+
+			// Other fields
+			for _, col := range result.TableMetadata().Columns() {
+				if strings.HasPrefix(col.Name(), "_") || col.Name() == "result" || col.Name() == "table" {
+					continue
+				}
+
+				dt, setFn, err := generateDataConvFn(col.DataType())
+				if err != nil {
+					return nil, fmt.Errorf("unsupported data type '%s' for column '%s'", col.DataType(), col.Name())
+				}
+				values.Headers = append(values.Headers, col.Name())
+				values.Datatypes = append(values.Datatypes, dt)
+				setFns = append(setFns, setFn)
+			}
+		}
+		// Each rows
+		row := mir_apiv1.QueryTelemetry_Row{
+			Datapoints: make([]*mir_apiv1.QueryTelemetry_Row_DataPoint, len(values.Headers)),
+		}
+		for i, col := range values.Headers {
+			val := result.Record().ValueByKey(col)
+			dp := setFns[i](val)
+			row.Datapoints[i] = dp
+		}
+		values.Rows = append(values.Rows, &row)
+	}
+
+	return &values, nil
+}
+
+func generateInfluxQuery(bucket string, ids []string, measurement string, fields []string, start time.Time, end time.Time) string {
+	// Time
+	if start.IsZero() {
+		// 1h default
+		start = time.Now().UTC().Add(-1 * time.Hour)
+	}
+	timeFilter := fmt.Sprintf(`|> range(start: %s)`, start.Format(time.RFC3339))
+	if !end.IsZero() {
+		timeFilter = fmt.Sprintf(`|> range(start: %s, stop: %s)`, start.Format(time.RFC3339), end.Format(time.RFC3339))
+	}
+
+	// Ids
+	idsFilter := ""
+	if len(ids) > 0 {
+		filterIds := []string{}
+		for _, id := range ids {
+			filterIds = append(filterIds, fmt.Sprintf(`r["__id"] == "%s"`, id))
+		}
+		idsFilter = fmt.Sprintf("|> filter(fn: (r) => %s)", strings.Join(filterIds, " or "))
+	}
+
+	// Fields
+	fieldsFilter := ""
+	if len(fields) > 0 {
+		fieldConds := []string{}
+		for _, field := range fields {
+			fieldConds = append(fieldConds, fmt.Sprintf(`r["_field"] == "%s"`, field))
+		}
+		fieldsFilter = fmt.Sprintf("|> filter(fn: (r) => %s)", strings.Join(fieldConds, " or "))
+	}
+
+	return fmt.Sprintf(`from(bucket:"%s")
+		%s
+		|> filter(fn: (r) => r["_measurement"] == "%s")
+		%s
+		%s
+		|> pivot(
+		    rowKey: ["_time", "__id"],
+		    columnKey: ["_field"],
+		    valueColumn: "_value"
+		)
+		|> group()
+		|> sort(columns: ["_time"], desc: false)
+		`, bucket, timeFilter, measurement, idsFilter, fieldsFilter)
+}
+
+func generateDataConvFn(datatype string) (mir_apiv1.DataType, func(val any) *mir_apiv1.QueryTelemetry_Row_DataPoint, error) {
+	switch datatype {
+	case "string":
+		return mir_apiv1.DataType_DATA_TYPE_STRING,
+			func(val any) *mir_apiv1.QueryTelemetry_Row_DataPoint {
+				r := mir_apiv1.QueryTelemetry_Row_DataPoint{}
+				v, ok := val.(string)
+				if ok {
+					r.ValueString = &v
+				}
+				return &r
+			}, nil
+	case "long":
+		return mir_apiv1.DataType_DATA_TYPE_INT64,
+			func(val any) *mir_apiv1.QueryTelemetry_Row_DataPoint {
+				r := mir_apiv1.QueryTelemetry_Row_DataPoint{}
+				v, ok := val.(int64)
+				if ok {
+					r.ValueInt64 = &v
+				}
+				return &r
+			}, nil
+	case "double":
+		return mir_apiv1.DataType_DATA_TYPE_DOUBLE,
+			func(val any) *mir_apiv1.QueryTelemetry_Row_DataPoint {
+				r := mir_apiv1.QueryTelemetry_Row_DataPoint{}
+				v, ok := val.(float64)
+				if ok {
+					r.ValueDouble = &v
+				}
+				return &r
+			}, nil
+	case "unsignedLong":
+		return mir_apiv1.DataType_DATA_TYPE_UINT64,
+			func(val any) *mir_apiv1.QueryTelemetry_Row_DataPoint {
+				r := mir_apiv1.QueryTelemetry_Row_DataPoint{}
+				v, ok := val.(uint64)
+				if ok {
+					r.ValueUint64 = &v
+				}
+				return &r
+			}, nil
+	case "boolean":
+		return mir_apiv1.DataType_DATA_TYPE_BOOL,
+			func(val any) *mir_apiv1.QueryTelemetry_Row_DataPoint {
+				r := mir_apiv1.QueryTelemetry_Row_DataPoint{}
+				v, ok := val.(bool)
+				if ok {
+					r.ValueBool = &v
+				}
+				return &r
+			}, nil
+	case "time":
+		return mir_apiv1.DataType_DATA_TYPE_TIMESTAMP,
+			func(val any) *mir_apiv1.QueryTelemetry_Row_DataPoint {
+				r := mir_apiv1.QueryTelemetry_Row_DataPoint{}
+				v, ok := val.(time.Time)
+				if ok {
+					r.ValueTimestamp = mir_v1.AsProtoTimestamp(v)
+				}
+				return &r
+			}, nil
+	default:
+		return mir_apiv1.DataType_DATA_TYPE_UNSPECIFIED, nil, errors.New("invalid data type: " + datatype)
+	}
 }

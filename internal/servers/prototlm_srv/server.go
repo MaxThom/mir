@@ -331,10 +331,37 @@ func (s *ProtoTlmServer) handleTelemetryListRequest(msg *mir.Msg, clientId strin
 func (s *ProtoTlmServer) handleTelemetryQueryRequest(msg *mir.Msg, clientId string, req *mir_apiv1.QueryTelemetryRequest) (*mir_apiv1.QueryTelemetry, error) {
 	l.Info().Any("req", req).Msg("query telemetry request")
 	requestTotal.WithLabelValues("query").Inc()
+	degradedMode := false
 
-	// TODO cmd so I can test with something
+	t := mir_v1.ProtoDeviceTargetToMirDeviceTarget(req.Targets)
+	devs, err := s.devStore.ListDevice(t, false)
+	if err != nil {
+		if strings.Contains(err.Error(), surreal.ErrDatabaseDisconnected.Error()) {
+			degradedMode = true
+			if !t.HasOnlyIdsTarget() && degradedMode {
+				return nil, fmt.Errorf("running in degraded mode as database is disconnected, only device ids can be used")
+			}
+			devs = []mir_v1.Device{}
+			for _, i := range t.Ids {
+				devs = append(devs, mir_v1.NewDevice().WithId(i))
+			}
+		} else {
+			requestErrorTotal.WithLabelValues("list").Inc()
+			l.Error().Err(err).Msg("error occure while listing devices")
+			return nil, fmt.Errorf("error listing device from db: %w", err)
+		}
+	}
 
-	return nil, nil
+	ids := []string{}
+	for _, dev := range devs {
+		ids = append(ids, dev.Spec.DeviceId)
+	}
+
+	values, err := s.tlmStore.Query(s.ctx, ids, req.Measurement, req.Fields, mir_v1.AsGoTime(req.StartTime), mir_v1.AsGoTime(req.EndTime))
+	if err != nil {
+		l.Error().Err(err).Msg("error querying telemetry from tsdb")
+	}
+	return values, err
 }
 
 // TODO have some device info

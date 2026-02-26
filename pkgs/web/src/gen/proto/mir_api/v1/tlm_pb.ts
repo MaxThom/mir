@@ -14,7 +14,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file mir_api/v1/tlm.proto.
  */
 export const file_mir_api_v1_tlm: GenFile = /*@__PURE__*/
-  fileDesc("ChRtaXJfYXBpL3YxL3RsbS5wcm90bxIKbWlyX2FwaS52MSLfAQoUTGlzdFRlbGVtZXRyeVJlcXVlc3QSKQoHdGFyZ2V0cxgBIAEoCzIYLm1pcl9hcGkudjEuRGV2aWNlVGFyZ2V0EhQKDG1lYXN1cmVtZW50cxgCIAMoCRI+CgdmaWx0ZXJzGAMgAygLMi0ubWlyX2FwaS52MS5MaXN0VGVsZW1ldHJ5UmVxdWVzdC5GaWx0ZXJzRW50cnkSFgoOcmVmcmVzaF9zY2hlbWEYBCABKAgaLgoMRmlsdGVyc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiYQoVTGlzdFRlbGVtZXRyeVJlc3BvbnNlEisKAm9rGAEgASgLMh0ubWlyX2FwaS52MS5UZWxlbWV0cnlSZXNwb25zZUgAEg8KBWVycm9yGAIgASgJSABCCgoIcmVzcG9uc2UiuwEKFVF1ZXJ5VGVsZW1ldHJ5UmVxdWVzdBIpCgd0YXJnZXRzGAEgASgLMhgubWlyX2FwaS52MS5EZXZpY2VUYXJnZXQSEwoLbWVhc3VyZW1lbnQYAiABKAkSDgoGZmllbGRzGAMgAygJEikKCnN0YXJ0X3RpbWUYBCABKAsyFS5taXJfYXBpLnYxLlRpbWVzdGFtcBInCghlbmRfdGltZRgFIAEoCzIVLm1pcl9hcGkudjEuVGltZXN0YW1wIl8KFlF1ZXJ5VGVsZW1ldHJ5UmVzcG9uc2USKAoCb2sYASABKAsyGi5taXJfYXBpLnYxLlF1ZXJ5VGVsZW1ldHJ5SAASDwoFZXJyb3IYAiABKAlIAEIKCghyZXNwb25zZSLfBAoOUXVlcnlUZWxlbWV0cnkSDwoHaGVhZGVycxgBIAMoCRImCghkYXRhdHlwZRgCIAMoDjIULm1pcl9hcGkudjEuRGF0YVR5cGUSPAoKZGF0YXBvaW50cxgDIAMoCzIoLm1pcl9hcGkudjEuUXVlcnlUZWxlbWV0cnkuVGVsZW1ldHJ5RGF0YRrVAwoNVGVsZW1ldHJ5RGF0YRIoCgl0aW1lc3RhbXAYASABKAsyFS5taXJfYXBpLnYxLlRpbWVzdGFtcBJCCgZ2YWx1ZXMYAiADKAsyMi5taXJfYXBpLnYxLlF1ZXJ5VGVsZW1ldHJ5LlRlbGVtZXRyeURhdGEuRGF0YVBvaW50GtUCCglEYXRhUG9pbnQSEwoLdmFsdWVfaW50MzIYAiABKAUSEwoLdmFsdWVfaW50NjQYAyABKAMSFAoMdmFsdWVfc2ludDMyGAQgASgREhQKDHZhbHVlX3NpbnQ2NBgFIAEoEhIUCgx2YWx1ZV91aW50MzIYBiABKA0SFAoMdmFsdWVfdWludDY0GAcgASgEEhUKDXZhbHVlX2ZpeGVkMzIYCCABKAcSFQoNdmFsdWVfZml4ZWQ2NBgJIAEoBhIWCg52YWx1ZV9zZml4ZWQzMhgKIAEoDxIWCg52YWx1ZV9zZml4ZWQ2NBgLIAEoEBITCgt2YWx1ZV9mbG9hdBgMIAEoAhIUCgx2YWx1ZV9kb3VibGUYDSABKAESEgoKdmFsdWVfYm9vbBgOIAEoCBIUCgx2YWx1ZV9zdHJpbmcYDyABKAkSEwoLdmFsdWVfYnl0ZXMYECABKAwiTAoRVGVsZW1ldHJ5UmVzcG9uc2USNwoRZGV2aWNlc190ZWxlbWV0cnkYASADKAsyHC5taXJfYXBpLnYxLkRldmljZXNUZWxlbWV0cnkiggEKEERldmljZXNUZWxlbWV0cnkSJQoDaWRzGAEgAygLMhgubWlyX2FwaS52MS5EZXZpY2VJZFBhaXISOAoPdGxtX2Rlc2NyaXB0b3JzGAIgAygLMh8ubWlyX2FwaS52MS5UZWxlbWV0cnlEZXNjcmlwdG9yEg0KBWVycm9yGAMgASgJIsUBChNUZWxlbWV0cnlEZXNjcmlwdG9yEgwKBG5hbWUYASABKAkSOwoGbGFiZWxzGAIgAygLMisubWlyX2FwaS52MS5UZWxlbWV0cnlEZXNjcmlwdG9yLkxhYmVsc0VudHJ5Eg4KBmZpZWxkcxgDIAMoCRIVCg1leHBsb3JlX3F1ZXJ5GAQgASgJEg0KBWVycm9yGAUgASgJGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEq7wIKCERhdGFUeXBlEhkKFURBVEFfVFlQRV9VTlNQRUNJRklFRBAAEhMKD0RBVEFfVFlQRV9JTlQzMhABEhMKD0RBVEFfVFlQRV9JTlQ2NBACEhQKEERBVEFfVFlQRV9TSU5UMzIQAxIUChBEQVRBX1RZUEVfU0lOVDY0EAQSFAoQREFUQV9UWVBFX1VJTlQzMhAFEhQKEERBVEFfVFlQRV9VSU5UNjQQBhIVChFEQVRBX1RZUEVfRklYRUQzMhAHEhUKEURBVEFfVFlQRV9GSVhFRDY0EAgSFgoSREFUQV9UWVBFX1NGSVhFRDMyEAkSFgoSREFUQV9UWVBFX1NGSVhFRDY0EAoSEwoPREFUQV9UWVBFX0ZMT0FUEAsSFAoQREFUQV9UWVBFX0RPVUJMRRAMEhIKDkRBVEFfVFlQRV9CT09MEA0SFAoQREFUQV9UWVBFX1NUUklORxAOEhMKD0RBVEFfVFlQRV9CWVRFUxAPQp8BCg5jb20ubWlyX2FwaS52MUIIVGxtUHJvdG9QAVo+Z2l0aHViLmNvbS9tYXh0aG9tL21pci9wa2dzL2FwaS9nZW4vcHJvdG8vbWlyX2FwaS92MTttaXJfYXBpdjGiAgNNWFiqAglNaXJBcGkuVjHKAglNaXJBcGlcVjHiAhVNaXJBcGlcVjFcR1BCTWV0YWRhdGHqAgpNaXJBcGk6OlYxYgZwcm90bzM", [file_mir_api_v1_common, file_mir_api_v1_core]);
+  fileDesc("ChRtaXJfYXBpL3YxL3RsbS5wcm90bxIKbWlyX2FwaS52MSLfAQoUTGlzdFRlbGVtZXRyeVJlcXVlc3QSKQoHdGFyZ2V0cxgBIAEoCzIYLm1pcl9hcGkudjEuRGV2aWNlVGFyZ2V0EhQKDG1lYXN1cmVtZW50cxgCIAMoCRI+CgdmaWx0ZXJzGAMgAygLMi0ubWlyX2FwaS52MS5MaXN0VGVsZW1ldHJ5UmVxdWVzdC5GaWx0ZXJzRW50cnkSFgoOcmVmcmVzaF9zY2hlbWEYBCABKAgaLgoMRmlsdGVyc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiYQoVTGlzdFRlbGVtZXRyeVJlc3BvbnNlEisKAm9rGAEgASgLMh0ubWlyX2FwaS52MS5UZWxlbWV0cnlSZXNwb25zZUgAEg8KBWVycm9yGAIgASgJSABCCgoIcmVzcG9uc2UiuwEKFVF1ZXJ5VGVsZW1ldHJ5UmVxdWVzdBIpCgd0YXJnZXRzGAEgASgLMhgubWlyX2FwaS52MS5EZXZpY2VUYXJnZXQSEwoLbWVhc3VyZW1lbnQYAiABKAkSDgoGZmllbGRzGAMgAygJEikKCnN0YXJ0X3RpbWUYBCABKAsyFS5taXJfYXBpLnYxLlRpbWVzdGFtcBInCghlbmRfdGltZRgFIAEoCzIVLm1pcl9hcGkudjEuVGltZXN0YW1wIl8KFlF1ZXJ5VGVsZW1ldHJ5UmVzcG9uc2USKAoCb2sYASABKAsyGi5taXJfYXBpLnYxLlF1ZXJ5VGVsZW1ldHJ5SAASDwoFZXJyb3IYAiABKAlIAEIKCghyZXNwb25zZSLTBwoOUXVlcnlUZWxlbWV0cnkSDwoHaGVhZGVycxgBIAMoCRInCglkYXRhdHlwZXMYAiADKA4yFC5taXJfYXBpLnYxLkRhdGFUeXBlEiwKBHJvd3MYAyADKAsyHi5taXJfYXBpLnYxLlF1ZXJ5VGVsZW1ldHJ5LlJvdxrYBgoDUm93EigKCXRpbWVzdGFtcBgBIAEoCzIVLm1pcl9hcGkudjEuVGltZXN0YW1wEjwKCmRhdGFwb2ludHMYAiADKAsyKC5taXJfYXBpLnYxLlF1ZXJ5VGVsZW1ldHJ5LlJvdy5EYXRhUG9pbnQa6AUKCURhdGFQb2ludBIYCgt2YWx1ZV9pbnQzMhgBIAEoBUgAiAEBEhgKC3ZhbHVlX2ludDY0GAIgASgDSAGIAQESGQoMdmFsdWVfc2ludDMyGAMgASgRSAKIAQESGQoMdmFsdWVfc2ludDY0GAQgASgSSAOIAQESGQoMdmFsdWVfdWludDMyGAUgASgNSASIAQESGQoMdmFsdWVfdWludDY0GAYgASgESAWIAQESGgoNdmFsdWVfZml4ZWQzMhgHIAEoB0gGiAEBEhoKDXZhbHVlX2ZpeGVkNjQYCCABKAZIB4gBARIbCg52YWx1ZV9zZml4ZWQzMhgJIAEoD0gIiAEBEhsKDnZhbHVlX3NmaXhlZDY0GAogASgQSAmIAQESGAoLdmFsdWVfZmxvYXQYCyABKAJICogBARIZCgx2YWx1ZV9kb3VibGUYDCABKAFIC4gBARIXCgp2YWx1ZV9ib29sGA0gASgISAyIAQESGQoMdmFsdWVfc3RyaW5nGA4gASgJSA2IAQESGAoLdmFsdWVfYnl0ZXMYDyABKAxIDogBARIzCg92YWx1ZV90aW1lc3RhbXAYECABKAsyFS5taXJfYXBpLnYxLlRpbWVzdGFtcEgPiAEBQg4KDF92YWx1ZV9pbnQzMkIOCgxfdmFsdWVfaW50NjRCDwoNX3ZhbHVlX3NpbnQzMkIPCg1fdmFsdWVfc2ludDY0Qg8KDV92YWx1ZV91aW50MzJCDwoNX3ZhbHVlX3VpbnQ2NEIQCg5fdmFsdWVfZml4ZWQzMkIQCg5fdmFsdWVfZml4ZWQ2NEIRCg9fdmFsdWVfc2ZpeGVkMzJCEQoPX3ZhbHVlX3NmaXhlZDY0Qg4KDF92YWx1ZV9mbG9hdEIPCg1fdmFsdWVfZG91YmxlQg0KC192YWx1ZV9ib29sQg8KDV92YWx1ZV9zdHJpbmdCDgoMX3ZhbHVlX2J5dGVzQhIKEF92YWx1ZV90aW1lc3RhbXAiTAoRVGVsZW1ldHJ5UmVzcG9uc2USNwoRZGV2aWNlc190ZWxlbWV0cnkYASADKAsyHC5taXJfYXBpLnYxLkRldmljZXNUZWxlbWV0cnkiggEKEERldmljZXNUZWxlbWV0cnkSJQoDaWRzGAEgAygLMhgubWlyX2FwaS52MS5EZXZpY2VJZFBhaXISOAoPdGxtX2Rlc2NyaXB0b3JzGAIgAygLMh8ubWlyX2FwaS52MS5UZWxlbWV0cnlEZXNjcmlwdG9yEg0KBWVycm9yGAMgASgJIsUBChNUZWxlbWV0cnlEZXNjcmlwdG9yEgwKBG5hbWUYASABKAkSOwoGbGFiZWxzGAIgAygLMisubWlyX2FwaS52MS5UZWxlbWV0cnlEZXNjcmlwdG9yLkxhYmVsc0VudHJ5Eg4KBmZpZWxkcxgDIAMoCRIVCg1leHBsb3JlX3F1ZXJ5GAQgASgJEg0KBWVycm9yGAUgASgJGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEqiAMKCERhdGFUeXBlEhkKFURBVEFfVFlQRV9VTlNQRUNJRklFRBAAEhMKD0RBVEFfVFlQRV9JTlQzMhABEhMKD0RBVEFfVFlQRV9JTlQ2NBACEhQKEERBVEFfVFlQRV9TSU5UMzIQAxIUChBEQVRBX1RZUEVfU0lOVDY0EAQSFAoQREFUQV9UWVBFX1VJTlQzMhAFEhQKEERBVEFfVFlQRV9VSU5UNjQQBhIVChFEQVRBX1RZUEVfRklYRUQzMhAHEhUKEURBVEFfVFlQRV9GSVhFRDY0EAgSFgoSREFUQV9UWVBFX1NGSVhFRDMyEAkSFgoSREFUQV9UWVBFX1NGSVhFRDY0EAoSEwoPREFUQV9UWVBFX0ZMT0FUEAsSFAoQREFUQV9UWVBFX0RPVUJMRRAMEhIKDkRBVEFfVFlQRV9CT09MEA0SFAoQREFUQV9UWVBFX1NUUklORxAOEhMKD0RBVEFfVFlQRV9CWVRFUxAPEhcKE0RBVEFfVFlQRV9USU1FU1RBTVAQEEKfAQoOY29tLm1pcl9hcGkudjFCCFRsbVByb3RvUAFaPmdpdGh1Yi5jb20vbWF4dGhvbS9taXIvcGtncy9hcGkvZ2VuL3Byb3RvL21pcl9hcGkvdjE7bWlyX2FwaXYxogIDTVhYqgIJTWlyQXBpLlYxygIJTWlyQXBpXFYx4gIVTWlyQXBpXFYxXEdQQk1ldGFkYXRh6gIKTWlyQXBpOjpWMWIGcHJvdG8z", [file_mir_api_v1_common, file_mir_api_v1_core]);
 
 /**
  * @generated from message mir_api.v1.ListTelemetryRequest
@@ -183,16 +183,16 @@ export type QueryTelemetry = Message<"mir_api.v1.QueryTelemetry"> & {
   /**
    * List of telemetry data type
    *
-   * @generated from field: repeated mir_api.v1.DataType datatype = 2;
+   * @generated from field: repeated mir_api.v1.DataType datatypes = 2;
    */
-  datatype: DataType[];
+  datatypes: DataType[];
 
   /**
    * List of telemetry data, order is the same as headers
    *
-   * @generated from field: repeated mir_api.v1.QueryTelemetry.TelemetryData datapoints = 3;
+   * @generated from field: repeated mir_api.v1.QueryTelemetry.Row rows = 3;
    */
-  datapoints: QueryTelemetry_TelemetryData[];
+  rows: QueryTelemetry_Row[];
 };
 
 /**
@@ -203,9 +203,9 @@ export const QueryTelemetrySchema: GenMessage<QueryTelemetry> = /*@__PURE__*/
   messageDesc(file_mir_api_v1_tlm, 4);
 
 /**
- * @generated from message mir_api.v1.QueryTelemetry.TelemetryData
+ * @generated from message mir_api.v1.QueryTelemetry.Row
  */
-export type QueryTelemetry_TelemetryData = Message<"mir_api.v1.QueryTelemetry.TelemetryData"> & {
+export type QueryTelemetry_Row = Message<"mir_api.v1.QueryTelemetry.Row"> & {
   /**
    * Timestamp of the telemetry data
    *
@@ -216,103 +216,114 @@ export type QueryTelemetry_TelemetryData = Message<"mir_api.v1.QueryTelemetry.Te
   /**
    * List of telemetry data, order is the same as headers
    *
-   * @generated from field: repeated mir_api.v1.QueryTelemetry.TelemetryData.DataPoint values = 2;
+   * @generated from field: repeated mir_api.v1.QueryTelemetry.Row.DataPoint datapoints = 2;
    */
-  values: QueryTelemetry_TelemetryData_DataPoint[];
+  datapoints: QueryTelemetry_Row_DataPoint[];
 };
 
 /**
- * Describes the message mir_api.v1.QueryTelemetry.TelemetryData.
- * Use `create(QueryTelemetry_TelemetryDataSchema)` to create a new message.
+ * Describes the message mir_api.v1.QueryTelemetry.Row.
+ * Use `create(QueryTelemetry_RowSchema)` to create a new message.
  */
-export const QueryTelemetry_TelemetryDataSchema: GenMessage<QueryTelemetry_TelemetryData> = /*@__PURE__*/
+export const QueryTelemetry_RowSchema: GenMessage<QueryTelemetry_Row> = /*@__PURE__*/
   messageDesc(file_mir_api_v1_tlm, 4, 0);
 
 /**
- * @generated from message mir_api.v1.QueryTelemetry.TelemetryData.DataPoint
+ * @generated from message mir_api.v1.QueryTelemetry.Row.DataPoint
  */
-export type QueryTelemetry_TelemetryData_DataPoint = Message<"mir_api.v1.QueryTelemetry.TelemetryData.DataPoint"> & {
+export type QueryTelemetry_Row_DataPoint = Message<"mir_api.v1.QueryTelemetry.Row.DataPoint"> & {
   /**
-   * @generated from field: int32 value_int32 = 2;
+   * A plain int32 field with value 0 → 0 bytes (not encoded at all).
+   * An optional int32 field with value 0 → 2 bytes (tag + varint 0 must be written to signal presence).
+   * An optional int32 field that is absent → 0 bytes (same as plain field, nil is not encoded).
+   * So the cost only applies when the value is explicitly set to its default (e.g., 0, false, ""). In all other cases, the wire size is identical to a
+   * plain field.
+   *
+   * @generated from field: optional int32 value_int32 = 1;
    */
-  valueInt32: number;
+  valueInt32?: number;
 
   /**
-   * @generated from field: int64 value_int64 = 3;
+   * @generated from field: optional int64 value_int64 = 2;
    */
-  valueInt64: bigint;
+  valueInt64?: bigint;
 
   /**
-   * @generated from field: sint32 value_sint32 = 4;
+   * @generated from field: optional sint32 value_sint32 = 3;
    */
-  valueSint32: number;
+  valueSint32?: number;
 
   /**
-   * @generated from field: sint64 value_sint64 = 5;
+   * @generated from field: optional sint64 value_sint64 = 4;
    */
-  valueSint64: bigint;
+  valueSint64?: bigint;
 
   /**
-   * @generated from field: uint32 value_uint32 = 6;
+   * @generated from field: optional uint32 value_uint32 = 5;
    */
-  valueUint32: number;
+  valueUint32?: number;
 
   /**
-   * @generated from field: uint64 value_uint64 = 7;
+   * @generated from field: optional uint64 value_uint64 = 6;
    */
-  valueUint64: bigint;
+  valueUint64?: bigint;
 
   /**
-   * @generated from field: fixed32 value_fixed32 = 8;
+   * @generated from field: optional fixed32 value_fixed32 = 7;
    */
-  valueFixed32: number;
+  valueFixed32?: number;
 
   /**
-   * @generated from field: fixed64 value_fixed64 = 9;
+   * @generated from field: optional fixed64 value_fixed64 = 8;
    */
-  valueFixed64: bigint;
+  valueFixed64?: bigint;
 
   /**
-   * @generated from field: sfixed32 value_sfixed32 = 10;
+   * @generated from field: optional sfixed32 value_sfixed32 = 9;
    */
-  valueSfixed32: number;
+  valueSfixed32?: number;
 
   /**
-   * @generated from field: sfixed64 value_sfixed64 = 11;
+   * @generated from field: optional sfixed64 value_sfixed64 = 10;
    */
-  valueSfixed64: bigint;
+  valueSfixed64?: bigint;
 
   /**
-   * @generated from field: float value_float = 12;
+   * @generated from field: optional float value_float = 11;
    */
-  valueFloat: number;
+  valueFloat?: number;
 
   /**
-   * @generated from field: double value_double = 13;
+   * @generated from field: optional double value_double = 12;
    */
-  valueDouble: number;
+  valueDouble?: number;
 
   /**
-   * @generated from field: bool value_bool = 14;
+   * @generated from field: optional bool value_bool = 13;
    */
-  valueBool: boolean;
+  valueBool?: boolean;
 
   /**
-   * @generated from field: string value_string = 15;
+   * @generated from field: optional string value_string = 14;
    */
-  valueString: string;
+  valueString?: string;
 
   /**
-   * @generated from field: bytes value_bytes = 16;
+   * @generated from field: optional bytes value_bytes = 15;
    */
-  valueBytes: Uint8Array;
+  valueBytes?: Uint8Array;
+
+  /**
+   * @generated from field: optional mir_api.v1.Timestamp value_timestamp = 16;
+   */
+  valueTimestamp?: Timestamp;
 };
 
 /**
- * Describes the message mir_api.v1.QueryTelemetry.TelemetryData.DataPoint.
- * Use `create(QueryTelemetry_TelemetryData_DataPointSchema)` to create a new message.
+ * Describes the message mir_api.v1.QueryTelemetry.Row.DataPoint.
+ * Use `create(QueryTelemetry_Row_DataPointSchema)` to create a new message.
  */
-export const QueryTelemetry_TelemetryData_DataPointSchema: GenMessage<QueryTelemetry_TelemetryData_DataPoint> = /*@__PURE__*/
+export const QueryTelemetry_Row_DataPointSchema: GenMessage<QueryTelemetry_Row_DataPoint> = /*@__PURE__*/
   messageDesc(file_mir_api_v1_tlm, 4, 0, 0);
 
 /**
@@ -505,6 +516,11 @@ export enum DataType {
    * @generated from enum value: DATA_TYPE_BYTES = 15;
    */
   BYTES = 15,
+
+  /**
+   * @generated from enum value: DATA_TYPE_TIMESTAMP = 16;
+   */
+  TIMESTAMP = 16,
 }
 
 /**
