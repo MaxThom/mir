@@ -36,29 +36,35 @@ message QueryTelemetryResponse {
 
 message QueryTelemetry {
   repeated string headers = 1; // List of telemetry headers
-  repeated DataType datatype = 2; // List of telemetry data type
-  repeated TelemetryData datapoints = 3; // List of telemetry data, order is the same as headers
+  repeated DataType datatypes = 2; // List of telemetry data type
+  repeated Row rows = 3; // List of telemetry data, order is the same as headers
 
-  message TelemetryData {
+  message Row {
     Timestamp timestamp = 1; // Timestamp of the telemetry data
-    repeated DataPoint values = 2; // List of telemetry data, order is the same as headers
+    repeated DataPoint datapoints = 2; // List of telemetry data, order is the same as headers
 
     message DataPoint {
-      int32 value_int32 = 2;
-      int64 value_int64 = 3;
-      sint32 value_sint32 = 4;
-      sint64 value_sint64 = 5;
-      uint32 value_uint32 = 6;
-      uint64 value_uint64 = 7;
-      fixed32 value_fixed32 = 8;
-      fixed64 value_fixed64 = 9;
-      sfixed32 value_sfixed32 = 10;
-      sfixed64 value_sfixed64 = 11;
-      float value_float = 12;
-      double value_double = 13;
-      bool value_bool = 14;
-      string value_string = 15;
-      bytes value_bytes = 16;
+      // A plain int32 field with value 0 → 0 bytes (not encoded at all).
+      // An optional int32 field with value 0 → 2 bytes (tag + varint 0 must be written to signal presence).
+      // An optional int32 field that is absent → 0 bytes (same as plain field, nil is not encoded).
+      // So the cost only applies when the value is explicitly set to its default (e.g., 0, false, ""). In all other cases, the wire size is identical to a
+      // plain field.
+      optional int32 value_int32 = 1;
+      optional int64 value_int64 = 2;
+      optional sint32 value_sint32 = 3;
+      optional sint64 value_sint64 = 4;
+      optional uint32 value_uint32 = 5;
+      optional uint64 value_uint64 = 6;
+      optional fixed32 value_fixed32 = 7;
+      optional fixed64 value_fixed64 = 8;
+      optional sfixed32 value_sfixed32 = 9;
+      optional sfixed64 value_sfixed64 = 10;
+      optional float value_float = 11;
+      optional double value_double = 12;
+      optional bool value_bool = 13;
+      optional string value_string = 14;
+      optional bytes value_bytes = 15;
+      optional Timestamp value_timestamp = 16;
     }
   }
 }
@@ -81,6 +87,7 @@ enum DataType {
   DATA_TYPE_BOOL = 13;
   DATA_TYPE_STRING = 14;
   DATA_TYPE_BYTES = 15;
+  DATA_TYPE_TIMESTAMP = 16;
 }
 
 // Map of device id and its list of telemetry

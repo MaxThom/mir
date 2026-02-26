@@ -71,7 +71,7 @@ func GenerateMarshalFn(pinnedTags map[string]string, desc protoreflect.MessageDe
 	lbl := mir_proto.RetrieveMessageTags(desc)
 	for k, v := range lbl {
 		if v != "" {
-			pinnedTags[k] = v
+			pinnedTags["__tag_"+k] = v
 		}
 	}
 

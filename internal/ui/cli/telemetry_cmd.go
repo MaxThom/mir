@@ -34,11 +34,13 @@ type TelemetryListCmd struct {
 type TelemetryQueryCmd struct {
 	Output      string `short:"o" help:"output format for response [pretty|json|yaml|csv]" default:"pretty"`
 	Target      `embed:"" prefix:"target."`
-	NameNs      string    `name:"name/namespace" arg:"" optional:"" help:"filter on name and/or namespace"`
-	Measurement string    `short:"m" help:"measurement to display. correspond to proto messages of type telemetry"`
-	Fields      []string  `short:"f" help:"specific fields of the measurement to query,"`
-	From        time.Time `help:"Set starting date to filter data. (eg: 2025-05-01T00:00:00.00Z)"`
-	To          time.Time `help:"Set ending date to filter data. Default to now. (eg: 2025-05-02T00:00:00.00Z)"`
+	NameNs      string        `name:"name/namespace" arg:"" optional:"" help:"filter on name and/or namespace"`
+	Measurement string        `short:"m" help:"measurement to display. correspond to proto messages of type telemetry"`
+	Fields      []string      `short:"f" help:"specific fields of the measurement to query,"`
+	Start       time.Time     `help:"Set starting date to filter data. (eg: 2025-05-01T00:00:00.00Z)"`
+	End         time.Time     `help:"Set ending date to filter data. Default to now. (eg: 2025-05-02T00:00:00.00Z)"`
+	Since       time.Duration `short:"s" help:"Set duration to filter data. (eg: 5m, 1h, 24h)" default:"5m"`
+	Timezone    string        `short:"z" help:"Timezone for Timestamp [local|UTC]" default:"local"`
 }
 
 func (d *TelemetryCmd) Run() error {
@@ -187,6 +189,20 @@ func (d *TelemetryQueryCmd) Validate() error {
 		d.Output = "pretty"
 	}
 
+	d.Timezone = strings.ToLower(d.Timezone)
+
+	if !d.Start.IsZero() && !d.End.IsZero() {
+		if d.Start.After(d.End) {
+			err.Details = append(err.Details, "start time must be before end time")
+		}
+	} else if !d.Start.IsZero() {
+		if d.Start.After(time.Now()) {
+			err.Details = append(err.Details, "start time cannot be in the future")
+		}
+	} else if d.Start.IsZero() {
+		d.Start = time.Now().UTC().Add(-d.Since)
+	}
+
 	if len(err.Details) > 0 {
 		return err
 	}
@@ -194,6 +210,15 @@ func (d *TelemetryQueryCmd) Validate() error {
 }
 
 func (d *TelemetryQueryCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) error {
+	if d.Measurement == "" {
+		// Shortcut for ergonomics
+		ls := TelemetryListCmd{
+			Target: d.Target,
+			NameNs: d.NameNs,
+		}
+		return ls.Run(log, m, cfg)
+	}
+
 	req := &mir_apiv1.QueryTelemetryRequest{
 		Targets: &mir_apiv1.DeviceTarget{
 			Ids:        d.Target.Ids,
@@ -203,8 +228,8 @@ func (d *TelemetryQueryCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) e
 		},
 		Measurement: d.Measurement,
 		Fields:      d.Fields,
-		StartTime:   mir_v1.AsProtoTimestamp(d.To),
-		EndTime:     mir_v1.AsProtoTimestamp(d.From),
+		StartTime:   mir_v1.AsProtoTimestamp(d.Start),
+		EndTime:     mir_v1.AsProtoTimestamp(d.End),
 	}
 	resp, err := m.Client().QueryTelemetry().Request(req)
 	if err != nil {
@@ -218,34 +243,64 @@ func (d *TelemetryQueryCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) e
 		if err != nil {
 			return fmt.Errorf("error marhsalling telemtry query: %w", err)
 		}
+		fmt.Println(out)
 	case "csv":
-		out = csvStringQuery(resp)
+		csvStringQuery(resp, d.Timezone)
 	case "pretty":
-		out = prettyStringQuery(resp)
+		prettyStringQuery(resp, d.Timezone)
 	}
 
-	fmt.Println(out)
 	return nil
 }
 
-func prettyStringQuery(query *mir_apiv1.QueryTelemetry) string {
-	// format := "%-45s %-25s %-10s %-20s %-20s %s\n"
-	// timeFormat := "2006-01-02 15:04:05"
+func prettyStringQuery(query *mir_apiv1.QueryTelemetry, timezone string) {
+	format := "%-25s %-15s"
+	if len(query.Headers) < 2 {
+		// Mean there is no datapoints
+		return
+	}
+	for range query.Headers[2:] {
+		format += " %15s"
+	}
+	headers := make([]any, len(query.Headers))
+	for i, h := range query.Headers {
+		headers[i] = h
+	}
 	var sb strings.Builder
-	// sb.WriteString(fmt.Sprintf(format, "NAMESPACE/NAME", "DEVICE_ID", "STATUS", "LAST_HEARTHBEAT", "LAST_SCHEMA_FETCH", "LABELS"))
+	fmt.Fprintf(&sb, format, headers...)
+	fmt.Println(sb.String())
+	sb.Reset()
 
-	// 	sb.WriteString(fmt.Sprintf(format, d.Meta.Namespace+"/"+d.Meta.Name, d.Spec.DeviceId, st, hb, sf, formatLabels(d.Meta.Labels)))
-	return sb.String()
+	dps := make([]any, len(query.Headers))
+	for _, row := range query.Rows {
+		for i, dp := range row.Datapoints {
+			val := datapointToString(query.Datatypes[i], dp, timezone)
+			if val == "" {
+				val = "-"
+			}
+			dps[i] = val
+		}
+		fmt.Fprintf(&sb, format, dps...)
+		fmt.Println(sb.String())
+		sb.Reset()
+	}
 }
 
-func csvStringQuery(query *mir_apiv1.QueryTelemetry) string {
-	// format := "%-45s %-25s %-10s %-20s %-20s %s\n"
-	// timeFormat := "2006-01-02 15:04:05"
+func csvStringQuery(query *mir_apiv1.QueryTelemetry, timezone string) {
 	var sb strings.Builder
-	// sb.WriteString(fmt.Sprintf(format, "NAMESPACE/NAME", "DEVICE_ID", "STATUS", "LAST_HEARTHBEAT", "LAST_SCHEMA_FETCH", "LABELS"))
-
-	// 	sb.WriteString(fmt.Sprintf(format, d.Meta.Namespace+"/"+d.Meta.Name, d.Spec.DeviceId, st, hb, sf, formatLabels(d.Meta.Labels)))
-	return sb.String()
+	sb.WriteString(strings.Join(query.Headers, ","))
+	fmt.Println(sb.String())
+	sb.Reset()
+	for _, row := range query.Rows {
+		for i, dp := range row.Datapoints {
+			sb.WriteString(datapointToString(query.Datatypes[i], dp, timezone))
+			if i < len(row.Datapoints)-1 {
+				sb.WriteString(",")
+			}
+		}
+		fmt.Println(sb.String())
+		sb.Reset()
+	}
 }
 
 // OSC 8 hyperlink escape sequence
@@ -256,4 +311,96 @@ func FormatHyperlink(text, url string) string {
 	underline := "\033[4m"
 	text = blue + underline + text + reset
 	return fmt.Sprintf("\033]8;;%s\033\\%s\033]8;;\033\\", url, text)
+}
+
+func datapointToString(tp mir_apiv1.DataType, dp *mir_apiv1.QueryTelemetry_Row_DataPoint, timezone string) string {
+	switch tp {
+	case mir_apiv1.DataType_DATA_TYPE_UNSPECIFIED:
+		return ""
+	case mir_apiv1.DataType_DATA_TYPE_BOOL:
+		if dp.ValueBool == nil {
+			return ""
+		}
+		return fmt.Sprintf("%t", *dp.ValueBool)
+	case mir_apiv1.DataType_DATA_TYPE_INT32:
+		if dp.ValueInt32 == nil {
+			return ""
+		}
+		return fmt.Sprintf("%d", *dp.ValueInt32)
+	case mir_apiv1.DataType_DATA_TYPE_INT64:
+		if dp.ValueInt64 == nil {
+			return ""
+		}
+		return fmt.Sprintf("%d", *dp.ValueInt64)
+	case mir_apiv1.DataType_DATA_TYPE_SINT32:
+		if dp.ValueSint32 == nil {
+			return ""
+		}
+		return fmt.Sprintf("%d", *dp.ValueSint32)
+	case mir_apiv1.DataType_DATA_TYPE_SINT64:
+		if dp.ValueSint64 == nil {
+			return ""
+		}
+		return fmt.Sprintf("%d", *dp.ValueSint64)
+	case mir_apiv1.DataType_DATA_TYPE_UINT32:
+		if dp.ValueUint32 == nil {
+			return ""
+		}
+		return fmt.Sprintf("%d", *dp.ValueUint32)
+	case mir_apiv1.DataType_DATA_TYPE_UINT64:
+		if dp.ValueUint64 == nil {
+			return ""
+		}
+		return fmt.Sprintf("%d", *dp.ValueUint64)
+	case mir_apiv1.DataType_DATA_TYPE_FIXED32:
+		if dp.ValueFixed32 == nil {
+			return ""
+		}
+		return fmt.Sprintf("%d", *dp.ValueFixed32)
+	case mir_apiv1.DataType_DATA_TYPE_FIXED64:
+		if dp.ValueFixed64 == nil {
+			return ""
+		}
+		return fmt.Sprintf("%d", *dp.ValueFixed64)
+	case mir_apiv1.DataType_DATA_TYPE_SFIXED32:
+		if dp.ValueSfixed32 == nil {
+			return ""
+		}
+		return fmt.Sprintf("%d", *dp.ValueSfixed32)
+	case mir_apiv1.DataType_DATA_TYPE_SFIXED64:
+		if dp.ValueSfixed64 == nil {
+			return ""
+		}
+		return fmt.Sprintf("%d", *dp.ValueSfixed64)
+	case mir_apiv1.DataType_DATA_TYPE_FLOAT:
+		if dp.ValueFloat == nil {
+			return ""
+		}
+		return fmt.Sprintf("%.4f", *dp.ValueFloat)
+	case mir_apiv1.DataType_DATA_TYPE_DOUBLE:
+		if dp.ValueDouble == nil {
+			return ""
+		}
+		return fmt.Sprintf("%.4f", *dp.ValueDouble)
+	case mir_apiv1.DataType_DATA_TYPE_STRING:
+		if dp.ValueString == nil {
+			return ""
+		}
+		return fmt.Sprintf("%s", *dp.ValueString)
+	case mir_apiv1.DataType_DATA_TYPE_BYTES:
+		if dp.ValueBytes == nil {
+			return ""
+		}
+		return fmt.Sprintf("%s", dp.ValueBytes)
+	case mir_apiv1.DataType_DATA_TYPE_TIMESTAMP:
+		if dp.ValueTimestamp == nil {
+			return ""
+		}
+		if timezone == "utc" {
+			return fmt.Sprintf("%s", mir_v1.AsGoTime(dp.ValueTimestamp).UTC().Format(time.RFC3339))
+		} else {
+			return fmt.Sprintf("%s", mir_v1.AsGoTime(dp.ValueTimestamp).Local().Format(time.RFC3339))
+		}
+	}
+	return ""
 }

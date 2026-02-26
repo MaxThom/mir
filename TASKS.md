@@ -6,6 +6,7 @@
 
 - [ ] Add deviceid to badger
 - [ ] boolean false not get written in db, properties default not getting written
+- [ ] bytes in tlm
 
 ### Features
 
