@@ -9,6 +9,7 @@ import {
 import { ListEvent } from "./server_event";
 import { ListCommands, SendCommand } from "./server_cmd";
 import { ListConfigs, SendConfig } from "./server_cfg";
+import { ListTelemetry, QueryTelemetry } from "./server_tlm";
 export { ClientSubject } from "./types.js";
 
 export class ClientRoutes {
@@ -44,5 +45,11 @@ export class ClientRoutes {
   }
   sendConfig(): SendConfig {
     return new SendConfig(this.mir);
+  }
+  listTelemetry(): ListTelemetry {
+    return new ListTelemetry(this.mir);
+  }
+  queryTelemetry(): QueryTelemetry {
+    return new QueryTelemetry(this.mir);
   }
 }

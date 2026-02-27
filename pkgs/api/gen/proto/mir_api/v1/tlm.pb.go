@@ -666,8 +666,7 @@ func (x *TelemetryDescriptor) GetError() string {
 
 type QueryTelemetry_Row struct {
 	state         protoimpl.MessageState          `protogen:"open.v1"`
-	Timestamp     *Timestamp                      `protobuf:"bytes,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`   // Timestamp of the telemetry data
-	Datapoints    []*QueryTelemetry_Row_DataPoint `protobuf:"bytes,2,rep,name=datapoints,proto3" json:"datapoints,omitempty"` // List of telemetry data, order is the same as headers
+	Datapoints    []*QueryTelemetry_Row_DataPoint `protobuf:"bytes,1,rep,name=datapoints,proto3" json:"datapoints,omitempty"` // List of telemetry data, order is the same as headers
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -700,13 +699,6 @@ func (x *QueryTelemetry_Row) ProtoReflect() protoreflect.Message {
 // Deprecated: Use QueryTelemetry_Row.ProtoReflect.Descriptor instead.
 func (*QueryTelemetry_Row) Descriptor() ([]byte, []int) {
 	return file_mir_api_v1_tlm_proto_rawDescGZIP(), []int{4, 0}
-}
-
-func (x *QueryTelemetry_Row) GetTimestamp() *Timestamp {
-	if x != nil {
-		return x.Timestamp
-	}
-	return nil
 }
 
 func (x *QueryTelemetry_Row) GetDatapoints() []*QueryTelemetry_Row_DataPoint {
@@ -915,15 +907,14 @@ const file_mir_api_v1_tlm_proto_rawDesc = "" +
 	"\x02ok\x18\x01 \x01(\v2\x1a.mir_api.v1.QueryTelemetryH\x00R\x02ok\x12\x16\n" +
 	"\x05error\x18\x02 \x01(\tH\x00R\x05errorB\n" +
 	"\n" +
-	"\bresponse\"\xd7\t\n" +
+	"\bresponse\"\xa2\t\n" +
 	"\x0eQueryTelemetry\x12\x18\n" +
 	"\aheaders\x18\x01 \x03(\tR\aheaders\x122\n" +
 	"\tdatatypes\x18\x02 \x03(\x0e2\x14.mir_api.v1.DataTypeR\tdatatypes\x122\n" +
-	"\x04rows\x18\x03 \x03(\v2\x1e.mir_api.v1.QueryTelemetry.RowR\x04rows\x1a\xc2\b\n" +
-	"\x03Row\x123\n" +
-	"\ttimestamp\x18\x01 \x01(\v2\x15.mir_api.v1.TimestampR\ttimestamp\x12H\n" +
+	"\x04rows\x18\x03 \x03(\v2\x1e.mir_api.v1.QueryTelemetry.RowR\x04rows\x1a\x8d\b\n" +
+	"\x03Row\x12H\n" +
 	"\n" +
-	"datapoints\x18\x02 \x03(\v2(.mir_api.v1.QueryTelemetry.Row.DataPointR\n" +
+	"datapoints\x18\x01 \x03(\v2(.mir_api.v1.QueryTelemetry.Row.DataPointR\n" +
 	"datapoints\x1a\xbb\a\n" +
 	"\tDataPoint\x12$\n" +
 	"\vvalue_int32\x18\x01 \x01(\x05H\x00R\n" +
@@ -1048,14 +1039,13 @@ var file_mir_api_v1_tlm_proto_depIdxs = []int32{
 	15, // 10: mir_api.v1.DevicesTelemetry.ids:type_name -> mir_api.v1.DeviceIdPair
 	8,  // 11: mir_api.v1.DevicesTelemetry.tlm_descriptors:type_name -> mir_api.v1.TelemetryDescriptor
 	12, // 12: mir_api.v1.TelemetryDescriptor.labels:type_name -> mir_api.v1.TelemetryDescriptor.LabelsEntry
-	14, // 13: mir_api.v1.QueryTelemetry.Row.timestamp:type_name -> mir_api.v1.Timestamp
-	11, // 14: mir_api.v1.QueryTelemetry.Row.datapoints:type_name -> mir_api.v1.QueryTelemetry.Row.DataPoint
-	14, // 15: mir_api.v1.QueryTelemetry.Row.DataPoint.value_timestamp:type_name -> mir_api.v1.Timestamp
-	16, // [16:16] is the sub-list for method output_type
-	16, // [16:16] is the sub-list for method input_type
-	16, // [16:16] is the sub-list for extension type_name
-	16, // [16:16] is the sub-list for extension extendee
-	0,  // [0:16] is the sub-list for field type_name
+	11, // 13: mir_api.v1.QueryTelemetry.Row.datapoints:type_name -> mir_api.v1.QueryTelemetry.Row.DataPoint
+	14, // 14: mir_api.v1.QueryTelemetry.Row.DataPoint.value_timestamp:type_name -> mir_api.v1.Timestamp
+	15, // [15:15] is the sub-list for method output_type
+	15, // [15:15] is the sub-list for method input_type
+	15, // [15:15] is the sub-list for extension type_name
+	15, // [15:15] is the sub-list for extension extendee
+	0,  // [0:15] is the sub-list for field type_name
 }
 
 func init() { file_mir_api_v1_tlm_proto_init() }
