@@ -41,6 +41,27 @@ func GetTelemetryStreamMsg(deviceId string, t protoreflect.ProtoMessage) (*nats.
 	}, nil
 }
 
+func PublishTelemetryQueryRequest(bus *nats.Conn, req *mir_apiv1.QueryTelemetryRequest) (*mir_apiv1.QueryTelemetryResponse, error) {
+	b, err := proto.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO revisit timeout
+	resMsg, err := bus.Request(TelemetryQueryRequest.WithId("todo"), b, 20*time.Second)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := &mir_apiv1.QueryTelemetryResponse{}
+	err = proto.Unmarshal(resMsg.Data, resp)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, err
+}
+
 func PublishTelemetryListRequest(bus *nats.Conn, req *mir_apiv1.ListTelemetryRequest) (*mir_apiv1.ListTelemetryResponse, error) {
 	b, err := proto.Marshal(req)
 	if err != nil {

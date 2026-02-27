@@ -834,3 +834,372 @@ func TestPublishTelemetryListError(t *testing.T) {
 	assert.Equal(t, dt.Ids[0].DeviceId, "dev_tlm_list_offline")
 	assert.Equal(t, dt.Error, "cannot reconcile device schema: error requesting device schema: error publishing request message: nats: no responders available for request")
 }
+
+func TestPublishTelemetryQueryBasic(t *testing.T) {
+	// Arrange
+	ctx, cancel := context.WithCancel(context.Background())
+	id := "device_query_tlm"
+	reqCreate := &mir_apiv1.NewDevice{
+		Meta: &mir_apiv1.Meta{
+			Name:      id,
+			Namespace: "testing_core",
+			Labels: map[string]string{
+				"testing": "tlm",
+			},
+		},
+		Spec: &mir_apiv1.DeviceSpec{
+			DeviceId: id,
+		},
+	}
+
+	dev, err := mirDevice.Builder().DeviceId(id).Store(mirDevice.StoreOptions{InMemory: true}).Target(busUrl).Schema(
+		prototlm_testv1.File_prototlm_test_v1_telemetry_proto,
+	).Build()
+	if err != nil {
+		t.Error(err)
+	}
+
+	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus, &mir_apiv1.CreateDeviceRequest{Device: reqCreate})
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	wg, err := dev.Launch(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Act
+	startTime := time.Now().Add(-2 * time.Second)
+	for i := 1; i <= 5; i++ {
+		dev.SendTelemetry(&prototlm_testv1.EnvTlm{
+			Temperature: int32(i * 5),
+			Pressure:    int32(i * 10),
+			Humidity:    int32(i * 15),
+		})
+		time.Sleep(100 * time.Millisecond)
+	}
+	time.Sleep(3 * time.Second) // Wait for InfluxDB batch to flush
+
+	resp, err := tlm_client.PublishTelemetryQueryRequest(mSdk.Bus, &mir_apiv1.QueryTelemetryRequest{
+		Targets: &mir_apiv1.DeviceTarget{
+			Ids: []string{id},
+		},
+		Measurement: "prototlm_test.v1.EnvTlm",
+		StartTime:   mir_v1.AsProtoTimestamp(startTime),
+	})
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Assert(t, resp.GetOk() != nil)
+	qt := resp.GetOk()
+	assert.Equal(t, 5, len(qt.Headers))
+	assert.Equal(t, "_time", qt.Headers[0])
+	assert.Equal(t, "__id", qt.Headers[1])
+	assert.Equal(t, "humidity", qt.Headers[2])
+	assert.Equal(t, "pressure", qt.Headers[3])
+	assert.Equal(t, "temperature", qt.Headers[4])
+	assert.Equal(t, mir_apiv1.DataType_DATA_TYPE_TIMESTAMP, qt.Datatypes[0])
+	assert.Equal(t, mir_apiv1.DataType_DATA_TYPE_STRING, qt.Datatypes[1])
+	assert.Equal(t, mir_apiv1.DataType_DATA_TYPE_INT64, qt.Datatypes[2])
+	assert.Equal(t, mir_apiv1.DataType_DATA_TYPE_INT64, qt.Datatypes[3])
+	assert.Equal(t, mir_apiv1.DataType_DATA_TYPE_INT64, qt.Datatypes[4])
+	assert.Equal(t, 5, len(qt.Rows))
+
+	cancel()
+	wg.Wait()
+}
+
+func TestPublishTelemetryQueryWithFieldFilter(t *testing.T) {
+	// Arrange
+	ctx, cancel := context.WithCancel(context.Background())
+	id := "device_query_tlm_filter"
+	reqCreate := &mir_apiv1.NewDevice{
+		Meta: &mir_apiv1.Meta{
+			Name:      id,
+			Namespace: "testing_core",
+			Labels: map[string]string{
+				"testing": "tlm",
+			},
+		},
+		Spec: &mir_apiv1.DeviceSpec{
+			DeviceId: id,
+		},
+	}
+
+	dev, err := mirDevice.Builder().DeviceId(id).Store(mirDevice.StoreOptions{InMemory: true}).Target(busUrl).Schema(
+		prototlm_testv1.File_prototlm_test_v1_telemetry_proto,
+	).Build()
+	if err != nil {
+		t.Error(err)
+	}
+
+	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus, &mir_apiv1.CreateDeviceRequest{Device: reqCreate})
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	wg, err := dev.Launch(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Act
+	startTime := time.Now().Add(-2 * time.Second)
+	for i := 1; i <= 5; i++ {
+		dev.SendTelemetry(&prototlm_testv1.EnvTlm{
+			Temperature: int32(i * 5),
+			Pressure:    int32(i * 10),
+			Humidity:    int32(i * 15),
+		})
+		time.Sleep(100 * time.Millisecond)
+	}
+	time.Sleep(3 * time.Second) // Wait for InfluxDB batch to flush
+
+	resp, err := tlm_client.PublishTelemetryQueryRequest(mSdk.Bus, &mir_apiv1.QueryTelemetryRequest{
+		Targets: &mir_apiv1.DeviceTarget{
+			Ids: []string{id},
+		},
+		Measurement: "prototlm_test.v1.EnvTlm",
+		Fields:      []string{"temperature"},
+		StartTime:   mir_v1.AsProtoTimestamp(startTime),
+	})
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Assert(t, resp.GetOk() != nil)
+	qt := resp.GetOk()
+	assert.Equal(t, 3, len(qt.Headers))
+	assert.Equal(t, "_time", qt.Headers[0])
+	assert.Equal(t, "__id", qt.Headers[1])
+	assert.Equal(t, "temperature", qt.Headers[2])
+	assert.Equal(t, 5, len(qt.Rows))
+
+	cancel()
+	wg.Wait()
+}
+
+func TestPublishTelemetryQueryAllTypes(t *testing.T) {
+	// Arrange
+	ctx, cancel := context.WithCancel(context.Background())
+	id := "device_query_tlm_all_types"
+	reqCreate := &mir_apiv1.NewDevice{
+		Meta: &mir_apiv1.Meta{
+			Name:      id,
+			Namespace: "testing_core",
+			Labels: map[string]string{
+				"testing": "tlm",
+			},
+		},
+		Spec: &mir_apiv1.DeviceSpec{
+			DeviceId: id,
+		},
+	}
+
+	dev, err := mirDevice.Builder().DeviceId(id).Store(mirDevice.StoreOptions{InMemory: true}).Target(busUrl).Schema(
+		prototlm_testv1.File_prototlm_test_v1_telemetry_proto,
+	).Build()
+	if err != nil {
+		t.Error(err)
+	}
+
+	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus, &mir_apiv1.CreateDeviceRequest{Device: reqCreate})
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	wg, err := dev.Launch(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Act
+	startTime := time.Now().Add(-2 * time.Second)
+	for i := 0; i < 3; i++ {
+		dev.SendTelemetry(&prototlm_testv1.AllTypesTlm{
+			ValueBool:     true,
+			ValueString:   "hello",
+			ValueInt32:    42,
+			ValueInt64:    100,
+			ValueSint32:   -10,
+			ValueSint64:   -200,
+			ValueSfixed32: 15,
+			ValueSfixed64: 150,
+			ValueUint32:   7,
+			ValueUint64:   99,
+			ValueFixed32:  3,
+			ValueFixed64:  33,
+			ValueFloat:    1.5,
+			ValueDouble:   2.5,
+		})
+		time.Sleep(100 * time.Millisecond)
+	}
+	time.Sleep(3 * time.Second) // Wait for InfluxDB batch to flush
+
+	resp, err := tlm_client.PublishTelemetryQueryRequest(mSdk.Bus, &mir_apiv1.QueryTelemetryRequest{
+		Targets: &mir_apiv1.DeviceTarget{
+			Ids: []string{id},
+		},
+		Measurement: "prototlm_test.v1.AllTypesTlm",
+		StartTime:   mir_v1.AsProtoTimestamp(startTime),
+	})
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Assert(t, resp.GetOk() != nil)
+	qt := resp.GetOk()
+
+	expectedHeaders := []string{
+		"_time", "__id",
+		"value_bool", "value_double", "value_fixed32", "value_fixed64",
+		"value_float", "value_int32", "value_int64",
+		"value_sfixed32", "value_sfixed64", "value_sint32", "value_sint64",
+		"value_string", "value_uint32", "value_uint64",
+	}
+	assert.Equal(t, len(expectedHeaders), len(qt.Headers))
+	for i, h := range expectedHeaders {
+		assert.Equal(t, h, qt.Headers[i])
+	}
+
+	expectedDatatypes := []mir_apiv1.DataType{
+		mir_apiv1.DataType_DATA_TYPE_TIMESTAMP, // _time
+		mir_apiv1.DataType_DATA_TYPE_STRING,    // __id
+		mir_apiv1.DataType_DATA_TYPE_BOOL,      // value_bool
+		mir_apiv1.DataType_DATA_TYPE_DOUBLE,    // value_double
+		mir_apiv1.DataType_DATA_TYPE_UINT64,    // value_fixed32
+		mir_apiv1.DataType_DATA_TYPE_UINT64,    // value_fixed64
+		mir_apiv1.DataType_DATA_TYPE_DOUBLE,    // value_float
+		mir_apiv1.DataType_DATA_TYPE_INT64,     // value_int32
+		mir_apiv1.DataType_DATA_TYPE_INT64,     // value_int64
+		mir_apiv1.DataType_DATA_TYPE_INT64,     // value_sfixed32
+		mir_apiv1.DataType_DATA_TYPE_INT64,     // value_sfixed64
+		mir_apiv1.DataType_DATA_TYPE_INT64,     // value_sint32
+		mir_apiv1.DataType_DATA_TYPE_INT64,     // value_sint64
+		mir_apiv1.DataType_DATA_TYPE_STRING,    // value_string
+		mir_apiv1.DataType_DATA_TYPE_UINT64,    // value_uint32
+		mir_apiv1.DataType_DATA_TYPE_UINT64,    // value_uint64
+	}
+	for i, dt := range expectedDatatypes {
+		assert.Equal(t, dt, qt.Datatypes[i])
+	}
+
+	assert.Equal(t, 3, len(qt.Rows))
+
+	// Spot-check first row values
+	row := qt.Rows[0]
+	boolIdx := slices.Index(qt.Headers, "value_bool")
+	stringIdx := slices.Index(qt.Headers, "value_string")
+	doubleIdx := slices.Index(qt.Headers, "value_double")
+
+	assert.Equal(t, true, row.Datapoints[boolIdx].GetValueBool())
+	assert.Equal(t, "hello", row.Datapoints[stringIdx].GetValueString())
+	assert.Equal(t, float64(2.5), row.Datapoints[doubleIdx].GetValueDouble())
+
+	cancel()
+	wg.Wait()
+}
+
+func TestPublishTelemetryQueryNullValues(t *testing.T) {
+	// Arrange
+	ctx, cancel := context.WithCancel(context.Background())
+	id := "device_query_tlm_sparse"
+	reqCreate := &mir_apiv1.NewDevice{
+		Meta: &mir_apiv1.Meta{
+			Name:      id,
+			Namespace: "testing_core",
+			Labels: map[string]string{
+				"testing": "tlm",
+			},
+		},
+		Spec: &mir_apiv1.DeviceSpec{
+			DeviceId: id,
+		},
+	}
+
+	dev, err := mirDevice.Builder().DeviceId(id).Store(mirDevice.StoreOptions{InMemory: true}).Target(busUrl).Schema(
+		prototlm_testv1.File_prototlm_test_v1_telemetry_proto,
+	).Build()
+	if err != nil {
+		t.Error(err)
+	}
+
+	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus, &mir_apiv1.CreateDeviceRequest{Device: reqCreate})
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	wg, err := dev.Launch(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Act — three readings with different optional fields set each time
+	va10, vb20 := int32(10), int32(20)
+	vcHello := "hello"
+	va30 := int32(30)
+	vb40 := int32(40)
+	vcWorld := "world"
+
+	startTime := time.Now().Add(-2 * time.Second)
+	// Row 0: all fields present
+	dev.SendTelemetry(&prototlm_testv1.SparseTlm{ValueA: &va10, ValueB: &vb20, ValueC: &vcHello})
+	time.Sleep(100 * time.Millisecond)
+	// Row 1: only value_a set → value_b and value_c will be null
+	dev.SendTelemetry(&prototlm_testv1.SparseTlm{ValueA: &va30})
+	time.Sleep(100 * time.Millisecond)
+	// Row 2: value_b and value_c set → value_a will be null
+	dev.SendTelemetry(&prototlm_testv1.SparseTlm{ValueB: &vb40, ValueC: &vcWorld})
+	time.Sleep(3 * time.Second) // Wait for InfluxDB batch to flush
+
+	resp, err := tlm_client.PublishTelemetryQueryRequest(mSdk.Bus, &mir_apiv1.QueryTelemetryRequest{
+		Targets: &mir_apiv1.DeviceTarget{
+			Ids: []string{id},
+		},
+		Measurement: "prototlm_test.v1.SparseTlm",
+		StartTime:   mir_v1.AsProtoTimestamp(startTime),
+	})
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Assert(t, resp.GetOk() != nil)
+	qt := resp.GetOk()
+	assert.Equal(t, 5, len(qt.Headers))
+	assert.Equal(t, 3, len(qt.Rows))
+
+	aIdx := slices.Index(qt.Headers, "value_a")
+	bIdx := slices.Index(qt.Headers, "value_b")
+	cIdx := slices.Index(qt.Headers, "value_c")
+
+	// Row 0: all fields present
+	row0 := qt.Rows[0]
+	assert.Equal(t, int64(10), row0.Datapoints[aIdx].GetValueInt64())
+	assert.Equal(t, int64(20), row0.Datapoints[bIdx].GetValueInt64())
+	assert.Equal(t, "hello", row0.Datapoints[cIdx].GetValueString())
+
+	// Row 1: only value_a set → value_b and value_c null
+	row1 := qt.Rows[1]
+	assert.Equal(t, int64(30), row1.Datapoints[aIdx].GetValueInt64())
+	assert.Assert(t, row1.Datapoints[bIdx].ValueInt64 == nil)
+	assert.Assert(t, row1.Datapoints[cIdx].ValueString == nil)
+
+	// Row 2: value_b and value_c set → value_a null
+	row2 := qt.Rows[2]
+	assert.Assert(t, row2.Datapoints[aIdx].ValueInt64 == nil)
+	assert.Equal(t, int64(40), row2.Datapoints[bIdx].GetValueInt64())
+	assert.Equal(t, "world", row2.Datapoints[cIdx].GetValueString())
+
+	cancel()
+	wg.Wait()
+}
