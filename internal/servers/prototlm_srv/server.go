@@ -242,6 +242,10 @@ func (s *ProtoTlmServer) handleTelemetryListRequest(msg *mir.Msg, clientId strin
 		}
 	}
 
+	if len(devs) == 0 {
+		return nil, mng.ErrorNoDeviceFound
+	}
+
 	devsTlm := []*mir_apiv1.DevicesTelemetry{}
 	devSchemas := []*schemaPerDevices{}
 	for _, dev := range devs {
@@ -346,10 +350,14 @@ func (s *ProtoTlmServer) handleTelemetryQueryRequest(msg *mir.Msg, clientId stri
 				devs = append(devs, mir_v1.NewDevice().WithId(i))
 			}
 		} else {
-			requestErrorTotal.WithLabelValues("list").Inc()
+			requestErrorTotal.WithLabelValues("query").Inc()
 			l.Error().Err(err).Msg("error occure while listing devices")
 			return nil, fmt.Errorf("error listing device from db: %w", err)
 		}
+	}
+
+	if len(devs) == 0 {
+		return nil, mng.ErrorNoDeviceFound
 	}
 
 	ids := []string{}
@@ -360,6 +368,7 @@ func (s *ProtoTlmServer) handleTelemetryQueryRequest(msg *mir.Msg, clientId stri
 	values, err := s.tlmStore.Query(s.ctx, ids, req.Measurement, req.Fields, mir_v1.AsGoTime(req.StartTime), mir_v1.AsGoTime(req.EndTime))
 	if err != nil {
 		l.Error().Err(err).Msg("error querying telemetry from tsdb")
+		requestErrorTotal.WithLabelValues("query").Inc()
 	}
 	return values, err
 }

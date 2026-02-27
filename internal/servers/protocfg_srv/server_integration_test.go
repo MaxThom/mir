@@ -1156,6 +1156,23 @@ func TestPublishCfgNoDeviceFound(t *testing.T) {
 	assert.Equal(t, respErr, "error sending config to devices: no device found with current targets criteria")
 }
 
+func TestPublishCfgListNoDeviceFound(t *testing.T) {
+	// Arrange — no device creation; target ID does not exist in DB
+
+	// Act
+	resp, err := cfg_client.PublishListConfigRequest(mSdk.Bus, &mir_apiv1.SendListConfigRequest{
+		Targets: &mir_apiv1.DeviceTarget{
+			Ids: []string{"nonexistent_cfg_device"},
+		},
+	})
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, "no device found with current targets criteria", resp.GetError())
+}
+
 func TestPublishCfgProtoDryRun(t *testing.T) {
 	// Arrange
 	ctx, cancel := context.WithCancel(context.Background())
