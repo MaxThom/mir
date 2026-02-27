@@ -40,8 +40,7 @@ message QueryTelemetry {
   repeated Row rows = 3; // List of telemetry data, order is the same as headers
 
   message Row {
-    Timestamp timestamp = 1; // Timestamp of the telemetry data
-    repeated DataPoint datapoints = 2; // List of telemetry data, order is the same as headers
+    repeated DataPoint datapoints = 1; // List of telemetry data, order is the same as headers
 
     message DataPoint {
       // A plain int32 field with value 0 → 0 bytes (not encoded at all).
