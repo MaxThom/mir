@@ -8,17 +8,35 @@
 	import type { ChartConfig } from '$lib/shared/components/shadcn/chart';
 	import DescriptorPanel from '$lib/domains/devices/components/commands/descriptor-panel.svelte';
 	import TlmChart from '$lib/domains/devices/components/telemetry/tlm-chart.svelte';
+	import TimePicker from '$lib/domains/devices/components/telemetry/time-picker.svelte';
+	import { RangeCalendar } from '$lib/shared/components/shadcn/range-calendar';
+	import * as Popover from '$lib/shared/components/shadcn/popover';
 	import ActivityIcon from '@lucide/svelte/icons/activity';
-	import RefreshCwIcon from '@lucide/svelte/icons/refresh-cw';
+	import CalendarIcon from '@lucide/svelte/icons/calendar';
+	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
+	import ZoomInIcon from '@lucide/svelte/icons/zoom-in';
+	import ZoomOutIcon from '@lucide/svelte/icons/zoom-out';
+	import type { DateRange } from 'bits-ui';
+	import { getLocalTimeZone, fromDate } from '@internationalized/date';
+	import { SvelteDate } from 'svelte/reactivity';
 
 	// ─── Constants ────────────────────────────────────────────────────────────
 
-	const TIME_RANGES = [
+	const PRESETS = [
+		{ label: '1m', minutes: 1 },
 		{ label: '5m', minutes: 5 },
+		{ label: '10m', minutes: 10 },
 		{ label: '15m', minutes: 15 },
+		{ label: '30m', minutes: 30 },
 		{ label: '1h', minutes: 60 },
+		{ label: '3h', minutes: 180 },
 		{ label: '6h', minutes: 360 },
-		{ label: '24h', minutes: 1440 }
+		{ label: '12h', minutes: 720 },
+		{ label: '24h', minutes: 1440 },
+		{ label: '2d', minutes: 2880 },
+		{ label: '7d', minutes: 10080 },
+		{ label: '30d', minutes: 43200 },
+		{ label: '90d', minutes: 129600 }
 	] as const;
 
 	const CHART_COLORS = [
@@ -31,18 +49,25 @@
 
 	const MAX_AUTO_FIELDS = 5;
 
+	// ─── Types ────────────────────────────────────────────────────────────────
+
+	type TimeFilter =
+		| { mode: 'relative'; minutes: number }
+		| { mode: 'absolute'; start: Date; end: Date };
+
 	// ─── State ────────────────────────────────────────────────────────────────
 
 	let deviceId = $derived(page.params.deviceId ?? '');
 	let selectedMeasurement = $state<TelemetryDescriptor | null>(null);
-	let timeRangeMinutes = $state(5);
+	let timeFilter = $state<TimeFilter>({ mode: 'relative', minutes: 5 });
 	let selectedFields = $state<string[]>([]);
-	let autoRefresh = $state(false);
-	let autoRefreshInterval = $state<ReturnType<typeof setInterval> | null>(null);
+	let popoverOpen = $state(false);
+	let calendarValue = $state<DateRange | undefined>(undefined);
+	let startTime = $state('00:00');
+	let endTime = $state('23:59');
 
 	// ─── Adapters ─────────────────────────────────────────────────────────────
 
-	// Flatten all descriptors for the DescriptorPanel (which needs Descriptor type)
 	let allDescriptors = $derived(
 		telemetryStore.measurements.flatMap((g) =>
 			g.descriptors.map(
@@ -57,18 +82,33 @@
 	);
 
 	let groupErrors = $derived(telemetryStore.measurements.map((g) => g.error).filter(Boolean));
-
-	// Full TelemetryDescriptor for the selected item (to get fields)
 	let allTelemetryDescriptors = $derived(telemetryStore.measurements.flatMap((g) => g.descriptors));
 
 	// ─── Chart config ─────────────────────────────────────────────────────────
 
 	let chartConfig = $derived.by((): ChartConfig => {
 		const config: ChartConfig = {};
-		selectedFields.forEach((field, i) => {
+		(selectedMeasurement?.fields ?? []).forEach((field, i) => {
 			config[field] = { label: field, color: CHART_COLORS[i % CHART_COLORS.length] };
 		});
 		return config;
+	});
+
+	// ─── Time filter label ────────────────────────────────────────────────────
+
+	let timeFilterLabel = $derived.by(() => {
+		if (timeFilter.mode === 'relative') {
+			const preset = PRESETS.find((p) => p.minutes === timeFilter.minutes);
+			return `Last ${preset?.label ?? timeFilter.minutes + 'm'}`;
+		}
+		const fmt = (d: Date) =>
+			d.toLocaleDateString([], {
+				month: 'short',
+				day: 'numeric',
+				hour: '2-digit',
+				minute: '2-digit'
+			});
+		return `${fmt(timeFilter.start)} – ${fmt(timeFilter.end)}`;
 	});
 
 	// ─── Context & lifecycle ──────────────────────────────────────────────────
@@ -77,11 +117,11 @@
 	deviceCtx.setTabRefresh(() => {
 		if (mirStore.mir && deviceId) {
 			telemetryStore.loadMeasurements(mirStore.mir, deviceId);
+			runQuery();
 		}
 	});
 	onDestroy(() => {
 		deviceCtx.setTabRefresh(null);
-		stopAutoRefresh();
 	});
 
 	$effect(() => {
@@ -96,8 +136,11 @@
 	// ─── Query logic ──────────────────────────────────────────────────────────
 
 	function getTimeRange(): { start: Date; end: Date } {
+		if (timeFilter.mode === 'absolute') {
+			return { start: timeFilter.start, end: timeFilter.end };
+		}
 		const end = new Date();
-		const start = new Date(end.getTime() - timeRangeMinutes * 60 * 1000);
+		const start = new Date(end.getTime() - timeFilter.minutes * 60 * 1000);
 		return { start, end };
 	}
 
@@ -124,42 +167,71 @@
 		runQuery();
 	}
 
-	function setTimeRange(minutes: number) {
-		timeRangeMinutes = minutes;
+	function selectPreset(minutes: number) {
+		timeFilter = { mode: 'relative', minutes };
+		calendarValue = undefined;
+		runQuery();
+		popoverOpen = false;
+	}
+
+	function zoom(factor: number) {
+		const { start, end } = getTimeRange();
+		const delta = (end.getTime() - start.getTime()) * 0.25 * factor;
+		const newStart = new Date(start.getTime() + delta);
+		const newEnd = new Date(end.getTime() - delta);
+		const tz = getLocalTimeZone();
+		timeFilter = { mode: 'absolute', start: newStart, end: newEnd };
+		calendarValue = { start: fromDate(newStart, tz), end: fromDate(newEnd, tz) };
+		startTime = `${String(newStart.getHours()).padStart(2, '0')}:${String(newStart.getMinutes()).padStart(2, '0')}`;
+		endTime = `${String(newEnd.getHours()).padStart(2, '0')}:${String(newEnd.getMinutes()).padStart(2, '0')}`;
 		runQuery();
 	}
 
-	function toggleField(field: string) {
-		if (selectedFields.includes(field)) {
-			if (selectedFields.length > 1) {
-				selectedFields = selectedFields.filter((f) => f !== field);
+	function toggleField(field: string, shift: boolean) {
+		if (shift) {
+			if (selectedFields.includes(field)) {
+				if (selectedFields.length > 1) {
+					selectedFields = selectedFields.filter((f) => f !== field);
+				}
+			} else {
+				selectedFields = [...selectedFields, field];
 			}
 		} else {
-			selectedFields = [...selectedFields, field];
+			selectedFields = [field];
 		}
 		runQuery();
 	}
 
-	// ─── Auto-refresh ─────────────────────────────────────────────────────────
+	// Run query when popover closes and an absolute range is set
+	let prevPopoverOpen = false;
+	$effect(() => {
+		if (prevPopoverOpen && !popoverOpen && timeFilter.mode === 'absolute') {
+			runQuery();
+		}
+		prevPopoverOpen = popoverOpen;
+	});
 
-	function startAutoRefresh() {
-		stopAutoRefresh();
-		autoRefreshInterval = setInterval(runQuery, 30_000);
-	}
-
-	function stopAutoRefresh() {
-		if (autoRefreshInterval !== null) {
-			clearInterval(autoRefreshInterval);
-			autoRefreshInterval = null;
+	function handleCalendarChange(value: DateRange | undefined) {
+		if (value?.start && value?.end) {
+			const [startH, startM] = startTime.split(':').map(Number);
+			const [endH, endM] = endTime.split(':').map(Number);
+			const start = value.start.toDate(getLocalTimeZone());
+			start.setHours(startH, startM, 0, 0);
+			const end = value.end.toDate(getLocalTimeZone());
+			end.setHours(endH, endM, 59, 999);
+			timeFilter = { mode: 'absolute', start, end };
 		}
 	}
 
-	function toggleAutoRefresh() {
-		autoRefresh = !autoRefresh;
-		if (autoRefresh) {
-			startAutoRefresh();
-		} else {
-			stopAutoRefresh();
+	function handleTimeInputChange() {
+		if (timeFilter.mode === 'absolute') {
+			const [startH, startM] = startTime.split(':').map(Number);
+			const [endH, endM] = endTime.split(':').map(Number);
+			const start = new SvelteDate(timeFilter.start);
+			start.setHours(startH, startM, 0, 0);
+			const end = new SvelteDate(timeFilter.end);
+			end.setHours(endH, endM, 59, 999);
+			timeFilter = { mode: 'absolute', start, end };
 		}
 	}
 </script>
@@ -185,30 +257,21 @@
 				<p class="text-sm">Select a measurement to view chart</p>
 			</div>
 		{:else}
+			<!-- Measurement name -->
+			<div class="border-b px-4 py-1.75">
+				<span class="font-mono text-sm font-medium">{selectedMeasurement.name}</span>
+				{#if selectedMeasurement.error}
+					<span class="ml-2 text-xs text-destructive">{selectedMeasurement.error}</span>
+				{/if}
+			</div>
+
 			<!-- Toolbar -->
-			<div class="flex flex-wrap items-center gap-2 border-b px-4 py-2">
-				<!-- Time range -->
-				<div class="flex items-center gap-1">
-					{#each TIME_RANGES as range (range.label)}
-						<button
-							onclick={() => setTimeRange(range.minutes)}
-							class="rounded px-2 py-0.5 text-xs transition-colors
-								{timeRangeMinutes === range.minutes
-								? 'bg-primary text-primary-foreground'
-								: 'bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground'}"
-						>
-							{range.label}
-						</button>
-					{/each}
-				</div>
-
-				<div class="h-4 w-px bg-border"></div>
-
+			<div class="flex flex-wrap items-center gap-2 border-b px-4 py-1.25">
 				<!-- Field toggles -->
 				<div class="flex flex-wrap gap-1">
 					{#each selectedMeasurement.fields as field, i (field)}
 						<button
-							onclick={() => toggleField(field)}
+							onclick={(e) => toggleField(field, e.shiftKey)}
 							class="flex items-center gap-1 rounded-sm border px-1.5 py-0.5 font-mono text-[11px] transition-colors
 								{selectedFields.includes(field)
 								? 'border-transparent text-white'
@@ -222,36 +285,100 @@
 					{/each}
 				</div>
 
-				<div class="ml-auto flex items-center gap-1.5">
-					<!-- Manual refresh -->
+				<!-- Zoom controls + time range picker (far right) -->
+				<div class="ml-auto flex items-center gap-1">
 					<button
-						onclick={runQuery}
-						disabled={telemetryStore.isQuerying}
-						class="flex items-center gap-1 rounded p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-50"
-						title="Refresh"
+						onclick={() => zoom(1)}
+						title="Zoom in"
+						class="flex items-center rounded-md border border-border bg-background p-1 text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
 					>
-						<RefreshCwIcon class="size-3.5 {telemetryStore.isQuerying ? 'animate-spin' : ''}" />
+						<ZoomInIcon class="size-3.5" />
 					</button>
-
-					<!-- Auto-refresh toggle -->
 					<button
-						onclick={toggleAutoRefresh}
-						class="rounded px-2 py-0.5 text-xs transition-colors
-							{autoRefresh
-							? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
-							: 'bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground'}"
+						onclick={() => zoom(-1)}
+						title="Zoom out"
+						class="flex items-center rounded-md border border-border bg-background p-1 text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
 					>
-						Auto
+						<ZoomOutIcon class="size-3.5" />
 					</button>
 				</div>
-			</div>
+				<Popover.Root bind:open={popoverOpen}>
+					<Popover.Trigger>
+						{#snippet child({ props })}
+							<button
+								{...props}
+								class="flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1 text-xs font-medium text-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground
+									{popoverOpen ? 'border-ring ring-1 ring-ring' : ''}"
+							>
+								<CalendarIcon class="size-3.5 text-muted-foreground" />
+								<span>{timeFilterLabel}</span>
+								<ChevronDownIcon
+									class="size-3 text-muted-foreground transition-transform {popoverOpen
+										? 'rotate-180'
+										: ''}"
+								/>
+							</button>
+						{/snippet}
+					</Popover.Trigger>
+					<Popover.Content class="w-auto p-0 shadow-lg" align="end">
+						<div class="flex">
+							<!-- Left: calendar + time inputs -->
+							<div class="p-5">
+								<p
+									class="mb-3 text-xs font-semibold tracking-wider text-muted-foreground uppercase"
+								>
+									Custom range
+								</p>
+								<div class="mb-3 grid grid-cols-2 gap-3">
+									<div class="space-y-1.5">
+										<label class="text-xs font-medium text-muted-foreground">Start time</label>
+										<TimePicker bind:value={startTime} onchange={handleTimeInputChange} />
+									</div>
+									<div class="space-y-1.5">
+										<label class="text-xs font-medium text-muted-foreground">End time</label>
+										<TimePicker bind:value={endTime} onchange={handleTimeInputChange} />
+									</div>
+								</div>
+								<RangeCalendar
+									bind:value={calendarValue}
+									onValueChange={handleCalendarChange}
+									numberOfMonths={1}
+								/>
+							</div>
 
-			<!-- Measurement name -->
-			<div class="border-b px-4 py-2">
-				<span class="font-mono text-sm font-medium">{selectedMeasurement.name}</span>
-				{#if selectedMeasurement.error}
-					<span class="ml-2 text-xs text-destructive">{selectedMeasurement.error}</span>
-				{/if}
+							<!-- Divider -->
+							<div class="w-px self-stretch bg-border"></div>
+
+							<!-- Right: presets -->
+							<div class="relative w-36 self-stretch">
+								<div class="absolute inset-0 flex flex-col p-3">
+									<p
+										class="mb-2 px-2 text-xs font-semibold tracking-wider text-muted-foreground uppercase"
+									>
+										Quick range
+									</p>
+									<div class="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto">
+										{#each PRESETS as preset (preset.label)}
+											<button
+												onclick={() => selectPreset(preset.minutes)}
+												class="flex items-center justify-between rounded-md px-2 py-1.5 text-left text-xs transition-colors
+												{timeFilter.mode === 'relative' && timeFilter.minutes === preset.minutes
+													? 'bg-primary font-medium text-primary-foreground'
+													: 'text-foreground hover:bg-accent hover:text-accent-foreground'}"
+											>
+												<span>Last {preset.label}</span>
+												{#if timeFilter.mode === 'relative' && timeFilter.minutes === preset.minutes}
+													<span class="size-1.5 rounded-full bg-primary-foreground opacity-70"
+													></span>
+												{/if}
+											</button>
+										{/each}
+									</div>
+								</div>
+							</div>
+						</div>
+					</Popover.Content>
+				</Popover.Root>
 			</div>
 
 			<!-- Chart -->
