@@ -1161,7 +1161,7 @@ func TestDeviceTlmTsFrac(t *testing.T) {
 	fmt.Println(lp)
 
 	// Assert
-	assert.Equal(t, true, strings.Contains(lp, "lp_test.v1.DeviceTlmTsFrac,building=A,floor=1 temperature=12i,pressure=42i,humidity=88i 1257894000000000256"))
+	assert.Equal(t, true, strings.Contains(lp, "lp_test.v1.DeviceTlmTsFrac,__tag_building=A,__tag_floor=1 temperature=12i,pressure=42i,humidity=88i 1257894000000000256"))
 }
 
 func TestDeviceTlmTsSec(t *testing.T) {
@@ -1186,7 +1186,7 @@ func TestDeviceTlmTsSec(t *testing.T) {
 	fmt.Println(lp)
 
 	// Assert
-	assert.Equal(t, true, strings.Contains(lp, "lp_test.v1.DeviceTlmTsSec,twice=fingers temperature=12i,pressure=42i,humidity=88i 1257894000000000000"))
+	assert.Equal(t, true, strings.Contains(lp, "lp_test.v1.DeviceTlmTsSec,__tag_twice=fingers temperature=12i,pressure=42i,humidity=88i 1257894000000000000"))
 }
 
 func TestDeviceTlmTsMilli(t *testing.T) {
@@ -1313,7 +1313,7 @@ func TestDeviceTlmNestedTags(t *testing.T) {
 	fmt.Println(lp)
 
 	// Assert
-	assert.Equal(t, true, strings.Contains(lp, "lp_test.v1.DeviceTlmNestedTags,env.floor=two,env.temperature.field_temp=hot,level=one env.temperature=12i,env.pressure=42i,env.humidity=88i 1257894000000000"))
+	assert.Equal(t, true, strings.Contains(lp, "lp_test.v1.DeviceTlmNestedTags,__tag_env.floor=two,__tag_env.temperature.field_temp=hot,__tag_level=one env.temperature=12i,env.pressure=42i,env.humidity=88i 1257894000000000"))
 }
 
 func TestDeviceTlmFieldTags(t *testing.T) {
@@ -1338,7 +1338,7 @@ func TestDeviceTlmFieldTags(t *testing.T) {
 	fmt.Println(lp)
 
 	// Assert
-	assert.Equal(t, true, strings.Contains(lp, "lp_test.v1.DeviceTlmFieldTags,level=one,temperature.field_temp=hot temperature=12i,pressure=42i,humidity=88i 1257894000000000"))
+	assert.Equal(t, true, strings.Contains(lp, "lp_test.v1.DeviceTlmFieldTags,__tag_level=one,__tag_temperature.field_temp=hot temperature=12i,pressure=42i,humidity=88i 1257894000000000"))
 }
 
 func ptr[T any](t T) *T {

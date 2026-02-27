@@ -16,6 +16,31 @@ message EnvTlm {
 		}];
 }
 
+message SparseTlm {
+    option (mir.device.v1.message_type) = MESSAGE_TYPE_TELEMETRY;
+    optional int32  value_a = 1;
+    optional int32  value_b = 2;
+    optional string value_c = 3;
+}
+
+message AllTypesTlm {
+    option (mir.device.v1.message_type) = MESSAGE_TYPE_TELEMETRY;
+    bool     value_bool     = 1;
+    string   value_string   = 2;
+    int32    value_int32    = 3;
+    int64    value_int64    = 4;
+    sint32   value_sint32   = 5;
+    sint64   value_sint64   = 6;
+    sfixed32 value_sfixed32 = 7;
+    sfixed64 value_sfixed64 = 8;
+    uint32   value_uint32   = 9;
+    uint64   value_uint64   = 10;
+    fixed32  value_fixed32  = 11;
+    fixed64  value_fixed64  = 12;
+    float    value_float    = 13;
+    double   value_double   = 14;
+}
+
 message PowerTlm {
     option (mir.device.v1.message_type) = MESSAGE_TYPE_TELEMETRY;
     option (mir.device.v1.meta) = {

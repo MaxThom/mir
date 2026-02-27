@@ -82,6 +82,214 @@ func (x *EnvTlm) GetHumidity() int32 {
 	return 0
 }
 
+type SparseTlm struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ValueA        *int32                 `protobuf:"varint,1,opt,name=value_a,json=valueA,proto3,oneof" json:"value_a,omitempty"`
+	ValueB        *int32                 `protobuf:"varint,2,opt,name=value_b,json=valueB,proto3,oneof" json:"value_b,omitempty"`
+	ValueC        *string                `protobuf:"bytes,3,opt,name=value_c,json=valueC,proto3,oneof" json:"value_c,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SparseTlm) Reset() {
+	*x = SparseTlm{}
+	mi := &file_prototlm_test_v1_telemetry_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SparseTlm) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SparseTlm) ProtoMessage() {}
+
+func (x *SparseTlm) ProtoReflect() protoreflect.Message {
+	mi := &file_prototlm_test_v1_telemetry_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SparseTlm.ProtoReflect.Descriptor instead.
+func (*SparseTlm) Descriptor() ([]byte, []int) {
+	return file_prototlm_test_v1_telemetry_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *SparseTlm) GetValueA() int32 {
+	if x != nil && x.ValueA != nil {
+		return *x.ValueA
+	}
+	return 0
+}
+
+func (x *SparseTlm) GetValueB() int32 {
+	if x != nil && x.ValueB != nil {
+		return *x.ValueB
+	}
+	return 0
+}
+
+func (x *SparseTlm) GetValueC() string {
+	if x != nil && x.ValueC != nil {
+		return *x.ValueC
+	}
+	return ""
+}
+
+type AllTypesTlm struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ValueBool     bool                   `protobuf:"varint,1,opt,name=value_bool,json=valueBool,proto3" json:"value_bool,omitempty"`
+	ValueString   string                 `protobuf:"bytes,2,opt,name=value_string,json=valueString,proto3" json:"value_string,omitempty"`
+	ValueInt32    int32                  `protobuf:"varint,3,opt,name=value_int32,json=valueInt32,proto3" json:"value_int32,omitempty"`
+	ValueInt64    int64                  `protobuf:"varint,4,opt,name=value_int64,json=valueInt64,proto3" json:"value_int64,omitempty"`
+	ValueSint32   int32                  `protobuf:"zigzag32,5,opt,name=value_sint32,json=valueSint32,proto3" json:"value_sint32,omitempty"`
+	ValueSint64   int64                  `protobuf:"zigzag64,6,opt,name=value_sint64,json=valueSint64,proto3" json:"value_sint64,omitempty"`
+	ValueSfixed32 int32                  `protobuf:"fixed32,7,opt,name=value_sfixed32,json=valueSfixed32,proto3" json:"value_sfixed32,omitempty"`
+	ValueSfixed64 int64                  `protobuf:"fixed64,8,opt,name=value_sfixed64,json=valueSfixed64,proto3" json:"value_sfixed64,omitempty"`
+	ValueUint32   uint32                 `protobuf:"varint,9,opt,name=value_uint32,json=valueUint32,proto3" json:"value_uint32,omitempty"`
+	ValueUint64   uint64                 `protobuf:"varint,10,opt,name=value_uint64,json=valueUint64,proto3" json:"value_uint64,omitempty"`
+	ValueFixed32  uint32                 `protobuf:"fixed32,11,opt,name=value_fixed32,json=valueFixed32,proto3" json:"value_fixed32,omitempty"`
+	ValueFixed64  uint64                 `protobuf:"fixed64,12,opt,name=value_fixed64,json=valueFixed64,proto3" json:"value_fixed64,omitempty"`
+	ValueFloat    float32                `protobuf:"fixed32,13,opt,name=value_float,json=valueFloat,proto3" json:"value_float,omitempty"`
+	ValueDouble   float64                `protobuf:"fixed64,14,opt,name=value_double,json=valueDouble,proto3" json:"value_double,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AllTypesTlm) Reset() {
+	*x = AllTypesTlm{}
+	mi := &file_prototlm_test_v1_telemetry_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AllTypesTlm) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AllTypesTlm) ProtoMessage() {}
+
+func (x *AllTypesTlm) ProtoReflect() protoreflect.Message {
+	mi := &file_prototlm_test_v1_telemetry_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AllTypesTlm.ProtoReflect.Descriptor instead.
+func (*AllTypesTlm) Descriptor() ([]byte, []int) {
+	return file_prototlm_test_v1_telemetry_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *AllTypesTlm) GetValueBool() bool {
+	if x != nil {
+		return x.ValueBool
+	}
+	return false
+}
+
+func (x *AllTypesTlm) GetValueString() string {
+	if x != nil {
+		return x.ValueString
+	}
+	return ""
+}
+
+func (x *AllTypesTlm) GetValueInt32() int32 {
+	if x != nil {
+		return x.ValueInt32
+	}
+	return 0
+}
+
+func (x *AllTypesTlm) GetValueInt64() int64 {
+	if x != nil {
+		return x.ValueInt64
+	}
+	return 0
+}
+
+func (x *AllTypesTlm) GetValueSint32() int32 {
+	if x != nil {
+		return x.ValueSint32
+	}
+	return 0
+}
+
+func (x *AllTypesTlm) GetValueSint64() int64 {
+	if x != nil {
+		return x.ValueSint64
+	}
+	return 0
+}
+
+func (x *AllTypesTlm) GetValueSfixed32() int32 {
+	if x != nil {
+		return x.ValueSfixed32
+	}
+	return 0
+}
+
+func (x *AllTypesTlm) GetValueSfixed64() int64 {
+	if x != nil {
+		return x.ValueSfixed64
+	}
+	return 0
+}
+
+func (x *AllTypesTlm) GetValueUint32() uint32 {
+	if x != nil {
+		return x.ValueUint32
+	}
+	return 0
+}
+
+func (x *AllTypesTlm) GetValueUint64() uint64 {
+	if x != nil {
+		return x.ValueUint64
+	}
+	return 0
+}
+
+func (x *AllTypesTlm) GetValueFixed32() uint32 {
+	if x != nil {
+		return x.ValueFixed32
+	}
+	return 0
+}
+
+func (x *AllTypesTlm) GetValueFixed64() uint64 {
+	if x != nil {
+		return x.ValueFixed64
+	}
+	return 0
+}
+
+func (x *AllTypesTlm) GetValueFloat() float32 {
+	if x != nil {
+		return x.ValueFloat
+	}
+	return 0
+}
+
+func (x *AllTypesTlm) GetValueDouble() float64 {
+	if x != nil {
+		return x.ValueDouble
+	}
+	return 0
+}
+
 type PowerTlm struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Amp           float64                `protobuf:"fixed64,1,opt,name=amp,proto3" json:"amp,omitempty"`
@@ -93,7 +301,7 @@ type PowerTlm struct {
 
 func (x *PowerTlm) Reset() {
 	*x = PowerTlm{}
-	mi := &file_prototlm_test_v1_telemetry_proto_msgTypes[1]
+	mi := &file_prototlm_test_v1_telemetry_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -105,7 +313,7 @@ func (x *PowerTlm) String() string {
 func (*PowerTlm) ProtoMessage() {}
 
 func (x *PowerTlm) ProtoReflect() protoreflect.Message {
-	mi := &file_prototlm_test_v1_telemetry_proto_msgTypes[1]
+	mi := &file_prototlm_test_v1_telemetry_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -118,7 +326,7 @@ func (x *PowerTlm) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PowerTlm.ProtoReflect.Descriptor instead.
 func (*PowerTlm) Descriptor() ([]byte, []int) {
-	return file_prototlm_test_v1_telemetry_proto_rawDescGZIP(), []int{1}
+	return file_prototlm_test_v1_telemetry_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *PowerTlm) GetAmp() float64 {
@@ -152,7 +360,37 @@ const file_prototlm_test_v1_telemetry_proto_rawDesc = "" +
 	"\bpressure\x18\x02 \x01(\x05R\bpressure\x122\n" +
 	"\bhumidity\x18\x03 \x01(\x05B\x16\xb2\xbb\x18\x12\n" +
 	"\x10\n" +
-	"\bseverity\x12\x04highR\bhumidity:\x04\x88\xb5\x18\x01\"k\n" +
+	"\bseverity\x12\x04highR\bhumidity:\x04\x88\xb5\x18\x01\"\x8f\x01\n" +
+	"\tSparseTlm\x12\x1c\n" +
+	"\avalue_a\x18\x01 \x01(\x05H\x00R\x06valueA\x88\x01\x01\x12\x1c\n" +
+	"\avalue_b\x18\x02 \x01(\x05H\x01R\x06valueB\x88\x01\x01\x12\x1c\n" +
+	"\avalue_c\x18\x03 \x01(\tH\x02R\x06valueC\x88\x01\x01:\x04\x88\xb5\x18\x01B\n" +
+	"\n" +
+	"\b_value_aB\n" +
+	"\n" +
+	"\b_value_bB\n" +
+	"\n" +
+	"\b_value_c\"\xff\x03\n" +
+	"\vAllTypesTlm\x12\x1d\n" +
+	"\n" +
+	"value_bool\x18\x01 \x01(\bR\tvalueBool\x12!\n" +
+	"\fvalue_string\x18\x02 \x01(\tR\vvalueString\x12\x1f\n" +
+	"\vvalue_int32\x18\x03 \x01(\x05R\n" +
+	"valueInt32\x12\x1f\n" +
+	"\vvalue_int64\x18\x04 \x01(\x03R\n" +
+	"valueInt64\x12!\n" +
+	"\fvalue_sint32\x18\x05 \x01(\x11R\vvalueSint32\x12!\n" +
+	"\fvalue_sint64\x18\x06 \x01(\x12R\vvalueSint64\x12%\n" +
+	"\x0evalue_sfixed32\x18\a \x01(\x0fR\rvalueSfixed32\x12%\n" +
+	"\x0evalue_sfixed64\x18\b \x01(\x10R\rvalueSfixed64\x12!\n" +
+	"\fvalue_uint32\x18\t \x01(\rR\vvalueUint32\x12!\n" +
+	"\fvalue_uint64\x18\n" +
+	" \x01(\x04R\vvalueUint64\x12#\n" +
+	"\rvalue_fixed32\x18\v \x01(\aR\fvalueFixed32\x12#\n" +
+	"\rvalue_fixed64\x18\f \x01(\x06R\fvalueFixed64\x12\x1f\n" +
+	"\vvalue_float\x18\r \x01(\x02R\n" +
+	"valueFloat\x12!\n" +
+	"\fvalue_double\x18\x0e \x01(\x01R\vvalueDouble:\x04\x88\xb5\x18\x01\"k\n" +
 	"\bPowerTlm\x12\x10\n" +
 	"\x03amp\x18\x01 \x01(\x01R\x03amp\x12\x12\n" +
 	"\x04volt\x18\x02 \x01(\x01R\x04volt\x12\x14\n" +
@@ -176,10 +414,12 @@ func file_prototlm_test_v1_telemetry_proto_rawDescGZIP() []byte {
 	return file_prototlm_test_v1_telemetry_proto_rawDescData
 }
 
-var file_prototlm_test_v1_telemetry_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_prototlm_test_v1_telemetry_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_prototlm_test_v1_telemetry_proto_goTypes = []any{
-	(*EnvTlm)(nil),   // 0: prototlm_test.v1.EnvTlm
-	(*PowerTlm)(nil), // 1: prototlm_test.v1.PowerTlm
+	(*EnvTlm)(nil),      // 0: prototlm_test.v1.EnvTlm
+	(*SparseTlm)(nil),   // 1: prototlm_test.v1.SparseTlm
+	(*AllTypesTlm)(nil), // 2: prototlm_test.v1.AllTypesTlm
+	(*PowerTlm)(nil),    // 3: prototlm_test.v1.PowerTlm
 }
 var file_prototlm_test_v1_telemetry_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
@@ -194,13 +434,14 @@ func file_prototlm_test_v1_telemetry_proto_init() {
 	if File_prototlm_test_v1_telemetry_proto != nil {
 		return
 	}
+	file_prototlm_test_v1_telemetry_proto_msgTypes[1].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_prototlm_test_v1_telemetry_proto_rawDesc), len(file_prototlm_test_v1_telemetry_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
