@@ -426,6 +426,23 @@ func TestPublishCmdNoDeviceFound(t *testing.T) {
 	assert.Equal(t, respErr, "error sending command to devices: no device found with current targets criteria")
 }
 
+func TestPublishCmdListNoDeviceFound(t *testing.T) {
+	// Arrange — no device creation; target ID does not exist in DB
+
+	// Act
+	resp, err := cmd_client.PublishListCommandsRequest(mSdk.Bus, &mir_apiv1.SendListCommandsRequest{
+		Targets: &mir_apiv1.DeviceTarget{
+			Ids: []string{"nonexistent_cmd_device"},
+		},
+	})
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, "no device found with current targets criteria", resp.GetError())
+}
+
 func TestPublishCmdProtoNoValidationDryRun(t *testing.T) {
 	// Arrange
 	id := "proto_novalidation_dryrun"

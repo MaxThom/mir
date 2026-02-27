@@ -411,6 +411,10 @@ func (s *ProtoCmdServer) listCommandsSub(msg *mir.Msg, clientId string, req *mir
 		}
 	}
 
+	if len(devs) == 0 {
+		return nil, mng.ErrorNoDeviceFound
+	}
+
 	devsCmd := []*mir_apiv1.DevicesCommands{}
 	devSchemas := []*schemaPerDevices{}
 	for _, dev := range devs {

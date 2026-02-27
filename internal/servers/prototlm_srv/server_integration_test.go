@@ -795,6 +795,41 @@ func TestPublishTelemetryList(t *testing.T) {
 	}
 }
 
+func TestPublishTelemetryQueryNoDeviceFound(t *testing.T) {
+	// Arrange — no device creation; target ID does not exist in DB
+
+	// Act
+	resp, err := tlm_client.PublishTelemetryQueryRequest(mSdk.Bus, &mir_apiv1.QueryTelemetryRequest{
+		Targets: &mir_apiv1.DeviceTarget{
+			Ids: []string{"nonexistent_query_device"},
+		},
+		Measurement: "prototlm_test.v1.EnvTlm",
+	})
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, "no device found with current targets criteria", resp.GetError())
+}
+
+func TestPublishTelemetryListNoDeviceFound(t *testing.T) {
+	// Arrange — no device creation; target ID does not exist in DB
+
+	// Act
+	resp, err := tlm_client.PublishTelemetryListRequest(mSdk.Bus, &mir_apiv1.ListTelemetryRequest{
+		Targets: &mir_apiv1.DeviceTarget{
+			Ids: []string{"nonexistent_list_device"},
+		},
+	})
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, "no device found with current targets criteria", resp.GetError())
+}
+
 func TestPublishTelemetryListError(t *testing.T) {
 	// Arrange
 	s := swarm.NewSwarm(mSdk.Bus)

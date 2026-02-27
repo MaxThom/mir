@@ -164,6 +164,10 @@ func (s *ProtoCfgServer) listCfgSub(msg *mir.Msg, clientId string, req *mir_apiv
 		}
 	}
 
+	if len(devs) == 0 {
+		return nil, mng.ErrorNoDeviceFound
+	}
+
 	devsCfg := []*mir_apiv1.DevicesConfigs{}
 	devSchemas := []*schemaPerDevices{}
 	for _, dev := range devs {
