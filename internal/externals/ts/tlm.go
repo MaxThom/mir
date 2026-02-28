@@ -16,7 +16,7 @@ import (
 
 type TelemetryStore interface {
 	RetrieveMeasurementsFields(ctx context.Context, measurement string) ([]string, error)
-	Query(ctx context.Context, ids []string, measurement string, fields []string, start time.Time, end time.Time) (*mir_apiv1.QueryTelemetry, error)
+	Query(ctx context.Context, ids []string, measurement string, fields []string, start time.Time, end time.Time, aggregationWindow string) (*mir_apiv1.QueryTelemetry, error)
 	GetExploreQuery(ids []string, measurement string) string
 	WriteDatapoint(string)
 	Errors() <-chan error
@@ -126,11 +126,11 @@ func (s *influxTelemetryStore) GetExploreQuery(ids []string, measurement string)
 
 // TODO
 // [ ] integration tests
-func (s *influxTelemetryStore) Query(ctx context.Context, ids []string, measurement string, fields []string, start time.Time, end time.Time) (*mir_apiv1.QueryTelemetry, error) {
+func (s *influxTelemetryStore) Query(ctx context.Context, ids []string, measurement string, fields []string, start time.Time, end time.Time, aggregationWindow string) (*mir_apiv1.QueryTelemetry, error) {
 	values := mir_apiv1.QueryTelemetry{}
 
 	// Build and Execute Flux query
-	qry := generateInfluxQuery(s.bucket, ids, measurement, fields, start, end)
+	qry := generateInfluxQuery(s.bucket, ids, measurement, fields, start, end, aggregationWindow)
 	result, err := s.querier.Query(context.Background(), qry)
 	if err != nil {
 		return nil, err
@@ -199,7 +199,7 @@ func (s *influxTelemetryStore) Query(ctx context.Context, ids []string, measurem
 	return &values, nil
 }
 
-func generateInfluxQuery(bucket string, ids []string, measurement string, fields []string, start time.Time, end time.Time) string {
+func generateInfluxQuery(bucket string, ids []string, measurement string, fields []string, start time.Time, end time.Time, aggregationWindow string) string {
 	// Time
 	if start.IsZero() {
 		// 1h default
@@ -230,9 +230,16 @@ func generateInfluxQuery(bucket string, ids []string, measurement string, fields
 		fieldsFilter = fmt.Sprintf("|> filter(fn: (r) => %s)", strings.Join(fieldConds, " or "))
 	}
 
+	// Aggregation window
+	aggregateStep := ""
+	if aggregationWindow != "" {
+		aggregateStep = fmt.Sprintf("|> aggregateWindow(every: %s, fn: mean, createEmpty: false)", aggregationWindow)
+	}
+
 	return fmt.Sprintf(`from(bucket:"%s")
 		%s
 		|> filter(fn: (r) => r["_measurement"] == "%s")
+		%s
 		%s
 		%s
 		|> pivot(
@@ -242,7 +249,7 @@ func generateInfluxQuery(bucket string, ids []string, measurement string, fields
 		)
 		|> group()
 		|> sort(columns: ["_time"], desc: false)
-		`, bucket, timeFilter, measurement, idsFilter, fieldsFilter)
+		`, bucket, timeFilter, measurement, idsFilter, fieldsFilter, aggregateStep)
 }
 
 func generateDataConvFn(datatype string) (mir_apiv1.DataType, func(val any) *mir_apiv1.QueryTelemetry_Row_DataPoint, error) {

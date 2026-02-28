@@ -365,7 +365,7 @@ func (s *ProtoTlmServer) handleTelemetryQueryRequest(msg *mir.Msg, clientId stri
 		ids = append(ids, dev.Spec.DeviceId)
 	}
 
-	values, err := s.tlmStore.Query(s.ctx, ids, req.Measurement, req.Fields, mir_v1.AsGoTime(req.StartTime), mir_v1.AsGoTime(req.EndTime))
+	values, err := s.tlmStore.Query(s.ctx, ids, req.Measurement, req.Fields, mir_v1.AsGoTime(req.StartTime), mir_v1.AsGoTime(req.EndTime), req.GetAggregationWindow())
 	if err != nil {
 		l.Error().Err(err).Msg("error querying telemetry from tsdb")
 		requestErrorTotal.WithLabelValues("query").Inc()

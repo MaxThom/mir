@@ -2,17 +2,19 @@
 	import type { ChartConfig } from '$lib/shared/components/shadcn/chart';
 	import { ChartContainer, ChartTooltip } from '$lib/shared/components/shadcn/chart';
 	import { LineChart } from 'layerchart';
-	import { scaleUtc } from 'd3-scale';
+	import { scaleUtc, scaleTime } from 'd3-scale';
 	import type { QueryData } from '@mir/sdk';
 
 	let {
 		data,
 		selectedFields,
-		chartConfig
+		chartConfig,
+		useUtc = false
 	}: {
 		data: QueryData;
 		selectedFields: string[];
 		chartConfig: ChartConfig;
+		useUtc?: boolean;
 	} = $props();
 
 	// Flat chart rows: { _time: Date, __id: string, [field]: value }
@@ -45,8 +47,35 @@
 		}))
 	);
 
-	function formatTime(d: Date): string {
-		return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+	const tz = $derived(useUtc ? 'UTC' : undefined);
+
+	// X-axis tick labels: just HH:MM(:SS if seconds vary)
+	function formatAxisTime(d: Date): string {
+		return d.toLocaleTimeString([], {
+			hour: '2-digit',
+			minute: '2-digit',
+			hour12: false,
+			timeZone: tz
+		});
+	}
+
+	// Tooltip header: "Feb 27 · 14:23:45 UTC" or "Feb 27 · 14:23:45"
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	function formatTooltipLabel(value: any): string {
+		if (!(value instanceof Date)) return String(value);
+		const date = value.toLocaleDateString([], {
+			month: 'short',
+			day: 'numeric',
+			timeZone: tz
+		});
+		const time = value.toLocaleTimeString([], {
+			hour: '2-digit',
+			minute: '2-digit',
+			second: '2-digit',
+			hour12: false,
+			timeZone: tz
+		});
+		return useUtc ? `${date} · ${time} UTC` : `${date} · ${time}`;
 	}
 </script>
 
@@ -59,17 +88,17 @@
 		<LineChart
 			data={chartRows}
 			x="_time"
-			xScale={scaleUtc()}
+			xScale={useUtc ? scaleUtc() : scaleTime()}
 			{series}
 			{yDomain}
 			padding={{ top: 8, right: 16, bottom: 32, left: 56 }}
 			props={{
 				spline: { strokeWidth: 2 },
-				xAxis: { format: formatTime, tickSpacing: 100 }
+				xAxis: { format: formatAxisTime, tickSpacing: 100 }
 			}}
 		>
 			{#snippet tooltip()}
-				<ChartTooltip />
+				<ChartTooltip labelFormatter={formatTooltipLabel} />
 			{/snippet}
 		</LineChart>
 	</ChartContainer>

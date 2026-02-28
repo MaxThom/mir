@@ -25,6 +25,7 @@ message QueryTelemetryRequest {
   repeated string fields = 3; // List of fields to query, if empty, query all fields
   Timestamp start_time = 4; // Start time of the query
   Timestamp end_time = 5; // End time of the query
+  optional string aggregation_window = 6; // e.g. "10s", "1m", "5m", "1h" — empty means raw data
 }
 
 message QueryTelemetryResponse {

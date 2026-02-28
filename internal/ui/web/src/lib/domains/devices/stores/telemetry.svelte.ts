@@ -32,7 +32,8 @@ class TelemetryStore {
 		measurement: string,
 		fields: string[],
 		start: Date,
-		end: Date
+		end: Date,
+		aggregationWindow?: string
 	) {
 		this.isQuerying = true;
 		this.queryError = null;
@@ -42,7 +43,7 @@ class TelemetryStore {
 			const result = await mir
 				.client()
 				.queryTelemetry()
-				.request(target, measurement, fields, start, end);
+				.request(target, measurement, fields, start, end, aggregationWindow);
 			this.queryData = result;
 		} catch (err) {
 			this.queryError = err instanceof Error ? err.message : 'Failed to query telemetry';

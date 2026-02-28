@@ -122,6 +122,7 @@ export class QueryTelemetry {
     fields: string[],
     start: Date,
     end: Date,
+    aggregationWindow?: string,
   ): Promise<QueryData> {
     const sbj = queryTelemetryRoute.WithId(this.mir.getInstanceName());
 
@@ -131,6 +132,7 @@ export class QueryTelemetry {
       fields,
       startTime: dateToTimestamp(start),
       endTime: dateToTimestamp(end),
+      aggregationWindow: aggregationWindow ?? '',
     });
     const payload = toBinary(QueryTelemetryRequestSchema, req);
 
