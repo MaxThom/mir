@@ -16,6 +16,7 @@
 	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
 	import ZoomInIcon from '@lucide/svelte/icons/zoom-in';
 	import ZoomOutIcon from '@lucide/svelte/icons/zoom-out';
+	import { editorPrefs } from '$lib/shared/stores/editor-prefs.svelte';
 	import type { DateRange } from 'bits-ui';
 	import { getLocalTimeZone, fromDate } from '@internationalized/date';
 	import { SvelteDate } from 'svelte/reactivity';
@@ -65,7 +66,6 @@
 	let calendarValue = $state<DateRange | undefined>(undefined);
 	let startTime = $state('00:00');
 	let endTime = $state('23:59');
-	let useUtc = $state(false);
 
 	// ─── Adapters ─────────────────────────────────────────────────────────────
 
@@ -314,16 +314,6 @@
 					>
 						<ZoomOutIcon class="size-3.5" />
 					</button>
-					<button
-						onclick={() => (useUtc = !useUtc)}
-						title="Toggle UTC / local time"
-						class="rounded-md border border-border bg-background px-2 py-1 font-mono text-[11px] font-medium shadow-sm transition-colors
-							{useUtc
-							? 'border-primary/50 bg-primary/10 text-primary'
-							: 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'}"
-					>
-						{useUtc ? 'UTC' : 'Local'}
-					</button>
 				</div>
 				<Popover.Root bind:open={popoverOpen}>
 					<Popover.Trigger>
@@ -413,7 +403,7 @@
 						Loading data…
 					</div>
 				{:else if telemetryStore.queryData}
-					<TlmChart data={telemetryStore.queryData} {selectedFields} {chartConfig} {useUtc} />
+					<TlmChart data={telemetryStore.queryData} {selectedFields} {chartConfig} useUtc={editorPrefs.utc} />
 				{/if}
 			</div>
 		{/if}
