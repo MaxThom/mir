@@ -177,9 +177,10 @@
 	// ─── Time filter label ────────────────────────────────────────────────────
 
 	let timeFilterLabel = $derived.by(() => {
-		if (timeFilter.mode === 'relative') {
-			const preset = PRESETS.find((p) => p.minutes === timeFilter.minutes);
-			return `Last ${preset?.label ?? timeFilter.minutes + 'm'}`;
+		const f = timeFilter;
+		if (f.mode === 'relative') {
+			const preset = PRESETS.find((p) => p.minutes === f.minutes);
+			return `Last ${preset?.label ?? f.minutes + 'm'}`;
 		}
 		const tz = editorPrefs.utc ? 'UTC' : undefined;
 		const fmt = (d: Date) =>
@@ -190,7 +191,7 @@
 				minute: '2-digit',
 				timeZone: tz
 			});
-		return `${fmt(timeFilter.start)} – ${fmt(timeFilter.end)}${editorPrefs.utc ? ' (UTC)' : ''}`;
+		return `${fmt(f.start)} – ${fmt(f.end)}${editorPrefs.utc ? ' (UTC)' : ''}`;
 	});
 
 	// ─── Context & lifecycle ──────────────────────────────────────────────────
@@ -302,7 +303,6 @@
 		const delta = (end.getTime() - start.getTime()) * 0.25 * factor;
 		const newStart = new Date(start.getTime() + delta);
 		const newEnd = new Date(end.getTime() - delta);
-		console.log('zoom start:', newStart, 'end:', newEnd);
 		if (newEnd.getTime() <= newStart.getTime() + 1000) return;
 		timeFilter = { mode: 'absolute', start: newStart, end: newEnd };
 		hasZoomed = true;
@@ -492,11 +492,11 @@
 								</p>
 								<div class="mb-3 grid grid-cols-2 gap-3">
 									<div class="space-y-1.5">
-										<label class="text-xs font-medium text-muted-foreground">Start time</label>
+										<span class="text-xs font-medium text-muted-foreground">Start time</span>
 										<TimePicker bind:value={startTime} onchange={handleTimeInputChange} />
 									</div>
 									<div class="space-y-1.5">
-										<label class="text-xs font-medium text-muted-foreground">End time</label>
+										<span class="text-xs font-medium text-muted-foreground">End time</span>
 										<TimePicker bind:value={endTime} onchange={handleTimeInputChange} />
 									</div>
 								</div>
