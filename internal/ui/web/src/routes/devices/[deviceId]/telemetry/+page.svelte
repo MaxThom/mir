@@ -140,7 +140,12 @@
 
 	function getTimeRange(): { start: Date; end: Date } {
 		if (timeFilter.mode === 'absolute') {
-			return { start: timeFilter.start, end: timeFilter.end };
+			const start = timeFilter.start;
+			const end =
+				timeFilter.end.getTime() <= start.getTime()
+					? new Date(start.getTime() + 1000)
+					: timeFilter.end;
+			return { start, end };
 		}
 		const end = new Date();
 		const start = new Date(end.getTime() - timeFilter.minutes * 60 * 1000);
@@ -196,6 +201,8 @@
 		const delta = (end.getTime() - start.getTime()) * 0.25 * factor;
 		const newStart = new Date(start.getTime() + delta);
 		const newEnd = new Date(end.getTime() - delta);
+		console.log('zoom start:', newStart, 'end:', newEnd);
+		if (newEnd.getTime() <= newStart.getTime() + 1000) return;
 		const tz = getLocalTimeZone();
 		timeFilter = { mode: 'absolute', start: newStart, end: newEnd };
 		calendarValue = { start: fromDate(newStart, tz), end: fromDate(newEnd, tz) };
