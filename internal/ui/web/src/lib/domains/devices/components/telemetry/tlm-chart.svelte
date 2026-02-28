@@ -11,7 +11,8 @@
 		chartConfig,
 		useUtc = false,
 		start = null,
-		end = null
+		end = null,
+		onBrushSelect
 	}: {
 		data: QueryData;
 		selectedFields: string[];
@@ -19,6 +20,7 @@
 		useUtc?: boolean;
 		start?: Date | null;
 		end?: Date | null;
+		onBrushSelect?: (start: Date, end: Date) => void;
 	} = $props();
 
 	// Flat chart rows: { _time: Date, __id: string, [field]: value }
@@ -93,6 +95,15 @@
 			{series}
 			{yDomain}
 			padding={{ top: 8, right: 16, bottom: 32, left: 56 }}
+			brush={{
+				axis: 'x',
+				resetOnEnd: true,
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				onBrushEnd: (detail: any) => {
+					const [s, e] = detail.xDomain as [Date, Date];
+					if (s && e && s.getTime() < e.getTime()) onBrushSelect?.(s, e);
+				}
+			}}
 			props={{
 				spline: { strokeWidth: 2 },
 				xAxis: { format: formatAxisTime, tickSpacing: 100 }
