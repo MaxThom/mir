@@ -9,12 +9,16 @@
 		data,
 		selectedFields,
 		chartConfig,
-		useUtc = false
+		useUtc = false,
+		start = null,
+		end = null
 	}: {
 		data: QueryData;
 		selectedFields: string[];
 		chartConfig: ChartConfig;
 		useUtc?: boolean;
+		start?: Date | null;
+		end?: Date | null;
 	} = $props();
 
 	// Flat chart rows: { _time: Date, __id: string, [field]: value }
@@ -79,16 +83,13 @@
 	}
 </script>
 
-{#if !chartRows.length}
-	<div class="flex h-48 items-center justify-center text-sm text-muted-foreground">
-		No data in this time range.
-	</div>
-{:else}
+<div class="relative">
 	<ChartContainer config={chartConfig} class="h-72 w-full">
 		<LineChart
 			data={chartRows}
 			x="_time"
 			xScale={useUtc ? scaleUtc() : scaleTime()}
+			xDomain={start && end ? [start, end] : undefined}
 			{series}
 			{yDomain}
 			padding={{ top: 8, right: 16, bottom: 32, left: 56 }}
@@ -102,4 +103,11 @@
 			{/snippet}
 		</LineChart>
 	</ChartContainer>
-{/if}
+	{#if !chartRows.length}
+		<div class="absolute inset-0 flex items-center justify-center">
+			<p class="rounded-md bg-background/80 px-3 py-1.5 text-sm text-muted-foreground">
+				No data in this time range.
+			</p>
+		</div>
+	{/if}
+</div>

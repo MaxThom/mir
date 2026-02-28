@@ -66,6 +66,8 @@
 	let calendarValue = $state<DateRange | undefined>(undefined);
 	let startTime = $state('00:00');
 	let endTime = $state('23:59');
+	let queryStart = $state<Date | null>(null);
+	let queryEnd = $state<Date | null>(null);
 
 	// ─── Adapters ─────────────────────────────────────────────────────────────
 
@@ -158,6 +160,8 @@
 	function runQuery() {
 		if (!mirStore.mir || !selectedMeasurement) return;
 		const { start, end } = getTimeRange();
+		queryStart = start;
+		queryEnd = end;
 		const aggWindow = getAggregationWindow(start, end);
 		telemetryStore.queryMeasurement(
 			mirStore.mir,
@@ -403,7 +407,14 @@
 						Loading data…
 					</div>
 				{:else if telemetryStore.queryData}
-					<TlmChart data={telemetryStore.queryData} {selectedFields} {chartConfig} useUtc={editorPrefs.utc} />
+					<TlmChart
+						data={telemetryStore.queryData}
+						{selectedFields}
+						{chartConfig}
+						useUtc={editorPrefs.utc}
+						start={queryStart}
+						end={queryEnd}
+					/>
 				{/if}
 			</div>
 		{/if}
