@@ -65,6 +65,7 @@
 	let calendarValue = $state<DateRange | undefined>(undefined);
 	let startTime = $state('00:00');
 	let endTime = $state('23:59');
+	let useUtc = $state(false);
 
 	// ─── Adapters ─────────────────────────────────────────────────────────────
 
@@ -144,16 +145,28 @@
 		return { start, end };
 	}
 
+	function getAggregationWindow(start: Date, end: Date): string | undefined {
+		const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+		if (hours < 1) return undefined; // raw
+		if (hours < 6) return '10s';
+		if (hours < 24) return '1m';
+		if (hours < 168) return '10m'; // < 7d
+		if (hours < 720) return '1h'; // < 30d
+		return '6h';
+	}
+
 	function runQuery() {
 		if (!mirStore.mir || !selectedMeasurement) return;
 		const { start, end } = getTimeRange();
+		const aggWindow = getAggregationWindow(start, end);
 		telemetryStore.queryMeasurement(
 			mirStore.mir,
 			deviceId,
 			selectedMeasurement.name,
 			selectedFields,
 			start,
-			end
+			end,
+			aggWindow
 		);
 	}
 
@@ -301,6 +314,16 @@
 					>
 						<ZoomOutIcon class="size-3.5" />
 					</button>
+					<button
+						onclick={() => (useUtc = !useUtc)}
+						title="Toggle UTC / local time"
+						class="rounded-md border border-border bg-background px-2 py-1 font-mono text-[11px] font-medium shadow-sm transition-colors
+							{useUtc
+							? 'border-primary/50 bg-primary/10 text-primary'
+							: 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'}"
+					>
+						{useUtc ? 'UTC' : 'Local'}
+					</button>
 				</div>
 				<Popover.Root bind:open={popoverOpen}>
 					<Popover.Trigger>
@@ -390,7 +413,7 @@
 						Loading data…
 					</div>
 				{:else if telemetryStore.queryData}
-					<TlmChart data={telemetryStore.queryData} {selectedFields} {chartConfig} />
+					<TlmChart data={telemetryStore.queryData} {selectedFields} {chartConfig} {useUtc} />
 				{/if}
 			</div>
 		{/if}

@@ -264,14 +264,15 @@ func (*ListTelemetryResponse_Ok) isListTelemetryResponse_Response() {}
 func (*ListTelemetryResponse_Error) isListTelemetryResponse_Response() {}
 
 type QueryTelemetryRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Targets       *DeviceTarget          `protobuf:"bytes,1,opt,name=targets,proto3" json:"targets,omitempty"`                      // To target a set of devices, search using ids, labels and annotations
-	Measurement   string                 `protobuf:"bytes,2,opt,name=measurement,proto3" json:"measurement,omitempty"`              // Measurement to query
-	Fields        []string               `protobuf:"bytes,3,rep,name=fields,proto3" json:"fields,omitempty"`                        // List of fields to query, if empty, query all fields
-	StartTime     *Timestamp             `protobuf:"bytes,4,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"` // Start time of the query
-	EndTime       *Timestamp             `protobuf:"bytes,5,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`       // End time of the query
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	Targets           *DeviceTarget          `protobuf:"bytes,1,opt,name=targets,proto3" json:"targets,omitempty"`                                                    // To target a set of devices, search using ids, labels and annotations
+	Measurement       string                 `protobuf:"bytes,2,opt,name=measurement,proto3" json:"measurement,omitempty"`                                            // Measurement to query
+	Fields            []string               `protobuf:"bytes,3,rep,name=fields,proto3" json:"fields,omitempty"`                                                      // List of fields to query, if empty, query all fields
+	StartTime         *Timestamp             `protobuf:"bytes,4,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`                               // Start time of the query
+	EndTime           *Timestamp             `protobuf:"bytes,5,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`                                     // End time of the query
+	AggregationWindow *string                `protobuf:"bytes,6,opt,name=aggregation_window,json=aggregationWindow,proto3,oneof" json:"aggregation_window,omitempty"` // e.g. "10s", "1m", "5m", "1h" — empty means raw data
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *QueryTelemetryRequest) Reset() {
@@ -337,6 +338,13 @@ func (x *QueryTelemetryRequest) GetEndTime() *Timestamp {
 		return x.EndTime
 	}
 	return nil
+}
+
+func (x *QueryTelemetryRequest) GetAggregationWindow() string {
+	if x != nil && x.AggregationWindow != nil {
+		return *x.AggregationWindow
+	}
+	return ""
 }
 
 type QueryTelemetryResponse struct {
@@ -895,14 +903,16 @@ const file_mir_api_v1_tlm_proto_rawDesc = "" +
 	"\x02ok\x18\x01 \x01(\v2\x1d.mir_api.v1.TelemetryResponseH\x00R\x02ok\x12\x16\n" +
 	"\x05error\x18\x02 \x01(\tH\x00R\x05errorB\n" +
 	"\n" +
-	"\bresponse\"\xed\x01\n" +
+	"\bresponse\"\xb8\x02\n" +
 	"\x15QueryTelemetryRequest\x122\n" +
 	"\atargets\x18\x01 \x01(\v2\x18.mir_api.v1.DeviceTargetR\atargets\x12 \n" +
 	"\vmeasurement\x18\x02 \x01(\tR\vmeasurement\x12\x16\n" +
 	"\x06fields\x18\x03 \x03(\tR\x06fields\x124\n" +
 	"\n" +
 	"start_time\x18\x04 \x01(\v2\x15.mir_api.v1.TimestampR\tstartTime\x120\n" +
-	"\bend_time\x18\x05 \x01(\v2\x15.mir_api.v1.TimestampR\aendTime\"j\n" +
+	"\bend_time\x18\x05 \x01(\v2\x15.mir_api.v1.TimestampR\aendTime\x122\n" +
+	"\x12aggregation_window\x18\x06 \x01(\tH\x00R\x11aggregationWindow\x88\x01\x01B\x15\n" +
+	"\x13_aggregation_window\"j\n" +
 	"\x16QueryTelemetryResponse\x12,\n" +
 	"\x02ok\x18\x01 \x01(\v2\x1a.mir_api.v1.QueryTelemetryH\x00R\x02ok\x12\x16\n" +
 	"\x05error\x18\x02 \x01(\tH\x00R\x05errorB\n" +
@@ -1059,6 +1069,7 @@ func file_mir_api_v1_tlm_proto_init() {
 		(*ListTelemetryResponse_Ok)(nil),
 		(*ListTelemetryResponse_Error)(nil),
 	}
+	file_mir_api_v1_tlm_proto_msgTypes[2].OneofWrappers = []any{}
 	file_mir_api_v1_tlm_proto_msgTypes[3].OneofWrappers = []any{
 		(*QueryTelemetryResponse_Ok)(nil),
 		(*QueryTelemetryResponse_Error)(nil),
