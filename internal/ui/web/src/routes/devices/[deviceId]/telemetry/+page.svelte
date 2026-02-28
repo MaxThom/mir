@@ -16,6 +16,7 @@
 	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
 	import ZoomInIcon from '@lucide/svelte/icons/zoom-in';
 	import ZoomOutIcon from '@lucide/svelte/icons/zoom-out';
+	import RotateCcwIcon from '@lucide/svelte/icons/rotate-ccw';
 	import { editorPrefs } from '$lib/shared/stores/editor-prefs.svelte';
 	import type { DateRange } from 'bits-ui';
 	import { getLocalTimeZone, fromDate } from '@internationalized/date';
@@ -68,6 +69,8 @@
 	let endTime = $state('23:59');
 	let queryStart = $state<Date | null>(null);
 	let queryEnd = $state<Date | null>(null);
+	let baseTimeFilter = $state<TimeFilter>({ mode: 'relative', minutes: 5 });
+	let hasZoomed = $state(false);
 
 	// ─── Adapters ─────────────────────────────────────────────────────────────
 
@@ -104,14 +107,16 @@
 			const preset = PRESETS.find((p) => p.minutes === timeFilter.minutes);
 			return `Last ${preset?.label ?? timeFilter.minutes + 'm'}`;
 		}
+		const tz = editorPrefs.utc ? 'UTC' : undefined;
 		const fmt = (d: Date) =>
 			d.toLocaleDateString([], {
 				month: 'short',
 				day: 'numeric',
 				hour: '2-digit',
-				minute: '2-digit'
+				minute: '2-digit',
+				timeZone: tz
 			});
-		return `${fmt(timeFilter.start)} – ${fmt(timeFilter.end)}`;
+		return `${fmt(timeFilter.start)} – ${fmt(timeFilter.end)}${editorPrefs.utc ? ' (UTC)' : ''}`;
 	});
 
 	// ─── Context & lifecycle ──────────────────────────────────────────────────
@@ -133,6 +138,18 @@
 			selectedFields = [];
 			telemetryStore.reset();
 			telemetryStore.loadMeasurements(mirStore.mir, deviceId);
+		}
+	});
+
+	// Keep calendarValue and time inputs in sync with timeFilter and UTC preference
+	$effect(() => {
+		if (timeFilter.mode === 'absolute') {
+			const tz = editorPrefs.utc ? 'UTC' : getLocalTimeZone();
+			calendarValue = { start: fromDate(timeFilter.start, tz), end: fromDate(timeFilter.end, tz) };
+			const getH = (d: Date) => (editorPrefs.utc ? d.getUTCHours() : d.getHours());
+			const getM = (d: Date) => (editorPrefs.utc ? d.getUTCMinutes() : d.getMinutes());
+			startTime = `${String(getH(timeFilter.start)).padStart(2, '0')}:${String(getM(timeFilter.start)).padStart(2, '0')}`;
+			endTime = `${String(getH(timeFilter.end)).padStart(2, '0')}:${String(getM(timeFilter.end)).padStart(2, '0')}`;
 		}
 	});
 
@@ -191,9 +208,18 @@
 
 	function selectPreset(minutes: number) {
 		timeFilter = { mode: 'relative', minutes };
+		baseTimeFilter = timeFilter;
+		hasZoomed = false;
 		calendarValue = undefined;
 		runQuery();
 		popoverOpen = false;
+	}
+
+	function handleBrushSelect(newStart: Date, newEnd: Date) {
+		if (newEnd.getTime() <= newStart.getTime() + 1000) return;
+		timeFilter = { mode: 'absolute', start: newStart, end: newEnd };
+		hasZoomed = true;
+		runQuery();
 	}
 
 	function zoom(factor: number) {
@@ -203,11 +229,14 @@
 		const newEnd = new Date(end.getTime() - delta);
 		console.log('zoom start:', newStart, 'end:', newEnd);
 		if (newEnd.getTime() <= newStart.getTime() + 1000) return;
-		const tz = getLocalTimeZone();
 		timeFilter = { mode: 'absolute', start: newStart, end: newEnd };
-		calendarValue = { start: fromDate(newStart, tz), end: fromDate(newEnd, tz) };
-		startTime = `${String(newStart.getHours()).padStart(2, '0')}:${String(newStart.getMinutes()).padStart(2, '0')}`;
-		endTime = `${String(newEnd.getHours()).padStart(2, '0')}:${String(newEnd.getMinutes()).padStart(2, '0')}`;
+		hasZoomed = true;
+		runQuery();
+	}
+
+	function resetZoom() {
+		timeFilter = baseTimeFilter;
+		hasZoomed = false;
 		runQuery();
 	}
 
@@ -230,6 +259,8 @@
 	let prevPopoverOpen = false;
 	$effect(() => {
 		if (prevPopoverOpen && !popoverOpen && timeFilter.mode === 'absolute') {
+			baseTimeFilter = timeFilter;
+			hasZoomed = false;
 			runQuery();
 		}
 		prevPopoverOpen = popoverOpen;
@@ -239,10 +270,16 @@
 		if (value?.start && value?.end) {
 			const [startH, startM] = startTime.split(':').map(Number);
 			const [endH, endM] = endTime.split(':').map(Number);
-			const start = value.start.toDate(getLocalTimeZone());
-			start.setHours(startH, startM, 0, 0);
-			const end = value.end.toDate(getLocalTimeZone());
-			end.setHours(endH, endM, 59, 999);
+			const tz = editorPrefs.utc ? 'UTC' : getLocalTimeZone();
+			const start = value.start.toDate(tz);
+			const end = value.end.toDate(tz);
+			if (editorPrefs.utc) {
+				start.setUTCHours(startH, startM, 0, 0);
+				end.setUTCHours(endH, endM, 59, 999);
+			} else {
+				start.setHours(startH, startM, 0, 0);
+				end.setHours(endH, endM, 59, 999);
+			}
 			timeFilter = { mode: 'absolute', start, end };
 		}
 	}
@@ -252,9 +289,14 @@
 			const [startH, startM] = startTime.split(':').map(Number);
 			const [endH, endM] = endTime.split(':').map(Number);
 			const start = new SvelteDate(timeFilter.start);
-			start.setHours(startH, startM, 0, 0);
 			const end = new SvelteDate(timeFilter.end);
-			end.setHours(endH, endM, 59, 999);
+			if (editorPrefs.utc) {
+				start.setUTCHours(startH, startM, 0, 0);
+				end.setUTCHours(endH, endM, 59, 999);
+			} else {
+				start.setHours(startH, startM, 0, 0);
+				end.setHours(endH, endM, 59, 999);
+			}
 			timeFilter = { mode: 'absolute', start, end };
 		}
 	}
@@ -311,6 +353,15 @@
 
 				<!-- Zoom controls + time range picker (far right) -->
 				<div class="ml-auto flex items-center gap-1">
+					{#if hasZoomed}
+						<button
+							onclick={resetZoom}
+							title="Reset to last selection"
+							class="flex items-center rounded-md border border-border bg-background p-1 text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+						>
+							<RotateCcwIcon class="size-3.5" />
+						</button>
+					{/if}
 					<button
 						onclick={() => zoom(1)}
 						title="Zoom in"
@@ -351,7 +402,7 @@
 								<p
 									class="mb-3 text-xs font-semibold tracking-wider text-muted-foreground uppercase"
 								>
-									Custom range
+									Custom range{editorPrefs.utc ? ' (UTC)' : ''}
 								</p>
 								<div class="mb-3 grid grid-cols-2 gap-3">
 									<div class="space-y-1.5">
@@ -421,6 +472,7 @@
 						useUtc={editorPrefs.utc}
 						start={queryStart}
 						end={queryEnd}
+						onBrushSelect={handleBrushSelect}
 					/>
 				{/if}
 			</div>
