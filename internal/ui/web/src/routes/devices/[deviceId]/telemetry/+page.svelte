@@ -22,6 +22,8 @@
 	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
 	import CopyIcon from '@lucide/svelte/icons/copy';
 	import CheckIcon from '@lucide/svelte/icons/check';
+	import MaximizeIcon from '@lucide/svelte/icons/maximize';
+	import MinimizeIcon from '@lucide/svelte/icons/minimize';
 	import CodeBlock from '$lib/shared/components/ui/code-block/code-block.svelte';
 	import { editorPrefs } from '$lib/shared/stores/editor-prefs.svelte';
 	import { contextStore } from '$lib/domains/contexts/stores/contexts.svelte';
@@ -80,6 +82,7 @@
 	let hasZoomed = $state(false);
 	let activeTab = $state('');
 	let copied = $state(false);
+	let fullscreen = $state(false);
 
 	// ─── Grafana Explore URL ──────────────────────────────────────────────────
 
@@ -377,6 +380,12 @@
 	}
 </script>
 
+<svelte:window
+	onkeydown={(e) => {
+		if (e.key === 'Escape' && fullscreen) fullscreen = false;
+	}}
+/>
+
 <div class="-m-4 flex min-h-125 overflow-hidden rounded-none border-y">
 	<!-- Left: measurement list -->
 	<DescriptorPanel
@@ -391,7 +400,11 @@
 	/>
 
 	<!-- Right: chart area -->
-	<div class="flex min-w-0 flex-1 flex-col overflow-hidden">
+	<div
+		class="{fullscreen
+			? 'fixed inset-0 z-50 bg-background'
+			: 'min-w-0 flex-1'} flex flex-col overflow-hidden"
+	>
 		{#if !selectedMeasurement}
 			<div class="flex flex-1 flex-col items-center justify-center gap-3 text-muted-foreground">
 				<ActivityIcon class="size-8 opacity-30" />
@@ -399,7 +412,7 @@
 			</div>
 		{:else}
 			<!-- Measurement name -->
-			<div class="flex items-center gap-2 border-b px-4 py-2.25">
+			<div class="flex items-center gap-2 border-b px-4 py-1.5">
 				<span class="font-mono text-sm font-medium">{selectedMeasurement.name}</span>
 				{#if grafanaUrl}
 					<a
@@ -415,29 +428,7 @@
 				{#if selectedMeasurement.error}
 					<span class="text-xs text-destructive">{selectedMeasurement.error}</span>
 				{/if}
-			</div>
-
-			<!-- Toolbar -->
-			<div class="flex flex-wrap items-center gap-2 border-b px-4 py-1.25">
-				<!-- Field toggles -->
-				<div class="flex flex-wrap gap-1">
-					{#each selectedMeasurement.fields as field, i (field)}
-						<button
-							onclick={(e) => toggleField(field, e.shiftKey)}
-							class="flex items-center gap-1 rounded-sm border px-1.5 py-0.5 font-mono text-[11px] transition-colors
-								{selectedFields.includes(field)
-								? 'border-transparent text-white'
-								: 'border-border/60 bg-muted/40 text-muted-foreground hover:bg-accent'}"
-							style={selectedFields.includes(field)
-								? `background: ${CHART_COLORS[i % CHART_COLORS.length]};`
-								: ''}
-						>
-							{field}
-						</button>
-					{/each}
-				</div>
-
-				<!-- Zoom controls + time range picker (far right) -->
+				<!-- Controls -->
 				<div class="ml-auto flex items-center gap-1">
 					{#if hasZoomed}
 						<button
@@ -462,183 +453,223 @@
 					>
 						<ZoomOutIcon class="size-3.5" />
 					</button>
-				</div>
-				<Popover.Root bind:open={popoverOpen}>
-					<Popover.Trigger>
-						{#snippet child({ props })}
-							<button
-								{...props}
-								class="flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1 text-xs font-medium text-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground
-									{popoverOpen ? 'border-ring ring-1 ring-ring' : ''}"
-							>
-								<CalendarIcon class="size-3.5 text-muted-foreground" />
-								<span>{timeFilterLabel}</span>
-								<ChevronDownIcon
-									class="size-3 text-muted-foreground transition-transform {popoverOpen
-										? 'rotate-180'
-										: ''}"
-								/>
-							</button>
-						{/snippet}
-					</Popover.Trigger>
-					<Popover.Content class="w-auto p-0 shadow-lg" align="end">
-						<div class="flex">
-							<!-- Left: calendar + time inputs -->
-							<div class="p-5">
-								<p
-									class="mb-3 text-xs font-semibold tracking-wider text-muted-foreground uppercase"
+					<Popover.Root bind:open={popoverOpen}>
+						<Popover.Trigger>
+							{#snippet child({ props })}
+								<button
+									{...props}
+									class="flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1 text-xs font-medium text-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground
+										{popoverOpen ? 'border-ring ring-1 ring-ring' : ''}"
 								>
-									Custom range{editorPrefs.utc ? ' (UTC)' : ''}
-								</p>
-								<div class="mb-3 grid grid-cols-2 gap-3">
-									<div class="space-y-1.5">
-										<span class="text-xs font-medium text-muted-foreground">Start time</span>
-										<TimePicker bind:value={startTime} onchange={handleTimeInputChange} />
-									</div>
-									<div class="space-y-1.5">
-										<span class="text-xs font-medium text-muted-foreground">End time</span>
-										<TimePicker bind:value={endTime} onchange={handleTimeInputChange} />
-									</div>
-								</div>
-								<RangeCalendar
-									bind:value={calendarValue}
-									onValueChange={handleCalendarChange}
-									numberOfMonths={1}
-								/>
-							</div>
-
-							<!-- Divider -->
-							<div class="w-px self-stretch bg-border"></div>
-
-							<!-- Right: presets -->
-							<div class="relative w-36 self-stretch">
-								<div class="absolute inset-0 flex flex-col p-3">
+									<CalendarIcon class="size-3.5 text-muted-foreground" />
+									<span>{timeFilterLabel}</span>
+									<ChevronDownIcon
+										class="size-3 text-muted-foreground transition-transform {popoverOpen
+											? 'rotate-180'
+											: ''}"
+									/>
+								</button>
+							{/snippet}
+						</Popover.Trigger>
+						<Popover.Content class="w-auto p-0 shadow-lg" align="end">
+							<div class="flex">
+								<!-- Left: calendar + time inputs -->
+								<div class="p-5">
 									<p
-										class="mb-2 px-2 text-xs font-semibold tracking-wider text-muted-foreground uppercase"
+										class="mb-3 text-xs font-semibold tracking-wider text-muted-foreground uppercase"
 									>
-										Quick range
+										Custom range{editorPrefs.utc ? ' (UTC)' : ''}
 									</p>
-									<div class="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto">
-										{#each PRESETS as preset (preset.label)}
-											<button
-												onclick={() => selectPreset(preset.minutes)}
-												class="flex items-center justify-between rounded-md px-2 py-1.5 text-left text-xs transition-colors
-												{timeFilter.mode === 'relative' && timeFilter.minutes === preset.minutes
-													? 'bg-primary font-medium text-primary-foreground'
-													: 'text-foreground hover:bg-accent hover:text-accent-foreground'}"
-											>
-												<span>Last {preset.label}</span>
-												{#if timeFilter.mode === 'relative' && timeFilter.minutes === preset.minutes}
-													<span class="size-1.5 rounded-full bg-primary-foreground opacity-70"
-													></span>
-												{/if}
-											</button>
-										{/each}
+									<div class="mb-3 grid grid-cols-2 gap-3">
+										<div class="space-y-1.5">
+											<span class="text-xs font-medium text-muted-foreground">Start time</span>
+											<TimePicker bind:value={startTime} onchange={handleTimeInputChange} />
+										</div>
+										<div class="space-y-1.5">
+											<span class="text-xs font-medium text-muted-foreground">End time</span>
+											<TimePicker bind:value={endTime} onchange={handleTimeInputChange} />
+										</div>
+									</div>
+									<RangeCalendar
+										bind:value={calendarValue}
+										onValueChange={handleCalendarChange}
+										numberOfMonths={1}
+									/>
+								</div>
+
+								<!-- Divider -->
+								<div class="w-px self-stretch bg-border"></div>
+
+								<!-- Right: presets -->
+								<div class="relative w-36 self-stretch">
+									<div class="absolute inset-0 flex flex-col p-3">
+										<p
+											class="mb-2 px-2 text-xs font-semibold tracking-wider text-muted-foreground uppercase"
+										>
+											Quick range
+										</p>
+										<div class="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto">
+											{#each PRESETS as preset (preset.label)}
+												<button
+													onclick={() => selectPreset(preset.minutes)}
+													class="flex items-center justify-between rounded-md px-2 py-1.5 text-left text-xs transition-colors
+													{timeFilter.mode === 'relative' && timeFilter.minutes === preset.minutes
+														? 'bg-primary font-medium text-primary-foreground'
+														: 'text-foreground hover:bg-accent hover:text-accent-foreground'}"
+												>
+													<span>Last {preset.label}</span>
+													{#if timeFilter.mode === 'relative' && timeFilter.minutes === preset.minutes}
+														<span class="size-1.5 rounded-full bg-primary-foreground opacity-70"
+														></span>
+													{/if}
+												</button>
+											{/each}
+										</div>
 									</div>
 								</div>
 							</div>
+						</Popover.Content>
+					</Popover.Root>
+					<button
+						onclick={() => (fullscreen = !fullscreen)}
+						title={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+						class="flex items-center rounded-md border border-border bg-background p-1 text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+					>
+						{#if fullscreen}
+							<MinimizeIcon class="size-3.5" />
+						{:else}
+							<MaximizeIcon class="size-3.5" />
+						{/if}
+					</button>
+					<button
+						onclick={copyAsCsv}
+						disabled={!telemetryStore.queryData}
+						title="Copy data as CSV"
+						class="flex items-center rounded-md border border-border bg-background p-1 text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:pointer-events-none disabled:opacity-40"
+					>
+						{#if copied}
+							<CheckIcon class="size-3.5 text-green-500" />
+						{:else}
+							<CopyIcon class="size-3.5" />
+						{/if}
+					</button>
+				</div>
+			</div>
+
+			<!-- Toolbar -->
+			<div class="flex flex-wrap items-center gap-2 border-b px-4 py-1.75">
+				<!-- Field toggles -->
+				<div class="flex flex-wrap gap-1">
+					{#each selectedMeasurement.fields as field, i (field)}
+						<button
+							onclick={(e) => toggleField(field, e.shiftKey)}
+							class="flex items-center gap-1 rounded-sm border px-1.5 py-0.5 font-mono text-[11px] transition-colors
+								{selectedFields.includes(field)
+								? 'border-transparent text-white'
+								: 'border-border/60 bg-muted/40 text-muted-foreground hover:bg-accent'}"
+							style={selectedFields.includes(field)
+								? `background: ${CHART_COLORS[i % CHART_COLORS.length]};`
+								: ''}
+						>
+							{field}
+						</button>
+					{/each}
+				</div>
+			</div>
+
+			<!-- Chart + Table scrollable area -->
+			<div class="min-h-0 flex-1 overflow-auto">
+				<!-- Chart -->
+				<div class="px-4 py-4">
+					{#if telemetryStore.queryError}
+						<p class="text-sm text-destructive">{telemetryStore.queryError}</p>
+					{:else if telemetryStore.isQuerying && !telemetryStore.queryData}
+						<div class="flex h-48 items-center justify-center text-sm text-muted-foreground">
+							Loading data…
 						</div>
-					</Popover.Content>
-				</Popover.Root>
-				<button
-					onclick={copyAsCsv}
-					disabled={!telemetryStore.queryData}
-					title="Copy data as CSV"
-					class="flex items-center rounded-md border border-border bg-background p-1 text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:pointer-events-none disabled:opacity-40"
-				>
-					{#if copied}
-						<CheckIcon class="size-3.5 text-green-500" />
-					{:else}
-						<CopyIcon class="size-3.5" />
+					{:else if telemetryStore.queryData}
+						<TlmChart
+							data={telemetryStore.queryData}
+							{selectedFields}
+							{chartConfig}
+							useUtc={editorPrefs.utc}
+							start={queryStart}
+							end={queryEnd}
+							chartClass={fullscreen ? 'h-108' : 'h-72'}
+							onBrushSelect={handleBrushSelect}
+						/>
 					{/if}
-				</button>
-			</div>
+				</div>
 
-			<!-- Chart -->
-			<div class="min-h-0 flex-1 overflow-auto px-4 py-4">
-				{#if telemetryStore.queryError}
-					<p class="text-sm text-destructive">{telemetryStore.queryError}</p>
-				{:else if telemetryStore.isQuerying && !telemetryStore.queryData}
-					<div class="flex h-48 items-center justify-center text-sm text-muted-foreground">
-						Loading data…
-					</div>
-				{:else if telemetryStore.queryData}
-					<TlmChart
-						data={telemetryStore.queryData}
-						{selectedFields}
-						{chartConfig}
-						useUtc={editorPrefs.utc}
-						start={queryStart}
-						end={queryEnd}
-						onBrushSelect={handleBrushSelect}
-					/>
-				{/if}
-			</div>
-
-			<!-- Data / Query tab panel -->
-			{#if telemetryStore.queryData || selectedMeasurement.exploreQuery}
-				<div class="flex h-52 flex-none flex-col border-t">
-					<Tabs.Root bind:value={activeTab} activationMode="manual" class="flex h-full flex-col">
-						<div class="border-b">
-							<Tabs.List class="h-9 flex-none justify-start gap-0 rounded-none bg-transparent px-3">
-								<Tabs.Trigger
-									value="data"
-									class="rounded-none text-xs"
-									onclick={(e) => {
-										if (activeTab === 'data') {
-											e.preventDefault();
-											activeTab = '';
-										}
-									}}>Table</Tabs.Trigger
+				<!-- Data / Query tab panel -->
+				{#if telemetryStore.queryData || selectedMeasurement.exploreQuery}
+					<div class="flex h-104 flex-none flex-col border-t">
+						<Tabs.Root bind:value={activeTab} activationMode="manual" class="flex h-full flex-col">
+							<div class="border-b">
+								<Tabs.List
+									class="h-9 flex-none justify-start gap-0 rounded-none bg-transparent px-3"
 								>
-								<Tabs.Trigger
-									value="query"
-									class="rounded-none text-xs"
-									onclick={(e) => {
-										if (activeTab === 'query') {
-											e.preventDefault();
-											activeTab = '';
-										}
-									}}>Flux Query</Tabs.Trigger
-								>
-							</Tabs.List>
-						</div>
+									<Tabs.Trigger
+										value="data"
+										class="rounded-none text-xs"
+										onclick={(e) => {
+											if (activeTab === 'data') {
+												e.preventDefault();
+												activeTab = '';
+											}
+										}}>Table</Tabs.Trigger
+									>
+									<Tabs.Trigger
+										value="query"
+										class="rounded-none text-xs"
+										onclick={(e) => {
+											if (activeTab === 'query') {
+												e.preventDefault();
+												activeTab = '';
+											}
+										}}>Flux Query</Tabs.Trigger
+									>
+								</Tabs.List>
+							</div>
 
-						<!-- Data table -->
-						<Tabs.Content value="data" class="mt-0 min-h-0 flex-1 overflow-auto">
-							{#if telemetryStore.queryData}
-								<Table.Root>
-									<Table.Header>
-										<Table.Row>
-											{#each telemetryStore.queryData.headers as header, i (i)}
-												<Table.Head class="h-7 px-3 text-xs whitespace-nowrap">{header}</Table.Head>
-											{/each}
-										</Table.Row>
-									</Table.Header>
-									<Table.Body>
-										{#each telemetryStore.queryData.rows as row, i (i)}
+							<!-- Data table -->
+							<Tabs.Content value="data" class="mt-0 min-h-0 flex-1 overflow-auto">
+								{#if telemetryStore.queryData}
+									<Table.Root>
+										<Table.Header>
 											<Table.Row>
-												{#each telemetryStore.queryData.headers as header, j (j)}
-													<Table.Cell class="px-3 py-1 font-mono text-xs">
-														{formatCell(row.values[header])}
-													</Table.Cell>
+												{#each telemetryStore.queryData.headers as header, i (i)}
+													<Table.Head class="h-7 px-3 text-xs whitespace-nowrap"
+														>{header}</Table.Head
+													>
 												{/each}
 											</Table.Row>
-										{/each}
-									</Table.Body>
-								</Table.Root>
-							{/if}
-						</Tabs.Content>
+										</Table.Header>
+										<Table.Body>
+											{#each telemetryStore.queryData.rows as row, i (i)}
+												<Table.Row>
+													{#each telemetryStore.queryData.headers as header, j (j)}
+														<Table.Cell class="px-3 py-1 font-mono text-xs">
+															{formatCell(row.values[header])}
+														</Table.Cell>
+													{/each}
+												</Table.Row>
+											{/each}
+										</Table.Body>
+									</Table.Root>
+								{/if}
+							</Tabs.Content>
 
-						<!-- Flux query -->
-						<Tabs.Content value="query" class="mt-0 min-h-0 flex-1 overflow-auto p-3">
-							{#if selectedMeasurement.exploreQuery}
-								<CodeBlock code={selectedMeasurement.exploreQuery} lang="bash" />
-							{/if}
-						</Tabs.Content>
-					</Tabs.Root>
-				</div>
-			{/if}
+							<!-- Flux query -->
+							<Tabs.Content value="query" class="mt-0 min-h-0 flex-1 overflow-auto p-3">
+								{#if selectedMeasurement.exploreQuery}
+									<CodeBlock code={selectedMeasurement.exploreQuery} lang="bash" />
+								{/if}
+							</Tabs.Content>
+						</Tabs.Root>
+					</div>
+				{/if}
+			</div>
 		{/if}
 	</div>
 </div>

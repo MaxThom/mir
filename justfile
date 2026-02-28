@@ -33,6 +33,7 @@ build-cockpit-server: build-cockpit
 build-ts-sdk:
     npm run build --prefix ./pkgs/web
 
+# NPM install cockpit and ts sdk
 install-cockpit:
     npm install --prefix ./pkgs/web
     npm install --prefix ./internal/ui/web

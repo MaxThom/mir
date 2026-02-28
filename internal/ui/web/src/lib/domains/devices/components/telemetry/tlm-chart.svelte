@@ -12,6 +12,7 @@
 		useUtc = false,
 		start = null,
 		end = null,
+		chartClass = 'h-72',
 		onBrushSelect
 	}: {
 		data: QueryData;
@@ -20,6 +21,7 @@
 		useUtc?: boolean;
 		start?: Date | null;
 		end?: Date | null;
+		chartClass?: string;
 		onBrushSelect?: (start: Date, end: Date) => void;
 	} = $props();
 
@@ -85,8 +87,8 @@
 	}
 </script>
 
-<div class="relative">
-	<ChartContainer config={chartConfig} class="h-72 w-full">
+<div class="relative {chartClass}">
+	<ChartContainer config={chartConfig} class="{chartClass} w-full">
 		<LineChart
 			data={chartRows}
 			x="_time"
