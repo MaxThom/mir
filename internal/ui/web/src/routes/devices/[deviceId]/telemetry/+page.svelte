@@ -11,13 +11,20 @@
 	import TimePicker from '$lib/domains/devices/components/telemetry/time-picker.svelte';
 	import { RangeCalendar } from '$lib/shared/components/shadcn/range-calendar';
 	import * as Popover from '$lib/shared/components/shadcn/popover';
+	import * as Tabs from '$lib/shared/components/shadcn/tabs';
+	import * as Table from '$lib/shared/components/shadcn/table';
 	import ActivityIcon from '@lucide/svelte/icons/activity';
 	import CalendarIcon from '@lucide/svelte/icons/calendar';
 	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
 	import ZoomInIcon from '@lucide/svelte/icons/zoom-in';
 	import ZoomOutIcon from '@lucide/svelte/icons/zoom-out';
 	import RotateCcwIcon from '@lucide/svelte/icons/rotate-ccw';
+	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
+	import CopyIcon from '@lucide/svelte/icons/copy';
+	import CheckIcon from '@lucide/svelte/icons/check';
+	import CodeBlock from '$lib/shared/components/ui/code-block/code-block.svelte';
 	import { editorPrefs } from '$lib/shared/stores/editor-prefs.svelte';
+	import { contextStore } from '$lib/domains/contexts/stores/contexts.svelte';
 	import type { DateRange } from 'bits-ui';
 	import { getLocalTimeZone, fromDate } from '@internationalized/date';
 	import { SvelteDate } from 'svelte/reactivity';
@@ -71,6 +78,73 @@
 	let queryEnd = $state<Date | null>(null);
 	let baseTimeFilter = $state<TimeFilter>({ mode: 'relative', minutes: 5 });
 	let hasZoomed = $state(false);
+	let activeTab = $state('');
+	let copied = $state(false);
+
+	// ─── Grafana Explore URL ──────────────────────────────────────────────────
+
+	function grafanaExploreUrl(fluxQuery: string): string | null {
+		const host = contextStore.activeContext?.grafana;
+		if (!host || !fluxQuery) return null;
+		const panes = JSON.stringify({
+			xyz: {
+				datasource: 'mir-influxdb',
+				queries: [
+					{
+						refId: 'A',
+						datasource: { type: 'influxdb', uid: 'mir-influxdb' },
+						query: fluxQuery
+					}
+				],
+				range: { from: 'now-1h', to: 'now' }
+			}
+		});
+		const params = new URLSearchParams({ schemaVersion: '1', orgId: '1', panes });
+		return `http://${host}/explore?${params}`;
+	}
+
+	let grafanaUrl = $derived(
+		selectedMeasurement ? grafanaExploreUrl(selectedMeasurement.exploreQuery) : null
+	);
+
+	function dateToRFC3339(date: Date): string {
+		if (editorPrefs.utc) return date.toISOString();
+		const offset = -date.getTimezoneOffset();
+		const sign = offset >= 0 ? '+' : '-';
+		const pad = (n: number, w = 2) => String(n).padStart(w, '0');
+		const tz = `${sign}${pad(Math.floor(Math.abs(offset) / 60))}:${pad(Math.abs(offset) % 60)}`;
+		return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}.${pad(date.getMilliseconds(), 3)}${tz}`;
+	}
+
+	function csvCell(value: number | boolean | string | Date | null): string {
+		if (value === null || value === undefined) return '';
+		if (value instanceof Date) return dateToRFC3339(value);
+		if (typeof value === 'boolean') return value ? 'true' : 'false';
+		return String(value);
+	}
+
+	async function copyAsCsv() {
+		if (!telemetryStore.queryData) return;
+		const { headers, rows } = telemetryStore.queryData;
+		const lines = [
+			headers.join(','),
+			...rows.map((row) => headers.map((h) => csvCell(row.values[h] ?? null)).join(','))
+		];
+		await navigator.clipboard.writeText(lines.join('\n'));
+		copied = true;
+		setTimeout(() => (copied = false), 2000);
+	}
+
+	function formatCell(value: number | boolean | string | Date | null): string {
+		if (value === null || value === undefined) return '—';
+		if (value instanceof Date) {
+			return editorPrefs.utc
+				? value.toISOString().replace('T', ' ').slice(0, 19) + ' UTC'
+				: value.toLocaleString();
+		}
+		if (typeof value === 'boolean') return value ? 'true' : 'false';
+		return String(value);
+	}
 
 	// ─── Adapters ─────────────────────────────────────────────────────────────
 
@@ -203,6 +277,7 @@
 		selectedFields = full.fields.slice(0, MAX_AUTO_FIELDS);
 		telemetryStore.queryData = null;
 		telemetryStore.queryError = null;
+		activeTab = '';
 		runQuery();
 	}
 
@@ -324,10 +399,21 @@
 			</div>
 		{:else}
 			<!-- Measurement name -->
-			<div class="border-b px-4 py-1.75">
+			<div class="flex items-center gap-2 border-b px-4 py-2.25">
 				<span class="font-mono text-sm font-medium">{selectedMeasurement.name}</span>
+				{#if grafanaUrl}
+					<a
+						href={grafanaUrl}
+						target="_blank"
+						rel="noreferrer"
+						title="Open in Grafana"
+						class="inline-flex -translate-y-0.5 items-center text-muted-foreground transition-colors hover:text-foreground"
+					>
+						<ExternalLinkIcon class="size-3.5" />
+					</a>
+				{/if}
 				{#if selectedMeasurement.error}
-					<span class="ml-2 text-xs text-destructive">{selectedMeasurement.error}</span>
+					<span class="text-xs text-destructive">{selectedMeasurement.error}</span>
 				{/if}
 			</div>
 
@@ -454,10 +540,22 @@
 						</div>
 					</Popover.Content>
 				</Popover.Root>
+				<button
+					onclick={copyAsCsv}
+					disabled={!telemetryStore.queryData}
+					title="Copy data as CSV"
+					class="flex items-center rounded-md border border-border bg-background p-1 text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:pointer-events-none disabled:opacity-40"
+				>
+					{#if copied}
+						<CheckIcon class="size-3.5 text-green-500" />
+					{:else}
+						<CopyIcon class="size-3.5" />
+					{/if}
+				</button>
 			</div>
 
 			<!-- Chart -->
-			<div class="flex-1 overflow-auto px-4 py-4">
+			<div class="min-h-0 flex-1 overflow-auto px-4 py-4">
 				{#if telemetryStore.queryError}
 					<p class="text-sm text-destructive">{telemetryStore.queryError}</p>
 				{:else if telemetryStore.isQuerying && !telemetryStore.queryData}
@@ -476,6 +574,71 @@
 					/>
 				{/if}
 			</div>
+
+			<!-- Data / Query tab panel -->
+			{#if telemetryStore.queryData || selectedMeasurement.exploreQuery}
+				<div class="flex h-52 flex-none flex-col border-t">
+					<Tabs.Root bind:value={activeTab} activationMode="manual" class="flex h-full flex-col">
+						<div class="border-b">
+							<Tabs.List class="h-9 flex-none justify-start gap-0 rounded-none bg-transparent px-3">
+								<Tabs.Trigger
+									value="data"
+									class="rounded-none text-xs"
+									onclick={(e) => {
+										if (activeTab === 'data') {
+											e.preventDefault();
+											activeTab = '';
+										}
+									}}>Table</Tabs.Trigger
+								>
+								<Tabs.Trigger
+									value="query"
+									class="rounded-none text-xs"
+									onclick={(e) => {
+										if (activeTab === 'query') {
+											e.preventDefault();
+											activeTab = '';
+										}
+									}}>Flux Query</Tabs.Trigger
+								>
+							</Tabs.List>
+						</div>
+
+						<!-- Data table -->
+						<Tabs.Content value="data" class="mt-0 min-h-0 flex-1 overflow-auto">
+							{#if telemetryStore.queryData}
+								<Table.Root>
+									<Table.Header>
+										<Table.Row>
+											{#each telemetryStore.queryData.headers as header, i (i)}
+												<Table.Head class="h-7 px-3 text-xs whitespace-nowrap">{header}</Table.Head>
+											{/each}
+										</Table.Row>
+									</Table.Header>
+									<Table.Body>
+										{#each telemetryStore.queryData.rows as row, i (i)}
+											<Table.Row>
+												{#each telemetryStore.queryData.headers as header, j (j)}
+													<Table.Cell class="px-3 py-1 font-mono text-xs">
+														{formatCell(row.values[header])}
+													</Table.Cell>
+												{/each}
+											</Table.Row>
+										{/each}
+									</Table.Body>
+								</Table.Root>
+							{/if}
+						</Tabs.Content>
+
+						<!-- Flux query -->
+						<Tabs.Content value="query" class="mt-0 min-h-0 flex-1 overflow-auto p-3">
+							{#if selectedMeasurement.exploreQuery}
+								<CodeBlock code={selectedMeasurement.exploreQuery} lang="bash" />
+							{/if}
+						</Tabs.Content>
+					</Tabs.Root>
+				</div>
+			{/if}
 		{/if}
 	</div>
 </div>
