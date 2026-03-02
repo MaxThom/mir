@@ -1,4 +1,4 @@
-import { Mir } from "./mir";
+import type { Mir } from "./mir";
 import { create, toBinary, fromBinary } from "@bufbuild/protobuf";
 import {
   SendListConfigRequestSchema,

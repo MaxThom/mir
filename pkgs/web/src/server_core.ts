@@ -1,4 +1,4 @@
-import { Mir } from "./mir";
+import type { Mir } from "./mir";
 import {
   type JsonObject,
   create,

@@ -9,7 +9,14 @@ export default defineConfig({
 	plugins: [tailwindcss(), sveltekit(), devtoolsJson()],
 
 	build: {
-		chunkSizeWarningLimit: 1000
+		chunkSizeWarningLimit: 1000,
+		rollupOptions: {
+			onwarn(warning, warn) {
+				// False positives: imports used inside $effect are stripped in SSR compilation
+				if (warning.code === 'UNUSED_EXTERNAL_IMPORT') return;
+				warn(warning);
+			}
+		}
 	},
 
 	resolve: {

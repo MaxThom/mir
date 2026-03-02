@@ -595,7 +595,7 @@
 							useUtc={editorPrefs.utc}
 							start={queryStart}
 							end={queryEnd}
-							chartClass={fullscreen ? 'h-108' : 'h-72'}
+							chartClass={fullscreen ? 'h-[calc(100vh-20vh)]' : 'h-72'}
 							onBrushSelect={handleBrushSelect}
 						/>
 					{/if}
@@ -634,7 +634,7 @@
 
 							<!-- Data table -->
 							<Tabs.Content value="data" class="mt-0 min-h-0 flex-1 overflow-auto">
-								{#if telemetryStore.queryData}
+								{#if telemetryStore.queryData && telemetryStore.queryData.rows.length}
 									<Table.Root>
 										<Table.Header>
 											<Table.Row>
@@ -657,6 +657,12 @@
 											{/each}
 										</Table.Body>
 									</Table.Root>
+								{:else if telemetryStore.queryData}
+									<div class="flex h-full items-center justify-center">
+										<p class="rounded-md bg-background/80 px-3 py-1.5 text-sm text-muted-foreground">
+											No data in this time range.
+										</p>
+									</div>
 								{/if}
 							</Tabs.Content>
 
