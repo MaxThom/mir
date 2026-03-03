@@ -26,7 +26,7 @@ COPY internal/ui/web ./internal/ui/web
 RUN npm run build --prefix ./internal/ui/web
 
 #### Mir build stage
-FROM --platform=$BUILDPLATFORM golang:1.24.5-alpine AS builder
+FROM --platform=$BUILDPLATFORM golang:1.26.0-alpine AS builder
 
 # Install build dependencies
 RUN apk add --no-cache git make build-base
