@@ -191,7 +191,7 @@ surrealdb:
 influxdb2:
   enabled: true
   image:
-    tag: "2.7.4"
+    tag: "2.8.0"
   adminUser:
     organization: "Mir"
     bucket: "mir"

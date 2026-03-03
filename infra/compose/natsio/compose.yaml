@@ -3,7 +3,7 @@
 # It is designed for building distributed systems and microservices architectures.
 services:
   nats:
-    image: nats:alpine
+    image: nats:2.12.4-alpine
     command: -c /etc/nats/config.conf
     restart: unless-stopped
     volumes:
@@ -16,7 +16,7 @@ services:
       - 8222:8222
       - 9222:9222
   nats-exporter:
-    image: natsio/prometheus-nats-exporter:latest
+    image: natsio/prometheus-nats-exporter:0.19.1
     ports:
       - "7777:7777"
     command: -varz -connz -routez -subz -prefix=nats -jsz all "http://nats:8222"

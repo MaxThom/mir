@@ -67,9 +67,9 @@ dep-update:
     go get -u ./...
 
 # Test with coverage
-test:
+test count="0":
     mkdir -p ./.tmp
-    go test -coverprofile ./.tmp/coverage.out ./...
+    go test -count {{ count }} -coverprofile ./.tmp/coverage.out ./...
     go tool cover -html ./.tmp/coverage.out
 
 # Start test infra
