@@ -173,14 +173,14 @@ func prettyStringEvents(events []mir_v1.Event) string {
 
 	// TODO sort time, namespace, name
 	sort.Slice(events, func(i, j int) bool {
-		if events[i].Status.FirstAt.Equal(events[j].Status.FirstAt.Time) {
+		if events[i].Status.FirstAt.Equal(*events[j].Status.FirstAt) {
 			if events[i].Meta.Namespace == events[j].Meta.Namespace {
 				return events[i].Meta.Name < events[j].Meta.Name
 			} else {
 				return events[i].Meta.Namespace < events[j].Meta.Namespace
 			}
 		} else {
-			return events[i].Status.FirstAt.After(events[j].Status.FirstAt.Time)
+			return events[i].Status.FirstAt.After(*events[j].Status.FirstAt)
 		}
 	})
 
@@ -196,7 +196,7 @@ func prettyStringEvents(events []mir_v1.Event) string {
 
 		age := ""
 		if !d.Status.FirstAt.IsZero() {
-			age = prettyDuration(time.Now().UTC().Sub(d.Status.FirstAt.Time))
+			age = prettyDuration(time.Now().UTC().Sub(*d.Status.FirstAt))
 		}
 
 		sb.WriteString(fmt.Sprintf(format, age, d.Meta.Namespace+"/"+d.Meta.Name, st, d.Spec.Reason, d.Spec.Message))

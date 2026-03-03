@@ -2625,7 +2625,7 @@ func TestDeviceRefreshSchema(t *testing.T) {
 
 	// Assert
 	timeNow := time.Now().UTC()
-	timeDiff := timeNow.Sub(devs[0].Device.Status.Schema.LastSchemaFetch.Time)
+	timeDiff := timeNow.Sub(*devs[0].Device.Status.Schema.LastSchemaFetch)
 
 	assert.Equal(t, "", devs[0].Error)
 	assert.Equal(t, true, timeDiff.Seconds() < 20)
@@ -2665,7 +2665,7 @@ func TestDeviceRefreshSchemaNoReach(t *testing.T) {
 
 	// Assert
 	assert.ErrorContains(t, errors.New(devs[0].Error), "cannot reconcile device schema: error requesting device schema: error publishing request message: nats: no responders available for request")
-	assert.Equal(t, true, devs[0].Device.Status.Schema.LastSchemaFetch.Time.IsZero())
+	assert.Equal(t, true, devs[0].Device.Status.Schema.LastSchemaFetch.IsZero())
 }
 
 func TestDeviceRefreshSchemaNoTarget(t *testing.T) {

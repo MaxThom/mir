@@ -5,6 +5,7 @@ go 1.26.0
 require (
 	github.com/adrg/xdg v0.5.3
 	github.com/alecthomas/kong v1.14.0
+	// There is a v2.0.0 of bubbles, major update
 	github.com/charmbracelet/bubbles v1.0.0
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.0
@@ -22,7 +23,8 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.23.2
 	github.com/rs/zerolog v1.34.0
-	github.com/surrealdb/surrealdb.go v0.6.0
+	// There are newer version, but it goes with surreal3.0
+	github.com/surrealdb/surrealdb.go v1.0.0
 	golang.org/x/net v0.51.0
 	google.golang.org/protobuf v1.36.11
 	gopkg.in/yaml.v3 v3.0.1

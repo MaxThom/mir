@@ -11,7 +11,6 @@ import (
 
 	"github.com/maxthom/mir/internal/libs/external/surreal"
 	"github.com/maxthom/mir/pkgs/mir_v1"
-	"github.com/surrealdb/surrealdb.go/pkg/models"
 )
 
 var (
@@ -229,7 +228,7 @@ func (s *surrealMirStore) UpdateDeviceHello(updates map[mir_v1.DeviceId]mir_v1.D
 		if hb.Schema != nil {
 			sch, err := mir_v1.NewSchemaFromProtoSchema(hb.Schema)
 			if err == nil {
-				sch.LastSchemaFetch = &models.CustomDateTime{Time: hb.Hearthbeat}
+				sch.LastSchemaFetch = new(hb.Hearthbeat)
 				var sbStatusSchema strings.Builder
 				if sch.CompressedSchema != nil {
 					sbStatusSchema.WriteString("compressedSchema: $" + string(deviceId) + "_SCH,")
