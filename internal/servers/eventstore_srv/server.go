@@ -17,7 +17,6 @@ import (
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
-	surrealdbModels "github.com/surrealdb/surrealdb.go/pkg/models"
 )
 
 type EventStoreServer struct {
@@ -223,10 +222,10 @@ func (s *EventStoreServer) streamEventsSub(msg *mir.Msg, subjectId string, req m
 	event.Spec = req
 
 	// TODO stack algo
-	now := surrealdbModels.CustomDateTime{Time: time.Now().UTC()}
+	now := new(time.Now().UTC())
 	event.Status.Count = 1
-	event.Status.FirstAt = &now
-	event.Status.LastAt = &now
+	event.Status.FirstAt = now
+	event.Status.LastAt = now
 
 	if err = s.sendToBuffer(event); err != nil {
 		eventCaptureErrorTotal.WithLabelValues(req.Reason).Inc()

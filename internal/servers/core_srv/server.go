@@ -22,7 +22,6 @@ import (
 	"github.com/maxthom/mir/pkgs/module/mir"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
-	surrealdbModels "github.com/surrealdb/surrealdb.go/pkg/models"
 )
 
 // How to make this service scalable
@@ -224,7 +223,7 @@ func (s *CoreServer) loadHearthbeatMap() {
 				if d.Status.LastHearthbeat == nil {
 					s.hearthbeats[mir_v1.DeviceId(d.Spec.DeviceId)] = timeNow
 				} else {
-					s.hearthbeats[mir_v1.DeviceId(d.Spec.DeviceId)] = d.Status.LastHearthbeat.Time
+					s.hearthbeats[mir_v1.DeviceId(d.Spec.DeviceId)] = *d.Status.LastHearthbeat
 				}
 			}
 			deviceStatusCount.WithLabelValues("online").Inc()
@@ -472,7 +471,7 @@ func (s *CoreServer) hearthbeatOnlinePulsor() {
 				Namespace: "__degraded",
 			}).WithStatus(mir_v1.DeviceStatus{
 				Online:         &degradedMode,
-				LastHearthbeat: &surrealdbModels.CustomDateTime{Time: t.Hearthbeat},
+				LastHearthbeat: new(t.Hearthbeat),
 			}).WithSchema(t.Schema, t.Hearthbeat)
 			i += 1
 		}
@@ -525,7 +524,7 @@ func (s *CoreServer) hearthbeatOnlinePulsor() {
 			deviceStatusCount.WithLabelValues("offline").Dec()
 			newOnline = append(newOnline, dev.Spec.DeviceId)
 		}
-		s.hearthbeats[mir_v1.DeviceId(dev.Spec.DeviceId)] = dev.Status.LastHearthbeat.Time
+		s.hearthbeats[mir_v1.DeviceId(dev.Spec.DeviceId)] = *dev.Status.LastHearthbeat
 
 		if hello, ok := tempBuffer[mir_v1.DeviceId(dev.Spec.DeviceId)]; ok && hello.Schema != nil {
 			if err := publishDeviceUpdateEvent(s.m, nil, dev); err != nil {
@@ -578,7 +577,7 @@ func (s *CoreServer) schemaSub(msg *mir.Msg, deviceId string, sch *mir_proto.Mir
 			Schema: mir_v1.Schema{
 				CompressedSchema: compressSch,
 				PackageNames:     sch.GetPackageList(),
-				LastSchemaFetch:  &surrealdbModels.CustomDateTime{Time: timeNow},
+				LastSchemaFetch:  new(timeNow),
 			},
 		}),
 	)

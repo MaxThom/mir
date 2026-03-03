@@ -26,8 +26,6 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/dynamicpb"
-
-	surrealdbModels "github.com/surrealdb/surrealdb.go/pkg/models"
 )
 
 type ProtoCfgServer struct {
@@ -527,9 +525,9 @@ func (s *ProtoCfgServer) sendConfigToDevices(msg *mir.Msg, req *mir_apiv1.SendCo
 		go func() {
 			defer wg.Done()
 
-			timeMap := map[string]surrealdbModels.CustomDateTime{}
+			timeMap := map[string]time.Time{}
 			for k := range p.mapPayload {
-				timeMap[k] = surrealdbModels.CustomDateTime{Time: p.time}
+				timeMap[k] = p.time
 			}
 			d := mir_v1.NewDevice().WithProps(mir_v1.DeviceProperties{
 				Desired: p.mapPayload,
@@ -649,8 +647,8 @@ func (s *ProtoCfgServer) reportedPropsSub(msg *mir.Msg, deviceId string, msgName
 		},
 	}).WithStatus(mir_v1.DeviceStatus{
 		Properties: mir_v1.PropertiesTime{
-			Reported: map[string]surrealdbModels.CustomDateTime{
-				string(msgDesc.FullName()): surrealdbModels.CustomDateTime{Time: time.Now().UTC()},
+			Reported: map[string]time.Time{
+				string(msgDesc.FullName()): time.Now().UTC(),
 			},
 		},
 	})
@@ -709,7 +707,7 @@ func (s *ProtoCfgServer) desiredPropsSub(msg *mir.Msg, deviceId string) (*mir_ap
 	// If not written in db, means we need to write empty config
 	// Then we return the config to the device
 	missingCfg := make(map[string]any)
-	missingTime := make(map[string]surrealdbModels.CustomDateTime)
+	missingTime := make(map[string]time.Time)
 	for _, cfgDesc := range cfgDescs {
 		var jsonRaw []byte
 		var updTime string
@@ -757,7 +755,7 @@ func (s *ProtoCfgServer) desiredPropsSub(msg *mir.Msg, deviceId string) (*mir_ap
 			timeNow := time.Now().UTC()
 			updTime = timeNow.Format(time.RFC3339Nano)
 			missingCfg[cfgDesc.Name] = msgMap
-			missingTime[cfgDesc.Name] = surrealdbModels.CustomDateTime{Time: timeNow}
+			missingTime[cfgDesc.Name] = timeNow
 		}
 
 		msg := dynamicpb.NewMessage(desc.(protoreflect.MessageDescriptor))

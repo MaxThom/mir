@@ -1096,27 +1096,27 @@ func TestPublishStoreDeviceUpdateStatus(t *testing.T) {
 	})
 	dUpd := mir_v1.NewDevice().WithStatus(mir_v1.DeviceStatus{
 		Online:         boolPtr(true),
-		LastHearthbeat: surrealTimePtr(time.Date(1992, 10, 14, 14, 0, 0, 0, time.UTC)),
+		LastHearthbeat: new(time.Date(1992, 10, 14, 14, 0, 0, 0, time.UTC)),
 		Schema: mir_v1.Schema{
 			CompressedSchema: []byte{0x12},
 			PackageNames:     []string{"bob"},
-			LastSchemaFetch:  surrealTimePtr(time.Date(1992, 10, 14, 14, 0, 0, 0, time.UTC)),
+			LastSchemaFetch:  new(time.Date(1992, 10, 14, 14, 0, 0, 0, time.UTC)),
 		},
 		Properties: mir_v1.PropertiesTime{
-			Desired: map[string]surrealdbModels.CustomDateTime{
-				"test": {Time: time.Date(1992, 10, 14, 14, 0, 0, 0, time.UTC)},
+			Desired: map[string]time.Time{
+				"test": time.Date(1992, 10, 14, 14, 0, 0, 0, time.UTC),
 			},
-			Reported: map[string]surrealdbModels.CustomDateTime{
-				"test": {Time: time.Date(1992, 10, 14, 14, 0, 0, 0, time.UTC)},
+			Reported: map[string]time.Time{
+				"test": time.Date(1992, 10, 14, 14, 0, 0, 0, time.UTC),
 			},
 		},
 	})
 	dUpd2 := mir_v1.NewDevice().WithStatus(mir_v1.DeviceStatus{
 		Properties: mir_v1.PropertiesTime{
-			Desired: map[string]surrealdbModels.CustomDateTime{
+			Desired: map[string]time.Time{
 				"test": {},
 			},
-			Reported: map[string]surrealdbModels.CustomDateTime{
+			Reported: map[string]time.Time{
 				"test": {},
 			},
 		},
@@ -1137,7 +1137,7 @@ func TestPublishStoreDeviceUpdateStatus(t *testing.T) {
 	}
 
 	// Assert
-	assert.Equal(t, dUpd.Status.LastHearthbeat.Time.UTC(), uResp[0].Status.LastHearthbeat.UTC())
+	assert.Equal(t, dUpd.Status.LastHearthbeat.UTC(), uResp[0].Status.LastHearthbeat.UTC())
 	assert.Equal(t, *dUpd.Status.Online, *uResp[0].Status.Online)
 	assert.Equal(t, len(dUpd.Status.Schema.CompressedSchema), len(uResp[0].Status.Schema.CompressedSchema))
 	assert.Equal(t, dUpd.Status.Schema.PackageNames[0], uResp[0].Status.Schema.PackageNames[0])
@@ -1365,8 +1365,8 @@ func TestMergeDeviceBasic(t *testing.T) {
 	}
 
 	// Prepare merge patch
-	mergePatch := map[string]interface{}{
-		"meta": map[string]interface{}{
+	mergePatch := map[string]any{
+		"meta": map[string]any{
 			"labels": map[string]string{
 				"test":     "updated",
 				"new_test": "added",
@@ -1420,8 +1420,8 @@ func TestMergeDeviceSpec(t *testing.T) {
 	}
 
 	// Prepare merge patch
-	mergePatch := map[string]interface{}{
-		"spec": map[string]interface{}{
+	mergePatch := map[string]any{
+		"spec": map[string]any{
 			"disabled": true,
 		},
 	}
@@ -1482,20 +1482,20 @@ func TestMergeDeviceProperties(t *testing.T) {
 	}
 
 	// Prepare merge patch
-	mergePatch := map[string]interface{}{
-		"properties": map[string]interface{}{
-			"desired": map[string]interface{}{
-				"config": map[string]interface{}{
+	mergePatch := map[string]any{
+		"properties": map[string]any{
+			"desired": map[string]any{
+				"config": map[string]any{
 					"feature2": "disabled",
 					"feature3": "new",
-					"nested": map[string]interface{}{
+					"nested": map[string]any{
 						"setting1": 456,
 						"setting3": "new",
 					},
 				},
 			},
-			"reported": map[string]interface{}{
-				"metrics": map[string]interface{}{
+			"reported": map[string]any{
+				"metrics": map[string]any{
 					"memory": 2048,
 					"disk":   75,
 				},
@@ -1532,7 +1532,7 @@ func TestMergeDeviceProperties(t *testing.T) {
 
 	metrics := mergedDevices[0].Properties.Reported["metrics"].(map[string]any)
 	assert.Equal(t, uint64(2048), metrics["memory"])
-	assert.Equal(t, float64(0.5), metrics["cpu"])
+	assert.Equal(t, float32(0.5), metrics["cpu"])
 	assert.Equal(t, uint64(75), metrics["disk"])
 }
 
@@ -1613,8 +1613,8 @@ func TestMergeDeviceUniqueConstraintViolation(t *testing.T) {
 
 	// Prepare patch that would violate uniqueness constraint
 	// by changing device2's name to device1's name
-	mergePatch := map[string]interface{}{
-		"meta": map[string]interface{}{
+	mergePatch := map[string]any{
+		"meta": map[string]any{
 			"name": "merge_device_unique1",
 		},
 	}
@@ -1664,8 +1664,8 @@ func TestPublishEventStoreCreateRequest(t *testing.T) {
 		Payload: j,
 	}).WithStatus(mir_v1.EventStatus{
 		Count:   1,
-		FirstAt: surrealTimePtr(time.Now().UTC()),
-		LastAt:  surrealTimePtr(time.Now().UTC()),
+		FirstAt: new(time.Now().UTC()),
+		LastAt:  new(time.Now().UTC()),
 	})
 
 	// Act
@@ -1913,7 +1913,7 @@ func TestPublishEventStoreListDateNow(t *testing.T) {
 			"test":     "list_limit",
 		},
 	}).WithStatus(mir_v1.EventStatus{
-		FirstAt: surrealTimePtr(time.Date(2025, 05, 7, 13, 0, 0, 0, time.UTC)),
+		FirstAt: new(time.Date(2025, 05, 7, 13, 0, 0, 0, time.UTC)),
 	})
 	m2 := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "list_event_2_lbl",
@@ -1923,7 +1923,7 @@ func TestPublishEventStoreListDateNow(t *testing.T) {
 			"test":     "list_limit",
 		},
 	}).WithStatus(mir_v1.EventStatus{
-		FirstAt: surrealTimePtr(time.Date(2025, 05, 7, 12, 0, 0, 0, time.UTC)),
+		FirstAt: new(time.Date(2025, 05, 7, 12, 0, 0, 0, time.UTC)),
 	})
 	m3 := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "list_event_3_lbl",
@@ -1933,7 +1933,7 @@ func TestPublishEventStoreListDateNow(t *testing.T) {
 			"test":     "list_limit",
 		},
 	}).WithStatus(mir_v1.EventStatus{
-		FirstAt: surrealTimePtr(time.Date(2025, 05, 5, 0, 0, 0, 0, time.UTC)),
+		FirstAt: new(time.Date(2025, 05, 5, 0, 0, 0, 0, time.UTC)),
 	})
 	// Act
 	mResp, err := mirStore.CreateEvent(m)
@@ -1980,7 +1980,7 @@ func TestPublishEventStoreListDateToFrom(t *testing.T) {
 			"test":     "list_limit",
 		},
 	}).WithStatus(mir_v1.EventStatus{
-		FirstAt: surrealTimePtr(time.Date(2025, 05, 7, 13, 0, 0, 0, time.UTC)),
+		FirstAt: new(time.Date(2025, 05, 7, 13, 0, 0, 0, time.UTC)),
 	})
 	m2 := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "list_event_2_lbl",
@@ -1990,7 +1990,7 @@ func TestPublishEventStoreListDateToFrom(t *testing.T) {
 			"test":     "list_limit",
 		},
 	}).WithStatus(mir_v1.EventStatus{
-		FirstAt: surrealTimePtr(time.Date(2025, 05, 7, 12, 0, 0, 0, time.UTC)),
+		FirstAt: new(time.Date(2025, 05, 7, 12, 0, 0, 0, time.UTC)),
 	})
 	m3 := mir_v1.NewEvent().WithMeta(mir_v1.Meta{
 		Name:      "list_event_3_lbl",
@@ -2000,7 +2000,7 @@ func TestPublishEventStoreListDateToFrom(t *testing.T) {
 			"test":     "list_limit",
 		},
 	}).WithStatus(mir_v1.EventStatus{
-		FirstAt: surrealTimePtr(time.Date(2025, 05, 5, 0, 0, 0, 0, time.UTC)),
+		FirstAt: new(time.Date(2025, 05, 5, 0, 0, 0, 0, time.UTC)),
 	})
 	// Act
 	mResp, err := mirStore.CreateEvent(m)
@@ -2213,8 +2213,8 @@ func TestPublishEventStoreUpdateMetaLblAnnoRequest(t *testing.T) {
 		Payload: j,
 	}).WithStatus(mir_v1.EventStatus{
 		Count:   1,
-		FirstAt: surrealTimePtr(time.Now().UTC()),
-		LastAt:  surrealTimePtr(time.Now().UTC()),
+		FirstAt: new(time.Now().UTC()),
+		LastAt:  new(time.Now().UTC()),
 	})
 	upd := mir_v1.EventUpdate{
 		Meta: &mir_v1.MetaUpdate{
@@ -2289,8 +2289,8 @@ func TestPublishEventStoreUpdateNameRequest(t *testing.T) {
 		Payload: j,
 	}).WithStatus(mir_v1.EventStatus{
 		Count:   1,
-		FirstAt: surrealTimePtr(time.Now().UTC()),
-		LastAt:  surrealTimePtr(time.Now().UTC()),
+		FirstAt: new(time.Now().UTC()),
+		LastAt:  new(time.Now().UTC()),
 	})
 	upd := mir_v1.EventUpdate{
 		Meta: &mir_v1.MetaUpdate{
@@ -2489,8 +2489,8 @@ func TestPublishEventStoreUpdateSpecRequest(t *testing.T) {
 		Payload: j,
 	}).WithStatus(mir_v1.EventStatus{
 		Count:   1,
-		FirstAt: surrealTimePtr(time.Now().UTC()),
-		LastAt:  surrealTimePtr(time.Now().UTC()),
+		FirstAt: new(time.Now().UTC()),
+		LastAt:  new(time.Now().UTC()),
 	})
 	upd := mir_v1.EventUpdate{
 		Spec: &mir_v1.EventUpdateSpec{
@@ -2566,14 +2566,14 @@ func TestPublishEventStoreUpdateStatusRequest(t *testing.T) {
 		Payload: j,
 	}).WithStatus(mir_v1.EventStatus{
 		Count:   1,
-		FirstAt: surrealTimePtr(time.Now().UTC()),
-		LastAt:  surrealTimePtr(time.Now().UTC()),
+		FirstAt: new(time.Now().UTC()),
+		LastAt:  new(time.Now().UTC()),
 	})
 	upd := mir_v1.EventUpdate{
 		Status: &mir_v1.EventUpdateStatus{
-			Count:   intPtr(3),
-			FirstAt: surrealTimePtr(time.Date(2014, 10, 14, 5, 5, 5, 5, time.UTC)),
-			LastAt:  surrealTimePtr(time.Date(2014, 10, 14, 5, 5, 5, 5, time.UTC)),
+			Count:   new(3),
+			FirstAt: new(time.Date(2014, 10, 14, 5, 5, 5, 0, time.UTC)),
+			LastAt:  new(time.Date(2014, 10, 14, 5, 5, 5, 0, time.UTC)),
 		},
 	}
 
@@ -2697,8 +2697,8 @@ func TestPublishEventStoreCreateBatchRequest(t *testing.T) {
 	}
 	status := mir_v1.EventStatus{
 		Count:   1,
-		FirstAt: surrealTimePtr(time.Now().UTC()),
-		LastAt:  surrealTimePtr(time.Now().UTC()),
+		FirstAt: new(time.Now().UTC()),
+		LastAt:  new(time.Now().UTC()),
 	}
 	count := 10
 	events := make([]mir_v1.Event, count)
@@ -2762,7 +2762,7 @@ func TestPublishUpdateDeviceHeartbeats(t *testing.T) {
 	// Assert
 	assert.Equal(t, len(resp), count)
 	assert.Equal(t, *resp[0].Status.Online, true)
-	assert.Equal(t, resp[0].Status.LastHearthbeat.Time.UTC(), time.Date(2025, 10, 14, 14, 0, 0, 0, time.UTC))
+	assert.Equal(t, resp[0].Status.LastHearthbeat.UTC(), time.Date(2025, 10, 14, 14, 0, 0, 0, time.UTC))
 }
 
 func strPtr(s string) *string {
