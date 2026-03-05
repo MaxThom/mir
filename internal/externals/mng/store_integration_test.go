@@ -25,7 +25,11 @@ func TestMain(m *testing.M) {
 	// Setup
 	fmt.Println("> Test Setup")
 	db = test_utils.SetupSurrealDbConnsPanic("ws://127.0.0.1:8000/rpc", "root", "root", "global", "mir_testing")
-	mirStore = NewSurrealMirStore(db)
+	var err error
+	mirStore, err = NewSurrealMirStore(log, db)
+	if err != nil {
+		panic(err)
+	}
 	if err := dataCleanUp(); err != nil {
 		panic(err)
 	}

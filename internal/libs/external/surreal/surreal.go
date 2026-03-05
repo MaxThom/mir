@@ -62,7 +62,7 @@ func Connect(ctx context.Context, url, namespace, database, user, password strin
 }
 
 func connect(ctx context.Context, url, namespace, database, user, password string, h ConnHandler) (*AutoReconnDB, error) {
-	db, err := surrealdb.Connect(ctx, url)
+	db, err := surrealdb.FromEndpointURLString(ctx, url)
 	if err != nil {
 		d := &AutoReconnDB{
 			DB:          db,

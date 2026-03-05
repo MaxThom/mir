@@ -209,7 +209,11 @@ func run(
 	if err != nil {
 		return err
 	}
-	coreSrv, err := core_srv.NewCore(log, m, mng.NewSurrealMirStore(db), cc, &core_srv.Options{
+	mngStore, err := mng.NewSurrealMirStore(log, db)
+	if err != nil {
+		return err
+	}
+	coreSrv, err := core_srv.NewCore(log, m, mngStore, cc, &core_srv.Options{
 		DeviceOnlineFlush:  cfg.DeviceOnlineFlush,
 		DeviceOfflineFlush: cfg.DeviceOfflineFlush,
 		DeviceOfflineAfter: cfg.DeviceOfflineAfter,

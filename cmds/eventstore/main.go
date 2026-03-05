@@ -200,7 +200,11 @@ func run(
 	log.Info().Str("url", cfg.DataBusServer.Url).Str("status", m.Bus.Status().String()).Msg("msg bus status")
 
 	// Services
-	eventSrv, err := eventstore_srv.NewEventStore(log, m, mng.NewSurrealMirStore(db), &eventstore_srv.Options{FlushInterval: cfg.FlushInterval})
+	mngStore, err := mng.NewSurrealMirStore(log, db)
+	if err != nil {
+		return err
+	}
+	eventSrv, err := eventstore_srv.NewEventStore(log, m, mngStore, &eventstore_srv.Options{FlushInterval: cfg.FlushInterval})
 	if err != nil {
 		return err
 	}

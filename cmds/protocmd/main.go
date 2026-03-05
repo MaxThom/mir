@@ -203,7 +203,11 @@ func run(
 	if err != nil {
 		return err
 	}
-	protocmdSrv, err := protocmd_srv.NewProtoCmd(log, m, mng.NewSurrealMirStore(db), cc)
+	mngStore, err := mng.NewSurrealMirStore(log, db)
+	if err != nil {
+		return err
+	}
+	protocmdSrv, err := protocmd_srv.NewProtoCmd(log, m, mngStore, cc)
 	if err != nil {
 		return err
 	}
