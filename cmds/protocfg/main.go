@@ -203,7 +203,11 @@ func run(
 	if err != nil {
 		return err
 	}
-	coreSrv, err := protocfg_srv.NewProtoCfg(log, m, mng.NewSurrealMirStore(db), cc)
+	mngStore, err := mng.NewSurrealMirStore(log, db)
+	if err != nil {
+		return err
+	}
+	coreSrv, err := protocfg_srv.NewProtoCfg(log, m, mngStore, cc)
 	if err != nil {
 		return err
 	}

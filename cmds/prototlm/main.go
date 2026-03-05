@@ -254,7 +254,11 @@ func run(
 	if err != nil {
 		return err
 	}
-	prototlmSrv, err := prototlm_srv.NewProtoTlm(log, m, mng.NewSurrealMirStore(db), ts.NewInfluxTelemetryStore(cfg.TelemetryServer.Org, cfg.TelemetryServer.Bucket, lpClient), cc)
+	mngStore, err := mng.NewSurrealMirStore(log, db)
+	if err != nil {
+		return err
+	}
+	prototlmSrv, err := prototlm_srv.NewProtoTlm(log, m, mngStore, ts.NewInfluxTelemetryStore(cfg.TelemetryServer.Org, cfg.TelemetryServer.Bucket, lpClient), cc)
 	if err != nil {
 		return err
 	}

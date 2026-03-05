@@ -247,7 +247,11 @@ func (d *ServeCmd) run(
 		return err
 	}
 
-	coreSrv, err := core_srv.NewCore(log, m, mng.NewSurrealMirStore(db), cc,
+	mngStore, err := mng.NewSurrealMirStore(log, db)
+	if err != nil {
+		return err
+	}
+	coreSrv, err := core_srv.NewCore(log, m, mngStore, cc,
 		&core_srv.Options{
 			DeviceOnlineFlush:  cfg.Module.Core.DeviceOnlineFlush,
 			DeviceOfflineFlush: cfg.Module.Core.DeviceOfflineFlush,
@@ -257,22 +261,22 @@ func (d *ServeCmd) run(
 		return err
 	}
 
-	cfgSrv, err := protocfg_srv.NewProtoCfg(log, m, mng.NewSurrealMirStore(db), cc)
+	cfgSrv, err := protocfg_srv.NewProtoCfg(log, m, mngStore, cc)
 	if err != nil {
 		return err
 	}
 
-	cmdSrv, err := protocmd_srv.NewProtoCmd(log, m, mng.NewSurrealMirStore(db), cc)
+	cmdSrv, err := protocmd_srv.NewProtoCmd(log, m, mngStore, cc)
 	if err != nil {
 		return err
 	}
 
-	tlmSrv, err := prototlm_srv.NewProtoTlm(log, m, mng.NewSurrealMirStore(db), ts.NewInfluxTelemetryStore(cfg.Influx.Org, cfg.Influx.Bucket, lpClient), cc)
+	tlmSrv, err := prototlm_srv.NewProtoTlm(log, m, mngStore, ts.NewInfluxTelemetryStore(cfg.Influx.Org, cfg.Influx.Bucket, lpClient), cc)
 	if err != nil {
 		return err
 	}
 
-	eventSrv, err := eventstore_srv.NewEventStore(log, m, mng.NewSurrealMirStore(db), &eventstore_srv.Options{FlushInterval: cfg.Module.EventStore.FlushInterval})
+	eventSrv, err := eventstore_srv.NewEventStore(log, m, mngStore, &eventstore_srv.Options{FlushInterval: cfg.Module.EventStore.FlushInterval})
 	if err != nil {
 		return err
 	}

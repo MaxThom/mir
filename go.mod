@@ -24,7 +24,7 @@ require (
 	github.com/prometheus/client_golang v1.23.2
 	github.com/rs/zerolog v1.34.0
 	// There are newer version, but it goes with surreal3.0
-	github.com/surrealdb/surrealdb.go v1.0.0
+	github.com/surrealdb/surrealdb.go v1.4.0
 	golang.org/x/net v0.51.0
 	google.golang.org/protobuf v1.36.11
 	gopkg.in/yaml.v3 v3.0.1
