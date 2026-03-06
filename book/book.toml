@@ -1,7 +1,6 @@
 [book]
 authors = ["maxthom"]
 language = "en"
-multilingual = false
 src = "src"
 title = "Mir"
 description = "A book about the Mir IotHub ecosystem"
@@ -9,3 +8,4 @@ description = "A book about the Mir IotHub ecosystem"
 [output.html]
 git-repository-url = "https://github.com/maxthom/mir"
 additional-css = ["theme/css/custom.css"]
+sidebar-header-nav = false
