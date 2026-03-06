@@ -14,17 +14,17 @@
   - [ ] https://www.utcp.io  
 - [ ] TinyGo
 - [ ] Cockpit
-  - [x] New cmd for refresh schema with button next to Delete
-  - [x] cfg
-  - [x] tlm
-  - [x] tlm with charts
-    - [x] fe
-    - [x] be
+  - [ ] New cmd for refresh schema with button next to Delete
+  - [ ] cfg
+  - [ ] tlm
+  - [ ] tlm with charts
+    - [ ] fe
+    - [ ] be
   - [ ] device list improvement
     - [ ] select multiple device
     - [ ] collapsible with device view
 - [ ] Road to Production
-  - [x] update all dependencies
+  - [ ] update all dependencies
   - [ ] alert & alarms
   - [ ] autoreconnect
     - [ ] if modules are down
@@ -36,7 +36,13 @@
 
 ### Documentation
 
-- [ ] Cockpit
+- [x] ModuleSDK
+- [ ] Update MdBook to latest version
+- [x] DeviceConfiguration and ServerConfiguration options
+- [x] Talk about reconnection and network loss
+- [x] Update CLI usage, mainly ctx and under device subcommand
+- [x] Security
+- [x] DeviceStorage
 
 ### Ergonomics
 
@@ -45,12 +51,38 @@
 ## Roadmap
 
 - [ ] Monitoring
+  - [x] Metrics
+  - [x] Dashboards
   - [ ] Alerts & Alarm with Grafana and Influx
+  - [x] Dashboards with influx/surreal/grafana data
+  - [x] Grafana Loki for logs
+- [ ] Productions
+  - [x] Docker
+  - [x] Template container for device sdk
+  - [x] Kubernetes/Helm, helm in the code and pushing chart to a registry
+  - [x] One deployment in private cluster
+  - [ ] Performance analysis
+- [x] Event Module
+  - [x] Code
+  - [x] Tests
+  - [x] CLI
+  - [x] watch events
+  - [x] dashboard
 - [ ] DeviceSDK
+  - [x] Msg store
   - [ ] Host metrics https://github.com/shirou/gopsutil
-  - [ ] Rewrite
+  - [x] Buf documentation/template
+  - [x] DeviceID (MAC, random, etc [save to kv store])
+  - [x] Custom Routes
+- [ ] ModuleSDK
+  - [x] Documentation
+  - [x] Improvements
+  - [x] Custom Routes
+  - [x] Better reconnections
 - [ ] Tui
-  - [ ] Tlm display
+  - [ ] Cfg
+  - [ ] Cmd
+  - [ ] Tlm
 
 ## Far Future
 

@@ -47,7 +47,7 @@ go install github.com/nats-io/natscli/nats@latest
 
 echo -e '\n-- Install Rust Tools --'
 echo "- mdbook"
-cargo install mdbook@0.5.2
+cargo install mdbook@0.4.40
 echo "- just"
 cargo install just
 
