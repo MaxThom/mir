@@ -5,13 +5,15 @@
 	import SettingsIcon from '@lucide/svelte/icons/settings';
 	import ListIcon from '@lucide/svelte/icons/list';
 	import BracesIcon from '@lucide/svelte/icons/braces';
+	import CommandIcon from '@lucide/svelte/icons/command';
 	import * as Table from '$lib/shared/components/shadcn/table';
 	import * as Tooltip from '$lib/shared/components/shadcn/tooltip';
-	import * as ButtonGroup from '$lib/shared/components/shadcn/button-group';
+	import * as DropdownMenu from '$lib/shared/components/shadcn/dropdown-menu';
 	import { Badge } from '$lib/shared/components/shadcn/badge';
 	import { Button } from '$lib/shared/components/shadcn/button';
 	import { cn } from '$lib/utils';
 	import type { Device } from '@mir/sdk';
+	import { goto } from '$app/navigation';
 	import { relativeTime, formatFullDate } from '$lib/shared/utils/time';
 	import { editorPrefs } from '$lib/shared/stores/editor-prefs.svelte';
 
@@ -86,26 +88,23 @@
 		{/if}
 	{:else if cell.column.id === 'actions'}
 		{@const deviceId = row.original.spec?.deviceId ?? ''}
-		<ButtonGroup.Root>
-			{#each DEVICE_ACTIONS as action (action.path)}
-				<Tooltip.Root>
-					<Tooltip.Trigger>
-						{#snippet child({ props })}
-							<Button
-								{...props}
-								variant="ghost"
-								size="icon-sm"
-								disabled={!deviceId}
-								href="/devices/{deviceId}/{action.path}"
-							>
-								<action.icon class="h-3.5 w-3.5" />
-							</Button>
-						{/snippet}
-					</Tooltip.Trigger>
-					<Tooltip.Content>{action.label}</Tooltip.Content>
-				</Tooltip.Root>
-			{/each}
-		</ButtonGroup.Root>
+		<DropdownMenu.Root>
+			<DropdownMenu.Trigger>
+				{#snippet child({ props })}
+					<Button {...props} variant="ghost" size="icon-sm" disabled={!deviceId}>
+						<CommandIcon class="h-3.5 w-3.5" />
+					</Button>
+				{/snippet}
+			</DropdownMenu.Trigger>
+			<DropdownMenu.Content align="end">
+				{#each DEVICE_ACTIONS as action (action.path)}
+					<DropdownMenu.Item onclick={() => goto(`/devices/${deviceId}/${action.path}`)}>
+						<action.icon class="h-3.5 w-3.5" />
+						{action.label}
+					</DropdownMenu.Item>
+				{/each}
+			</DropdownMenu.Content>
+		</DropdownMenu.Root>
 	{:else}
 		{cell.getValue() ?? '—'}
 	{/if}

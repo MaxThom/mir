@@ -25,7 +25,7 @@
 	import * as Empty from '$lib/shared/components/shadcn/empty';
 	import * as Card from '$lib/shared/components/shadcn/card';
 	import * as Tooltip from '$lib/shared/components/shadcn/tooltip';
-	import * as Checkbox from 'bits-ui';
+	import { Checkbox } from '$lib/shared/components/shadcn/checkbox';
 	import { goto } from '$app/navigation';
 	import { cn } from '$lib/utils';
 	import type { Device } from '@mir/sdk';
@@ -148,23 +148,12 @@
 							{#each headerGroup.headers as header, i (i)}
 								{#if header.column.id === 'select'}
 									<Table.Head class="w-px px-3">
-										<Checkbox.Root
+										<Checkbox
 											checked={table.getIsAllPageRowsSelected()}
 											indeterminate={table.getIsSomePageRowsSelected() && !table.getIsAllPageRowsSelected()}
 											onCheckedChange={(v) => table.toggleAllPageRowsSelected(!!v)}
 											aria-label="Select all"
-											class="flex size-4 items-center justify-center rounded border border-input bg-background transition-colors data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground data-[state=indeterminate]:bg-primary data-[state=indeterminate]:text-primary-foreground"
-										>
-											{#snippet children({ checked, indeterminate })}
-												{#if indeterminate}
-													<span class="size-2 rounded-sm bg-current"></span>
-												{:else if checked}
-													<svg class="size-3" viewBox="0 0 12 12" fill="none">
-														<path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-													</svg>
-												{/if}
-											{/snippet}
-										</Checkbox.Root>
+										/>
 									</Table.Head>
 								{:else}
 									<Table.Head
@@ -204,20 +193,11 @@
 							{#each row.getVisibleCells() as cell, j (j)}
 								{#if cell.column.id === 'select'}
 									<Table.Cell class="w-px px-3">
-										<Checkbox.Root
+										<Checkbox
 											checked={row.getIsSelected()}
 											onCheckedChange={(v) => row.toggleSelected(!!v)}
 											aria-label="Select row"
-											class="flex size-4 items-center justify-center rounded border border-input bg-background transition-colors data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
-										>
-											{#snippet children({ checked })}
-												{#if checked}
-													<svg class="size-3" viewBox="0 0 12 12" fill="none">
-														<path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-													</svg>
-												{/if}
-											{/snippet}
-										</Checkbox.Root>
+										/>
 									</Table.Cell>
 								{:else}
 									<DeviceTableCell {cell} {row} />
