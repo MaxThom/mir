@@ -86,6 +86,29 @@
 		{:else}
 			<span class="text-muted-foreground">—</span>
 		{/if}
+	{:else if cell.column.id === 'packages'}
+		{@const pkgs = cell.getValue() as string[]}
+		{@const lastFetch = row.original.status?.schema?.lastSchemaFetch}
+		{#if pkgs.length > 0}
+			<div class="flex flex-wrap gap-1">
+				{#each pkgs as pkg (pkg)}
+					<Tooltip.Root>
+						<Tooltip.Trigger>
+							<Badge variant="outline" class="font-mono text-xs font-normal">{pkg}</Badge>
+						</Tooltip.Trigger>
+						<Tooltip.Content>
+							{#if lastFetch}
+								Last fetched {formatFullDate(lastFetch.getTime() / 1000, editorPrefs.utc)}
+							{:else}
+								No fetch time available
+							{/if}
+						</Tooltip.Content>
+					</Tooltip.Root>
+				{/each}
+			</div>
+		{:else}
+			<span class="text-muted-foreground">—</span>
+		{/if}
 	{:else if cell.column.id === 'actions'}
 		{@const deviceId = row.original.spec?.deviceId ?? ''}
 		<DropdownMenu.Root>

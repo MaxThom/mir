@@ -21,6 +21,10 @@ export const deviceGlobalFilterFn: FilterFn<Device> = (
 	const heartbeat = row.original.status?.lastHearthbeat
 		? row.original.status.lastHearthbeat.toLocaleString().toLowerCase()
 		: '';
+	const packages = (row.original.status?.schema?.packageNames ?? [])
+		.filter((p) => p !== 'mir.device.v1' && p !== 'google.protobuf')
+		.join(' ')
+		.toLowerCase();
 
 	return (
 		name.includes(search) ||
@@ -29,7 +33,8 @@ export const deviceGlobalFilterFn: FilterFn<Device> = (
 		status.includes(search) ||
 		disabled.includes(search) ||
 		labels.includes(search) ||
-		heartbeat.includes(search)
+		heartbeat.includes(search) ||
+		packages.includes(search)
 	);
 };
 deviceGlobalFilterFn.autoRemove = (val: string) => !val || val.trim() === '';
@@ -76,6 +81,24 @@ export const deviceColumns = [
 			return a.localeCompare(b);
 		},
 	}),
+	col.accessor(
+		(d) => (d.status?.schema?.packageNames ?? []).filter(
+			(p) => p !== 'mir.device.v1' && p !== 'google.protobuf'
+		),
+		{
+			id: 'packages',
+			header: 'Schema',
+			sortingFn: (rowA, rowB) => {
+				const a = (rowA.original.status?.schema?.packageNames ?? [])
+					.filter((p) => p !== 'mir.device.v1' && p !== 'google.protobuf')
+					.join(',');
+				const b = (rowB.original.status?.schema?.packageNames ?? [])
+					.filter((p) => p !== 'mir.device.v1' && p !== 'google.protobuf')
+					.join(',');
+				return a.localeCompare(b);
+			},
+		}
+	),
 	col.display({
 		id: 'actions',
 		header: '',
