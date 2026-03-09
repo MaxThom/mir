@@ -167,7 +167,7 @@ func stringifyEvents(output string, events []mir_v1.Event) (string, error) {
 }
 
 func prettyStringEvents(events []mir_v1.Event) string {
-	format := "%-16s %-45s %-8s %-20s %-60s\n"
+	format := "%-16s %-45s %-8s %-20s %s\n"
 	var sb strings.Builder
 	sb.WriteString(fmt.Sprintf(format, "AGE", "NAMESPACE/NAME", "TYPE", "REASON", "MESSAGE"))
 
