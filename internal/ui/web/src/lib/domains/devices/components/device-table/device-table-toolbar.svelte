@@ -3,6 +3,7 @@
 	import { Input } from '$lib/shared/components/shadcn/input';
 	import { Badge } from '$lib/shared/components/shadcn/badge';
 	import { RefreshButtonGroup } from '$lib/shared/components/ui/refresh-button-group';
+	import { selectionStore } from '$lib/domains/devices/stores/selection.svelte';
 
 	let {
 		deviceCount,
@@ -25,6 +26,11 @@
 	<div class="flex items-center gap-3">
 		<span class="text-sm font-semibold">Devices</span>
 		<Badge variant="secondary" class="tabular-nums">{deviceCount}</Badge>
+		{#if selectionStore.count > 0}
+			<Badge variant="outline" class="tabular-nums text-muted-foreground">
+				{selectionStore.count} selected
+			</Badge>
+		{/if}
 		<div class="relative">
 			<SearchIcon
 				class="pointer-events-none absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"

@@ -14,7 +14,12 @@ export const ROUTES = {
 		CONFIG: (id: string) => `/devices/${id}/configuration`,
 		EVENTS: (id: string) => `/devices/${id}/events`,
 		SCHEMA: (id: string) => `/devices/${id}/schema`,
-		CREATE: '/devices/create'
+		CREATE: '/devices/create',
+		MULTI: {
+			COMMANDS: '/devices/multi/commands',
+			CONFIG: '/devices/multi/configuration',
+			TELEMETRY: '/devices/multi/telemetry',
+		}
 	},
 	SCHEMAS: {
 		LIST: '/schemas',
