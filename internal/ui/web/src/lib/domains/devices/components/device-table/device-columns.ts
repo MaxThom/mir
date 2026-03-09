@@ -37,6 +37,12 @@ deviceGlobalFilterFn.autoRemove = (val: string) => !val || val.trim() === '';
 const col = createColumnHelper<Device>();
 
 export const deviceColumns = [
+	col.display({
+		id: 'select',
+		header: '',
+		enableSorting: false,
+		enableGlobalFilter: false,
+	}),
 	col.accessor((d) => d.meta?.name ?? '—', {
 		id: 'name',
 		header: 'Name',
