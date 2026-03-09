@@ -16,6 +16,12 @@ export { ConfigResponseStatus } from "./gen/proto/mir_api/v1/cfg_pb";
 
 // ─── SDK types ────────────────────────────────────────────────────────────────
 
+type DeviceId = {
+  id: string;
+  name: string;
+  namespace: string;
+};
+
 export type ConfigDescriptor = {
   name: string;
   labels: Record<string, string>;
@@ -30,6 +36,7 @@ export type ConfigValues = {
 };
 
 export type ConfigGroup = {
+  ids: DeviceId[];
   descriptors: ConfigDescriptor[];
   values: ConfigValues[];
   error: string;
@@ -67,6 +74,7 @@ export class ListConfigs {
     const response = fromBinary(SendListConfigResponseSchema, msg.data);
     if (response.response.case === "ok") {
       return response.response.value.deviceConfigs.map((g) => ({
+        ids: g.cfgValues.map((v) => ({ id: v.id?.deviceId ?? "", name: v.id?.name ?? "", namespace: v.id?.namespace ?? "" })),
         descriptors: g.cfgDescriptors.map((d) => ({
           name: d.name,
           labels: d.labels as Record<string, string>,
