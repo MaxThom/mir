@@ -5,8 +5,9 @@
 	import { json as jsonLang } from '@codemirror/lang-json';
 	import { oneDark } from '@codemirror/theme-one-dark';
 	import { vim, Vim } from '@replit/codemirror-vim';
-	import { mode } from 'mode-watcher';
 	import { editorPrefs } from '$lib/shared/stores/editor-prefs.svelte';
+	import { themeStore } from '$lib/shared/stores/theme.svelte';
+	import { rustTheme } from '$lib/shared/stores/codemirror-themes';
 	import { Badge } from '$lib/shared/components/shadcn/badge';
 	import { Button } from '$lib/shared/components/shadcn/button';
 	import { Spinner } from '$lib/shared/components/shadcn/spinner';
@@ -131,7 +132,7 @@
 				vimCompartment.of(untrack(() => editorPrefs.vim) ? vim() : []),
 				basicSetup,
 				jsonLang(),
-				themeCompartment.of(untrack(() => mode.current === 'dark') ? oneDark : [])
+				themeCompartment.of(untrack(() => themeStore.current === 'dark') ? oneDark : untrack(() => themeStore.current === 'rust') ? rustTheme : [])
 			],
 			parent: cmEl
 		});
@@ -144,9 +145,9 @@
 
 	// Update theme without recreating the view
 	$effect(() => {
-		const isDark = mode.current === 'dark';
+		const t = themeStore.current;
 		if (cmView) {
-			cmView.dispatch({ effects: themeCompartment.reconfigure(isDark ? oneDark : []) });
+			cmView.dispatch({ effects: themeCompartment.reconfigure(t === 'dark' ? oneDark : t === 'rust' ? rustTheme : []) });
 		}
 	});
 
