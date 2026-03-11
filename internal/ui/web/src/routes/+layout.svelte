@@ -5,6 +5,8 @@
 	import MoonIcon from '@lucide/svelte/icons/moon';
 	import FlameIcon from '@lucide/svelte/icons/flame';
 	import MoonStarIcon from '@lucide/svelte/icons/moon-star';
+	import TerminalIcon from '@lucide/svelte/icons/terminal';
+	import CoffeeIcon from '@lucide/svelte/icons/coffee';
 	import UnplugIcon from '@lucide/svelte/icons/unplug';
 	import BookOpenIcon from '@lucide/svelte/icons/book-open';
 	import { ActivityLog } from '$lib/domains/activity/components/activity-log';
@@ -89,7 +91,7 @@
 				<Button onclick={() => editorPrefs.setUtc(!editorPrefs.utc)} variant="ghost" class="h-7 w-12 px-2 font-mono text-[10px]">
 					{editorPrefs.utc ? 'UTC' : 'LOCAL'}
 				</Button>
-				<DropdownMenu.Root>
+				<DropdownMenu.Root onOpenChange={(open) => { if (!open) themeStore.revert(); }}>
 					<DropdownMenu.Trigger>
 						{#snippet child({ props })}
 							<Button {...props} variant="ghost" size="icon" class="size-7">
@@ -99,6 +101,10 @@
 									<MoonStarIcon class="size-4" />
 								{:else if themeStore.current === 'rust'}
 									<FlameIcon class="size-4" />
+								{:else if themeStore.current === 'hacker'}
+									<TerminalIcon class="size-4" />
+								{:else if themeStore.current === 'mocha'}
+									<CoffeeIcon class="size-4" />
 								{:else}
 									<SunIcon class="size-4" />
 								{/if}
@@ -107,17 +113,23 @@
 						{/snippet}
 					</DropdownMenu.Trigger>
 					<DropdownMenu.Content align="end" class="min-w-32">
-						<DropdownMenu.Item onclick={() => themeStore.set('light')} class="gap-2">
+						<DropdownMenu.Item onmouseenter={() => themeStore.preview('light')} onclick={() => themeStore.set('light')} class="gap-2">
 							<SunIcon class="size-3.5" /> Light
 						</DropdownMenu.Item>
-						<DropdownMenu.Item onclick={() => themeStore.set('dark')} class="gap-2">
+						<DropdownMenu.Item onmouseenter={() => themeStore.preview('dark')} onclick={() => themeStore.set('dark')} class="gap-2">
 							<MoonIcon class="size-3.5" /> Dark
 						</DropdownMenu.Item>
-						<DropdownMenu.Item onclick={() => themeStore.set('rust')} class="gap-2">
+						<DropdownMenu.Item onmouseenter={() => themeStore.preview('rust')} onclick={() => themeStore.set('rust')} class="gap-2">
 							<FlameIcon class="size-3.5" /> Rust
 						</DropdownMenu.Item>
-						<DropdownMenu.Item onclick={() => themeStore.set('midnight')} class="gap-2">
+						<DropdownMenu.Item onmouseenter={() => themeStore.preview('mocha')} onclick={() => themeStore.set('mocha')} class="gap-2">
+							<CoffeeIcon class="size-3.5" /> Mocha
+						</DropdownMenu.Item>
+						<DropdownMenu.Item onmouseenter={() => themeStore.preview('midnight')} onclick={() => themeStore.set('midnight')} class="gap-2">
 							<MoonStarIcon class="size-3.5" /> Midnight
+						</DropdownMenu.Item>
+						<DropdownMenu.Item onmouseenter={() => themeStore.preview('hacker')} onclick={() => themeStore.set('hacker')} class="gap-2">
+							<TerminalIcon class="size-3.5" /> Hacker
 						</DropdownMenu.Item>
 					</DropdownMenu.Content>
 				</DropdownMenu.Root>
