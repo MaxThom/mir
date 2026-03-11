@@ -16,6 +16,7 @@
 	import { goto } from '$app/navigation';
 	import { relativeTime, formatFullDate } from '$lib/shared/utils/time';
 	import { editorPrefs } from '$lib/shared/stores/editor-prefs.svelte';
+	import { resolve } from '$app/paths';
 
 	const DEVICE_ACTIONS = [
 		{ icon: ActivityIcon, label: 'Telemetry', path: 'telemetry' },
@@ -121,7 +122,7 @@
 			</DropdownMenu.Trigger>
 			<DropdownMenu.Content align="end">
 				{#each DEVICE_ACTIONS as action (action.path)}
-					<DropdownMenu.Item onclick={() => goto(`/devices/${deviceId}/${action.path}`)}>
+					<DropdownMenu.Item onclick={() => goto(resolve(`/devices/${deviceId}/${action.path}`))}>
 						<action.icon class="h-3.5 w-3.5" />
 						{action.label}
 					</DropdownMenu.Item>

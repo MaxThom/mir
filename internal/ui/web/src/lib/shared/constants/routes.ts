@@ -16,9 +16,9 @@ export const ROUTES = {
 		SCHEMA: (id: string) => `/devices/${id}/schema`,
 		CREATE: '/devices/create',
 		MULTI: {
-			COMMANDS: '/devices/multi/commands',
-			CONFIG: '/devices/multi/configuration',
-			TELEMETRY: '/devices/multi/telemetry',
+			COMMANDS: '/devices/bulk/commands',
+			CONFIG: '/devices/bulk/configuration',
+			TELEMETRY: '/devices/bulk/telemetry',
 		}
 	},
 	SCHEMAS: {

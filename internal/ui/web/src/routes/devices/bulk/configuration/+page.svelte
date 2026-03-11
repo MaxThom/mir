@@ -1,16 +1,14 @@
 <script lang="ts">
-	import { untrack } from 'svelte';
+	import { untrack, getContext, onDestroy } from 'svelte';
 	import { mirStore } from '$lib/domains/mir/stores/mir.svelte';
 	import { selectionStore } from '$lib/domains/devices/stores/selection.svelte';
 	import { DeviceTarget, ConfigResponseStatus } from '@mir/sdk';
 	import type { ConfigGroup, ConfigDescriptor, SendConfigResult } from '@mir/sdk';
-	import {
-		DescriptorPanel,
-		ResponsePanel
-	} from '$lib/domains/devices/components/commands';
+	import { DescriptorPanel, ResponsePanel } from '$lib/domains/devices/components/commands';
 	import { CfgPayloadEditor } from '$lib/domains/devices/components/configurations';
 	import { activityStore } from '$lib/domains/activity/stores/activity.svelte';
 	import SlidersHorizontalIcon from '@lucide/svelte/icons/sliders-horizontal';
+	import { SvelteMap } from 'svelte/reactivity';
 	import type { Descriptor } from '$lib/domains/devices/types/types';
 
 	type Selection = {
@@ -53,7 +51,11 @@
 
 				if (selGroupKey) {
 					const newIdx = configGroups.findIndex(
-						(g) => g.values.map((v) => v.deviceId).sort().join(',') === selGroupKey
+						(g) =>
+							g.values
+								.map((v) => v.deviceId)
+								.sort()
+								.join(',') === selGroupKey
 					);
 					if (newIdx === -1) {
 						selection = null;
@@ -70,7 +72,7 @@
 		}
 	});
 
-	async function loadConfigs() {
+	async function loadConfigs(preserveSelection = false) {
 		if (!mirStore.mir) return;
 		isLoading = true;
 		error = null;
@@ -80,15 +82,21 @@
 			const groups = await mirStore.mir.client().listConfigs().request(target);
 			configGroups = groups;
 			_lastLoadedIds = new Set(allIds);
-			selection = null;
-			response = null;
-			sendError = null;
+			if (!preserveSelection) {
+				selection = null;
+				response = null;
+				sendError = null;
+			}
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Failed to load configurations';
 		} finally {
 			isLoading = false;
 		}
 	}
+
+	const multiCtx = getContext<{ setTabRefresh: (fn: (() => void) | null) => void }>('multi');
+	multiCtx.setTabRefresh(() => loadConfigs(true));
+	onDestroy(() => multiCtx.setTabRefresh(null));
 
 	let deviceLookup = $derived(
 		new Map(selectionStore.selectedDevices.map((d) => [d.spec.deviceId, d.meta]))
@@ -217,42 +225,45 @@
 		if (!mirStore.mir || !selection) return;
 		isSending = true;
 		sendError = null;
-		const combined: SendConfigResult = new Map();
-		try {
-			for (const [deviceId, text] of payloads) {
+		const merged = new SvelteMap<string, unknown>();
+		const failures: string[] = [];
+
+		for (const [deviceId, json] of payloads) {
+			try {
 				const target = new DeviceTarget({ ids: [deviceId] });
 				const result = await mirStore.mir
 					.client()
 					.sendConfig()
-					.request(target, selection.config.name, text, dryRun);
-				for (const [id, resp] of result) combined.set(id, resp);
+					.request(target, selection.config.name, json, dryRun);
+				for (const [k, v] of result) merged.set(k, v);
+			} catch (err) {
+				const label = deviceValues?.find((dv) => dv.deviceId === deviceId)?.label ?? deviceId;
+				failures.push(`${label}: ${err instanceof Error ? err.message : 'failed'}`);
 			}
-			response = combined;
+		}
+
+		if (merged.size > 0) {
+			response = merged as SendConfigResult;
 			activityStore.add({
 				kind: 'success',
 				category: 'Config',
 				title: selection.config.name,
-				request: {
-					ids: [...payloads.keys()],
-					name: selection.config.name,
-					payloads: Object.fromEntries(payloads),
-					dryRun
-				},
-				response: Object.fromEntries(combined)
+				request: { name: selection.config.name, dryRun },
+				response: Object.fromEntries(merged)
 			});
-		} catch (err) {
-			const message = err instanceof Error ? err.message : 'Failed to send configuration';
-			sendError = message;
+		}
+		if (failures.length > 0) {
+			sendError = failures.join('; ');
 			activityStore.add({
 				kind: 'error',
 				category: 'Config',
 				title: selection.config.name,
 				request: { name: selection.config.name },
-				error: message
+				error: sendError
 			});
-		} finally {
-			isSending = false;
 		}
+
+		isSending = false;
 	}
 </script>
 
@@ -261,8 +272,8 @@
 		title="Configurations"
 		items={[]}
 		{groups}
-		isLoading={isLoading}
-		error={error}
+		{isLoading}
+		{error}
 		groupErrors={[]}
 		{selectedKey}
 		emptyText="No configurations found."

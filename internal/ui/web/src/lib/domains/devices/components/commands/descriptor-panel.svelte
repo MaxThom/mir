@@ -86,7 +86,7 @@
 
 	<!-- Loading / error / list -->
 	<div class="flex-1 overflow-y-auto">
-		{#if isLoading && items.length === 0}
+		{#if isLoading && items.length === 0 && (groups === undefined || groups.length === 0)}
 			<div class="flex items-center gap-2 px-3 py-4 text-xs text-muted-foreground">
 				<Spinner class="size-3" />
 				Loading…
@@ -96,7 +96,9 @@
 		{:else if filteredGroups !== null}
 			<!-- Grouped mode -->
 			{#if filteredGroups.length === 0}
-				<p class="px-3 py-4 text-xs text-muted-foreground">{emptyText}</p>
+				<p class="px-3 py-4 text-xs text-muted-foreground">
+					{searchQuery.trim() ? `No match for "${searchQuery.trim()}".` : emptyText}
+				</p>
 			{:else}
 				{#each filteredGroups as group (group.idx)}
 					<Tooltip.Root>

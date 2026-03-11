@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { getContext, onDestroy } from 'svelte';
 	import { mirStore } from '$lib/domains/mir/stores/mir.svelte';
 	import { selectionStore } from '$lib/domains/devices/stores/selection.svelte';
 	import { activityStore } from '$lib/domains/activity/stores/activity.svelte';
@@ -70,6 +71,12 @@
 	// Guard against $effect re-triggering when onValueChange sets timeFilter
 	let _calendarSyncInProgress = false;
 
+	// ─── Refresh context ──────────────────────────────────────────────────────
+
+	const multiCtx = getContext<{ setTabRefresh: (fn: (() => void) | null) => void }>('multi');
+	multiCtx.setTabRefresh(() => loadMeasurements(true));
+	onDestroy(() => multiCtx.setTabRefresh(null));
+
 	// ─── Load measurements ────────────────────────────────────────────────────
 
 	$effect(() => {
@@ -77,7 +84,7 @@
 		loadMeasurements();
 	});
 
-	async function loadMeasurements() {
+	async function loadMeasurements(preserveSelection = false) {
 		if (!mirStore.mir) return;
 		generation++;
 		isLoading = true;
@@ -87,15 +94,35 @@
 			const target = new DeviceTarget({ ids: allIds });
 			const groups = await mirStore.mir.client().listTelemetry().request(target);
 			tlmGroups = groups;
-			groupStates = groups.map((g) => ({
-				group: g,
-				selectedMeasurement: null,
-				mergedData: null,
-				isQuerying: false,
-				queryError: null,
-				chartConfig: {},
-				mergedFields: []
-			}));
+			if (preserveSelection) {
+				const prevStates = groupStates;
+				groupStates = groups.map((g) => {
+					const prevIds = g.ids.map((id) => id.id).sort().join(',');
+					const prev = prevStates.find(
+						(ps) => ps.group.ids.map((id) => id.id).sort().join(',') === prevIds
+					);
+					if (!prev) {
+						return { group: g, selectedMeasurement: null, mergedData: null, isQuerying: false, queryError: null, chartConfig: {}, mergedFields: [] };
+					}
+					const measurement = prev.selectedMeasurement
+						? (g.descriptors.find((d) => d.name === prev.selectedMeasurement!.name) ?? null)
+						: null;
+					return { ...prev, group: g, selectedMeasurement: measurement };
+				});
+				groupStates.forEach((_, idx) => {
+					if (groupStates[idx].selectedMeasurement) queryGroup(idx);
+				});
+			} else {
+				groupStates = groups.map((g) => ({
+					group: g,
+					selectedMeasurement: null,
+					mergedData: null,
+					isQuerying: false,
+					queryError: null,
+					chartConfig: {},
+					mergedFields: []
+				}));
+			}
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Failed to load telemetry';
 		} finally {

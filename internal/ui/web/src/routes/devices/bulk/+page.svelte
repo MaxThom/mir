@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { ROUTES } from '$lib/shared/constants/routes';
+	import { resolve } from '$app/paths';
 
-	goto(ROUTES.DEVICES.LIST);
+	goto(resolve(ROUTES.DEVICES.LIST));
 </script>

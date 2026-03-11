@@ -35,6 +35,7 @@
 	import DeviceTableCell from './device-table-cell.svelte';
 	import DeviceTablePagination from './device-table-pagination.svelte';
 	import { selectionStore } from '$lib/domains/devices/stores/selection.svelte';
+	import { resolve } from '$app/paths';
 
 	let {
 		devices,
@@ -150,7 +151,8 @@
 									<Table.Head class="w-px px-3">
 										<Checkbox
 											checked={table.getIsAllPageRowsSelected()}
-											indeterminate={table.getIsSomePageRowsSelected() && !table.getIsAllPageRowsSelected()}
+											indeterminate={table.getIsSomePageRowsSelected() &&
+												!table.getIsAllPageRowsSelected()}
 											onCheckedChange={(v) => table.toggleAllPageRowsSelected(!!v)}
 											aria-label="Select all"
 										/>
@@ -213,7 +215,8 @@
 											<SatelliteDishIcon />
 										</Empty.Media>
 										<Empty.Title>No devices found</Empty.Title>
-										<Empty.Description>No devices are registered in this context.</Empty.Description>
+										<Empty.Description>No devices are registered in this context.</Empty.Description
+										>
 									</Empty.Header>
 								</Empty.Root>
 							</Table.Cell>
@@ -240,28 +243,31 @@
 					</div>
 					<div class="flex items-center gap-2">
 						<button
-							onclick={() => { selectionStore.clearSelection(); rowSelection = {}; }}
+							onclick={() => {
+								selectionStore.clearSelection();
+								rowSelection = {};
+							}}
 							class="flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
 						>
 							<XIcon class="size-3.5" />
 							Clear
 						</button>
 						<button
-							onclick={() => goto('/devices/multi/telemetry')}
+							onclick={() => goto(resolve('/devices/bulk/telemetry'))}
 							class="flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs transition-colors hover:bg-accent hover:text-accent-foreground"
 						>
 							<ActivityIcon class="size-3.5" />
 							Telemetry
 						</button>
 						<button
-							onclick={() => goto('/devices/multi/commands')}
+							onclick={() => goto(resolve('/devices/bulk/commands'))}
 							class="flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs transition-colors hover:bg-accent hover:text-accent-foreground"
 						>
 							<TerminalIcon class="size-3.5" />
 							Commands
 						</button>
 						<button
-							onclick={() => goto('/devices/multi/configuration')}
+							onclick={() => goto(resolve('/devices/bulk/configuration'))}
 							class="flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs transition-colors hover:bg-accent hover:text-accent-foreground"
 						>
 							<SlidersHorizontalIcon class="size-3.5" />
