@@ -13,7 +13,7 @@
 	import XIcon from '@lucide/svelte/icons/x';
 	import { editorPrefs } from '$lib/shared/stores/editor-prefs.svelte';
 	import { themeStore } from '$lib/shared/stores/theme.svelte';
-	import { rustTheme } from '$lib/shared/stores/codemirror-themes';
+	import { rustTheme, midnightTheme } from '$lib/shared/stores/codemirror-themes';
 
 	let {
 		content,
@@ -73,7 +73,7 @@
 				extensions: [
 					vimCompartment.of(isVimMode ? vim() : []),
 					langCompartment.of(isJsonMode ? jsonLang() : yamlLang()),
-					themeCompartment.of(themeStore.current === 'dark' ? oneDark : themeStore.current === 'rust' ? rustTheme : []),
+					themeCompartment.of(themeStore.current === 'dark' ? oneDark : themeStore.current === 'midnight' ? midnightTheme : themeStore.current === 'rust' ? rustTheme : []),
 					basicSetup
 				],
 				parent: cmEditorEl

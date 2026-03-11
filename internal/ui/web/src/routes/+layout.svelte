@@ -4,6 +4,7 @@
 	import SunIcon from '@lucide/svelte/icons/sun';
 	import MoonIcon from '@lucide/svelte/icons/moon';
 	import FlameIcon from '@lucide/svelte/icons/flame';
+	import MoonStarIcon from '@lucide/svelte/icons/moon-star';
 	import UnplugIcon from '@lucide/svelte/icons/unplug';
 	import BookOpenIcon from '@lucide/svelte/icons/book-open';
 	import { ActivityLog } from '$lib/domains/activity/components/activity-log';
@@ -94,6 +95,8 @@
 							<Button {...props} variant="ghost" size="icon" class="size-7">
 								{#if themeStore.current === 'dark'}
 									<MoonIcon class="size-4" />
+								{:else if themeStore.current === 'midnight'}
+									<MoonStarIcon class="size-4" />
 								{:else if themeStore.current === 'rust'}
 									<FlameIcon class="size-4" />
 								{:else}
@@ -112,6 +115,9 @@
 						</DropdownMenu.Item>
 						<DropdownMenu.Item onclick={() => themeStore.set('rust')} class="gap-2">
 							<FlameIcon class="size-3.5" /> Rust
+						</DropdownMenu.Item>
+						<DropdownMenu.Item onclick={() => themeStore.set('midnight')} class="gap-2">
+							<MoonStarIcon class="size-3.5" /> Midnight
 						</DropdownMenu.Item>
 					</DropdownMenu.Content>
 				</DropdownMenu.Root>

@@ -1,7 +1,7 @@
 import { setMode } from 'mode-watcher';
 import { browser } from '$app/environment';
 
-export type Theme = 'light' | 'dark' | 'rust';
+export type Theme = 'light' | 'dark' | 'rust' | 'midnight';
 const STORAGE_KEY = 'mir-theme';
 
 class ThemeStore {
@@ -21,16 +21,18 @@ class ThemeStore {
 	private apply(theme: Theme) {
 		this.current = theme;
 		if (!browser) return;
-		if (theme === 'dark') {
+		// midnight piggybacks on .dark so dark: Tailwind variants work;
+		// .midnight CSS block comes after .dark in the cascade and overrides all variables
+		if (theme === 'dark' || theme === 'midnight') {
 			setMode('dark');
-			document.documentElement.classList.remove('rust');
 		} else {
 			setMode('light');
-			if (theme === 'rust') {
-				document.documentElement.classList.add('rust');
-			} else {
-				document.documentElement.classList.remove('rust');
-			}
+		}
+		document.documentElement.classList.remove('rust', 'midnight');
+		if (theme === 'rust') {
+			document.documentElement.classList.add('rust');
+		} else if (theme === 'midnight') {
+			document.documentElement.classList.add('midnight');
 		}
 	}
 }

@@ -108,6 +108,41 @@
 	--sidebar-ring: oklch(0.551 0.027 264.364);
 }
 
+/* midnight comes after .dark so its variables win the cascade when both classes are present */
+.midnight {
+	--background: oklch(0.08 0.012 265);
+	--foreground: oklch(0.70 0.018 265);
+	--card: oklch(0.11 0.014 265);
+	--card-foreground: oklch(0.70 0.018 265);
+	--popover: oklch(0.11 0.014 265);
+	--popover-foreground: oklch(0.70 0.018 265);
+	--primary: oklch(0.56 0.15 265);
+	--primary-foreground: oklch(0.95 0.005 265);
+	--secondary: oklch(0.14 0.016 265);
+	--secondary-foreground: oklch(0.62 0.016 265);
+	--muted: oklch(0.14 0.016 265);
+	--muted-foreground: oklch(0.42 0.02 265);
+	--accent: oklch(0.32 0.09 285);
+	--accent-foreground: oklch(0.78 0.018 265);
+	--destructive: oklch(0.50 0.18 22);
+	--border: oklch(1 0 0 / 7%);
+	--input: oklch(1 0 0 / 10%);
+	--ring: oklch(0.44 0.13 265);
+	--chart-1: oklch(0.6231 0.188 259.81);
+	--chart-2: oklch(0.696 0.17 162.48);
+	--chart-3: oklch(0.769 0.188 70.08);
+	--chart-4: oklch(0.627 0.265 303.9);
+	--chart-5: oklch(0.645 0.246 16.439);
+	--sidebar: oklch(0.055 0.01 265);
+	--sidebar-foreground: oklch(0.58 0.022 280);
+	--sidebar-primary: oklch(0.52 0.14 265);
+	--sidebar-primary-foreground: oklch(0.95 0.005 265);
+	--sidebar-accent: oklch(0.12 0.014 265);
+	--sidebar-accent-foreground: oklch(0.68 0.022 280);
+	--sidebar-border: oklch(1 0 0 / 6%);
+	--sidebar-ring: oklch(0.44 0.13 265);
+}
+
 @theme inline {
 	--radius-sm: calc(var(--radius) - 4px);
 	--radius-md: calc(var(--radius) - 2px);
@@ -161,6 +196,10 @@
 :is(.dark *) .shiki span {
 	color: var(--shiki-dark) !important;
 	background-color: var(--shiki-dark-bg) !important;
+}
+
+:is(.rust *) .shiki {
+	background-color: #ede4d6 !important;
 }
 
 /* Sonner: color only the description text per toast type */
