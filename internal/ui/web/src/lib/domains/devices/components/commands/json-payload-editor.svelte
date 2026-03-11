@@ -7,7 +7,7 @@
 	import { vim, Vim } from '@replit/codemirror-vim';
 	import { editorPrefs } from '$lib/shared/stores/editor-prefs.svelte';
 	import { themeStore } from '$lib/shared/stores/theme.svelte';
-	import { rustTheme } from '$lib/shared/stores/codemirror-themes';
+	import { rustTheme, midnightTheme } from '$lib/shared/stores/codemirror-themes';
 	import { Badge } from '$lib/shared/components/shadcn/badge';
 	import { Button } from '$lib/shared/components/shadcn/button';
 	import { Spinner } from '$lib/shared/components/shadcn/spinner';
@@ -132,7 +132,7 @@
 				vimCompartment.of(untrack(() => editorPrefs.vim) ? vim() : []),
 				basicSetup,
 				jsonLang(),
-				themeCompartment.of(untrack(() => themeStore.current === 'dark') ? oneDark : untrack(() => themeStore.current === 'rust') ? rustTheme : [])
+				themeCompartment.of(untrack(() => themeStore.current === 'dark') ? oneDark : untrack(() => themeStore.current === 'midnight') ? midnightTheme : untrack(() => themeStore.current === 'rust') ? rustTheme : [])
 			],
 			parent: cmEl
 		});
@@ -147,7 +147,7 @@
 	$effect(() => {
 		const t = themeStore.current;
 		if (cmView) {
-			cmView.dispatch({ effects: themeCompartment.reconfigure(t === 'dark' ? oneDark : t === 'rust' ? rustTheme : []) });
+			cmView.dispatch({ effects: themeCompartment.reconfigure(t === 'dark' ? oneDark : t === 'midnight' ? midnightTheme : t === 'rust' ? rustTheme : []) });
 		}
 	});
 
