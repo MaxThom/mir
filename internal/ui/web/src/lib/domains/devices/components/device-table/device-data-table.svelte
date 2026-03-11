@@ -113,6 +113,23 @@
 		const selected = table.getSelectedRowModel().rows.map((r) => r.original);
 		selectionStore.setAll(selected);
 	});
+
+	$effect(() => {
+		function handleKeyDown(e: KeyboardEvent) {
+			const tag = (e.target as HTMLElement).tagName;
+			const isInput = tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement).isContentEditable;
+
+			if (e.key === 'Escape') {
+				selectionStore.clearSelection();
+				rowSelection = {};
+			} else if ((e.ctrlKey || e.metaKey) && e.key === 'a' && !isInput) {
+				e.preventDefault();
+				table.toggleAllRowsSelected(!table.getIsAllRowsSelected());
+			}
+		}
+		document.addEventListener('keydown', handleKeyDown);
+		return () => document.removeEventListener('keydown', handleKeyDown);
+	});
 </script>
 
 <Card.Root class="gap-0 overflow-hidden py-0">
