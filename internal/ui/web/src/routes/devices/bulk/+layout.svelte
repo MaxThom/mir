@@ -1,23 +1,44 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
+	import { setContext } from 'svelte';
 	import { selectionStore } from '$lib/domains/devices/stores/selection.svelte';
 	import { ROUTES } from '$lib/shared/constants/routes';
 	import { cn } from '$lib/utils';
+	import { resolve } from '$app/paths';
+	import { RefreshButtonGroup } from '$lib/shared/components/ui/refresh-button-group';
 
 	let { children } = $props();
 
 	// Guard: redirect to device list if no devices selected
 	$effect(() => {
 		if (selectionStore.count === 0) {
-			goto(ROUTES.DEVICES.LIST);
+			goto(resolve(ROUTES.DEVICES.LIST));
+		}
+	});
+
+	let tabRefreshFn = $state<(() => Promise<void> | void) | null>(null);
+	let isRefreshing = $state(false);
+
+	async function handleRefresh() {
+		isRefreshing = true;
+		try {
+			await tabRefreshFn?.();
+		} finally {
+			isRefreshing = false;
+		}
+	}
+
+	setContext('multi', {
+		setTabRefresh(fn: (() => void) | null) {
+			tabRefreshFn = fn;
 		}
 	});
 
 	const TABS = [
 		{ label: 'Telemetry', href: ROUTES.DEVICES.MULTI.TELEMETRY },
 		{ label: 'Commands', href: ROUTES.DEVICES.MULTI.COMMANDS },
-		{ label: 'Configuration', href: ROUTES.DEVICES.MULTI.CONFIG },
+		{ label: 'Configuration', href: ROUTES.DEVICES.MULTI.CONFIG }
 	];
 
 	let isActive = (href: string) => {
@@ -39,6 +60,9 @@
 					{selectionStore.count} devices
 				{/if}
 			</span>
+			<div class="ml-auto">
+				<RefreshButtonGroup onRefresh={handleRefresh} isLoading={isRefreshing} />
+			</div>
 		</div>
 
 		<!-- Selected device chips -->
@@ -53,10 +77,12 @@
 					)}
 					title={disabled ? 'Click to re-enable' : 'Click to exclude'}
 				>
-					<span class={cn(
-						'h-1.5 w-1.5 shrink-0 rounded-full',
-						device.status?.online ? 'bg-emerald-500' : 'bg-muted-foreground/30'
-					)}></span>
+					<span
+						class={cn(
+							'h-1.5 w-1.5 shrink-0 rounded-full',
+							device.status?.online ? 'bg-emerald-500' : 'bg-muted-foreground/30'
+						)}
+					></span>
 					{device.meta?.name}/{device.meta?.namespace}
 				</button>
 			{/each}

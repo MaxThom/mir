@@ -1,8 +1,9 @@
 <script lang="ts">
-	import { untrack } from 'svelte';
+	import { untrack, getContext, onDestroy } from 'svelte';
 	import { mirStore } from '$lib/domains/mir/stores/mir.svelte';
 	import { selectionStore } from '$lib/domains/devices/stores/selection.svelte';
 	import { DeviceTarget, CommandResponseStatus } from '@mir/sdk';
+	import { SvelteMap } from 'svelte/reactivity';
 	import type { CommandGroup, CommandDescriptor, SendCommandResult } from '@mir/sdk';
 	import {
 		DescriptorPanel,
@@ -54,7 +55,11 @@
 
 				if (selGroupKey) {
 					const newIdx = commandGroups.findIndex(
-						(g) => g.ids.map((id) => id.id).sort().join(',') === selGroupKey
+						(g) =>
+							g.ids
+								.map((id) => id.id)
+								.sort()
+								.join(',') === selGroupKey
 					);
 					if (newIdx === -1) {
 						selection = null;
@@ -71,7 +76,7 @@
 		}
 	});
 
-	async function loadCommands() {
+	async function loadCommands(preserveSelection = false) {
 		if (!mirStore.mir) return;
 		isLoading = true;
 		error = null;
@@ -81,15 +86,21 @@
 			const groups = await mirStore.mir.client().listCommands().request(target);
 			commandGroups = groups;
 			_lastLoadedIds = new Set(allIds);
-			selection = null;
-			response = null;
-			sendError = null;
+			if (!preserveSelection) {
+				selection = null;
+				response = null;
+				sendError = null;
+			}
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Failed to load commands';
 		} finally {
 			isLoading = false;
 		}
 	}
+
+	const multiCtx = getContext<{ setTabRefresh: (fn: (() => void) | null) => void }>('multi');
+	multiCtx.setTabRefresh(() => loadCommands(true));
+	onDestroy(() => multiCtx.setTabRefresh(null));
 
 	let groups = $derived(
 		commandGroups.map((g) => ({
@@ -199,42 +210,45 @@
 		if (!mirStore.mir || !selection) return;
 		isSending = true;
 		sendError = null;
-		const combined: SendCommandResult = new Map();
-		try {
-			for (const [deviceId, text] of payloads) {
+		const merged = new SvelteMap<string, unknown>();
+		const failures: string[] = [];
+
+		for (const [deviceId, json] of payloads) {
+			try {
 				const target = new DeviceTarget({ ids: [deviceId] });
 				const result = await mirStore.mir
 					.client()
 					.sendCommand()
-					.request(target, selection.command.name, text, dryRun);
-				for (const [id, resp] of result) combined.set(id, resp);
+					.request(target, selection.command.name, json, dryRun);
+				for (const [k, v] of result) merged.set(k, v);
+			} catch (err) {
+				const label = deviceValues?.find((dv) => dv.deviceId === deviceId)?.label ?? deviceId;
+				failures.push(`${label}: ${err instanceof Error ? err.message : 'failed'}`);
 			}
-			response = combined;
+		}
+
+		if (merged.size > 0) {
+			response = merged as SendCommandResult;
 			activityStore.add({
 				kind: 'success',
 				category: 'Command',
 				title: selection.command.name,
-				request: {
-					ids: [...payloads.keys()],
-					name: selection.command.name,
-					payloads: Object.fromEntries(payloads),
-					dryRun
-				},
-				response: Object.fromEntries(combined)
+				request: { name: selection.command.name, dryRun },
+				response: Object.fromEntries(merged)
 			});
-		} catch (err) {
-			const message = err instanceof Error ? err.message : 'Failed to send command';
-			sendError = message;
+		}
+		if (failures.length > 0) {
+			sendError = failures.join('; ');
 			activityStore.add({
 				kind: 'error',
 				category: 'Command',
 				title: selection.command.name,
 				request: { name: selection.command.name },
-				error: message
+				error: sendError
 			});
-		} finally {
-			isSending = false;
 		}
+
+		isSending = false;
 	}
 </script>
 
@@ -243,8 +257,8 @@
 		title="Commands"
 		items={[]}
 		{groups}
-		isLoading={isLoading}
-		error={error}
+		{isLoading}
+		{error}
 		groupErrors={[]}
 		{selectedKey}
 		emptyText="No commands found."

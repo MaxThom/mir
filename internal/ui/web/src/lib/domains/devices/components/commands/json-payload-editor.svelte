@@ -51,22 +51,6 @@
 		return value;
 	});
 
-	function parseMultiDeviceContent(text: string): Map<string, string> | null {
-		if (!deviceValues) return null;
-		const labelToId = new Map(deviceValues.map((dv) => [dv.label, dv.deviceId]));
-		const result = new Map<string, string>();
-		const parts = text.split(/^\/\/ /m);
-		for (let i = 1; i < parts.length; i++) {
-			const nl = parts[i].indexOf('\n');
-			if (nl === -1) continue;
-			const label = parts[i].slice(0, nl).trim();
-			const json = parts[i].slice(nl + 1).trim();
-			const deviceId = labelToId.get(label);
-			if (deviceId) result.set(deviceId, json);
-		}
-		return result;
-	}
-
 	let isVimMode = $derived(editorPrefs.vim);
 	let copied = $state(false);
 	let localError = $state<string | null>(null);
@@ -77,6 +61,7 @@
 	const vimCompartment = new Compartment();
 
 	Vim.defineEx('write', 'w', () => submit(false));
+	Vim.defineEx('wq', 'wq', () => submit(false));
 
 	function toggleVim() {
 		const newVim = !isVimMode;
@@ -99,18 +84,27 @@
 		const text = cmView ? cmView.state.doc.toString() : displayValue;
 
 		if (isMultiValues && onSendMulti) {
-			const payloads = parseMultiDeviceContent(text);
-			if (!payloads) {
-				localError = 'Failed to parse device sections';
-				return;
-			}
-			for (const [, json] of payloads) {
+			const payloads = new Map<string, string>();
+			const errors: string[] = [];
+			const blocks = text.split(/\n(?=\/\/ )/);
+			for (const block of blocks) {
+				const nlIdx = block.indexOf('\n');
+				if (nlIdx === -1) continue;
+				const labelLine = block.slice(0, nlIdx).trim();
+				const label = labelLine.startsWith('// ') ? labelLine.slice(3) : labelLine;
+				const jsonText = block.slice(nlIdx + 1).trim();
 				try {
-					JSON.parse(json);
+					JSON.parse(jsonText);
 				} catch {
-					localError = 'Invalid JSON in one or more device sections';
-					return;
+					errors.push(`Invalid JSON for ${label}`);
+					continue;
 				}
+				const dv = deviceValues!.find((d) => d.label === label);
+				if (dv) payloads.set(dv.deviceId, jsonText);
+			}
+			if (errors.length > 0) {
+				localError = errors.join('; ');
+				return;
 			}
 			localError = null;
 			onSendMulti(dryRun, payloads);

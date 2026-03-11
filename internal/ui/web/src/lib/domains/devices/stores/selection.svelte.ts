@@ -58,7 +58,7 @@ class SelectionStore {
 	}
 
 	get activeCount() {
-		return this.selectedDevices.length - this.disabledDeviceIds.size;
+		return this.activeDevices.length;
 	}
 }
 
