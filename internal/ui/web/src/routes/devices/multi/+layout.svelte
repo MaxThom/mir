@@ -3,10 +3,7 @@
 	import { page } from '$app/state';
 	import { selectionStore } from '$lib/domains/devices/stores/selection.svelte';
 	import { ROUTES } from '$lib/shared/constants/routes';
-	import { Badge } from '$lib/shared/components/shadcn/badge';
 	import { cn } from '$lib/utils';
-	import XIcon from '@lucide/svelte/icons/x';
-	import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
 
 	let { children } = $props();
 
@@ -32,37 +29,36 @@
 <div class="flex flex-col">
 	<!-- Header -->
 	<div class="border-b bg-background px-4 pt-2 pb-0">
-		<!-- Breadcrumb -->
+		<!-- Title row -->
 		<div class="flex items-center gap-2 pb-2">
-			<button
-				onclick={() => goto(ROUTES.DEVICES.LIST)}
-				class="flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
-			>
-				<ChevronLeftIcon class="size-3.5" />
-				Devices
-			</button>
-			<span class="text-xs text-muted-foreground">/</span>
-			<span class="text-xs font-medium">Bulk Operations</span>
-			<Badge variant="secondary" class="ml-1 text-xs">{selectionStore.count}</Badge>
+			<span class="text-sm font-medium">Bulk Operations</span>
+			<span class="text-xs text-muted-foreground">
+				{#if selectionStore.activeCount < selectionStore.count}
+					{selectionStore.activeCount} of {selectionStore.count} devices
+				{:else}
+					{selectionStore.count} devices
+				{/if}
+			</span>
 		</div>
 
 		<!-- Selected device chips -->
 		<div class="flex flex-wrap items-center gap-1.5 pb-2">
 			{#each selectionStore.selectedDevices as device (device.spec.deviceId)}
-				<span class="flex items-center gap-1 rounded-full border bg-muted/50 px-2 py-0.5 font-mono text-xs">
+				{@const disabled = selectionStore.isDisabled(device.spec.deviceId)}
+				<button
+					onclick={() => selectionStore.toggleDisabled(device.spec.deviceId)}
+					class={cn(
+						'flex items-center gap-1 rounded-full border px-2 py-0.5 font-mono text-xs transition-opacity',
+						disabled ? 'opacity-35 hover:opacity-60' : 'bg-muted/50 hover:opacity-80'
+					)}
+					title={disabled ? 'Click to re-enable' : 'Click to exclude'}
+				>
 					<span class={cn(
 						'h-1.5 w-1.5 shrink-0 rounded-full',
 						device.status?.online ? 'bg-emerald-500' : 'bg-muted-foreground/30'
 					)}></span>
 					{device.meta?.name}/{device.meta?.namespace}
-					<button
-						onclick={() => selectionStore.deselect(device.spec.deviceId)}
-						class="ml-0.5 text-muted-foreground transition-colors hover:text-foreground"
-						aria-label="Remove {device.meta?.name} from selection"
-					>
-						<XIcon class="size-3" />
-					</button>
-				</span>
+				</button>
 			{/each}
 		</div>
 

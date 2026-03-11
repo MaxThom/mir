@@ -15,30 +15,63 @@
 	import CopyIcon from '@lucide/svelte/icons/copy';
 	import CheckIcon from '@lucide/svelte/icons/check';
 
+	type DeviceValue = { label: string; deviceId: string; values: string };
+
 	let {
 		name,
 		nameError,
-		currentValues,
+		currentValues = '{}',
 		template,
 		hasResponse,
 		isSending,
 		sendError,
 		showDryRun = true,
-		onSend
+		onSend,
+		deviceValues,
+		onSendMulti
 	}: {
 		name: string;
 		nameError?: string;
-		currentValues: string;
+		currentValues?: string;
 		template: string;
 		hasResponse: boolean;
 		isSending: boolean;
 		sendError: string | null;
 		showDryRun?: boolean;
 		onSend: (dryRun: boolean, text: string) => void;
+		deviceValues?: DeviceValue[];
+		onSendMulti?: (dryRun: boolean, payloads: Map<string, string>) => void;
 	} = $props();
 
 	let viewMode = $state<'values' | 'template'>('values');
-	let displayValue = $derived(viewMode === 'values' ? currentValues : template);
+
+	let isMultiValues = $derived(viewMode === 'values' && (deviceValues?.length ?? 0) > 0);
+
+	let displayValue = $derived.by(() => {
+		if (viewMode === 'template') return template;
+		if (deviceValues && deviceValues.length > 0) {
+			return deviceValues.map((dv) => `// ${dv.label}\n${dv.values}`).join('\n\n');
+		}
+		return currentValues;
+	});
+
+	function parseMultiDeviceContent(text: string): Map<string, string> | null {
+		if (!deviceValues) return null;
+		const labelToId = new Map(deviceValues.map((dv) => [dv.label, dv.deviceId]));
+		const result = new Map<string, string>();
+		// Split on "// Label" comment lines
+		const parts = text.split(/^\/\/ /m);
+		// parts[0] is content before first comment (empty/whitespace)
+		for (let i = 1; i < parts.length; i++) {
+			const nl = parts[i].indexOf('\n');
+			if (nl === -1) continue;
+			const label = parts[i].slice(0, nl).trim();
+			const json = parts[i].slice(nl + 1).trim();
+			const deviceId = labelToId.get(label);
+			if (deviceId) result.set(deviceId, json);
+		}
+		return result;
+	}
 
 	let isVimMode = $derived(editorPrefs.vim);
 	let copied = $state(false);
@@ -52,8 +85,9 @@
 	Vim.defineEx('write', 'w', () => submit(false));
 
 	function toggleVim() {
-		editorPrefs.setVim(!isVimMode);
-		cmView?.dispatch({ effects: vimCompartment.reconfigure(!isVimMode ? vim() : []) });
+		const newVim = !isVimMode;
+		editorPrefs.setVim(newVim);
+		cmView?.dispatch({ effects: vimCompartment.reconfigure(newVim ? vim() : []) });
 	}
 
 	async function handleCopy() {
@@ -69,6 +103,26 @@
 
 	function submit(dryRun: boolean) {
 		const text = cmView ? cmView.state.doc.toString() : displayValue;
+
+		if (isMultiValues && onSendMulti) {
+			const payloads = parseMultiDeviceContent(text);
+			if (!payloads) {
+				localError = 'Failed to parse device sections';
+				return;
+			}
+			for (const [, json] of payloads) {
+				try {
+					JSON.parse(json);
+				} catch {
+					localError = 'Invalid JSON in one or more device sections';
+					return;
+				}
+			}
+			localError = null;
+			onSendMulti(dryRun, payloads);
+			return;
+		}
+
 		try {
 			JSON.parse(text);
 		} catch {
@@ -125,7 +179,7 @@
 					? 'bg-secondary text-secondary-foreground'
 					: 'text-muted-foreground hover:text-foreground'}"
 			>
-				{viewMode === 'template' ? 'TEMPLATE' : 'VALUES'}
+				{viewMode === 'template' ? 'TEMPLATE' : isMultiValues ? 'VALUES (per device)' : 'VALUES'}
 			</button>
 			<button
 				onclick={toggleVim}

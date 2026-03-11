@@ -73,7 +73,7 @@
 	// ─── Load measurements ────────────────────────────────────────────────────
 
 	$effect(() => {
-		if (!mirStore.mir || selectionStore.count === 0) return;
+		if (!mirStore.mir || selectionStore.activeCount === 0) return;
 		loadMeasurements();
 	});
 
@@ -83,7 +83,7 @@
 		isLoading = true;
 		error = null;
 		try {
-			const allIds = selectionStore.selectedDevices.map((d) => d.spec.deviceId);
+			const allIds = selectionStore.activeDevices.map((d) => d.spec.deviceId);
 			const target = new DeviceTarget({ ids: allIds });
 			const groups = await mirStore.mir.client().listTelemetry().request(target);
 			tlmGroups = groups;

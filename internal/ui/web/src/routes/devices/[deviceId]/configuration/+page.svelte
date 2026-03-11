@@ -99,7 +99,7 @@
 	}
 </script>
 
-<div class="-m-4 flex min-h-125 overflow-hidden rounded-none border-y">
+<div class="-m-4 flex h-[calc(100svh-14rem)] overflow-hidden rounded-none border-y">
 	<DescriptorPanel
 		title="Configurations"
 		items={allDescriptors}
