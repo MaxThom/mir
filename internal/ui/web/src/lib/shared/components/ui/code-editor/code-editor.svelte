@@ -12,7 +12,8 @@
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import XIcon from '@lucide/svelte/icons/x';
 	import { editorPrefs } from '$lib/shared/stores/editor-prefs.svelte';
-	import { mode } from 'mode-watcher';
+	import { themeStore } from '$lib/shared/stores/theme.svelte';
+	import { rustTheme } from '$lib/shared/stores/codemirror-themes';
 
 	let {
 		content,
@@ -72,7 +73,7 @@
 				extensions: [
 					vimCompartment.of(isVimMode ? vim() : []),
 					langCompartment.of(isJsonMode ? jsonLang() : yamlLang()),
-					themeCompartment.of(mode.current === 'dark' ? oneDark : []),
+					themeCompartment.of(themeStore.current === 'dark' ? oneDark : themeStore.current === 'rust' ? rustTheme : []),
 					basicSetup
 				],
 				parent: cmEditorEl
@@ -87,9 +88,9 @@
 	});
 
 	$effect(() => {
-		const isDark = mode.current === 'dark';
+		const t = themeStore.current;
 		if (cmView) {
-			cmView.dispatch({ effects: themeCompartment.reconfigure(isDark ? oneDark : []) });
+			cmView.dispatch({ effects: themeCompartment.reconfigure(t === 'dark' ? oneDark : t === 'rust' ? rustTheme : []) });
 		}
 	});
 </script>

@@ -3,15 +3,17 @@
 	import { ModeWatcher } from 'mode-watcher';
 	import SunIcon from '@lucide/svelte/icons/sun';
 	import MoonIcon from '@lucide/svelte/icons/moon';
+	import FlameIcon from '@lucide/svelte/icons/flame';
 	import UnplugIcon from '@lucide/svelte/icons/unplug';
 	import BookOpenIcon from '@lucide/svelte/icons/book-open';
 	import { ActivityLog } from '$lib/domains/activity/components/activity-log';
 	import { Toaster } from '$lib/shared/components/shadcn/sonner';
 	import * as Empty from '$lib/shared/components/shadcn/empty';
 
-	import { toggleMode } from 'mode-watcher';
 	import { Button } from '$lib/shared/components/shadcn/button/index.js';
+	import * as DropdownMenu from '$lib/shared/components/shadcn/dropdown-menu/index.js';
 	import { onMount, untrack } from 'svelte';
+	import { themeStore } from '$lib/shared/stores/theme.svelte';
 
 	let { children } = $props();
 
@@ -34,6 +36,7 @@
 
 	onMount(async () => {
 		await contextStore.initialize();
+		themeStore.init();
 	});
 
 	$effect(() => {
@@ -85,15 +88,33 @@
 				<Button onclick={() => editorPrefs.setUtc(!editorPrefs.utc)} variant="ghost" class="h-7 w-12 px-2 font-mono text-[10px]">
 					{editorPrefs.utc ? 'UTC' : 'LOCAL'}
 				</Button>
-				<Button onclick={toggleMode} variant="ghost" size="icon" class="size-7">
-					<SunIcon
-						class="h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-all! dark:scale-0 dark:-rotate-90"
-					/>
-					<MoonIcon
-						class="absolute h-[1.2rem] w-[1.2rem] scale-0 rotate-90 transition-all! dark:scale-100 dark:rotate-0"
-					/>
-					<span class="sr-only">Toggle theme</span>
-				</Button>
+				<DropdownMenu.Root>
+					<DropdownMenu.Trigger>
+						{#snippet child({ props })}
+							<Button {...props} variant="ghost" size="icon" class="size-7">
+								{#if themeStore.current === 'dark'}
+									<MoonIcon class="size-4" />
+								{:else if themeStore.current === 'rust'}
+									<FlameIcon class="size-4" />
+								{:else}
+									<SunIcon class="size-4" />
+								{/if}
+								<span class="sr-only">Theme</span>
+							</Button>
+						{/snippet}
+					</DropdownMenu.Trigger>
+					<DropdownMenu.Content align="end" class="min-w-32">
+						<DropdownMenu.Item onclick={() => themeStore.set('light')} class="gap-2">
+							<SunIcon class="size-3.5" /> Light
+						</DropdownMenu.Item>
+						<DropdownMenu.Item onclick={() => themeStore.set('dark')} class="gap-2">
+							<MoonIcon class="size-3.5" /> Dark
+						</DropdownMenu.Item>
+						<DropdownMenu.Item onclick={() => themeStore.set('rust')} class="gap-2">
+							<FlameIcon class="size-3.5" /> Rust
+						</DropdownMenu.Item>
+					</DropdownMenu.Content>
+				</DropdownMenu.Root>
 				<Button onclick={() => docsStore.toggle()} variant="ghost" size="icon" class="size-7">
 					<BookOpenIcon class="size-4" />
 					<span class="sr-only">Toggle documentation</span>

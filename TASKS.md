@@ -2,6 +2,12 @@
 
 ## Immediate
 
+- [ ] Rust theme
+- [ ] multi tlm
+- [ ] perf check
+- [ ] tutorial on each page
+- [ ] schema page
+
 ### Bug
 
 - [ ] Add deviceid to badger
