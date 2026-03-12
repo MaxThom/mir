@@ -2,7 +2,7 @@
 
 ## Immediate
 
-- [ ] Rust theme
+- [x] Rust theme
 - [ ] multi tlm
 - [ ] perf check
 - [ ] tutorial on each page
