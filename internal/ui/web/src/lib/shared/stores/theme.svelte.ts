@@ -1,12 +1,12 @@
 import { setMode } from 'mode-watcher';
 import { browser } from '$app/environment';
 
-export type Theme = 'light' | 'dark' | 'rust' | 'midnight' | 'hacker' | 'mocha';
+export type Theme = 'dawn' | 'dusk' | 'rust' | 'aurora' | 'midnight' | 'hacker' | 'mocha';
 const STORAGE_KEY = 'mir-theme';
 
 class ThemeStore {
-	current = $state<Theme>('light');
-	private committed: Theme = 'light';
+	current = $state<Theme>('dawn');
+	private committed: Theme = 'dawn';
 
 	init() {
 		if (!browser) return;
@@ -34,14 +34,16 @@ class ThemeStore {
 	private apply(theme: Theme) {
 		this.current = theme;
 		if (!browser) return;
-		if (theme === 'dark' || theme === 'midnight' || theme === 'hacker' || theme === 'mocha') {
+		if (theme === 'dusk' || theme === 'midnight' || theme === 'aurora' || theme === 'hacker' || theme === 'mocha') {
 			setMode('dark');
 		} else {
 			setMode('light');
 		}
-		document.documentElement.classList.remove('rust', 'midnight', 'hacker', 'mocha');
+		document.documentElement.classList.remove('rust', 'aurora', 'midnight', 'hacker', 'mocha');
 		if (theme === 'rust') {
 			document.documentElement.classList.add('rust');
+		} else if (theme === 'aurora') {
+			document.documentElement.classList.add('aurora');
 		} else if (theme === 'midnight') {
 			document.documentElement.classList.add('midnight');
 		} else if (theme === 'hacker') {

@@ -3,11 +3,10 @@
 	import { EditorView, basicSetup } from 'codemirror';
 	import { Compartment } from '@codemirror/state';
 	import { json as jsonLang } from '@codemirror/lang-json';
-	import { oneDark } from '@codemirror/theme-one-dark';
 	import { vim, Vim } from '@replit/codemirror-vim';
 	import { editorPrefs } from '$lib/shared/stores/editor-prefs.svelte';
 	import { themeStore } from '$lib/shared/stores/theme.svelte';
-	import { rustTheme, midnightTheme, hackerTheme, mochaTheme } from '$lib/shared/stores/codemirror-themes';
+	import { cmTheme } from '$lib/shared/stores/codemirror-themes';
 	import { Badge } from '$lib/shared/components/shadcn/badge';
 	import { Button } from '$lib/shared/components/shadcn/button';
 	import { Spinner } from '$lib/shared/components/shadcn/spinner';
@@ -136,7 +135,7 @@
 				vimCompartment.of(untrack(() => editorPrefs.vim) ? vim() : []),
 				basicSetup,
 				jsonLang(),
-				themeCompartment.of(untrack(() => themeStore.current === 'dark') ? oneDark : untrack(() => themeStore.current === 'midnight') ? midnightTheme : untrack(() => themeStore.current === 'rust') ? rustTheme : [])
+				themeCompartment.of(cmTheme(untrack(() => themeStore.current)))
 			],
 			parent: cmEl
 		});
@@ -151,7 +150,7 @@
 	$effect(() => {
 		const t = themeStore.current;
 		if (cmView) {
-			cmView.dispatch({ effects: themeCompartment.reconfigure(t === 'dark' ? oneDark : t === 'midnight' ? midnightTheme : t === 'hacker' ? hackerTheme : t === 'mocha' ? mochaTheme : t === 'rust' ? rustTheme : []) });
+			cmView.dispatch({ effects: themeCompartment.reconfigure(cmTheme(t)) });
 		}
 	});
 
