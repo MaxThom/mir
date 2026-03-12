@@ -6,6 +6,7 @@
 	import FlameIcon from '@lucide/svelte/icons/flame';
 	import MoonStarIcon from '@lucide/svelte/icons/moon-star';
 	import TerminalIcon from '@lucide/svelte/icons/terminal';
+	import SparklesIcon from '@lucide/svelte/icons/sparkles';
 	import CoffeeIcon from '@lucide/svelte/icons/coffee';
 	import UnplugIcon from '@lucide/svelte/icons/unplug';
 	import BookOpenIcon from '@lucide/svelte/icons/book-open';
@@ -95,8 +96,10 @@
 					<DropdownMenu.Trigger>
 						{#snippet child({ props })}
 							<Button {...props} variant="ghost" size="icon" class="size-7">
-								{#if themeStore.current === 'dark'}
+								{#if themeStore.current === 'dusk'}
 									<MoonIcon class="size-4" />
+								{:else if themeStore.current === 'aurora'}
+									<SparklesIcon class="size-4" />
 								{:else if themeStore.current === 'midnight'}
 									<MoonStarIcon class="size-4" />
 								{:else if themeStore.current === 'rust'}
@@ -113,17 +116,20 @@
 						{/snippet}
 					</DropdownMenu.Trigger>
 					<DropdownMenu.Content align="end" class="min-w-32">
-						<DropdownMenu.Item onmouseenter={() => themeStore.preview('light')} onclick={() => themeStore.set('light')} class="gap-2">
-							<SunIcon class="size-3.5" /> Light
-						</DropdownMenu.Item>
-						<DropdownMenu.Item onmouseenter={() => themeStore.preview('dark')} onclick={() => themeStore.set('dark')} class="gap-2">
-							<MoonIcon class="size-3.5" /> Dark
+						<DropdownMenu.Item onmouseenter={() => themeStore.preview('dawn')} onclick={() => themeStore.set('dawn')} class="gap-2">
+							<SunIcon class="size-3.5" /> Dawn
 						</DropdownMenu.Item>
 						<DropdownMenu.Item onmouseenter={() => themeStore.preview('rust')} onclick={() => themeStore.set('rust')} class="gap-2">
 							<FlameIcon class="size-3.5" /> Rust
 						</DropdownMenu.Item>
 						<DropdownMenu.Item onmouseenter={() => themeStore.preview('mocha')} onclick={() => themeStore.set('mocha')} class="gap-2">
 							<CoffeeIcon class="size-3.5" /> Mocha
+						</DropdownMenu.Item>
+						<DropdownMenu.Item onmouseenter={() => themeStore.preview('dusk')} onclick={() => themeStore.set('dusk')} class="gap-2">
+							<MoonIcon class="size-3.5" /> Dusk
+						</DropdownMenu.Item>
+						<DropdownMenu.Item onmouseenter={() => themeStore.preview('aurora')} onclick={() => themeStore.set('aurora')} class="gap-2">
+							<SparklesIcon class="size-3.5" /> Aurora
 						</DropdownMenu.Item>
 						<DropdownMenu.Item onmouseenter={() => themeStore.preview('midnight')} onclick={() => themeStore.set('midnight')} class="gap-2">
 							<MoonStarIcon class="size-3.5" /> Midnight

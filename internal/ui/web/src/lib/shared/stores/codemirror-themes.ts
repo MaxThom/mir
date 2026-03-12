@@ -1,6 +1,9 @@
 import { EditorView } from '@codemirror/view';
 import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
 import { tags } from '@lezer/highlight';
+import { oneDark } from '@codemirror/theme-one-dark';
+import type { Extension } from '@codemirror/state';
+import type { Theme } from './theme.svelte';
 
 export const rustTheme = EditorView.theme(
 	{
@@ -17,6 +20,75 @@ export const rustTheme = EditorView.theme(
 	},
 	{ dark: false }
 );
+
+// Aurora — editor shell
+const auroraEditorTheme = EditorView.theme(
+	{
+		'&': { background: '#0a0d14', color: '#e0e6f5' },
+		'.cm-content': { caretColor: '#c792ea' },
+		'.cm-cursor': { borderLeftColor: '#c792ea' },
+		'.cm-gutters': {
+			background: '#07090f',
+			borderRight: '1px solid #1b1f2e',
+			color: '#3d4466'
+		},
+		'.cm-lineNumbers .cm-gutterElement': { padding: '0 8px' },
+		'.cm-activeLineGutter': { background: '#1b1f2e80', color: '#6272a4' },
+		'.cm-activeLine': { background: '#1b1f2e40' },
+		'.cm-selectionBackground': { background: '#2d3354' },
+		'&.cm-focused .cm-selectionBackground': { background: '#3a4068' },
+		'::selection': { background: '#3a4068' },
+		'.cm-matchingBracket': { color: '#c3e88d', outline: '1px solid #c3e88d66' }
+	},
+	{ dark: true }
+);
+
+// Aurora — vivid syntax tokens (Tokyo Night-inspired)
+const auroraHighlight = HighlightStyle.define([
+	{ tag: tags.keyword, color: '#c792ea', fontStyle: 'italic' },
+	{ tag: tags.controlKeyword, color: '#c792ea', fontStyle: 'italic' },
+	{ tag: tags.operatorKeyword, color: '#c792ea' },
+	{ tag: tags.moduleKeyword, color: '#c792ea' },
+
+	{ tag: tags.string, color: '#9ece6a' },
+	{ tag: tags.special(tags.string), color: '#73daca' },
+	{ tag: tags.escape, color: '#ffc777' },
+
+	{ tag: tags.number, color: '#ff9e64' },
+	{ tag: tags.bool, color: '#ff9e64' },
+	{ tag: tags.null, color: '#ff757f' },
+
+	{ tag: tags.function(tags.variableName), color: '#7dcfff' },
+	{ tag: tags.function(tags.propertyName), color: '#7dcfff' },
+
+	{ tag: tags.propertyName, color: '#73daca' },
+
+	{ tag: tags.typeName, color: '#e0af68' },
+	{ tag: tags.className, color: '#e0af68' },
+	{ tag: tags.namespace, color: '#e0af68' },
+
+	{ tag: tags.name, color: '#c0caf5' },
+	{ tag: tags.variableName, color: '#c0caf5' },
+	{ tag: tags.definition(tags.variableName), color: '#7aa2f7' },
+
+	{ tag: tags.operator, color: '#89ddff' },
+	{ tag: tags.punctuation, color: '#565f89' },
+	{ tag: tags.separator, color: '#565f89' },
+	{ tag: tags.bracket, color: '#ffc777' },
+
+	{ tag: tags.comment, color: '#565f89', fontStyle: 'italic' },
+	{ tag: tags.lineComment, color: '#565f89', fontStyle: 'italic' },
+	{ tag: tags.blockComment, color: '#565f89', fontStyle: 'italic' },
+
+	{ tag: tags.tagName, color: '#f7768e' },
+	{ tag: tags.attributeName, color: '#7dcfff' },
+	{ tag: tags.attributeValue, color: '#9ece6a' },
+
+	{ tag: tags.meta, color: '#565f89' },
+	{ tag: tags.invalid, color: '#ff5874', textDecoration: 'underline' }
+]);
+
+export const auroraTheme = [auroraEditorTheme, syntaxHighlighting(auroraHighlight)];
 
 // Serendipity Midnight — editor shell
 const serendipityEditorTheme = EditorView.theme(
@@ -40,58 +112,47 @@ const serendipityEditorTheme = EditorView.theme(
 	{ dark: true }
 );
 
-// Serendipity Midnight — syntax tokens
+// Serendipity Midnight — syntax tokens (original dim palette)
 const serendipityHighlight = HighlightStyle.define([
-	// Keywords: soft lavender
 	{ tag: tags.keyword, color: '#a78bdb', fontStyle: 'italic' },
 	{ tag: tags.controlKeyword, color: '#a78bdb', fontStyle: 'italic' },
 	{ tag: tags.operatorKeyword, color: '#a78bdb' },
 	{ tag: tags.moduleKeyword, color: '#a78bdb' },
 
-	// Strings: sky blue
 	{ tag: tags.string, color: '#7ab0f5' },
 	{ tag: tags.special(tags.string), color: '#89c4f4' },
 	{ tag: tags.escape, color: '#f5a97f' },
 
-	// Numbers & booleans: soft peach/orange
 	{ tag: tags.number, color: '#f5a97f' },
 	{ tag: tags.bool, color: '#f5a97f' },
 	{ tag: tags.null, color: '#f5a97f' },
 
-	// Functions & methods: cyan
 	{ tag: tags.function(tags.variableName), color: '#58d1eb' },
 	{ tag: tags.function(tags.propertyName), color: '#58d1eb' },
 
-	// Property names / keys: soft blue-gray
 	{ tag: tags.propertyName, color: '#8db4f5' },
 
-	// Types & classes: periwinkle
 	{ tag: tags.typeName, color: '#8db4f5' },
 	{ tag: tags.className, color: '#8db4f5' },
 	{ tag: tags.namespace, color: '#8db4f5' },
 
-	// Variables & names: foreground
 	{ tag: tags.name, color: '#b6c1e4' },
 	{ tag: tags.variableName, color: '#b6c1e4' },
 	{ tag: tags.definition(tags.variableName), color: '#c3e88d' },
 
-	// Operators: light blue
 	{ tag: tags.operator, color: '#89c4f4' },
 	{ tag: tags.punctuation, color: '#6272a4' },
 	{ tag: tags.separator, color: '#6272a4' },
 	{ tag: tags.bracket, color: '#7aa2f7' },
 
-	// Comments: dim purple-gray
 	{ tag: tags.comment, color: '#454e6b', fontStyle: 'italic' },
 	{ tag: tags.lineComment, color: '#454e6b', fontStyle: 'italic' },
 	{ tag: tags.blockComment, color: '#454e6b', fontStyle: 'italic' },
 
-	// Tags (HTML/XML): lavender
 	{ tag: tags.tagName, color: '#a78bdb' },
 	{ tag: tags.attributeName, color: '#58d1eb' },
 	{ tag: tags.attributeValue, color: '#7ab0f5' },
 
-	// Misc
 	{ tag: tags.meta, color: '#6272a4' },
 	{ tag: tags.invalid, color: '#ff5555', textDecoration: 'underline' }
 ]);
@@ -235,3 +296,17 @@ const mochaHighlight = HighlightStyle.define([
 ]);
 
 export const mochaTheme = [mochaEditorTheme, syntaxHighlighting(mochaHighlight)];
+
+const themeMap: Record<Theme, Extension> = {
+	dawn: [],
+	dusk: oneDark,
+	rust: rustTheme,
+	aurora: auroraTheme,
+	midnight: midnightTheme,
+	hacker: hackerTheme,
+	mocha: mochaTheme
+};
+
+export function cmTheme(theme: Theme): Extension {
+	return themeMap[theme] ?? [];
+}

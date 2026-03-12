@@ -3,7 +3,6 @@
 	import { Compartment } from '@codemirror/state';
 	import { yaml as yamlLang } from '@codemirror/lang-yaml';
 	import { json as jsonLang } from '@codemirror/lang-json';
-	import { oneDark } from '@codemirror/theme-one-dark';
 	import { vim, Vim } from '@replit/codemirror-vim';
 	import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 	import { untrack } from 'svelte';
@@ -13,7 +12,7 @@
 	import XIcon from '@lucide/svelte/icons/x';
 	import { editorPrefs } from '$lib/shared/stores/editor-prefs.svelte';
 	import { themeStore } from '$lib/shared/stores/theme.svelte';
-	import { rustTheme, midnightTheme, hackerTheme, mochaTheme } from '$lib/shared/stores/codemirror-themes';
+	import { cmTheme } from '$lib/shared/stores/codemirror-themes';
 
 	let {
 		content,
@@ -73,7 +72,7 @@
 				extensions: [
 					vimCompartment.of(isVimMode ? vim() : []),
 					langCompartment.of(isJsonMode ? jsonLang() : yamlLang()),
-					themeCompartment.of(themeStore.current === 'dark' ? oneDark : themeStore.current === 'midnight' ? midnightTheme : themeStore.current === 'hacker' ? hackerTheme : themeStore.current === 'mocha' ? mochaTheme : themeStore.current === 'rust' ? rustTheme : []),
+					themeCompartment.of(cmTheme(themeStore.current)),
 					basicSetup
 				],
 				parent: cmEditorEl
@@ -90,7 +89,7 @@
 	$effect(() => {
 		const t = themeStore.current;
 		if (cmView) {
-			cmView.dispatch({ effects: themeCompartment.reconfigure(t === 'dark' ? oneDark : t === 'midnight' ? midnightTheme : t === 'hacker' ? hackerTheme : t === 'mocha' ? mochaTheme : t === 'rust' ? rustTheme : []) });
+			cmView.dispatch({ effects: themeCompartment.reconfigure(cmTheme(t)) });
 		}
 	});
 </script>
