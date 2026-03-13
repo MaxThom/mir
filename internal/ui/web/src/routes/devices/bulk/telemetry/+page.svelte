@@ -10,9 +10,16 @@
 	import TlmToolbar from '$lib/domains/devices/components/telemetry/tlm-toolbar.svelte';
 	import TlmFieldToggles from '$lib/domains/devices/components/telemetry/tlm-field-toggles.svelte';
 	import TlmDataPanel from '$lib/domains/devices/components/telemetry/tlm-data-panel.svelte';
+	import TlmSlotChart from '$lib/domains/devices/components/telemetry/tlm-slot-chart.svelte';
 	import TimePicker from '$lib/domains/devices/components/telemetry/time-picker.svelte';
 	import { Spinner } from '$lib/shared/components/shadcn/spinner';
 	import ActivityIcon from '@lucide/svelte/icons/activity';
+	import Columns2Icon from '@lucide/svelte/icons/columns-2';
+	import LayoutDashboardIcon from '@lucide/svelte/icons/layout-dashboard';
+	import Grid2x2Icon from '@lucide/svelte/icons/grid-2x2';
+	import SquareIcon from '@lucide/svelte/icons/square';
+	import LockIcon from '@lucide/svelte/icons/lock';
+	import LockOpenIcon from '@lucide/svelte/icons/lock-open';
 	import { editorPrefs } from '$lib/shared/stores/editor-prefs.svelte';
 	import { contextStore } from '$lib/domains/contexts/stores/contexts.svelte';
 	import type { ChartConfig } from '$lib/shared/components/shadcn/chart';
@@ -22,6 +29,7 @@
 	import { SvelteDate } from 'svelte/reactivity';
 	import {
 		CHART_COLORS,
+		getDeviceFieldColor,
 		MAX_AUTO_FIELDS,
 		type TimeFilter,
 		getTimeRange,
@@ -57,7 +65,7 @@
 	let error = $state<string | null>(null);
 	let selection = $state<Selection>(null);
 	let selectedFields = $state<string[]>([]);
-	let enabledDeviceIds = $state<Set<string>>(new Set());
+	let enabledDeviceIds = $state<string[]>([]);
 	let mergedData = $state<QueryData | null>(null);
 	let mergedFields = $state<string[]>([]);
 	let chartConfig = $state<ChartConfig>({});
@@ -74,6 +82,9 @@
 	let calendarValue = $state<DateRange | undefined>(undefined);
 	let fullscreen = $state(false);
 	let hasZoomed = $state(false);
+	let splitCount = $state<1 | 2 | 3 | 4>(1);
+	let syncFields = $state(false);
+	let syncSelectedFields = $state<string[]>([]);
 
 	// Time input state
 	let startTime = $state('00:00');
@@ -180,13 +191,16 @@
 	function clearSelection() {
 		selection = null;
 		selectedFields = [];
-		enabledDeviceIds = new Set();
+		enabledDeviceIds = [];
 		mergedData = null;
 		mergedFields = [];
 		chartConfig = {};
 		queryError = null;
 		queryStart = null;
 		queryEnd = null;
+		splitCount = 1;
+		syncFields = false;
+		syncSelectedFields = [];
 	}
 
 	// ─── Time helpers ─────────────────────────────────────────────────────────
@@ -255,7 +269,7 @@
 			queryEnd = end;
 			// Multi-device merge requires aligned timestamps — always aggregate
 			const aggWindow = getAggregationWindow(start, end) ?? '10s';
-			const fields = selectedFields.length ? selectedFields : selectedMeasurement.fields;
+			const fields = selectedMeasurement.fields;
 
 			const results = await Promise.all(
 				group.ids.map((devId) =>
@@ -278,20 +292,17 @@
 
 			const newMergedFields: string[] = [];
 			const newChartConfig: ChartConfig = {};
-			let colorIdx = 0;
 
-			results.forEach(({ deviceName, data }) => {
-				data.headers
-					.filter((h) => !h.startsWith('_'))
-					.forEach((field) => {
-						const key = `${deviceName}_${field}`;
-						newMergedFields.push(key);
-						newChartConfig[key] = {
-							label: `${deviceName}: ${field}`,
-							color: CHART_COLORS[colorIdx % CHART_COLORS.length]
-						};
-						colorIdx++;
-					});
+			selectedMeasurement.fields.forEach((field, fieldIdx) => {
+				results.forEach(({ deviceName, data }) => {
+					if (!data.headers.includes(field)) return;
+					const key = `${deviceName}_${field}`;
+					newMergedFields.push(key);
+					newChartConfig[key] = {
+						label: `${field} - ${deviceName} `,
+						color: CHART_COLORS[fieldIdx % CHART_COLORS.length]
+					};
+				});
 			});
 
 			const timeMap = new Map<number, QueryRow>();
@@ -344,8 +355,9 @@
 		const full = tlmGroups[groupIdx].descriptors.find((d) => d.name === desc.name);
 		if (!full) return;
 		selection = { groupIdx, measurement: full };
-		selectedFields = full.fields.slice(0, MAX_AUTO_FIELDS);
-		enabledDeviceIds = new Set(tlmGroups[groupIdx].ids.map((id) => id.id));
+		selectedFields = full.fields.slice(0, 1);
+		enabledDeviceIds = tlmGroups[groupIdx].ids.slice(0, 5).map((id) => id.id);
+		syncSelectedFields = full.fields.slice(0, 1);
 		mergedData = null;
 		queryError = null;
 		queryGroup();
@@ -353,15 +365,13 @@
 
 	function toggleDevice(deviceId: string, shift: boolean) {
 		if (shift) {
-			const next = new Set(enabledDeviceIds);
-			if (next.has(deviceId)) {
-				if (next.size > 1) next.delete(deviceId);
+			if (enabledDeviceIds.includes(deviceId)) {
+				if (enabledDeviceIds.length > 1) enabledDeviceIds = enabledDeviceIds.filter((id) => id !== deviceId);
 			} else {
-				next.add(deviceId);
+				enabledDeviceIds = [...enabledDeviceIds, deviceId];
 			}
-			enabledDeviceIds = next;
 		} else {
-			enabledDeviceIds = new Set([deviceId]);
+			enabledDeviceIds = [deviceId];
 		}
 	}
 
@@ -369,9 +379,42 @@
 		mergedFields.filter((key) => {
 			const group = tlmGroups[selection?.groupIdx ?? -1];
 			if (!group) return true;
-			return group.ids.some((id) => enabledDeviceIds.has(id.id) && key.startsWith(id.name + '_'));
+			return group.ids.some(
+				(id) =>
+					enabledDeviceIds.includes(id.id) &&
+					key.startsWith(id.name + '_') &&
+					selectedFields.includes(key.slice(id.name.length + 1))
+			);
 		})
 	);
+
+	let splitSlots = $derived.by(() => {
+		const group = tlmGroups[selection?.groupIdx ?? -1];
+		if (!group) return [];
+		return Array.from({ length: splitCount }, (_, i) => group.ids[i] ?? group.ids[0] ?? null);
+	});
+
+	let singleViewChartConfig = $derived.by(() => {
+		const group = tlmGroups[selection?.groupIdx ?? -1];
+		if (!group) return chartConfig;
+		const enabledDevices = enabledDeviceIds.map((id) => group.ids.find((g) => g.id === id)).filter((d): d is typeof group.ids[0] => d !== undefined);
+		if (enabledDevices.length <= 1) return chartConfig;
+		const result: ChartConfig = { ...chartConfig };
+		enabledDevices.forEach((dev, devIdx) => {
+			selectedFields.forEach((field) => {
+				const fieldIdx = selection?.measurement.fields.indexOf(field) ?? 0;
+				const key = `${dev.name}_${field}`;
+				if (key in result) result[key] = { ...result[key], color: getDeviceFieldColor(fieldIdx, devIdx) } as typeof result[string];
+			});
+		});
+		return result;
+	});
+
+		let slotChartClass = $derived.by(() => {
+		if (!fullscreen) return 'h-52';
+		const twoRows = splitCount === 3 || splitCount === 4;
+		return twoRows ? 'h-[calc(50vh-6rem)]' : 'h-[calc(100vh-8rem)]';
+	});
 
 	function handleBrushSelect(newStart: Date, newEnd: Date) {
 		if (newEnd.getTime() <= newStart.getTime() + 1000) return;
@@ -390,7 +433,19 @@
 		} else {
 			selectedFields = [field];
 		}
-		queryGroup();
+	}
+
+	function toggleSyncField(field: string, shift: boolean) {
+		if (shift) {
+			if (syncSelectedFields.includes(field)) {
+				if (syncSelectedFields.length > 1)
+					syncSelectedFields = syncSelectedFields.filter((f) => f !== field);
+			} else {
+				syncSelectedFields = [...syncSelectedFields, field];
+			}
+		} else {
+			syncSelectedFields = [field];
+		}
 	}
 </script>
 
@@ -447,6 +502,43 @@
 					</div>
 				</div>
 			{/snippet}
+		{#snippet toolbarEnd()}
+			{#if splitCount > 1}
+				<button
+					onclick={() => (syncFields = !syncFields)}
+					title={syncFields ? 'Unsync fields' : 'Sync fields across charts'}
+					class="flex items-center rounded-md border p-1 text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground
+						{syncFields ? 'border-ring bg-accent text-accent-foreground' : 'border-border bg-background'}"
+				>
+					{#if syncFields}
+						<LockIcon class="size-3.5" />
+					{:else}
+						<LockOpenIcon class="size-3.5" />
+					{/if}
+				</button>
+			{/if}
+			<button
+				onclick={() => {
+					const next = splitCount === 4 ? 1 : (splitCount + 1) as 1 | 2 | 3 | 4;
+					if (next === 1) syncFields = false;
+					else if (splitCount === 1) syncFields = true;
+					splitCount = next;
+				}}
+				title={splitCount === 1 ? 'Split in 2' : splitCount === 2 ? 'Split in 3' : splitCount === 3 ? 'Split in 4' : 'Single view'}
+				class="flex items-center rounded-md border p-1 text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground
+					{splitCount > 1 ? 'border-ring bg-accent text-accent-foreground' : 'border-border bg-background'}"
+			>
+				{#if splitCount === 1}
+					<SquareIcon class="size-3.5" />
+				{:else if splitCount === 2}
+					<Columns2Icon class="size-3.5" />
+				{:else if splitCount === 3}
+					<LayoutDashboardIcon class="size-3.5" />
+				{:else}
+					<Grid2x2Icon class="size-3.5" />
+				{/if}
+			</button>
+		{/snippet}
 		</TlmToolbar>
 
 		{#if !selection}
@@ -455,13 +547,16 @@
 				<p class="text-sm">Select a measurement to view chart</p>
 			</div>
 		{:else}
+			{#if splitCount === 1}
+			<TlmFieldToggles fields={selection.measurement.fields} {selectedFields} ontoggle={toggleField} />
+
 			<!-- Device pills -->
 			<div class="flex shrink-0 flex-wrap items-center gap-2 border-b px-4 py-1.5">
 				{#each tlmGroups[selection.groupIdx]?.ids ?? [] as dev (dev.id)}
 					<button
-						onclick={(e) => toggleDevice(dev.id, e.shiftKey)}
+						onclick={(e) => toggleDevice(dev.id, e.shiftKey || e.ctrlKey)}
 						class="flex items-center gap-1 rounded-sm border px-1.5 py-0.5 font-mono text-[11px] transition-colors
-							{enabledDeviceIds.has(dev.id)
+							{enabledDeviceIds.includes(dev.id)
 								? 'border-transparent bg-foreground text-background'
 								: 'border-border/60 bg-muted/40 text-muted-foreground hover:bg-accent'}"
 					>
@@ -469,35 +564,71 @@
 					</button>
 				{/each}
 			</div>
-
-			<TlmFieldToggles fields={selection.measurement.fields} {selectedFields} ontoggle={toggleField} />
+		{:else if syncFields}
+			<TlmFieldToggles
+				fields={selection.measurement.fields}
+				selectedFields={syncSelectedFields}
+				ontoggle={toggleSyncField}
+			/>
+		{/if}
 
 			<!-- Chart + data panel scrollable area -->
 			<div class="min-h-0 flex-1 overflow-auto">
-				<!-- Chart -->
-				<div class="px-4 py-4">
+				{#if splitCount === 1}
+					<!-- Single chart -->
+					<div class="px-4 py-4">
+						{#if queryError}
+							<p class="text-sm text-destructive">{queryError}</p>
+						{:else if isQuerying && !mergedData}
+							<div class="flex h-48 items-center justify-center text-sm text-muted-foreground">
+								<Spinner class="mr-2 size-4" />
+								Loading data…
+							</div>
+						{:else if mergedData}
+							<TlmChart
+								data={mergedData}
+								selectedFields={visibleFields}
+								chartConfig={singleViewChartConfig}
+								useUtc={editorPrefs.utc}
+								start={queryStart}
+								end={queryEnd}
+								chartClass={fullscreen ? 'h-[calc(100vh-20vh)]' : 'h-72'}
+								onBrushSelect={handleBrushSelect}
+							/>
+						{/if}
+					</div>
+					<TlmDataPanel data={mergedData} exploreQuery={selection.measurement.exploreQuery} />
+				{:else}
+					<!-- Split grid -->
 					{#if queryError}
-						<p class="text-sm text-destructive">{queryError}</p>
+						<p class="px-4 py-4 text-sm text-destructive">{queryError}</p>
 					{:else if isQuerying && !mergedData}
 						<div class="flex h-48 items-center justify-center text-sm text-muted-foreground">
 							<Spinner class="mr-2 size-4" />
 							Loading data…
 						</div>
 					{:else if mergedData}
-						<TlmChart
-							data={mergedData}
-							selectedFields={visibleFields}
-							{chartConfig}
-							useUtc={editorPrefs.utc}
-							start={queryStart}
-							end={queryEnd}
-							chartClass={fullscreen ? 'h-[calc(100vh-20vh)]' : 'h-72'}
-							onBrushSelect={handleBrushSelect}
-						/>
+						<div class="grid grid-cols-2 gap-4 px-4 py-4">
+							{#each splitSlots as initialDevice, i (i)}
+								<div class={splitCount === 3 && i === 0 ? 'col-span-2' : ''}>
+									<TlmSlotChart
+										devices={tlmGroups[selection.groupIdx].ids}
+										measurementFields={selection.measurement.fields}
+										{mergedData}
+										{chartConfig}
+										{queryStart}
+										{queryEnd}
+										useUtc={editorPrefs.utc}
+										initialDeviceId={initialDevice?.id}
+										chartClass={slotChartClass}
+										forcedFields={syncFields ? syncSelectedFields : undefined}
+										onBrushSelect={handleBrushSelect}
+									/>
+								</div>
+							{/each}
+						</div>
 					{/if}
-				</div>
-
-				<TlmDataPanel data={mergedData} exploreQuery={selection.measurement.exploreQuery} />
+				{/if}
 			</div>
 		{/if}
 	</div>

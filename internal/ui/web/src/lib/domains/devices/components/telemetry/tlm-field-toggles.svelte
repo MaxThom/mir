@@ -16,7 +16,7 @@
 	<div class="flex flex-wrap gap-1">
 		{#each fields as field, i (field)}
 			<button
-				onclick={(e) => ontoggle(field, e.shiftKey)}
+				onclick={(e) => ontoggle(field, e.shiftKey || e.ctrlKey)}
 				class="flex items-center gap-1 rounded-sm border px-1.5 py-0.5 font-mono text-[11px] transition-colors
 					{selectedFields.includes(field)
 						? 'border-transparent text-white'

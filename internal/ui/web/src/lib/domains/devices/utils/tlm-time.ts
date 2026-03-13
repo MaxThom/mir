@@ -6,6 +6,19 @@ export const CHART_COLORS = [
 	'var(--chart-5)'
 ] as const;
 
+const DEVICE_VARIANTS = [
+	(base: string) => base,
+	(base: string) => `color-mix(in oklch, ${base} 60%, white)`,
+	(base: string) => `color-mix(in oklch, ${base} 60%, black)`,
+	(base: string) => `color-mix(in oklch, ${base} 35%, white)`,
+	(base: string) => `color-mix(in oklch, ${base} 35%, black)`
+];
+
+export function getDeviceFieldColor(fieldIdx: number, deviceIdx: number): string {
+	const base = CHART_COLORS[fieldIdx % CHART_COLORS.length];
+	return DEVICE_VARIANTS[deviceIdx % DEVICE_VARIANTS.length](base);
+}
+
 export const MAX_AUTO_FIELDS = 5;
 
 export type TimeFilter =

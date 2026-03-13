@@ -11,8 +11,13 @@
 	import TlmToolbar from '$lib/domains/devices/components/telemetry/tlm-toolbar.svelte';
 	import TlmFieldToggles from '$lib/domains/devices/components/telemetry/tlm-field-toggles.svelte';
 	import TlmDataPanel from '$lib/domains/devices/components/telemetry/tlm-data-panel.svelte';
+	import TlmSingleSlotChart from '$lib/domains/devices/components/telemetry/tlm-single-slot-chart.svelte';
 	import TimePicker from '$lib/domains/devices/components/telemetry/time-picker.svelte';
 	import ActivityIcon from '@lucide/svelte/icons/activity';
+	import Columns2Icon from '@lucide/svelte/icons/columns-2';
+	import LayoutDashboardIcon from '@lucide/svelte/icons/layout-dashboard';
+	import Grid2x2Icon from '@lucide/svelte/icons/grid-2x2';
+	import SquareIcon from '@lucide/svelte/icons/square';
 	import { editorPrefs } from '$lib/shared/stores/editor-prefs.svelte';
 	import { contextStore } from '$lib/domains/contexts/stores/contexts.svelte';
 	import type { DateRange } from 'bits-ui';
@@ -58,6 +63,13 @@
 	let queryEnd = $state<Date | null>(null);
 	let hasZoomed = $state(false);
 	let fullscreen = $state(false);
+	let splitCount = $state<1 | 2 | 3 | 4>(1);
+
+	let slotChartClass = $derived.by(() => {
+		if (!fullscreen) return 'h-52';
+		const twoRows = splitCount === 3 || splitCount === 4;
+		return twoRows ? 'h-[calc(50vh-6rem)]' : 'h-[calc(100vh-8rem)]';
+	});
 
 	// ─── Grafana Explore URL ──────────────────────────────────────────────────
 
@@ -108,7 +120,7 @@
 	let chartConfig = $derived.by((): ChartConfig => {
 		const config: ChartConfig = {};
 		(selectedMeasurement?.fields ?? []).forEach((field, i) => {
-			config[field] = { label: field, color: CHART_COLORS[i % CHART_COLORS.length] };
+			config[field] = { label: `${field} `, color: CHART_COLORS[i % CHART_COLORS.length] };
 		});
 		return config;
 	});
@@ -153,11 +165,12 @@
 		queryStart = start;
 		queryEnd = end;
 		const aggWindow = getAggregationWindow(start, end);
+		// Always query all fields so split slots can filter independently
 		telemetryStore.queryMeasurement(
 			mirStore.mir,
 			deviceId,
 			selectedMeasurement.name,
-			selectedFields,
+			selectedMeasurement.fields,
 			start,
 			end,
 			aggWindow
@@ -168,7 +181,7 @@
 		const full = allTelemetryDescriptors.find((d) => d.name === desc.name);
 		if (!full) return;
 		selectedMeasurement = full;
-		selectedFields = full.fields.slice(0, MAX_AUTO_FIELDS);
+		selectedFields = full.fields.slice(0, 1);
 		telemetryStore.queryData = null;
 		telemetryStore.queryError = null;
 		runQuery();
@@ -193,7 +206,6 @@
 		} else {
 			selectedFields = [field];
 		}
-		runQuery();
 	}
 
 	// Calendar change handler: applies startTime/endTime to the selected date range
@@ -287,6 +299,26 @@
 					</div>
 				</div>
 			{/snippet}
+			{#snippet toolbarEnd()}
+				<button
+					onclick={() => {
+						splitCount = splitCount === 4 ? 1 : (splitCount + 1) as 1 | 2 | 3 | 4;
+					}}
+					title={splitCount === 1 ? 'Split in 2' : splitCount === 2 ? 'Split in 3' : splitCount === 3 ? 'Split in 4' : 'Single view'}
+					class="flex items-center rounded-md border p-1 text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground
+						{splitCount > 1 ? 'border-ring bg-accent text-accent-foreground' : 'border-border bg-background'}"
+				>
+					{#if splitCount === 1}
+						<SquareIcon class="size-3.5" />
+					{:else if splitCount === 2}
+						<Columns2Icon class="size-3.5" />
+					{:else if splitCount === 3}
+						<LayoutDashboardIcon class="size-3.5" />
+					{:else}
+						<Grid2x2Icon class="size-3.5" />
+					{/if}
+				</button>
+			{/snippet}
 		</TlmToolbar>
 
 		{#if !selectedMeasurement}
@@ -295,33 +327,70 @@
 				<p class="text-sm">Select a measurement to view chart</p>
 			</div>
 		{:else}
-			<TlmFieldToggles fields={selectedMeasurement.fields} {selectedFields} ontoggle={toggleField} />
+			{#if splitCount === 1}
+				<TlmFieldToggles
+					fields={selectedMeasurement.fields}
+					{selectedFields}
+					ontoggle={toggleField}
+				/>
+			{/if}
 
 			<!-- Chart + Table scrollable area -->
 			<div class="min-h-0 flex-1 overflow-auto">
-				<!-- Chart -->
-				<div class="px-4 py-4">
+				{#if splitCount === 1}
+					<!-- Single chart -->
+					<div class="px-4 py-4">
+						{#if telemetryStore.queryError}
+							<p class="text-sm text-destructive">{telemetryStore.queryError}</p>
+						{:else if telemetryStore.isQuerying && !telemetryStore.queryData}
+							<div class="flex h-48 items-center justify-center text-sm text-muted-foreground">
+								Loading data…
+							</div>
+						{:else if telemetryStore.queryData}
+							<TlmChart
+								data={telemetryStore.queryData}
+								{selectedFields}
+								{chartConfig}
+								useUtc={editorPrefs.utc}
+								start={queryStart}
+								end={queryEnd}
+								chartClass={fullscreen ? 'h-[calc(100vh-20vh)]' : 'h-72'}
+								onBrushSelect={handleBrushSelect}
+							/>
+						{/if}
+					</div>
+					<TlmDataPanel
+						data={telemetryStore.queryData}
+						exploreQuery={selectedMeasurement.exploreQuery}
+					/>
+				{:else}
+					<!-- Split grid -->
 					{#if telemetryStore.queryError}
-						<p class="text-sm text-destructive">{telemetryStore.queryError}</p>
+						<p class="px-4 py-4 text-sm text-destructive">{telemetryStore.queryError}</p>
 					{:else if telemetryStore.isQuerying && !telemetryStore.queryData}
 						<div class="flex h-48 items-center justify-center text-sm text-muted-foreground">
 							Loading data…
 						</div>
 					{:else if telemetryStore.queryData}
-						<TlmChart
-							data={telemetryStore.queryData}
-							{selectedFields}
-							{chartConfig}
-							useUtc={editorPrefs.utc}
-							start={queryStart}
-							end={queryEnd}
-							chartClass={fullscreen ? 'h-[calc(100vh-20vh)]' : 'h-72'}
-							onBrushSelect={handleBrushSelect}
-						/>
+						<div class="grid grid-cols-2 gap-4 px-4 py-4">
+							{#each { length: splitCount } as _, i (i)}
+								<div class={splitCount === 3 && i === 0 ? 'col-span-2' : ''}>
+									<TlmSingleSlotChart
+										measurementFields={selectedMeasurement.fields}
+										data={telemetryStore.queryData}
+										{chartConfig}
+										{queryStart}
+										{queryEnd}
+										useUtc={editorPrefs.utc}
+										chartClass={slotChartClass}
+										initialFields={[selectedMeasurement.fields[i % selectedMeasurement.fields.length]]}
+										onBrushSelect={handleBrushSelect}
+									/>
+								</div>
+							{/each}
+						</div>
 					{/if}
-				</div>
-
-				<TlmDataPanel data={telemetryStore.queryData} exploreQuery={selectedMeasurement.exploreQuery} />
+				{/if}
 			</div>
 		{/if}
 	</div>

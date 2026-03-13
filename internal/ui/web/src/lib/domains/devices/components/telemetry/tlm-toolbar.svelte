@@ -33,7 +33,8 @@
 		presets,
 		onQuery,
 		onCalendarChange = undefined,
-		calendarTop = undefined
+		calendarTop = undefined,
+		toolbarEnd = undefined
 	}: {
 		measurementName?: string | null;
 		measurementError?: string | null;
@@ -49,6 +50,8 @@
 		onCalendarChange?: (v: DateRange | undefined) => TimeFilter | undefined;
 		// Optional extra content above the calendar (e.g. time inputs for single-device)
 		calendarTop?: Snippet;
+		// Optional extra buttons rendered just before the fullscreen button
+		toolbarEnd?: Snippet;
 	} = $props();
 
 	let popoverOpen = $state(false);
@@ -271,6 +274,7 @@
 				</div>
 			</Popover.Content>
 		</Popover.Root>
+		{@render toolbarEnd?.()}
 		<button
 			onclick={() => (fullscreen = !fullscreen)}
 			title={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}
