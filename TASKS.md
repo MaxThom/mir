@@ -3,7 +3,9 @@
 ## Immediate
 
 - [x] Rust theme
-- [ ] multi tlm
+- [x] multi tlm
+  - [ ] review
+  - [ ] bug table/qry horizontal scroll
 - [ ] perf check
 - [ ] tutorial on each page
 - [ ] schema page
