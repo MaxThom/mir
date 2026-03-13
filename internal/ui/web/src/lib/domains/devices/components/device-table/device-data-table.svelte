@@ -125,6 +125,10 @@
 			} else if ((e.ctrlKey || e.metaKey) && e.key === 'a' && !isInput) {
 				e.preventDefault();
 				table.toggleAllRowsSelected(!table.getIsAllRowsSelected());
+			} else if (!isInput && !e.ctrlKey && !e.metaKey && !e.altKey && selectionStore.count > 0) {
+				if (e.key === 't') goto(resolve('/devices/bulk/telemetry'));
+				else if (e.key === 'c') goto(resolve('/devices/bulk/commands'));
+				else if (e.key === 'p') goto(resolve('/devices/bulk/configuration'));
 			}
 		}
 		document.addEventListener('keydown', handleKeyDown);
@@ -275,6 +279,7 @@
 						>
 							<ActivityIcon class="size-3.5" />
 							Telemetry
+							<kbd class="ml-0.5 rounded border bg-muted px-1 font-mono text-[10px] text-muted-foreground">t</kbd>
 						</button>
 						<button
 							onclick={() => goto(resolve('/devices/bulk/commands'))}
@@ -282,6 +287,7 @@
 						>
 							<TerminalIcon class="size-3.5" />
 							Commands
+							<kbd class="ml-0.5 rounded border bg-muted px-1 font-mono text-[10px] text-muted-foreground">c</kbd>
 						</button>
 						<button
 							onclick={() => goto(resolve('/devices/bulk/configuration'))}
@@ -289,6 +295,7 @@
 						>
 							<SlidersHorizontalIcon class="size-3.5" />
 							Configuration
+							<kbd class="ml-0.5 rounded border bg-muted px-1 font-mono text-[10px] text-muted-foreground">p</kbd>
 						</button>
 					</div>
 				</div>
