@@ -2,7 +2,6 @@ package mir
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"reflect"
@@ -11,143 +10,66 @@ import (
 	"time"
 
 	"github.com/maxthom/mir/internal/clients"
-	"github.com/maxthom/mir/internal/clients/cfg_client"
 	"github.com/maxthom/mir/internal/clients/core_client"
-	"github.com/maxthom/mir/internal/clients/tlm_client"
+	"github.com/maxthom/mir/internal/clients/device_client"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
-	"github.com/maxthom/mir/internal/libs/systemid"
 	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	"github.com/nats-io/nats.go"
 	"github.com/rs/zerolog"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
-	"google.golang.org/protobuf/types/dynamicpb"
 )
 
-type Mir struct {
-	cfg         Config
-	b           *bus.BusConn
-	store       *Store
-	ctx         context.Context
-	cancelFn    context.CancelFunc
-	cleanLogger zerolog.Logger
-	l           zerolog.Logger
-	schema      *descriptorpb.FileDescriptorSet
-	schemaReg   *protoregistry.Files
-	cmdHandlers map[string]cmdHandlerValue
-	cfgHandlers map[string]cfgHandlerValue
-	initialized bool
-}
-
-type Config struct {
-	Target      string       `json:"target" yaml:"target"`
-	Credentials string       `json:"credentials" yaml:"credentials"`
-	RootCA      string       `json:"rootCA" yaml:"rootCA"`
-	TLSCert     string       `json:"tlsCert" yaml:"tlsCert"`
-	TLSKey      string       `json:"tlsKey" yaml:"tlsKey"`
-	LogLevel    string       `json:"logLevel" yaml:"logLevel"`
-	Device      DeviceCfg    `json:"device" yaml:"device"`
-	LocalStore  StoreOptions `json:"localStore" yaml:"localStore"`
-}
-
-type DeviceCfg struct {
-	Id             string       `json:"id" yaml:"id"`
-	IdPrefix       *IdPrefix    `json:"idPrefix,omitempty" yaml:"idPrefix"`
-	IdGenerator    *IdGenerator `json:"idGenerator,omitempty" yaml:"idGenerator"`
-	NoSchemaOnBoot bool         `json:"noSchemaOnBoot" yaml:"noSchemaOnBoot"`
-}
-
-type IdPrefix struct {
-	Prefix   string `json:"prefix,omitempty" yaml:"prefix"`
-	Hostname bool   `json:"hostname,omitempty" yaml:"hostname"`
-	Username bool   `json:"username,omitempty" yaml:"username"`
-}
-
-type IdGenerator struct {
-	Salt      string `json:"salt,omitempty" yaml:"salt"`
-	CPU       bool   `json:"cpu,omitempty" yaml:"cpu"`
-	Disk      bool   `json:"disk,omitempty" yaml:"disk"`
-	MAC       bool   `json:"mac,omitempty" yaml:"mac"`
-	MachineID bool   `json:"machineId,omitempty" yaml:"machineId"`
-	OS        bool   `json:"os,omitempty" yaml:"os"`
-	Hostname  bool   `json:"hostname,omitempty" yaml:"hostname"`
-	User      bool   `json:"user,omitempty" yaml:"user"`
-	Plain     bool   `json:"plain,omitempty" yaml:"plain"`
-}
-
-func (i IdPrefix) ToSystemIdPrefixOpts() systemid.PrefixOptions {
-	return systemid.PrefixOptions{
-		Prefix:   i.Prefix,
-		Hostname: i.Hostname,
-		Username: i.Username,
+type (
+	Mir struct {
+		cfg         Config
+		b           *bus.BusConn
+		store       *Store
+		ctx         context.Context
+		cancelFn    context.CancelFunc
+		cleanLogger zerolog.Logger
+		l           zerolog.Logger
+		schema      *descriptorpb.FileDescriptorSet
+		schemaReg   *protoregistry.Files
+		msgHandlers map[string]msgHandler
+		cmdHandlers map[string]cmdHandlerValue
+		cfgHandlers map[string]cfgHandlerValue
+		msgSender   msgSender
+		initialized bool
 	}
-}
 
-func (i IdPrefix) IsActive() bool {
-	return i.Prefix != "" || i.Hostname || i.Username
-}
+	Config struct {
+		Target      string       `json:"target" yaml:"target"`
+		Credentials string       `json:"credentials" yaml:"credentials"`
+		RootCA      string       `json:"rootCA" yaml:"rootCA"`
+		TLSCert     string       `json:"tlsCert" yaml:"tlsCert"`
+		TLSKey      string       `json:"tlsKey" yaml:"tlsKey"`
+		LogLevel    string       `json:"logLevel" yaml:"logLevel"`
+		Device      DeviceCfg    `json:"device" yaml:"device"`
+		LocalStore  StoreOptions `json:"localStore" yaml:"localStore"`
+	}
 
-func (i IdGenerator) ToSystemIdOpts() systemid.Options {
-	return systemid.Options{
-		IncludeCPU:       i.CPU,
-		IncludeDisk:      i.Disk,
-		IncludeMAC:       i.MAC,
-		IncludeMachineID: i.MachineID,
-		IncludeOS:        i.OS,
-		IncludeHostname:  i.Hostname,
-		IncludeUser:      i.User,
-		Plain:            i.Plain,
+	DeviceCfg struct {
+		Id             string       `json:"id" yaml:"id"`
+		IdPrefix       *IdPrefix    `json:"idPrefix,omitempty" yaml:"idPrefix"`
+		IdGenerator    *IdGenerator `json:"idGenerator,omitempty" yaml:"idGenerator"`
+		NoSchemaOnBoot bool         `json:"noSchemaOnBoot" yaml:"noSchemaOnBoot"`
 	}
-}
 
-func (i IdGenerator) IsActive() bool {
-	if i.CPU {
-		return true
-	}
-	if i.Disk {
-		return true
-	}
-	if i.MAC {
-		return true
-	}
-	if i.MachineID {
-		return true
-	}
-	if i.OS {
-		return true
-	}
-	if i.Hostname {
-		return true
-	}
-	if i.User {
-		return true
-	}
-	if i.Salt != "" {
-		return true
-	}
-	return false
-}
+	msgHandler func(msg *nats.Msg) error
+	msgSender  func(msg *nats.Msg) error
 
-type cmdHandlerValue struct {
-	t reflect.Type
-	h func(proto.Message) (proto.Message, error)
-}
+	cmdHandlerValue struct {
+		t reflect.Type
+		h func(proto.Message) (proto.Message, error)
+	}
 
-type cfgHandlerValue struct {
-	t reflect.Type
-	h []func(proto.Message)
-}
-
-func (m Mir) GetConfig() Config {
-	return m.cfg
-}
-
-func (m Mir) GetDeviceId() string {
-	return m.cfg.Device.Id
-}
+	cfgHandlerValue struct {
+		t reflect.Type
+		h []func(proto.Message)
+	}
+)
 
 // Launch establish connection to the Mir server.
 //   - This will enable communication to and from the device.
@@ -162,6 +84,12 @@ func (m *Mir) Launch(ctx context.Context, opts ...nats.Option) (*sync.WaitGroup,
 	}
 	m.ctx, m.cancelFn = context.WithCancel(ctx)
 	connectWorkDone := make(chan struct{})
+
+	// Setup msg handlers
+	// Custom messages from server that the SDK handles
+	m.msgHandlers[device_client.SchemaRequest.GetVersionAndFunction()] = m.schemaRetrieveHandler
+	m.msgHandlers[device_client.CommandRequest.GetVersionAndFunction()] = m.definedCommandHandler
+	m.msgHandlers[device_client.ConfigRequest.GetVersionAndFunction()] = m.definedConfigHandler
 
 	// Setup persistence
 	if err := m.store.Load(); err != nil {
@@ -212,6 +140,7 @@ func (m *Mir) Launch(ctx context.Context, opts ...nats.Option) (*sync.WaitGroup,
 			m.l.Info().Msg("reconnected to Mir Server ")
 			// This time gives time for server side service
 			// to reconnect if they were disconnected as well
+			// TODO loop over here on error instead of sleep
 			time.Sleep(1 * time.Second)
 			m.setOnlineHandler()
 			if err := m.requestDesiredProperties(); err != nil {
@@ -242,35 +171,27 @@ func (m *Mir) Launch(ctx context.Context, opts ...nats.Option) (*sync.WaitGroup,
 		return &wg, err
 	}
 
-	wg.Add(1)
-	go func() {
+	wg.Go(func() {
 		m.hearthbeat(m.ctx, time.Second*10)
-		wg.Done()
-	}()
+	})
 
-	wg.Add(1)
-	go func() {
-		m.commands(ctx, sub)
-		wg.Done()
-	}()
+	wg.Go(func() {
+		m.msgHandlerSub(ctx, sub)
+	})
 
-	wg.Add(1)
-	go func() {
+	wg.Go(func() {
 		<-ctx.Done()
 		m.shutdown()
-		wg.Done()
-	}()
+	})
 
-	wg.Add(1)
-	go func() {
+	wg.Go(func() {
 		<-ctx.Done()
 		err := m.store.Close()
 		if err != nil {
 			m.l.Error().Err(err).Msg("error closing device store")
 		}
-		m.l.Info().Msg("flushing writes to store and closing")
-		wg.Done()
-	}()
+		m.l.Debug().Msg("flushed writes to store")
+	})
 
 	// This timeout has to be longer then the connect handler possible time to take
 	select {
@@ -319,9 +240,9 @@ func (m *Mir) hearthbeat(ctx context.Context, interval time.Duration) {
 	}
 }
 
-// Listen to any incoming commands from Mir and redirect to handler
+// Listen to any incoming msg from Mir and redirect to handler
 // Run in a routine for non blocking
-func (m *Mir) commands(ctx context.Context, sub *nats.Subscription) {
+func (m *Mir) msgHandlerSub(ctx context.Context, sub *nats.Subscription) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -331,14 +252,17 @@ func (m *Mir) commands(ctx context.Context, sub *nats.Subscription) {
 			// TODO error channel
 			msg, err := sub.NextMsgWithContext(ctx)
 			if err != nil && !strings.Contains(err.Error(), "context canceled") && !strings.Contains(err.Error(), "connection closed") { // TODO if not context canceled
-				m.l.Error().Err(err).Msg("error receiving commands")
+				m.l.Error().Err(err).Msg("error receiving message")
 			}
 			if msg != nil {
-				m.l.Debug().Msg("handling command " + clients.DeviceSubject(msg.Subject).GetVersionAndFunction())
-				err = msgHandlers[clients.DeviceSubject(msg.Subject).GetVersionAndFunction()](msg, m)
-				if err != nil {
-					m.l.Error().Err(err).Msg("error handling command " + clients.DeviceSubject(msg.Subject).GetVersionAndFunction())
-				}
+				// TODO manage msg in a go routine so its not blocking
+				go func() {
+					m.l.Debug().Str("subject", clients.DeviceSubject(msg.Subject).GetVersionAndFunction()).Str("msg", msg.Header.Get(HeaderMsgName)).Msg("handling message")
+					err = m.msgHandlers[clients.DeviceSubject(msg.Subject).GetVersionAndFunction()](msg)
+					if err != nil {
+						m.l.Error().Err(err).Str("subject", clients.DeviceSubject(msg.Subject).GetVersionAndFunction()).Str("msg", msg.Header.Get(HeaderMsgName)).Msg("error handling message")
+					}
+				}()
 			}
 		}
 	}
@@ -349,90 +273,8 @@ func (m *Mir) shutdown() {
 	m.b.Conn.Close()
 }
 
-// Return a new context of the Mir SDK logger
-// The zerolog.logger can be extended and
-// used to log your app specific logs
-// You need to assigned it first
-// eg.
-// l := m.Logger()
-// l.Info().Msg("Mir is ready for launch")
-func (m Mir) Logger() *zerolog.Logger {
-	l := m.cleanLogger.With().Logger()
-	return &l
-}
-
-// Marshal the FileDescriptorSet to bytes
-func (m Mir) marshalTelemetrySchema() ([]byte, error) {
-	var schemaBytes []byte
-	var err error
-	if m.schema != nil {
-		schemaBytes, err = proto.Marshal(m.schema)
-	}
-	return schemaBytes, err
-}
-
-// Send proto telemetry to Mir Server
-func (m Mir) SendTelemetry(t proto.Message) error {
-	msg, err := tlm_client.GetTelemetryStreamMsg(m.cfg.Device.Id, t)
-	if err != nil {
-		return err
-	}
-	return m.sendMsg(msg)
-}
-
-// Send proto reported properties to Mir Server
-func (m Mir) SendProperties(t proto.Message) error {
-	msg, err := cfg_client.GetReportedPropertiesStreamMsg(m.cfg.Device.Id, t)
-	if err != nil {
-		return err
-	}
-	return m.sendMsg(msg)
-}
-
-func (m Mir) sendSchema() error {
-	bytes, err := proto.Marshal(m.schema)
-	if err != nil {
-		return err
-	}
-
-	return m.sendProtoMsg(core_client.SchemaDeviceStream.WithId(m.GetDeviceId()), &mir_apiv1.SchemaRetrieveResponse{
-		Response: &mir_apiv1.SchemaRetrieveResponse_Schema{
-			Schema: bytes,
-		},
-	}, nil, true)
-}
-
-// Fill the properties store with the latest properties from Mir server
-// Also write to the persistent store
-func (m Mir) requestDesiredProperties() error {
-	resp, err := cfg_client.PublishRequestDesiredPropertiesStream(m.b.Conn, m.cfg.Device.Id)
-	if err != nil {
-		return err
-	}
-	if resp.GetError() != "" {
-		return fmt.Errorf("%s", resp.GetError())
-	}
-
-	props := resp.GetOk()
-
-	var errs error
-	for msgName, cfg := range props.Properties {
-		updTime, err := time.Parse(time.RFC3339, cfg.Time)
-		if err != nil {
-			errs = errors.Join(errs, err)
-			continue
-		}
-
-		if _, err := m.store.UpdatePropsIfNew(msgName, propsValue{LastUpdate: updTime, Value: cfg.Property}); err != nil {
-			errs = errors.Join(errs, err)
-			continue
-		}
-	}
-
-	return errs
-}
-
-func (m Mir) callAllCfgHandlers() {
+// Call all cfg handlers with the properties from the store
+func (m *Mir) callAllCfgHandlers() {
 	for name, h := range m.cfgHandlers {
 		props, ok := m.store.GetProps(name)
 		if !ok {
@@ -452,148 +294,127 @@ func (m Mir) callAllCfgHandlers() {
 	}
 }
 
-// Handle a command from Mir server
-// Specify which command with the proto msg from your schema
-// Return a proto message as response, nil if no response, or an error
-// eg:
-// m.HandleCommand(
-//
-//	&config_devicev1.SendConfigRequest{},
-//	func(m proto.Message) (proto.Message, error) {
-//	  cmd := m.(*config_devicev1.SendConfigRequest)
-//	  return &config_devicev1.SendConfigResponse{}, nil
-//	})
-func (m Mir) HandleCommand(t proto.Message, handler func(proto.Message) (proto.Message, error)) {
-	m.cmdHandlers[string(t.ProtoReflect().Descriptor().FullName())] = cmdHandlerValue{
-		t: reflect.TypeOf(t).Elem(),
-		h: handler,
+// Select message handler according to online state and cfg
+func (m *Mir) setOnlineHandler() {
+	switch m.store.opts.PersistenceType {
+	case PersistentTypeNoStorage:
+		m.msgSender = m.sendMsgOnly
+		m.l.Info().Msg("set online handler: no storage")
+	case PersistentTypeOnlyIfOffline:
+		m.msgSender = m.sendMsgOnly
+		m.l.Info().Msg("set online handler: no storage")
+	case PersistentTypeAlways:
+		m.msgSender = m.sendMsgWithStorage
+		m.l.Info().Msg("set online handler: persistent storage")
 	}
 }
 
-// Handle a properties update from Mir server
-// Specify which properties with the proto msg from your schema
-// Each properties can have many handlers and each will be called upon update
-// If the handler is registered after the launch, it will be called if the properties
-// is already present in the store
-// If the handler is registered before the launch, it will be called on Launch
-// eg:
-// m.HandleProperties(
-//
-//	&config_devicev1.SendConfigRequest{},
-//	func(m proto.Message) {
-//	  cmd := m.(*config_devicev1.SendConfigRequest)
-//	})
-func (m Mir) HandleProperties(t proto.Message, handler ...func(proto.Message)) {
-	key := string(t.ProtoReflect().Descriptor().FullName())
-	cfg, ok := m.cfgHandlers[key]
-	if !ok {
-		cfg = cfgHandlerValue{
-			t: reflect.TypeOf(t).Elem(),
-			h: []func(proto.Message){},
-		}
+// Select message handler according to offline state and cfg
+func (m *Mir) setOfflineHandler() {
+	switch m.store.opts.PersistenceType {
+	case PersistentTypeNoStorage:
+		m.msgSender = m.sendNothing
+		m.l.Info().Msg("set offline handler: no storage")
+	case PersistentTypeOnlyIfOffline:
+		m.msgSender = m.saveMsgInPending
+		m.l.Info().Msg("set offline handler: pending storage")
+	case PersistentTypeAlways:
+		m.msgSender = m.saveMsgInPending
+		m.l.Info().Msg("set offline handler: pending storage")
 	}
-	cfg.h = append(cfg.h, handler...)
-	m.cfgHandlers[key] = cfg
+}
 
-	// If we register cfg handler after launch, we need to call it
-	// if we already have the properties
-	if m.initialized {
-		props, ok := m.store.GetProps(key)
-		if !ok {
-			return
-		}
+func (m Mir) sendMsg(msg *nats.Msg) error {
+	return m.msgSender(msg)
+}
 
-		var msg proto.Message
-		if cfg.t == reflect.TypeOf(dynamicpb.Message{}) {
-			desc, err := m.schemaReg.FindDescriptorByName(protoreflect.FullName(key))
-			if err != nil {
-				m.l.Error().Err(fmt.Errorf("device error while looking for property descriptor: %w", err))
-				return
+// Discard any msg to be sent.
+// Cause: offline and no storage
+func (m Mir) sendNothing(msg *nats.Msg) error {
+	return nil
+}
+
+// Send message to server
+// Cause: online and no storaage
+func (m Mir) sendMsgOnly(msg *nats.Msg) error {
+	return m.b.PublishMsg(msg)
+}
+
+// Save msg to pending store
+// Cause: offline and save if offline
+func (m Mir) saveMsgInPending(msg *nats.Msg) error {
+	return m.store.SaveMsgToPending(*msg)
+}
+
+// Save msg to permenant storage
+// Cause: online and persistent cfg
+// Performance solution would be to do batch writes
+// and split DISK IO and Internet IO
+func (m Mir) sendMsgWithStorage(msg *nats.Msg) error {
+	if err := m.store.SaveMsgToPermanent(*msg); err != nil {
+		m.l.Warn().Err(err).Msg("error saving msg to sent store")
+	}
+	return m.b.PublishMsg(msg)
+}
+
+func (m Mir) sendPendingMsgs() {
+	batchSize := 100
+	if m.cfg.LocalStore.PersistenceType == PersistentTypeAlways {
+		count := 0
+		if err := m.store.SwapMsgByBatch(msgPendingBucket, msgPersistentBucket, batchSize, func(msgs []nats.Msg) error {
+			var errs error
+			for _, msg := range msgs {
+				errs = errors.Join(m.sendMsgOnly(&msg))
 			}
-			msg = dynamicpb.NewMessage(desc.(protoreflect.MessageDescriptor))
+			count += len(msgs)
+			return errs
+		}); err != nil {
+			m.l.Error().Err(err).Msg("error sending pending messages to Mir")
+		}
+		if count == 0 {
+			m.l.Info().Msg("pending storage is empty")
 		} else {
-			v := reflect.New(cfg.t).Interface()
-			msg = v.(proto.Message)
+			m.l.Info().Msgf("%d pending messages sent to Mir and moved to persistent storage", count)
 		}
-
-		if err := proto.Unmarshal(props.Value, msg); err != nil {
-			m.l.Error().Err(err).Msg("error unmarshalling properties")
-			return
+	} else {
+		count := 0
+		if err := m.store.DeleteMsgByBatch(msgPendingBucket, batchSize, func(msgs []nats.Msg) error {
+			var errs error
+			for _, msg := range msgs {
+				errs = errors.Join(m.sendMsgOnly(&msg))
+			}
+			count += len(msgs)
+			return errs
+		}); err != nil {
+			m.l.Error().Err(err).Msg("error sending pending messages to Mir")
 		}
-
-		for _, handler := range handler {
-			go handler(msg)
+		if count == 0 {
+			m.l.Info().Msg("pending storage is empty")
+		} else {
+			m.l.Info().Msgf("%d pending messages sent to Mir", count)
 		}
 	}
 }
 
-type subject string
-
-// Subject in Mir have the following format:
-// device.<device_id>.<module>.<version>.<function>.<extra...>
-func (m Mir) NewSubject(module, version, function string, extra ...string) subject {
-	extra = append([]string{"device", m.cfg.Device.Id, module, version, function}, extra...)
-	return subject(strings.Join(extra, "."))
-}
-
-type Header = nats.Header
-
-// Send custom data on a custom route for your own integration.
-//
-// Use `m.NewSubject` to create a subject.
-// Use the module sdk to subscribe to the subject and process the data
-func (m Mir) SendData(sbj subject, data []byte, h Header) error {
-	return m.sendMsg(&nats.Msg{
-		Subject: string(sbj),
-		Header:  h,
-		Data:    data,
-	})
-}
-
-// Send custom json data on a custom route for your own integration.
-//
-// Use `m.NewSubject` to create a subject.
-// Use the module sdk to subscribe to the subject and process the data
-func (m Mir) SendJsonData(sbj subject, data any, h Header) error {
-	jsonData, err := json.Marshal(data)
-	if err != nil {
-		return err
+// Marshal the FileDescriptorSet to bytes
+func (m Mir) marshalTelemetrySchema() ([]byte, error) {
+	var schemaBytes []byte
+	var err error
+	if m.schema != nil {
+		schemaBytes, err = proto.Marshal(m.schema)
 	}
-	return m.SendData(sbj, jsonData, h)
+	return schemaBytes, err
 }
 
-// Send proto data on a custom route for your own integration.
-//
-// Use `m.NewSubject` to create a subject.
-// Use the module sdk to subscribe to the subject and process the data
-func (m Mir) SendProtoData(sbj subject, data proto.Message, h Header) error {
-	protoData, err := proto.Marshal(data)
+func (m Mir) sendSchema() error {
+	bytes, err := proto.Marshal(m.schema)
 	if err != nil {
 		return err
 	}
 
-	if h == nil {
-		h = nats.Header{}
-	}
-	h.Set(HeaderMsgName, string(data.ProtoReflect().Descriptor().FullName()))
-
-	return m.SendData(sbj, protoData, h)
-}
-
-// Send proto as json data on a custom route for your own integration.
-//
-// Use `m.NewSubject` to create a subject.
-// Use the module sdk to subscribe to the subject and process the data
-func (m Mir) SendProtoJsonData(sbj subject, data proto.Message, h Header) error {
-	jsonData, err := protojson.Marshal(data)
-	if err != nil {
-		return err
-	}
-
-	if h == nil {
-		h = nats.Header{}
-	}
-	h.Set(HeaderMsgName, string(data.ProtoReflect().Descriptor().FullName()))
-
-	return m.SendJsonData(sbj, jsonData, h)
+	return m.sendProtoMsg(core_client.SchemaDeviceStream.WithId(m.GetDeviceId()), &mir_apiv1.SchemaRetrieveResponse{
+		Response: &mir_apiv1.SchemaRetrieveResponse_Schema{
+			Schema: bytes,
+		},
+	}, nil, true)
 }

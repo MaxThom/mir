@@ -517,6 +517,7 @@ func (b builder) build(extraCfg any) (*Mir, error) {
 		store:       store,
 		schema:      b.schema,
 		schemaReg:   reg,
+		msgHandlers: make(map[string]msgHandler),
 		cmdHandlers: make(map[string]cmdHandlerValue),
 		cfgHandlers: make(map[string]cfgHandlerValue),
 	}, nil
