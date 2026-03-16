@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/maxthom/mir/internal/clients/device_client"
+	"github.com/maxthom/mir/internal/clients/cfg_client"
 	"github.com/maxthom/mir/internal/libs/compression/zstd"
 	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
@@ -23,19 +23,7 @@ const (
 	HeaderSchema  = "mir-schema"
 )
 
-var (
-	msgHandlers map[string]func(msg *nats.Msg, m *Mir) error
-	msgSender   func(msg *nats.Msg) error
-)
-
-func init() {
-	msgHandlers = make(map[string]func(msg *nats.Msg, m *Mir) error)
-	msgHandlers[device_client.SchemaRequest.GetVersionAndFunction()] = SchemaRetrieveHandler
-	msgHandlers[device_client.CommandRequest.GetVersionAndFunction()] = DefinedCommandHandler
-	msgHandlers[device_client.ConfigRequest.GetVersionAndFunction()] = DefinedConfigHandler
-}
-
-func SchemaRetrieveHandler(msg *nats.Msg, m *Mir) error {
+func (m *Mir) schemaRetrieveHandler(msg *nats.Msg) error {
 	shouldZstd := false
 	if msg.Header.Get("mir-request-encoding") == "mir-zstd" {
 		shouldZstd = true
@@ -56,7 +44,7 @@ func SchemaRetrieveHandler(msg *nats.Msg, m *Mir) error {
 	}, nil, shouldZstd)
 }
 
-func DefinedCommandHandler(msg *nats.Msg, m *Mir) error {
+func (m *Mir) definedCommandHandler(msg *nats.Msg) error {
 	shouldZstd := false
 	if msg.Header.Get("mir-request-encoding") == "mir-zstd" {
 		shouldZstd = true
@@ -77,7 +65,7 @@ func DefinedCommandHandler(msg *nats.Msg, m *Mir) error {
 	}
 
 	var cmdMsg proto.Message
-	if h.t == reflect.TypeOf(dynamicpb.Message{}) {
+	if h.t == reflect.TypeFor[dynamicpb.Message]() {
 		cmdMsg = dynamicpb.NewMessage(desc.(protoreflect.MessageDescriptor))
 	} else {
 		v := reflect.New(h.t).Interface()
@@ -90,33 +78,30 @@ func DefinedCommandHandler(msg *nats.Msg, m *Mir) error {
 		}, nil, false)
 	}
 
-	// Call handler in a go routine?
-	go func() {
-		cmdResp, err := h.h(cmdMsg)
-		if err != nil {
-			if err := sendReplyOrAck(m.b, msg, &devicev1.Error{
-				Message: fmt.Errorf("device error in command handler: %w", err).Error(),
-			}, nil, false); err != nil {
-				m.l.Error().Err(err).Msg("error sending command response")
-			}
-			return
-		}
-
-		if cmdResp == nil {
-			if err := sendReplyOrAck(m.b, msg, &devicev1.Void{}, nil, false); err != nil {
-				m.l.Error().Err(err).Msg("error sending command response")
-			}
-			return
-		}
-		if err := sendReplyOrAck(m.b, msg, cmdResp, nil, shouldZstd); err != nil {
+	cmdResp, err := h.h(cmdMsg)
+	if err != nil {
+		if err := sendReplyOrAck(m.b, msg, &devicev1.Error{
+			Message: fmt.Errorf("device error in command handler: %w", err).Error(),
+		}, nil, false); err != nil {
 			m.l.Error().Err(err).Msg("error sending command response")
 		}
-	}()
+		return nil
+	}
+
+	if cmdResp == nil {
+		if err := sendReplyOrAck(m.b, msg, &devicev1.Void{}, nil, false); err != nil {
+			m.l.Error().Err(err).Msg("error sending command response")
+		}
+		return nil
+	}
+	if err := sendReplyOrAck(m.b, msg, cmdResp, nil, shouldZstd); err != nil {
+		m.l.Error().Err(err).Msg("error sending command response")
+	}
 
 	return nil
 }
 
-func DefinedConfigHandler(msg *nats.Msg, m *Mir) error {
+func (m *Mir) definedConfigHandler(msg *nats.Msg) error {
 	descName := msg.Header.Get(HeaderMsgName)
 	timeStr := msg.Header.Get(HeaderTime)
 	updTime, err := time.Parse(time.RFC3339Nano, timeStr)
@@ -144,7 +129,7 @@ func DefinedConfigHandler(msg *nats.Msg, m *Mir) error {
 	}
 
 	var cfgMsg proto.Message
-	if h.t == reflect.TypeOf(dynamicpb.Message{}) {
+	if h.t == reflect.TypeFor[dynamicpb.Message]() {
 		cfgMsg = dynamicpb.NewMessage(desc.(protoreflect.MessageDescriptor))
 	} else {
 		v := reflect.New(h.t).Interface()
@@ -159,7 +144,7 @@ func DefinedConfigHandler(msg *nats.Msg, m *Mir) error {
 		go handler(cfgMsg)
 	}
 
-	return nil // sendReplyOrAck(m.b, msg, cmdResp, nil, shouldZstd)
+	return nil
 }
 
 func sendReplyOrAck(bus *bus.BusConn, msg *nats.Msg, m protoreflect.ProtoMessage, h nats.Header, shouldZstdCompress bool) error {
@@ -222,91 +207,32 @@ func (m Mir) sendProtoMsg(subject string, protoMsg protoreflect.ProtoMessage, h 
 	})
 }
 
-func (m Mir) setOnlineHandler() {
-	if m.store.opts.PersistenceType == PersistentTypeNoStorage {
-		msgSender = m.sendMsgOnly
-		m.l.Info().Msg("set online handler: no storage")
-	} else if m.store.opts.PersistenceType == PersistentTypeOnlyIfOffline {
-		msgSender = m.sendMsgOnly
-		m.l.Info().Msg("set online handler: no storage")
-	} else if m.store.opts.PersistenceType == PersistentTypeAlways {
-		msgSender = m.sendMsgWithStorage
-		m.l.Info().Msg("set online handler: persistent storage")
+// Fill the properties store with the latest properties from Mir server
+// Also write to the persistent store
+func (m Mir) requestDesiredProperties() error {
+	resp, err := cfg_client.PublishRequestDesiredPropertiesStream(m.b.Conn, m.cfg.Device.Id)
+	if err != nil {
+		return err
 	}
-}
-
-func (m Mir) setOfflineHandler() {
-	if m.store.opts.PersistenceType == PersistentTypeNoStorage {
-		msgSender = m.sendNothing
-		m.l.Info().Msg("set offline handler: no storage")
-	} else if m.store.opts.PersistenceType == PersistentTypeOnlyIfOffline {
-		msgSender = m.saveMsgInPending
-		m.l.Info().Msg("set offline handler: pending storage")
-	} else if m.store.opts.PersistenceType == PersistentTypeAlways {
-		msgSender = m.saveMsgInPending
-		m.l.Info().Msg("set offline handler: pending storage")
+	if resp.GetError() != "" {
+		return fmt.Errorf("%s", resp.GetError())
 	}
-}
 
-func (m Mir) sendMsg(msg *nats.Msg) error {
-	return msgSender(msg)
-}
+	props := resp.GetOk()
 
-func (m Mir) sendNothing(msg *nats.Msg) error {
-	return nil
-}
-func (m Mir) sendMsgOnly(msg *nats.Msg) error {
-	return m.b.PublishMsg(msg)
-}
-
-func (m Mir) saveMsgInPending(msg *nats.Msg) error {
-	return m.store.SaveMsgToPending(*msg)
-}
-
-// Performance solution would be to do batch writes
-// and split DISK IO and Internet IO
-func (m Mir) sendMsgWithStorage(msg *nats.Msg) error {
-	if err := m.store.SaveMsgToPermanent(*msg); err != nil {
-		m.l.Warn().Err(err).Msg("error saving msg to sent store")
-	}
-	return m.b.PublishMsg(msg)
-}
-
-func (m Mir) sendPendingMsgs() {
-	batchSize := 100
-	if m.cfg.LocalStore.PersistenceType == PersistentTypeAlways {
-		count := 0
-		if err := m.store.SwapMsgByBatch(msgPendingBucket, msgPersistentBucket, batchSize, func(msgs []nats.Msg) error {
-			var errs error
-			for _, msg := range msgs {
-				errs = errors.Join(m.sendMsgOnly(&msg))
-			}
-			count += len(msgs)
-			return errs
-		}); err != nil {
-			m.l.Error().Err(err).Msg("error sending pending messages to Mir")
+	var errs error
+	for msgName, cfg := range props.Properties {
+		updTime, err := time.Parse(time.RFC3339, cfg.Time)
+		if err != nil {
+			errs = errors.Join(errs, err)
+			continue
 		}
-		if count == 0 {
-			m.l.Info().Msg("pending storage is empty")
-		} else {
-			m.l.Info().Msgf("%d pending messages sent to Mir and moved to persistent storage", count)
-		}
-	} else {
-		count := 0
-		if err := m.store.DeleteMsgByBatch(msgPendingBucket, batchSize, func(msgs []nats.Msg) error {
-			var errs error
-			for _, msg := range msgs {
-				errs = errors.Join(m.sendMsgOnly(&msg))
-			}
-			count += len(msgs)
-			return errs
-		}); err != nil {
-			m.l.Error().Err(err).Msg("error sending pending messages to Mir")
-		}
-		if count == 0 {
-			m.l.Info().Msg("pending storage is empty")
-		} else {
-			m.l.Info().Msgf("%d pending messages sent to Mir", count)
+
+		if _, err := m.store.UpdatePropsIfNew(msgName, propsValue{LastUpdate: updTime, Value: cfg.Property}); err != nil {
+			errs = errors.Join(errs, err)
+			continue
 		}
 	}
+
+	return errs
 }
