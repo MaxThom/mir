@@ -43,7 +43,9 @@ const (
 	PersistentTypeOnlyIfOffline MsgPersistenceType = "ifoffline"
 	// PersistentTypeAlways will keep all msgs
 	PersistentTypeAlways MsgPersistenceType = "always"
+)
 
+var (
 	msgPendingBucket    StoreBucket = "msgs.pending"
 	msgPersistentBucket StoreBucket = "msgs.persistent"
 	propertiesBucket    StoreBucket = "properties"
@@ -98,7 +100,12 @@ type propsValue struct {
 	Value      []byte    `json:"value"`
 }
 
-func NewStore(opts StoreOptions) (*Store, error) {
+func NewStore(prefix string, opts StoreOptions) (*Store, error) {
+	if prefix != "" {
+		msgPendingBucket = StoreBucket(prefix + ":" + string(msgPendingBucket))
+		msgPersistentBucket = StoreBucket(prefix + ":" + string(msgPersistentBucket))
+		propertiesBucket = StoreBucket(prefix + ":" + string(propertiesBucket))
+	}
 	return &Store{
 		props: make(map[string]propsValue),
 		db:    nil,

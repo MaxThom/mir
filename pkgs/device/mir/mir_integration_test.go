@@ -250,7 +250,7 @@ func TestStoreUpdatePropIfNew(t *testing.T) {
 	id := "test_store_update_prop_if_new"
 	path := "./" + id + ".db"
 
-	s, err := NewStore(StoreOptions{
+	s, err := NewStore(id, StoreOptions{
 		FolderPath: path,
 	})
 	if err != nil {
@@ -295,8 +295,8 @@ func TestStoreUpdatePropIfNew(t *testing.T) {
 
 func TestStoreSaveMsg(t *testing.T) {
 	// Arrange
-	subject := "test_sub"
-	s, err := NewStore(StoreOptions{
+	subject := "test_sub_save"
+	s, err := NewStore(subject, StoreOptions{
 		InMemory: true,
 	})
 	if err != nil {
@@ -343,8 +343,8 @@ func TestStoreSaveMsg(t *testing.T) {
 
 func TestStoreSaveMsgWithTTL(t *testing.T) {
 	// Arrange
-	subject := "test_sub"
-	s, err := NewStore(StoreOptions{
+	subject := "test_sub_ttl"
+	s, err := NewStore(subject, StoreOptions{
 		InMemory:       true,
 		RetentionLimit: 3 * time.Second,
 	})
@@ -373,7 +373,7 @@ func TestStoreSaveMsgWithTTL(t *testing.T) {
 	}
 
 	// Act
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		if err := s.SaveMsgToPending(msg); err != nil {
 			t.Error(err)
 		}
@@ -400,8 +400,8 @@ func TestStoreSaveMsgWithTTL(t *testing.T) {
 
 func TestStoreDeleteMsgByBatch(t *testing.T) {
 	// Arrange
-	subject := "test_sub"
-	s, err := NewStore(StoreOptions{
+	subject := "test_sub_delete"
+	s, err := NewStore(subject, StoreOptions{
 		InMemory: true,
 	})
 	if err != nil {
@@ -427,7 +427,7 @@ func TestStoreDeleteMsgByBatch(t *testing.T) {
 			HeaderMsgName: []string{string(tlm.ProtoReflect().Descriptor().Name())},
 		},
 	}
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		if err := s.SaveMsgToPending(msg); err != nil {
 			t.Error(err)
 		}
@@ -461,8 +461,8 @@ func TestStoreDeleteMsgByBatch(t *testing.T) {
 
 func TestStoreSwapMsgByBatchLimit(t *testing.T) {
 	// Arrange
-	subject := "test_sub"
-	s, err := NewStore(StoreOptions{
+	subject := "test_sub_batch"
+	s, err := NewStore(subject, StoreOptions{
 		InMemory: true,
 	})
 	if err != nil {
@@ -488,7 +488,7 @@ func TestStoreSwapMsgByBatchLimit(t *testing.T) {
 			HeaderMsgName: []string{string(tlm.ProtoReflect().Descriptor().Name())},
 		},
 	}
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		if err := s.SaveMsgToPending(msg); err != nil {
 			t.Error(err)
 		}
@@ -527,8 +527,8 @@ func TestStoreSwapMsgByBatchLimit(t *testing.T) {
 
 func TestStoreSwapMsgByBatch(t *testing.T) {
 	// Arrange
-	subject := "test_sub"
-	s, err := NewStore(StoreOptions{
+	subject := "test_sub_swap"
+	s, err := NewStore(subject, StoreOptions{
 		InMemory: true,
 	})
 	if err != nil {
@@ -554,7 +554,7 @@ func TestStoreSwapMsgByBatch(t *testing.T) {
 			HeaderMsgName: []string{string(tlm.ProtoReflect().Descriptor().Name())},
 		},
 	}
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		if err := s.SaveMsgToPending(msg); err != nil {
 			t.Error(err)
 		}
@@ -643,8 +643,4 @@ func marshalProtoFiles(files ...protoreflect.FileDescriptor) ([]byte, error) {
 		return []byte{}, err
 	}
 	return bytes, nil
-}
-
-func strRef(s string) *string {
-	return &s
 }

@@ -474,6 +474,7 @@ func (b builder) build(extraCfg any) (*Mir, error) {
 	if strings.Contains(cfg.Mir.Device.Id, ".") || strings.Contains(cfg.Mir.Device.Id, ">") || strings.Contains(cfg.Mir.Device.Id, "*") {
 		fieldsErr = append(fieldsErr, "Device ID must not contain reserved characters: * > .")
 	}
+	cfg.Mir.LocalStore.FolderPath = filepath.Join(cfg.Mir.LocalStore.FolderPath, cfg.Mir.Device.Id)
 
 	if prettyCfg, err := mir_config.JsonMarshalWithoutSecrets(cfg); err != nil {
 		l.Error().Err(err).Msg("Error marshalling config")
@@ -506,7 +507,7 @@ func (b builder) build(extraCfg any) (*Mir, error) {
 		return nil, fmt.Errorf("error creating schema registry: %w", err)
 	}
 
-	store, err := NewStore(cfg.Mir.LocalStore)
+	store, err := NewStore("mir", cfg.Mir.LocalStore)
 	if err != nil {
 		return nil, fmt.Errorf("error creating store: %w", err)
 	}

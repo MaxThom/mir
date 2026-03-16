@@ -23,12 +23,12 @@
 - [ ] DeviceSDK v2
   - [ ] TinyGo
   - [x] Refactor
-  - [ ] Store with prefix ID
+  - [x] Store with prefix ID
+  - [ ] Event (error) msg to evt mod becomes event eg: disk full
   - [ ] Metrics gopsutil
+  - [ ] Disk size limits as well as TTL
   - [ ] Bbolt integration (choose between that and badger)
   - [ ] Tool to see data in badger
-  - [ ] Disk size limits as well as TTL
-  - [ ] Error msg to core eg: disk full
 - [ ] Cockpit
   - [x] New cmd for refresh schema with button next to Delete
   - [x] cfg
