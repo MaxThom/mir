@@ -6,9 +6,9 @@
 - [x] multi tlm
   - [x] review
   - [x] bug table/qry horizontal scroll
-- [ ] config update, refresh device
+- [x] config update, refresh device
 - [ ] perf check
-- [ ] tutorial on each page
+- [x] tutorial on each page
 
 ### Bug
 
@@ -36,7 +36,7 @@
   - [x] tlm with charts
     - [x] fe
     - [x] be
-  - [ ] create device
+  - [x] create device
   - [x] device list improvement
     - [x] select multiple device
   - [ ] dashboard creation
