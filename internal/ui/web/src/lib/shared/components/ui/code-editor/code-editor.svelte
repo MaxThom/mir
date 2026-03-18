@@ -10,6 +10,7 @@
 	import { Spinner } from '$lib/shared/components/shadcn/spinner';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import XIcon from '@lucide/svelte/icons/x';
+	import FormIcon from '@lucide/svelte/icons/form';
 	import { editorPrefs } from '$lib/shared/stores/editor-prefs.svelte';
 	import { themeStore } from '$lib/shared/stores/theme.svelte';
 	import { cmTheme } from '$lib/shared/stores/codemirror-themes';
@@ -19,13 +20,23 @@
 		onSave,
 		onCancel,
 		isSaving = false,
-		error = null
+		error = null,
+		saveLabel = 'Save',
+		onSaveMany,
+		saveManyLabel = 'Save Many',
+		cancelLabel = 'Cancel',
+		cancelIconOnly = false
 	}: {
 		content: string;
 		onSave: (text: string) => Promise<void>;
 		onCancel: () => void;
 		isSaving?: boolean;
 		error?: string | null;
+		saveLabel?: string;
+		onSaveMany?: (text: string) => Promise<void>;
+		saveManyLabel?: string;
+		cancelLabel?: string;
+		cancelIconOnly?: boolean;
 	} = $props();
 
 	let isVimMode = $derived(editorPrefs.vim);
@@ -61,6 +72,12 @@
 	async function handleSave() {
 		const text = cmView ? cmView.state.doc.toString() : localContent;
 		await onSave(text);
+	}
+
+	async function handleSaveMany() {
+		if (!onSaveMany) return;
+		const text = cmView ? cmView.state.doc.toString() : localContent;
+		await onSaveMany(text);
 	}
 
 	$effect(() => {
@@ -128,21 +145,39 @@
 			class="h-7 gap-1 text-xs"
 		>
 			{#if isSaving}<Spinner class="size-3" />{:else}<CheckIcon class="size-3" />{/if}
-			Save
+			{saveLabel}
 		</Button>
-		<Button
-			variant="ghost"
-			size="sm"
-			onclick={onCancel}
-			disabled={isSaving}
-			class="h-7 gap-1 text-xs"
-		>
-			<XIcon class="size-3" />
-			Cancel
-		</Button>
+		{#if onSaveMany}
+			<Button
+				variant="ghost"
+				size="sm"
+				onclick={handleSaveMany}
+				disabled={isSaving}
+				class="h-7 gap-1 text-xs"
+			>
+				{#if isSaving}<Spinner class="size-3" />{:else}<CheckIcon class="size-3" />{/if}
+				{saveManyLabel}
+			</Button>
+		{/if}
+		{#if cancelIconOnly}
+			<Button variant="ghost" size="icon-sm" onclick={onCancel} disabled={isSaving} class="size-7">
+				<FormIcon class="size-3.5" />
+				<span class="sr-only">Back to fields</span>
+			</Button>
+		{:else}
+			<Button
+				variant="ghost"
+				size="sm"
+				onclick={onCancel}
+				disabled={isSaving}
+				class="h-7 gap-1 text-xs"
+			>
+				<XIcon class="size-3" />
+				{cancelLabel}
+			</Button>
+		{/if}
 	</div>
 </div>
-
 
 {#if error}
 	<p class="rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">{error}</p>

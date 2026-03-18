@@ -1,8 +1,11 @@
 <script lang="ts">
 	import SearchIcon from '@lucide/svelte/icons/search';
+	import PlusIcon from '@lucide/svelte/icons/plus';
 	import { Input } from '$lib/shared/components/shadcn/input';
 	import { Badge } from '$lib/shared/components/shadcn/badge';
+	import { Button } from '$lib/shared/components/shadcn/button';
 	import { RefreshButtonGroup } from '$lib/shared/components/ui/refresh-button-group';
+	import { ROUTES } from '$lib/shared/constants/routes';
 
 	let {
 		deviceCount,
@@ -43,6 +46,14 @@
 			<span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
 			{onlineCount} online
 		</div>
+		<Button
+			variant="ghost"
+			size="icon-sm"
+			class="h-7 w-7 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-950 dark:hover:text-emerald-300"
+			href={ROUTES.DEVICES.CREATE}
+		>
+			<PlusIcon class="h-4 w-4" />
+		</Button>
 		<RefreshButtonGroup {isLoading} {onRefresh} />
 	</div>
 </div>

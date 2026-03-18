@@ -4,8 +4,9 @@
 
 - [x] Rust theme
 - [x] multi tlm
-  - [ ] review
-  - [ ] bug table/qry horizontal scroll
+  - [x] review
+  - [x] bug table/qry horizontal scroll
+- [ ] config update, refresh device
 - [ ] perf check
 - [ ] tutorial on each page
 
@@ -35,8 +36,11 @@
   - [x] tlm with charts
     - [x] fe
     - [x] be
+  - [ ] create device
   - [x] device list improvement
     - [x] select multiple device
+  - [ ] dashboard creation
+  - [ ] security
 - [ ] Road to Production
   - [x] update all dependencies
   - [ ] alert & alarms
