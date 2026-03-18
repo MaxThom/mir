@@ -5,7 +5,7 @@ import { oneDark } from '@codemirror/theme-one-dark';
 import type { Extension } from '@codemirror/state';
 import type { Theme } from './theme.svelte';
 
-export const rustTheme = EditorView.theme(
+const rustEditorTheme = EditorView.theme(
 	{
 		'&': { background: '#f4ece2', color: '#2c2118' },
 		'.cm-content': { caretColor: '#8b5e3c' },
@@ -14,12 +14,62 @@ export const rustTheme = EditorView.theme(
 			borderRight: '1px solid #c9b49a',
 			color: '#8b7355'
 		},
+		'.cm-lineNumbers .cm-gutterElement': { padding: '0 8px' },
 		'.cm-activeLineGutter': { background: '#e4d8c8' },
 		'.cm-activeLine': { background: '#ede4d640' },
-		'.cm-selectionBackground, ::selection': { background: '#c9b49a55' }
+		'.cm-selectionBackground': { background: '#c9b49a55' },
+		'&.cm-focused .cm-selectionBackground': { background: '#c9b49a80' },
+		'::selection': { background: '#c9b49a80' },
+		'.cm-matchingBracket': { color: '#5a7a3a', outline: '1px solid #5a7a3a55' }
 	},
 	{ dark: false }
 );
+
+const rustHighlight = HighlightStyle.define([
+	{ tag: tags.keyword, color: '#9b3a2a', fontStyle: 'italic' },
+	{ tag: tags.controlKeyword, color: '#9b3a2a', fontStyle: 'italic' },
+	{ tag: tags.operatorKeyword, color: '#9b3a2a' },
+	{ tag: tags.moduleKeyword, color: '#9b3a2a' },
+
+	{ tag: tags.string, color: '#5a7a3a' },
+	{ tag: tags.special(tags.string), color: '#3a7060' },
+	{ tag: tags.escape, color: '#b5651b' },
+
+	{ tag: tags.number, color: '#b5651b' },
+	{ tag: tags.bool, color: '#b5651b' },
+	{ tag: tags.null, color: '#9b3a2a' },
+
+	{ tag: tags.function(tags.variableName), color: '#4a6090' },
+	{ tag: tags.function(tags.propertyName), color: '#4a6090' },
+
+	{ tag: tags.propertyName, color: '#4a6090' },
+
+	{ tag: tags.typeName, color: '#8b6914' },
+	{ tag: tags.className, color: '#8b6914' },
+	{ tag: tags.namespace, color: '#8b6914' },
+
+	{ tag: tags.name, color: '#2c2118' },
+	{ tag: tags.variableName, color: '#2c2118' },
+	{ tag: tags.definition(tags.variableName), color: '#3a5a80' },
+
+	{ tag: tags.operator, color: '#3a7070' },
+	{ tag: tags.punctuation, color: '#9b8870' },
+	{ tag: tags.separator, color: '#9b8870' },
+	{ tag: tags.bracket, color: '#7a5a3a' },
+
+	{ tag: tags.comment, color: '#a8907a', fontStyle: 'italic' },
+	{ tag: tags.lineComment, color: '#a8907a', fontStyle: 'italic' },
+	{ tag: tags.blockComment, color: '#a8907a', fontStyle: 'italic' },
+
+	{ tag: tags.tagName, color: '#9b3a2a' },
+	{ tag: tags.attributeName, color: '#4a6090' },
+	{ tag: tags.attributeValue, color: '#5a7a3a' },
+
+	{ tag: tags.meta, color: '#b09880' },
+	{ tag: tags.invalid, color: '#cc2200', textDecoration: 'underline' }
+]);
+
+export const rustTheme = [rustEditorTheme, syntaxHighlighting(rustHighlight)];
 
 // Aurora — editor shell
 const auroraEditorTheme = EditorView.theme(

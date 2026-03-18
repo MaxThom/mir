@@ -1,5 +1,5 @@
 import type { Mir } from '@mir/sdk';
-import { Device, DeviceTarget } from '@mir/sdk';
+import { Device, DeviceTarget, Meta, DeviceSpec } from '@mir/sdk';
 import { activityStore } from '$lib/domains/activity/stores/activity.svelte';
 
 class DeviceStore {
@@ -16,6 +16,9 @@ class DeviceStore {
 
 	isDeleting = $state(false);
 	deleteError = $state<string | null>(null);
+
+	isCreating = $state(false);
+	createError = $state<string | null>(null);
 
 	private requestId = 0;
 	private deviceRequestId = 0;
@@ -127,6 +130,55 @@ class DeviceStore {
 			throw err;
 		} finally {
 			this.isDeleting = false;
+		}
+	}
+
+	async createDevice(
+		mir: Mir,
+		name: string,
+		namespace: string,
+		deviceId: string,
+		options: {
+			disabled?: boolean;
+			labels?: Record<string, string>;
+			annotations?: Record<string, string>;
+		} = {}
+	) {
+		this.isCreating = true;
+		this.createError = null;
+
+		try {
+			const device = new Device({
+				meta: new Meta({
+					name,
+					namespace,
+					labels: options.labels ?? {},
+					annotations: options.annotations ?? {}
+				}),
+				spec: new DeviceSpec({ deviceId, disabled: options.disabled ?? false })
+			});
+			const created = await mir.client().createDevices().request(device);
+			this.devices = [...this.devices, created];
+			activityStore.add({
+				kind: 'success',
+				category: 'Device',
+				title: 'Created',
+				request: { name, namespace, deviceId },
+				response: created
+			});
+			return created;
+		} catch (err) {
+			this.createError = err instanceof Error ? err.message : 'Failed to create device';
+			activityStore.add({
+				kind: 'error',
+				category: 'Device',
+				title: 'Create Failed',
+				request: { name, namespace, deviceId },
+				error: err instanceof Error ? err.message : String(err)
+			});
+			throw err;
+		} finally {
+			this.isCreating = false;
 		}
 	}
 
