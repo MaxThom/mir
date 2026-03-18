@@ -2,13 +2,28 @@ package health
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/maxthom/mir/internal/libs/api/metrics"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+type ComponentStatus string
+
+const (
+	ComponentStatusReady    ComponentStatus = "ready"
+	ComponentStatusDegraded ComponentStatus = "degraded"
+	ComponentStatusUnready  ComponentStatus = "unready"
+
+	ComponentSurreal string = "surreal"
+	ComponentInflux  string = "influx"
+	ComponentNats    string = "nats"
+	ComponentHttp    string = "http"
+)
+
 var (
-	isReady bool
+	componentStatus = make(map[string]ComponentStatus)
+	isReady         = ComponentStatusUnready
 
 	readyStatus = metrics.NewGauge(prometheus.GaugeOpts{
 		Subsystem: "health",
@@ -20,6 +35,11 @@ var (
 		Name:      "alive",
 		Help:      "Status of aliveness of running process",
 	})
+	compReadyStatus = metrics.NewGaugeVec(prometheus.GaugeOpts{
+		Subsystem: "health",
+		Name:      "component_ready",
+		Help:      "Status of readiness of each component",
+	}, []string{"component"})
 )
 
 func init() {
@@ -27,30 +47,71 @@ func init() {
 	readyStatus.Set(0)
 }
 
-func IsReady() bool {
-	return isReady
-}
-
 func SetReady() {
+	isReady = ComponentStatusReady
 	readyStatus.Set(1)
-	isReady = true
 }
 
 func SetUnready() {
+	isReady = ComponentStatusUnready
 	readyStatus.Set(0)
-	isReady = false
 }
+
+func SetDegraded() {
+	isReady = ComponentStatusDegraded
+	readyStatus.Set(0)
+}
+
+func IsReady() bool {
+	return isReady == ComponentStatusReady
+}
+
+func GetReadyStatus() ComponentStatus {
+	return isReady
+}
+
+func GetComponentStatus(component string) ComponentStatus {
+	return componentStatus[component]
+}
+
+func SetComponentReady(component string) {
+	componentStatus[component] = ComponentStatusReady
+	compReadyStatus.With(prometheus.Labels{"component": component}).Set(1)
+	for _, status := range componentStatus {
+		if status != ComponentStatusReady {
+			SetDegraded()
+			return
+		}
+	}
+	SetReady()
+}
+
+func SetComponentUnready(component string) {
+	componentStatus[component] = ComponentStatusUnready
+	compReadyStatus.With(prometheus.Labels{"component": component}).Set(0)
+	SetDegraded()
+}
+
+// func SetComponentDegraded(component string) {
+// 	componentStatus[component] = ComponentStatusDegraded
+// 	compReadyStatus.With(prometheus.Labels{"component": component}).Set(0)
+// }
 
 func RegisterRoutes(r *http.ServeMux) {
 	r.HandleFunc("/ready", func(w http.ResponseWriter, r *http.Request) {
-		if IsReady() {
+		var sb strings.Builder
+		sb.WriteString(string(isReady) + "\n\nsubsystems:\n")
+		for comp, status := range componentStatus {
+			sb.WriteString(" " + comp + ": " + string(status) + "\n")
+		}
+		if GetReadyStatus() == ComponentStatusReady {
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("ready"))
+		} else if GetReadyStatus() == ComponentStatusDegraded {
+			w.WriteHeader(http.StatusOK)
 		} else {
 			w.WriteHeader(http.StatusServiceUnavailable)
-			w.Write([]byte("not ready"))
-
 		}
+		w.Write([]byte(sb.String()))
 	})
 	r.HandleFunc("/alive", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)

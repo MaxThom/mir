@@ -174,8 +174,10 @@ func run(
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+		health.SetComponentReady(health.ComponentHttp)
 		log.Info().Int("port", cfg.HttpServer.Port).Msg("starting cockpit web server")
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			health.SetComponentUnready(health.ComponentHttp)
 			log.Error().Err(err).Msg("http server error")
 			health.SetUnready()
 			mir_signals.Shutdown()

@@ -27,7 +27,6 @@ type AutoReconnDB struct {
 	log         zerolog.Logger
 	ConnStatus  external.ConnectionStatus
 	once        resync.Once
-	isConn      bool
 	connHandler ConnHandler
 	Url         string
 	User        string
@@ -46,19 +45,21 @@ func Connect(ctx context.Context, url, namespace, database, user, password strin
 	db, err := connect(ctx, url, namespace, database, user, password, h)
 	if err != nil {
 		// Check for connection errors
-		if strings.Contains(err.Error(), "connection refused") ||
-			strings.Contains(err.Error(), "broken pipe") ||
-			strings.Contains(err.Error(), "context deadline exceeded") ||
-			strings.Contains(err.Error(), "connection reset by peer") ||
-			strings.Contains(err.Error(), "unexpected EOF") {
+		if isConnectionError(err) {
 			db.monitorAndReconnect()
 		}
 		return db, err
 	}
-	if db.connHandler.FnConnected != nil {
-		db.connHandler.FnConnected(db.Url)
-	}
+	db.monitorAndReconnect()
 	return db, nil
+}
+
+func isConnectionError(err error) bool {
+	return strings.Contains(err.Error(), "connection refused") ||
+		strings.Contains(err.Error(), "broken pipe") ||
+		strings.Contains(err.Error(), "context deadline exceeded") ||
+		strings.Contains(err.Error(), "connection reset by peer") ||
+		strings.Contains(err.Error(), "unexpected EOF")
 }
 
 func connect(ctx context.Context, url, namespace, database, user, password string, h ConnHandler) (*AutoReconnDB, error) {
@@ -102,7 +103,6 @@ func connect(ctx context.Context, url, namespace, database, user, password strin
 			ctx:         ctx,
 			ConnStatus:  external.StatusConnected,
 			connHandler: h,
-			isConn:      true,
 			Url:         url,
 			User:        user,
 			Password:    password,
@@ -116,7 +116,6 @@ func connect(ctx context.Context, url, namespace, database, user, password strin
 		ctx:         ctx,
 		ConnStatus:  external.StatusConnected,
 		connHandler: h,
-		isConn:      true,
 		Url:         url,
 		User:        user,
 		Password:    password,
@@ -145,16 +144,9 @@ func (db *AutoReconnDB) Close() error {
 }
 
 func (db *AutoReconnDB) monitorAndReconnect() {
-	db.isConn = false
 	fnM := func() {
 		go func() {
-			db.ConnStatus = external.StatusDisconnected
-			for _, ch := range db.statusSubs {
-				ch <- db.ConnStatus
-			}
-			if db.connHandler.FnDisconnected != nil {
-				db.connHandler.FnDisconnected(db.Url)
-			}
+			db.dispatchConnStatus()
 			t := 5 * time.Second
 			ticker := time.NewTicker(t)
 			defer ticker.Stop()
@@ -163,34 +155,51 @@ func (db *AutoReconnDB) monitorAndReconnect() {
 				case <-db.ctx.Done():
 					return
 				case <-ticker.C:
-					d, err := connect(db.ctx, db.Url, db.Namespace, db.Database, db.User, db.Password, db.connHandler)
-					db.dbMu.Lock()
-					db.DB = d.DB
-					if db.ConnStatus != d.ConnStatus {
-						for _, ch := range db.statusSubs {
-							ch <- d.ConnStatus
+					if db.ConnStatus == external.StatusConnected {
+						_, _ = QueryWithTimeout[map[string]any](db, "INFO FOR DB", nil, 3*time.Second)
+					} else {
+						d, err := connect(db.ctx, db.Url, db.Namespace, db.Database, db.User, db.Password, db.connHandler)
+						db.dbMu.Lock()
+						db.DB = d.DB
+						if db.ConnStatus != d.ConnStatus {
+							db.ConnStatus = d.ConnStatus
+							db.dispatchConnStatus()
+						}
+						db.dbMu.Unlock()
+						if err != nil {
+							// Mean still trying to connect
+							if db.connHandler.FnFailedReconnect != nil {
+								db.connHandler.FnFailedReconnect(db.Url, t)
+							}
 						}
 					}
-					db.ConnStatus = d.ConnStatus
-					db.dbMu.Unlock()
-					if err != nil {
-						// Mean still trying to connect
-						if db.connHandler.FnFailedReconnect != nil {
-							db.connHandler.FnFailedReconnect(db.Url, t)
-						}
-						continue
-					}
-					db.isConn = true
-					if db.connHandler.FnConnected != nil {
-						db.connHandler.FnConnected(db.Url)
-					}
-					db.once.Reset()
-					return
 				}
 			}
 		}()
 	}
 	db.once.Do(fnM)
+}
+
+func (db *AutoReconnDB) dispatchConnStatus() {
+	for _, ch := range db.statusSubs {
+		ch <- db.ConnStatus
+	}
+
+	switch db.ConnStatus {
+	case external.StatusConnected:
+		if db.connHandler.FnConnected != nil {
+			db.connHandler.FnConnected(db.Url)
+		}
+	case external.StatusClosed:
+		if db.connHandler.FnDisconnected != nil {
+			db.connHandler.FnDisconnected(db.Url)
+		}
+
+	case external.StatusDisconnected:
+		if db.connHandler.FnDisconnected != nil {
+			db.connHandler.FnDisconnected(db.Url)
+		}
+	}
 }
 
 func (db *AutoReconnDB) StatusSubscribe() <-chan external.ConnectionStatus {
@@ -202,7 +211,7 @@ func (db *AutoReconnDB) StatusSubscribe() <-chan external.ConnectionStatus {
 }
 
 func Create[T any, TWhat surrealdb.TableOrRecord](db *AutoReconnDB, what TWhat, data any) (*T, error) {
-	if !db.isConn {
+	if db.ConnStatus != external.StatusConnected {
 		return nil, ErrDatabaseDisconnected
 	}
 	ctxT, cancel := context.WithTimeout(db.ctx, defaultTimeout)
@@ -211,9 +220,9 @@ func Create[T any, TWhat surrealdb.TableOrRecord](db *AutoReconnDB, what TWhat, 
 	respDb, err := surrealdb.Create[T](ctxT, db.DB, what, data)
 	db.dbMu.RUnlock()
 	if err != nil {
-		// Check for connection errors
-		if strings.Contains(err.Error(), "connection refused") || strings.Contains(err.Error(), "broken pipe") || strings.Contains(err.Error(), "context deadline exceeded") {
-			db.monitorAndReconnect()
+		if isConnectionError(err) {
+			db.ConnStatus = external.StatusDisconnected
+			db.dispatchConnStatus()
 		}
 		return nil, err
 	}
@@ -222,7 +231,7 @@ func Create[T any, TWhat surrealdb.TableOrRecord](db *AutoReconnDB, what TWhat, 
 }
 
 func Insert[TResult any](db *AutoReconnDB, what string, data any) (*[]TResult, error) {
-	if !db.isConn {
+	if db.ConnStatus != external.StatusConnected {
 		return nil, ErrDatabaseDisconnected
 	}
 	ctxT, cancel := context.WithTimeout(db.ctx, defaultTimeout)
@@ -231,9 +240,9 @@ func Insert[TResult any](db *AutoReconnDB, what string, data any) (*[]TResult, e
 	respDb, err := surrealdb.Insert[TResult](ctxT, db.DB, models.Table(what), data)
 	db.dbMu.RUnlock()
 	if err != nil {
-		// Check for connection errors
-		if strings.Contains(err.Error(), "connection refused") || strings.Contains(err.Error(), "broken pipe") || strings.Contains(err.Error(), "context deadline exceeded") {
-			db.monitorAndReconnect()
+		if isConnectionError(err) {
+			db.ConnStatus = external.StatusDisconnected
+			db.dispatchConnStatus()
 		}
 		return nil, err
 	}
@@ -243,7 +252,7 @@ func Insert[TResult any](db *AutoReconnDB, what string, data any) (*[]TResult, e
 
 func Query[T any](db *AutoReconnDB, query string, vars map[string]any) (T, error) {
 	var empty T
-	if !db.isConn {
+	if db.ConnStatus != external.StatusConnected {
 		return empty, ErrDatabaseDisconnected
 	}
 
@@ -253,9 +262,36 @@ func Query[T any](db *AutoReconnDB, query string, vars map[string]any) (T, error
 	result, err := surrealdb.Query[T](ctxT, db.DB, query, vars)
 	db.dbMu.RUnlock()
 	if err != nil {
-		// Check for connection errors
-		if strings.Contains(err.Error(), "connection refused") || strings.Contains(err.Error(), "broken pipe") || strings.Contains(err.Error(), "context deadline exceeded") {
-			db.monitorAndReconnect()
+		if isConnectionError(err) {
+			db.ConnStatus = external.StatusDisconnected
+			db.dispatchConnStatus()
+		}
+		return empty, err
+	}
+
+	res := *result
+	if len(res) == 0 {
+		return empty, nil
+	}
+
+	return res[0].Result, nil
+}
+
+func QueryWithTimeout[T any](db *AutoReconnDB, query string, vars map[string]any, timeout time.Duration) (T, error) {
+	var empty T
+	if db.ConnStatus != external.StatusConnected {
+		return empty, ErrDatabaseDisconnected
+	}
+
+	ctxT, cancel := context.WithTimeout(db.ctx, timeout)
+	defer cancel()
+	db.dbMu.RLock()
+	result, err := surrealdb.Query[T](ctxT, db.DB, query, vars)
+	db.dbMu.RUnlock()
+	if err != nil {
+		if isConnectionError(err) {
+			db.ConnStatus = external.StatusDisconnected
+			db.dispatchConnStatus()
 		}
 		return empty, err
 	}
@@ -270,7 +306,7 @@ func Query[T any](db *AutoReconnDB, query string, vars map[string]any) (T, error
 
 func QueryMultiple[T any](db *AutoReconnDB, query string, vars map[string]any) ([]T, error) {
 	var empty []T
-	if !db.isConn {
+	if db.ConnStatus != external.StatusConnected {
 		return empty, ErrDatabaseDisconnected
 	}
 
@@ -280,9 +316,9 @@ func QueryMultiple[T any](db *AutoReconnDB, query string, vars map[string]any) (
 	result, err := surrealdb.Query[T](ctxT, db.DB, query, vars)
 	db.dbMu.RUnlock()
 	if err != nil {
-		// Check for connection errors
-		if strings.Contains(err.Error(), "connection refused") || strings.Contains(err.Error(), "broken pipe") || strings.Contains(err.Error(), "context deadline exceeded") {
-			db.monitorAndReconnect()
+		if isConnectionError(err) {
+			db.ConnStatus = external.StatusDisconnected
+			db.dispatchConnStatus()
 		}
 		return empty, err
 	}

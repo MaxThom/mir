@@ -205,9 +205,11 @@ func run(
 		cfg.DatabaseServer.Password,
 		surreal.ConnHandler{
 			FnConnected: func(url string) {
+				health.SetComponentReady(health.ComponentSurreal)
 				log.Info().Str("url", cfg.DatabaseServer.Url).Str("namespace", cfg.DatabaseServer.Namespace).Str("database", cfg.DatabaseServer.Database).Msg("connected to database")
 			},
 			FnDisconnected: func(url string) {
+				health.SetComponentUnready(health.ComponentSurreal)
 				log.Error().Str("url", cfg.DatabaseServer.Url).Str("namespace", cfg.DatabaseServer.Namespace).Str("database", cfg.DatabaseServer.Database).Msg("disconnected from database, running in degraded state")
 			},
 			FnFailedReconnect: func(url string, nextAttempt time.Duration) {
@@ -224,6 +226,7 @@ func run(
 		UseGZip:          cfg.TelemetryServer.GZip,
 	})
 	if err != nil {
+		health.SetComponentUnready(health.ComponentInflux)
 		influxRdy = false
 		if strings.Contains(err.Error(), "connect: connection refused") {
 			log.Warn().Err(err).Str("buffer size (GB)", fmt.Sprintf("%.2f", float64(cfg.TelemetryServer.RetryBufferLimit)/1_073_741_824)).Msg("cannot connect to telemetry db, telemetry will be capture and rotated in buffer until connected")
@@ -235,11 +238,12 @@ func run(
 		if err := influx.CreateOrgAndBucket(ctx, lpClient, cfg.TelemetryServer.Org, cfg.TelemetryServer.Bucket); err != nil {
 			return err
 		}
+		health.SetComponentReady(health.ComponentInflux)
 		log.Info().Str("url", cfg.TelemetryServer.Url).Msg("connected to puthost")
 	}
 
 	// Bus
-	opts := append(mir.WithDefaultReconnectOpts(), mir.WithDefaultConnectionLogging(log)...)
+	opts := append(mir.WithDefaultReconnectOpts(), mir.WithDefaultConnectionHandlers(log)...)
 	opts = append(opts, mir.WithUserCredentials(cfg.DataBusServer.CredentialsFilePath))
 	opts = append(opts, mir.WithRootCA(cfg.DataBusServer.RootCAFilePath))
 	opts = append(opts, mir.WithClientCertificate(cfg.DataBusServer.CertificateFilePath, cfg.DataBusServer.KeyFilePath))
@@ -258,7 +262,7 @@ func run(
 	if err != nil {
 		return err
 	}
-	prototlmSrv, err := prototlm_srv.NewProtoTlm(log, m, mngStore, ts.NewInfluxTelemetryStore(cfg.TelemetryServer.Org, cfg.TelemetryServer.Bucket, lpClient), cc)
+	prototlmSrv, err := prototlm_srv.NewProtoTlm(log, m, mngStore, ts.NewInfluxTelemetryStore(ctx, cfg.TelemetryServer.Org, cfg.TelemetryServer.Bucket, lpClient), cc)
 	if err != nil {
 		return err
 	}
@@ -278,7 +282,9 @@ func run(
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
+		health.SetComponentReady(health.ComponentHttp)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			health.SetComponentUnready(health.ComponentHttp)
 			log.Err(err).Msg("")
 			health.SetUnready()
 			mir_signals.Shutdown()

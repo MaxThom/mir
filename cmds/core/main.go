@@ -183,9 +183,11 @@ func run(
 		cfg.DatabaseServer.Password,
 		surreal.ConnHandler{
 			FnConnected: func(url string) {
+				health.SetComponentReady(health.ComponentSurreal)
 				log.Info().Str("url", cfg.DatabaseServer.Url).Str("namespace", cfg.DatabaseServer.Namespace).Str("database", cfg.DatabaseServer.Database).Msg("connected to database")
 			},
 			FnDisconnected: func(url string) {
+				health.SetComponentUnready(health.ComponentSurreal)
 				log.Error().Str("url", cfg.DatabaseServer.Url).Str("namespace", cfg.DatabaseServer.Namespace).Str("database", cfg.DatabaseServer.Database).Msg("disconnected from database")
 			},
 			FnFailedReconnect: func(url string, nextAttempt time.Duration) {
@@ -194,7 +196,7 @@ func run(
 		})
 
 	// Bus
-	opts := append(mir.WithDefaultReconnectOpts(), mir.WithDefaultConnectionLogging(log)...)
+	opts := append(mir.WithDefaultReconnectOpts(), mir.WithDefaultConnectionHandlers(log)...)
 	opts = append(opts, mir.WithUserCredentials(cfg.DataBusServer.CredentialsFilePath))
 	opts = append(opts, mir.WithRootCA(cfg.DataBusServer.RootCAFilePath))
 	opts = append(opts, mir.WithClientCertificate(cfg.DataBusServer.CertificateFilePath, cfg.DataBusServer.KeyFilePath))
@@ -237,9 +239,10 @@ func run(
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
+		health.SetComponentReady(health.ComponentHttp)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			health.SetComponentUnready(health.ComponentHttp)
 			log.Err(err).Msg("")
-			health.SetUnready()
 			mir_signals.Shutdown()
 		}
 		log.Debug().Msg("http server shutdown")
@@ -252,7 +255,6 @@ func run(
 
 	// Handle shutdown
 	log.Info().Msg(fmt.Sprintf("%s initialized", AppName))
-	health.SetReady()
 	mir_signals.WaitForOsSignals(func() {
 		cancel()
 		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 3*time.Second)

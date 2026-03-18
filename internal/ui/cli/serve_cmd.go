@@ -197,9 +197,11 @@ func (d *ServeCmd) run(
 		cfg.Surreal.Password,
 		surreal.ConnHandler{
 			FnConnected: func(url string) {
+				health.SetComponentReady(health.ComponentSurreal)
 				log.Info().Str("url", cfg.Surreal.Url).Str("namespace", cfg.Surreal.Namespace).Str("database", cfg.Surreal.Database).Msg("connected to database")
 			},
 			FnDisconnected: func(url string) {
+				health.SetComponentUnready(health.ComponentSurreal)
 				log.Error().Str("url", cfg.Surreal.Url).Str("namespace", cfg.Surreal.Namespace).Str("database", cfg.Surreal.Database).Msg("disconnected from database")
 			},
 			FnFailedReconnect: func(url string, nextAttempt time.Duration) {
@@ -216,6 +218,7 @@ func (d *ServeCmd) run(
 	})
 	if err != nil {
 		influxRdy = false
+		health.SetComponentUnready(health.ComponentInflux)
 		if strings.Contains(err.Error(), "connect: connection refused") {
 			log.Warn().Err(err).Str("buffer size (GB)", fmt.Sprintf("%.2f", float64(cfg.Influx.RetryBufferLimit)/1_073_741_824)).Msg("cannot connect to telemetry db, telemetry will be capture and rotated in buffer until connected")
 		} else {
@@ -227,8 +230,9 @@ func (d *ServeCmd) run(
 			return err
 		}
 		log.Info().Str("url", cfg.Influx.Url).Msg("connected to puthost")
+		health.SetComponentReady(health.ComponentInflux)
 	}
-	opts := append(mir.WithDefaultReconnectOpts(), mir.WithDefaultConnectionLogging(log)...)
+	opts := append(mir.WithDefaultReconnectOpts(), mir.WithDefaultConnectionHandlers(log)...)
 	opts = append(opts, mir.WithUserCredentials(cfg.Mir.Credentials))
 	opts = append(opts, mir.WithRootCA(cfg.Mir.RootCA))
 	opts = append(opts, mir.WithClientCertificate(cfg.Mir.TLSCert, cfg.Mir.TLSKey))
@@ -271,7 +275,7 @@ func (d *ServeCmd) run(
 		return err
 	}
 
-	tlmSrv, err := prototlm_srv.NewProtoTlm(log, m, mngStore, ts.NewInfluxTelemetryStore(cfg.Influx.Org, cfg.Influx.Bucket, lpClient), cc)
+	tlmSrv, err := prototlm_srv.NewProtoTlm(log, m, mngStore, ts.NewInfluxTelemetryStore(ctx, cfg.Influx.Org, cfg.Influx.Bucket, lpClient), cc)
 	if err != nil {
 		return err
 	}
@@ -315,7 +319,9 @@ func (d *ServeCmd) run(
 	wg.Add(1)
 	log.Info().Msgf("serve Cockpit on :%d", cfg.Mir.HttpPort)
 	go func() {
+		health.SetComponentReady(health.ComponentHttp)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			health.SetComponentUnready(health.ComponentHttp)
 			log.Err(err).Msg("")
 			health.SetUnready()
 			mir_signals.Shutdown()
