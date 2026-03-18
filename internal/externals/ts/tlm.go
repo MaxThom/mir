@@ -9,6 +9,7 @@ import (
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/influxdata/influxdb-client-go/v2/api"
+	"github.com/maxthom/mir/internal/libs/api/health"
 	"github.com/maxthom/mir/internal/libs/external/influx"
 	mir_apiv1 "github.com/maxthom/mir/pkgs/api/gen/proto/mir_api/v1"
 	"github.com/maxthom/mir/pkgs/mir_v1"
@@ -23,6 +24,7 @@ type TelemetryStore interface {
 }
 
 type influxTelemetryStore struct {
+	ctx     context.Context
 	org     string
 	bucket  string
 	client  influxdb2.Client
@@ -31,8 +33,9 @@ type influxTelemetryStore struct {
 	errors  chan error
 }
 
-func NewInfluxTelemetryStore(org, bucket string, client influxdb2.Client) *influxTelemetryStore {
+func NewInfluxTelemetryStore(ctx context.Context, org, bucket string, client influxdb2.Client) *influxTelemetryStore {
 	s := &influxTelemetryStore{
+		ctx:     ctx,
 		org:     org,
 		bucket:  bucket,
 		client:  client,
@@ -43,6 +46,7 @@ func NewInfluxTelemetryStore(org, bucket string, client influxdb2.Client) *influ
 
 	// Start monitoring writer errors
 	go s.monitorErrors()
+	go s.monitorConnection()
 
 	return s
 }
@@ -53,6 +57,22 @@ func (s *influxTelemetryStore) WriteDatapoint(line string) {
 
 func (s *influxTelemetryStore) Errors() <-chan error {
 	return s.errors
+}
+
+func (s *influxTelemetryStore) monitorConnection() {
+	for {
+		select {
+		case <-s.ctx.Done():
+			return
+		case <-time.After(5 * time.Second):
+			_, err := s.client.Health(s.ctx)
+			if err != nil {
+				health.SetComponentUnready(health.ComponentInflux)
+			} else {
+				health.SetComponentReady(health.ComponentInflux)
+			}
+		}
+	}
 }
 
 func (s *influxTelemetryStore) monitorErrors() {
@@ -69,6 +89,8 @@ func (s *influxTelemetryStore) monitorErrors() {
 			} else {
 				s.errors <- fmt.Errorf("influx bucket '%s' not found, creating...", s.bucket)
 			}
+		} else if err != nil && strings.Contains(err.Error(), "connection refused") {
+			health.SetComponentUnready(health.ComponentInflux)
 		} else {
 			s.errors <- err
 		}

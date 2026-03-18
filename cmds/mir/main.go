@@ -167,7 +167,7 @@ func (d *Client) BeforeApply(k *kong.Context, log zerolog.Logger, ctx ui.Context
 		return nil
 	}
 
-	opts := append(mir.WithDefaultReconnectOpts(), mir.WithDefaultConnectionLogging(log)...)
+	opts := append(mir.WithDefaultReconnectOpts(), mir.WithDefaultConnectionHandlers(log)...)
 	opts = append(opts, mir.WithUserCredentials(ctx.Credentials))
 	opts = append(opts, mir.WithRootCA(ctx.RootCA))
 	opts = append(opts, mir.WithClientCertificate(ctx.TlsCert, ctx.TlsKey))

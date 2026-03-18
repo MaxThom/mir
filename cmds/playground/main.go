@@ -1,35 +1,21 @@
 package main
 
-import (
-	"fmt"
-	"strconv"
-	"time"
-
-	"github.com/maxthom/mir/pkgs/mir_v1"
-	"github.com/maxthom/mir/pkgs/module/mir"
-)
-
 func main() {
+	// v, _ := mem.VirtualMemory()
 
-	m, err := mir.Connect("playground", "nats://localhost:4222")
-	if err != nil {
-		panic(err)
-	}
+	// // almost every return value is a struct
+	// fmt.Printf("Total: %v, Free:%v, UsedPercent:%f%%\n", v.Total, v.Free, v.UsedPercent)
 
-	for i := range 120 {
-		time.Sleep(time.Millisecond * 100)
-		fmt.Println(i)
-		if err := m.Event().Publish(m.Event().NewSubject(strconv.Itoa(i), "playground", "v1", "test"),
-			mir_v1.EventSpec{
-				Type:    mir_v1.EventTypeNormal,
-				Reason:  "test",
-				Message: "testing buffer",
-				// Payload:       jsonyaml.RawMessage{},
-				// RelatedObject: mir_v1.Object{},
-			}, nil); err != nil {
-			fmt.Println(err)
-		}
-	}
+	// convert to JSON. String() is also implemented
+	// fmt.Println(v)
 
-	fmt.Println("done")
+	// fmt.Println(cpu.Info())
+	// d, _ := disk.Usage("/home")
+	// fmt.Println(d.UsedPercent)
+	// fmt.Println(d.Free)
+	// fmt.Println(d.Total)
+	// do, _ := docker.GetDockerIDList()
+	// fmt.Println(do)
+	// doc, _ := docker.GetDockerStat()
+	// fmt.Println(doc)
 }

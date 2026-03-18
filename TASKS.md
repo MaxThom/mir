@@ -20,15 +20,15 @@
 
 - [ ] MCP Server for Mir
   - [ ] https://www.utcp.io  
+- [ ] Healthcare
+  - [ ] Uniformised wrapper arround external to have proper subscrition for conn status
+  - [ ] Have system health check for higher components
 - [ ] DeviceSDK v2
   - [ ] TinyGo
   - [x] Refactor
   - [x] Store with prefix ID
   - [ ] Event (error) msg to evt mod becomes event eg: disk full
   - [ ] Metrics gopsutil
-  - [ ] Disk size limits as well as TTL
-  - [ ] Bbolt integration (choose between that and badger)
-  - [ ] Tool to see data in badger
 - [ ] Cockpit
   - [x] New cmd for refresh schema with button next to Delete
   - [x] cfg
@@ -37,7 +37,7 @@
     - [x] fe
     - [x] be
   - [ ] device list improvement
-    - [ ] select multiple device
+    - [x] select multiple device
     - [ ] collapsible with device view
 - [ ] Road to Production
   - [x] update all dependencies

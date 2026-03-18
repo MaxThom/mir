@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/maxthom/mir/internal/libs/api/health"
 	"github.com/maxthom/mir/internal/libs/compression/zstd"
 	"github.com/nats-io/nats.go"
 	"github.com/rs/zerolog"
@@ -113,10 +114,14 @@ func Connect(name string, target string, natsOpts ...nats.Option) (*Mir, error) 
 	m.Bus, err = nats.Connect(target,
 		append([]nats.Option{nats.Name(name)}, natsOpts...)...,
 	)
+	if m.Bus != nil && m.Bus.Status() == nats.CONNECTED {
+		health.SetComponentReady(health.ComponentNats)
+	} else {
+		health.SetComponentUnready(health.ComponentNats)
+	}
 	if err != nil {
 		return m, err
 	}
-
 	return m, nil
 }
 
@@ -150,21 +155,27 @@ func WithDefaultReconnectOpts() []nats.Option {
 	}
 }
 
-func WithDefaultConnectionLogging(l zerolog.Logger) []nats.Option {
+func WithDefaultConnectionHandlers(l zerolog.Logger) []nats.Option {
 	return []nats.Option{
 		nats.ErrorHandler(func(c *nats.Conn, s *nats.Subscription, err error) {
 			l.Error().Str("url", c.ConnectedUrl()).Str("status", c.Status().String()).Err(err).Msg("connected to Mir Server ")
 		}),
 		nats.ConnectHandler(func(c *nats.Conn) {
+			health.SetComponentReady(health.ComponentNats)
 			l.Info().Str("url", c.ConnectedUrl()).Str("status", c.Status().String()).Msg("connected to Mir Server ")
 		}),
 		nats.DisconnectErrHandler(func(c *nats.Conn, err error) {
+			health.SetComponentUnready(health.ComponentNats)
+			health.SetDegraded()
 			l.Warn().Str("url", c.ConnectedUrl()).Str("status", c.Status().String()).Err(err).Msg("disconnected from Mir Server")
 		}),
 		nats.ReconnectHandler(func(c *nats.Conn) {
+			health.SetComponentReady(health.ComponentNats)
 			l.Info().Str("url", c.ConnectedUrl()).Str("status", c.Status().String()).Msg("reconnected to Mir Server ")
 		}),
 		nats.ClosedHandler(func(c *nats.Conn) {
+			health.SetComponentUnready(health.ComponentNats)
+			health.SetDegraded()
 			l.Warn().Str("url", c.ConnectedAddr()).Str("status", c.Status().String()).Err(c.LastError()).Msg("closed connection from Mir Server")
 		}),
 	}
