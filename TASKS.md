@@ -8,7 +8,6 @@
   - [ ] bug table/qry horizontal scroll
 - [ ] perf check
 - [ ] tutorial on each page
-- [ ] schema page
 
 ### Bug
 
@@ -36,9 +35,8 @@
   - [x] tlm with charts
     - [x] fe
     - [x] be
-  - [ ] device list improvement
+  - [x] device list improvement
     - [x] select multiple device
-    - [ ] collapsible with device view
 - [ ] Road to Production
   - [x] update all dependencies
   - [ ] alert & alarms

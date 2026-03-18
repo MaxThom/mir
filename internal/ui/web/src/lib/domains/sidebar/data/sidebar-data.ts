@@ -1,5 +1,4 @@
 import BotIcon from '@lucide/svelte/icons/bot';
-import FileBraces from '@lucide/svelte/icons/file-braces';
 import CalendarSearch from '@lucide/svelte/icons/calendar-search';
 import SquareTerminalIcon from '@lucide/svelte/icons/square-terminal';
 import type { SidebarData } from '../types/types';
@@ -24,42 +23,13 @@ export const sidebarData: SidebarData = {
 			url: '/devices',
 			icon: BotIcon,
 			isActive: true,
-			items: [
-				{
-					title: 'List',
-					url: '/devices'
-				},
-				{
-					title: 'Telemetry',
-					url: '/devices/telemetry'
-				},
-				{
-					title: 'Commands',
-					url: '/devices/commands'
-				}
-			]
-		},
-		{
-			title: 'Schemas',
-			url: '/schemas',
-			icon: FileBraces,
-			items: [
-				{
-					title: 'Explorer',
-					url: '/schemas'
-				}
-			]
+			items: []
 		},
 		{
 			title: 'Events',
 			url: '/events',
 			icon: CalendarSearch,
-			items: [
-				{
-					title: 'List',
-					url: '/events'
-				}
-			]
+			items: []
 		}
 	]
 };

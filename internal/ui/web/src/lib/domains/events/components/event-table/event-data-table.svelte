@@ -61,6 +61,7 @@
 	let typeFilter = $state<TypeFilter>('all');
 	let dateRange = $state<DateRange | undefined>(undefined);
 	let reasonFilter = new SvelteSet<string>();
+	let deviceFilter = new SvelteSet<string>();
 
 	// Payload highlight state
 	let highlightedPayloads = $state<Record<string, string>>({});
@@ -70,10 +71,31 @@
 		[...new Set(events.map((e) => e.spec?.reason ?? '').filter(Boolean))].sort()
 	);
 
+	// { namespace: string; names: string[] }[] sorted by namespace, names within each
+	let deviceGroups = $derived.by(() => {
+		const map = new Map<string, Set<string>>();
+		for (const e of events) {
+			const ns = e.spec?.relatedObject?.meta?.namespace ?? '';
+			const name = e.spec?.relatedObject?.meta?.name ?? '';
+			if (!name) continue;
+			if (!map.has(ns)) map.set(ns, new Set());
+			map.get(ns)!.add(name);
+		}
+		return [...map.entries()]
+			.sort(([a], [b]) => a.localeCompare(b))
+			.map(([namespace, names]) => ({ namespace, names: [...names].sort() }));
+	});
+
 	let filteredEvents = $derived.by(() => {
 		let evts = events;
 		if (typeFilter !== 'all') evts = evts.filter((e) => e.spec?.type === typeFilter);
 		if (reasonFilter.size > 0) evts = evts.filter((e) => reasonFilter.has(e.spec?.reason ?? ''));
+		if (deviceFilter.size > 0) {
+			evts = evts.filter((e) => {
+				const key = `${e.spec?.relatedObject?.meta?.namespace ?? ''}/${e.spec?.relatedObject?.meta?.name ?? ''}`;
+				return deviceFilter.has(key);
+			});
+		}
 		return evts;
 	});
 
@@ -233,6 +255,8 @@
 		{dateRange}
 		{allReasons}
 		{reasonFilter}
+		{deviceGroups}
+		{deviceFilter}
 		onglobalfilterchange={(v) => {
 			globalFilter = v;
 			pagination = { ...pagination, pageIndex: 0 };
@@ -259,6 +283,11 @@
 			else reasonFilter.add(reason);
 			pagination = { ...pagination, pageIndex: 0 };
 		}}
+		ondevicefiltertoggle={(key) => {
+			if (deviceFilter.has(key)) deviceFilter.delete(key);
+			else deviceFilter.add(key);
+			pagination = { ...pagination, pageIndex: 0 };
+		}}
 	/>
 
 	{#if error}
@@ -282,6 +311,7 @@
 									class={cn(
 										'h-10 text-xs font-medium tracking-wide text-muted-foreground uppercase',
 										header.column.id === 'expand' && 'w-8',
+										header.column.id === 'deviceName' && 'w-32',
 										header.column.id === 'type' && 'w-24',
 										header.column.id === 'lastAt' && 'w-28'
 									)}
@@ -338,6 +368,11 @@
 											isExpanded && 'rotate-90'
 										)}
 									/>
+								</Table.Cell>
+
+								<!-- Device name -->
+								<Table.Cell class="font-mono text-xs">
+									{event.spec?.relatedObject?.meta?.name || '—'}
 								</Table.Cell>
 
 								<!-- Type badge -->
