@@ -12,8 +12,9 @@ export const eventGlobalFilterFn: FilterFn<MirEvent> = (
 	const type = (row.original.spec?.type ?? '').toLowerCase();
 	const reason = (row.original.spec?.reason ?? '').toLowerCase();
 	const message = (row.original.spec?.message ?? '').toLowerCase();
+	const device = (row.original.spec?.relatedObject?.meta?.name ?? '').toLowerCase();
 
-	return type.includes(search) || reason.includes(search) || message.includes(search);
+	return type.includes(search) || reason.includes(search) || message.includes(search) || device.includes(search);
 };
 eventGlobalFilterFn.autoRemove = (val: string) => !val || val.trim() === '';
 
@@ -25,6 +26,11 @@ export const eventColumns = [
 		header: '',
 		enableSorting: false,
 		enableGlobalFilter: false,
+	}),
+	col.accessor((e) => e.spec?.relatedObject?.meta?.name ?? '', {
+		id: 'deviceName',
+		header: 'Device',
+		enableSorting: true,
 	}),
 	col.accessor((e) => e.spec?.type ?? 'normal', {
 		id: 'type',

@@ -18,7 +18,7 @@
 	}
 </script>
 
-<div class="flex flex-col gap-4 p-4">
+<div class="flex flex-col gap-4">
 	<DeviceDataTable
 		devices={deviceStore.devices}
 		{isLoading}

@@ -26,8 +26,7 @@
 		{ label: 'Telemetry', href: (id: string) => ROUTES.DEVICES.TELEMETRY(id) },
 		{ label: 'Configuration', href: (id: string) => ROUTES.DEVICES.CONFIG(id) },
 		{ label: 'Commands', href: (id: string) => ROUTES.DEVICES.COMMANDS(id) },
-		{ label: 'Events', href: (id: string) => ROUTES.DEVICES.EVENTS(id) },
-		{ label: 'Schema', href: (id: string) => ROUTES.DEVICES.SCHEMA(id) }
+		{ label: 'Events', href: (id: string) => ROUTES.DEVICES.EVENTS(id) }
 	];
 
 	let isActive = (tabHref: string) => {

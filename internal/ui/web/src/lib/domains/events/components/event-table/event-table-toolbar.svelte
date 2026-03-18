@@ -21,10 +21,13 @@
 		dateRange: DateRange | undefined;
 		allReasons: string[];
 		reasonFilter: Set<string>;
+		deviceGroups?: { namespace: string; names: string[] }[];
+		deviceFilter?: Set<string>;
 		onglobalfilterchange: (value: string) => void;
 		ontypefilterchange: (value: TypeFilter) => void;
 		ondaterangechange: (value: DateRange | undefined) => void;
 		onreasonfiltertoggle: (reason: string) => void;
+		ondevicefiltertoggle?: (key: string) => void;
 	};
 
 	let {
@@ -34,10 +37,13 @@
 		dateRange,
 		allReasons,
 		reasonFilter,
+		deviceGroups = [],
+		deviceFilter,
 		onglobalfilterchange,
 		ontypefilterchange,
 		ondaterangechange,
-		onreasonfiltertoggle
+		onreasonfiltertoggle,
+		ondevicefiltertoggle
 	}: Props = $props();
 
 	const typeOptions: { value: TypeFilter; label: string }[] = [
@@ -90,6 +96,50 @@
 		</div>
 	</div>
 	<div class="flex items-center gap-3">
+		<!-- Device filter dropdown -->
+		{#if deviceGroups.length > 0 && ondevicefiltertoggle}
+			<DropdownMenu.Root>
+				<DropdownMenu.Trigger>
+					{#snippet child({ props })}
+						<Button
+							variant={deviceFilter && deviceFilter.size > 0 ? 'secondary' : 'outline'}
+							size="sm"
+							class="h-7 gap-1.5 px-2.5 text-xs"
+							{...props}
+						>
+							Device
+							{#if deviceFilter && deviceFilter.size > 0}
+								<span class="ml-0.5 rounded-full bg-primary px-1.5 text-[10px] text-primary-foreground">
+									{deviceFilter.size}
+								</span>
+							{/if}
+							<ChevronDownIcon class="h-3 w-3 opacity-50" />
+						</Button>
+					{/snippet}
+				</DropdownMenu.Trigger>
+				<DropdownMenu.Content class="max-h-72 overflow-y-auto" align="end">
+					{#each deviceGroups as group, gi (group.namespace)}
+						{#if gi > 0}
+							<DropdownMenu.Separator />
+						{/if}
+						<DropdownMenu.Label class="px-2 py-1 font-mono text-[10px] text-muted-foreground">
+							{group.namespace || '(no namespace)'}
+						</DropdownMenu.Label>
+						{#each group.names as name (name)}
+							{@const key = `${group.namespace}/${name}`}
+							<DropdownMenu.CheckboxItem
+								checked={deviceFilter?.has(key) ?? false}
+								onCheckedChange={() => ondevicefiltertoggle(key)}
+								closeOnSelect={false}
+							>
+								<span class="font-mono text-xs">{name}</span>
+							</DropdownMenu.CheckboxItem>
+						{/each}
+					{/each}
+				</DropdownMenu.Content>
+			</DropdownMenu.Root>
+		{/if}
+
 		<!-- Reason filter dropdown -->
 		{#if allReasons.length > 0}
 			<DropdownMenu.Root>
