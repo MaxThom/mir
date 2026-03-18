@@ -9,7 +9,7 @@ export type PageDocContent = {
 interface DocContentProps {
 	tab: DocTab;
 }
-export type RouteKey = 'dashboard' | 'devices';
+export type RouteKey = 'dashboard' | 'devices' | 'devices/create' | 'devices/detail' | 'devices/telemetry' | 'devices/commands' | 'devices/configuration' | 'devices/events';
 // | 'devices/detail'
 // | 'devices/commands'
 // | 'devices/configuration'

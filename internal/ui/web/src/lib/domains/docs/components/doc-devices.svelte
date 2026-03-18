@@ -38,28 +38,143 @@
 	</Tabs.List>
 	<div class="flex-1 overflow-y-auto px-4 py-4">
 		<Tabs.Content value="web">
-			<p class="text-sm leading-relaxed text-muted-foreground">
-				Use the search bar to filter devices by name or namespace. Click any row to open the device
-				detail view. The status indicator shows real-time online/offline state. Use the "Create"
-				button in the top-right to register a new device.
-			</p>
+			<div class="space-y-4">
+				<div>
+					<p class="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+						Search
+					</p>
+					<p class="text-sm text-muted-foreground">
+						Filters across all columns — name, namespace, device ID, labels, status, schema packages, and last heartbeat.
+					</p>
+				</div>
+				<div>
+					<p class="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+						Multi-select
+					</p>
+					<p class="text-sm text-muted-foreground">
+						Select devices using the row checkboxes to reveal a bulk action bar — send telemetry, commands, or configuration to all selected devices at once.
+					</p>
+				</div>
+				<div>
+					<p class="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+						Keyboard shortcuts
+					</p>
+					<div class="space-y-1.5">
+						<div class="flex items-center justify-between text-sm">
+							<span class="text-muted-foreground">Select all</span>
+							<div class="flex gap-1">
+								<kbd class="rounded border bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">Ctrl</kbd>
+								<kbd class="rounded border bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">A</kbd>
+							</div>
+						</div>
+						<div class="flex items-center justify-between text-sm">
+							<span class="text-muted-foreground">Clear selection</span>
+							<kbd class="rounded border bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">Esc</kbd>
+						</div>
+						<div class="flex items-center justify-between text-sm">
+							<span class="text-muted-foreground">Bulk telemetry</span>
+							<kbd class="rounded border bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">T</kbd>
+						</div>
+						<div class="flex items-center justify-between text-sm">
+							<span class="text-muted-foreground">Bulk commands</span>
+							<kbd class="rounded border bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">C</kbd>
+						</div>
+						<div class="flex items-center justify-between text-sm">
+							<span class="text-muted-foreground">Bulk configuration</span>
+							<kbd class="rounded border bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">P</kbd>
+						</div>
+					</div>
+					<p class="mt-2 text-xs text-muted-foreground">T, C, P only active with a selection.</p>
+				</div>
+			</div>
 		</Tabs.Content>
 		<Tabs.Content value="cli">
-			<div class="space-y-3">
-				<div class="space-y-1">
-					<CodeBlock title="List all devices" code="mir device list" lang="bash" />
+			<div class="space-y-4">
+				<div>
+					<p class="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+						Basic listing
+					</p>
+					<div class="space-y-3">
+						<CodeBlock title="List all devices" code="mir device list" lang="bash" />
+						<CodeBlock
+							title="List a single device by name"
+							code="mir device list my-device"
+							lang="bash"
+						/>
+						<CodeBlock
+							title="List all devices in a namespace"
+							code="mir device list /default"
+							lang="bash"
+						/>
+						<CodeBlock
+							title="List a single device by name and namespace"
+							code="mir device list my-device/default"
+							lang="bash"
+						/>
+					</div>
 				</div>
-				<div class="space-y-1">
-					<CodeBlock
-						title="Create a device"
-						code="mir device create --name my-device --namespace default"
-						lang="bash"
-					/>
+				<div>
+					<p class="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+						Output format
+					</p>
+					<p class="mb-2 text-xs text-muted-foreground">
+						Use <code class="font-mono">-o</code> to choose between
+						<code class="font-mono">pretty</code> (default), <code class="font-mono">json</code>, or
+						<code class="font-mono">yaml</code>.
+					</p>
+					<div class="space-y-3">
+						<CodeBlock
+							title="JSON output"
+							code="mir device list -o json"
+							lang="bash"
+						/>
+						<CodeBlock
+							title="YAML output  —  pipe into a file"
+							code="mir device list my-device -o yaml > device.yaml"
+							lang="bash"
+						/>
+					</div>
 				</div>
-				<div class="space-y-1">
+				<div>
+					<p class="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+						Targeting
+					</p>
+					<p class="mb-2 text-xs text-muted-foreground">
+						Use target flags to filter devices. Flags accept comma-separated values.
+					</p>
+					<div class="space-y-3">
+						<CodeBlock
+							title="Filter by IDs"
+							code="mir device list --target.ids=abc123,def456"
+							lang="bash"
+						/>
+						<CodeBlock
+							title="Filter by names"
+							code="mir device list --target.names=sensor-1,sensor-2"
+							lang="bash"
+						/>
+						<CodeBlock
+							title="All devices in a namespace"
+							code="mir device list --target.namespaces=production"
+							lang="bash"
+						/>
+						<CodeBlock
+							title="Filter by labels  —  key=value pairs separated by ;"
+							code={"mir device list --target.labels='env=prod;region=us-east'"}
+							lang="bash"
+						/>
+					</div>
+				</div>
+				<div>
+					<p class="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+						Performance
+					</p>
+					<p class="mb-2 text-xs text-muted-foreground">
+						Skip event history to speed up the query on large fleets.
+					</p>
 					<CodeBlock
-						title="Delete a device"
-						code="mir device delete --name my-device --namespace default"
+						title="Exclude events"
+						code="mir device list --exclude-events"
 						lang="bash"
 					/>
 				</div>
@@ -67,41 +182,81 @@
 		</Tabs.Content>
 		<Tabs.Content value="gosdk">
 			<CodeBlock
-				title="List and create devices"
-				code={`// List all devices
-devices, err := mir.Client().ListDevices(ctx, &ListDevicesRequest{
-    Targets: &Targets{},
-})
+				title="List devices"
+				code={`package main
 
-// Create a device
-device, err := mir.Client().CreateDevice(ctx, &CreateDeviceRequest{
-    Device: &Device{
-        Meta: &Meta{
-            Name:      "my-device",
-            Namespace: "default",
-        },
-    },
-})`}
+import (
+    "fmt"
+    mir "github.com/maxthom/mir/pkgs/module/mir"
+    "github.com/maxthom/mir/pkgs/mir_v1"
+)
+
+func main() {
+    m, err := mir.Connect("my-module", "nats://localhost:4222")
+    if err != nil {
+        panic(err)
+    }
+    defer m.Disconnect()
+
+    // List all devices
+    devices, err := m.Client().ListDevice().Request(mir_v1.DeviceTarget{}, false)
+
+    // List by name
+    devices, err = m.Client().ListDevice().Request(
+        mir_v1.DeviceTarget{Names: []string{"my-device"}},
+        false,
+    )
+
+    // List all in a namespace
+    devices, err = m.Client().ListDevice().Request(
+        mir_v1.DeviceTarget{Namespaces: []string{"default"}},
+        false,
+    )
+
+    // List by name and namespace
+    devices, err = m.Client().ListDevice().Request(
+        mir_v1.DeviceTarget{Names: []string{"my-device"}, Namespaces: []string{"default"}},
+        false,
+    )
+
+    fmt.Println(devices, err)
+}`}
 				lang="go"
 			/>
 		</Tabs.Content>
 		<Tabs.Content value="tssdk">
 			<CodeBlock
-				title="List and create devices"
-				code={`// List all devices
-const devices = await m.client().listDevices({ targets: {} });
+				title="List devices"
+				code={`import { Mir } from '@mir/web-sdk';
 
-// Create a device
-const device = await m.client().createDevice({
-  device: {
-    meta: { name: "my-device", namespace: "default" },
-  },
-});
+async function main() {
+    const mir = await Mir.connect("my-module", { servers: "ws://localhost:9222" });
 
-// Delete a device
-await m.client().deleteDevice({
-  target: { name: "my-device", namespace: "default" },
-});`}
+    // List all devices
+    const all = await mir.client().listDevices().request({}, false);
+
+    // List by name
+    const byName = await mir.client().listDevices().request(
+        { names: ["my-device"] },
+        false
+    );
+
+    // List all in a namespace
+    const byNs = await mir.client().listDevices().request(
+        { namespaces: ["default"] },
+        false
+    );
+
+    // List by name and namespace
+    const byBoth = await mir.client().listDevices().request(
+        { names: ["my-device"], namespaces: ["default"] },
+        false
+    );
+
+    await mir.disconnect();
+}
+
+main();`}
 				lang="typescript"
 			/>
 		</Tabs.Content>

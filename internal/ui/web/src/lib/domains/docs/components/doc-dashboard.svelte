@@ -12,8 +12,7 @@
 </Sheet.Header>
 <Separator class="mt-3" />
 <div class="bg-muted/50 px-4 py-3 text-sm leading-relaxed text-muted-foreground">
-	The Dashboard gives you a high-level overview of your Mir IoT Hub instance. View connected device
-	counts, recent events, and system health at a glance.
+	Get started with Mir — install the CLI, Go SDK, or TypeScript SDK.
 </div>
 <Separator />
 <Tabs.Root
@@ -38,51 +37,170 @@
 	<div class="flex-1 overflow-y-auto px-4 py-4">
 		<Tabs.Content value="web">
 			<p class="text-sm leading-relaxed text-muted-foreground">
-				The Dashboard displays live device counts, connection status, and a feed of recent system
-				events. Cards update automatically as devices connect or disconnect. Click any device count
-				card to jump directly to the filtered device list.
+				You're already here. Use the sidebar to navigate devices, telemetry, commands,
+				configurations, and events.
 			</p>
 		</Tabs.Content>
 		<Tabs.Content value="cli">
-			<div class="space-y-3">
-				<div class="space-y-1">
-					<CodeBlock title="Show Mir server status" code="mir status" lang="bash" />
+			<div class="space-y-4">
+				<div>
+					<p class="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+						Private repository setup
+					</p>
+					<div class="space-y-3">
+						<CodeBlock
+							title="Tell Git to use SSH for the Mir repo"
+							code={`# ~/.gitconfig
+[url "ssh://git@github.com/maxthom/mir"]
+  insteadOf = https://github.com/maxthom/mir`}
+							lang="bash"
+						/>
+						<CodeBlock
+							title="Bypass Go module proxy for Mir packages"
+							code="go env -w GOPRIVATE=github.com/maxthom/mir"
+							lang="bash"
+						/>
+					</div>
 				</div>
-				<div class="space-y-1">
-					<CodeBlock title="List all context" code="mir context list" lang="bash" />
+				<div>
+					<p class="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+						Install
+					</p>
+					<CodeBlock
+						title="Install the Mir CLI"
+						code="go install github.com/maxthom/mir/cmds/mir@latest"
+						lang="bash"
+					/>
+				</div>
+				<div>
+					<p class="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+						Config file
+					</p>
+					<p class="mb-3 text-sm text-muted-foreground">
+						The CLI reads <span class="font-mono text-xs text-foreground">~/.config/mir/cli.yaml</span> by default. Use <span class="font-mono text-xs text-foreground">-C</span> to point to a different file.
+					</p>
+					<div class="space-y-3">
+						<CodeBlock
+							title="View and edit the config file"
+							code={`mir tools config view
+mir tools config edit`}
+							lang="bash"
+						/>
+						<CodeBlock
+							title="~/.config/mir/cli.yaml"
+							code={`logLevel: info
+currentContext: local
+contexts:
+  - name: local
+    target: nats://localhost:4222
+    grafana: localhost:3000
+    credentials: ""
+  - name: prod
+    target: nats://mir.prod.example.com:4222
+    grafana: grafana.example.com
+    credentials: ~/.config/mir/creds/cli_prod.creds`}
+							lang="bash"
+						/>
+						<CodeBlock
+							title="List and switch contexts"
+							code={`mir context
+mir context prod`}
+							lang="bash"
+						/>
+					</div>
 				</div>
 			</div>
 		</Tabs.Content>
 		<Tabs.Content value="gosdk">
-			<CodeBlock
-				title="Connect to Mir"
-				code={`// Connect to Mir
-mir, err := mir.Connect("my-module", natsConn)
-if err != nil {
-    log.Fatal(err)
-}
-defer mir.Disconnect()
+			<div class="space-y-4">
+				<div>
+					<p class="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+						Private repository setup
+					</p>
+					<div class="space-y-3">
+						<CodeBlock
+							title="Tell Git to use SSH for the Mir repo"
+							code={`# ~/.gitconfig
+[url "ssh://git@github.com/maxthom/mir"]
+  insteadOf = https://github.com/maxthom/mir`}
+							lang="bash"
+						/>
+						<CodeBlock
+							title="Bypass Go module proxy for Mir packages"
+							code="go env -w GOPRIVATE=github.com/maxthom/mir"
+							lang="bash"
+						/>
+					</div>
+				</div>
+				<div>
+					<p class="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+						Install
+					</p>
+					<CodeBlock
+						title="Add the SDK to your module"
+						code="go get github.com/maxthom/mir/"
+						lang="bash"
+					/>
+				</div>
+				<div>
+					<p class="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+						Connect
+					</p>
+					<CodeBlock
+						title="Connect to Mir"
+						code={`package main
 
-// List devices
-devices, err := mir.Client().ListDevices(ctx, &ListDevicesRequest{})
-if err != nil {
-    log.Fatal(err)
+import (
+    "fmt"
+    "github.com/maxthom/mir/pkgs/module/mir"
+)
+
+func main() {
+    m, err := mir.Connect("my-module", "nats://localhost:4222")
+    if err != nil {
+        panic(err)
+    }
+    defer m.Disconnect()
+
+    fmt.Println("connected")
 }`}
-				lang="go"
-			/>
+						lang="go"
+					/>
+				</div>
+			</div>
 		</Tabs.Content>
 		<Tabs.Content value="tssdk">
-			<CodeBlock
-				title="Connect to Mir"
-				code={`// Connect to Mir
-const m = await Mir.connect("my-module", ["ws://localhost:9222"], jwt, nkey);
+			<div class="space-y-4">
+				<div>
+					<p class="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+						Install
+					</p>
+					<CodeBlock
+						title="Add the SDK to your project"
+						code="npm install @mir/sdk"
+						lang="bash"
+					/>
+				</div>
+				<div>
+					<p class="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+						Connect
+					</p>
+					<CodeBlock
+						title="Connect to Mir"
+						code={`import { Mir } from '@mir/sdk';
 
-// List devices
-const devices = await m.client().listDevices({});
+async function main() {
+    const mir = await Mir.connect("my-module", { servers: "ws://localhost:9222" });
 
-await m.disconnect();`}
-				lang="typescript"
-			/>
+    console.log("connected");
+    await mir.disconnect();
+}
+
+main();`}
+						lang="typescript"
+					/>
+				</div>
+			</div>
 		</Tabs.Content>
 	</div>
 </Tabs.Root>
