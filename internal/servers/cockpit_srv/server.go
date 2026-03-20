@@ -5,19 +5,22 @@ import (
 	"io/fs"
 	"net/http"
 
+	"github.com/maxthom/mir/internal/externals/mng"
 	"github.com/maxthom/mir/internal/ui"
 	"github.com/rs/zerolog"
 )
 
 type CockpitServer struct {
-	log  zerolog.Logger
-	opts Options
+	log   zerolog.Logger
+	opts  Options
+	store mng.DashboardStore
 }
 
 type Options struct {
 	AllowedOrigins []string
-	WebFS          fs.FS     // Embedded web files
-	Config         ui.Config // Cockpit configuration
+	WebFS          fs.FS              // Embedded web files
+	Config         ui.Config          // Cockpit configuration
+	Store          mng.DashboardStore // Dashboard persistence (optional)
 }
 
 func NewCockpit(logger zerolog.Logger, opts *Options) (*CockpitServer, error) {
@@ -29,8 +32,9 @@ func NewCockpit(logger zerolog.Logger, opts *Options) (*CockpitServer, error) {
 	}
 
 	return &CockpitServer{
-		log:  logger.With().Str("srv", "cockpit_server").Logger(),
-		opts: *opts,
+		log:   logger.With().Str("srv", "cockpit_server").Logger(),
+		opts:  *opts,
+		store: opts.Store,
 	}, nil
 }
 
@@ -44,6 +48,12 @@ func (s *CockpitServer) RegisterRoutes(mux *http.ServeMux) {
 	apiHandler = securityHeadersMiddleware(apiHandler)
 	apiHandler = corsMiddleware(s.opts.AllowedOrigins)(apiHandler)
 	mux.Handle("/api/v1/contexts", apiHandler)
+
+	// Dashboard API routes (only if store is configured)
+	if s.store != nil {
+		s.registerDashboardRoute(mux, "/api/v1/dashboards", s.dashboardsHandler)
+		s.registerDashboardRoute(mux, "/api/v1/dashboards/", s.dashboardHandler)
+	}
 
 	// Create SPA handler that serves static files and falls back to index.html
 	spaHandler := createSPAHandler(s.opts.WebFS, s.log)
@@ -64,4 +74,12 @@ func (s *CockpitServer) RegisterRoutes(mux *http.ServeMux) {
 	mux.Handle("/", handler)
 
 	s.log.Debug().Msg("cockpit routes registered")
+}
+
+func (s *CockpitServer) registerDashboardRoute(mux *http.ServeMux, pattern string, handler func(http.ResponseWriter, *http.Request)) {
+	h := metricsMiddleware(http.HandlerFunc(handler))
+	h = loggingMiddleware(s.log)(h)
+	h = securityHeadersMiddleware(h)
+	h = corsMiddleware(s.opts.AllowedOrigins)(h)
+	mux.Handle(pattern, h)
 }

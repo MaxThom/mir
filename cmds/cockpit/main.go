@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/maxthom/mir/internal/externals/mng"
 	"github.com/maxthom/mir/internal/libs/api/health"
 	"github.com/maxthom/mir/internal/libs/api/metrics"
 	"github.com/maxthom/mir/internal/libs/api/pprof"
@@ -18,6 +19,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/boiler/mir_log"
 	"github.com/maxthom/mir/internal/libs/boiler/mir_signals"
 	"github.com/maxthom/mir/internal/libs/build_meta"
+	"github.com/maxthom/mir/internal/libs/external/surreal"
 	cockpit_srv "github.com/maxthom/mir/internal/servers/cockpit_srv"
 	"github.com/maxthom/mir/internal/ui"
 	"github.com/rs/zerolog"
@@ -31,14 +33,23 @@ const (
 
 type (
 	CockpitConfig struct {
-		LogLevel   string
-		HttpServer HttpServer
-		Contexts   ui.Config `yaml:"contexts"`
+		LogLevel       string
+		HttpServer     HttpServer
+		Contexts       ui.Config      `yaml:"contexts"`
+		DatabaseServer DatabaseServer `yaml:"databaseServer"`
 	}
 
 	HttpServer struct {
 		Port           int
 		AllowedOrigins []string `yaml:"allowedOrigins"` // CORS allowed origins (empty = allow all)
+	}
+
+	DatabaseServer struct {
+		Url       string
+		User      string
+		Password  string `cfg:"secret"`
+		Namespace string
+		Database  string
 	}
 )
 
@@ -51,6 +62,13 @@ var (
 				"http://localhost:5173", // Svelte dev server
 				"http://localhost:3021", // Self
 			},
+		},
+		DatabaseServer: DatabaseServer{
+			Url:       "ws://127.0.0.1:8000/rpc",
+			User:      "root",
+			Password:  "root",
+			Namespace: "global",
+			Database:  "mir",
 		},
 		Contexts: ui.Config{
 			CurrentContext: "local",
@@ -150,11 +168,38 @@ func run(
 		return fmt.Errorf("failed to get web filesystem: %w", err)
 	}
 
+	// Connect to SurrealDB for dashboard persistence
+	db, err := surreal.Connect(ctx,
+		cfg.DatabaseServer.Url,
+		cfg.DatabaseServer.Namespace,
+		cfg.DatabaseServer.Database,
+		cfg.DatabaseServer.User,
+		cfg.DatabaseServer.Password,
+		surreal.ConnHandler{
+			FnConnected: func(url string) {
+				health.SetComponentReady(health.ComponentSurreal)
+				log.Info().Str("url", url).Msg("cockpit connected to SurrealDB")
+			},
+			FnDisconnected: func(url string) {
+				health.SetComponentUnready(health.ComponentSurreal)
+				log.Warn().Str("url", url).Msg("cockpit disconnected from SurrealDB")
+			},
+			FnFailedReconnect: func(url string, next time.Duration) {
+				log.Warn().Str("url", url).Dur("next", next).Msg("cockpit SurrealDB reconnect failed")
+			},
+		},
+	)
+	mngStore, err := mng.NewSurrealMirStore(log, db)
+	if err != nil {
+		return err
+	}
+
 	// Create cockpit server and register routes
 	cockpitSrv, err := cockpit_srv.NewCockpit(log, &cockpit_srv.Options{
 		AllowedOrigins: cfg.HttpServer.AllowedOrigins,
 		WebFS:          webFS,
 		Config:         cfg.Contexts,
+		Store:          mngStore,
 	})
 	if err != nil {
 		return err
@@ -198,6 +243,12 @@ func run(
 
 		if err := server.Shutdown(shutdownCtx); err != nil {
 			log.Error().Err(err).Msg("failed to gracefully shutdown server")
+		}
+
+		if db != nil {
+			if err := db.Close(); err != nil {
+				log.Error().Err(err).Msg("failed to close SurrealDB connection")
+			}
 		}
 
 		wg.Wait()

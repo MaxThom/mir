@@ -23,6 +23,14 @@ const (
 	MergePatch UpdateType = "merge-patch"
 )
 
+type DashboardStore interface {
+	ListDashboards(t mir_v1.ObjectTarget) ([]mir_v1.Dashboard, error)
+	CreateDashboard(d mir_v1.Dashboard) (mir_v1.Dashboard, error)
+	UpdateDashboard(t mir_v1.ObjectTarget, upd mir_v1.DashboardUpdate) ([]mir_v1.Dashboard, error)
+	MergeDashboard(t mir_v1.ObjectTarget, path json.RawMessage, op UpdateType) ([]mir_v1.Dashboard, error)
+	DeleteDashboard(t mir_v1.ObjectTarget) ([]mir_v1.Dashboard, error)
+}
+
 type MirStore interface {
 	ListDevice(t mir_v1.DeviceTarget, includeEvents bool) ([]mir_v1.Device, error)
 	CreateDevice(d mir_v1.Device) (mir_v1.Device, error)
@@ -83,6 +91,7 @@ func (s *surrealMirStore) initSchema() error {
 	q := `
 		DEFINE TABLE IF NOT EXISTS devices SCHEMALESS;
 		DEFINE TABLE IF NOT EXISTS events SCHEMALESS;
+		DEFINE TABLE IF NOT EXISTS dashboards SCHEMALESS;
 	`
 	_, err := surreal.Query[any](s.db, q, nil)
 	if err != nil {
