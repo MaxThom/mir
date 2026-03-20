@@ -72,8 +72,13 @@ func createDeleteQueryForObjects(table string, t mir_v1.ObjectTarget) (sql strin
 	var q strings.Builder
 	vars = map[string]any{}
 
-	q.WriteString("DELETE FROM " + table + " WHERE ")
-	q.WriteString(createTargetStatementForObjects(t))
+	q.WriteString("DELETE FROM " + table)
+	where := createTargetStatementForObjects(t)
+	if len(where) > 0 {
+		q.WriteString(" WHERE ")
+		q.WriteString(where)
+	}
+
 	q.WriteString(";")
 	sql = q.String()
 	return
@@ -153,4 +158,59 @@ func validateObjectMetaForUpdate(db *surreal.AutoReconnDB, table string, t mir_v
 		}
 	}
 	return nil
+}
+
+func createUpdateQueryForMeta(t mir_v1.ObjectTarget, upd *mir_v1.MetaUpdate) (sql string, vars map[string]any) {
+	var q strings.Builder
+	vars = map[string]any{}
+	if upd != nil {
+		var sb strings.Builder
+		if upd.Name != nil && *upd.Name != "" {
+			sb.WriteString("name: $NAME,")
+			vars["NAME"] = *upd.Name
+		}
+		if upd.Namespace != nil && *upd.Namespace != "" {
+			sb.WriteString("namespace: $NS,")
+			vars["NS"] = *upd.Namespace
+		}
+		if len(upd.Labels) > 0 {
+			sb.WriteString("labels: {")
+			for key, val := range upd.Labels {
+				sb.WriteString("\"")
+				sb.WriteString(key)
+				sb.WriteString("\"")
+				sb.WriteString(": ")
+				if val == nil {
+					sb.WriteString("NONE")
+				} else {
+					sb.WriteString(fmt.Sprintf("\"%s\"", *val))
+				}
+				sb.WriteString(",")
+			}
+			sb.WriteString("},")
+		}
+		if len(upd.Annotations) > 0 {
+			sb.WriteString("annotations: {")
+			for key, val := range upd.Annotations {
+				sb.WriteString("\"")
+				sb.WriteString(key)
+				sb.WriteString("\"")
+				sb.WriteString(": ")
+				if val == nil {
+					sb.WriteString("NONE")
+				} else {
+					sb.WriteString(fmt.Sprintf("\"%s\"", *val))
+				}
+				sb.WriteString(",")
+			}
+			sb.WriteString("},")
+		}
+		if sb.Len() > 0 {
+			q.WriteString("meta: {")
+			q.WriteString(sb.String())
+			q.WriteString("},")
+		}
+	}
+	sql = q.String()
+	return
 }

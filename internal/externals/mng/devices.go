@@ -23,11 +23,6 @@ const (
 	surrealDeviceTable string = "devices"
 )
 
-type deviceWithId struct {
-	Id string `json:"id"`
-	mir_v1.Device
-}
-
 func (s *surrealMirStore) ListDevice(t mir_v1.DeviceTarget, includeEvents bool) ([]mir_v1.Device, error) {
 	q, v := createListQueryForDevice(t, includeEvents)
 	devs, err := surreal.Query[[]mir_v1.Device](s.db, q, v)
