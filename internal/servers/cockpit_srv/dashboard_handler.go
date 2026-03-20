@@ -21,7 +21,7 @@ import (
 func (s *CockpitServer) dashboardsHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		dashboards, err := s.store.ListDashboards()
+		dashboards, err := s.store.ListDashboards(mir_v1.ObjectTarget{})
 		if err != nil {
 			s.log.Error().Err(err).Msg("failed to list dashboards")
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -59,16 +59,25 @@ func (s *CockpitServer) dashboardHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	t := mir_v1.ObjectTarget{
+		Names:      []string{name},
+		Namespaces: []string{namespace},
+	}
+
 	switch sub {
 	case "":
 		switch r.Method {
 		case http.MethodGet:
-			d, err := s.store.GetDashboard(name, namespace)
+			dashboards, err := s.store.ListDashboards(t)
 			if err != nil {
 				dashboardError(w, err)
 				return
 			}
-			writeJSON(w, d)
+			if len(dashboards) == 0 {
+				dashboardError(w, mng.ErrorDashboardNotFound)
+				return
+			}
+			writeJSON(w, dashboards[0])
 		case http.MethodPut:
 			var req struct {
 				Spec struct {
@@ -79,19 +88,28 @@ func (s *CockpitServer) dashboardHandler(w http.ResponseWriter, r *http.Request)
 				http.Error(w, "Invalid JSON", http.StatusBadRequest)
 				return
 			}
-			d, err := s.store.UpdateDashboard(name, namespace, req.Spec.Description)
+			upd := mir_v1.DashboardUpdate{
+				Spec: &mir_v1.DashboardUpdateSpec{
+					Description: &req.Spec.Description,
+				},
+			}
+			dashboards, err := s.store.UpdateDashboard(t, upd)
 			if err != nil {
 				dashboardError(w, err)
 				return
 			}
-			writeJSON(w, d)
+			if len(dashboards) == 0 {
+				dashboardError(w, mng.ErrorDashboardNotFound)
+				return
+			}
+			writeJSON(w, dashboards[0])
 		case http.MethodDelete:
-			d, err := s.store.DeleteDashboard(name, namespace)
+			dashboards, err := s.store.DeleteDashboard(t)
 			if err != nil {
 				dashboardError(w, err)
 				return
 			}
-			writeJSON(w, d)
+			writeJSON(w, dashboards)
 		default:
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
@@ -108,12 +126,21 @@ func (s *CockpitServer) dashboardHandler(w http.ResponseWriter, r *http.Request)
 			http.Error(w, "Invalid JSON", http.StatusBadRequest)
 			return
 		}
-		d, err := s.store.SaveWidgets(name, namespace, req.Widgets)
+		upd := mir_v1.DashboardUpdate{
+			Spec: &mir_v1.DashboardUpdateSpec{
+				Widgets: req.Widgets,
+			},
+		}
+		dashboards, err := s.store.UpdateDashboard(t, upd)
 		if err != nil {
 			dashboardError(w, err)
 			return
 		}
-		writeJSON(w, d)
+		if len(dashboards) == 0 {
+			dashboardError(w, mng.ErrorDashboardNotFound)
+			return
+		}
+		writeJSON(w, dashboards[0])
 
 	default:
 		http.NotFound(w, r)
