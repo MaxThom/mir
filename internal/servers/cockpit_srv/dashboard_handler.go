@@ -80,6 +80,10 @@ func (s *CockpitServer) dashboardHandler(w http.ResponseWriter, r *http.Request)
 			writeJSON(w, dashboards[0])
 		case http.MethodPut:
 			var req struct {
+				Meta *struct {
+					Name      *string `json:"name"`
+					Namespace *string `json:"namespace"`
+				} `json:"meta,omitempty"`
 				Spec struct {
 					Description string `json:"description"`
 				} `json:"spec"`
@@ -92,6 +96,12 @@ func (s *CockpitServer) dashboardHandler(w http.ResponseWriter, r *http.Request)
 				Spec: &mir_v1.DashboardUpdateSpec{
 					Description: &req.Spec.Description,
 				},
+			}
+			if req.Meta != nil {
+				upd.Meta = &mir_v1.MetaUpdate{
+					Name:      req.Meta.Name,
+					Namespace: req.Meta.Namespace,
+				}
 			}
 			dashboards, err := s.store.UpdateDashboard(t, upd)
 			if err != nil {

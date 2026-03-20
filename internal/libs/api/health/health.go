@@ -3,6 +3,7 @@ package health
 import (
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/maxthom/mir/internal/libs/api/metrics"
 	"github.com/prometheus/client_golang/prometheus"
@@ -23,6 +24,7 @@ const (
 
 var (
 	componentStatus = make(map[string]ComponentStatus)
+	componentLock   = sync.RWMutex{}
 	isReady         = ComponentStatusUnready
 
 	readyStatus = metrics.NewGauge(prometheus.GaugeOpts{
@@ -71,10 +73,14 @@ func GetReadyStatus() ComponentStatus {
 }
 
 func GetComponentStatus(component string) ComponentStatus {
+	componentLock.RLock()
+	defer componentLock.RUnlock()
 	return componentStatus[component]
 }
 
 func SetComponentReady(component string) {
+	componentLock.Lock()
+	defer componentLock.Unlock()
 	componentStatus[component] = ComponentStatusReady
 	compReadyStatus.With(prometheus.Labels{"component": component}).Set(1)
 	for _, status := range componentStatus {
@@ -87,15 +93,12 @@ func SetComponentReady(component string) {
 }
 
 func SetComponentUnready(component string) {
+	componentLock.Lock()
+	defer componentLock.Unlock()
 	componentStatus[component] = ComponentStatusUnready
 	compReadyStatus.With(prometheus.Labels{"component": component}).Set(0)
 	SetDegraded()
 }
-
-// func SetComponentDegraded(component string) {
-// 	componentStatus[component] = ComponentStatusDegraded
-// 	compReadyStatus.With(prometheus.Labels{"component": component}).Set(0)
-// }
 
 func RegisterRoutes(r *http.ServeMux) {
 	r.HandleFunc("/ready", func(w http.ResponseWriter, r *http.Request) {

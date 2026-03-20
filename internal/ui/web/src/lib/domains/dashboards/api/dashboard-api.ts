@@ -100,11 +100,25 @@ export const dashboardApi = {
 			})
 		}),
 
-	update: (namespace: string, name: string, description: string): Promise<Dashboard> =>
+	update: (
+		namespace: string,
+		name: string,
+		patch: { name?: string; namespace?: string; description?: string }
+	): Promise<Dashboard> =>
 		request<Dashboard>(`${BASE}/${namespace}/${name}`, {
 			method: 'PUT',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ spec: { description } })
+			body: JSON.stringify({
+				...(patch.name || patch.namespace
+					? {
+							meta: {
+								...(patch.name ? { name: patch.name } : {}),
+								...(patch.namespace ? { namespace: patch.namespace } : {})
+							}
+						}
+					: {}),
+				spec: { description: patch.description ?? '' }
+			})
 		}),
 
 	delete: (namespace: string, name: string): Promise<Dashboard> =>
