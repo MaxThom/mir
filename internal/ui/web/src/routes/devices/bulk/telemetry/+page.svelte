@@ -391,7 +391,11 @@
 	let splitSlots = $derived.by(() => {
 		const group = tlmGroups[selection?.groupIdx ?? -1];
 		if (!group) return [];
-		return Array.from({ length: splitCount }, (_, i) => group.ids[i] ?? group.ids[0] ?? null);
+		const fields = selection?.measurement.fields ?? [];
+		return Array.from({ length: splitCount }, (_, i) => ({
+			device: group.ids[i] ?? group.ids[0] ?? null,
+			fields: [fields[i % Math.max(1, fields.length)]].filter(Boolean) as string[]
+		}));
 	});
 
 	let singleViewChartConfig = $derived.by(() => {
@@ -410,11 +414,7 @@
 		return result;
 	});
 
-		let slotChartClass = $derived.by(() => {
-		if (!fullscreen) return 'h-52';
-		const twoRows = splitCount === 3 || splitCount === 4;
-		return twoRows ? 'h-[calc(50vh-6rem)]' : 'h-[calc(100vh-8rem)]';
-	});
+	
 
 	function handleBrushSelect(newStart: Date, newEnd: Date) {
 		if (newEnd.getTime() <= newStart.getTime() + 1000) return;
@@ -573,8 +573,8 @@
 		{/if}
 
 			<!-- Chart + data panel scrollable area -->
-			<div class="min-h-0 flex-1 overflow-auto">
-				{#if splitCount === 1}
+			{#if splitCount === 1}
+				<div class="min-h-0 flex-1 overflow-auto">
 					<!-- Single chart -->
 					<div class="px-4 py-4">
 						{#if queryError}
@@ -598,19 +598,24 @@
 						{/if}
 					</div>
 					<TlmDataPanel data={mergedData} exploreQuery={selection.measurement.exploreQuery} />
-				{:else}
-					<!-- Split grid -->
+				</div>
+			{:else}
+				<!-- Split grid: fills available height -->
+				<div class="min-h-0 flex-1 overflow-hidden px-4 py-4">
 					{#if queryError}
-						<p class="px-4 py-4 text-sm text-destructive">{queryError}</p>
+						<p class="text-sm text-destructive">{queryError}</p>
 					{:else if isQuerying && !mergedData}
 						<div class="flex h-48 items-center justify-center text-sm text-muted-foreground">
 							<Spinner class="mr-2 size-4" />
 							Loading data…
 						</div>
 					{:else if mergedData}
-						<div class="grid grid-cols-2 gap-4 px-4 py-4">
-							{#each splitSlots as initialDevice, i (i)}
-								<div class={splitCount === 3 && i === 0 ? 'col-span-2' : ''}>
+						<div
+							class="h-full grid grid-cols-2 gap-3"
+							style="grid-template-rows: repeat({splitCount > 2 ? 2 : 1}, 1fr)"
+						>
+							{#each splitSlots as slot, i (i)}
+								<div class="min-h-0 flex flex-col overflow-hidden {splitCount === 3 && i === 0 ? 'col-span-2' : ''}">
 									<TlmSlotChart
 										devices={tlmGroups[selection.groupIdx].ids}
 										measurementFields={selection.measurement.fields}
@@ -619,8 +624,9 @@
 										{queryStart}
 										{queryEnd}
 										useUtc={editorPrefs.utc}
-										initialDeviceId={initialDevice?.id}
-										chartClass={slotChartClass}
+										initialDeviceId={slot.device?.id}
+										initialFields={slot.fields}
+										chartClass="flex-1 min-h-0"
 										forcedFields={syncFields ? syncSelectedFields : undefined}
 										onBrushSelect={handleBrushSelect}
 									/>
@@ -628,8 +634,8 @@
 							{/each}
 						</div>
 					{/if}
-				{/if}
-			</div>
+				</div>
+			{/if}
 		{/if}
 	</div>
 </div>

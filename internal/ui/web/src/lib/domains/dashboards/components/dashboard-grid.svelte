@@ -105,4 +105,8 @@
 	:global(.grid-stack:not(.gs-edit-mode) .ui-resizable-handle) {
 		display: none !important;
 	}
+	/* Ensure resize handles appear above widget card content */
+	:global(.grid-stack.gs-edit-mode .ui-resizable-handle) {
+		z-index: 10;
+	}
 </style>
