@@ -18,9 +18,13 @@
 	} = $props();
 </script>
 
-<Card.Root class="flex h-full flex-col overflow-hidden">
-	<Card.Header class="flex flex-row items-center gap-2 px-3 py-2">
-		<span class="grid-stack-item-content-drag-handle text-muted-foreground {editMode ? 'cursor-grab' : 'invisible pointer-events-none'}">
+<Card.Root class="flex h-full flex-col gap-0 overflow-hidden py-4">
+	<Card.Header class="flex flex-row items-center gap-2 px-2">
+		<span
+			class="grid-stack-item-content-drag-handle text-muted-foreground {editMode
+				? 'cursor-grab'
+				: 'pointer-events-none invisible'}"
+		>
 			<GripVerticalIcon class="h-4 w-4" />
 		</span>
 		<Card.Title class="flex-1 truncate text-sm">{title}</Card.Title>
@@ -36,7 +40,7 @@
 			</Button>
 		{/if}
 	</Card.Header>
-	<Card.Content class="min-h-0 flex-1 overflow-auto p-2">
+	<Card.Content class="min-h-0 flex-1 overflow-auto p-0">
 		{@render children()}
 	</Card.Content>
 </Card.Root>

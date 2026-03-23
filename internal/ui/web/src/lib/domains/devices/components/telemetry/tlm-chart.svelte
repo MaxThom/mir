@@ -88,7 +88,7 @@
 </script>
 
 <div class="relative {chartClass}">
-	<ChartContainer config={chartConfig} class="{chartClass} w-full">
+	<ChartContainer config={chartConfig} class="h-full w-full">
 		<LineChart
 			data={chartRows}
 			x="_time"

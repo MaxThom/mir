@@ -13,8 +13,11 @@
 		queryEnd = null,
 		useUtc = false,
 		initialDeviceId = undefined,
+		initialFields = undefined,
 		chartClass = 'h-52',
 		forcedFields = undefined,
+		forcedDeviceIds = undefined,
+		onToggleDevice = undefined,
 		onBrushSelect
 	}: {
 		devices: { id: string; name: string }[];
@@ -25,8 +28,11 @@
 		queryEnd?: Date | null;
 		useUtc?: boolean;
 		initialDeviceId?: string;
+		initialFields?: string[];
 		chartClass?: string;
 		forcedFields?: string[];
+		forcedDeviceIds?: string[];
+		onToggleDevice?: (id: string, multi: boolean) => void;
 		onBrushSelect?: (start: Date, end: Date) => void;
 	} = $props();
 
@@ -34,12 +40,13 @@
 	let selectedDeviceIds = $state<string[]>(
 		[initialDeviceId ?? devices[0]?.id ?? ''].filter(Boolean)
 	);
-	let selectedFields = $state<string[]>(measurementFields.slice(0, MAX_AUTO_FIELDS));
+	let selectedFields = $state<string[]>(initialFields ?? measurementFields.slice(0, MAX_AUTO_FIELDS));
 
 	let activeFields = $derived(forcedFields ?? selectedFields);
+	let activeDeviceIds = $derived(forcedDeviceIds ?? selectedDeviceIds);
 
 	let selectedDevices = $derived(
-		selectedDeviceIds
+		activeDeviceIds
 			.map((id) => devices.find((d) => d.id === id))
 			.filter((d): d is { id: string; name: string } => d !== undefined)
 	);
@@ -62,6 +69,10 @@
 	});
 
 	function toggleDevice(deviceId: string, multi: boolean) {
+		if (onToggleDevice) {
+			onToggleDevice(deviceId, multi);
+			return;
+		}
 		if (multi) {
 			if (selectedDeviceIds.includes(deviceId)) {
 				if (selectedDeviceIds.length > 1) selectedDeviceIds = selectedDeviceIds.filter((id) => id !== deviceId);
@@ -106,21 +117,6 @@
 </div>
 {/if}
 
-<!-- Device selector -->
-<div class="mb-2 flex flex-wrap gap-1">
-	{#each devices as dev (dev.id)}
-		<button
-			onclick={(e) => toggleDevice(dev.id, e.shiftKey || e.ctrlKey)}
-			class="flex items-center gap-1 rounded-sm border px-1.5 py-0.5 font-mono text-[11px] transition-colors
-				{selectedDeviceIds.includes(dev.id)
-					? 'border-transparent bg-foreground text-background'
-					: 'border-border/60 bg-muted/40 text-muted-foreground hover:bg-accent'}"
-		>
-			{dev.name}
-		</button>
-	{/each}
-</div>
-
 <!-- Chart -->
 <TlmChart
 	data={mergedData}
@@ -132,3 +128,23 @@
 	{chartClass}
 	{onBrushSelect}
 />
+
+<!-- Device legend -->
+{#if devices.length > 0 && activeFields.length > 0}
+	<div class="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 px-1">
+		{#each devices as dev (dev.id)}
+			{@const enabled = activeDeviceIds.includes(dev.id)}
+			{@const color = localChartConfig[`${dev.name}_${activeFields[0]}`]?.color ?? 'var(--chart-1)'}
+			<button
+				onclick={(e) => toggleDevice(dev.id, e.shiftKey || e.ctrlKey)}
+				class="flex items-center gap-1 font-mono text-[11px] transition-colors {enabled ? 'text-foreground' : 'text-muted-foreground/40'}"
+			>
+				<span
+					class="inline-block size-2 shrink-0 rounded-full transition-opacity {enabled ? '' : 'opacity-30'}"
+					style="background: {color}"
+				></span>
+				{dev.name}
+			</button>
+		{/each}
+	</div>
+{/if}
