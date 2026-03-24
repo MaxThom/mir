@@ -61,7 +61,6 @@
 	let endTime = $state('23:59');
 	let queryStart = $state<Date | null>(null);
 	let queryEnd = $state<Date | null>(null);
-	let hasZoomed = $state(false);
 	let fullscreen = $state(false);
 	let splitCount = $state<1 | 2 | 3 | 4>(1);
 
@@ -190,7 +189,6 @@
 	function handleBrushSelect(newStart: Date, newEnd: Date) {
 		if (newEnd.getTime() <= newStart.getTime() + 1000) return;
 		timeFilter = { mode: 'absolute', start: newStart, end: newEnd };
-		hasZoomed = true;
 		runQuery();
 	}
 
@@ -277,7 +275,6 @@
 			{grafanaUrl}
 			bind:timeFilter
 			bind:calendarValue
-			bind:hasZoomed
 			bind:fullscreen
 			queryData={telemetryStore.queryData}
 			presets={PRESETS}
