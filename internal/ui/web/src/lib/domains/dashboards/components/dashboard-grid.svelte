@@ -86,7 +86,7 @@
 						dashboardStore.removeWidget(dashboardStore.activeDashboard, widget.id)}
 				>
 					{#if widget.type === 'telemetry'}
-						<WidgetTelemetry config={widget.config as TelemetryWidgetConfig} />
+						<WidgetTelemetry widgetId={widget.id} config={widget.config as TelemetryWidgetConfig} />
 					{:else if widget.type === 'command'}
 						<WidgetCommand config={widget.config as CommandWidgetConfig} />
 					{:else if widget.type === 'config'}

@@ -328,7 +328,7 @@ func (s *ProtoTlmServer) handleTelemetryListRequest(msg *mir.Msg, clientId strin
 		})
 	}
 
-	l.Info().Msg("list command request processed successfully")
+	l.Info().Msg("list telemetry request processed successfully")
 	return devsTlm, nil
 }
 

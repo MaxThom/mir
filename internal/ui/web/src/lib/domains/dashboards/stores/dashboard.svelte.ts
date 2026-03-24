@@ -18,6 +18,7 @@ class DashboardStore {
 	error = $state<string | null>(null);
 
 	private saveTimer: ReturnType<typeof setTimeout> | null = null;
+	private configSaveTimer: ReturnType<typeof setTimeout> | null = null;
 	private editSnapshot: Dashboard | null = null;
 
 	private _loadPinnedKeys(): string[] {
@@ -193,6 +194,19 @@ class DashboardStore {
 		);
 	}
 
+	saveWidgetConfig(d: Dashboard, widgetId: string, config: WidgetConfig) {
+		const updated = (d.spec.widgets ?? []).map((w) =>
+			w.id === widgetId ? { ...w, config } : w
+		);
+		this._syncDashboard(d, { ...d, spec: { ...d.spec, widgets: updated } });
+
+		if (this.configSaveTimer) clearTimeout(this.configSaveTimer);
+		this.configSaveTimer = setTimeout(() => {
+			if (!this.activeDashboard) return;
+			this._persistWidgets(this.activeDashboard, this.activeDashboard.spec.widgets);
+		}, 1000);
+	}
+
 	saveLayout(d: Dashboard, layoutItems: Pick<Widget, 'id' | 'x' | 'y' | 'w' | 'h'>[]) {
 		const posMap = new Map(layoutItems.map((item) => [item.id, item]));
 		const updated = (d.spec.widgets ?? []).map((w) => {
@@ -233,6 +247,10 @@ class DashboardStore {
 		if (this.saveTimer) {
 			clearTimeout(this.saveTimer);
 			this.saveTimer = null;
+		}
+		if (this.configSaveTimer) {
+			clearTimeout(this.configSaveTimer);
+			this.configSaveTimer = null;
 		}
 		this.editMode = false;
 	}

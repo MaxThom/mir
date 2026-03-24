@@ -12,6 +12,11 @@ export interface TelemetryWidgetConfig {
 	measurement: string;
 	fields: string[];
 	timeMinutes: number;
+	// View state (optional — absent in older saved dashboards, defaults applied on load)
+	selectedFields?: string[];
+	splitCount?: 1 | 2 | 3 | 4;
+	syncFields?: boolean;
+	enabledDeviceIds?: string[];
 }
 
 export interface CommandWidgetConfig {
