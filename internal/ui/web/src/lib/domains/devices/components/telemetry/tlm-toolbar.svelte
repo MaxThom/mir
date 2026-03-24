@@ -76,16 +76,7 @@
 			const preset = presets.find((p) => p.minutes === f.minutes);
 			return `Last ${preset?.label ?? f.minutes + 'm'}`;
 		}
-		const tz = editorPrefs.utc ? 'UTC' : undefined;
-		const fmt = (d: Date) =>
-			d.toLocaleDateString([], {
-				month: 'short',
-				day: 'numeric',
-				hour: '2-digit',
-				minute: '2-digit',
-				timeZone: tz
-			});
-		return `${fmt(f.start)} – ${fmt(f.end)}${editorPrefs.utc ? ' (UTC)' : ''}`;
+		return 'Custom';
 	});
 
 	function getTimeRange(): { start: Date; end: Date } {

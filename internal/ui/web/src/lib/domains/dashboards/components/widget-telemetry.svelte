@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { mirStore } from '$lib/domains/mir/stores/mir.svelte';
 	import { DeviceTarget } from '@mir/sdk';
 	import { SvelteMap } from 'svelte/reactivity';
@@ -16,6 +17,7 @@ import { Spinner } from '$lib/shared/components/shadcn/spinner';
 		getTimeRange,
 		getAggregationWindow
 	} from '$lib/domains/devices/utils/tlm-time';
+	import { dashboardStore } from '$lib/domains/dashboards/stores/dashboard.svelte';
 	import Columns2Icon from '@lucide/svelte/icons/columns-2';
 	import LayoutDashboardIcon from '@lucide/svelte/icons/layout-dashboard';
 	import Grid2x2Icon from '@lucide/svelte/icons/grid-2x2';
@@ -24,7 +26,7 @@ import { Spinner } from '$lib/shared/components/shadcn/spinner';
 	import LockOpenIcon from '@lucide/svelte/icons/lock-open';
 	import type { TelemetryWidgetConfig } from '../api/dashboard-api';
 
-	let { config }: { config: TelemetryWidgetConfig } = $props();
+	let { config, widgetId }: { config: TelemetryWidgetConfig; widgetId: string } = $props();
 
 	// ─── State ────────────────────────────────────────────────────────────────
 
@@ -41,8 +43,9 @@ import { Spinner } from '$lib/shared/components/shadcn/spinner';
 
 	let timeFilter = $state<TimeFilter>({ mode: 'relative', minutes: config.timeMinutes ?? 60 });
 	let hasZoomed = $state(false);
-	let splitCount = $state<1 | 2 | 3 | 4>(1);
-	let syncFields = $state(false);
+	let splitCount = $state<1 | 2 | 3 | 4>((config.splitCount ?? 1) as 1 | 2 | 3 | 4);
+	let syncFields = $state(config.syncFields ?? false);
+	let hasLoaded = $state(false);
 
 	let selectedFields = $state<string[]>([]);
 	let enabledDeviceIds = $state<string[]>([]);
@@ -51,6 +54,38 @@ import { Spinner } from '$lib/shared/components/shadcn/spinner';
 	let fullscreen = $state(false);
 
 	let generation = 0;
+
+	// ─── Auto-save view settings in edit mode ────────────────────────────────
+
+	$effect(() => {
+		if (!hasLoaded) return;
+		if (!dashboardStore.editMode) return;
+
+		// Capture user-controlled state (these are the tracked dependencies)
+		const newTimeMinutes = timeFilter.mode === 'relative'
+			? timeFilter.minutes
+			: untrack(() => config.timeMinutes);
+		const currentSelectedFields = selectedFields;
+		const currentSplitCount = splitCount;
+		const currentSyncFields = syncFields;
+		const currentEnabledDeviceIds = enabledDeviceIds;
+
+		// Read dashboard and config WITHOUT tracking — saveWidgetConfig updates
+		// activeDashboard via _syncDashboard, which would cause an infinite loop
+		// if those reads were tracked.
+		untrack(() => {
+			const dashboard = dashboardStore.activeDashboard;
+			if (!dashboard) return;
+			dashboardStore.saveWidgetConfig(dashboard, widgetId, {
+				...config,
+				timeMinutes: newTimeMinutes,
+				selectedFields: currentSelectedFields,
+				splitCount: currentSplitCount,
+				syncFields: currentSyncFields,
+				enabledDeviceIds: currentEnabledDeviceIds
+			});
+		});
+	});
 
 	// ─── Presets ──────────────────────────────────────────────────────────────
 
@@ -68,7 +103,10 @@ import { Spinner } from '$lib/shared/components/shadcn/spinner';
 
 	$effect(() => {
 		if (mirStore.mir) {
-			loadAndQuery();
+			// untrack so config.* reads inside loadAndQuery don't become
+			// dependencies — saveWidgetConfig creates a new config object each
+			// time and would otherwise re-trigger this effect in a tight loop.
+			untrack(loadAndQuery);
 		} else {
 			mergedData = null;
 		}
@@ -92,9 +130,13 @@ import { Spinner } from '$lib/shared/components/shadcn/spinner';
 			isLoading = false;
 		}
 
-		enabledDeviceIds = deviceInfos.map((d) => d.id);
-		selectedFields = config.fields.slice(0, 1);
-		syncSelectedFields = config.fields.slice(0, 1);
+		enabledDeviceIds = config.enabledDeviceIds?.filter((id) => deviceInfos.some((d) => d.id === id))
+			?? deviceInfos.map((d) => d.id);
+
+		const validSelectedFields = config.selectedFields?.filter((f) => config.fields.includes(f)) ?? [];
+		selectedFields = validSelectedFields.length > 0 ? validSelectedFields : config.fields.slice(0, 1);
+		syncSelectedFields = selectedFields;
+		hasLoaded = true;
 		query();
 	}
 
@@ -364,6 +406,8 @@ import { Spinner } from '$lib/shared/components/shadcn/spinner';
 								selectedFields={visibleFields}
 								chartConfig={singleViewChartConfig}
 								chartClass="h-full"
+								start={queryStart}
+								end={queryEnd}
 								onBrushSelect={handleBrushSelect}
 							/>
 						</div>

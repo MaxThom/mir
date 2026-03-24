@@ -57,15 +57,30 @@
 
 	const tz = $derived(useUtc ? 'UTC' : undefined);
 
-	// X-axis tick labels: just HH:MM(:SS if seconds vary)
-	function formatAxisTime(d: Date): string {
-		return d.toLocaleTimeString([], {
+	const rangeHours = $derived(
+		start && end ? (end.getTime() - start.getTime()) / (1000 * 60 * 60) : 0
+	);
+
+	// X-axis tick labels: range-aware format
+	//   ≤ 6 h  → "14:30"
+	//   ≤ 48 h → "Jan 15 14:30"
+	//   > 48 h → "Jan 15"
+	const formatAxisTime = $derived((d: Date): string => {
+		if (rangeHours > 48) {
+			return d.toLocaleDateString([], { month: 'short', day: 'numeric', timeZone: tz });
+		}
+		const time = d.toLocaleTimeString([], {
 			hour: '2-digit',
 			minute: '2-digit',
 			hour12: false,
 			timeZone: tz
 		});
-	}
+		if (rangeHours > 6) {
+			const date = d.toLocaleDateString([], { month: 'short', day: 'numeric', timeZone: tz });
+			return `${date} ${time}`;
+		}
+		return time;
+	});
 
 	// Tooltip header: "Feb 27 · 14:23:45 UTC" or "Feb 27 · 14:23:45"
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
