@@ -8,10 +8,10 @@ export const CHART_COLORS = [
 
 const DEVICE_VARIANTS = [
 	(base: string) => base,
-	(base: string) => `color-mix(in oklch, ${base} 60%, white)`,
-	(base: string) => `color-mix(in oklch, ${base} 60%, black)`,
-	(base: string) => `color-mix(in oklch, ${base} 35%, white)`,
-	(base: string) => `color-mix(in oklch, ${base} 35%, black)`
+	(base: string) => `color-mix(in oklch, ${base} 45%, white)`,
+	(base: string) => `color-mix(in oklch, ${base} 45%, black)`,
+	(base: string) => `color-mix(in oklch, ${base} 22%, white)`,
+	(base: string) => `color-mix(in oklch, ${base} 22%, black)`
 ];
 
 export function getDeviceFieldColor(fieldIdx: number, deviceIdx: number): string {
