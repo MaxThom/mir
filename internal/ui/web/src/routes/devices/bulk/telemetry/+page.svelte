@@ -81,7 +81,6 @@
 	let timeFilter = $state<TimeFilter>({ mode: 'relative', minutes: 5 });
 	let calendarValue = $state<DateRange | undefined>(undefined);
 	let fullscreen = $state(false);
-	let hasZoomed = $state(false);
 	let splitCount = $state<1 | 2 | 3 | 4>(1);
 	let syncFields = $state(false);
 	let syncSelectedFields = $state<string[]>([]);
@@ -419,7 +418,6 @@
 	function handleBrushSelect(newStart: Date, newEnd: Date) {
 		if (newEnd.getTime() <= newStart.getTime() + 1000) return;
 		timeFilter = { mode: 'absolute', start: newStart, end: newEnd };
-		hasZoomed = true;
 		queryGroup();
 	}
 
@@ -481,7 +479,6 @@
 			bind:timeFilter
 			bind:calendarValue
 			bind:fullscreen
-			bind:hasZoomed
 			queryData={mergedData}
 			presets={PRESETS}
 			onQuery={() => { if (selection) queryGroup(); }}

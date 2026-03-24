@@ -2,14 +2,18 @@
 	import { untrack } from 'svelte';
 	import { mirStore } from '$lib/domains/mir/stores/mir.svelte';
 	import { DeviceTarget } from '@mir/sdk';
-	import { SvelteMap } from 'svelte/reactivity';
+	import { SvelteMap, SvelteDate } from 'svelte/reactivity';
+	import type { DateRange } from 'bits-ui';
+	import { getLocalTimeZone } from '@internationalized/date';
+	import { editorPrefs } from '$lib/shared/stores/editor-prefs.svelte';
+	import TimePicker from '$lib/domains/devices/components/telemetry/time-picker.svelte';
 	import type { QueryData, QueryRow } from '@mir/sdk';
 	import type { ChartConfig } from '$lib/shared/components/shadcn/chart';
 	import TlmChart from '$lib/domains/devices/components/telemetry/tlm-chart.svelte';
 	import TlmToolbar from '$lib/domains/devices/components/telemetry/tlm-toolbar.svelte';
 	import TlmFieldToggles from '$lib/domains/devices/components/telemetry/tlm-field-toggles.svelte';
 	import TlmSlotChart from '$lib/domains/devices/components/telemetry/tlm-slot-chart.svelte';
-import { Spinner } from '$lib/shared/components/shadcn/spinner';
+	import { Spinner } from '$lib/shared/components/shadcn/spinner';
 	import {
 		CHART_COLORS,
 		getDeviceFieldColor,
@@ -42,7 +46,9 @@ import { Spinner } from '$lib/shared/components/shadcn/spinner';
 	let queryEnd = $state<Date | null>(null);
 
 	let timeFilter = $state<TimeFilter>({ mode: 'relative', minutes: config.timeMinutes ?? 60 });
-	let hasZoomed = $state(false);
+	let calendarValue = $state<DateRange | undefined>(undefined);
+	let startTime = $state('00:00');
+	let endTime = $state('23:59');
 	let splitCount = $state<1 | 2 | 3 | 4>((config.splitCount ?? 1) as 1 | 2 | 3 | 4);
 	let syncFields = $state(config.syncFields ?? false);
 	let hasLoaded = $state(false);
@@ -52,6 +58,10 @@ import { Spinner } from '$lib/shared/components/shadcn/spinner';
 	let syncSelectedFields = $state<string[]>([]);
 
 	let fullscreen = $state(false);
+	let widgetEl: HTMLDivElement | undefined;
+	let widgetWidth = $state(9999);
+
+	const compact = $derived(widgetWidth < 420);
 
 	let generation = 0;
 
@@ -62,9 +72,8 @@ import { Spinner } from '$lib/shared/components/shadcn/spinner';
 		if (!dashboardStore.editMode) return;
 
 		// Capture user-controlled state (these are the tracked dependencies)
-		const newTimeMinutes = timeFilter.mode === 'relative'
-			? timeFilter.minutes
-			: untrack(() => config.timeMinutes);
+		const newTimeMinutes =
+			timeFilter.mode === 'relative' ? timeFilter.minutes : untrack(() => config.timeMinutes);
 		const currentSelectedFields = selectedFields;
 		const currentSplitCount = splitCount;
 		const currentSyncFields = syncFields;
@@ -87,16 +96,80 @@ import { Spinner } from '$lib/shared/components/shadcn/spinner';
 		});
 	});
 
+	// Track widget width for compact mode
+	$effect(() => {
+		if (!widgetEl) return;
+		const ro = new ResizeObserver(([entry]) => {
+			widgetWidth = entry.contentRect.width;
+		});
+		ro.observe(widgetEl);
+		return () => ro.disconnect();
+	});
+
+	// Keep time inputs in sync with timeFilter (e.g. after brush zoom)
+	$effect(() => {
+		if (timeFilter.mode === 'absolute') {
+			const getH = (d: Date) => (editorPrefs.utc ? d.getUTCHours() : d.getHours());
+			const getM = (d: Date) => (editorPrefs.utc ? d.getUTCMinutes() : d.getMinutes());
+			startTime = `${String(getH(timeFilter.start)).padStart(2, '0')}:${String(getM(timeFilter.start)).padStart(2, '0')}`;
+			endTime = `${String(getH(timeFilter.end)).padStart(2, '0')}:${String(getM(timeFilter.end)).padStart(2, '0')}`;
+		}
+	});
+
+	function handleCalendarChange(value: DateRange | undefined): TimeFilter | undefined {
+		if (value?.start && value?.end) {
+			const [startH, startM] = startTime.split(':').map(Number);
+			const [endH, endM] = endTime.split(':').map(Number);
+			const tz = editorPrefs.utc ? 'UTC' : getLocalTimeZone();
+			const start = value.start.toDate(tz);
+			const end = value.end.toDate(tz);
+			if (editorPrefs.utc) {
+				start.setUTCHours(startH, startM, 0, 0);
+				end.setUTCHours(endH, endM, 59, 999);
+			} else {
+				start.setHours(startH, startM, 0, 0);
+				end.setHours(endH, endM, 59, 999);
+			}
+			return { mode: 'absolute', start, end };
+		}
+		return undefined;
+	}
+
+	function handleTimeInputChange() {
+		if (timeFilter.mode === 'absolute') {
+			const [startH, startM] = startTime.split(':').map(Number);
+			const [endH, endM] = endTime.split(':').map(Number);
+			const start = new SvelteDate(timeFilter.start);
+			const end = new SvelteDate(timeFilter.end);
+			if (editorPrefs.utc) {
+				start.setUTCHours(startH, startM, 0, 0);
+				end.setUTCHours(endH, endM, 59, 999);
+			} else {
+				start.setHours(startH, startM, 0, 0);
+				end.setHours(endH, endM, 59, 999);
+			}
+			timeFilter = { mode: 'absolute', start, end };
+			query();
+		}
+	}
+
 	// ─── Presets ──────────────────────────────────────────────────────────────
 
 	const PRESETS = [
+		{ label: '1m', minutes: 1 },
 		{ label: '5m', minutes: 5 },
+		{ label: '10m', minutes: 10 },
 		{ label: '15m', minutes: 15 },
+		{ label: '30m', minutes: 30 },
 		{ label: '1h', minutes: 60 },
 		{ label: '3h', minutes: 180 },
 		{ label: '6h', minutes: 360 },
+		{ label: '12h', minutes: 720 },
 		{ label: '24h', minutes: 1440 },
-		{ label: '7d', minutes: 10080 }
+		{ label: '2d', minutes: 2880 },
+		{ label: '7d', minutes: 10080 },
+		{ label: '30d', minutes: 43200 },
+		{ label: '90d', minutes: 129600 }
 	] as const;
 
 	// ─── Startup ──────────────────────────────────────────────────────────────
@@ -130,11 +203,14 @@ import { Spinner } from '$lib/shared/components/shadcn/spinner';
 			isLoading = false;
 		}
 
-		enabledDeviceIds = config.enabledDeviceIds?.filter((id) => deviceInfos.some((d) => d.id === id))
-			?? deviceInfos.map((d) => d.id);
+		enabledDeviceIds =
+			config.enabledDeviceIds?.filter((id) => deviceInfos.some((d) => d.id === id)) ??
+			deviceInfos.map((d) => d.id);
 
-		const validSelectedFields = config.selectedFields?.filter((f) => config.fields.includes(f)) ?? [];
-		selectedFields = validSelectedFields.length > 0 ? validSelectedFields : config.fields.slice(0, 1);
+		const validSelectedFields =
+			config.selectedFields?.filter((f) => config.fields.includes(f)) ?? [];
+		selectedFields =
+			validSelectedFields.length > 0 ? validSelectedFields : config.fields.slice(0, 1);
 		syncSelectedFields = selectedFields;
 		hasLoaded = true;
 		query();
@@ -267,7 +343,6 @@ import { Spinner } from '$lib/shared/components/shadcn/spinner';
 	function handleBrushSelect(newStart: Date, newEnd: Date) {
 		if (newEnd.getTime() <= newStart.getTime() + 1000) return;
 		timeFilter = { mode: 'absolute', start: newStart, end: newEnd };
-		hasZoomed = true;
 		query();
 	}
 
@@ -308,36 +383,60 @@ import { Spinner } from '$lib/shared/components/shadcn/spinner';
 			syncSelectedFields = [field];
 		}
 	}
-
 </script>
 
-<svelte:window onkeydown={(e) => { if (e.key === 'Escape' && fullscreen) fullscreen = false; }} />
+<svelte:window
+	onkeydown={(e) => {
+		if (e.key === 'Escape' && fullscreen) fullscreen = false;
+	}}
+/>
 
-<div class="{fullscreen ? 'fixed inset-0 z-50 bg-background' : 'flex h-full flex-col overflow-hidden'} flex flex-col overflow-hidden">
+<div
+	bind:this={widgetEl}
+	class="{fullscreen
+		? 'fixed inset-0 z-50 bg-background'
+		: 'flex h-full flex-col overflow-hidden'} flex flex-col overflow-hidden"
+>
 	<TlmToolbar
 		measurementName={config.measurement}
 		bind:timeFilter
-		bind:hasZoomed
+		bind:calendarValue
 		bind:fullscreen
+		{compact}
 		queryData={mergedData}
 		presets={PRESETS}
 		onQuery={query}
+		onCalendarChange={handleCalendarChange}
 	>
+		{#snippet calendarTop()}
+			<p class="mb-3 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+				Custom range{editorPrefs.utc ? ' (UTC)' : ''}
+			</p>
+			<div class="mb-3 grid grid-cols-2 gap-3">
+				<div class="space-y-1.5">
+					<span class="text-xs font-medium text-muted-foreground">Start time</span>
+					<TimePicker bind:value={startTime} onchange={handleTimeInputChange} />
+				</div>
+				<div class="space-y-1.5">
+					<span class="text-xs font-medium text-muted-foreground">End time</span>
+					<TimePicker bind:value={endTime} onchange={handleTimeInputChange} />
+				</div>
+			</div>
+		{/snippet}
 		{#snippet toolbarEnd()}
-			{#if splitCount > 1}
-				<button
-					onclick={() => (syncFields = !syncFields)}
-					title={syncFields ? 'Unsync fields' : 'Sync fields across charts'}
-					class="flex items-center rounded-md border p-1 text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground
-						{syncFields ? 'border-ring bg-accent text-accent-foreground' : 'border-border bg-background'}"
-				>
-					{#if syncFields}
-						<LockIcon class="size-3.5" />
-					{:else}
-						<LockOpenIcon class="size-3.5" />
-					{/if}
-				</button>
-			{/if}
+			<button
+				onclick={() => (syncFields = !syncFields)}
+				disabled={splitCount === 1}
+				title={syncFields ? 'Unsync fields' : 'Sync fields across charts'}
+				class="flex items-center rounded-md border p-1 text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:pointer-events-none disabled:opacity-40
+					{syncFields ? 'border-ring bg-accent text-accent-foreground' : 'border-border bg-background'}"
+			>
+				{#if syncFields}
+					<LockIcon class="size-3.5" />
+				{:else}
+					<LockOpenIcon class="size-3.5" />
+				{/if}
+			</button>
 			<button
 				onclick={() => {
 					const next = splitCount === 4 ? 1 : ((splitCount + 1) as 1 | 2 | 3 | 4);
@@ -366,6 +465,29 @@ import { Spinner } from '$lib/shared/components/shadcn/spinner';
 				{/if}
 			</button>
 		{/snippet}
+		{#snippet compactDropdownExtra()}
+			{#if config.fields.length > 0 && (splitCount === 1 || syncFields)}
+				{@const activeFields = splitCount === 1 ? selectedFields : syncSelectedFields}
+				{@const activeToggle = splitCount === 1 ? toggleField : toggleSyncField}
+				<div class="my-1 h-px bg-border"></div>
+				<div class="flex flex-col gap-0.5">
+					{#each config.fields as field, i (field)}
+						{@const selected = activeFields.includes(field)}
+						<button
+							onclick={(e) => activeToggle(field, e.shiftKey || e.ctrlKey)}
+							class="flex items-center gap-2 rounded-sm px-2 py-1 text-xs transition-colors
+								{selected ? 'bg-accent font-medium text-accent-foreground' : 'text-foreground hover:bg-accent/60'}"
+						>
+							<span
+								class="inline-block size-2 shrink-0 rounded-full"
+								style="background: {CHART_COLORS[i % CHART_COLORS.length]}"
+							></span>
+							{field}
+						</button>
+					{/each}
+				</div>
+			{/if}
+		{/snippet}
 	</TlmToolbar>
 
 	{#if isLoading}
@@ -375,8 +497,8 @@ import { Spinner } from '$lib/shared/components/shadcn/spinner';
 	{:else if loadError}
 		<p class="px-4 py-2 text-xs text-destructive">{loadError}</p>
 	{:else}
-		<!-- Field toggles -->
-		{#if config.fields.length > 0}
+		<!-- Field toggles (move into toolbar dropdown when compact) -->
+		{#if config.fields.length > 0 && !compact}
 			{#if splitCount === 1}
 				<TlmFieldToggles fields={config.fields} {selectedFields} ontoggle={toggleField} />
 			{:else if syncFields}
@@ -389,7 +511,7 @@ import { Spinner } from '$lib/shared/components/shadcn/spinner';
 		{/if}
 
 		<!-- Chart area -->
-		<div class="min-h-0 flex-1 flex flex-col overflow-hidden">
+		<div class="flex min-h-0 flex-1 flex-col overflow-hidden">
 			{#if splitCount === 1}
 				{#if queryError}
 					<p class="px-4 py-2 text-sm text-destructive">{queryError}</p>
@@ -399,7 +521,7 @@ import { Spinner } from '$lib/shared/components/shadcn/spinner';
 						Loading data…
 					</div>
 				{:else if mergedData}
-					<div class="min-h-0 flex-1 flex flex-col px-4 pt-2 pb-2">
+					<div class="flex min-h-0 flex-1 flex-col pt-1 pb-1">
 						<div class="min-h-0 flex-1">
 							<TlmChart
 								data={mergedData}
@@ -412,16 +534,22 @@ import { Spinner } from '$lib/shared/components/shadcn/spinner';
 							/>
 						</div>
 						{#if deviceInfos.length > 0 && selectedFields.length > 0}
-							<div class="mt-0.5 flex shrink-0 flex-wrap gap-x-3 gap-y-0.5 px-1">
+							<div class="mt-0.5 flex shrink-0 flex-wrap gap-x-3 gap-y-0.5 px-4">
 								{#each deviceInfos as dev (dev.id)}
 									{@const enabled = enabledDeviceIds.includes(dev.id)}
-									{@const color = singleViewChartConfig[`${dev.name}_${selectedFields[0]}`]?.color ?? 'var(--chart-1)'}
+									{@const color =
+										singleViewChartConfig[`${dev.name}_${selectedFields[0]}`]?.color ??
+										'var(--chart-1)'}
 									<button
 										onclick={(e) => toggleDevice(dev.id, e.shiftKey || e.ctrlKey)}
-										class="flex items-center gap-1 font-mono text-[11px] transition-colors {enabled ? 'text-foreground' : 'text-muted-foreground/40'}"
+										class="flex items-center gap-1 font-mono text-[11px] transition-colors {enabled
+											? 'text-foreground'
+											: 'text-muted-foreground/40'}"
 									>
 										<span
-											class="inline-block size-2 shrink-0 rounded-full transition-opacity {enabled ? '' : 'opacity-30'}"
+											class="inline-block size-2 shrink-0 rounded-full transition-opacity {enabled
+												? ''
+												: 'opacity-30'}"
 											style="background: {color}"
 										></span>
 										{dev.name}
@@ -441,13 +569,17 @@ import { Spinner } from '$lib/shared/components/shadcn/spinner';
 					Loading data…
 				</div>
 			{:else if mergedData}
-				<div class="min-h-0 flex-1 overflow-hidden px-4 py-2">
+				<div class="min-h-0 flex-1 overflow-hidden py-1">
 					<div
-						class="h-full grid grid-cols-2 gap-3"
+						class="grid h-full grid-cols-2 gap-3"
 						style="grid-template-rows: repeat({splitCount > 2 ? 2 : 1}, 1fr)"
 					>
 						{#each splitSlots as slot, i (i)}
-							<div class="min-h-0 flex flex-col overflow-hidden {splitCount === 3 && i === 0 ? 'col-span-2' : ''}">
+							<div
+								class="flex min-h-0 flex-col overflow-hidden px-2 {splitCount === 3 && i === 0
+									? 'col-span-2'
+									: ''}"
+							>
 								<TlmSlotChart
 									devices={deviceInfos}
 									measurementFields={config.fields}

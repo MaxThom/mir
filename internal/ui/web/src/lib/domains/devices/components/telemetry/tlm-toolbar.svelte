@@ -6,9 +6,7 @@
 	import { RangeCalendar } from '$lib/shared/components/shadcn/range-calendar';
 	import CalendarIcon from '@lucide/svelte/icons/calendar';
 	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
-	import ZoomInIcon from '@lucide/svelte/icons/zoom-in';
 	import ZoomOutIcon from '@lucide/svelte/icons/zoom-out';
-	import RotateCcwIcon from '@lucide/svelte/icons/rotate-ccw';
 	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
 	import CopyIcon from '@lucide/svelte/icons/copy';
 	import CheckIcon from '@lucide/svelte/icons/check';
@@ -27,23 +25,24 @@
 		grafanaUrl = null,
 		timeFilter = $bindable<TimeFilter>({ mode: 'relative', minutes: 5 }),
 		calendarValue = $bindable<DateRange | undefined>(undefined),
-		hasZoomed = $bindable(false),
 		fullscreen = $bindable(false),
 		queryData = null,
+		compact = false,
 		presets,
 		onQuery,
 		onCalendarChange = undefined,
 		calendarTop = undefined,
-		toolbarEnd = undefined
+		toolbarEnd = undefined,
+		compactDropdownExtra = undefined
 	}: {
 		measurementName?: string | null;
 		measurementError?: string | null;
 		grafanaUrl?: string | null;
 		timeFilter?: TimeFilter;
 		calendarValue?: DateRange | undefined;
-		hasZoomed?: boolean;
 		fullscreen?: boolean;
 		queryData?: QueryData | null;
+		compact?: boolean;
 		presets: readonly { label: string; minutes: number }[];
 		onQuery: () => void;
 		// Optional override: return a TimeFilter to use instead of the default date-only conversion
@@ -52,11 +51,13 @@
 		calendarTop?: Snippet;
 		// Optional extra buttons rendered just before the fullscreen button
 		toolbarEnd?: Snippet;
+		// Optional extra content rendered inside the compact overflow dropdown (below action buttons)
+		compactDropdownExtra?: Snippet;
 	} = $props();
 
 	let popoverOpen = $state(false);
+	let overflowOpen = $state(false);
 	let copied = $state(false);
-	let baseTimeFilter = $state<TimeFilter>(timeFilter);
 	let _calendarSyncInProgress = false;
 
 	// Sync calendarValue when timeFilter changes to absolute (e.g. from brush zoom)
@@ -93,8 +94,6 @@
 
 	function selectPreset(minutes: number) {
 		timeFilter = { mode: 'relative', minutes };
-		baseTimeFilter = timeFilter;
-		hasZoomed = false;
 		calendarValue = undefined;
 		popoverOpen = false;
 		onQuery();
@@ -107,13 +106,6 @@
 		const newEnd = new Date(end.getTime() - delta);
 		if (newEnd.getTime() <= newStart.getTime() + 1000) return;
 		timeFilter = { mode: 'absolute', start: newStart, end: newEnd };
-		hasZoomed = true;
-		onQuery();
-	}
-
-	function resetZoom() {
-		timeFilter = baseTimeFilter;
-		hasZoomed = false;
 		onQuery();
 	}
 
@@ -128,8 +120,6 @@
 			timeFilter = { mode: 'absolute', start: v.start.toDate(tz), end: v.end.toDate(tz) };
 		}
 		_calendarSyncInProgress = false;
-		baseTimeFilter = timeFilter;
-		hasZoomed = false;
 		onQuery();
 	}
 
@@ -167,14 +157,14 @@
 
 <div class="flex shrink-0 items-center gap-2 border-b px-4 py-1.5">
 	{#if measurementName}
-		<span class="font-mono text-sm font-medium">{measurementName}</span>
+		<span class="min-w-0 truncate font-mono text-sm font-medium">{measurementName}</span>
 		{#if grafanaUrl}
 			<a
 				href={grafanaUrl}
 				target="_blank"
 				rel="noreferrer"
 				title="Open in Grafana"
-				class="inline-flex -translate-y-0.5 items-center text-muted-foreground transition-colors hover:text-foreground"
+				class="inline-flex shrink-0 -translate-y-0.5 items-center text-muted-foreground transition-colors hover:text-foreground"
 			>
 				<ExternalLinkIcon class="size-3.5" />
 			</a>
@@ -184,110 +174,155 @@
 		{/if}
 	{/if}
 
-	<div class="ml-auto flex items-center gap-1">
-		{#if hasZoomed}
+	{#if !compact}
+		<div class="ml-auto flex shrink-0 items-center gap-1">
 			<button
-				onclick={resetZoom}
-				title="Reset to last selection"
+				onclick={() => zoom(-1)}
+				title="Zoom out"
 				class="flex items-center rounded-md border border-border bg-background p-1 text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
 			>
-				<RotateCcwIcon class="size-3.5" />
+				<ZoomOutIcon class="size-3.5" />
 			</button>
-		{/if}
-		<button
-			onclick={() => zoom(1)}
-			title="Zoom in"
-			class="flex items-center rounded-md border border-border bg-background p-1 text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
-		>
-			<ZoomInIcon class="size-3.5" />
-		</button>
-		<button
-			onclick={() => zoom(-1)}
-			title="Zoom out"
-			class="flex items-center rounded-md border border-border bg-background p-1 text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
-		>
-			<ZoomOutIcon class="size-3.5" />
-		</button>
-		<Popover.Root bind:open={popoverOpen}>
-			<Popover.Trigger>
-				{#snippet child({ props })}
-					<button
-						{...props}
-						class="flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1 text-xs font-medium text-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground
-							{popoverOpen ? 'border-ring ring-1 ring-ring' : ''}"
-					>
-						<CalendarIcon class="size-3.5 text-muted-foreground" />
-						<span>{timeFilterLabel}</span>
-						<ChevronDownIcon
-							class="size-3 text-muted-foreground transition-transform {popoverOpen
-								? 'rotate-180'
-								: ''}"
-						/>
-					</button>
-				{/snippet}
-			</Popover.Trigger>
-			<Popover.Content class="w-auto p-0 shadow-lg" align="end">
-				<div class="flex">
-					<div class="p-5">
-						{@render calendarTop?.()}
-						<RangeCalendar
-							bind:value={calendarValue}
-							onValueChange={handleCalendarValueChange}
-							numberOfMonths={1}
-						/>
+			{@render datePicker()}
+			{@render toolbarEnd?.()}
+			<button
+				onclick={() => (fullscreen = !fullscreen)}
+				title={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+				class="flex items-center rounded-md border border-border bg-background p-1 text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+			>
+				{#if fullscreen}
+					<MinimizeIcon class="size-3.5" />
+				{:else}
+					<MaximizeIcon class="size-3.5" />
+				{/if}
+			</button>
+			<button
+				onclick={copyAsCsv}
+				disabled={!queryData}
+				title="Copy data as CSV"
+				class="flex items-center rounded-md border border-border bg-background p-1 text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:pointer-events-none disabled:opacity-40"
+			>
+				{#if copied}
+					<CheckIcon class="size-3.5 text-green-500" />
+				{:else}
+					<CopyIcon class="size-3.5" />
+				{/if}
+			</button>
+		</div>
+	{:else}
+		<div class="ml-auto flex shrink-0 items-center gap-1">
+			<Popover.Root bind:open={overflowOpen}>
+				<Popover.Trigger>
+					{#snippet child({ props })}
+						<button
+							{...props}
+							title="More options"
+							class="flex items-center rounded-md border border-border bg-background px-1.5 py-1 text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground
+								{overflowOpen ? 'border-ring ring-1 ring-ring' : ''}"
+						>
+							<ChevronDownIcon class="size-3.5" />
+						</button>
+					{/snippet}
+				</Popover.Trigger>
+				<Popover.Content class="w-auto p-1.5 shadow-lg" align="end">
+					{@render datePicker(true)}
+					<div class="mt-1 flex items-center gap-1">
+						<button
+							onclick={() => { zoom(-1); overflowOpen = false; }}
+							title="Zoom out"
+							class="flex items-center rounded-md border border-border bg-background p-1 text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+						>
+							<ZoomOutIcon class="size-3.5" />
+						</button>
+						{@render toolbarEnd?.()}
+						<button
+							onclick={() => { fullscreen = !fullscreen; overflowOpen = false; }}
+							title={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+							class="flex items-center rounded-md border border-border bg-background p-1 text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+						>
+							{#if fullscreen}
+								<MinimizeIcon class="size-3.5" />
+							{:else}
+								<MaximizeIcon class="size-3.5" />
+							{/if}
+						</button>
+						<button
+							onclick={() => { copyAsCsv(); overflowOpen = false; }}
+							disabled={!queryData}
+							title="Copy data as CSV"
+							class="flex items-center rounded-md border border-border bg-background p-1 text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:pointer-events-none disabled:opacity-40"
+						>
+							{#if copied}
+								<CheckIcon class="size-3.5 text-green-500" />
+							{:else}
+								<CopyIcon class="size-3.5" />
+							{/if}
+						</button>
 					</div>
-					<div class="w-px self-stretch bg-border"></div>
-					<div class="relative w-36 self-stretch">
-						<div class="absolute inset-0 flex flex-col p-3">
-							<p
-								class="mb-2 px-2 text-xs font-semibold tracking-wider text-muted-foreground uppercase"
-							>
-								Quick range
-							</p>
-							<div class="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto">
-								{#each presets as preset (preset.label)}
-									<button
-										onclick={() => selectPreset(preset.minutes)}
-										class="flex items-center justify-between rounded-md px-2 py-1.5 text-left text-xs transition-colors
-										{timeFilter.mode === 'relative' && timeFilter.minutes === preset.minutes
-											? 'bg-primary font-medium text-primary-foreground'
-											: 'text-foreground hover:bg-accent hover:text-accent-foreground'}"
-									>
-										<span>Last {preset.label}</span>
-										{#if timeFilter.mode === 'relative' && timeFilter.minutes === preset.minutes}
-											<span class="size-1.5 rounded-full bg-primary-foreground opacity-70"></span>
-										{/if}
-									</button>
-								{/each}
-							</div>
+					{@render compactDropdownExtra?.()}
+				</Popover.Content>
+			</Popover.Root>
+		</div>
+	{/if}
+</div>
+
+{#snippet datePicker(fullWidth = false)}
+	<Popover.Root bind:open={popoverOpen}>
+		<Popover.Trigger>
+			{#snippet child({ props })}
+				<button
+					{...props}
+					class="flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1 text-xs font-medium text-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground
+						{fullWidth ? 'w-full justify-between' : ''}
+						{popoverOpen ? 'border-ring ring-1 ring-ring' : ''}"
+				>
+					<CalendarIcon class="size-3.5 text-muted-foreground" />
+					<span>{timeFilterLabel}</span>
+					<ChevronDownIcon
+						class="size-3 text-muted-foreground transition-transform {popoverOpen
+							? 'rotate-180'
+							: ''}"
+					/>
+				</button>
+			{/snippet}
+		</Popover.Trigger>
+		<Popover.Content class="w-auto p-0 shadow-lg" align="end">
+			<div class="flex">
+				<div class="p-5">
+					{@render calendarTop?.()}
+					<RangeCalendar
+						bind:value={calendarValue}
+						onValueChange={handleCalendarValueChange}
+						numberOfMonths={1}
+					/>
+				</div>
+				<div class="w-px self-stretch bg-border"></div>
+				<div class="relative w-36 self-stretch">
+					<div class="absolute inset-0 flex flex-col p-3">
+						<p
+							class="mb-2 px-2 text-xs font-semibold tracking-wider text-muted-foreground uppercase"
+						>
+							Quick range
+						</p>
+						<div class="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto">
+							{#each presets as preset (preset.label)}
+								<button
+									onclick={() => selectPreset(preset.minutes)}
+									class="flex items-center justify-between rounded-md px-2 py-1.5 text-left text-xs transition-colors
+									{timeFilter.mode === 'relative' && timeFilter.minutes === preset.minutes
+										? 'bg-primary font-medium text-primary-foreground'
+										: 'text-foreground hover:bg-accent hover:text-accent-foreground'}"
+								>
+									<span>Last {preset.label}</span>
+									{#if timeFilter.mode === 'relative' && timeFilter.minutes === preset.minutes}
+										<span class="size-1.5 rounded-full bg-primary-foreground opacity-70"></span>
+									{/if}
+								</button>
+							{/each}
 						</div>
 					</div>
 				</div>
-			</Popover.Content>
-		</Popover.Root>
-		{@render toolbarEnd?.()}
-		<button
-			onclick={() => (fullscreen = !fullscreen)}
-			title={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}
-			class="flex items-center rounded-md border border-border bg-background p-1 text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
-		>
-			{#if fullscreen}
-				<MinimizeIcon class="size-3.5" />
-			{:else}
-				<MaximizeIcon class="size-3.5" />
-			{/if}
-		</button>
-		<button
-			onclick={copyAsCsv}
-			disabled={!queryData}
-			title="Copy data as CSV"
-			class="flex items-center rounded-md border border-border bg-background p-1 text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:pointer-events-none disabled:opacity-40"
-		>
-			{#if copied}
-				<CheckIcon class="size-3.5 text-green-500" />
-			{:else}
-				<CopyIcon class="size-3.5" />
-			{/if}
-		</button>
-	</div>
-</div>
+			</div>
+		</Popover.Content>
+	</Popover.Root>
+{/snippet}

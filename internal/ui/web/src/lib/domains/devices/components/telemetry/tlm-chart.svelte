@@ -131,11 +131,4 @@
 			{/snippet}
 		</LineChart>
 	</ChartContainer>
-	{#if !chartRows.length}
-		<div class="absolute inset-0 flex items-center justify-center">
-			<p class="rounded-md bg-background/80 px-3 py-1.5 text-sm text-muted-foreground">
-				No data in this time range.
-			</p>
-		</div>
-	{/if}
 </div>
