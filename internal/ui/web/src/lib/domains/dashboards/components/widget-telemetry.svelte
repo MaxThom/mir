@@ -48,6 +48,8 @@ import { Spinner } from '$lib/shared/components/shadcn/spinner';
 	let enabledDeviceIds = $state<string[]>([]);
 	let syncSelectedFields = $state<string[]>([]);
 
+	let fullscreen = $state(false);
+
 	let generation = 0;
 
 	// ─── Presets ──────────────────────────────────────────────────────────────
@@ -267,11 +269,14 @@ import { Spinner } from '$lib/shared/components/shadcn/spinner';
 
 </script>
 
-<div class="flex h-full flex-col overflow-hidden">
+<svelte:window onkeydown={(e) => { if (e.key === 'Escape' && fullscreen) fullscreen = false; }} />
+
+<div class="{fullscreen ? 'fixed inset-0 z-50 bg-background' : 'flex h-full flex-col overflow-hidden'} flex flex-col overflow-hidden">
 	<TlmToolbar
 		measurementName={config.measurement}
 		bind:timeFilter
 		bind:hasZoomed
+		bind:fullscreen
 		queryData={mergedData}
 		presets={PRESETS}
 		onQuery={query}

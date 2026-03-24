@@ -9,6 +9,12 @@
 - [x] config update, refresh device
 - [ ] perf check
 - [x] tutorial on each page
+- [ ] widgets
+  - [ ] tlm, save settings of selection
+  - [ ] tlm, make sure toolbar work
+  - [ ] cmd
+  - [ ] cfg
+  - [ ] evt
 
 ### Bug
 
