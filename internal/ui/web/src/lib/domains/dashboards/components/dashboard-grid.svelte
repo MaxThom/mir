@@ -10,7 +10,7 @@
 	import WidgetEvents from './widget-events.svelte';
 	import type { TelemetryWidgetConfig, CommandWidgetConfig, ConfigWidgetConfig, EventsWidgetConfig } from '../api/dashboard-api';
 
-	let { widgets }: { widgets: Widget[] } = $props();
+	let { widgets, refreshTick = 0 }: { widgets: Widget[]; refreshTick?: number } = $props();
 
 	let gridEl: HTMLDivElement | undefined;
 	let grid: GridStack | undefined;
@@ -86,13 +86,13 @@
 						dashboardStore.removeWidget(dashboardStore.activeDashboard, widget.id)}
 				>
 					{#if widget.type === 'telemetry'}
-						<WidgetTelemetry widgetId={widget.id} config={widget.config as TelemetryWidgetConfig} />
+						<WidgetTelemetry widgetId={widget.id} config={widget.config as TelemetryWidgetConfig} {refreshTick} />
 					{:else if widget.type === 'command'}
 						<WidgetCommand config={widget.config as CommandWidgetConfig} />
 					{:else if widget.type === 'config'}
 						<WidgetConfig config={widget.config as ConfigWidgetConfig} />
 					{:else if widget.type === 'events'}
-						<WidgetEvents config={widget.config as EventsWidgetConfig} />
+						<WidgetEvents config={widget.config as EventsWidgetConfig} {refreshTick} />
 					{/if}
 				</WidgetWrapper>
 			</div>

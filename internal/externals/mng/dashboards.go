@@ -168,6 +168,14 @@ func createUpdateQueryForDashboards(t mir_v1.ObjectTarget, upd mir_v1.DashboardU
 			sbSpec.WriteString("description: $DESC,")
 			vars["DESC"] = *upd.Spec.Description
 		}
+		if upd.Spec.RefreshInterval != nil {
+			sbSpec.WriteString("refreshInterval: $RI,")
+			vars["RI"] = *upd.Spec.RefreshInterval
+		}
+		if upd.Spec.TimeMinutes != nil {
+			sbSpec.WriteString("timeMinutes: $TM,")
+			vars["TM"] = *upd.Spec.TimeMinutes
+		}
 		if upd.Spec.Widgets != nil {
 			sbSpec.WriteString("widgets: $WID,")
 			vars["WID"] = upd.Spec.Widgets

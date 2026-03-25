@@ -3,13 +3,15 @@
 	import { EventDataTable } from '$lib/domains/events/components/event-table';
 	import { EventTarget, DateFilter, MirEvent } from '@mir/sdk';
 	import type { EventsWidgetConfig } from '../api/dashboard-api';
+	import { dashboardStore } from '$lib/domains/dashboards/stores/dashboard.svelte';
 
-	let { config }: { config: EventsWidgetConfig } = $props();
+	let { config, refreshTick = 0 }: { config: EventsWidgetConfig; refreshTick?: number } = $props();
 
 	let events = $state<MirEvent[]>([]);
 	let isLoading = $state(false);
 	let hasLoaded = $state(false);
 	let error = $state<string | null>(null);
+	let isInRefresh = false;
 
 	async function loadEvents(from?: Date, to?: Date) {
 		const mir = mirStore.mir;
@@ -29,8 +31,22 @@
 		} finally {
 			isLoading = false;
 			hasLoaded = true;
+			if (isInRefresh) {
+				isInRefresh = false;
+				dashboardStore.refreshDone();
+			}
 		}
 	}
+
+	$effect(() => {
+		if (refreshTick > 0) {
+			if (!isInRefresh) {
+				isInRefresh = true;
+				dashboardStore.refreshStart();
+			}
+			loadEvents();
+		}
+	});
 
 	$effect(() => {
 		if (mirStore.mir) {

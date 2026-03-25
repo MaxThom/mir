@@ -12,7 +12,6 @@
 	import TlmFieldToggles from '$lib/domains/devices/components/telemetry/tlm-field-toggles.svelte';
 	import TlmDataPanel from '$lib/domains/devices/components/telemetry/tlm-data-panel.svelte';
 	import TlmSingleSlotChart from '$lib/domains/devices/components/telemetry/tlm-single-slot-chart.svelte';
-	import TimePicker from '$lib/domains/devices/components/telemetry/time-picker.svelte';
 	import ActivityIcon from '@lucide/svelte/icons/activity';
 	import Columns2Icon from '@lucide/svelte/icons/columns-2';
 	import LayoutDashboardIcon from '@lucide/svelte/icons/layout-dashboard';
@@ -20,9 +19,6 @@
 	import SquareIcon from '@lucide/svelte/icons/square';
 	import { editorPrefs } from '$lib/shared/stores/editor-prefs.svelte';
 	import { contextStore } from '$lib/domains/contexts/stores/contexts.svelte';
-	import type { DateRange } from 'bits-ui';
-	import { getLocalTimeZone, fromDate } from '@internationalized/date';
-	import { SvelteDate } from 'svelte/reactivity';
 	import {
 		CHART_COLORS,
 		MAX_AUTO_FIELDS,
@@ -56,9 +52,6 @@
 	let selectedMeasurement = $state<TelemetryDescriptor | null>(null);
 	let timeFilter = $state<TimeFilter>({ mode: 'relative', minutes: 5 });
 	let selectedFields = $state<string[]>([]);
-	let calendarValue = $state<DateRange | undefined>(undefined);
-	let startTime = $state('00:00');
-	let endTime = $state('23:59');
 	let queryStart = $state<Date | null>(null);
 	let queryEnd = $state<Date | null>(null);
 	let fullscreen = $state(false);
@@ -146,16 +139,6 @@
 		}
 	});
 
-	// Keep time inputs in sync with timeFilter and UTC preference
-	$effect(() => {
-		if (timeFilter.mode === 'absolute') {
-			const getH = (d: Date) => (editorPrefs.utc ? d.getUTCHours() : d.getHours());
-			const getM = (d: Date) => (editorPrefs.utc ? d.getUTCMinutes() : d.getMinutes());
-			startTime = `${String(getH(timeFilter.start)).padStart(2, '0')}:${String(getM(timeFilter.start)).padStart(2, '0')}`;
-			endTime = `${String(getH(timeFilter.end)).padStart(2, '0')}:${String(getM(timeFilter.end)).padStart(2, '0')}`;
-		}
-	});
-
 	// ─── Query logic ──────────────────────────────────────────────────────────
 
 	function runQuery() {
@@ -206,42 +189,6 @@
 		}
 	}
 
-	// Calendar change handler: applies startTime/endTime to the selected date range
-	function handleCalendarChange(value: DateRange | undefined): TimeFilter | undefined {
-		if (value?.start && value?.end) {
-			const [startH, startM] = startTime.split(':').map(Number);
-			const [endH, endM] = endTime.split(':').map(Number);
-			const tz = editorPrefs.utc ? 'UTC' : getLocalTimeZone();
-			const start = value.start.toDate(tz);
-			const end = value.end.toDate(tz);
-			if (editorPrefs.utc) {
-				start.setUTCHours(startH, startM, 0, 0);
-				end.setUTCHours(endH, endM, 59, 999);
-			} else {
-				start.setHours(startH, startM, 0, 0);
-				end.setHours(endH, endM, 59, 999);
-			}
-			return { mode: 'absolute', start, end };
-		}
-		return undefined;
-	}
-
-	function handleTimeInputChange() {
-		if (timeFilter.mode === 'absolute') {
-			const [startH, startM] = startTime.split(':').map(Number);
-			const [endH, endM] = endTime.split(':').map(Number);
-			const start = new SvelteDate(timeFilter.start);
-			const end = new SvelteDate(timeFilter.end);
-			if (editorPrefs.utc) {
-				start.setUTCHours(startH, startM, 0, 0);
-				end.setUTCHours(endH, endM, 59, 999);
-			} else {
-				start.setHours(startH, startM, 0, 0);
-				end.setHours(endH, endM, 59, 999);
-			}
-			timeFilter = { mode: 'absolute', start, end };
-		}
-	}
 </script>
 
 <svelte:window
@@ -274,28 +221,11 @@
 			measurementError={selectedMeasurement?.error ?? null}
 			{grafanaUrl}
 			bind:timeFilter
-			bind:calendarValue
 			bind:fullscreen
 			queryData={telemetryStore.queryData}
 			presets={PRESETS}
 			onQuery={runQuery}
-			onCalendarChange={handleCalendarChange}
 		>
-			{#snippet calendarTop()}
-				<p class="mb-3 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-					Custom range{editorPrefs.utc ? ' (UTC)' : ''}
-				</p>
-				<div class="mb-3 grid grid-cols-2 gap-3">
-					<div class="space-y-1.5">
-						<span class="text-xs font-medium text-muted-foreground">Start time</span>
-						<TimePicker bind:value={startTime} onchange={handleTimeInputChange} />
-					</div>
-					<div class="space-y-1.5">
-						<span class="text-xs font-medium text-muted-foreground">End time</span>
-						<TimePicker bind:value={endTime} onchange={handleTimeInputChange} />
-					</div>
-				</div>
-			{/snippet}
 			{#snippet toolbarEnd()}
 				<button
 					onclick={() => {

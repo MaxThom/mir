@@ -9,6 +9,7 @@
 	import LayoutDashboardIcon from '@lucide/svelte/icons/layout-dashboard';
 
 	let addWidgetOpen = $state(false);
+	let refreshTick = $state(0);
 
 	onMount(() => {
 		dashboardStore.load();
@@ -16,7 +17,7 @@
 </script>
 
 <div class="flex h-full flex-col">
-	<DashboardToolbar onAddWidget={() => (addWidgetOpen = true)} />
+	<DashboardToolbar onAddWidget={() => (addWidgetOpen = true)} onRefresh={() => refreshTick++} />
 
 	<div class="flex-1 overflow-auto p-2">
 		{#if dashboardStore.isLoading}
@@ -54,7 +55,7 @@
 				</Empty.Root>
 			</div>
 		{:else}
-			<DashboardGrid widgets={dashboardStore.activeDashboard.spec.widgets ?? []} />
+			<DashboardGrid widgets={dashboardStore.activeDashboard.spec.widgets ?? []} {refreshTick} />
 		{/if}
 	</div>
 </div>
