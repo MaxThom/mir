@@ -10,8 +10,12 @@
 - [ ] perf check
 - [x] tutorial on each page
 - [ ] widgets
-  - [ ] tlm, save settings of selection
-  - [ ] tlm, make sure toolbar work
+  - [x] tlm, save settings of selection
+  - [x] tlm, make sure toolbar work
+  - [x] tlm, tiny
+  - [ ] tlm, wizard and multischema
+  - [ ] tlm, autorefresh and timerange
+  - [ ] tlm, utc switch
   - [ ] cmd
   - [ ] cfg
   - [ ] evt

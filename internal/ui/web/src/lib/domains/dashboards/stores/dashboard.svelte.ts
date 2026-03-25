@@ -7,6 +7,7 @@ import {
 	type WidgetConfig,
 	type WidgetType
 } from '../api/dashboard-api';
+import { editorPrefs } from '$lib/shared/stores/editor-prefs.svelte';
 
 class DashboardStore {
 	dashboards = $state<Dashboard[]>([]);
@@ -14,11 +15,14 @@ class DashboardStore {
 	pinnedKeys = $state<string[]>(this._loadPinnedKeys());
 	isLoading = $state(false);
 	isSaving = $state(false);
+	isRefreshing = $state(false);
 	editMode = $state(false);
 	error = $state<string | null>(null);
 
 	private saveTimer: ReturnType<typeof setTimeout> | null = null;
+	private _refreshCount = 0;
 	private configSaveTimer: ReturnType<typeof setTimeout> | null = null;
+	private viewStateTimers = new Map<string, ReturnType<typeof setTimeout>>();
 	private editSnapshot: Dashboard | null = null;
 
 	private _loadPinnedKeys(): string[] {
@@ -105,6 +109,10 @@ class DashboardStore {
 			const savedKey = localStorage.getItem('mir_active_dashboard_key');
 			const found = savedKey ? this.dashboards.find((d) => dashboardKey(d) === savedKey) : null;
 			this.activeDashboard = found ?? this.dashboards[0] ?? null;
+			if (this.activeDashboard) {
+				editorPrefs.setRefreshInterval(this.activeDashboard.spec.refreshInterval ?? 10);
+				editorPrefs.setTimeMinutes(this.activeDashboard.spec.timeMinutes ?? 60);
+			}
 			if (this.pinnedKeys.length === 0 && this.activeDashboard) {
 				this.pinnedKeys = [dashboardKey(this.activeDashboard)];
 				this._savePinnedKeys();
@@ -119,6 +127,8 @@ class DashboardStore {
 	setActive(d: Dashboard) {
 		this.activeDashboard = d;
 		localStorage.setItem('mir_active_dashboard_key', dashboardKey(d));
+		editorPrefs.setRefreshInterval(d.spec.refreshInterval ?? 10);
+		editorPrefs.setTimeMinutes(d.spec.timeMinutes ?? 60);
 	}
 
 	async create(name: string, namespace = 'default', description = '') {
@@ -203,8 +213,32 @@ class DashboardStore {
 		if (this.configSaveTimer) clearTimeout(this.configSaveTimer);
 		this.configSaveTimer = setTimeout(() => {
 			if (!this.activeDashboard) return;
-			this._persistWidgets(this.activeDashboard, this.activeDashboard.spec.widgets);
+			this._persistWidgets(
+				this.activeDashboard,
+				this.activeDashboard.spec.widgets,
+				this.activeDashboard.spec.refreshInterval,
+				this.activeDashboard.spec.timeMinutes
+			);
 		}, 1000);
+	}
+
+	saveWidgetViewState(widgetId: string, config: WidgetConfig) {
+		const existing = this.viewStateTimers.get(widgetId);
+		if (existing) clearTimeout(existing);
+		const timer = setTimeout(() => {
+			this.viewStateTimers.delete(widgetId);
+			if (!this.activeDashboard) return;
+			const updated = (this.activeDashboard.spec.widgets ?? []).map((w) =>
+				w.id === widgetId ? { ...w, config } : w
+			);
+			this._persistWidgets(
+				this.activeDashboard,
+				updated,
+				this.activeDashboard.spec.refreshInterval,
+				this.activeDashboard.spec.timeMinutes
+			);
+		}, 1000);
+		this.viewStateTimers.set(widgetId, timer);
 	}
 
 	saveLayout(d: Dashboard, layoutItems: Pick<Widget, 'id' | 'x' | 'y' | 'w' | 'h'>[]) {
@@ -255,15 +289,55 @@ class DashboardStore {
 		this.editMode = false;
 	}
 
-	private async _persistWidgets(d: Dashboard, widgets: Widget[]) {
+	saveRefreshInterval(d: Dashboard, interval: number) {
+		this._syncDashboard(d, { ...d, spec: { ...d.spec, refreshInterval: interval } });
+
+		if (this.configSaveTimer) clearTimeout(this.configSaveTimer);
+		this.configSaveTimer = setTimeout(() => {
+			if (!this.activeDashboard) return;
+			this._persistWidgets(
+				this.activeDashboard,
+				this.activeDashboard.spec.widgets,
+				this.activeDashboard.spec.refreshInterval,
+				this.activeDashboard.spec.timeMinutes
+			);
+		}, 1000);
+	}
+
+	saveTimeMinutes(d: Dashboard, minutes: number) {
+		this._syncDashboard(d, { ...d, spec: { ...d.spec, timeMinutes: minutes } });
+
+		if (this.configSaveTimer) clearTimeout(this.configSaveTimer);
+		this.configSaveTimer = setTimeout(() => {
+			if (!this.activeDashboard) return;
+			this._persistWidgets(
+				this.activeDashboard,
+				this.activeDashboard.spec.widgets,
+				this.activeDashboard.spec.refreshInterval,
+				this.activeDashboard.spec.timeMinutes
+			);
+		}, 1000);
+	}
+
+	private async _persistWidgets(d: Dashboard, widgets: Widget[], refreshInterval?: number, timeMinutes?: number) {
 		this.isSaving = true;
 		try {
-			const updated = await dashboardApi.saveWidgets(d.meta.namespace, d.meta.name, widgets);
+			const updated = await dashboardApi.saveWidgets(d.meta.namespace, d.meta.name, widgets, refreshInterval, timeMinutes);
 			this._syncDashboard(d, updated);
 			return updated;
 		} finally {
 			this.isSaving = false;
 		}
+	}
+
+	refreshStart() {
+		this._refreshCount++;
+		this.isRefreshing = true;
+	}
+
+	refreshDone() {
+		this._refreshCount = Math.max(0, this._refreshCount - 1);
+		if (this._refreshCount === 0) this.isRefreshing = false;
 	}
 
 	private _syncDashboard(old: Dashboard, updated: Dashboard) {

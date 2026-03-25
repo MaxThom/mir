@@ -58,6 +58,8 @@ export interface DashboardMeta {
 
 export interface DashboardSpec {
 	description: string;
+	refreshInterval?: number;
+	timeMinutes?: number;
 	widgets: Widget[];
 	createdAt: string;
 	updatedAt: string;
@@ -129,10 +131,14 @@ export const dashboardApi = {
 	delete: (namespace: string, name: string): Promise<Dashboard> =>
 		request<Dashboard>(`${BASE}/${namespace}/${name}`, { method: 'DELETE' }),
 
-	saveWidgets: (namespace: string, name: string, widgets: Widget[]): Promise<Dashboard> =>
+	saveWidgets: (namespace: string, name: string, widgets: Widget[], refreshInterval?: number, timeMinutes?: number): Promise<Dashboard> =>
 		request<Dashboard>(`${BASE}/${namespace}/${name}/widgets`, {
 			method: 'PUT',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ widgets })
+			body: JSON.stringify({
+				widgets,
+				...(refreshInterval !== undefined ? { refreshInterval } : {}),
+				...(timeMinutes !== undefined ? { timeMinutes } : {})
+			})
 		})
 };

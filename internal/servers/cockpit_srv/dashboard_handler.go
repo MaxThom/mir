@@ -130,7 +130,9 @@ func (s *CockpitServer) dashboardHandler(w http.ResponseWriter, r *http.Request)
 			return
 		}
 		var req struct {
-			Widgets []mir_v1.DashboardWidget `json:"widgets"`
+			Widgets         []mir_v1.DashboardWidget `json:"widgets"`
+			RefreshInterval *int                     `json:"refreshInterval,omitempty"`
+			TimeMinutes     *int                     `json:"timeMinutes,omitempty"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, "Invalid JSON", http.StatusBadRequest)
@@ -138,7 +140,9 @@ func (s *CockpitServer) dashboardHandler(w http.ResponseWriter, r *http.Request)
 		}
 		upd := mir_v1.DashboardUpdate{
 			Spec: &mir_v1.DashboardUpdateSpec{
-				Widgets: req.Widgets,
+				Widgets:         req.Widgets,
+				RefreshInterval: req.RefreshInterval,
+				TimeMinutes:     req.TimeMinutes,
 			},
 		}
 		dashboards, err := s.store.UpdateDashboard(t, upd)

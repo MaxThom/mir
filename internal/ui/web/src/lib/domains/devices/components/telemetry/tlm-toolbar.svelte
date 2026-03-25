@@ -1,10 +1,8 @@
 <script lang="ts">
 	import type { QueryData } from '@mir/sdk';
-	import type { DateRange } from 'bits-ui';
 	import type { Snippet } from 'svelte';
 	import * as Popover from '$lib/shared/components/shadcn/popover';
-	import { RangeCalendar } from '$lib/shared/components/shadcn/range-calendar';
-	import CalendarIcon from '@lucide/svelte/icons/calendar';
+	import TimeRangePicker from './time-range-picker.svelte';
 	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
 	import ZoomOutIcon from '@lucide/svelte/icons/zoom-out';
 	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
@@ -13,7 +11,6 @@
 	import MaximizeIcon from '@lucide/svelte/icons/maximize';
 	import MinimizeIcon from '@lucide/svelte/icons/minimize';
 	import { editorPrefs } from '$lib/shared/stores/editor-prefs.svelte';
-	import { getLocalTimeZone, fromDate } from '@internationalized/date';
 
 	type TimeFilter =
 		| { mode: 'relative'; minutes: number }
@@ -24,14 +21,12 @@
 		measurementError = null,
 		grafanaUrl = null,
 		timeFilter = $bindable<TimeFilter>({ mode: 'relative', minutes: 5 }),
-		calendarValue = $bindable<DateRange | undefined>(undefined),
 		fullscreen = $bindable(false),
 		queryData = null,
 		compact = false,
+		showZoom = true,
 		presets,
 		onQuery,
-		onCalendarChange = undefined,
-		calendarTop = undefined,
 		toolbarEnd = undefined,
 		compactDropdownExtra = undefined
 	}: {
@@ -39,46 +34,20 @@
 		measurementError?: string | null;
 		grafanaUrl?: string | null;
 		timeFilter?: TimeFilter;
-		calendarValue?: DateRange | undefined;
 		fullscreen?: boolean;
 		queryData?: QueryData | null;
 		compact?: boolean;
-		presets: readonly { label: string; minutes: number }[];
+		showZoom?: boolean;
+		presets?: readonly { label: string; minutes: number }[];
 		onQuery: () => void;
-		// Optional override: return a TimeFilter to use instead of the default date-only conversion
-		onCalendarChange?: (v: DateRange | undefined) => TimeFilter | undefined;
-		// Optional extra content above the calendar (e.g. time inputs for single-device)
-		calendarTop?: Snippet;
 		// Optional extra buttons rendered just before the fullscreen button
 		toolbarEnd?: Snippet;
 		// Optional extra content rendered inside the compact overflow dropdown (below action buttons)
 		compactDropdownExtra?: Snippet;
 	} = $props();
 
-	let popoverOpen = $state(false);
 	let overflowOpen = $state(false);
 	let copied = $state(false);
-	let _calendarSyncInProgress = false;
-
-	// Sync calendarValue when timeFilter changes to absolute (e.g. from brush zoom)
-	$effect(() => {
-		if (timeFilter.mode === 'absolute' && !_calendarSyncInProgress) {
-			const tz = editorPrefs.utc ? 'UTC' : getLocalTimeZone();
-			calendarValue = {
-				start: fromDate(timeFilter.start, tz),
-				end: fromDate(timeFilter.end, tz)
-			};
-		}
-	});
-
-	let timeFilterLabel = $derived.by(() => {
-		const f = timeFilter;
-		if (f.mode === 'relative') {
-			const preset = presets.find((p) => p.minutes === f.minutes);
-			return `Last ${preset?.label ?? f.minutes + 'm'}`;
-		}
-		return 'Custom';
-	});
 
 	function getTimeRange(): { start: Date; end: Date } {
 		const f = timeFilter;
@@ -92,13 +61,6 @@
 		return { start, end };
 	}
 
-	function selectPreset(minutes: number) {
-		timeFilter = { mode: 'relative', minutes };
-		calendarValue = undefined;
-		popoverOpen = false;
-		onQuery();
-	}
-
 	function zoom(factor: number) {
 		const { start, end } = getTimeRange();
 		const delta = (end.getTime() - start.getTime()) * 0.25 * factor;
@@ -106,20 +68,6 @@
 		const newEnd = new Date(end.getTime() - delta);
 		if (newEnd.getTime() <= newStart.getTime() + 1000) return;
 		timeFilter = { mode: 'absolute', start: newStart, end: newEnd };
-		onQuery();
-	}
-
-	function handleCalendarValueChange(v: DateRange | undefined) {
-		if (!v?.start || !v?.end) return;
-		const override = onCalendarChange?.(v);
-		_calendarSyncInProgress = true;
-		if (override) {
-			timeFilter = override;
-		} else {
-			const tz = editorPrefs.utc ? 'UTC' : getLocalTimeZone();
-			timeFilter = { mode: 'absolute', start: v.start.toDate(tz), end: v.end.toDate(tz) };
-		}
-		_calendarSyncInProgress = false;
 		onQuery();
 	}
 
@@ -176,14 +124,22 @@
 
 	{#if !compact}
 		<div class="ml-auto flex shrink-0 items-center gap-1">
-			<button
-				onclick={() => zoom(-1)}
-				title="Zoom out"
-				class="flex items-center rounded-md border border-border bg-background p-1 text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
-			>
-				<ZoomOutIcon class="size-3.5" />
-			</button>
-			{@render datePicker()}
+			{#if showZoom}
+				<button
+					onclick={() => zoom(-1)}
+					title="Zoom out"
+					class="flex items-center rounded-md border border-border bg-background p-1 text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+				>
+					<ZoomOutIcon class="size-3.5" />
+				</button>
+			{/if}
+			{#if presets}
+				<TimeRangePicker
+					{timeFilter}
+					{presets}
+					ontimechange={(f) => { timeFilter = f; onQuery(); }}
+				/>
+			{/if}
 			{@render toolbarEnd?.()}
 			<button
 				onclick={() => (fullscreen = !fullscreen)}
@@ -225,15 +181,24 @@
 					{/snippet}
 				</Popover.Trigger>
 				<Popover.Content class="w-auto p-1.5 shadow-lg" align="end">
-					{@render datePicker(true)}
+					{#if presets}
+						<TimeRangePicker
+							{timeFilter}
+							{presets}
+							ontimechange={(f) => { timeFilter = f; onQuery(); }}
+							fullWidth
+						/>
+					{/if}
 					<div class="mt-1 flex items-center gap-1">
-						<button
-							onclick={() => { zoom(-1); overflowOpen = false; }}
-							title="Zoom out"
-							class="flex items-center rounded-md border border-border bg-background p-1 text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
-						>
-							<ZoomOutIcon class="size-3.5" />
-						</button>
+						{#if showZoom}
+							<button
+								onclick={() => { zoom(-1); overflowOpen = false; }}
+								title="Zoom out"
+								class="flex items-center rounded-md border border-border bg-background p-1 text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+							>
+								<ZoomOutIcon class="size-3.5" />
+							</button>
+						{/if}
 						{@render toolbarEnd?.()}
 						<button
 							onclick={() => { fullscreen = !fullscreen; overflowOpen = false; }}
@@ -265,64 +230,3 @@
 		</div>
 	{/if}
 </div>
-
-{#snippet datePicker(fullWidth = false)}
-	<Popover.Root bind:open={popoverOpen}>
-		<Popover.Trigger>
-			{#snippet child({ props })}
-				<button
-					{...props}
-					class="flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1 text-xs font-medium text-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground
-						{fullWidth ? 'w-full justify-between' : ''}
-						{popoverOpen ? 'border-ring ring-1 ring-ring' : ''}"
-				>
-					<CalendarIcon class="size-3.5 text-muted-foreground" />
-					<span>{timeFilterLabel}</span>
-					<ChevronDownIcon
-						class="size-3 text-muted-foreground transition-transform {popoverOpen
-							? 'rotate-180'
-							: ''}"
-					/>
-				</button>
-			{/snippet}
-		</Popover.Trigger>
-		<Popover.Content class="w-auto p-0 shadow-lg" align="end">
-			<div class="flex">
-				<div class="p-5">
-					{@render calendarTop?.()}
-					<RangeCalendar
-						bind:value={calendarValue}
-						onValueChange={handleCalendarValueChange}
-						numberOfMonths={1}
-					/>
-				</div>
-				<div class="w-px self-stretch bg-border"></div>
-				<div class="relative w-36 self-stretch">
-					<div class="absolute inset-0 flex flex-col p-3">
-						<p
-							class="mb-2 px-2 text-xs font-semibold tracking-wider text-muted-foreground uppercase"
-						>
-							Quick range
-						</p>
-						<div class="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto">
-							{#each presets as preset (preset.label)}
-								<button
-									onclick={() => selectPreset(preset.minutes)}
-									class="flex items-center justify-between rounded-md px-2 py-1.5 text-left text-xs transition-colors
-									{timeFilter.mode === 'relative' && timeFilter.minutes === preset.minutes
-										? 'bg-primary font-medium text-primary-foreground'
-										: 'text-foreground hover:bg-accent hover:text-accent-foreground'}"
-								>
-									<span>Last {preset.label}</span>
-									{#if timeFilter.mode === 'relative' && timeFilter.minutes === preset.minutes}
-										<span class="size-1.5 rounded-full bg-primary-foreground opacity-70"></span>
-									{/if}
-								</button>
-							{/each}
-						</div>
-					</div>
-				</div>
-			</div>
-		</Popover.Content>
-	</Popover.Root>
-{/snippet}

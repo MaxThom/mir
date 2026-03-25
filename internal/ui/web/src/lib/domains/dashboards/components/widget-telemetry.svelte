@@ -2,18 +2,14 @@
 	import { untrack } from 'svelte';
 	import { mirStore } from '$lib/domains/mir/stores/mir.svelte';
 	import { DeviceTarget } from '@mir/sdk';
-	import { SvelteMap, SvelteDate } from 'svelte/reactivity';
-	import type { DateRange } from 'bits-ui';
-	import { getLocalTimeZone } from '@internationalized/date';
+	import { SvelteMap } from 'svelte/reactivity';
 	import { editorPrefs } from '$lib/shared/stores/editor-prefs.svelte';
-	import TimePicker from '$lib/domains/devices/components/telemetry/time-picker.svelte';
 	import type { QueryData, QueryRow } from '@mir/sdk';
 	import type { ChartConfig } from '$lib/shared/components/shadcn/chart';
 	import TlmChart from '$lib/domains/devices/components/telemetry/tlm-chart.svelte';
 	import TlmToolbar from '$lib/domains/devices/components/telemetry/tlm-toolbar.svelte';
 	import TlmFieldToggles from '$lib/domains/devices/components/telemetry/tlm-field-toggles.svelte';
 	import TlmSlotChart from '$lib/domains/devices/components/telemetry/tlm-slot-chart.svelte';
-	import { Spinner } from '$lib/shared/components/shadcn/spinner';
 	import {
 		CHART_COLORS,
 		getDeviceFieldColor,
@@ -30,7 +26,7 @@
 	import LockOpenIcon from '@lucide/svelte/icons/lock-open';
 	import type { TelemetryWidgetConfig } from '../api/dashboard-api';
 
-	let { config, widgetId }: { config: TelemetryWidgetConfig; widgetId: string } = $props();
+	let { config, widgetId, refreshTick = 0 }: { config: TelemetryWidgetConfig; widgetId: string; refreshTick?: number } = $props();
 
 	// ─── State ────────────────────────────────────────────────────────────────
 
@@ -45,10 +41,7 @@
 	let queryStart = $state<Date | null>(null);
 	let queryEnd = $state<Date | null>(null);
 
-	let timeFilter = $state<TimeFilter>({ mode: 'relative', minutes: config.timeMinutes ?? 60 });
-	let calendarValue = $state<DateRange | undefined>(undefined);
-	let startTime = $state('00:00');
-	let endTime = $state('23:59');
+	let timeFilter = $state<TimeFilter>(editorPrefs.timeFilter);
 	let splitCount = $state<1 | 2 | 3 | 4>((config.splitCount ?? 1) as 1 | 2 | 3 | 4);
 	let syncFields = $state(config.syncFields ?? false);
 	let hasLoaded = $state(false);
@@ -64,30 +57,48 @@
 	const compact = $derived(widgetWidth < 420);
 
 	let generation = 0;
+	let isInRefresh = false;
 
-	// ─── Auto-save view settings in edit mode ────────────────────────────────
+	// ─── Global time change ────────────────────────────────────────────────────
+
+	$effect(() => {
+		const globalFilter = editorPrefs.timeFilter;
+		if (untrack(() => !hasLoaded)) return;
+		untrack(() => {
+			timeFilter = globalFilter;
+			query();
+		});
+	});
+
+	// ─── Refresh tick ─────────────────────────────────────────────────────────
+
+	$effect(() => {
+		if (refreshTick > 0) {
+			if (!isInRefresh) {
+				isInRefresh = true;
+				dashboardStore.refreshStart();
+			}
+			if (untrack(() => deviceInfos).length === 0) loadAndQuery();
+			else query();
+		}
+	});
+
+	// ─── Auto-save view settings ──────────────────────────────────────────────
 
 	$effect(() => {
 		if (!hasLoaded) return;
-		if (!dashboardStore.editMode) return;
 
 		// Capture user-controlled state (these are the tracked dependencies)
-		const newTimeMinutes =
-			timeFilter.mode === 'relative' ? timeFilter.minutes : untrack(() => config.timeMinutes);
 		const currentSelectedFields = selectedFields;
 		const currentSplitCount = splitCount;
 		const currentSyncFields = syncFields;
 		const currentEnabledDeviceIds = enabledDeviceIds;
 
-		// Read dashboard and config WITHOUT tracking — saveWidgetConfig updates
-		// activeDashboard via _syncDashboard, which would cause an infinite loop
-		// if those reads were tracked.
+		// Use saveWidgetViewState (no immediate _syncDashboard) to avoid
+		// cascading prop changes that would re-trigger a data query.
 		untrack(() => {
-			const dashboard = dashboardStore.activeDashboard;
-			if (!dashboard) return;
-			dashboardStore.saveWidgetConfig(dashboard, widgetId, {
+			dashboardStore.saveWidgetViewState(widgetId, {
 				...config,
-				timeMinutes: newTimeMinutes,
 				selectedFields: currentSelectedFields,
 				splitCount: currentSplitCount,
 				syncFields: currentSyncFields,
@@ -106,71 +117,6 @@
 		return () => ro.disconnect();
 	});
 
-	// Keep time inputs in sync with timeFilter (e.g. after brush zoom)
-	$effect(() => {
-		if (timeFilter.mode === 'absolute') {
-			const getH = (d: Date) => (editorPrefs.utc ? d.getUTCHours() : d.getHours());
-			const getM = (d: Date) => (editorPrefs.utc ? d.getUTCMinutes() : d.getMinutes());
-			startTime = `${String(getH(timeFilter.start)).padStart(2, '0')}:${String(getM(timeFilter.start)).padStart(2, '0')}`;
-			endTime = `${String(getH(timeFilter.end)).padStart(2, '0')}:${String(getM(timeFilter.end)).padStart(2, '0')}`;
-		}
-	});
-
-	function handleCalendarChange(value: DateRange | undefined): TimeFilter | undefined {
-		if (value?.start && value?.end) {
-			const [startH, startM] = startTime.split(':').map(Number);
-			const [endH, endM] = endTime.split(':').map(Number);
-			const tz = editorPrefs.utc ? 'UTC' : getLocalTimeZone();
-			const start = value.start.toDate(tz);
-			const end = value.end.toDate(tz);
-			if (editorPrefs.utc) {
-				start.setUTCHours(startH, startM, 0, 0);
-				end.setUTCHours(endH, endM, 59, 999);
-			} else {
-				start.setHours(startH, startM, 0, 0);
-				end.setHours(endH, endM, 59, 999);
-			}
-			return { mode: 'absolute', start, end };
-		}
-		return undefined;
-	}
-
-	function handleTimeInputChange() {
-		if (timeFilter.mode === 'absolute') {
-			const [startH, startM] = startTime.split(':').map(Number);
-			const [endH, endM] = endTime.split(':').map(Number);
-			const start = new SvelteDate(timeFilter.start);
-			const end = new SvelteDate(timeFilter.end);
-			if (editorPrefs.utc) {
-				start.setUTCHours(startH, startM, 0, 0);
-				end.setUTCHours(endH, endM, 59, 999);
-			} else {
-				start.setHours(startH, startM, 0, 0);
-				end.setHours(endH, endM, 59, 999);
-			}
-			timeFilter = { mode: 'absolute', start, end };
-			query();
-		}
-	}
-
-	// ─── Presets ──────────────────────────────────────────────────────────────
-
-	const PRESETS = [
-		{ label: '1m', minutes: 1 },
-		{ label: '5m', minutes: 5 },
-		{ label: '10m', minutes: 10 },
-		{ label: '15m', minutes: 15 },
-		{ label: '30m', minutes: 30 },
-		{ label: '1h', minutes: 60 },
-		{ label: '3h', minutes: 180 },
-		{ label: '6h', minutes: 360 },
-		{ label: '12h', minutes: 720 },
-		{ label: '24h', minutes: 1440 },
-		{ label: '2d', minutes: 2880 },
-		{ label: '7d', minutes: 10080 },
-		{ label: '30d', minutes: 43200 },
-		{ label: '90d', minutes: 129600 }
-	] as const;
 
 	// ─── Startup ──────────────────────────────────────────────────────────────
 
@@ -296,7 +242,13 @@
 			if (myGen !== generation) return;
 			queryError = err instanceof Error ? err.message : 'Query failed';
 		} finally {
-			if (myGen === generation) isQuerying = false;
+			if (myGen === generation) {
+				isQuerying = false;
+				if (isInRefresh) {
+					isInRefresh = false;
+					dashboardStore.refreshDone();
+				}
+			}
 		}
 	}
 
@@ -342,8 +294,7 @@
 
 	function handleBrushSelect(newStart: Date, newEnd: Date) {
 		if (newEnd.getTime() <= newStart.getTime() + 1000) return;
-		timeFilter = { mode: 'absolute', start: newStart, end: newEnd };
-		query();
+		editorPrefs.setTimeFilter({ mode: 'absolute', start: newStart, end: newEnd });
 	}
 
 	function toggleDevice(id: string, shift: boolean) {
@@ -400,29 +351,12 @@
 	<TlmToolbar
 		measurementName={config.measurement}
 		bind:timeFilter
-		bind:calendarValue
 		bind:fullscreen
 		{compact}
+		showZoom={false}
 		queryData={mergedData}
-		presets={PRESETS}
 		onQuery={query}
-		onCalendarChange={handleCalendarChange}
 	>
-		{#snippet calendarTop()}
-			<p class="mb-3 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-				Custom range{editorPrefs.utc ? ' (UTC)' : ''}
-			</p>
-			<div class="mb-3 grid grid-cols-2 gap-3">
-				<div class="space-y-1.5">
-					<span class="text-xs font-medium text-muted-foreground">Start time</span>
-					<TimePicker bind:value={startTime} onchange={handleTimeInputChange} />
-				</div>
-				<div class="space-y-1.5">
-					<span class="text-xs font-medium text-muted-foreground">End time</span>
-					<TimePicker bind:value={endTime} onchange={handleTimeInputChange} />
-				</div>
-			</div>
-		{/snippet}
 		{#snippet toolbarEnd()}
 			<button
 				onclick={() => (syncFields = !syncFields)}
@@ -490,11 +424,7 @@
 		{/snippet}
 	</TlmToolbar>
 
-	{#if isLoading}
-		<div class="flex flex-1 items-center justify-center">
-			<Spinner class="size-4" />
-		</div>
-	{:else if loadError}
+	{#if loadError}
 		<p class="px-4 py-2 text-xs text-destructive">{loadError}</p>
 	{:else}
 		<!-- Field toggles (move into toolbar dropdown when compact) -->
@@ -515,14 +445,9 @@
 			{#if splitCount === 1}
 				{#if queryError}
 					<p class="px-4 py-2 text-sm text-destructive">{queryError}</p>
-				{:else if isQuerying && !mergedData}
-					<div class="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-						<Spinner class="mr-2 size-4" />
-						Loading data…
-					</div>
 				{:else if mergedData}
 					<div class="flex min-h-0 flex-1 flex-col pt-1 pb-1">
-						<div class="min-h-0 flex-1">
+						<div class="relative min-h-0 flex-1">
 							<TlmChart
 								data={mergedData}
 								selectedFields={visibleFields}
@@ -530,6 +455,7 @@
 								chartClass="h-full"
 								start={queryStart}
 								end={queryEnd}
+								useUtc={editorPrefs.utc}
 								onBrushSelect={handleBrushSelect}
 							/>
 						</div>
@@ -563,13 +489,8 @@
 				{/if}
 			{:else if queryError}
 				<p class="px-4 py-2 text-sm text-destructive">{queryError}</p>
-			{:else if isQuerying && !mergedData}
-				<div class="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-					<Spinner class="mr-2 size-4" />
-					Loading data…
-				</div>
 			{:else if mergedData}
-				<div class="min-h-0 flex-1 overflow-hidden py-1">
+				<div class="relative min-h-0 flex-1 overflow-hidden py-1">
 					<div
 						class="grid h-full grid-cols-2 gap-3"
 						style="grid-template-rows: repeat({splitCount > 2 ? 2 : 1}, 1fr)"

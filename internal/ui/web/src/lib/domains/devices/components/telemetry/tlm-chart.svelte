@@ -26,8 +26,31 @@
 	} = $props();
 
 	// Flat chart rows: { _time: Date, __id: string, [field]: value }
+	// Gap sentinel rows ({ __gap: true }) are inserted where consecutive points are
+	// more than 3× the median interval apart so the line breaks instead of connecting.
 	let chartRows = $derived.by(() => {
-		return data.rows.map((row) => ({ ...row.values }));
+		const rows = data.rows.map((row) => ({ ...row.values }));
+		if (rows.length < 2) return rows;
+
+		const intervals: number[] = [];
+		for (let i = 1; i < rows.length; i++) {
+			intervals.push(
+				(rows[i]._time as Date).getTime() - (rows[i - 1]._time as Date).getTime()
+			);
+		}
+		const sorted = [...intervals].sort((a, b) => a - b);
+		const median = sorted[Math.floor(sorted.length / 2)];
+		const threshold = median * 3;
+
+		const result: (typeof rows)[number][] = [];
+		for (let i = 0; i < rows.length; i++) {
+			result.push(rows[i]);
+			if (i < rows.length - 1 && intervals[i] > threshold) {
+				const mid = ((rows[i]._time as Date).getTime() + (rows[i + 1]._time as Date).getTime()) / 2;
+				result.push({ _time: new Date(mid), __gap: true } as (typeof rows)[number]);
+			}
+		}
+		return result;
 	});
 
 	// Y-domain spanning all selected numeric fields
@@ -122,7 +145,7 @@
 				}
 			}}
 			props={{
-				spline: { strokeWidth: 2 },
+				spline: { strokeWidth: 2, defined: (d: Record<string, unknown>) => !d.__gap },
 				xAxis: { format: formatAxisTime, tickSpacing: 100 }
 			}}
 		>

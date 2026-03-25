@@ -18,8 +18,10 @@ type Dashboard struct {
 }
 
 type DashboardSpec struct {
-	Description string            `json:"description,omitempty"`
-	Widgets     []DashboardWidget `json:"widgets,omitempty"`
+	Description     string            `json:"description,omitempty"`
+	RefreshInterval *int              `json:"refreshInterval,omitempty"`
+	TimeMinutes     *int              `json:"timeMinutes,omitempty"`
+	Widgets         []DashboardWidget `json:"widgets,omitempty"`
 }
 
 type DashboardStatus struct {
@@ -60,8 +62,10 @@ type DashboardUpdate struct {
 }
 
 type DashboardUpdateSpec struct {
-	Description *string           `json:"description,omitempty"`
-	Widgets     []DashboardWidget `json:"widgets,omitempty"`
+	Description     *string           `json:"description,omitempty"`
+	RefreshInterval *int              `json:"refreshInterval,omitempty"`
+	TimeMinutes     *int              `json:"timeMinutes,omitempty"`
+	Widgets         []DashboardWidget `json:"widgets,omitempty"`
 }
 
 type DashboardUpdateStatus struct {

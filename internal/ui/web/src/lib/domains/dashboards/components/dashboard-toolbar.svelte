@@ -3,17 +3,74 @@
 	import { dashboardKey } from '../api/dashboard-api';
 	import { Button } from '$lib/shared/components/shadcn/button';
 	import * as DropdownMenu from '$lib/shared/components/shadcn/dropdown-menu';
-	import { Spinner } from '$lib/shared/components/shadcn/spinner';
+	import TimeRangePicker from '$lib/domains/devices/components/telemetry/time-range-picker.svelte';
 	import LayoutDashboardIcon from '@lucide/svelte/icons/layout-dashboard';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import PencilIcon from '@lucide/svelte/icons/pencil';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import XIcon from '@lucide/svelte/icons/x';
 	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
+	import ZoomOutIcon from '@lucide/svelte/icons/zoom-out';
 	import { toast } from 'svelte-sonner';
 	import DeleteButton from '$lib/shared/components/ui/delete-button/delete-button.svelte';
+	import RefreshButtonGroup from '$lib/shared/components/ui/refresh-button-group/refresh-button-group.svelte';
+	import { editorPrefs, type GlobalTimeFilter } from '$lib/shared/stores/editor-prefs.svelte';
 
-	let { onAddWidget }: { onAddWidget: () => void } = $props();
+	let { onAddWidget, onRefresh }: { onAddWidget: () => void; onRefresh?: () => void } = $props();
+
+	$effect(() => {
+		const interval = editorPrefs.refreshInterval;
+		const d = dashboardStore.activeDashboard;
+		if (!d) return;
+		if ((d.spec.refreshInterval ?? 10) === interval) return;
+		dashboardStore.saveRefreshInterval(d, interval);
+	});
+
+	$effect(() => {
+		const minutes = editorPrefs.timeMinutes;
+		const d = dashboardStore.activeDashboard;
+		if (!d) return;
+		if ((d.spec.timeMinutes ?? 60) === minutes) return;
+		dashboardStore.saveTimeMinutes(d, minutes);
+	});
+
+	// ─── Time picker state ────────────────────────────────────────────────────
+
+	const TIME_PRESETS = [
+		{ label: '1m', minutes: 1 },
+		{ label: '5m', minutes: 5 },
+		{ label: '10m', minutes: 10 },
+		{ label: '15m', minutes: 15 },
+		{ label: '30m', minutes: 30 },
+		{ label: '1h', minutes: 60 },
+		{ label: '3h', minutes: 180 },
+		{ label: '6h', minutes: 360 },
+		{ label: '12h', minutes: 720 },
+		{ label: '24h', minutes: 1440 },
+		{ label: '2d', minutes: 2880 },
+		{ label: '7d', minutes: 10080 },
+		{ label: '30d', minutes: 43200 },
+		{ label: '90d', minutes: 129600 }
+	] as const;
+
+	function zoom(factor: number) {
+		const f = editorPrefs.timeFilter;
+		let start: Date, end: Date;
+		if (f.mode === 'absolute') {
+			start = f.start;
+			end = f.end;
+		} else {
+			end = new Date();
+			start = new Date(end.getTime() - f.minutes * 60 * 1000);
+		}
+		const delta = (end.getTime() - start.getTime()) * 0.25 * factor;
+		const newStart = new Date(start.getTime() + delta);
+		const newEnd = new Date(end.getTime() - delta);
+		if (newEnd.getTime() <= newStart.getTime() + 1000) return;
+		editorPrefs.setTimeFilter({ mode: 'absolute', start: newStart, end: newEnd });
+	}
+
+	// ─── Dashboard management ─────────────────────────────────────────────────
 
 	let isCreating = $state(false);
 	let newName = $state('');
@@ -140,9 +197,6 @@
 
 	<div class="flex-1"></div>
 
-	{#if dashboardStore.isSaving}
-		<Spinner class="h-4 w-4" />
-	{/if}
 
 	<!-- Create new dashboard -->
 	{#if !dashboardStore.editMode}
@@ -194,6 +248,22 @@
 	{/if}
 
 	{#if dashboardStore.activeDashboard}
+		<!-- Global time range picker (hidden in edit mode) -->
+		{#if !dashboardStore.editMode}
+			<button
+				onclick={() => zoom(-1)}
+				title="Zoom out"
+				class="flex items-center rounded-md border border-border bg-background p-1 text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+			>
+				<ZoomOutIcon class="size-3.5" />
+			</button>
+			<TimeRangePicker
+				timeFilter={editorPrefs.timeFilter}
+				presets={TIME_PRESETS}
+				ontimechange={(f) => editorPrefs.setTimeFilter(f)}
+			/>
+		{/if}
+		<RefreshButtonGroup {onRefresh} isLoading={dashboardStore.isRefreshing} />
 		{#if dashboardStore.editMode}
 			<!-- Save -->
 			<Button
