@@ -10,13 +10,38 @@
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import XIcon from '@lucide/svelte/icons/x';
 	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
+	import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
+	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import ZoomOutIcon from '@lucide/svelte/icons/zoom-out';
+	import EllipsisIcon from '@lucide/svelte/icons/ellipsis';
 	import DeleteButton from '$lib/shared/components/ui/delete-button/delete-button.svelte';
 	import RefreshButtonGroup from '$lib/shared/components/ui/refresh-button-group/refresh-button-group.svelte';
 	import { editorPrefs } from '$lib/shared/stores/editor-prefs.svelte';
 	import { Separator } from '$lib/shared/components/shadcn/separator/index.js';
 
 	let { onAddWidget, onRefresh }: { onAddWidget: () => void; onRefresh?: () => void } = $props();
+
+	// ─── Tab scroll state ─────────────────────────────────────────────────────
+
+	let scrollEl = $state<HTMLDivElement | null>(null);
+	let canScrollLeft = $state(false);
+	let canScrollRight = $state(false);
+
+	function updateScrollState() {
+		if (!scrollEl) return;
+		canScrollLeft = scrollEl.scrollLeft > 0;
+		canScrollRight = scrollEl.scrollLeft + scrollEl.clientWidth < scrollEl.scrollWidth - 1;
+	}
+
+	function scrollTabs(dir: number) {
+		scrollEl?.scrollBy({ left: dir * 120, behavior: 'smooth' });
+	}
+
+	$effect(() => {
+		// Re-check whenever pinned dashboards change (setTimeout lets DOM settle first)
+		void dashboardStore.pinnedDashboards.length;
+		setTimeout(updateScrollState, 0);
+	});
 
 	$effect(() => {
 		if (!dashboardStore.editMode && !dashboardStore.isCreatingNew) return;
@@ -144,10 +169,16 @@
 	<!-- Icon as dropdown trigger -->
 	<DropdownMenu.Root>
 		<DropdownMenu.Trigger>
-			<Button variant="ghost" size="sm" class="-ml-4 gap-1" aria-label="Select dashboards">
-				<LayoutDashboardIcon class="h-4 w-4" />
-				<ChevronDownIcon class="h-3 w-3" />
-			</Button>
+			{#snippet child({ props })}
+				<button
+					{...props}
+					aria-label="Select dashboards"
+					class="-ml-1 flex items-center gap-1 rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+				>
+					<LayoutDashboardIcon class="size-4" />
+					<ChevronDownIcon class="size-3" />
+				</button>
+			{/snippet}
 		</DropdownMenu.Trigger>
 		<DropdownMenu.Content>
 			{#if dashboardStore.dashboards.length === 0}
@@ -193,33 +224,46 @@
 			placeholder="name"
 			bind:value={renameName}
 		/>
+		<div class="flex-1"></div>
 	{:else}
-		{#each dashboardStore.pinnedDashboards as d (`${d.meta.namespace}/${d.meta.name}`)}
-			{@const isActive =
-				!!dashboardStore.activeDashboard &&
-				dashboardKey(d) === dashboardKey(dashboardStore.activeDashboard)}
-			<Button
-				variant={isActive ? 'secondary' : 'ghost'}
-				size="sm"
-				onclick={() => dashboardStore.setActive(d)}
-			>
-				{d.meta.name}
-			</Button>
-		{/each}
+		<div class="flex min-w-0 flex-1 items-center gap-1">
+			{#if canScrollLeft}
+				<button
+					onclick={() => scrollTabs(-1)}
+					aria-label="Scroll tabs left"
+					class="flex shrink-0 items-center rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+				>
+					<ChevronLeftIcon class="size-3" />
+				</button>
+			{/if}
+			<div class="min-w-0 flex-1 overflow-hidden">
+				<div bind:this={scrollEl} onscroll={updateScrollState} class="tab-scroll flex items-center gap-1 overflow-x-auto">
+					{#each dashboardStore.pinnedDashboards as d (`${d.meta.namespace}/${d.meta.name}`)}
+						{@const isActive =
+							!!dashboardStore.activeDashboard &&
+							dashboardKey(d) === dashboardKey(dashboardStore.activeDashboard)}
+						<Button
+							variant={isActive ? 'secondary' : 'ghost'}
+							size="sm"
+							class="shrink-0"
+							onclick={() => dashboardStore.setActive(d)}
+						>
+							{d.meta.name}
+						</Button>
+					{/each}
+				</div>
+			</div>
+			{#if canScrollRight}
+				<button
+					onclick={() => scrollTabs(1)}
+					aria-label="Scroll tabs right"
+					class="flex shrink-0 items-center rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+				>
+					<ChevronRightIcon class="size-3" />
+				</button>
+			{/if}
+		</div>
 	{/if}
-
-	<!-- Create new dashboard -->
-	{#if !dashboardStore.editMode && !dashboardStore.isCreatingNew}
-		<button
-			onclick={createDashboard}
-			aria-label="New dashboard"
-			class="flex items-center rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-		>
-			<PlusIcon class="size-3.5" />
-		</button>
-	{/if}
-
-	<div class="flex-1"></div>
 
 	{#if dashboardStore.isCreatingNew || dashboardStore.editMode}
 		<!-- Save -->
@@ -262,23 +306,6 @@
 	{/if}
 
 	{#if dashboardStore.activeDashboard}
-		<!-- Edit button -->
-		{#if !dashboardStore.editMode && !dashboardStore.isCreatingNew}
-			<button
-				onclick={() => {
-					const { name, namespace } = dashboardStore.enterEditMode();
-					renameName = name;
-					renameNamespace = namespace;
-				}}
-				aria-label="Edit dashboard"
-				class="flex items-center rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-			>
-				<PencilIcon class="size-3.5" />
-			</button>
-		{/if}
-		{#if dashboardStore.editMode || dashboardStore.isCreatingNew}
-			<Separator orientation="vertical" class="data-[orientation=vertical]:h-2" />
-		{/if}
 		<!-- Global time range picker -->
 		<button
 			onclick={() => zoom(-1)}
@@ -294,4 +321,65 @@
 		/>
 		<RefreshButtonGroup {onRefresh} isLoading={dashboardStore.isRefreshing} />
 	{/if}
+
+	<!-- Dashboard management dropdown -->
+	{#if !dashboardStore.editMode && !dashboardStore.isCreatingNew}
+		<DropdownMenu.Root>
+			<DropdownMenu.Trigger>
+				{#snippet child({ props })}
+					<button
+						{...props}
+						aria-label="Dashboard actions"
+						class="flex items-center rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+					>
+						<EllipsisIcon class="size-3.5" />
+					</button>
+				{/snippet}
+			</DropdownMenu.Trigger>
+			<DropdownMenu.Content align="end">
+				<DropdownMenu.Item onclick={createDashboard}>
+					<PlusIcon class="mr-2 size-3.5" />
+					New Dashboard
+				</DropdownMenu.Item>
+				{#if dashboardStore.activeDashboard}
+					<DropdownMenu.Item
+						onclick={() => {
+							const { name, namespace } = dashboardStore.enterEditMode();
+							renameName = name;
+							renameNamespace = namespace;
+						}}
+					>
+						<PencilIcon class="mr-2 size-3.5" />
+						Edit Dashboard
+					</DropdownMenu.Item>
+				{/if}
+			</DropdownMenu.Content>
+		</DropdownMenu.Root>
+	{/if}
 </div>
+
+<style>
+	/*
+	 * Scrollbar trick: padding-bottom pushes the track into the overflow area,
+	 * margin-bottom cancels the extra height, and the parent overflow:hidden clips it.
+	 * Net result: zero height impact, scrollbar appears overlaid on hover.
+	 */
+	.tab-scroll {
+		padding-bottom: 6px;
+		margin-bottom: -6px;
+		scrollbar-width: none; /* Firefox: no native scrollbar, still scrollable */
+	}
+	.tab-scroll::-webkit-scrollbar {
+		height: 2px;
+	}
+	.tab-scroll::-webkit-scrollbar-track {
+		background: transparent;
+	}
+	.tab-scroll::-webkit-scrollbar-thumb {
+		border-radius: 9999px;
+		background: transparent;
+	}
+	.tab-scroll:hover::-webkit-scrollbar-thumb {
+		background: hsl(var(--border) / 0.6);
+	}
+</style>
