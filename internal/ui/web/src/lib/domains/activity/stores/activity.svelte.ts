@@ -1,7 +1,7 @@
 import { toast } from 'svelte-sonner';
 
 export type ActivityKind = 'success' | 'error' | 'info';
-export type ActivityCategory = 'Device' | 'Command' | 'Config' | 'Connection' | 'Telemetry';
+export type ActivityCategory = 'Device' | 'Command' | 'Config' | 'Connection' | 'Telemetry' | 'Dashboard';
 
 export type ActivityEntry = {
 	id: string;
