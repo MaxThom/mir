@@ -26,7 +26,7 @@
 			</div>
 		{:else if dashboardStore.error}
 			<div class="flex h-full items-center justify-center">
-				<p class="text-destructive text-sm">{dashboardStore.error}</p>
+				<p class="text-sm text-destructive">{dashboardStore.error}</p>
 			</div>
 		{:else if !dashboardStore.activeDashboard}
 			<div class="flex h-full items-center justify-center">
@@ -36,7 +36,7 @@
 							<LayoutDashboardIcon />
 						</Empty.Media>
 						<Empty.Title>No Dashboard</Empty.Title>
-						<Empty.Description>Create a dashboard using the + button above.</Empty.Description>
+						<Empty.Description>Create a dashboard using the ... button above.</Empty.Description>
 					</Empty.Header>
 				</Empty.Root>
 			</div>
