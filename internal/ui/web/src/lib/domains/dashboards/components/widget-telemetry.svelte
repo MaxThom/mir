@@ -26,7 +26,11 @@
 	import LockOpenIcon from '@lucide/svelte/icons/lock-open';
 	import type { TelemetryWidgetConfig } from '../api/dashboard-api';
 
-	let { config, widgetId, refreshTick = 0 }: { config: TelemetryWidgetConfig; widgetId: string; refreshTick?: number } = $props();
+	let {
+		config,
+		widgetId,
+		refreshTick = 0
+	}: { config: TelemetryWidgetConfig; widgetId: string; refreshTick?: number } = $props();
 
 	// ─── State ────────────────────────────────────────────────────────────────
 
@@ -116,7 +120,6 @@
 		ro.observe(widgetEl);
 		return () => ro.disconnect();
 	});
-
 
 	// ─── Startup ──────────────────────────────────────────────────────────────
 

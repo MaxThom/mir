@@ -11,12 +11,22 @@
 	import XIcon from '@lucide/svelte/icons/x';
 	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
 	import ZoomOutIcon from '@lucide/svelte/icons/zoom-out';
-	import { toast } from 'svelte-sonner';
 	import DeleteButton from '$lib/shared/components/ui/delete-button/delete-button.svelte';
 	import RefreshButtonGroup from '$lib/shared/components/ui/refresh-button-group/refresh-button-group.svelte';
-	import { editorPrefs, type GlobalTimeFilter } from '$lib/shared/stores/editor-prefs.svelte';
+	import { editorPrefs } from '$lib/shared/stores/editor-prefs.svelte';
+	import { Separator } from '$lib/shared/components/shadcn/separator/index.js';
 
 	let { onAddWidget, onRefresh }: { onAddWidget: () => void; onRefresh?: () => void } = $props();
+
+	$effect(() => {
+		if (!dashboardStore.editMode && !dashboardStore.isCreatingNew) return;
+		function onKeydown(e: KeyboardEvent) {
+			if (e.key === 'Escape') cancelEdits();
+			else if (e.key === 'Enter') saveEdits();
+		}
+		window.addEventListener('keydown', onKeydown);
+		return () => window.removeEventListener('keydown', onKeydown);
+	});
 
 	$effect(() => {
 		const interval = editorPrefs.refreshInterval;
@@ -72,43 +82,44 @@
 
 	// ─── Dashboard management ─────────────────────────────────────────────────
 
-	let isCreating = $state(false);
-	let newName = $state('');
-	let newNamespace = $state('');
 	let renameName = $state('');
 	let renameNamespace = $state('');
 
-	async function createDashboard() {
-		if (!newName.trim()) return;
-		try {
-			await dashboardStore.create(newName.trim(), newNamespace.trim() || 'default');
-			newName = '';
-			newNamespace = '';
-			isCreating = false;
-		} catch {
-			toast.error('Failed to create dashboard');
-		}
-	}
-
-	function cancelCreating() {
-		isCreating = false;
-		newName = '';
-		newNamespace = '';
+	function createDashboard() {
+		renameName = '';
+		renameNamespace = 'default';
+		dashboardStore.beginCreate();
 	}
 
 	async function saveEdits() {
-		if (dashboardStore.activeDashboard && renameName.trim()) {
+		if (!renameName.trim()) return;
+		if (dashboardStore.isCreatingNew) {
+			try {
+				await dashboardStore.create(renameName.trim(), renameNamespace.trim() || 'default');
+			} catch {
+				// error reported via activityStore
+			}
+			return;
+		}
+		if (dashboardStore.activeDashboard) {
 			try {
 				await dashboardStore.update(dashboardStore.activeDashboard, {
 					name: renameName.trim(),
 					namespace: renameNamespace.trim() || 'default'
 				});
 			} catch {
-				toast.error('Failed to rename dashboard');
-				return;
+				return; // error reported via activityStore
 			}
 		}
 		dashboardStore.saveEditMode();
+	}
+
+	async function cancelEdits() {
+		if (dashboardStore.isCreatingNew) {
+			dashboardStore.cancelCreate();
+			return;
+		}
+		dashboardStore.cancelEditMode();
 	}
 
 	let deleteError = $state<string | null>(null);
@@ -169,14 +180,16 @@
 	</DropdownMenu.Root>
 
 	<!-- Tab bar / edit input -->
-	{#if dashboardStore.editMode}
+	{#if dashboardStore.isCreatingNew || dashboardStore.editMode}
 		<input
 			class="w-36 rounded border border-input px-2 py-1 text-sm"
 			placeholder="namespace"
 			bind:value={renameNamespace}
 		/>
 		<input
-			class="w-44 rounded border border-input px-2 py-1 text-sm"
+			class="w-44 rounded border px-2 py-1 text-sm {renameName.trim()
+				? 'border-input'
+				: 'border-destructive'}"
 			placeholder="name"
 			bind:value={renameName}
 		/>
@@ -195,125 +208,90 @@
 		{/each}
 	{/if}
 
-	<div class="flex-1"></div>
-
-
 	<!-- Create new dashboard -->
-	{#if !dashboardStore.editMode}
-		{#if isCreating}
-			<div class="flex items-center gap-1">
-				<input
-					class="w-36 rounded border border-input px-2 py-1 text-sm"
-					placeholder="namespace"
-					bind:value={newNamespace}
-					onkeydown={(e) => e.key === 'Enter' && createDashboard()}
-				/>
-				<input
-					class="w-44 rounded border border-input px-2 py-1 text-sm"
-					placeholder="name"
-					bind:value={newName}
-					onkeydown={(e) => e.key === 'Enter' && createDashboard()}
-				/>
-				<Button
-					variant="ghost"
-					size="icon"
-					class="h-7 w-7 text-green-500"
-					onclick={createDashboard}
-					disabled={!newName.trim()}
-					aria-label="Create dashboard"
-				>
-					<CheckIcon class="h-4 w-4" />
-				</Button>
-				<Button
-					variant="ghost"
-					size="icon"
-					class="h-7 w-7 text-destructive"
-					onclick={cancelCreating}
-					aria-label="Cancel"
-				>
-					<XIcon class="h-4 w-4" />
-				</Button>
-			</div>
-		{:else}
-			<Button
-				variant="ghost"
-				size="icon"
-				class="h-7 w-7"
-				onclick={() => (isCreating = true)}
-				aria-label="New dashboard"
-			>
-				<PlusIcon class="h-4 w-4" />
-			</Button>
-		{/if}
+	{#if !dashboardStore.editMode && !dashboardStore.isCreatingNew}
+		<button
+			onclick={createDashboard}
+			aria-label="New dashboard"
+			class="flex items-center rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+		>
+			<PlusIcon class="size-3.5" />
+		</button>
 	{/if}
 
-	{#if dashboardStore.activeDashboard}
-		<!-- Global time range picker (hidden in edit mode) -->
-		{#if !dashboardStore.editMode}
-			<button
-				onclick={() => zoom(-1)}
-				title="Zoom out"
-				class="flex items-center rounded-md border border-border bg-background p-1 text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
-			>
-				<ZoomOutIcon class="size-3.5" />
-			</button>
-			<TimeRangePicker
-				timeFilter={editorPrefs.timeFilter}
-				presets={TIME_PRESETS}
-				ontimechange={(f) => editorPrefs.setTimeFilter(f)}
-			/>
-		{/if}
-		<RefreshButtonGroup {onRefresh} isLoading={dashboardStore.isRefreshing} />
-		{#if dashboardStore.editMode}
-			<!-- Save -->
-			<Button
-				variant="ghost"
-				size="icon"
-				class="h-7 w-7 text-green-500"
-				onclick={saveEdits}
-				aria-label="Save"
-			>
-				<CheckIcon class="h-4 w-4" />
-			</Button>
-			<!-- Cancel -->
-			<Button
-				variant="ghost"
-				size="icon"
-				class="h-7 w-7 text-destructive"
-				onclick={() => dashboardStore.cancelEditMode()}
-				aria-label="Cancel editing"
-			>
-				<XIcon class="h-4 w-4" />
-			</Button>
-			<Button size="sm" onclick={onAddWidget}>
-				<PlusIcon class="mr-1 h-4 w-4" />
-				Add Widget
-			</Button>
-			<!-- Delete -->
+	<div class="flex-1"></div>
+
+	{#if dashboardStore.isCreatingNew || dashboardStore.editMode}
+		<!-- Save -->
+		<Button
+			variant="ghost"
+			size="icon"
+			class="h-7 w-7 text-green-500"
+			onclick={saveEdits}
+			disabled={!renameName.trim()}
+			aria-label="Save"
+		>
+			<CheckIcon class="h-4 w-4" />
+		</Button>
+		<!-- Cancel -->
+		<Button
+			variant="ghost"
+			size="icon"
+			class="h-7 w-7 text-destructive"
+			onclick={cancelEdits}
+			aria-label="Cancel editing"
+		>
+			<XIcon class="h-4 w-4" />
+		</Button>
+		<!-- Delete (only for existing dashboards) -->
+		{#if !dashboardStore.isCreatingNew && dashboardStore.activeDashboard}
 			<DeleteButton
-				confirmValue="{dashboardStore.activeDashboard.meta.name}/{dashboardStore.activeDashboard
-					.meta.namespace}"
+				confirmValue="{dashboardStore.activeDashboard.meta.namespace}/{dashboardStore
+					.activeDashboard.meta.name}"
 				confirmHint="Type &quot;{dashboardStore.activeDashboard.meta.name}/{dashboardStore
 					.activeDashboard.meta.namespace}&quot; to confirm."
 				error={deleteError}
 				{isDeleting}
 				onconfirm={removeDashboard}
 			/>
-		{:else}
-			<!-- Edit mode -->
-			<Button
-				variant="ghost"
-				size="icon"
-				class="h-7 w-7"
+		{/if}
+		<Button size="sm" onclick={onAddWidget}>
+			<PlusIcon class="mr-1 h-4 w-4" />
+			Add Widget
+		</Button>
+	{/if}
+
+	{#if dashboardStore.activeDashboard}
+		<!-- Edit button -->
+		{#if !dashboardStore.editMode && !dashboardStore.isCreatingNew}
+			<button
 				onclick={() => {
 					const { name, namespace } = dashboardStore.enterEditMode();
 					renameName = name;
 					renameNamespace = namespace;
 				}}
 				aria-label="Edit dashboard"
+				class="flex items-center rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
 			>
-				<PencilIcon class="h-4 w-4" />
-			</Button>
+				<PencilIcon class="size-3.5" />
+			</button>
 		{/if}
+		{#if dashboardStore.editMode || dashboardStore.isCreatingNew}
+			<Separator orientation="vertical" class="data-[orientation=vertical]:h-2" />
+		{/if}
+		<!-- Global time range picker -->
+		<button
+			onclick={() => zoom(-1)}
+			title="Zoom out"
+			class="flex items-center rounded-md border border-border bg-background p-1 text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+		>
+			<ZoomOutIcon class="size-3.5" />
+		</button>
+		<TimeRangePicker
+			timeFilter={editorPrefs.timeFilter}
+			presets={TIME_PRESETS}
+			ontimechange={(f) => editorPrefs.setTimeFilter(f)}
+		/>
+		<RefreshButtonGroup {onRefresh} isLoading={dashboardStore.isRefreshing} />
 	{/if}
 </div>

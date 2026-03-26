@@ -47,7 +47,6 @@
 						<Empty.Media variant="icon">
 							<LayoutDashboardIcon />
 						</Empty.Media>
-						<Empty.Title>{dashboardStore.activeDashboard.meta.name}</Empty.Title>
 						<Empty.Description>
 							Click <strong>Edit</strong> then <strong>Add Widget</strong> to get started.
 						</Empty.Description>
@@ -55,7 +54,9 @@
 				</Empty.Root>
 			</div>
 		{:else}
-			<DashboardGrid widgets={dashboardStore.activeDashboard.spec.widgets ?? []} {refreshTick} />
+			{#key `${dashboardStore.activeDashboard.meta.namespace}/${dashboardStore.activeDashboard.meta.name}`}
+				<DashboardGrid widgets={dashboardStore.activeDashboard.spec.widgets ?? []} {refreshTick} />
+			{/key}
 		{/if}
 	</div>
 </div>

@@ -48,7 +48,7 @@
 	});
 
 	$effect(() => {
-		const editMode = dashboardStore.editMode;
+		const editMode = dashboardStore.editMode || dashboardStore.isCreatingNew;
 		if (!grid) return;
 		tick().then(() => {
 			editMode ? grid!.enable() : grid!.disable();
@@ -71,7 +71,7 @@
 	});
 </script>
 
-<div class="grid-stack" class:gs-edit-mode={dashboardStore.editMode} bind:this={gridEl}>
+<div class="grid-stack" class:gs-edit-mode={dashboardStore.editMode || dashboardStore.isCreatingNew} bind:this={gridEl}>
 	{#each widgets as widget (widget.id)}
 		<div
 			class="grid-stack-item"
@@ -80,7 +80,7 @@
 			<div class="grid-stack-item-content">
 				<WidgetWrapper
 					title={widget.title}
-					editMode={dashboardStore.editMode}
+					editMode={dashboardStore.editMode || dashboardStore.isCreatingNew}
 					onRemove={() =>
 						dashboardStore.activeDashboard &&
 						dashboardStore.removeWidget(dashboardStore.activeDashboard, widget.id)}

@@ -8,6 +8,7 @@ import {
 	type WidgetType
 } from '../api/dashboard-api';
 import { editorPrefs } from '$lib/shared/stores/editor-prefs.svelte';
+import { activityStore } from '$lib/domains/activity/stores/activity.svelte';
 
 class DashboardStore {
 	dashboards = $state<Dashboard[]>([]);
@@ -17,6 +18,7 @@ class DashboardStore {
 	isSaving = $state(false);
 	isRefreshing = $state(false);
 	editMode = $state(false);
+	isCreatingNew = $state(false);
 	error = $state<string | null>(null);
 
 	private saveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -24,6 +26,7 @@ class DashboardStore {
 	private configSaveTimer: ReturnType<typeof setTimeout> | null = null;
 	private viewStateTimers = new Map<string, ReturnType<typeof setTimeout>>();
 	private editSnapshot: Dashboard | null = null;
+	private _preCreateDashboard: Dashboard | null = null;
 
 	private _loadPinnedKeys(): string[] {
 		try {
@@ -131,15 +134,43 @@ class DashboardStore {
 		editorPrefs.setTimeMinutes(d.spec.timeMinutes ?? 60);
 	}
 
+	beginCreate() {
+		this._preCreateDashboard = this.activeDashboard;
+		this.activeDashboard = {
+			meta: { name: '__draft__', namespace: 'default' },
+			spec: { description: '', widgets: [], refreshInterval: 10, timeMinutes: 60 }
+		} as unknown as Dashboard;
+		this.isCreatingNew = true;
+	}
+
+	cancelCreate() {
+		this.activeDashboard = this._preCreateDashboard;
+		this._preCreateDashboard = null;
+		this.isCreatingNew = false;
+	}
+
 	async create(name: string, namespace = 'default', description = '') {
 		this.isSaving = true;
 		try {
-			const d = await dashboardApi.create(name, namespace, description);
+			const draftWidgets = this.isCreatingNew ? (this.activeDashboard?.spec.widgets ?? []) : [];
+			let d = await dashboardApi.create(name, namespace, description);
+			if (draftWidgets.length > 0) {
+				d = await dashboardApi.saveWidgets(d.meta.namespace, d.meta.name, draftWidgets);
+			}
 			this.dashboards = [...this.dashboards, d];
-			this.setActive(d);
 			this.pinnedKeys = [...this.pinnedKeys, dashboardKey(d)];
 			this._savePinnedKeys();
+			this.activeDashboard = d;
+			localStorage.setItem('mir_active_dashboard_key', dashboardKey(d));
+			editorPrefs.setRefreshInterval(d.spec.refreshInterval ?? 10);
+			editorPrefs.setTimeMinutes(d.spec.timeMinutes ?? 60);
+			this.isCreatingNew = false;
+			this._preCreateDashboard = null;
+			activityStore.add({ kind: 'success', category: 'Dashboard', title: 'Created', request: { name, namespace } });
 			return d;
+		} catch (err) {
+			activityStore.add({ kind: 'error', category: 'Dashboard', title: 'Create Failed', error: err instanceof Error ? err.message : String(err) });
+			throw err;
 		} finally {
 			this.isSaving = false;
 		}
@@ -156,7 +187,11 @@ class DashboardStore {
 				this._savePinnedKeys();
 			}
 			this._syncDashboard(d, updated);
+			activityStore.add({ kind: 'success', category: 'Dashboard', title: 'Updated', request: { name: updated.meta.name, namespace: updated.meta.namespace } });
 			return updated;
+		} catch (err) {
+			activityStore.add({ kind: 'error', category: 'Dashboard', title: 'Update Failed', error: err instanceof Error ? err.message : String(err) });
+			throw err;
 		} finally {
 			this.isSaving = false;
 		}
@@ -178,6 +213,10 @@ class DashboardStore {
 					localStorage.removeItem('mir_active_dashboard_key');
 				}
 			}
+			activityStore.add({ kind: 'success', category: 'Dashboard', title: 'Deleted', request: { name: d.meta.name, namespace: d.meta.namespace } });
+		} catch (err) {
+			activityStore.add({ kind: 'error', category: 'Dashboard', title: 'Delete Failed', error: err instanceof Error ? err.message : String(err) });
+			throw err;
 		} finally {
 			this.isSaving = false;
 		}
@@ -194,7 +233,12 @@ class DashboardStore {
 			w: 4,
 			h: 4
 		};
-		return this._persistWidgets(d, [...(d.spec.widgets ?? []), newWidget]);
+		const updated = [...(d.spec.widgets ?? []), newWidget];
+		if (this.isCreatingNew) {
+			this.activeDashboard = { ...d, spec: { ...d.spec, widgets: updated } };
+			return;
+		}
+		return this._persistWidgets(d, updated);
 	}
 
 	async removeWidget(d: Dashboard, widgetId: string) {
@@ -205,6 +249,7 @@ class DashboardStore {
 	}
 
 	saveWidgetConfig(d: Dashboard, widgetId: string, config: WidgetConfig) {
+		if (this.isCreatingNew) return;
 		const updated = (d.spec.widgets ?? []).map((w) =>
 			w.id === widgetId ? { ...w, config } : w
 		);
@@ -223,6 +268,7 @@ class DashboardStore {
 	}
 
 	saveWidgetViewState(widgetId: string, config: WidgetConfig) {
+		if (this.isCreatingNew) return;
 		const existing = this.viewStateTimers.get(widgetId);
 		if (existing) clearTimeout(existing);
 		const timer = setTimeout(() => {
@@ -247,6 +293,10 @@ class DashboardStore {
 			const pos = posMap.get(w.id);
 			return pos ? { ...w, ...pos } : w;
 		});
+		if (this.isCreatingNew) {
+			this.activeDashboard = { ...d, spec: { ...d.spec, widgets: updated } };
+			return;
+		}
 		// Optimistic update so the grid doesn't flicker during drag.
 		this._syncDashboard(d, { ...d, spec: { ...d.spec, widgets: updated } });
 

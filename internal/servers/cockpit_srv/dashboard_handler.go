@@ -41,7 +41,7 @@ func (s *CockpitServer) dashboardsHandler(w http.ResponseWriter, r *http.Request
 		created, err := s.store.CreateDashboard(d)
 		if err != nil {
 			s.log.Error().Err(err).Msg("failed to create dashboard")
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		w.WriteHeader(http.StatusCreated)
@@ -165,7 +165,7 @@ func dashboardError(w http.ResponseWriter, err error) {
 	if errors.Is(err, mng.ErrorDashboardNotFound) {
 		http.Error(w, "Dashboard not found", http.StatusNotFound)
 	} else {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
