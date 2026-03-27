@@ -2,17 +2,20 @@
 	import * as Card from '$lib/shared/components/shadcn/card';
 	import { Button } from '$lib/shared/components/shadcn/button';
 	import GripVerticalIcon from '@lucide/svelte/icons/grip-vertical';
+	import PencilIcon from '@lucide/svelte/icons/pencil';
 	import XIcon from '@lucide/svelte/icons/x';
 	import type { Snippet } from 'svelte';
 
 	let {
 		title,
 		editMode = false,
+		onEdit,
 		onRemove,
 		children
 	}: {
 		title: string;
 		editMode?: boolean;
+		onEdit?: () => void;
 		onRemove?: () => void;
 		children: Snippet;
 	} = $props();
@@ -28,6 +31,17 @@
 			<GripVerticalIcon class="h-4 w-4" />
 		</span>
 		<Card.Title class="flex-1 truncate text-sm">{title}</Card.Title>
+		{#if editMode && onEdit}
+			<Button
+				variant="ghost"
+				size="icon"
+				class="h-6 w-6 shrink-0"
+				onclick={onEdit}
+				aria-label="Edit widget"
+			>
+				<PencilIcon class="h-3 w-3" />
+			</Button>
+		{/if}
 		{#if editMode && onRemove}
 			<Button
 				variant="ghost"

@@ -9,6 +9,7 @@
 	import { Input } from '$lib/shared/components/shadcn/input';
 	import { Spinner } from '$lib/shared/components/shadcn/spinner';
 	import type {
+		Widget,
 		WidgetType,
 		DeviceTargetConfig,
 		TelemetryWidgetConfig,
@@ -24,11 +25,30 @@
 	import SlidersHorizontalIcon from '@lucide/svelte/icons/sliders-horizontal';
 	import CalendarClockIcon from '@lucide/svelte/icons/calendar-clock';
 
-	let { open = $bindable(false) }: { open?: boolean } = $props();
+	let {
+		open = $bindable(false),
+		editWidget = $bindable<Widget | null>(null)
+	}: { open?: boolean; editWidget?: Widget | null } = $props();
 
 	$effect(() => {
 		if (open && mirStore.mir && deviceStore.devices.length === 0 && !deviceStore.isLoading) {
 			deviceStore.loadDevices(mirStore.mir);
+		}
+	});
+
+	// Pre-populate state when opening in edit mode
+	$effect(() => {
+		if (open && editWidget) {
+			selectedType = editWidget.type;
+			title = editWidget.title;
+			step = 'target';
+			if (editWidget.type === 'telemetry') {
+				const c = editWidget.config as TelemetryWidgetConfig;
+				selectedMeasurement = c.measurement;
+				timeFilter = { mode: 'relative', minutes: c.timeMinutes };
+			} else if (editWidget.type === 'events') {
+				eventLimit = (editWidget.config as EventsWidgetConfig).limit;
+			}
 		}
 	});
 
@@ -102,6 +122,7 @@
 		selectedMeasurement = '';
 		timeFilter = { mode: 'relative', minutes: 60 };
 		eventLimit = 50;
+		editWidget = null;
 	}
 
 	function selectType(t: WidgetType) {
@@ -127,41 +148,40 @@
 		step = 'config';
 	}
 
-	async function addWidget() {
-		if (!dashboardStore.activeDashboard || !selectedType) return;
-
-		let config:
-			| TelemetryWidgetConfig
-			| CommandWidgetConfig
-			| ConfigWidgetConfig
-			| EventsWidgetConfig;
-		switch (selectedType) {
+	function buildConfig(): TelemetryWidgetConfig | CommandWidgetConfig | ConfigWidgetConfig | EventsWidgetConfig {
+		switch (selectedType!) {
 			case 'telemetry': {
 				const descriptor = measurements.find((m) => m.name === selectedMeasurement);
 				const minutes =
 					timeFilter.mode === 'relative'
 						? timeFilter.minutes
 						: Math.round((timeFilter.end.getTime() - timeFilter.start.getTime()) / 60000);
-				config = {
+				return {
 					target,
 					measurement: selectedMeasurement,
-					fields: descriptor?.fields ?? [],
+					fields: descriptor?.fields ?? (editWidget?.config as TelemetryWidgetConfig)?.fields ?? [],
 					timeMinutes: minutes
 				} satisfies TelemetryWidgetConfig;
-				break;
 			}
 			case 'command':
-				config = { target } satisfies CommandWidgetConfig;
-				break;
+				return { target } satisfies CommandWidgetConfig;
 			case 'config':
-				config = { target } satisfies ConfigWidgetConfig;
-				break;
+				return { target } satisfies ConfigWidgetConfig;
 			case 'events':
-				config = { target, limit: eventLimit } satisfies EventsWidgetConfig;
-				break;
+				return { target, limit: eventLimit } satisfies EventsWidgetConfig;
 		}
+	}
 
-		await dashboardStore.addWidget(dashboardStore.activeDashboard, selectedType, title, config);
+	async function saveWidget() {
+		if (!dashboardStore.activeDashboard || !selectedType) return;
+		const config = buildConfig();
+		if (editWidget) {
+			const w = dashboardStore.activeDashboard.spec.widgets.find((w) => w.id === editWidget!.id);
+			if (w) w.title = title;
+			dashboardStore.saveWidgetConfig(dashboardStore.activeDashboard, editWidget.id, config);
+		} else {
+			await dashboardStore.addWidget(dashboardStore.activeDashboard, selectedType, title, config);
+		}
 		open = false;
 		reset();
 	}
@@ -175,11 +195,11 @@
 >
 	<Dialog.Content class="h-[90vh] max-h-[90vh] w-[90vw] max-w-[90vw] overflow-y-auto">
 		<Dialog.Header>
-			<Dialog.Title>Add Widget</Dialog.Title>
+			<Dialog.Title>{editWidget ? 'Edit Widget' : 'Add Widget'}</Dialog.Title>
 			<Dialog.Description>
 				{#if step === 'type'}Step 1 of 3 — Choose widget type{/if}
-				{#if step === 'target'}Step 2 of 3 — Select devices{/if}
-				{#if step === 'config'}Step 3 of 3 — Configure widget{/if}
+				{#if step === 'target'}{editWidget ? 'Step 1 of 2' : 'Step 2 of 3'} — Select devices{/if}
+				{#if step === 'config'}{editWidget ? 'Step 2 of 2' : 'Step 3 of 3'} — Configure widget{/if}
 			</Dialog.Description>
 		</Dialog.Header>
 
@@ -215,10 +235,11 @@
 					devices={deviceStore.devices}
 					isLoading={deviceStore.isLoading}
 					bind:target
+					initialTarget={editWidget?.config?.target}
 				/>
 
 				<div class="flex gap-2">
-					<Button variant="outline" onclick={() => (step = 'type')}>Back</Button>
+					<Button variant="outline" onclick={() => editWidget ? (open = false, reset()) : (step = 'type')}>{editWidget ? 'Cancel' : 'Back'}</Button>
 					<Button
 						onclick={goToConfig}
 						disabled={selectedType !== 'events' &&
@@ -283,18 +304,18 @@
 					</div>
 				{:else}
 					<p class="text-sm text-muted-foreground">
-						{typeLabel(selectedType!)} widget is ready to add. Select a command or config after adding.
+						{editWidget ? typeLabel(selectedType!) + ' widget is ready. Click Save to update.' : typeLabel(selectedType!) + ' widget is ready to add. Select a command or config after adding.'}
 					</p>
 				{/if}
 
 				<div class="flex gap-2">
 					<Button variant="outline" onclick={() => (step = 'target')}>Back</Button>
 					<Button
-						onclick={addWidget}
+						onclick={saveWidget}
 						disabled={dashboardStore.isSaving ||
 							(selectedType === 'telemetry' && !selectedMeasurement)}
 					>
-						{dashboardStore.isSaving ? 'Adding…' : 'Add Widget'}
+						{dashboardStore.isSaving ? (editWidget ? 'Saving…' : 'Adding…') : (editWidget ? 'Save' : 'Add Widget')}
 					</Button>
 				</div>
 			{/if}

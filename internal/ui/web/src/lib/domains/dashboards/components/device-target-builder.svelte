@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import type { Device } from '@mir/sdk';
 	import type { DeviceTargetConfig } from '../api/dashboard-api';
 	import DevicePicker from './device-picker.svelte';
@@ -15,21 +16,31 @@
 	let {
 		devices,
 		isLoading = false,
-		target = $bindable<DeviceTargetConfig>({})
+		target = $bindable<DeviceTargetConfig>({}),
+		initialTarget
 	}: {
 		devices: Device[];
 		isLoading?: boolean;
 		target: DeviceTargetConfig;
+		initialTarget?: DeviceTargetConfig;
 	} = $props();
 
-	let mode = $state<'dynamic' | 'specific'>('specific');
+	let mode = $state<'dynamic' | 'specific'>(
+		untrack(() =>
+			initialTarget?.namespaces?.length || initialTarget?.labels
+				? 'dynamic'
+				: 'specific'
+		)
+	);
 
 	// Dynamic state
-	let selectedNamespaces = $state<string[]>([]);
-	let labelConditions = $state<{ key: string; value: string }[]>([]);
+	let selectedNamespaces = $state<string[]>(untrack(() => initialTarget?.namespaces ?? []));
+	let labelConditions = $state<{ key: string; value: string }[]>(
+		untrack(() => Object.entries(initialTarget?.labels ?? {}).map(([key, value]) => ({ key, value })))
+	);
 
 	// Specific state
-	let selectedIds = $state<string[]>([]);
+	let selectedIds = $state<string[]>(untrack(() => initialTarget?.ids ?? []));
 
 	// ─── Derived suggestions ──────────────────────────────────────────────────
 
