@@ -141,7 +141,11 @@
 		isLoading = true;
 		loadError = null;
 		try {
-			const target = new DeviceTarget({ ids: config.target.ids ?? [] });
+			const target = new DeviceTarget({
+			ids: config.target.ids,
+			namespaces: config.target.namespaces,
+			labels: config.target.labels
+		});
 			const groups = await mir.client().listTelemetry().request(target);
 			const group = groups.find((g) => g.descriptors.some((d) => d.name === config.measurement));
 			deviceInfos = group?.ids ?? (config.target.ids ?? []).map((id) => ({ id, name: id }));
