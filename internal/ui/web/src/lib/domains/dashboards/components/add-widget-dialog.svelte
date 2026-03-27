@@ -2,7 +2,7 @@
 	import { dashboardStore } from '../stores/dashboard.svelte';
 	import { deviceStore } from '$lib/domains/devices/stores/device.svelte';
 	import { mirStore } from '$lib/domains/mir/stores/mir.svelte';
-	import DevicePicker from './device-picker.svelte';
+	import DeviceTargetBuilder from './device-target-builder.svelte';
 	import TlmTimeRangePicker from '$lib/domains/devices/components/telemetry/tlm-time-range-picker.svelte';
 	import * as Sheet from '$lib/shared/components/shadcn/sheet';
 	import { Button } from '$lib/shared/components/shadcn/button';
@@ -37,7 +37,7 @@
 	let step = $state<Step>('type');
 	let selectedType = $state<WidgetType | null>(null);
 	let title = $state('');
-	let selectedDeviceIds = $state<string[]>([]);
+	let target = $state<DeviceTargetConfig>({});
 
 	// Telemetry config
 	let measurements = $state<{ name: string; fields: string[] }[]>([]);
@@ -49,7 +49,7 @@
 	let eventLimit = $state(50);
 
 	$effect(() => {
-		if (step === 'config' && selectedType === 'telemetry' && selectedDeviceIds.length > 0 && mirStore.mir) {
+		if (step === 'config' && selectedType === 'telemetry' && mirStore.mir) {
 			loadMeasurements();
 		}
 	});
@@ -58,8 +58,26 @@
 		measurementsLoading = true;
 		measurements = [];
 		try {
-			const target = new DeviceTarget({ ids: [selectedDeviceIds[0]] });
-			const groups = (await mirStore.mir!.client().listTelemetry().request(target)) as TelemetryGroup[];
+			// Find a representative device: prefer explicit IDs, fall back to first dynamic match
+			let firstId: string | undefined;
+			if (target.ids?.length) {
+				firstId = target.ids[0];
+			} else {
+				const match = deviceStore.devices.find((d) => {
+					const nsMatch =
+						!target.namespaces?.length ||
+						target.namespaces.includes(d.meta?.namespace ?? 'default');
+					const labelMatch =
+						!target.labels ||
+						Object.entries(target.labels).every(([k, v]) => d.meta?.labels?.[k] === v);
+					return nsMatch && labelMatch;
+				});
+				firstId = match?.spec?.deviceId;
+			}
+			if (!firstId) return;
+
+			const deviceTarget = new DeviceTarget({ ids: [firstId] });
+			const groups = (await mirStore.mir!.client().listTelemetry().request(deviceTarget)) as TelemetryGroup[];
 			measurements = groups
 				.flatMap((g) => g.descriptors ?? [])
 				.map((d) => ({ name: d.name ?? '', fields: d.fields ?? [] }))
@@ -75,7 +93,7 @@
 		step = 'type';
 		selectedType = null;
 		title = '';
-		selectedDeviceIds = [];
+		target = {};
 		measurements = [];
 		measurementsLoading = false;
 		selectedMeasurement = '';
@@ -104,8 +122,6 @@
 
 	async function addWidget() {
 		if (!dashboardStore.activeDashboard || !selectedType) return;
-
-		const target: DeviceTargetConfig = { ids: selectedDeviceIds };
 
 		let config: TelemetryWidgetConfig | CommandWidgetConfig | ConfigWidgetConfig | EventsWidgetConfig;
 		switch (selectedType) {
@@ -179,15 +195,18 @@
 					<Input bind:value={title} placeholder="Widget title" />
 				</div>
 
-				<DevicePicker
+				<DeviceTargetBuilder
 					devices={deviceStore.devices}
-					bind:selectedIds={selectedDeviceIds}
 					isLoading={deviceStore.isLoading}
+					bind:target
 				/>
 
 				<div class="flex gap-2">
 					<Button variant="outline" onclick={() => (step = 'type')}>Back</Button>
-					<Button onclick={goToConfig} disabled={selectedDeviceIds.length === 0 && selectedType !== 'events'}>
+					<Button
+						onclick={goToConfig}
+						disabled={selectedType !== 'events' && target.ids !== undefined && target.ids.length === 0}
+					>
 						Next
 					</Button>
 				</div>
