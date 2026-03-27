@@ -4,6 +4,7 @@
 	import TlmChart from './tlm-chart.svelte';
 	import TlmFieldToggles from './tlm-field-toggles.svelte';
 	import { MAX_AUTO_FIELDS, getDeviceFieldColor } from '$lib/domains/devices/utils/tlm-time';
+	import { untrack } from 'svelte';
 
 	let {
 		devices,
@@ -39,9 +40,9 @@
 
 	// Ordered array — index = selection order, drives color assignment
 	let selectedDeviceIds = $state<string[]>(
-		[initialDeviceId ?? devices[0]?.id ?? ''].filter(Boolean)
+		untrack(() => [initialDeviceId ?? devices[0]?.id ?? ''].filter(Boolean))
 	);
-	let selectedFields = $state<string[]>(initialFields ?? measurementFields.slice(0, MAX_AUTO_FIELDS));
+	let selectedFields = $state<string[]>(untrack(() => initialFields ?? measurementFields.slice(0, MAX_AUTO_FIELDS)));
 
 	let activeFields = $derived(forcedFields ?? selectedFields);
 	let activeDeviceIds = $derived(forcedDeviceIds ?? selectedDeviceIds);

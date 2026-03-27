@@ -35,8 +35,6 @@
 	// ─── State ────────────────────────────────────────────────────────────────
 
 	let deviceInfos = $state<{ id: string; name: string }[]>([]);
-	let isLoading = $state(false);
-	let isQuerying = $state(false);
 	let loadError = $state<string | null>(null);
 	let queryError = $state<string | null>(null);
 	let mergedData = $state<QueryData | null>(null);
@@ -46,8 +44,8 @@
 	let queryEnd = $state<Date | null>(null);
 
 	let timeFilter = $state<TimeFilter>(editorPrefs.timeFilter);
-	let splitCount = $state<1 | 2 | 3 | 4>((config.splitCount ?? 1) as 1 | 2 | 3 | 4);
-	let syncFields = $state(config.syncFields ?? false);
+	let splitCount = $state<1 | 2 | 3 | 4>(untrack(() => (config.splitCount ?? 1) as 1 | 2 | 3 | 4));
+	let syncFields = $state(untrack(() => config.syncFields ?? false));
 	let hasLoaded = $state(false);
 
 	let selectedFields = $state<string[]>([]);
@@ -138,22 +136,19 @@
 		const mir = mirStore.mir;
 		if (!mir || !config.measurement) return;
 
-		isLoading = true;
 		loadError = null;
 		try {
 			const target = new DeviceTarget({
-			ids: config.target.ids,
-			namespaces: config.target.namespaces,
-			labels: config.target.labels
-		});
+				ids: config.target.ids,
+				namespaces: config.target.namespaces,
+				labels: config.target.labels
+			});
 			const groups = await mir.client().listTelemetry().request(target);
 			const group = groups.find((g) => g.descriptors.some((d) => d.name === config.measurement));
 			deviceInfos = group?.ids ?? (config.target.ids ?? []).map((id) => ({ id, name: id }));
 		} catch {
 			// Fall back to raw IDs as names
 			deviceInfos = (config.target.ids ?? []).map((id) => ({ id, name: id }));
-		} finally {
-			isLoading = false;
 		}
 
 		enabledDeviceIds =
@@ -176,7 +171,6 @@
 		if (!mir || !config.measurement || deviceInfos.length === 0) return;
 
 		const myGen = ++generation;
-		isQuerying = true;
 		queryError = null;
 
 		try {
@@ -249,12 +243,9 @@
 			if (myGen !== generation) return;
 			queryError = err instanceof Error ? err.message : 'Query failed';
 		} finally {
-			if (myGen === generation) {
-				isQuerying = false;
-				if (isInRefresh) {
-					isInRefresh = false;
-					dashboardStore.refreshDone();
-				}
+			if (myGen === generation && isInRefresh) {
+				isInRefresh = false;
+				dashboardStore.refreshDone();
 			}
 		}
 	}

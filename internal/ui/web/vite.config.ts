@@ -5,18 +5,28 @@ import { playwright } from '@vitest/browser-playwright';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { resolve } from 'path';
 
+const suppressUnusedExternalImport = {
+	onwarn(warning: { code?: string }, warn: (w: { code?: string }) => void) {
+		// False positives: imports used inside $effect are stripped in SSR compilation
+		if (warning.code === 'UNUSED_EXTERNAL_IMPORT') return;
+		warn(warning);
+	}
+};
+
 export default defineConfig({
 	plugins: [tailwindcss(), sveltekit(), devtoolsJson()],
 
-	build: {
-		chunkSizeWarningLimit: 1000,
-		rollupOptions: {
-			onwarn(warning, warn) {
-				// False positives: imports used inside $effect are stripped in SSR compilation
-				if (warning.code === 'UNUSED_EXTERNAL_IMPORT') return;
-				warn(warning);
+	environments: {
+		ssr: {
+			build: {
+				rollupOptions: suppressUnusedExternalImport
 			}
 		}
+	},
+
+	build: {
+		chunkSizeWarningLimit: 1000,
+		rollupOptions: suppressUnusedExternalImport
 	},
 
 	resolve: {
