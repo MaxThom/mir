@@ -5,8 +5,10 @@ import { playwright } from '@vitest/browser-playwright';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { resolve } from 'path';
 
+import type { RollupLog } from 'rollup';
+
 const suppressUnusedExternalImport = {
-	onwarn(warning: { code?: string }, warn: (w: { code?: string }) => void) {
+	onwarn(warning: RollupLog, warn: (w: RollupLog) => void) {
 		// False positives: imports used inside $effect are stripped in SSR compilation
 		if (warning.code === 'UNUSED_EXTERNAL_IMPORT') return;
 		warn(warning);
