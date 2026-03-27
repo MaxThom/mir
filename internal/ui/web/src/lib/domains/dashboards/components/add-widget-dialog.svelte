@@ -4,7 +4,7 @@
 	import { mirStore } from '$lib/domains/mir/stores/mir.svelte';
 	import DeviceTargetBuilder from './device-target-builder.svelte';
 	import TlmTimeRangePicker from '$lib/domains/devices/components/telemetry/tlm-time-range-picker.svelte';
-	import * as Sheet from '$lib/shared/components/shadcn/sheet';
+	import * as Dialog from '$lib/shared/components/shadcn/dialog';
 	import { Button } from '$lib/shared/components/shadcn/button';
 	import { Input } from '$lib/shared/components/shadcn/input';
 	import { Spinner } from '$lib/shared/components/shadcn/spinner';
@@ -77,7 +77,10 @@
 			if (!firstId) return;
 
 			const deviceTarget = new DeviceTarget({ ids: [firstId] });
-			const groups = (await mirStore.mir!.client().listTelemetry().request(deviceTarget)) as TelemetryGroup[];
+			const groups = (await mirStore
+				.mir!.client()
+				.listTelemetry()
+				.request(deviceTarget)) as TelemetryGroup[];
 			measurements = groups
 				.flatMap((g) => g.descriptors ?? [])
 				.map((d) => ({ name: d.name ?? '', fields: d.fields ?? [] }))
@@ -109,10 +112,14 @@
 
 	function typeLabel(t: WidgetType): string {
 		switch (t) {
-			case 'telemetry': return 'Telemetry';
-			case 'command': return 'Command';
-			case 'config': return 'Configuration';
-			case 'events': return 'Events';
+			case 'telemetry':
+				return 'Telemetry';
+			case 'command':
+				return 'Command';
+			case 'config':
+				return 'Configuration';
+			case 'events':
+				return 'Events';
 		}
 	}
 
@@ -123,7 +130,11 @@
 	async function addWidget() {
 		if (!dashboardStore.activeDashboard || !selectedType) return;
 
-		let config: TelemetryWidgetConfig | CommandWidgetConfig | ConfigWidgetConfig | EventsWidgetConfig;
+		let config:
+			| TelemetryWidgetConfig
+			| CommandWidgetConfig
+			| ConfigWidgetConfig
+			| EventsWidgetConfig;
 		switch (selectedType) {
 			case 'telemetry': {
 				const descriptor = measurements.find((m) => m.name === selectedMeasurement);
@@ -156,35 +167,40 @@
 	}
 </script>
 
-<Sheet.Root bind:open onOpenChange={(o) => { if (!o) reset(); }}>
-	<Sheet.Content side="right" class="w-[48rem]">
-		<Sheet.Header>
-			<Sheet.Title>Add Widget</Sheet.Title>
-			<Sheet.Description>
+<Dialog.Root
+	bind:open
+	onOpenChange={(o) => {
+		if (!o) reset();
+	}}
+>
+	<Dialog.Content class="h-[90vh] max-h-[90vh] w-[90vw] max-w-[90vw] overflow-y-auto">
+		<Dialog.Header>
+			<Dialog.Title>Add Widget</Dialog.Title>
+			<Dialog.Description>
 				{#if step === 'type'}Step 1 of 3 — Choose widget type{/if}
 				{#if step === 'target'}Step 2 of 3 — Select devices{/if}
 				{#if step === 'config'}Step 3 of 3 — Configure widget{/if}
-			</Sheet.Description>
-		</Sheet.Header>
+			</Dialog.Description>
+		</Dialog.Header>
 
-		<div class="mt-4 space-y-4 px-1">
+		<div class="flex h-full flex-col space-y-4 px-2">
 			<!-- Step 1: Type -->
 			{#if step === 'type'}
-				<div class="grid grid-cols-2 gap-2">
-					{#each [
-						{ type: 'telemetry' as WidgetType, icon: ActivityIcon, label: 'Telemetry' },
-						{ type: 'command' as WidgetType, icon: TerminalIcon, label: 'Command' },
-						{ type: 'config' as WidgetType, icon: SlidersHorizontalIcon, label: 'Configuration' },
-						{ type: 'events' as WidgetType, icon: CalendarClockIcon, label: 'Events' }
-					] as item (item.type)}
-						<button
-							class="border-border hover:border-primary flex flex-col items-center gap-2 rounded-lg border p-4 transition-colors"
-							onclick={() => selectType(item.type)}
-						>
-							<item.icon class="h-6 w-6" />
-							<span class="text-sm">{item.label}</span>
-						</button>
-					{/each}
+				<div class="flex flex-1 items-start justify-center">
+					<div class="grid w-full max-w-4xl grid-cols-4 gap-4">
+						{#each [{ type: 'telemetry' as WidgetType, icon: ActivityIcon, label: 'Telemetry', desc: 'Visualize time-series data from device sensors' }, { type: 'command' as WidgetType, icon: TerminalIcon, label: 'Command', desc: 'Send commands and view responses from devices' }, { type: 'config' as WidgetType, icon: SlidersHorizontalIcon, label: 'Configuration', desc: 'Manage and push configuration to devices' }, { type: 'events' as WidgetType, icon: CalendarClockIcon, label: 'Events', desc: 'Monitor events and audit logs from the fleet' }] as item (item.type)}
+							<button
+								class="flex flex-col items-center gap-4 rounded-xl border border-border p-10 text-center transition-colors hover:border-primary hover:bg-accent"
+								onclick={() => selectType(item.type)}
+							>
+								<item.icon class="h-12 w-12 text-muted-foreground" />
+								<div>
+									<p class="font-semibold">{item.label}</p>
+									<p class="mt-1 text-xs text-muted-foreground">{item.desc}</p>
+								</div>
+							</button>
+						{/each}
+					</div>
 				</div>
 			{/if}
 
@@ -205,7 +221,10 @@
 					<Button variant="outline" onclick={() => (step = 'type')}>Back</Button>
 					<Button
 						onclick={goToConfig}
-						disabled={selectedType !== 'events' && target.ids !== undefined && target.ids.length === 0}
+						disabled={selectedType !== 'events' &&
+							!target.ids?.length &&
+							!target.namespaces?.length &&
+							!Object.keys(target.labels ?? {}).length}
 					>
 						Next
 					</Button>
@@ -224,9 +243,11 @@
 									<span>Loading measurements…</span>
 								</div>
 							{:else if measurements.length === 0}
-								<p class="py-2 text-sm text-muted-foreground">No measurements found for selected device.</p>
+								<p class="py-2 text-sm text-muted-foreground">
+									No measurements found for selected device.
+								</p>
 							{:else}
-								<div class="border-border max-h-52 divide-y overflow-y-auto rounded-md border">
+								<div class="max-h-52 divide-y overflow-y-auto rounded-md border border-border">
 									{#each measurements as m (m.name)}
 										<button
 											onclick={() => (selectedMeasurement = m.name)}
@@ -261,7 +282,7 @@
 						<Input id="widget-maxevents" type="number" bind:value={eventLimit} min={1} max={500} />
 					</div>
 				{:else}
-					<p class="text-muted-foreground text-sm">
+					<p class="text-sm text-muted-foreground">
 						{typeLabel(selectedType!)} widget is ready to add. Select a command or config after adding.
 					</p>
 				{/if}
@@ -270,12 +291,13 @@
 					<Button variant="outline" onclick={() => (step = 'target')}>Back</Button>
 					<Button
 						onclick={addWidget}
-						disabled={dashboardStore.isSaving || (selectedType === 'telemetry' && !selectedMeasurement)}
+						disabled={dashboardStore.isSaving ||
+							(selectedType === 'telemetry' && !selectedMeasurement)}
 					>
 						{dashboardStore.isSaving ? 'Adding…' : 'Add Widget'}
 					</Button>
 				</div>
 			{/if}
 		</div>
-	</Sheet.Content>
-</Sheet.Root>
+	</Dialog.Content>
+</Dialog.Root>
