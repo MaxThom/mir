@@ -4,11 +4,13 @@
 	import DashboardToolbar from '$lib/domains/dashboards/components/dashboard-toolbar.svelte';
 	import DashboardGrid from '$lib/domains/dashboards/components/dashboard-grid.svelte';
 	import AddWidgetDialog from '$lib/domains/dashboards/components/add-widget-dialog.svelte';
+	import type { Widget } from '$lib/domains/dashboards/api/dashboard-api';
 	import * as Empty from '$lib/shared/components/shadcn/empty';
 	import { Spinner } from '$lib/shared/components/shadcn/spinner';
 	import LayoutDashboardIcon from '@lucide/svelte/icons/layout-dashboard';
 
 	let addWidgetOpen = $state(false);
+	let editingWidget = $state<Widget | null>(null);
 	let refreshTick = $state(0);
 
 	onMount(() => {
@@ -55,10 +57,14 @@
 			</div>
 		{:else}
 			{#key `${dashboardStore.activeDashboard.meta.namespace}/${dashboardStore.activeDashboard.meta.name}`}
-				<DashboardGrid widgets={dashboardStore.activeDashboard.spec.widgets ?? []} {refreshTick} />
+				<DashboardGrid
+					widgets={dashboardStore.activeDashboard.spec.widgets ?? []}
+					{refreshTick}
+					onEditWidget={(w) => { editingWidget = w; addWidgetOpen = true; }}
+				/>
 			{/key}
 		{/if}
 	</div>
 </div>
 
-<AddWidgetDialog bind:open={addWidgetOpen} />
+<AddWidgetDialog bind:open={addWidgetOpen} bind:editWidget={editingWidget} />

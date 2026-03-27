@@ -10,7 +10,7 @@
 	import WidgetEvents from './widget-events.svelte';
 	import type { TelemetryWidgetConfig, CommandWidgetConfig, ConfigWidgetConfig, EventsWidgetConfig } from '../api/dashboard-api';
 
-	let { widgets, refreshTick = 0 }: { widgets: Widget[]; refreshTick?: number } = $props();
+	let { widgets, refreshTick = 0, onEditWidget }: { widgets: Widget[]; refreshTick?: number; onEditWidget?: (w: Widget) => void } = $props();
 
 	let gridEl: HTMLDivElement | undefined;
 	let grid: GridStack | undefined;
@@ -81,6 +81,7 @@
 				<WidgetWrapper
 					title={widget.title}
 					editMode={dashboardStore.editMode || dashboardStore.isCreatingNew}
+					onEdit={() => onEditWidget?.(widget)}
 					onRemove={() =>
 						dashboardStore.activeDashboard &&
 						dashboardStore.removeWidget(dashboardStore.activeDashboard, widget.id)}
