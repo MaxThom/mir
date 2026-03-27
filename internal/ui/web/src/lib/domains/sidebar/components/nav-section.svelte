@@ -2,7 +2,7 @@
 	import * as Collapsible from '$lib/shared/components/shadcn/collapsible/index.js';
 	import * as Sidebar from '$lib/shared/components/shadcn/sidebar/index.js';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
-	import { resolve } from '$app/paths';
+
 	import type { NavMainProps, NavItem } from '../types/types';
 
 	let {
@@ -47,7 +47,7 @@
 										<Sidebar.MenuSubItem>
 											<Sidebar.MenuSubButton>
 												{#snippet child({ props })}
-													<a href={resolve(subItem.url)} data-sveltekit-preload-data="" {...props}>
+													<a href={subItem.url} data-sveltekit-preload-data="" {...props}>
 														<span>{subItem.title}</span>
 													</a>
 												{/snippet}
@@ -63,7 +63,7 @@
 				<Sidebar.MenuItem>
 					<Sidebar.MenuButton tooltipContent={item.title}>
 						{#snippet child({ props })}
-							<a href={resolve(item.url)} data-sveltekit-preload-data="" {...props}>
+							<a href={item.url} data-sveltekit-preload-data="" {...props}>
 								{#if item.icon}
 									<item.icon />
 								{/if}

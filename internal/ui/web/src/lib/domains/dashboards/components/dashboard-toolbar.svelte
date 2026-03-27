@@ -17,7 +17,6 @@
 	import DeleteButton from '$lib/shared/components/ui/delete-button/delete-button.svelte';
 	import RefreshButtonGroup from '$lib/shared/components/ui/refresh-button-group/refresh-button-group.svelte';
 	import { editorPrefs } from '$lib/shared/stores/editor-prefs.svelte';
-	import { Separator } from '$lib/shared/components/shadcn/separator/index.js';
 
 	let { onAddWidget, onRefresh }: { onAddWidget: () => void; onRefresh?: () => void } = $props();
 
@@ -237,7 +236,11 @@
 				</button>
 			{/if}
 			<div class="min-w-0 flex-1 overflow-hidden">
-				<div bind:this={scrollEl} onscroll={updateScrollState} class="tab-scroll flex items-center gap-1 overflow-x-auto">
+				<div
+					bind:this={scrollEl}
+					onscroll={updateScrollState}
+					class="tab-scroll flex items-center gap-1 overflow-x-auto"
+				>
 					{#each dashboardStore.pinnedDashboards as d (`${d.meta.namespace}/${d.meta.name}`)}
 						{@const isActive =
 							!!dashboardStore.activeDashboard &&

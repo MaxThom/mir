@@ -18,7 +18,7 @@
 
 	let containerEl: HTMLDivElement | undefined;
 	let measureEl: HTMLDivElement | undefined;
-	let visibleCount = $state(fields.length);
+	let visibleCount = $state(0);
 	let overflowOpen = $state(false);
 
 	const visibleFields = $derived(fields.slice(0, visibleCount));

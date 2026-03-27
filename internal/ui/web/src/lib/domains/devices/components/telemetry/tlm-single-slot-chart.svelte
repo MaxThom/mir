@@ -3,6 +3,7 @@
 	import type { ChartConfig } from '$lib/shared/components/shadcn/chart';
 	import TlmChart from './tlm-chart.svelte';
 	import { CHART_COLORS, MAX_AUTO_FIELDS } from '$lib/domains/devices/utils/tlm-time';
+	import { untrack } from 'svelte';
 
 	let {
 		measurementFields,
@@ -26,7 +27,7 @@
 		onBrushSelect?: (start: Date, end: Date) => void;
 	} = $props();
 
-	let selectedFields = $state<string[]>(initialFields ?? measurementFields.slice(0, MAX_AUTO_FIELDS));
+	let selectedFields = $state<string[]>(untrack(() => initialFields ?? measurementFields.slice(0, MAX_AUTO_FIELDS)));
 
 	function toggleField(field: string, multi: boolean) {
 		if (multi) {

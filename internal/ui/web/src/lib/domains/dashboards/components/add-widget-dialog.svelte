@@ -191,8 +191,8 @@
 			<!-- Step 2: Target devices -->
 			{#if step === 'target'}
 				<div class="space-y-2">
-					<label class="text-sm font-medium">Title</label>
-					<Input bind:value={title} placeholder="Widget title" />
+					<label for="widget-title" class="text-sm font-medium">Title</label>
+					<Input id="widget-title" bind:value={title} placeholder="Widget title" />
 				</div>
 
 				<DeviceTargetBuilder
@@ -217,7 +217,7 @@
 				{#if selectedType === 'telemetry'}
 					<div class="space-y-3">
 						<div class="space-y-1">
-							<label class="text-sm font-medium">Measurement</label>
+							<p class="text-sm font-medium">Measurement</p>
 							{#if measurementsLoading}
 								<div class="flex items-center gap-2 py-3 text-sm text-muted-foreground">
 									<Spinner class="h-4 w-4" />
@@ -251,14 +251,14 @@
 							{/if}
 						</div>
 						<div class="space-y-1">
-							<label class="text-sm font-medium">Time range</label>
+							<p class="text-sm font-medium">Time range</p>
 							<TlmTimeRangePicker bind:timeFilter />
 						</div>
 					</div>
 				{:else if selectedType === 'events'}
 					<div class="space-y-1">
-						<label class="text-sm font-medium">Max events</label>
-						<Input type="number" bind:value={eventLimit} min={1} max={500} />
+						<label for="widget-maxevents" class="text-sm font-medium">Max events</label>
+						<Input id="widget-maxevents" type="number" bind:value={eventLimit} min={1} max={500} />
 					</div>
 				{:else}
 					<p class="text-muted-foreground text-sm">
