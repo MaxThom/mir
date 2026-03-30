@@ -8,7 +8,7 @@
 		fields,
 		selectedFields,
 		ontoggle,
-		class: wrapperClass = 'shrink-0 border-b px-4 py-1.5'
+		class: wrapperClass = 'shrink-0 px-4 py-1.5'
 	}: {
 		fields: string[];
 		selectedFields: string[];
