@@ -145,7 +145,7 @@
 				}
 			}}
 			props={{
-				spline: { strokeWidth: 2, defined: (d: Record<string, unknown>) => !d.__gap },
+				spline: { strokeWidth: 2 },
 				xAxis: { format: formatAxisTime, tickSpacing: 100 }
 			}}
 		>

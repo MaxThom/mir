@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount, onDestroy, tick } from 'svelte';
+	import { SvelteMap } from 'svelte/reactivity';
 	import type { GridStack } from 'gridstack';
 	import { dashboardStore } from '../stores/dashboard.svelte';
 	import type { Widget } from '../api/dashboard-api';
@@ -8,9 +9,12 @@
 	import WidgetCommand from './widget-command.svelte';
 	import WidgetConfig from './widget-config.svelte';
 	import WidgetEvents from './widget-events.svelte';
+	import WidgetDevicePills from './widget-device-pills.svelte';
 	import type { TelemetryWidgetConfig, CommandWidgetConfig, ConfigWidgetConfig, EventsWidgetConfig } from '../api/dashboard-api';
 
 	let { widgets, refreshTick = 0, onEditWidget }: { widgets: Widget[]; refreshTick?: number; onEditWidget?: (w: Widget) => void } = $props();
+
+	const widgetDevices = new SvelteMap<string, { id: string; name: string; color: string }[]>();
 
 	let gridEl: HTMLDivElement | undefined;
 	let grid: GridStack | undefined;
@@ -78,6 +82,12 @@
 			{...{ 'gs-id': widget.id, 'gs-x': widget.x, 'gs-y': widget.y, 'gs-w': widget.w, 'gs-h': widget.h }}
 		>
 			<div class="grid-stack-item-content">
+				{#snippet headerPills()}
+					<WidgetDevicePills
+						devices={widgetDevices.get(widget.id) ?? []}
+						target={widget.config.target}
+					/>
+				{/snippet}
 				<WidgetWrapper
 					title={widget.title}
 					editMode={dashboardStore.editMode || dashboardStore.isCreatingNew}
@@ -85,9 +95,15 @@
 					onRemove={() =>
 						dashboardStore.activeDashboard &&
 						dashboardStore.removeWidget(dashboardStore.activeDashboard, widget.id)}
+					headerExtra={headerPills}
 				>
 					{#if widget.type === 'telemetry'}
-						<WidgetTelemetry widgetId={widget.id} config={widget.config as TelemetryWidgetConfig} {refreshTick} />
+						<WidgetTelemetry
+							widgetId={widget.id}
+							config={widget.config as TelemetryWidgetConfig}
+							{refreshTick}
+							onDevicesReady={(infos) => widgetDevices.set(widget.id, infos)}
+						/>
 					{:else if widget.type === 'command'}
 						<WidgetCommand config={widget.config as CommandWidgetConfig} />
 					{:else if widget.type === 'config'}

@@ -15,9 +15,11 @@
   - [x] tlm, make sure toolbar work
   - [x] tlm, tiny
   - [ ] tlm, wizard and multischema and start size
+  - [x] tlm, header pills
   - [x] dashboard toolbar, horizontal scroll
   - [x] tlm, autorefresh and timerange
   - [x] tlm, utc switch
+  - [ ] dev
   - [ ] cmd
   - [ ] cfg
   - [ ] evt
