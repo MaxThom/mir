@@ -23,7 +23,7 @@
 	} = $props();
 </script>
 
-<Card.Root class="flex h-full flex-col gap-0 overflow-hidden py-4">
+<Card.Root class="flex h-full flex-col gap-0 py-4">
 	<Card.Header class="flex flex-row items-center gap-2 px-2">
 		<span
 			class="grid-stack-item-content-drag-handle text-muted-foreground {editMode
@@ -63,7 +63,7 @@
 			</Button>
 		{/if}
 	</Card.Header>
-	<Card.Content class="min-h-0 flex-1 overflow-auto p-0">
+	<Card.Content class="min-h-0 flex-1 overflow-visible p-0">
 		{@render children()}
 	</Card.Content>
 </Card.Root>

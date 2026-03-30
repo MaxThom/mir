@@ -2,7 +2,8 @@
 	import type { QueryData } from '@mir/sdk';
 	import type { ChartConfig } from '$lib/shared/components/shadcn/chart';
 	import TlmChart from './tlm-chart.svelte';
-	import { CHART_COLORS, MAX_AUTO_FIELDS } from '$lib/domains/devices/utils/tlm-time';
+	import TlmFieldToggles from './tlm-field-toggles.svelte';
+	import { MAX_AUTO_FIELDS } from '$lib/domains/devices/utils/tlm-time';
 	import { untrack } from 'svelte';
 
 	let {
@@ -42,22 +43,12 @@
 	}
 </script>
 
-<div class="mb-2 flex flex-wrap gap-1">
-	{#each measurementFields as field, i (field)}
-		<button
-			onclick={(e) => toggleField(field, e.shiftKey || e.ctrlKey)}
-			class="flex items-center gap-1 rounded-sm border px-1.5 py-0.5 font-mono text-[11px] transition-colors
-				{selectedFields.includes(field)
-					? 'border-transparent text-white'
-					: 'border-border/60 bg-muted/40 text-muted-foreground hover:bg-accent'}"
-			style={selectedFields.includes(field)
-				? `background: ${CHART_COLORS[i % CHART_COLORS.length]};`
-				: ''}
-		>
-			{field}
-		</button>
-	{/each}
-</div>
+<TlmFieldToggles
+	fields={measurementFields}
+	{selectedFields}
+	ontoggle={toggleField}
+	class="shrink-0 px-0 py-1.5"
+/>
 
 <TlmChart
 	{data}
