@@ -14,7 +14,7 @@
   - [x] tlm, save settings of selection
   - [x] tlm, make sure toolbar work
   - [x] tlm, tiny
-  - [ ] tlm, wizard and multischema and start size
+  - [x] tlm, wizard and multischema and start size
   - [x] tlm, header pills
   - [x] dashboard toolbar, horizontal scroll
   - [x] tlm, autorefresh and timerange

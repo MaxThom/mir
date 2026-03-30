@@ -62,7 +62,7 @@
 	let widgetEl: HTMLDivElement | undefined;
 	let widgetWidth = $state(9999);
 
-	const compact = $derived(widgetWidth < 420);
+	const compact = $derived(widgetWidth < 280);
 
 	let generation = 0;
 	let isInRefresh = false;
@@ -148,6 +148,7 @@
 
 	// Re-load when the user edits the widget (measurement / fields / target change).
 	$effect(() => {
+		// eslint-disable-next-line @typescript-eslint/no-unused-expressions
 		configKey;
 		if (mirStore.mir && untrack(() => hasLoaded)) {
 			untrack(loadAndQuery);

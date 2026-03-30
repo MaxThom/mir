@@ -27,16 +27,16 @@
 
 	let mode = $state<'dynamic' | 'specific'>(
 		untrack(() =>
-			initialTarget?.namespaces?.length || initialTarget?.labels
-				? 'dynamic'
-				: 'specific'
+			initialTarget?.namespaces?.length || initialTarget?.labels ? 'dynamic' : 'specific'
 		)
 	);
 
 	// Dynamic state
 	let selectedNamespaces = $state<string[]>(untrack(() => initialTarget?.namespaces ?? []));
 	let labelConditions = $state<{ key: string; value: string }[]>(
-		untrack(() => Object.entries(initialTarget?.labels ?? {}).map(([key, value]) => ({ key, value })))
+		untrack(() =>
+			Object.entries(initialTarget?.labels ?? {}).map(([key, value]) => ({ key, value }))
+		)
 	);
 
 	// Specific state
@@ -74,10 +74,6 @@
 	);
 
 	const previewOnline = $derived(previewDevices.filter((d) => d.status?.online).length);
-
-	const hasActiveFilters = $derived(
-		selectedNamespaces.some((ns) => ns) || labelConditions.some((c) => c.key && c.value)
-	);
 
 	// ─── Sync to bindable target ──────────────────────────────────────────────
 
@@ -146,7 +142,7 @@
 
 			{#if selectedNamespaces.length > 0}
 				<div class="space-y-1.5">
-					{#each selectedNamespaces as ns, i (i)}
+					{#each selectedNamespaces, i (i)}
 						<div class="flex items-center gap-1.5">
 							<SuggestionInput
 								bind:value={selectedNamespaces[i]}
@@ -325,7 +321,7 @@
 								</Table.Cell>
 								<Table.Cell>
 									<div class="flex flex-wrap gap-1">
-										{#each d.status?.schema?.packageNames ?? [] as pkg (pkg)}
+										{#each (d.status?.schema?.packageNames ?? []).filter((p) => p !== 'mir.device.v1' && p !== 'google.protobuf') as pkg (pkg)}
 											<Badge variant="outline" class="font-mono text-xs font-normal">{pkg}</Badge>
 										{:else}
 											<span class="text-muted-foreground">—</span>
