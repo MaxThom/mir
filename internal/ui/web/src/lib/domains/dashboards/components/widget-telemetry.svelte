@@ -29,8 +29,14 @@
 	let {
 		config,
 		widgetId,
-		refreshTick = 0
-	}: { config: TelemetryWidgetConfig; widgetId: string; refreshTick?: number } = $props();
+		refreshTick = 0,
+		onDevicesReady
+	}: {
+		config: TelemetryWidgetConfig;
+		widgetId: string;
+		refreshTick?: number;
+		onDevicesReady?: (infos: { id: string; name: string; color: string }[]) => void;
+	} = $props();
 
 	// ─── State ────────────────────────────────────────────────────────────────
 
@@ -132,6 +138,22 @@
 		}
 	});
 
+	// Stable string key for the structural config (measurement + fields + target).
+	// $derived uses value comparison for strings, so view-state saves that preserve
+	// these values (but produce new object references via JSON round-trip) won't
+	// change this key and won't trigger the effect below.
+	const configKey = $derived(
+		`${config.measurement}|${(config.fields ?? []).join('\0')}|${JSON.stringify(config.target ?? {})}`
+	);
+
+	// Re-load when the user edits the widget (measurement / fields / target change).
+	$effect(() => {
+		configKey;
+		if (mirStore.mir && untrack(() => hasLoaded)) {
+			untrack(loadAndQuery);
+		}
+	});
+
 	async function loadAndQuery() {
 		const mir = mirStore.mir;
 		if (!mir || !config.measurement) return;
@@ -150,6 +172,12 @@
 			// Fall back to raw IDs as names
 			deviceInfos = (config.target.ids ?? []).map((id) => ({ id, name: id }));
 		}
+		onDevicesReady?.(
+			deviceInfos.map((dev, devIdx) => ({
+				...dev,
+				color: CHART_COLORS[devIdx % CHART_COLORS.length]
+			}))
+		);
 
 		enabledDeviceIds =
 			config.enabledDeviceIds?.filter((id) => deviceInfos.some((d) => d.id === id)) ??

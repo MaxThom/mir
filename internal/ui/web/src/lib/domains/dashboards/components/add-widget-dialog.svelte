@@ -3,11 +3,11 @@
 	import { deviceStore } from '$lib/domains/devices/stores/device.svelte';
 	import { mirStore } from '$lib/domains/mir/stores/mir.svelte';
 	import DeviceTargetBuilder from './device-target-builder.svelte';
-	import TlmTimeRangePicker from '$lib/domains/devices/components/telemetry/tlm-time-range-picker.svelte';
 	import * as Dialog from '$lib/shared/components/shadcn/dialog';
 	import { Button } from '$lib/shared/components/shadcn/button';
 	import { Input } from '$lib/shared/components/shadcn/input';
 	import { Spinner } from '$lib/shared/components/shadcn/spinner';
+	import { Badge } from '$lib/shared/components/shadcn/badge';
 	import type {
 		Widget,
 		WidgetType,
@@ -17,13 +17,13 @@
 		CommandWidgetConfig,
 		ConfigWidgetConfig
 	} from '../api/dashboard-api';
-	import type { TimeFilter } from '$lib/domains/devices/utils/tlm-time';
 	import type { TelemetryGroup } from '@mir/sdk';
 	import { DeviceTarget } from '@mir/sdk';
 	import ActivityIcon from '@lucide/svelte/icons/activity';
 	import TerminalIcon from '@lucide/svelte/icons/terminal';
 	import SlidersHorizontalIcon from '@lucide/svelte/icons/sliders-horizontal';
 	import CalendarClockIcon from '@lucide/svelte/icons/calendar-clock';
+	import InfoIcon from '@lucide/svelte/icons/info';
 
 	let {
 		open = $bindable(false),
@@ -45,7 +45,6 @@
 			if (editWidget.type === 'telemetry') {
 				const c = editWidget.config as TelemetryWidgetConfig;
 				selectedMeasurement = c.measurement;
-				timeFilter = { mode: 'relative', minutes: c.timeMinutes };
 			} else if (editWidget.type === 'events') {
 				eventLimit = (editWidget.config as EventsWidgetConfig).limit;
 			}
@@ -54,16 +53,20 @@
 
 	type Step = 'type' | 'target' | 'config';
 
+	type MeasurementGroup = {
+		devices: { id: string; name: string; namespace: string }[];
+		measurements: { name: string; fields: string[] }[];
+	};
+
 	let step = $state<Step>('type');
 	let selectedType = $state<WidgetType | null>(null);
 	let title = $state('');
 	let target = $state<DeviceTargetConfig>({});
 
 	// Telemetry config
-	let measurements = $state<{ name: string; fields: string[] }[]>([]);
+	let measurementGroups = $state<MeasurementGroup[]>([]);
 	let measurementsLoading = $state(false);
 	let selectedMeasurement = $state('');
-	let timeFilter = $state<TimeFilter>({ mode: 'relative', minutes: 60 });
 
 	// Events config
 	let eventLimit = $state(50);
@@ -76,37 +79,40 @@
 
 	async function loadMeasurements() {
 		measurementsLoading = true;
-		measurements = [];
+		measurementGroups = [];
 		try {
-			// Find a representative device: prefer explicit IDs, fall back to first dynamic match
-			let firstId: string | undefined;
+			let deviceIds: string[] = [];
 			if (target.ids?.length) {
-				firstId = target.ids[0];
+				deviceIds = target.ids;
 			} else {
-				const match = deviceStore.devices.find((d) => {
-					const nsMatch =
-						!target.namespaces?.length ||
-						target.namespaces.includes(d.meta?.namespace ?? 'default');
-					const labelMatch =
-						!target.labels ||
-						Object.entries(target.labels).every(([k, v]) => d.meta?.labels?.[k] === v);
-					return nsMatch && labelMatch;
-				});
-				firstId = match?.spec?.deviceId;
+				deviceIds = deviceStore.devices
+					.filter((d) => {
+						const nsMatch =
+							!target.namespaces?.length ||
+							target.namespaces.includes(d.meta?.namespace ?? 'default');
+						const labelMatch =
+							!target.labels ||
+							Object.entries(target.labels).every(([k, v]) => d.meta?.labels?.[k] === v);
+						return nsMatch && labelMatch;
+					})
+					.map((d) => d.spec?.deviceId)
+					.filter((id): id is string => Boolean(id));
 			}
-			if (!firstId) return;
+			if (!deviceIds.length) return;
 
-			const deviceTarget = new DeviceTarget({ ids: [firstId] });
+			const deviceTarget = new DeviceTarget({ ids: deviceIds });
 			const groups = (await mirStore
 				.mir!.client()
 				.listTelemetry()
 				.request(deviceTarget)) as TelemetryGroup[];
-			measurements = groups
-				.flatMap((g) => g.descriptors ?? [])
-				.map((d) => ({ name: d.name ?? '', fields: d.fields ?? [] }))
-				.filter((d) => d.name);
+			measurementGroups = groups.map((g) => ({
+				devices: g.ids ?? [],
+				measurements: (g.descriptors ?? [])
+					.map((d) => ({ name: d.name ?? '', fields: d.fields ?? [] }))
+					.filter((d) => d.name)
+			}));
 		} catch {
-			measurements = [];
+			measurementGroups = [];
 		} finally {
 			measurementsLoading = false;
 		}
@@ -117,10 +123,9 @@
 		selectedType = null;
 		title = '';
 		target = {};
-		measurements = [];
+		measurementGroups = [];
 		measurementsLoading = false;
 		selectedMeasurement = '';
-		timeFilter = { mode: 'relative', minutes: 60 };
 		eventLimit = 50;
 		editWidget = null;
 	}
@@ -151,16 +156,14 @@
 	function buildConfig(): TelemetryWidgetConfig | CommandWidgetConfig | ConfigWidgetConfig | EventsWidgetConfig {
 		switch (selectedType!) {
 			case 'telemetry': {
-				const descriptor = measurements.find((m) => m.name === selectedMeasurement);
-				const minutes =
-					timeFilter.mode === 'relative'
-						? timeFilter.minutes
-						: Math.round((timeFilter.end.getTime() - timeFilter.start.getTime()) / 60000);
+				const descriptor = measurementGroups
+					.flatMap((g) => g.measurements)
+					.find((m) => m.name === selectedMeasurement);
 				return {
 					target,
 					measurement: selectedMeasurement,
 					fields: descriptor?.fields ?? (editWidget?.config as TelemetryWidgetConfig)?.fields ?? [],
-					timeMinutes: minutes
+					timeMinutes: 60
 				} satisfies TelemetryWidgetConfig;
 			}
 			case 'command':
@@ -193,7 +196,7 @@
 		if (!o) reset();
 	}}
 >
-	<Dialog.Content class="h-[90vh] max-h-[90vh] w-[90vw] max-w-[90vw] overflow-y-auto">
+	<Dialog.Content class="h-[90vh] max-h-[90vh] w-[90vw] max-w-[90vw] overflow-y-auto content-start">
 		<Dialog.Header>
 			<Dialog.Title>{editWidget ? 'Edit Widget' : 'Add Widget'}</Dialog.Title>
 			<Dialog.Description>
@@ -254,8 +257,8 @@
 
 			<!-- Step 3: Type-specific config -->
 			{#if step === 'config'}
-				{#if selectedType === 'telemetry'}
-					<div class="space-y-3">
+				<div class="space-y-3">
+					{#if selectedType === 'telemetry'}
 						<div class="space-y-1">
 							<p class="text-sm font-medium">Measurement</p>
 							{#if measurementsLoading}
@@ -263,50 +266,70 @@
 									<Spinner class="h-4 w-4" />
 									<span>Loading measurements…</span>
 								</div>
-							{:else if measurements.length === 0}
+							{:else if measurementGroups.length === 0}
 								<p class="py-2 text-sm text-muted-foreground">
-									No measurements found for selected device.
+									No measurements found for selected devices.
 								</p>
 							{:else}
-								<div class="max-h-52 divide-y overflow-y-auto rounded-md border border-border">
-									{#each measurements as m (m.name)}
-										<button
-											onclick={() => (selectedMeasurement = m.name)}
-											class="flex w-full items-center gap-3 px-3 py-2 text-left text-sm transition-colors hover:bg-accent
-												{selectedMeasurement === m.name ? 'bg-muted' : ''}"
-										>
-											<span
-												class="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border
-													{selectedMeasurement === m.name ? 'border-primary bg-primary' : 'border-muted-foreground'}"
-											>
-												{#if selectedMeasurement === m.name}
-													<span class="h-1.5 w-1.5 rounded-full bg-primary-foreground"></span>
-												{/if}
-											</span>
-											<span class="flex-1 font-mono">{m.name}</span>
-											<span class="text-xs text-muted-foreground"
-												>{m.fields.length} field{m.fields.length !== 1 ? 's' : ''}</span
-											>
-										</button>
+								<div class="max-h-64 space-y-2 overflow-y-auto">
+									{#each measurementGroups as group, gi (gi)}
+										<div class="rounded-md border border-border">
+											<div class="flex flex-wrap items-center gap-1 border-b px-3 py-2">
+												{#each group.devices as dev (dev.id)}
+													<Badge variant="secondary" class="font-mono text-xs font-normal"
+														>{dev.name}</Badge
+													>
+												{/each}
+											</div>
+											<div class="divide-y">
+												{#each group.measurements as m (m.name)}
+													<button
+														onclick={() => (selectedMeasurement = m.name)}
+														class="flex w-full items-center gap-3 px-3 py-2 text-left text-sm transition-colors hover:bg-accent
+															{selectedMeasurement === m.name ? 'bg-muted' : ''}"
+													>
+														<span
+															class="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border
+																{selectedMeasurement === m.name ? 'border-primary bg-primary' : 'border-muted-foreground'}"
+														>
+															{#if selectedMeasurement === m.name}
+																<span class="h-1.5 w-1.5 rounded-full bg-primary-foreground"></span>
+															{/if}
+														</span>
+														<span class="flex-1 font-mono">{m.name}</span>
+														<span class="text-xs text-muted-foreground"
+															>{m.fields.length} field{m.fields.length !== 1 ? 's' : ''}</span
+														>
+													</button>
+												{/each}
+											</div>
+										</div>
 									{/each}
 								</div>
 							{/if}
 						</div>
+						{#if measurementGroups.length > 1}
+							<div
+								class="flex items-start gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground"
+							>
+								<InfoIcon class="mt-0.5 h-3.5 w-3.5 shrink-0" />
+								<span
+									>Selected devices have different schemas. Only devices that support the chosen
+									measurement will contribute data to this widget.</span
+								>
+							</div>
+						{/if}
+					{:else if selectedType === 'events'}
 						<div class="space-y-1">
-							<p class="text-sm font-medium">Time range</p>
-							<TlmTimeRangePicker bind:timeFilter />
+							<label for="widget-maxevents" class="text-sm font-medium">Max events</label>
+							<Input id="widget-maxevents" type="number" bind:value={eventLimit} min={1} max={500} />
 						</div>
-					</div>
-				{:else if selectedType === 'events'}
-					<div class="space-y-1">
-						<label for="widget-maxevents" class="text-sm font-medium">Max events</label>
-						<Input id="widget-maxevents" type="number" bind:value={eventLimit} min={1} max={500} />
-					</div>
-				{:else}
-					<p class="text-sm text-muted-foreground">
-						{editWidget ? typeLabel(selectedType!) + ' widget is ready. Click Save to update.' : typeLabel(selectedType!) + ' widget is ready to add. Select a command or config after adding.'}
-					</p>
-				{/if}
+					{:else}
+						<p class="text-sm text-muted-foreground">
+							{editWidget ? typeLabel(selectedType!) + ' widget is ready. Click Save to update.' : typeLabel(selectedType!) + ' widget is ready to add. Select a command or config after adding.'}
+						</p>
+					{/if}
+				</div>
 
 				<div class="flex gap-2">
 					<Button variant="outline" onclick={() => (step = 'target')}>Back</Button>

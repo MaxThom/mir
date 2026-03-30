@@ -11,13 +11,15 @@
 		editMode = false,
 		onEdit,
 		onRemove,
-		children
+		children,
+		headerExtra
 	}: {
 		title: string;
 		editMode?: boolean;
 		onEdit?: () => void;
 		onRemove?: () => void;
 		children: Snippet;
+		headerExtra?: Snippet;
 	} = $props();
 </script>
 
@@ -30,7 +32,14 @@
 		>
 			<GripVerticalIcon class="h-4 w-4" />
 		</span>
-		<Card.Title class="flex-1 truncate text-sm">{title}</Card.Title>
+		<Card.Title class="truncate text-sm">{title}</Card.Title>
+		{#if headerExtra}
+			<div class="flex min-w-0 flex-1 items-center gap-1 overflow-hidden">
+				{@render headerExtra()}
+			</div>
+		{:else}
+			<div class="flex-1"></div>
+		{/if}
 		{#if editMode && onEdit}
 			<Button
 				variant="ghost"
