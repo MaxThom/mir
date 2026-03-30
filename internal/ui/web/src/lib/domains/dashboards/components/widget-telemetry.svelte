@@ -296,7 +296,8 @@
 		const enabledDevices = deviceInfos.filter((d) => enabledDeviceIds.includes(d.id));
 		if (enabledDevices.length <= 1) return chartConfig;
 		const result: ChartConfig = { ...chartConfig };
-		enabledDevices.forEach((dev, devIdx) => {
+		enabledDevices.forEach((dev) => {
+			const devIdx = deviceInfos.indexOf(dev);
 			selectedFields.forEach((field) => {
 				const fieldIdx = config.fields.indexOf(field);
 				const key = `${dev.name}_${field}`;
@@ -373,7 +374,7 @@
 	bind:this={widgetEl}
 	class="{fullscreen
 		? 'fixed inset-0 z-50 bg-background'
-		: 'flex h-full flex-col overflow-hidden'} flex flex-col overflow-hidden"
+		: 'flex h-full flex-col'} flex flex-col"
 >
 	<TlmToolbar
 		measurementName={config.measurement}
@@ -468,7 +469,7 @@
 		{/if}
 
 		<!-- Chart area -->
-		<div class="flex min-h-0 flex-1 flex-col overflow-hidden">
+		<div class="flex min-h-0 flex-1 flex-col">
 			{#if splitCount === 1}
 				{#if queryError}
 					<p class="px-4 py-2 text-sm text-destructive">{queryError}</p>

@@ -23,7 +23,7 @@
 
 	let search = $state('');
 
-	let filtered = $derived(() => {
+	let filtered = $derived.by(() => {
 		const q = search.toLowerCase().trim();
 		if (!q) return devices;
 		return devices.filter((d) => {
@@ -59,9 +59,7 @@
 	}
 
 	function toggleAll() {
-		const ids = filtered()
-			.map((d) => d.spec?.deviceId ?? '')
-			.filter(Boolean);
+		const ids = filtered.map((d) => d.spec?.deviceId ?? '').filter(Boolean);
 		const allSelected = ids.every((id) => selectedIds.includes(id));
 		if (allSelected) {
 			selectedIds = selectedIds.filter((id) => !ids.includes(id));
@@ -71,8 +69,8 @@
 	}
 
 	let allFilteredSelected = $derived(
-		filtered().length > 0 &&
-			filtered()
+		filtered.length > 0 &&
+			filtered
 				.map((d) => d.spec?.deviceId ?? '')
 				.filter(Boolean)
 				.every((id) => selectedIds.includes(id))
@@ -80,7 +78,7 @@
 
 	let someFilteredSelected = $derived(
 		!allFilteredSelected &&
-			filtered()
+			filtered
 				.map((d) => d.spec?.deviceId ?? '')
 				.filter(Boolean)
 				.some((id) => selectedIds.includes(id))
@@ -92,7 +90,7 @@
 	<div class="flex items-center justify-between border-b px-4 py-2">
 		<div class="flex items-center gap-3">
 			<span class="text-sm font-semibold">Devices</span>
-			<Badge variant="secondary" class="tabular-nums">{filtered().length}</Badge>
+			<Badge variant="secondary" class="tabular-nums">{filtered.length}</Badge>
 			<div class="relative">
 				<SearchIcon
 					class="pointer-events-none absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
@@ -153,7 +151,7 @@
 					</Table.Row>
 				</Table.Header>
 				<Table.Body>
-					{#if filtered().length === 0}
+					{#if filtered.length === 0}
 						<Table.Row class="hover:bg-transparent">
 							<Table.Cell colspan={7} class="py-8 text-center">
 								<div class="flex flex-col items-center gap-2 text-muted-foreground">
@@ -165,7 +163,7 @@
 							</Table.Cell>
 						</Table.Row>
 					{:else}
-						{#each filtered() as device (device.spec?.deviceId ?? device.meta?.name)}
+						{#each filtered as device (device.spec?.deviceId ?? device.meta?.name)}
 							{@const id = device.spec?.deviceId ?? ''}
 							{@const checked = selectedIds.includes(id)}
 							{@const pkgs = (device.status?.schema?.packageNames ?? []).filter(
