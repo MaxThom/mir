@@ -27,6 +27,7 @@
 	// ─── Types ────────────────────────────────────────────────────────────────
 
 	type CmdResponseEntry = {
+		idx: number;
 		deviceId: string;
 		deviceName: string;
 		status: 'success' | 'error';
@@ -84,6 +85,10 @@
 		}));
 	});
 
+	const configKey = $derived(
+		JSON.stringify(config.target ?? {})
+	);
+
 	// ─── Startup ──────────────────────────────────────────────────────────────
 
 	$effect(() => {
@@ -92,6 +97,14 @@
 		} else {
 			groups = [];
 			loadError = null;
+		}
+	});
+
+	$effect(() => {
+		// eslint-disable-next-line @typescript-eslint/no-unused-expressions
+		configKey;
+		if (mirStore.mir && untrack(() => hasLoaded)) {
+			untrack(loadCommands);
 		}
 	});
 
@@ -134,11 +147,11 @@
 					}
 				}
 			}
+			hasLoaded = true;
 		} catch (err) {
 			loadError = err instanceof Error ? err.message : 'Failed to load commands';
 		} finally {
 			isLoading = false;
-			hasLoaded = true;
 		}
 	}
 
@@ -188,7 +201,7 @@
 		deviceName: string,
 		text: string,
 		dryRun: boolean
-	): Promise<CmdResponseEntry> {
+	): Promise<Omit<CmdResponseEntry, 'idx'>> {
 		const start = performance.now();
 		try {
 			const target = new DeviceTarget({ ids: [deviceId] });
@@ -233,24 +246,30 @@
 		responses = [];
 		hasResponses = true;
 
-		const results = await Promise.allSettled(
-			selectedGroupDevices.map((dev) => sendToDevice(mir, dev.id, dev.name, text, dryRun))
-		);
+		try {
+			const results = await Promise.allSettled(
+				selectedGroupDevices.map((dev) => sendToDevice(mir, dev.id, dev.name, text, dryRun))
+			);
 
-		responses = results.map((r) =>
-			r.status === 'fulfilled'
-				? r.value
-				: {
-						deviceId: '',
-						deviceName: 'unknown',
-						status: 'error' as const,
-						message: String(r.reason),
-						durationMs: 0,
-						expanded: false
-					}
-		);
-
-		isSending = false;
+			responses = results.map((r, i) =>
+				r.status === 'fulfilled'
+					? { ...r.value, idx: i }
+					: {
+							idx: i,
+							deviceId: '',
+							deviceName: 'unknown',
+							status: 'error' as const,
+							message: String(r.reason),
+							durationMs: 0,
+							expanded: false
+						}
+			);
+		} catch (err) {
+			sendError = err instanceof Error ? err.message : 'Send failed';
+			hasResponses = false;
+		} finally {
+			isSending = false;
+		}
 	}
 
 	// ─── Send (per-device) ────────────────────────────────────────────────────
@@ -264,29 +283,35 @@
 		responses = [];
 		hasResponses = true;
 
-		const results = await Promise.allSettled(
-			[...payloads.entries()].map(([deviceId, text]) => {
-				const dev =
-					selectedGroupDevices.find((d) => d.id === deviceId) ??
-					({ id: deviceId, name: deviceId, namespace: 'default' } as const);
-				return sendToDevice(mir, dev.id, dev.name, text, dryRun);
-			})
-		);
+		try {
+			const results = await Promise.allSettled(
+				[...payloads.entries()].map(([deviceId, text]) => {
+					const dev =
+						selectedGroupDevices.find((d) => d.id === deviceId) ??
+						({ id: deviceId, name: deviceId, namespace: 'default' } as const);
+					return sendToDevice(mir, dev.id, dev.name, text, dryRun);
+				})
+			);
 
-		responses = results.map((r) =>
-			r.status === 'fulfilled'
-				? r.value
-				: {
-						deviceId: '',
-						deviceName: 'unknown',
-						status: 'error' as const,
-						message: String(r.reason),
-						durationMs: 0,
-						expanded: false
-					}
-		);
-
-		isSending = false;
+			responses = results.map((r, i) =>
+				r.status === 'fulfilled'
+					? { ...r.value, idx: i }
+					: {
+							idx: i,
+							deviceId: '',
+							deviceName: 'unknown',
+							status: 'error' as const,
+							message: String(r.reason),
+							durationMs: 0,
+							expanded: false
+						}
+			);
+		} catch (err) {
+			sendError = err instanceof Error ? err.message : 'Send failed';
+			hasResponses = false;
+		} finally {
+			isSending = false;
+		}
 	}
 </script>
 
@@ -360,7 +385,7 @@
 									>Responses</span
 								>
 							</div>
-							{#each responses as entry (entry.deviceId + entry.deviceName)}
+							{#each responses as entry (entry.idx)}
 								<div class="border-b last:border-0">
 									<button
 										class="flex w-full items-center gap-2 px-3 py-1.5 text-left hover:bg-accent/50"
