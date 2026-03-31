@@ -17,7 +17,7 @@
 		CommandWidgetConfig,
 		ConfigWidgetConfig
 	} from '../api/dashboard-api';
-	import type { TelemetryGroup } from '@mir/sdk';
+	import type { TelemetryGroup, CommandGroup } from '@mir/sdk';
 	import { DeviceTarget } from '@mir/sdk';
 	import ActivityIcon from '@lucide/svelte/icons/activity';
 	import TerminalIcon from '@lucide/svelte/icons/terminal';
@@ -45,6 +45,9 @@
 			if (editWidget.type === 'telemetry') {
 				const c = editWidget.config as TelemetryWidgetConfig;
 				selectedMeasurement = c.measurement;
+			} else if (editWidget.type === 'command') {
+				const c = editWidget.config as CommandWidgetConfig;
+				selectedCommandName = c.selectedCommand ?? '';
 			} else if (editWidget.type === 'events') {
 				eventLimit = (editWidget.config as EventsWidgetConfig).limit;
 			}
@@ -68,12 +71,23 @@
 	let measurementsLoading = $state(false);
 	let selectedMeasurement = $state('');
 
+	// Command config
+	let commandGroups = $state<CommandGroup[]>([]);
+	let commandsLoading = $state(false);
+	let selectedCommandName = $state('');
+
 	// Events config
 	let eventLimit = $state(50);
 
 	$effect(() => {
 		if (step === 'config' && selectedType === 'telemetry' && mirStore.mir) {
 			loadMeasurements();
+		}
+	});
+
+	$effect(() => {
+		if (step === 'config' && selectedType === 'command' && mirStore.mir) {
+			loadCommandsForWizard();
 		}
 	});
 
@@ -118,6 +132,37 @@
 		}
 	}
 
+	async function loadCommandsForWizard() {
+		commandsLoading = true;
+		commandGroups = [];
+		try {
+			let deviceIds: string[] = [];
+			if (target.ids?.length) {
+				deviceIds = target.ids;
+			} else {
+				deviceIds = deviceStore.devices
+					.filter((d) => {
+						const nsMatch =
+							!target.namespaces?.length ||
+							target.namespaces.includes(d.meta?.namespace ?? 'default');
+						const labelMatch =
+							!target.labels ||
+							Object.entries(target.labels).every(([k, v]) => d.meta?.labels?.[k] === v);
+						return nsMatch && labelMatch;
+					})
+					.map((d) => d.spec?.deviceId)
+					.filter((id): id is string => Boolean(id));
+			}
+			if (!deviceIds.length) return;
+			const deviceTarget = new DeviceTarget({ ids: deviceIds });
+			commandGroups = await mirStore.mir!.client().listCommands().request(deviceTarget);
+		} catch {
+			commandGroups = [];
+		} finally {
+			commandsLoading = false;
+		}
+	}
+
 	function reset() {
 		step = 'type';
 		selectedType = null;
@@ -126,6 +171,9 @@
 		measurementGroups = [];
 		measurementsLoading = false;
 		selectedMeasurement = '';
+		commandGroups = [];
+		commandsLoading = false;
+		selectedCommandName = '';
 		eventLimit = 50;
 		editWidget = null;
 	}
@@ -167,7 +215,7 @@
 				} satisfies TelemetryWidgetConfig;
 			}
 			case 'command':
-				return { target } satisfies CommandWidgetConfig;
+				return { target, selectedCommand: selectedCommandName } satisfies CommandWidgetConfig;
 			case 'config':
 				return { target } satisfies ConfigWidgetConfig;
 			case 'events':
@@ -319,6 +367,53 @@
 								>
 							</div>
 						{/if}
+					{:else if selectedType === 'command'}
+						<div class="space-y-1">
+							<p class="text-sm font-medium">Command</p>
+							{#if commandsLoading}
+								<div class="flex items-center gap-2 py-3 text-sm text-muted-foreground">
+									<Spinner class="h-4 w-4" />
+									<span>Loading commands…</span>
+								</div>
+							{:else if commandGroups.length === 0}
+								<p class="py-2 text-sm text-muted-foreground">
+									No commands found for selected devices.
+								</p>
+							{:else}
+								<div class="max-h-64 space-y-2 overflow-y-auto">
+									{#each commandGroups as group, gi (gi)}
+										<div class="rounded-md border border-border">
+											<div class="flex flex-wrap items-center gap-1 border-b px-3 py-2">
+												{#each group.ids as dev (dev.id)}
+													<Badge variant="secondary" class="font-mono text-xs font-normal"
+														>{dev.name}</Badge
+													>
+												{/each}
+											</div>
+											<div class="divide-y">
+												{#each group.descriptors as cmd (cmd.name)}
+													<button
+														onclick={() => (selectedCommandName = cmd.name)}
+														class="flex w-full items-center gap-3 px-3 py-2 text-left text-sm transition-colors hover:bg-accent
+															{selectedCommandName === cmd.name ? 'bg-muted' : ''}"
+													>
+														<span
+															class="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border
+																{selectedCommandName === cmd.name ? 'border-primary bg-primary' : 'border-muted-foreground'}"
+														>
+															{#if selectedCommandName === cmd.name}
+																<span class="h-1.5 w-1.5 rounded-full bg-primary-foreground"></span>
+															{/if}
+														</span>
+														<span class="flex-1 font-mono">{cmd.name}</span>
+													</button>
+												{/each}
+											</div>
+										</div>
+									{/each}
+								</div>
+							{/if}
+						</div>
 					{:else if selectedType === 'events'}
 						<div class="space-y-1">
 							<label for="widget-maxevents" class="text-sm font-medium">Max events</label>
@@ -326,7 +421,7 @@
 						</div>
 					{:else}
 						<p class="text-sm text-muted-foreground">
-							{editWidget ? typeLabel(selectedType!) + ' widget is ready. Click Save to update.' : typeLabel(selectedType!) + ' widget is ready to add. Select a command or config after adding.'}
+							{editWidget ? typeLabel(selectedType!) + ' widget is ready. Click Save to update.' : typeLabel(selectedType!) + ' widget is ready to add.'}
 						</p>
 					{/if}
 				</div>
@@ -336,7 +431,8 @@
 					<Button
 						onclick={saveWidget}
 						disabled={dashboardStore.isSaving ||
-							(selectedType === 'telemetry' && !selectedMeasurement)}
+							(selectedType === 'telemetry' && !selectedMeasurement) ||
+							(selectedType === 'command' && !selectedCommandName)}
 					>
 						{dashboardStore.isSaving ? (editWidget ? 'Saving…' : 'Adding…') : (editWidget ? 'Save' : 'Add Widget')}
 					</Button>
