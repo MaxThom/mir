@@ -105,7 +105,11 @@
 							onDevicesReady={(infos) => widgetDevices.set(widget.id, infos)}
 						/>
 					{:else if widget.type === 'command'}
-						<WidgetCommand config={widget.config as CommandWidgetConfig} />
+						<WidgetCommand
+							widgetId={widget.id}
+							config={widget.config as CommandWidgetConfig}
+							onDevicesReady={(infos) => widgetDevices.set(widget.id, infos)}
+						/>
 					{:else if widget.type === 'config'}
 						<WidgetConfig config={widget.config as ConfigWidgetConfig} />
 					{:else if widget.type === 'events'}
