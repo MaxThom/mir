@@ -21,6 +21,7 @@ export interface TelemetryWidgetConfig {
 
 export interface CommandWidgetConfig {
 	target: DeviceTargetConfig;
+	selectedCommand?: string;
 }
 
 export interface ConfigWidgetConfig {
