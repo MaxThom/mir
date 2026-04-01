@@ -45,7 +45,7 @@ func createTargetStatementForObjects(t mir_v1.ObjectTarget) string {
 	if len(t.Names) > 0 {
 		var i []string
 		for _, n := range t.Names {
-			i = append(i, fmt.Sprintf("meta.name CONTAINS \"%s\"", n))
+			i = append(i, fmt.Sprintf("meta.name = \"%s\"", n))
 		}
 		cond = append(cond, "("+strings.Join(i, " OR ")+")")
 	}

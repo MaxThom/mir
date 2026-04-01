@@ -31,6 +31,7 @@
 		deviceName: string;
 		status: 'success' | 'error';
 		message: string;
+		payload: string;
 		durationMs: number;
 		expanded: boolean;
 	};
@@ -49,6 +50,7 @@
 	let sendError = $state<string | null>(null);
 	let responses = $state<CmdResponseEntry[]>([]);
 	let hasResponses = $state(false);
+	let showResponses = $state(true);
 
 	let fullscreen = $state(false);
 
@@ -153,6 +155,20 @@
 		return CommandResponseStatus[status] ?? 'OK';
 	}
 
+	function decodePayload(bytes: Uint8Array): string {
+		if (!bytes || bytes.length === 0) return '';
+		try {
+			const text = new TextDecoder().decode(bytes);
+			try {
+				return JSON.stringify(JSON.parse(text), null, 2);
+			} catch {
+				return text;
+			}
+		} catch {
+			return `<binary ${bytes.length}b>`;
+		}
+	}
+
 	async function sendToDevice(
 		mir: NonNullable<typeof mirStore.mir>,
 		deviceId: string,
@@ -171,6 +187,7 @@
 			const resp = result.get(deviceId) ?? [...result.values()][0];
 			const success = resp ? isResponseSuccess(resp.status) : true;
 			const message = resp ? responseMessage(resp.status, resp.error) : 'OK';
+			const payload = resp?.payload ? decodePayload(resp.payload) : '';
 			activityStore.add({
 				kind: success ? 'success' : 'error',
 				category: 'Command',
@@ -178,7 +195,7 @@
 				request: { deviceId, name: activeDescriptor!.name, text, dryRun },
 				...(success ? { response: Object.fromEntries(result) } : { error: message })
 			});
-			return { deviceId, deviceName, status: success ? 'success' : 'error', message, durationMs, expanded: false };
+			return { deviceId, deviceName, status: success ? 'success' : 'error', message, payload, durationMs, expanded: false };
 		} catch (err) {
 			const durationMs = Math.round(performance.now() - start);
 			const message = err instanceof Error ? err.message : 'Failed';
@@ -189,7 +206,7 @@
 				request: { deviceId, name: activeDescriptor!.name, text, dryRun },
 				error: message
 			});
-			return { deviceId, deviceName, status: 'error', message, durationMs, expanded: false };
+			return { deviceId, deviceName, status: 'error', message, payload: '', durationMs, expanded: false };
 		}
 	}
 
@@ -203,6 +220,7 @@
 		sendError = null;
 		responses = [];
 		hasResponses = true;
+		showResponses = true;
 
 		try {
 			const results = await Promise.allSettled(
@@ -211,7 +229,7 @@
 			responses = results.map((r, i) =>
 				r.status === 'fulfilled'
 					? { ...r.value, idx: i }
-					: { idx: i, deviceId: '', deviceName: 'unknown', status: 'error' as const, message: String(r.reason), durationMs: 0, expanded: false }
+					: { idx: i, deviceId: '', deviceName: 'unknown', status: 'error' as const, message: String(r.reason), payload: '', durationMs: 0, expanded: false }
 			);
 		} catch (err) {
 			sendError = err instanceof Error ? err.message : 'Send failed';
@@ -231,6 +249,7 @@
 		sendError = null;
 		responses = [];
 		hasResponses = true;
+		showResponses = true;
 
 		try {
 			const results = await Promise.allSettled(
@@ -244,7 +263,7 @@
 			responses = results.map((r, i) =>
 				r.status === 'fulfilled'
 					? { ...r.value, idx: i }
-					: { idx: i, deviceId: '', deviceName: 'unknown', status: 'error' as const, message: String(r.reason), durationMs: 0, expanded: false }
+					: { idx: i, deviceId: '', deviceName: 'unknown', status: 'error' as const, message: String(r.reason), payload: '', durationMs: 0, expanded: false }
 			);
 		} catch (err) {
 			sendError = err instanceof Error ? err.message : 'Send failed';
@@ -275,23 +294,8 @@
 	{:else if !config.selectedCommand}
 		<p class="p-4 text-xs text-muted-foreground">No command selected. Edit the widget to choose one.</p>
 	{:else if activeDescriptor}
-		<!-- Fullscreen toggle -->
-		<div class="flex shrink-0 items-center justify-end px-2 py-0.5">
-			<button
-				onclick={() => (fullscreen = !fullscreen)}
-				title={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}
-				class="rounded p-1 text-muted-foreground transition-colors hover:text-foreground"
-			>
-				{#if fullscreen}
-					<MinimizeIcon class="size-3.5" />
-				{:else}
-					<MaximizeIcon class="size-3.5" />
-				{/if}
-			</button>
-		</div>
-
 		<!-- JSON editor -->
-		<div class="flex min-h-0 flex-1 overflow-hidden">
+		<div class="flex min-h-16 flex-1 overflow-hidden">
 			<JsonPayloadEditor
 				name={activeDescriptor.name}
 				value={editorContent}
@@ -301,17 +305,36 @@
 				{deviceValues}
 				onSend={handleSend}
 				onSendMulti={handleSendMulti}
-			/>
+			>
+				{#snippet footerEnd()}
+					{#if hasResponses}
+						<button
+							onclick={() => (showResponses = !showResponses)}
+							class="ml-auto rounded px-2 py-0.5 font-mono text-[10px] text-muted-foreground transition-colors hover:text-foreground"
+						>
+							{showResponses ? 'Hide Response' : 'Show Response'}
+						</button>
+					{/if}
+				{/snippet}
+				{#snippet headerEnd()}
+					<button
+						onclick={() => (fullscreen = !fullscreen)}
+						title={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+						class="flex items-center rounded-md border border-border bg-background p-1 text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+					>
+						{#if fullscreen}
+							<MinimizeIcon class="size-3.5" />
+						{:else}
+							<MaximizeIcon class="size-3.5" />
+						{/if}
+					</button>
+				{/snippet}
+			</JsonPayloadEditor>
 		</div>
 
 		<!-- Response log (appears after first send) -->
-		{#if hasResponses}
-			<div class="max-h-48 shrink-0 overflow-y-auto border-t">
-				<div class="border-b px-3 py-1">
-					<span class="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"
-						>Responses</span
-					>
-				</div>
+		{#if hasResponses && showResponses}
+			<div class="max-h-[45%] min-h-0 shrink overflow-y-auto border-t">
 				{#each responses as entry (entry.idx)}
 					<div class="border-b last:border-0">
 						<button
@@ -328,12 +351,12 @@
 								>{entry.durationMs}ms</span
 							>
 							<span class="max-w-32 truncate font-mono text-[10px] text-muted-foreground"
-								>{entry.message}</span
+								>{entry.payload || entry.message}</span
 							>
 						</button>
 						{#if entry.expanded}
 							<pre
-								class="overflow-x-auto bg-muted/40 px-3 py-2 font-mono text-[11px] break-all whitespace-pre-wrap">{entry.message}</pre>
+								class="overflow-x-auto bg-muted/40 px-3 py-2 font-mono text-[11px] break-all whitespace-pre-wrap">{entry.payload || entry.message}</pre>
 						{/if}
 					</div>
 				{/each}

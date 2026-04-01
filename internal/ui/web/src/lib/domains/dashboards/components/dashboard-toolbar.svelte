@@ -340,10 +340,6 @@
 				{/snippet}
 			</DropdownMenu.Trigger>
 			<DropdownMenu.Content align="end">
-				<DropdownMenu.Item onclick={createDashboard}>
-					<PlusIcon class="mr-2 size-3.5" />
-					New Dashboard
-				</DropdownMenu.Item>
 				{#if dashboardStore.activeDashboard}
 					<DropdownMenu.Item
 						onclick={() => {
@@ -356,6 +352,10 @@
 						Edit Dashboard
 					</DropdownMenu.Item>
 				{/if}
+				<DropdownMenu.Item onclick={createDashboard}>
+					<PlusIcon class="mr-2 size-3.5" />
+					New Dashboard
+				</DropdownMenu.Item>
 			</DropdownMenu.Content>
 		</DropdownMenu.Root>
 	{/if}
