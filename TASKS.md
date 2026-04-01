@@ -19,6 +19,7 @@
   - [x] dashboard toolbar, horizontal scroll
   - [x] tlm, autorefresh and timerange
   - [x] tlm, utc switch
+  - [ ] store, validate CONTAINS with *
   - [ ] dev
   - [ ] cmd
   - [ ] cfg

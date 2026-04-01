@@ -81,7 +81,7 @@ func (s *surrealMirStore) UpdateDashboard(t mir_v1.ObjectTarget, upd mir_v1.Dash
 	if upd.Meta != nil && upd.Meta.Namespace != nil {
 		obj.Meta.Namespace = *upd.Meta.Namespace
 	}
-	if err := validateObjectMetaForUpdate(s.db, surrealEventTable, t, obj); err != nil {
+	if err := validateObjectMetaForUpdate(s.db, surrealDashboardTable, t, obj); err != nil {
 		return nil, err
 	}
 
