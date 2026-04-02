@@ -248,6 +248,24 @@ class DashboardStore {
 		);
 	}
 
+	updateWidgetConfigInMemory(d: Dashboard, widgetId: string, config: WidgetConfig) {
+		if (this.isCreatingNew) return;
+		const updated = (d.spec.widgets ?? []).map((w) =>
+			w.id === widgetId ? { ...w, config } : w
+		);
+		this._syncDashboard(d, { ...d, spec: { ...d.spec, widgets: updated } });
+	}
+
+	persistActiveDashboard() {
+		if (!this.activeDashboard || this.isCreatingNew) return;
+		return this._persistWidgets(
+			this.activeDashboard,
+			this.activeDashboard.spec.widgets,
+			this.activeDashboard.spec.refreshInterval,
+			this.activeDashboard.spec.timeMinutes
+		);
+	}
+
 	saveWidgetConfig(d: Dashboard, widgetId: string, config: WidgetConfig) {
 		if (this.isCreatingNew) return;
 		const updated = (d.spec.widgets ?? []).map((w) =>
@@ -301,10 +319,15 @@ class DashboardStore {
 		this._syncDashboard(d, { ...d, spec: { ...d.spec, widgets: updated } });
 
 		if (this.saveTimer) clearTimeout(this.saveTimer);
-		this.saveTimer = setTimeout(
-			() => this._persistWidgets({ ...d, spec: { ...d.spec, widgets: updated } }, updated),
-			1000
-		);
+		this.saveTimer = setTimeout(() => {
+			if (!this.activeDashboard) return;
+			const current = this.activeDashboard;
+			const withPositions = current.spec.widgets.map((w) => {
+				const pos = posMap.get(w.id);
+				return pos ? { ...w, ...pos } : w;
+			});
+			this._persistWidgets(current, withPositions, current.spec.refreshInterval, current.spec.timeMinutes);
+		}, 1000);
 	}
 
 	enterEditMode(): { name: string; namespace: string } {
@@ -320,6 +343,10 @@ class DashboardStore {
 
 	saveEditMode() {
 		this.editSnapshot = null;
+		if (this.saveTimer) { clearTimeout(this.saveTimer); this.saveTimer = null; }
+		if (this.configSaveTimer) { clearTimeout(this.configSaveTimer); this.configSaveTimer = null; }
+		for (const t of this.viewStateTimers.values()) clearTimeout(t);
+		this.viewStateTimers.clear();
 		this.editMode = false;
 	}
 

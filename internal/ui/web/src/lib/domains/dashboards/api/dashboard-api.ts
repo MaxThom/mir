@@ -22,6 +22,9 @@ export interface TelemetryWidgetConfig {
 export interface CommandWidgetConfig {
 	target: DeviceTargetConfig;
 	selectedCommand?: string;
+	// View state (optional — absent in older saved dashboards, template used as default)
+	savedPayload?: string;               // single/template payload
+	savedPayloads?: Record<string, string>; // per-device: { deviceId: jsonText }
 }
 
 export interface ConfigWidgetConfig {
