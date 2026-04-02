@@ -29,6 +29,7 @@
 		isSending,
 		sendError,
 		showDryRun = true,
+		initialViewMode = 'template',
 		onSend,
 		deviceValues,
 		onSendMulti,
@@ -42,6 +43,7 @@
 		isSending: boolean;
 		sendError: string | null;
 		showDryRun?: boolean;
+		initialViewMode?: 'template' | 'per-device';
 		onSend: (dryRun: boolean, text: string) => void;
 		deviceValues?: DeviceValue[];
 		onSendMulti?: (dryRun: boolean, payloads: Map<string, string>) => void;
@@ -49,7 +51,11 @@
 		footerEnd?: Snippet;
 	} = $props();
 
-	let viewMode = $state<'template' | 'per-device'>('template');
+	export function getContent(): string {
+		return cmView ? cmView.state.doc.toString() : displayValue;
+	}
+
+	let viewMode = $state<'template' | 'per-device'>(initialViewMode);
 	let isMultiValues = $derived(viewMode === 'per-device' && (deviceValues?.length ?? 0) > 0);
 
 	let displayValue = $derived.by(() => {

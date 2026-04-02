@@ -8,6 +8,7 @@
 	import { activityStore } from '$lib/domains/activity/stores/activity.svelte';
 	import { CHART_COLORS } from '$lib/domains/devices/utils/tlm-time';
 	import type { CommandWidgetConfig } from '../api/dashboard-api';
+	import { dashboardStore } from '../stores/dashboard.svelte';
 	import MaximizeIcon from '@lucide/svelte/icons/maximize';
 	import MinimizeIcon from '@lucide/svelte/icons/minimize';
 	import CheckIcon from '@lucide/svelte/icons/check';
@@ -15,7 +16,7 @@
 
 	let {
 		config,
-		widgetId: _widgetId,
+		widgetId,
 		onDevicesReady
 	}: {
 		config: CommandWidgetConfig;
@@ -45,6 +46,8 @@
 	let activeDescriptor = $state<CommandDescriptor | null>(null);
 	let activeDevices = $state<{ id: string; name: string; namespace: string }[]>([]);
 	let editorContent = $state('{}');
+	let deviceContents = $state<Map<string, string>>(new Map());
+	let editorHandle: { getContent: () => string } | undefined = $state(undefined);
 
 	let isSending = $state(false);
 	let sendError = $state<string | null>(null);
@@ -61,11 +64,68 @@
 		return activeDevices.map((d) => ({
 			label: `${d.name}/${d.namespace}`,
 			deviceId: d.id,
-			values: editorContent
+			values: deviceContents.get(d.id) ?? editorContent
 		}));
 	});
 
+	const initialViewMode = $derived(
+		config.savedPayloads && Object.keys(config.savedPayloads).length > 0 ? 'per-device' : 'template'
+	) as 'template' | 'per-device';
+
 	const configKey = $derived(JSON.stringify(config.target ?? {}));
+
+	// ─── Save default payload when exiting edit mode ────────────────────────────
+
+	let editModeDirty = $state(false);
+
+	// Set dirty when the user enters edit mode while the widget is loaded
+	$effect(() => {
+		if (dashboardStore.editMode && hasLoaded) editModeDirty = true;
+	});
+
+	// Save when exiting edit mode (dirty flag prevents saving on initial load)
+	$effect(() => {
+		if (!hasLoaded || dashboardStore.editMode || !editModeDirty) return;
+		untrack(() => {
+			editModeDirty = false;
+			if (!dashboardStore.activeDashboard) return;
+			const content = editorHandle?.getContent() ?? editorContent;
+			const perDevice = parsePerDeviceBlocks(content);
+			if (perDevice) {
+				dashboardStore.updateWidgetConfigInMemory(dashboardStore.activeDashboard, widgetId, {
+					...config,
+					savedPayload: undefined,
+					savedPayloads: perDevice
+				});
+			} else {
+				try {
+					JSON.parse(content);
+					dashboardStore.updateWidgetConfigInMemory(dashboardStore.activeDashboard, widgetId, {
+						...config,
+						savedPayload: content,
+						savedPayloads: undefined
+					});
+				} catch {
+					// Don't save invalid JSON
+				}
+			}
+		});
+	});
+
+	function parsePerDeviceBlocks(content: string): Record<string, string> | null {
+		if (!content.trimStart().startsWith('// ')) return null;
+		const result: Record<string, string> = {};
+		const blocks = content.split(/\n(?=\/\/ )/);
+		for (const block of blocks) {
+			const nlIdx = block.indexOf('\n');
+			if (nlIdx === -1) continue;
+			const label = block.slice(0, nlIdx).trim().replace(/^\/\/ /, '');
+			const jsonText = block.slice(nlIdx + 1).trim();
+			const dev = activeDevices.find((d) => `${d.name}/${d.namespace}` === label);
+			if (dev && jsonText) result[dev.id] = jsonText;
+		}
+		return Object.keys(result).length > 0 ? result : null;
+	}
 
 	// ─── Startup ──────────────────────────────────────────────────────────────
 
@@ -121,10 +181,23 @@
 
 			activeDescriptor = found.desc;
 			activeDevices = found.group.ids;
-			try {
-				editorContent = JSON.stringify(JSON.parse(found.desc.template || '{}'), null, 2);
-			} catch {
-				editorContent = found.desc.template || '{}';
+			if (config.savedPayloads && Object.keys(config.savedPayloads).length > 0) {
+				deviceContents = new Map(Object.entries(config.savedPayloads));
+				try {
+					editorContent = JSON.stringify(JSON.parse(found.desc.template || '{}'), null, 2);
+				} catch {
+					editorContent = found.desc.template || '{}';
+				}
+			} else if (config.savedPayload) {
+				editorContent = config.savedPayload;
+				deviceContents = new Map();
+			} else {
+				try {
+					editorContent = JSON.stringify(JSON.parse(found.desc.template || '{}'), null, 2);
+				} catch {
+					editorContent = found.desc.template || '{}';
+				}
+				deviceContents = new Map();
 			}
 
 			const allDevices = groups.flatMap((g) => g.ids);
@@ -297,8 +370,10 @@
 		<!-- JSON editor -->
 		<div class="flex min-h-16 flex-1 overflow-hidden">
 			<JsonPayloadEditor
+				bind:this={editorHandle}
 				name={activeDescriptor.name}
 				value={editorContent}
+				{initialViewMode}
 				hasResponse={false}
 				{isSending}
 				{sendError}

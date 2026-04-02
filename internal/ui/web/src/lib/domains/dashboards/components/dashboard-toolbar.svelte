@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { tick } from 'svelte';
 	import { dashboardStore } from '../stores/dashboard.svelte';
 	import { dashboardKey } from '../api/dashboard-api';
 	import { Button } from '$lib/shared/components/shadcn/button';
@@ -125,17 +126,24 @@
 			}
 			return;
 		}
-		if (dashboardStore.activeDashboard) {
-			try {
-				await dashboardStore.update(dashboardStore.activeDashboard, {
-					name: renameName.trim(),
-					namespace: renameNamespace.trim() || 'default'
-				});
-			} catch {
-				return; // error reported via activityStore
+		const d = dashboardStore.activeDashboard;
+		if (d) {
+			const nameChanged = renameName.trim() !== d.meta.name;
+			const nsChanged = (renameNamespace.trim() || 'default') !== d.meta.namespace;
+			if (nameChanged || nsChanged) {
+				try {
+					await dashboardStore.update(d, {
+						name: renameName.trim(),
+						namespace: renameNamespace.trim() || 'default'
+					});
+				} catch {
+					return; // error reported via activityStore
+				}
 			}
 		}
-		dashboardStore.saveEditMode();
+		dashboardStore.saveEditMode(); // cancels all pending timers, sets editMode = false
+		await tick(); // let widget effects update activeDashboard in-memory
+		await dashboardStore.persistActiveDashboard(); // single persist
 	}
 
 	async function cancelEdits() {
