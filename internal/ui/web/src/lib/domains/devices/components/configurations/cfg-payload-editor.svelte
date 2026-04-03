@@ -15,6 +15,8 @@
 	import FlaskConicalIcon from '@lucide/svelte/icons/flask-conical';
 	import CopyIcon from '@lucide/svelte/icons/copy';
 	import CheckIcon from '@lucide/svelte/icons/check';
+	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
+	import * as Popover from '$lib/shared/components/shadcn/popover';
 
 	type DeviceValue = { label: string; deviceId: string; values: string };
 
@@ -63,6 +65,9 @@
 	let isVimMode = $derived(editorPrefs.vim);
 	let copied = $state(false);
 	let localError = $state<string | null>(null);
+	let headerWidth = $state(9999);
+	const compact = $derived(headerWidth < 300);
+	let overflowOpen = $state(false);
 
 	let cmEl = $state<HTMLElement | null>(null);
 	let cmView: EditorView | null = null;
@@ -168,40 +173,90 @@
 
 <div class="flex flex-1 flex-col overflow-hidden {hasResponse ? 'border-r' : ''}">
 	<!-- Header: name + error badge + TPL toggle + vim toggle + copy -->
-	<div class="flex items-center gap-2 border-b px-4 py-2">
-		<span class="font-mono text-sm font-medium">{name}</span>
+	<div class="flex items-center gap-2 border-b px-4 py-2" bind:clientWidth={headerWidth}>
+		<span class="min-w-0 truncate font-mono text-sm font-medium">{name}</span>
 		{#if nameError}
-			<Badge variant="destructive" class="text-xs">{nameError}</Badge>
+			<Badge variant="destructive" class="shrink-0 text-xs">{nameError}</Badge>
 		{/if}
-		<div class="ml-auto flex items-center gap-1">
-			<button
-				onclick={() => (viewMode = viewMode === 'values' ? 'template' : 'values')}
-				class="rounded px-2 py-0.5 font-mono text-[10px] transition-colors {viewMode === 'template'
-					? 'bg-secondary text-secondary-foreground'
-					: 'text-muted-foreground hover:text-foreground'}"
-			>
-				{viewMode === 'template' ? 'TEMPLATE' : isMultiValues ? 'VALUES (per device)' : 'VALUES'}
-			</button>
-			<button
-				onclick={toggleVim}
-				class="rounded px-2 py-0.5 font-mono text-[10px] transition-colors {isVimMode
-					? 'bg-secondary text-secondary-foreground'
-					: 'text-muted-foreground hover:text-foreground'}"
-			>
-				VIM
-			</button>
-			<button
-				onclick={handleCopy}
-				class="rounded p-1 text-muted-foreground transition-colors hover:text-foreground"
-				title="Copy"
-			>
-				{#if copied}
-					<CheckIcon class="size-3.5 text-emerald-500" />
-				{:else}
-					<CopyIcon class="size-3.5" />
-				{/if}
-			</button>
-			{@render headerEnd?.()}
+		<div class="ml-auto flex shrink-0 items-center gap-1">
+			{#if !compact}
+				<button
+					onclick={() => (viewMode = viewMode === 'values' ? 'template' : 'values')}
+					class="rounded px-2 py-0.5 font-mono text-[10px] transition-colors {viewMode === 'template'
+						? 'bg-secondary text-secondary-foreground'
+						: 'text-muted-foreground hover:text-foreground'}"
+				>
+					{viewMode === 'template' ? 'TEMPLATE' : isMultiValues ? 'VALUES (per device)' : 'VALUES'}
+				</button>
+				<button
+					onclick={toggleVim}
+					class="rounded px-2 py-0.5 font-mono text-[10px] transition-colors {isVimMode
+						? 'bg-secondary text-secondary-foreground'
+						: 'text-muted-foreground hover:text-foreground'}"
+				>
+					VIM
+				</button>
+				<button
+					onclick={handleCopy}
+					class="rounded p-1 text-muted-foreground transition-colors hover:text-foreground"
+					title="Copy"
+				>
+					{#if copied}
+						<CheckIcon class="size-3.5 text-emerald-500" />
+					{:else}
+						<CopyIcon class="size-3.5" />
+					{/if}
+				</button>
+				{@render headerEnd?.()}
+			{:else}
+				<!-- Compact: collapse into popover -->
+				<Popover.Root bind:open={overflowOpen}>
+					<Popover.Trigger>
+						{#snippet child({ props })}
+							<button
+								{...props}
+								title="More options"
+								class="flex items-center rounded-md border border-border bg-background px-1.5 py-1 text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground {overflowOpen
+									? 'border-ring ring-1 ring-ring'
+									: ''}"
+							>
+								<ChevronDownIcon class="size-3.5" />
+							</button>
+						{/snippet}
+					</Popover.Trigger>
+					<Popover.Content class="w-auto p-1.5 shadow-lg" align="end">
+						<div class="flex items-center gap-1">
+							<button
+								onclick={() => {
+									viewMode = viewMode === 'values' ? 'template' : 'values';
+									overflowOpen = false;
+								}}
+								class="flex items-center gap-1 rounded-md border border-border bg-background px-1.5 py-1 font-mono text-[10px] text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground {viewMode === 'template' ? 'border-ring text-foreground ring-1 ring-ring' : ''}"
+							>
+								{viewMode === 'template' ? 'TEMPLATE' : isMultiValues ? 'VALUES (per device)' : 'VALUES'}
+							</button>
+							<button
+								onclick={() => { toggleVim(); overflowOpen = false; }}
+								class="flex items-center gap-1 rounded-md border border-border bg-background px-1.5 py-1 font-mono text-[10px] text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground {isVimMode ? 'border-ring text-foreground ring-1 ring-ring' : ''}"
+							>
+								VIM
+							</button>
+							<button
+								onclick={() => { handleCopy(); overflowOpen = false; }}
+								class="flex items-center gap-1 rounded-md border border-border bg-background p-1 text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+								title="Copy"
+							>
+								{#if copied}
+									<CheckIcon class="size-3.5 text-emerald-500" />
+								{:else}
+									<CopyIcon class="size-3.5" />
+								{/if}
+							</button>
+							{@render headerEnd?.()}
+						</div>
+					</Popover.Content>
+				</Popover.Root>
+			{/if}
 		</div>
 	</div>
 
