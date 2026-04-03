@@ -65,6 +65,13 @@ func dataCleanUp() error {
 	}); err != nil {
 		return err
 	}
+	if _, err := mirStore.DeleteDashboard(mir_v1.ObjectTarget{
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+	}); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -690,6 +697,69 @@ func TestPublishStoreDeviceListByNamespace(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, len(lResp), 2)
+}
+
+func TestPublishStoreDeviceListByIdsWithWilcards(t *testing.T) {
+	// Arrange
+	ids := []string{"list_wid_0", "list_wid_1"}
+	d0 := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+		Annotations: map[string]string{
+			"info": "supra",
+		},
+	}).WithSpec(mir_v1.DeviceSpec{
+		DeviceId: ids[0],
+	})
+	d1 := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
+		Namespace: "mirstore",
+		Labels: map[string]string{
+			"mirstore": "testing",
+		},
+		Annotations: map[string]string{
+			"info": "supra",
+		},
+	}).WithSpec(mir_v1.DeviceSpec{
+		DeviceId: ids[1],
+	})
+	l1 := mir_v1.DeviceTarget{
+		Ids: []string{"list_wid_*"},
+	}
+	l2 := mir_v1.DeviceTarget{
+		Ids: []string{"*_wid_*"},
+	}
+	l3 := mir_v1.DeviceTarget{
+		Ids: []string{"*_wid_0"},
+	}
+
+	// Act
+	_, err := mirStore.CreateDevice(d0)
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = mirStore.CreateDevice(d1)
+	if err != nil {
+		t.Error(err)
+	}
+	lResp1, err := mirStore.ListDevice(l1, false)
+	if err != nil {
+		t.Error(err)
+	}
+	lResp2, err := mirStore.ListDevice(l2, false)
+	if err != nil {
+		t.Error(err)
+	}
+	lResp3, err := mirStore.ListDevice(l3, false)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, len(lResp1), 2)
+	assert.Equal(t, len(lResp2), 2)
+	assert.Equal(t, len(lResp3), 1)
 }
 
 func TestPublishStoreDeviceDeleteByIds(t *testing.T) {
