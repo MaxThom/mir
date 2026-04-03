@@ -676,28 +676,28 @@ func createDeviceWhereStatementWithTargets(t mir_v1.DeviceTarget) string {
 	if len(t.Ids) > 0 {
 		var i []string
 		for _, id := range t.Ids {
-			i = append(i, fmt.Sprintf("spec.deviceId = \"%s\"", id))
+			i = append(i, wildcardToSurreal("spec.deviceId", id))
 		}
 		cond = append(cond, "("+strings.Join(i, " OR ")+")")
 	}
 	if len(t.Names) > 0 {
 		var i []string
 		for _, ns := range t.Names {
-			i = append(i, fmt.Sprintf("meta.name = \"%s\"", ns))
+			i = append(i, wildcardToSurreal("meta.name", ns))
 		}
 		cond = append(cond, "("+strings.Join(i, " OR ")+")")
 	}
 	if len(t.Namespaces) > 0 {
 		var i []string
 		for _, ns := range t.Namespaces {
-			i = append(i, fmt.Sprintf("meta.namespace = \"%s\"", ns))
+			i = append(i, wildcardToSurreal("meta.namespace", ns))
 		}
 		cond = append(cond, "("+strings.Join(i, " OR ")+")")
 	}
 	if len(t.Labels) > 0 {
 		var i []string
 		for k, v := range t.Labels {
-			i = append(i, fmt.Sprintf("meta.labels.%s CONTAINS \"%s\"", k, v))
+			i = append(i, wildcardToSurreal(fmt.Sprintf("meta.labels.%s", k), v))
 		}
 		cond = append(cond, "("+strings.Join(i, " AND ")+")")
 	}

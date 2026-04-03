@@ -288,7 +288,7 @@ func TestPublishDeleteEventsRequest(t *testing.T) {
 	target := mir_v1.EventTarget{
 		ObjectTarget: mir_v1.ObjectTarget{
 			Names: []string{
-				name,
+				name + "*",
 			},
 			Namespaces: []string{
 				namespace,

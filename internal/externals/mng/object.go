@@ -2,6 +2,7 @@ package mng
 
 import (
 	"fmt"
+	"regexp"
 	"slices"
 	"strings"
 
@@ -45,21 +46,21 @@ func createTargetStatementForObjects(t mir_v1.ObjectTarget) string {
 	if len(t.Names) > 0 {
 		var i []string
 		for _, n := range t.Names {
-			i = append(i, fmt.Sprintf("meta.name = \"%s\"", n))
+			i = append(i, wildcardToSurreal("meta.name", n))
 		}
 		cond = append(cond, "("+strings.Join(i, " OR ")+")")
 	}
 	if len(t.Namespaces) > 0 {
 		var i []string
 		for _, ns := range t.Namespaces {
-			i = append(i, fmt.Sprintf("meta.namespace = \"%s\"", ns))
+			i = append(i, wildcardToSurreal("meta.namespace", ns))
 		}
 		cond = append(cond, "("+strings.Join(i, " OR ")+")")
 	}
 	if len(t.Labels) > 0 {
 		var i []string
 		for k, v := range t.Labels {
-			i = append(i, fmt.Sprintf("meta.labels.%s CONTAINS \"%s\"", k, v))
+			i = append(i, wildcardToSurreal(fmt.Sprintf("meta.labels.%s", k), v))
 		}
 		cond = append(cond, "("+strings.Join(i, " AND ")+")")
 	}
@@ -213,4 +214,27 @@ func createUpdateQueryForMeta(t mir_v1.ObjectTarget, upd *mir_v1.MetaUpdate) (sq
 	}
 	sql = q.String()
 	return
+}
+
+func wildcardToSurreal(field, pattern string) string {
+	prefix := strings.HasPrefix(pattern, "*")
+	suffix := strings.HasSuffix(pattern, "*")
+	core := strings.Trim(pattern, "*")
+	nullSafe := "(" + field + " ?? '')"
+
+	switch {
+	case pattern == "*":
+		return ""
+	case prefix && suffix && !strings.Contains(core, "*"):
+		return fmt.Sprintf("string::contains(%s, %q)", nullSafe, core)
+	case prefix && !strings.Contains(core, "*"):
+		return fmt.Sprintf("string::ends_with(%s, %q)", nullSafe, core)
+	case suffix && !strings.Contains(core, "*"):
+		return fmt.Sprintf("string::starts_with(%s, %q)", nullSafe, core)
+	default:
+		// any remaining * → .* for regex, escape other regex metacharacters
+		escaped := regexp.QuoteMeta(pattern)
+		regexPat := strings.ReplaceAll(escaped, `\*`, `.*`)
+		return fmt.Sprintf("string::matches(%s, %q)", nullSafe, "^"+regexPat+"$")
+	}
 }
