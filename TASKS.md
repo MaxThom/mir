@@ -10,7 +10,7 @@
 - [ ] perf check
 - [x] tutorial on each page
 - [ ] widgets
-  - [ ] db, dashboard unit test
+  - [x] db, dashboard unit test
   - [x] tlm, save settings of selection
   - [x] tlm, make sure toolbar work
   - [x] tlm, tiny
@@ -19,9 +19,9 @@
   - [x] dashboard toolbar, horizontal scroll
   - [x] tlm, autorefresh and timerange
   - [x] tlm, utc switch
-  - [ ] store, validate CONTAINS with *
+  - [x] store, validate CONTAINS with *
   - [ ] dev
-  - [ ] cmd
+  - [x] cmd
   - [ ] cfg
   - [ ] evt
 
