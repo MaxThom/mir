@@ -29,6 +29,9 @@ export interface CommandWidgetConfig {
 
 export interface ConfigWidgetConfig {
 	target: DeviceTargetConfig;
+	selectedConfig?: string;                        // pre-selected config name
+	savedPayload?: string;                          // single/template payload
+	savedPayloads?: Record<string, string>;         // per-device: { deviceId: jsonText }
 }
 
 export interface EventsWidgetConfig {
