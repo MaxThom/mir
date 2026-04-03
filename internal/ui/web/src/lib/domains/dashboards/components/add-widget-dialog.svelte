@@ -17,7 +17,7 @@
 		CommandWidgetConfig,
 		ConfigWidgetConfig
 	} from '../api/dashboard-api';
-	import type { TelemetryGroup, CommandGroup } from '@mir/sdk';
+	import type { TelemetryGroup, CommandGroup, ConfigGroup } from '@mir/sdk';
 	import { DeviceTarget } from '@mir/sdk';
 	import ActivityIcon from '@lucide/svelte/icons/activity';
 	import TerminalIcon from '@lucide/svelte/icons/terminal';
@@ -48,6 +48,9 @@
 			} else if (editWidget.type === 'command') {
 				const c = editWidget.config as CommandWidgetConfig;
 				selectedCommandName = c.selectedCommand ?? '';
+			} else if (editWidget.type === 'config') {
+				const c = editWidget.config as ConfigWidgetConfig;
+				selectedConfigName = c.selectedConfig ?? '';
 			} else if (editWidget.type === 'events') {
 				eventLimit = (editWidget.config as EventsWidgetConfig).limit;
 			}
@@ -76,6 +79,11 @@
 	let commandsLoading = $state(false);
 	let selectedCommandName = $state('');
 
+	// Config config
+	let configGroups = $state<ConfigGroup[]>([]);
+	let configsLoading = $state(false);
+	let selectedConfigName = $state('');
+
 	// Events config
 	let eventLimit = $state(50);
 
@@ -88,6 +96,12 @@
 	$effect(() => {
 		if (step === 'config' && selectedType === 'command' && mirStore.mir) {
 			loadCommandsForWizard();
+		}
+	});
+
+	$effect(() => {
+		if (step === 'config' && selectedType === 'config' && mirStore.mir) {
+			loadConfigsForWizard();
 		}
 	});
 
@@ -163,6 +177,37 @@
 		}
 	}
 
+	async function loadConfigsForWizard() {
+		configsLoading = true;
+		configGroups = [];
+		try {
+			let deviceIds: string[] = [];
+			if (target.ids?.length) {
+				deviceIds = target.ids;
+			} else {
+				deviceIds = deviceStore.devices
+					.filter((d) => {
+						const nsMatch =
+							!target.namespaces?.length ||
+							target.namespaces.includes(d.meta?.namespace ?? 'default');
+						const labelMatch =
+							!target.labels ||
+							Object.entries(target.labels).every(([k, v]) => d.meta?.labels?.[k] === v);
+						return nsMatch && labelMatch;
+					})
+					.map((d) => d.spec?.deviceId)
+					.filter((id): id is string => Boolean(id));
+			}
+			if (!deviceIds.length) return;
+			const deviceTarget = new DeviceTarget({ ids: deviceIds });
+			configGroups = await mirStore.mir!.client().listConfigs().request(deviceTarget);
+		} catch {
+			configGroups = [];
+		} finally {
+			configsLoading = false;
+		}
+	}
+
 	function reset() {
 		step = 'type';
 		selectedType = null;
@@ -174,6 +219,9 @@
 		commandGroups = [];
 		commandsLoading = false;
 		selectedCommandName = '';
+		configGroups = [];
+		configsLoading = false;
+		selectedConfigName = '';
 		eventLimit = 50;
 		editWidget = null;
 	}
@@ -217,7 +265,7 @@
 			case 'command':
 				return { target, selectedCommand: selectedCommandName } satisfies CommandWidgetConfig;
 			case 'config':
-				return { target } satisfies ConfigWidgetConfig;
+				return { target, selectedConfig: selectedConfigName } satisfies ConfigWidgetConfig;
 			case 'events':
 				return { target, limit: eventLimit } satisfies EventsWidgetConfig;
 		}
@@ -414,6 +462,53 @@
 								</div>
 							{/if}
 						</div>
+					{:else if selectedType === 'config'}
+						<div class="space-y-1">
+							<p class="text-sm font-medium">Configuration</p>
+							{#if configsLoading}
+								<div class="flex items-center gap-2 py-3 text-sm text-muted-foreground">
+									<Spinner class="h-4 w-4" />
+									<span>Loading configurations…</span>
+								</div>
+							{:else if configGroups.length === 0}
+								<p class="py-2 text-sm text-muted-foreground">
+									No configurations found for selected devices.
+								</p>
+							{:else}
+								<div class="max-h-64 space-y-2 overflow-y-auto">
+									{#each configGroups as group, gi (gi)}
+										<div class="rounded-md border border-border">
+											<div class="flex flex-wrap items-center gap-1 border-b px-3 py-2">
+												{#each group.ids as dev (dev.id)}
+													<Badge variant="secondary" class="font-mono text-xs font-normal"
+														>{dev.name}</Badge
+													>
+												{/each}
+											</div>
+											<div class="divide-y">
+												{#each group.descriptors as cfg (cfg.name)}
+													<button
+														onclick={() => (selectedConfigName = cfg.name)}
+														class="flex w-full items-center gap-3 px-3 py-2 text-left text-sm transition-colors hover:bg-accent
+															{selectedConfigName === cfg.name ? 'bg-muted' : ''}"
+													>
+														<span
+															class="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border
+																{selectedConfigName === cfg.name ? 'border-primary bg-primary' : 'border-muted-foreground'}"
+														>
+															{#if selectedConfigName === cfg.name}
+																<span class="h-1.5 w-1.5 rounded-full bg-primary-foreground"></span>
+															{/if}
+														</span>
+														<span class="flex-1 font-mono">{cfg.name}</span>
+													</button>
+												{/each}
+											</div>
+										</div>
+									{/each}
+								</div>
+							{/if}
+						</div>
 					{:else if selectedType === 'events'}
 						<div class="space-y-1">
 							<label for="widget-maxevents" class="text-sm font-medium">Max events</label>
@@ -432,7 +527,8 @@
 						onclick={saveWidget}
 						disabled={dashboardStore.isSaving ||
 							(selectedType === 'telemetry' && !selectedMeasurement) ||
-							(selectedType === 'command' && !selectedCommandName)}
+							(selectedType === 'command' && !selectedCommandName) ||
+							(selectedType === 'config' && !selectedConfigName)}
 					>
 						{dashboardStore.isSaving ? (editWidget ? 'Saving…' : 'Adding…') : (editWidget ? 'Save' : 'Add Widget')}
 					</Button>
