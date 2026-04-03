@@ -55,7 +55,7 @@
 		return cmView ? cmView.state.doc.toString() : displayValue;
 	}
 
-	let viewMode = $state<'template' | 'per-device'>(initialViewMode);
+	let viewMode = $state<'template' | 'per-device'>(untrack(() => initialViewMode));
 	let isMultiValues = $derived(viewMode === 'per-device' && (deviceValues?.length ?? 0) > 0);
 
 	let displayValue = $derived.by(() => {
