@@ -186,7 +186,7 @@
 						? 'bg-secondary text-secondary-foreground'
 						: 'text-muted-foreground hover:text-foreground'}"
 				>
-					{viewMode === 'template' ? 'TEMPLATE' : isMultiValues ? 'VALUES (per device)' : 'VALUES'}
+					{viewMode === 'template' ? 'TEMPLATE' : 'VALUES'}
 				</button>
 				<button
 					onclick={toggleVim}
@@ -233,7 +233,7 @@
 								}}
 								class="flex items-center gap-1 rounded-md border border-border bg-background px-1.5 py-1 font-mono text-[10px] text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground {viewMode === 'template' ? 'border-ring text-foreground ring-1 ring-ring' : ''}"
 							>
-								{viewMode === 'template' ? 'TEMPLATE' : isMultiValues ? 'VALUES (per device)' : 'VALUES'}
+								{viewMode === 'template' ? 'TEMPLATE' : 'VALUES'}
 							</button>
 							<button
 								onclick={() => { toggleVim(); overflowOpen = false; }}
