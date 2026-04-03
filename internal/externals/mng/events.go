@@ -385,6 +385,7 @@ func createTargetStatementForEvents(t mir_v1.EventTarget) string {
 		dt.WriteString(t.DateFilter.From.Format(time.RFC3339Nano))
 		dt.WriteString("\"")
 		whereSt = append(whereSt, dt.String())
+		//
 	}
 	if !t.DateFilter.To.IsZero() {
 		var dt strings.Builder
