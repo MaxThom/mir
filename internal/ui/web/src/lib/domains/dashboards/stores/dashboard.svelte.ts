@@ -1,3 +1,4 @@
+import { tick } from 'svelte';
 import { SvelteMap } from 'svelte/reactivity';
 import {
 	dashboardApi,
@@ -21,10 +22,7 @@ class DashboardStore {
 	isCreatingNew = $state(false);
 	error = $state<string | null>(null);
 
-	private saveTimer: ReturnType<typeof setTimeout> | null = null;
 	private _refreshCount = 0;
-	private configSaveTimer: ReturnType<typeof setTimeout> | null = null;
-	private viewStateTimers = new Map<string, ReturnType<typeof setTimeout>>();
 	private editSnapshot: Dashboard | null = null;
 	private _preCreateDashboard: Dashboard | null = null;
 
@@ -151,12 +149,15 @@ class DashboardStore {
 
 	async create(name: string, namespace = 'default', description = '') {
 		this.isSaving = true;
+		// tick() lets widget $effects that watch isSaving flush their pending editor content
+		// (e.g. command widget saves typed payload before we snapshot draftWidgets)
+		await tick();
 		try {
-			const draftWidgets = this.isCreatingNew ? (this.activeDashboard?.spec.widgets ?? []) : [];
-			let d = await dashboardApi.create(name, namespace, description);
-			if (draftWidgets.length > 0) {
-				d = await dashboardApi.saveWidgets(d.meta.namespace, d.meta.name, draftWidgets);
-			}
+			// Use $state.snapshot to get a plain (non-proxy) copy for reliable JSON serialization
+			const draftWidgets = this.isCreatingNew
+				? ($state.snapshot(this.activeDashboard)?.spec.widgets ?? [])
+				: [];
+			const d = await dashboardApi.create(name, namespace, description, draftWidgets);
 			this.dashboards = [...this.dashboards, d];
 			this.pinnedKeys = [...this.pinnedKeys, dashboardKey(d)];
 			this._savePinnedKeys();
@@ -176,19 +177,27 @@ class DashboardStore {
 		}
 	}
 
-	async update(d: Dashboard, patch: { name?: string; namespace?: string; description?: string }) {
+	async update(d: Dashboard, patch: { name?: string; namespace?: string; description?: string; widgets?: Widget[]; refreshInterval?: number; timeMinutes?: number }) {
 		this.isSaving = true;
 		try {
 			const oldKey = dashboardKey(d);
-			const updated = await dashboardApi.update(d.meta.namespace, d.meta.name, patch);
-			const keyChanged = dashboardKey(updated) !== oldKey;
+			const serverResponse = await dashboardApi.update(d.meta.namespace, d.meta.name, patch);
+			const keyChanged = dashboardKey(serverResponse) !== oldKey;
 			if (keyChanged) {
-				this.pinnedKeys = this.pinnedKeys.map((k) => (k === oldKey ? dashboardKey(updated) : k));
+				this.pinnedKeys = this.pinnedKeys.map((k) => (k === oldKey ? dashboardKey(serverResponse) : k));
 				this._savePinnedKeys();
 			}
-			this._syncDashboard(d, updated);
-			activityStore.add({ kind: 'success', category: 'Dashboard', title: 'Updated', request: { name: updated.meta.name, namespace: updated.meta.namespace } });
-			return updated;
+			// If widgets were included in the patch, the server response is authoritative.
+			// Otherwise (rename/description-only), preserve the in-memory spec to avoid wiping unsaved widget changes.
+			const merged = patch.widgets !== undefined
+				? serverResponse
+				: (() => {
+						const inMemorySpec = this.activeDashboard?.spec ?? d.spec;
+						return { ...serverResponse, spec: { ...serverResponse.spec, widgets: inMemorySpec.widgets, refreshInterval: inMemorySpec.refreshInterval, timeMinutes: inMemorySpec.timeMinutes } };
+					})();
+			this._syncDashboard(d, merged);
+			activityStore.add({ kind: 'success', category: 'Dashboard', title: 'Updated', request: { name: serverResponse.meta.name, namespace: serverResponse.meta.namespace } });
+			return merged;
 		} catch (err) {
 			activityStore.add({ kind: 'error', category: 'Dashboard', title: 'Update Failed', error: err instanceof Error ? err.message : String(err) });
 			throw err;
@@ -222,7 +231,7 @@ class DashboardStore {
 		}
 	}
 
-	async addWidget(d: Dashboard, type: WidgetType, title: string, config: WidgetConfig) {
+	addWidget(d: Dashboard, type: WidgetType, title: string, config: WidgetConfig) {
 		const newWidget: Widget = {
 			id: crypto.randomUUID(),
 			type,
@@ -238,21 +247,22 @@ class DashboardStore {
 			this.activeDashboard = { ...d, spec: { ...d.spec, widgets: updated } };
 			return;
 		}
-		return this._persistWidgets(d, updated);
+		this._syncDashboard(d, { ...d, spec: { ...d.spec, widgets: updated } });
 	}
 
-	async removeWidget(d: Dashboard, widgetId: string) {
-		return this._persistWidgets(
-			d,
-			d.spec.widgets.filter((w) => w.id !== widgetId)
-		);
+	removeWidget(d: Dashboard, widgetId: string) {
+		const updated = d.spec.widgets.filter((w) => w.id !== widgetId);
+		this._syncDashboard(d, { ...d, spec: { ...d.spec, widgets: updated } });
 	}
 
 	updateWidgetConfigInMemory(d: Dashboard, widgetId: string, config: WidgetConfig) {
-		if (this.isCreatingNew) return;
 		const updated = (d.spec.widgets ?? []).map((w) =>
 			w.id === widgetId ? { ...w, config } : w
 		);
+		if (this.isCreatingNew) {
+			this.activeDashboard = { ...d, spec: { ...d.spec, widgets: updated } };
+			return;
+		}
 		this._syncDashboard(d, { ...d, spec: { ...d.spec, widgets: updated } });
 	}
 
@@ -267,42 +277,22 @@ class DashboardStore {
 	}
 
 	saveWidgetConfig(d: Dashboard, widgetId: string, config: WidgetConfig) {
-		if (this.isCreatingNew) return;
 		const updated = (d.spec.widgets ?? []).map((w) =>
 			w.id === widgetId ? { ...w, config } : w
 		);
 		this._syncDashboard(d, { ...d, spec: { ...d.spec, widgets: updated } });
-
-		if (this.configSaveTimer) clearTimeout(this.configSaveTimer);
-		this.configSaveTimer = setTimeout(() => {
-			if (!this.activeDashboard) return;
-			this._persistWidgets(
-				this.activeDashboard,
-				this.activeDashboard.spec.widgets,
-				this.activeDashboard.spec.refreshInterval,
-				this.activeDashboard.spec.timeMinutes
-			);
-		}, 1000);
 	}
 
 	saveWidgetViewState(widgetId: string, config: WidgetConfig) {
-		if (this.isCreatingNew) return;
-		const existing = this.viewStateTimers.get(widgetId);
-		if (existing) clearTimeout(existing);
-		const timer = setTimeout(() => {
-			this.viewStateTimers.delete(widgetId);
-			if (!this.activeDashboard) return;
-			const updated = (this.activeDashboard.spec.widgets ?? []).map((w) =>
-				w.id === widgetId ? { ...w, config } : w
-			);
-			this._persistWidgets(
-				this.activeDashboard,
-				updated,
-				this.activeDashboard.spec.refreshInterval,
-				this.activeDashboard.spec.timeMinutes
-			);
-		}, 1000);
-		this.viewStateTimers.set(widgetId, timer);
+		if (!this.activeDashboard) return;
+		const updated = (this.activeDashboard.spec.widgets ?? []).map((w) =>
+			w.id === widgetId ? { ...w, config } : w
+		);
+		if (this.isCreatingNew) {
+			this.activeDashboard = { ...this.activeDashboard, spec: { ...this.activeDashboard.spec, widgets: updated } };
+			return;
+		}
+		this._syncDashboard(this.activeDashboard, { ...this.activeDashboard, spec: { ...this.activeDashboard.spec, widgets: updated } });
 	}
 
 	saveLayout(d: Dashboard, layoutItems: Pick<Widget, 'id' | 'x' | 'y' | 'w' | 'h'>[]) {
@@ -315,22 +305,21 @@ class DashboardStore {
 			this.activeDashboard = { ...d, spec: { ...d.spec, widgets: updated } };
 			return;
 		}
-		// Optimistic update so the grid doesn't flicker during drag.
 		this._syncDashboard(d, { ...d, spec: { ...d.spec, widgets: updated } });
-
-		if (this.saveTimer) clearTimeout(this.saveTimer);
-		this.saveTimer = setTimeout(() => {
-			if (!this.activeDashboard) return;
-			const current = this.activeDashboard;
-			const withPositions = current.spec.widgets.map((w) => {
-				const pos = posMap.get(w.id);
-				return pos ? { ...w, ...pos } : w;
-			});
-			this._persistWidgets(current, withPositions, current.spec.refreshInterval, current.spec.timeMinutes);
-		}, 1000);
 	}
 
-	enterEditMode(): { name: string; namespace: string } {
+	async enterEditMode(): Promise<{ name: string; namespace: string }> {
+		if (this.activeDashboard && !this.isCreatingNew) {
+			try {
+				const fresh = await dashboardApi.get(
+					this.activeDashboard.meta.namespace,
+					this.activeDashboard.meta.name
+				);
+				this._syncDashboard(this.activeDashboard, fresh);
+			} catch {
+				// If fetch fails, proceed with current in-memory state
+			}
+		}
 		this.editSnapshot = this.activeDashboard
 			? structuredClone($state.snapshot(this.activeDashboard))
 			: null;
@@ -343,10 +332,6 @@ class DashboardStore {
 
 	saveEditMode() {
 		this.editSnapshot = null;
-		if (this.saveTimer) { clearTimeout(this.saveTimer); this.saveTimer = null; }
-		if (this.configSaveTimer) { clearTimeout(this.configSaveTimer); this.configSaveTimer = null; }
-		for (const t of this.viewStateTimers.values()) clearTimeout(t);
-		this.viewStateTimers.clear();
 		this.editMode = false;
 	}
 
@@ -355,45 +340,15 @@ class DashboardStore {
 			this._syncDashboard(this.activeDashboard!, this.editSnapshot);
 			this.editSnapshot = null;
 		}
-		if (this.saveTimer) {
-			clearTimeout(this.saveTimer);
-			this.saveTimer = null;
-		}
-		if (this.configSaveTimer) {
-			clearTimeout(this.configSaveTimer);
-			this.configSaveTimer = null;
-		}
 		this.editMode = false;
 	}
 
 	saveRefreshInterval(d: Dashboard, interval: number) {
 		this._syncDashboard(d, { ...d, spec: { ...d.spec, refreshInterval: interval } });
-
-		if (this.configSaveTimer) clearTimeout(this.configSaveTimer);
-		this.configSaveTimer = setTimeout(() => {
-			if (!this.activeDashboard) return;
-			this._persistWidgets(
-				this.activeDashboard,
-				this.activeDashboard.spec.widgets,
-				this.activeDashboard.spec.refreshInterval,
-				this.activeDashboard.spec.timeMinutes
-			);
-		}, 1000);
 	}
 
 	saveTimeMinutes(d: Dashboard, minutes: number) {
 		this._syncDashboard(d, { ...d, spec: { ...d.spec, timeMinutes: minutes } });
-
-		if (this.configSaveTimer) clearTimeout(this.configSaveTimer);
-		this.configSaveTimer = setTimeout(() => {
-			if (!this.activeDashboard) return;
-			this._persistWidgets(
-				this.activeDashboard,
-				this.activeDashboard.spec.widgets,
-				this.activeDashboard.spec.refreshInterval,
-				this.activeDashboard.spec.timeMinutes
-			);
-		}, 1000);
 	}
 
 	private async _persistWidgets(d: Dashboard, widgets: Widget[], refreshInterval?: number, timeMinutes?: number) {

@@ -85,7 +85,10 @@ func (s *CockpitServer) dashboardHandler(w http.ResponseWriter, r *http.Request)
 					Namespace *string `json:"namespace"`
 				} `json:"meta,omitempty"`
 				Spec struct {
-					Description string `json:"description"`
+					Description     string                   `json:"description"`
+					Widgets         []mir_v1.DashboardWidget `json:"widgets,omitempty"`
+					RefreshInterval *int                     `json:"refreshInterval,omitempty"`
+					TimeMinutes     *int                     `json:"timeMinutes,omitempty"`
 				} `json:"spec"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -94,7 +97,10 @@ func (s *CockpitServer) dashboardHandler(w http.ResponseWriter, r *http.Request)
 			}
 			upd := mir_v1.DashboardUpdate{
 				Spec: &mir_v1.DashboardUpdateSpec{
-					Description: &req.Spec.Description,
+					Description:     &req.Spec.Description,
+					Widgets:         req.Spec.Widgets,
+					RefreshInterval: req.Spec.RefreshInterval,
+					TimeMinutes:     req.Spec.TimeMinutes,
 				},
 			}
 			if req.Meta != nil {

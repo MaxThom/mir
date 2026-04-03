@@ -68,9 +68,9 @@
 		}));
 	});
 
-	const initialViewMode = $derived(
+	const initialViewMode: 'template' | 'per-device' = $derived(
 		config.savedPayloads && Object.keys(config.savedPayloads).length > 0 ? 'per-device' : 'template'
-	) as 'template' | 'per-device';
+	);
 
 	const configKey = $derived(JSON.stringify(config.target ?? {}));
 
@@ -145,6 +145,44 @@
 		if (mirStore.mir && untrack(() => hasLoaded)) {
 			untrack(loadCommands);
 		}
+	});
+
+	// Reset editor to saved config when entering edit mode
+	$effect(() => {
+		if (dashboardStore.editMode && mirStore.mir && hasLoaded) {
+			untrack(loadCommands);
+		}
+	});
+
+	// Flush current editor content into the draft before create() snapshots draftWidgets.
+	// isSaving is set true → tick() in create() → this effect runs → store updated → snapshot captures it.
+	// activeDashboard is read inside untrack to avoid re-triggering when updateWidgetConfigInMemory
+	// replaces activeDashboard with a new object (which would cause an infinite loop).
+	$effect(() => {
+		if (!dashboardStore.isSaving || !dashboardStore.isCreatingNew || !hasLoaded) return;
+		untrack(() => {
+			if (!dashboardStore.activeDashboard) return;
+			const content = editorHandle?.getContent() ?? editorContent;
+			const perDevice = parsePerDeviceBlocks(content);
+			if (perDevice) {
+				dashboardStore.updateWidgetConfigInMemory(dashboardStore.activeDashboard, widgetId, {
+					...config,
+					savedPayload: undefined,
+					savedPayloads: perDevice
+				});
+			} else {
+				try {
+					JSON.parse(content);
+					dashboardStore.updateWidgetConfigInMemory(dashboardStore.activeDashboard, widgetId, {
+						...config,
+						savedPayload: content,
+						savedPayloads: undefined
+					});
+				} catch {
+					// Don't save invalid JSON
+				}
+			}
+		});
 	});
 
 	async function loadCommands() {

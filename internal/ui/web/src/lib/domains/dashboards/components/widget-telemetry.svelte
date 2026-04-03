@@ -95,6 +95,7 @@
 
 	$effect(() => {
 		if (!hasLoaded) return;
+		if (!dashboardStore.editMode) return;
 
 		// Capture user-controlled state (these are the tracked dependencies)
 		const currentSelectedFields = selectedFields;
@@ -153,6 +154,37 @@
 		if (mirStore.mir && untrack(() => hasLoaded)) {
 			untrack(loadAndQuery);
 		}
+	});
+
+	// Reset view state to saved config when entering edit mode
+	$effect(() => {
+		if (dashboardStore.editMode && hasLoaded) {
+			untrack(() => {
+				splitCount = (config.splitCount ?? 1) as 1 | 2 | 3 | 4;
+				syncFields = config.syncFields ?? false;
+				enabledDeviceIds =
+					config.enabledDeviceIds?.filter((id) => deviceInfos.some((d) => d.id === id)) ??
+					deviceInfos.map((d) => d.id);
+				const valid = config.selectedFields?.filter((f) => config.fields.includes(f)) ?? [];
+				selectedFields = valid.length > 0 ? valid : config.fields.slice(0, 1);
+				syncSelectedFields = selectedFields;
+			});
+		}
+	});
+
+	// Flush view state into the draft before create() snapshots draftWidgets.
+	// isSaving is set true → tick() in create() → this effect runs → store updated → snapshot captures it.
+	$effect(() => {
+		if (!dashboardStore.isSaving || !dashboardStore.isCreatingNew || !hasLoaded) return;
+		untrack(() => {
+			dashboardStore.saveWidgetViewState(widgetId, {
+				...config,
+				selectedFields,
+				splitCount,
+				syncFields,
+				enabledDeviceIds
+			});
+		});
 	});
 
 	async function loadAndQuery() {
