@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import type { Snippet } from 'svelte';
 	import { EditorView, basicSetup } from 'codemirror';
 	import { Compartment } from '@codemirror/state';
 	import { json as jsonLang } from '@codemirror/lang-json';
@@ -28,7 +29,9 @@
 		showDryRun = true,
 		onSend,
 		deviceValues,
-		onSendMulti
+		onSendMulti,
+		headerEnd,
+		footerEnd
 	}: {
 		name: string;
 		nameError?: string;
@@ -41,6 +44,8 @@
 		onSend: (dryRun: boolean, text: string) => void;
 		deviceValues?: DeviceValue[];
 		onSendMulti?: (dryRun: boolean, payloads: Map<string, string>) => void;
+		headerEnd?: Snippet;
+		footerEnd?: Snippet;
 	} = $props();
 
 	let viewMode = $state<'values' | 'template'>('values');
@@ -196,6 +201,7 @@
 					<CopyIcon class="size-3.5" />
 				{/if}
 			</button>
+			{@render headerEnd?.()}
 		</div>
 	</div>
 
@@ -206,18 +212,18 @@
 	></div>
 
 	<!-- Action buttons -->
-	<div class="flex items-center gap-1 border-t px-4 py-2">
+	<div class="flex items-center gap-1 border-t px-3 py-0.5">
 		<Button
 			variant="ghost"
 			size="sm"
 			disabled={isSending}
 			onclick={() => submit(false)}
-			class="gap-1.5"
+			class="h-7 gap-1 px-2 text-xs"
 		>
 			{#if isSending}
 				<Spinner class="size-3" />
 			{:else}
-				<SendIcon class="size-3.5" />
+				<SendIcon class="size-3" />
 			{/if}
 			Send
 		</Button>
@@ -227,12 +233,12 @@
 				size="sm"
 				disabled={isSending}
 				onclick={() => submit(true)}
-				class="gap-1.5 text-muted-foreground"
+				class="h-7 gap-1 px-2 text-xs text-muted-foreground"
 			>
 				{#if isSending}
 					<Spinner class="size-3" />
 				{:else}
-					<FlaskConicalIcon class="size-3.5" />
+					<FlaskConicalIcon class="size-3" />
 				{/if}
 				Dry Run
 			</Button>
@@ -240,5 +246,6 @@
 		{#if displayError}
 			<p class="ml-2 text-xs text-destructive">{displayError}</p>
 		{/if}
+		{@render footerEnd?.()}
 	</div>
 </div>

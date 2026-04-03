@@ -447,29 +447,6 @@
 			>No configuration selected. Edit the widget to choose one.</p
 		>
 	{:else if activeDescriptor}
-		<!-- Control bar (fullscreen + show/hide response) -->
-		<div class="flex items-center justify-end gap-1 border-b px-2 py-1">
-			{#if hasResponses}
-				<button
-					onclick={() => (showResponses = !showResponses)}
-					class="ml-auto rounded px-2 py-0.5 font-mono text-[10px] text-muted-foreground transition-colors hover:text-foreground"
-				>
-					{showResponses ? 'Hide Response' : 'Show Response'}
-				</button>
-			{/if}
-			<button
-				onclick={() => (fullscreen = !fullscreen)}
-				title={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}
-				class="flex items-center rounded-md border border-border bg-background p-1 text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
-			>
-				{#if fullscreen}
-					<MinimizeIcon class="size-3.5" />
-				{:else}
-					<MaximizeIcon class="size-3.5" />
-				{/if}
-			</button>
-		</div>
-
 		<!-- Config editor -->
 		<div class="flex min-h-16 flex-1 overflow-hidden">
 			<CfgPayloadEditor
@@ -483,7 +460,31 @@
 				{deviceValues}
 				onSend={handleSend}
 				onSendMulti={handleSendMulti}
-			/>
+			>
+				{#snippet headerEnd()}
+					<button
+						onclick={() => (fullscreen = !fullscreen)}
+						title={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+						class="flex items-center rounded-md border border-border bg-background p-1 text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+					>
+						{#if fullscreen}
+							<MinimizeIcon class="size-3.5" />
+						{:else}
+							<MaximizeIcon class="size-3.5" />
+						{/if}
+					</button>
+				{/snippet}
+				{#snippet footerEnd()}
+					{#if hasResponses}
+						<button
+							onclick={() => (showResponses = !showResponses)}
+							class="ml-auto rounded px-2 py-0.5 font-mono text-[10px] text-muted-foreground transition-colors hover:text-foreground"
+						>
+							{showResponses ? 'Hide Response' : 'Show Response'}
+						</button>
+					{/if}
+				{/snippet}
+			</CfgPayloadEditor>
 		</div>
 
 		<!-- Response log (appears after first send) -->
