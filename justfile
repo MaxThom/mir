@@ -183,21 +183,7 @@ certs *args:
 
 # Go code line count
 line-count:
-    @echo "=== Go Code ==="
-    @echo -n "All Go files: "
-    @find . -name '*.go' | xargs -I {} cat {} | wc -l
-    @echo -n "Go files (excluding generated): "
-    @find . -name '*.go' ! -name '*.pb.go' | xargs -I {} cat {} | wc -l
-    @echo ""
-    @echo "=== Svelte App (Cockpit) ==="
-    @echo -n "Svelte: "
-    @find ./internal/ui/web/src -name '*.svelte' 2>/dev/null | xargs -I {} cat {} 2>/dev/null | wc -l || echo "0"
-    @echo -n "TypeScript/JavaScript: "
-    @find ./internal/ui/web/src -name '*.ts' -o -name '*.js' 2>/dev/null | grep -v node_modules | xargs -I {} cat {} 2>/dev/null | wc -l || echo "0"
-    @echo -n "CSS: "
-    @find ./internal/ui/web/src -name '*.css' 2>/dev/null | xargs -I {} cat {} 2>/dev/null | wc -l || echo "0"
-    @echo -n "HTML: "
-    @find ./internal/ui/web/src -name '*.html' 2>/dev/null | xargs -I {} cat {} 2>/dev/null | wc -l || echo "0"
+    ./scripts/line_count.sh
 
 # Go test count
 test-count:
