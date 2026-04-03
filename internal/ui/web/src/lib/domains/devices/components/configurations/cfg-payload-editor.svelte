@@ -67,6 +67,10 @@
 	Vim.defineEx('write', 'w', () => submit(false));
 	Vim.defineEx('wq', 'wq', () => submit(false));
 
+	export function getContent(): string {
+		return cmView ? cmView.state.doc.toString() : displayValue;
+	}
+
 	function toggleVim() {
 		const newVim = !isVimMode;
 		editorPrefs.setVim(newVim);
