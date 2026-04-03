@@ -99,7 +99,7 @@ export const dashboardApi = {
 	get: (namespace: string, name: string): Promise<Dashboard> =>
 		request<Dashboard>(`${BASE}/${namespace}/${name}`),
 
-	create: (name: string, namespace = 'default', description = ''): Promise<Dashboard> =>
+	create: (name: string, namespace = 'default', description = '', widgets: Widget[] = []): Promise<Dashboard> =>
 		request<Dashboard>(BASE, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
@@ -107,14 +107,21 @@ export const dashboardApi = {
 				apiVersion: 'mir/v1alpha',
 				kind: 'dashboard',
 				meta: { name, namespace },
-				spec: { description, widgets: [] }
+				spec: { description, widgets }
 			})
 		}),
 
 	update: (
 		namespace: string,
 		name: string,
-		patch: { name?: string; namespace?: string; description?: string }
+		patch: {
+			name?: string;
+			namespace?: string;
+			description?: string;
+			widgets?: Widget[];
+			refreshInterval?: number;
+			timeMinutes?: number;
+		}
 	): Promise<Dashboard> =>
 		request<Dashboard>(`${BASE}/${namespace}/${name}`, {
 			method: 'PUT',
@@ -128,7 +135,12 @@ export const dashboardApi = {
 							}
 						}
 					: {}),
-				spec: { description: patch.description ?? '' }
+				spec: {
+					description: patch.description ?? '',
+					...(patch.widgets !== undefined ? { widgets: patch.widgets } : {}),
+					...(patch.refreshInterval !== undefined ? { refreshInterval: patch.refreshInterval } : {}),
+					...(patch.timeMinutes !== undefined ? { timeMinutes: patch.timeMinutes } : {})
+				}
 			})
 		}),
 

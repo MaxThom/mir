@@ -56,7 +56,7 @@
 	$effect(() => {
 		const interval = editorPrefs.refreshInterval;
 		const d = dashboardStore.activeDashboard;
-		if (!d) return;
+		if (!d || !dashboardStore.editMode) return;
 		if ((d.spec.refreshInterval ?? 10) === interval) return;
 		dashboardStore.saveRefreshInterval(d, interval);
 	});
@@ -64,7 +64,7 @@
 	$effect(() => {
 		const minutes = editorPrefs.timeMinutes;
 		const d = dashboardStore.activeDashboard;
-		if (!d) return;
+		if (!d || !dashboardStore.editMode) return;
 		if ((d.spec.timeMinutes ?? 60) === minutes) return;
 		dashboardStore.saveTimeMinutes(d, minutes);
 	});
@@ -127,23 +127,30 @@
 			return;
 		}
 		const d = dashboardStore.activeDashboard;
-		if (d) {
-			const nameChanged = renameName.trim() !== d.meta.name;
-			const nsChanged = (renameNamespace.trim() || 'default') !== d.meta.namespace;
-			if (nameChanged || nsChanged) {
-				try {
-					await dashboardStore.update(d, {
-						name: renameName.trim(),
-						namespace: renameNamespace.trim() || 'default'
-					});
-				} catch {
-					return; // error reported via activityStore
-				}
-			}
+		if (!d) return;
+
+		const nameChanged = renameName.trim() !== d.meta.name;
+		const nsChanged = (renameNamespace.trim() || 'default') !== d.meta.namespace;
+
+		// Exit edit mode FIRST so widget dirty effects (e.g. command payload save) run
+		// before any name change triggers a {#key} remount and destroys the widgets.
+		dashboardStore.saveEditMode();
+		await tick();
+
+		// After tick, activeDashboard has the latest widget state (dirty effects have flushed).
+		// Send everything in a single PUT — meta rename + widgets + time settings.
+		const snap = dashboardStore.activeDashboard?.spec;
+		try {
+			await dashboardStore.update(d, {
+				...(nameChanged ? { name: renameName.trim() } : {}),
+				...(nsChanged ? { namespace: renameNamespace.trim() || 'default' } : {}),
+				widgets: snap?.widgets ?? d.spec.widgets,
+				refreshInterval: snap?.refreshInterval,
+				timeMinutes: snap?.timeMinutes
+			});
+		} catch {
+			// error reported via activityStore
 		}
-		dashboardStore.saveEditMode(); // cancels all pending timers, sets editMode = false
-		await tick(); // let widget effects update activeDashboard in-memory
-		await dashboardStore.persistActiveDashboard(); // single persist
 	}
 
 	async function cancelEdits() {
@@ -303,8 +310,8 @@
 			<DeleteButton
 				confirmValue="{dashboardStore.activeDashboard.meta.namespace}/{dashboardStore
 					.activeDashboard.meta.name}"
-				confirmHint="Type &quot;{dashboardStore.activeDashboard.meta.name}/{dashboardStore
-					.activeDashboard.meta.namespace}&quot; to confirm."
+				confirmHint="Type &quot;{dashboardStore.activeDashboard.meta.namespace}/{dashboardStore
+					.activeDashboard.meta.name}&quot; to confirm."
 				error={deleteError}
 				{isDeleting}
 				onconfirm={removeDashboard}
@@ -350,8 +357,8 @@
 			<DropdownMenu.Content align="end">
 				{#if dashboardStore.activeDashboard}
 					<DropdownMenu.Item
-						onclick={() => {
-							const { name, namespace } = dashboardStore.enterEditMode();
+						onclick={async () => {
+							const { name, namespace } = await dashboardStore.enterEditMode();
 							renameName = name;
 							renameNamespace = namespace;
 						}}

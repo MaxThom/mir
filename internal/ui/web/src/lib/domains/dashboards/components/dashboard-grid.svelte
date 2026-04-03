@@ -35,6 +35,7 @@
 
 		grid.on('change', () => {
 			if (!dashboardStore.activeDashboard || !grid) return;
+			if (!dashboardStore.editMode && !dashboardStore.isCreatingNew) return;
 			const items = grid.save(false) as import('gridstack').GridStackWidget[];
 			const layout = items.map((item) => ({
 				id: item.id as string,
