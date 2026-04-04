@@ -206,6 +206,7 @@
 				request: { ids, name: selection.config.name, payload: text, dryRun },
 				response: Object.fromEntries(result)
 			});
+			if (!dryRun) await loadConfigs(true);
 		} catch (err) {
 			const message = err instanceof Error ? err.message : 'Failed to send configuration';
 			sendError = message;
@@ -251,6 +252,7 @@
 				request: { name: selection.config.name, dryRun },
 				response: Object.fromEntries(merged)
 			});
+			if (!dryRun) await loadConfigs(true);
 		}
 		if (failures.length > 0) {
 			sendError = failures.join('; ');
