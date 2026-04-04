@@ -17,11 +17,13 @@
 	let {
 		config,
 		widgetId,
-		onDevicesReady
+		onDevicesReady,
+		refreshTick = 0
 	}: {
 		config: ConfigWidgetConfig;
 		widgetId: string;
 		onDevicesReady?: (infos: { id: string; name: string; color: string }[]) => void;
+		refreshTick?: number;
 	} = $props();
 
 	// ─── Types ────────────────────────────────────────────────────────────────
@@ -47,6 +49,7 @@
 	let activeDevices = $state<{ id: string; name: string; namespace: string }[]>([]);
 	let editorContent = $state('{}');
 	let deviceContents = $state<Map<string, string>>(new Map());
+	let serverDeviceValues = $state<Map<string, string>>(new Map());
 	let editorHandle: { getContent: () => string } | undefined = $state(undefined);
 
 	let isSending = $state(false);
@@ -64,7 +67,7 @@
 		return activeDevices.map((d) => ({
 			label: `${d.name}/${d.namespace}`,
 			deviceId: d.id,
-			values: deviceContents.get(d.id) ?? editorContent
+			values: serverDeviceValues.get(d.id) ?? prettyJson(activeDescriptor?.template ?? '{}')
 		}));
 	});
 
@@ -178,16 +181,21 @@
 		}
 	});
 
+	// Auto-refresh: reload config values when dashboard refresh fires
+	$effect(() => {
+		if (refreshTick > 0 && mirStore.mir && hasLoaded) {
+			untrack(loadConfigs);
+		}
+	});
+
 	// ─── Load ─────────────────────────────────────────────────────────────────
 
 	async function loadConfigs() {
 		const mir = mirStore.mir;
 		if (!mir || !config.selectedConfig) return;
 
-		isLoading = true;
+		if (!hasLoaded) isLoading = true;
 		loadError = null;
-		responses = [];
-		hasResponses = false;
 
 		try {
 			const target = new DeviceTarget({
@@ -214,9 +222,16 @@
 			activeDescriptor = found.desc;
 			activeDevices = found.group.ids;
 
+			// Always load current device values from server for per-device display
+			serverDeviceValues = new Map(
+				found.group.ids.map((d) => {
+					const cv = found!.group.values.find((v) => v.deviceId === d.id);
+					return [d.id, prettyJson(cv?.values[config.selectedConfig!] ?? '{}')];
+				})
+			);
+
 			if (config.savedPayloads && Object.keys(config.savedPayloads).length > 0) {
 				deviceContents = new Map(Object.entries(config.savedPayloads));
-				// Single-slot fallback: first device's current values
 				const firstDev = found.group.ids[0];
 				const cv = firstDev
 					? found.group.values.find((v) => v.deviceId === firstDev.id)
@@ -226,18 +241,13 @@
 				editorContent = config.savedPayload;
 				deviceContents = new Map();
 			} else {
-				// Default: current values from each device
+				// Default: current values from first device for single-slot editor
 				const firstDev = found.group.ids[0];
 				const firstCv = firstDev
 					? found.group.values.find((v) => v.deviceId === firstDev.id)
 					: undefined;
 				editorContent = prettyJson(firstCv?.values[config.selectedConfig!] ?? '{}');
-				deviceContents = new Map(
-					found.group.ids.map((d) => {
-						const cv = found!.group.values.find((v) => v.deviceId === d.id);
-						return [d.id, prettyJson(cv?.values[config.selectedConfig!] ?? '{}')];
-					})
-				);
+				deviceContents = new Map();
 			}
 
 			const allDevices = groups.flatMap((g) => g.ids);
