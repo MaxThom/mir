@@ -26,6 +26,7 @@
 	import CalendarClockIcon from '@lucide/svelte/icons/calendar-clock';
 	import InfoIcon from '@lucide/svelte/icons/info';
 	import CpuIcon from '@lucide/svelte/icons/cpu';
+	import PieChartIcon from '@lucide/svelte/icons/pie-chart';
 
 	let {
 		open = $bindable(false),
@@ -93,7 +94,7 @@
 	let eventLimit = $state(50);
 
 	// Device config
-	let selectedDeviceView = $state<'info' | 'properties'>('info');
+	let selectedDeviceView = $state<'info' | 'properties' | 'status'>('info');
 
 	$effect(() => {
 		if (step === 'config' && selectedType === 'telemetry' && mirStore.mir) {
@@ -530,7 +531,7 @@
 					{:else if selectedType === 'device'}
 						<div class="space-y-1">
 							<p class="text-sm font-medium">View</p>
-							<div class="grid grid-cols-2 gap-3">
+							<div class="grid grid-cols-3 gap-3">
 								<button
 									onclick={() => (selectedDeviceView = 'info')}
 									class="flex flex-col items-center gap-2 rounded-xl border p-6 text-center transition-colors hover:border-primary hover:bg-accent {selectedDeviceView === 'info' ? 'border-primary bg-accent' : 'border-border'}"
@@ -549,6 +550,16 @@
 									<div>
 										<p class="font-semibold">Properties</p>
 										<p class="mt-0.5 text-xs text-muted-foreground">Desired &amp; Reported</p>
+									</div>
+								</button>
+								<button
+									onclick={() => (selectedDeviceView = 'status')}
+									class="flex flex-col items-center gap-2 rounded-xl border p-6 text-center transition-colors hover:border-primary hover:bg-accent {selectedDeviceView === 'status' ? 'border-primary bg-accent' : 'border-border'}"
+								>
+									<PieChartIcon class="h-8 w-8 text-muted-foreground" />
+									<div>
+										<p class="font-semibold">Status</p>
+										<p class="mt-0.5 text-xs text-muted-foreground">Online &amp; Offline</p>
 									</div>
 								</button>
 							</div>
