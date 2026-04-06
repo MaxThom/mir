@@ -13,7 +13,7 @@
 	import { Badge } from '$lib/shared/components/shadcn/badge';
 	import { cn } from '$lib/utils';
 	import CircleCheckBigIcon from '@lucide/svelte/icons/circle-check-big';
-	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
+	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
 
 	let {
 		config,
@@ -38,22 +38,31 @@
 	const pillsCompact = $derived(widgetWidth < 280);
 
 	let pillsEl = $state<HTMLDivElement | undefined>(undefined);
-	let canScrollRight = $state(false);
+	let pillsWrapEl = $state<HTMLDivElement | undefined>(undefined);
+	let hasOverflow = $state(false);
+	let dropdownOpen = $state(false);
 
 	$effect(() => {
 		if (!pillsEl) return;
 		function check() {
 			if (!pillsEl) return;
-			canScrollRight = pillsEl.scrollWidth > pillsEl.clientWidth + pillsEl.scrollLeft + 2;
+			hasOverflow = pillsEl.scrollWidth > pillsEl.clientWidth + 2;
 		}
 		check();
-		pillsEl.addEventListener('scroll', check);
 		const ro = new ResizeObserver(check);
 		ro.observe(pillsEl);
-		return () => {
-			pillsEl!.removeEventListener('scroll', check);
-			ro.disconnect();
-		};
+		return () => ro.disconnect();
+	});
+
+	$effect(() => {
+		if (!dropdownOpen) return;
+		function handleClick(e: MouseEvent) {
+			if (pillsWrapEl && !pillsWrapEl.contains(e.target as Node)) {
+				dropdownOpen = false;
+			}
+		}
+		document.addEventListener('click', handleClick);
+		return () => document.removeEventListener('click', handleClick);
 	});
 
 	$effect(() => {
@@ -172,8 +181,8 @@
 					</select>
 				</div>
 			{:else}
-				<div class="relative shrink-0 border-b">
-					<div bind:this={pillsEl} class="pills-scroll flex items-center gap-1.5 overflow-x-auto px-3 py-1.5">
+				<div class="relative shrink-0 border-b" bind:this={pillsWrapEl}>
+					<div bind:this={pillsEl} class="pills-scroll flex items-center gap-1.5 overflow-x-auto px-3 py-1.5" class:pr-8={hasOverflow}>
 						{#each deviceInfos as info (info.id)}
 							<button
 								onclick={() => selectDevice(info.id)}
@@ -188,9 +197,34 @@
 							</button>
 						{/each}
 					</div>
-					{#if canScrollRight}
-						<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center bg-gradient-to-l from-background via-background/80 to-transparent pl-6 pr-1.5">
-							<ChevronRightIcon class="size-3 text-muted-foreground" />
+					{#if hasOverflow}
+						<div class="absolute inset-y-0 right-0 flex items-center bg-gradient-to-l from-background via-background/80 to-transparent pl-6 pr-1">
+							<button
+								onclick={() => (dropdownOpen = !dropdownOpen)}
+								class={cn(
+									'flex size-5 items-center justify-center rounded transition-colors hover:bg-muted',
+									dropdownOpen ? 'text-foreground' : 'text-muted-foreground'
+								)}
+							>
+								<ChevronDownIcon class="size-3" />
+							</button>
+						</div>
+					{/if}
+					{#if dropdownOpen}
+						<div class="absolute left-0 right-0 top-full z-50 rounded-b-md border-x border-b bg-popover shadow-md">
+							{#each deviceInfos as info (info.id)}
+								<button
+									onclick={() => { selectDevice(info.id); dropdownOpen = false; }}
+									class={cn(
+										'flex w-full items-center px-3 py-1.5 text-left text-xs transition-colors hover:bg-accent',
+										info.id === (selectedDevice.spec?.deviceId ?? '')
+											? 'font-medium text-foreground'
+											: 'text-muted-foreground'
+									)}
+								>
+									{info.name}
+								</button>
+							{/each}
 						</div>
 					{/if}
 				</div>
