@@ -9,7 +9,7 @@
 	import WidgetCommand from './widget-command.svelte';
 	import WidgetConfig from './widget-config.svelte';
 	import WidgetEvents from './widget-events.svelte';
-import WidgetDevice from './widget-device.svelte';
+	import WidgetDevice from './widget-device.svelte';
 	import WidgetDevicePills from './widget-device-pills.svelte';
 	import type { TelemetryWidgetConfig, CommandWidgetConfig, ConfigWidgetConfig, EventsWidgetConfig, DeviceWidgetConfig } from '../api/dashboard-api';
 
