@@ -15,7 +15,8 @@
 		TelemetryWidgetConfig,
 		EventsWidgetConfig,
 		CommandWidgetConfig,
-		ConfigWidgetConfig
+		ConfigWidgetConfig,
+		DeviceWidgetConfig
 	} from '../api/dashboard-api';
 	import type { TelemetryGroup, CommandGroup, ConfigGroup } from '@mir/sdk';
 	import { DeviceTarget } from '@mir/sdk';
@@ -24,6 +25,7 @@
 	import SlidersHorizontalIcon from '@lucide/svelte/icons/sliders-horizontal';
 	import CalendarClockIcon from '@lucide/svelte/icons/calendar-clock';
 	import InfoIcon from '@lucide/svelte/icons/info';
+	import CpuIcon from '@lucide/svelte/icons/cpu';
 
 	let {
 		open = $bindable(false),
@@ -53,6 +55,9 @@
 				selectedConfigName = c.selectedConfig ?? '';
 			} else if (editWidget.type === 'events') {
 				eventLimit = (editWidget.config as EventsWidgetConfig).limit;
+			} else if (editWidget.type === 'device') {
+				const c = editWidget.config as DeviceWidgetConfig;
+				selectedDeviceView = c.view ?? 'info';
 			}
 		}
 	});
@@ -86,6 +91,9 @@
 
 	// Events config
 	let eventLimit = $state(50);
+
+	// Device config
+	let selectedDeviceView = $state<'info' | 'properties'>('info');
 
 	$effect(() => {
 		if (step === 'config' && selectedType === 'telemetry' && mirStore.mir) {
@@ -223,6 +231,7 @@
 		configsLoading = false;
 		selectedConfigName = '';
 		eventLimit = 50;
+		selectedDeviceView = 'info';
 		editWidget = null;
 	}
 
@@ -242,6 +251,8 @@
 				return 'Configuration';
 			case 'events':
 				return 'Events';
+			case 'device':
+				return 'Device';
 		}
 	}
 
@@ -249,7 +260,7 @@
 		step = 'config';
 	}
 
-	function buildConfig(): TelemetryWidgetConfig | CommandWidgetConfig | ConfigWidgetConfig | EventsWidgetConfig {
+	function buildConfig(): TelemetryWidgetConfig | CommandWidgetConfig | ConfigWidgetConfig | EventsWidgetConfig | DeviceWidgetConfig {
 		switch (selectedType!) {
 			case 'telemetry': {
 				const descriptor = measurementGroups
@@ -268,6 +279,8 @@
 				return { target, selectedConfig: selectedConfigName } satisfies ConfigWidgetConfig;
 			case 'events':
 				return { target, limit: eventLimit } satisfies EventsWidgetConfig;
+			case 'device':
+				return { target, view: selectedDeviceView } satisfies DeviceWidgetConfig;
 		}
 	}
 
@@ -306,8 +319,8 @@
 			<!-- Step 1: Type -->
 			{#if step === 'type'}
 				<div class="flex flex-1 items-start justify-center">
-					<div class="grid w-full max-w-4xl grid-cols-4 gap-4">
-						{#each [{ type: 'telemetry' as WidgetType, icon: ActivityIcon, label: 'Telemetry', desc: 'Visualize time-series data from device sensors' }, { type: 'command' as WidgetType, icon: TerminalIcon, label: 'Command', desc: 'Send commands and view responses from devices' }, { type: 'config' as WidgetType, icon: SlidersHorizontalIcon, label: 'Configuration', desc: 'Manage and push configuration to devices' }, { type: 'events' as WidgetType, icon: CalendarClockIcon, label: 'Events', desc: 'Monitor events and audit logs from the fleet' }] as item (item.type)}
+					<div class="grid w-full max-w-4xl grid-cols-5 gap-4">
+						{#each [{ type: 'telemetry' as WidgetType, icon: ActivityIcon, label: 'Telemetry', desc: 'Visualize time-series data from device sensors' }, { type: 'command' as WidgetType, icon: TerminalIcon, label: 'Command', desc: 'Send commands and view responses from devices' }, { type: 'config' as WidgetType, icon: SlidersHorizontalIcon, label: 'Configuration', desc: 'Manage and push configuration to devices' }, { type: 'events' as WidgetType, icon: CalendarClockIcon, label: 'Events', desc: 'Monitor events and audit logs from the fleet' }, { type: 'device' as WidgetType, icon: CpuIcon, label: 'Device', desc: 'View device meta, status and properties' }] as item (item.type)}
 							<button
 								class="flex flex-col items-center gap-4 rounded-xl border border-border p-10 text-center transition-colors hover:border-primary hover:bg-accent"
 								onclick={() => selectType(item.type)}
@@ -513,6 +526,32 @@
 						<div class="space-y-1">
 							<label for="widget-maxevents" class="text-sm font-medium">Max events</label>
 							<Input id="widget-maxevents" type="number" bind:value={eventLimit} min={1} max={500} />
+						</div>
+					{:else if selectedType === 'device'}
+						<div class="space-y-1">
+							<p class="text-sm font-medium">View</p>
+							<div class="grid grid-cols-2 gap-3">
+								<button
+									onclick={() => (selectedDeviceView = 'info')}
+									class="flex flex-col items-center gap-2 rounded-xl border p-6 text-center transition-colors hover:border-primary hover:bg-accent {selectedDeviceView === 'info' ? 'border-primary bg-accent' : 'border-border'}"
+								>
+									<InfoIcon class="h-8 w-8 text-muted-foreground" />
+									<div>
+										<p class="font-semibold">Info</p>
+										<p class="mt-0.5 text-xs text-muted-foreground">Meta, Spec &amp; Status</p>
+									</div>
+								</button>
+								<button
+									onclick={() => (selectedDeviceView = 'properties')}
+									class="flex flex-col items-center gap-2 rounded-xl border p-6 text-center transition-colors hover:border-primary hover:bg-accent {selectedDeviceView === 'properties' ? 'border-primary bg-accent' : 'border-border'}"
+								>
+									<SlidersHorizontalIcon class="h-8 w-8 text-muted-foreground" />
+									<div>
+										<p class="font-semibold">Properties</p>
+										<p class="mt-0.5 text-xs text-muted-foreground">Desired &amp; Reported</p>
+									</div>
+								</button>
+							</div>
 						</div>
 					{:else}
 						<p class="text-sm text-muted-foreground">
