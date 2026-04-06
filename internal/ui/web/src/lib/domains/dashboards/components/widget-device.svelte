@@ -13,6 +13,7 @@
 	import { Badge } from '$lib/shared/components/shadcn/badge';
 	import { cn } from '$lib/utils';
 	import CircleCheckBigIcon from '@lucide/svelte/icons/circle-check-big';
+	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 
 	let {
 		config,
@@ -35,6 +36,25 @@
 	let widgetEl: HTMLDivElement | undefined;
 	let widgetWidth = $state(9999);
 	const pillsCompact = $derived(widgetWidth < 280);
+
+	let pillsEl = $state<HTMLDivElement | undefined>(undefined);
+	let canScrollRight = $state(false);
+
+	$effect(() => {
+		if (!pillsEl) return;
+		function check() {
+			if (!pillsEl) return;
+			canScrollRight = pillsEl.scrollWidth > pillsEl.clientWidth + pillsEl.scrollLeft + 2;
+		}
+		check();
+		pillsEl.addEventListener('scroll', check);
+		const ro = new ResizeObserver(check);
+		ro.observe(pillsEl);
+		return () => {
+			pillsEl!.removeEventListener('scroll', check);
+			ro.disconnect();
+		};
+	});
 
 	$effect(() => {
 		if (!widgetEl) return;
@@ -152,20 +172,27 @@
 					</select>
 				</div>
 			{:else}
-				<div class="flex shrink-0 items-center gap-1.5 overflow-x-auto border-b px-3 py-1.5">
-					{#each deviceInfos as info (info.id)}
-						<button
-							onclick={() => selectDevice(info.id)}
-							class={cn(
-								'shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors',
-								info.id === (selectedDevice.spec?.deviceId ?? '')
-									? 'bg-primary text-primary-foreground'
-									: 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground'
-							)}
-						>
-							{info.name}
-						</button>
-					{/each}
+				<div class="relative shrink-0 border-b">
+					<div bind:this={pillsEl} class="pills-scroll flex items-center gap-1.5 overflow-x-auto px-3 py-1.5">
+						{#each deviceInfos as info (info.id)}
+							<button
+								onclick={() => selectDevice(info.id)}
+								class={cn(
+									'shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors',
+									info.id === (selectedDevice.spec?.deviceId ?? '')
+										? 'bg-primary text-primary-foreground'
+										: 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground'
+								)}
+							>
+								{info.name}
+							</button>
+						{/each}
+					</div>
+					{#if canScrollRight}
+						<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center bg-gradient-to-l from-background via-background/80 to-transparent pl-6 pr-1.5">
+							<ChevronRightIcon class="size-3 text-muted-foreground" />
+						</div>
+					{/if}
 				</div>
 			{/if}
 		{/if}
@@ -371,3 +398,13 @@
 		</div>
 	{/if}
 </div>
+
+<style>
+	.pills-scroll {
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+	}
+	.pills-scroll::-webkit-scrollbar {
+		display: none;
+	}
+</style>
