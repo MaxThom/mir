@@ -86,6 +86,13 @@
 		}))
 	);
 
+	const pillsDeviceInfos = $derived(() => {
+		const selectedId = selectedDevice?.spec?.deviceId ?? '';
+		const idx = deviceInfos.findIndex((d) => d.id === selectedId);
+		if (idx <= 0) return deviceInfos;
+		return [deviceInfos[idx], ...deviceInfos.slice(0, idx), ...deviceInfos.slice(idx + 1)];
+	});
+
 	$effect(() => {
 		if (mirStore.mir) {
 			untrack(loadDevices);
@@ -183,7 +190,7 @@
 			{:else}
 				<div class="relative shrink-0 border-b" bind:this={pillsWrapEl}>
 					<div bind:this={pillsEl} class="pills-scroll flex items-center gap-1.5 overflow-x-auto px-3 py-1.5" class:pr-8={hasOverflow}>
-						{#each deviceInfos as info (info.id)}
+						{#each pillsDeviceInfos() as info (info.id)}
 							<button
 								onclick={() => selectDevice(info.id)}
 								class={cn(
@@ -212,7 +219,7 @@
 					{/if}
 					{#if dropdownOpen}
 						<div class="absolute left-0 right-0 top-full z-50 rounded-b-md border-x border-b bg-popover shadow-md">
-							{#each deviceInfos as info (info.id)}
+							{#each pillsDeviceInfos() as info (info.id)}
 								<button
 									onclick={() => { selectDevice(info.id); dropdownOpen = false; }}
 									class={cn(

@@ -1,0 +1,59 @@
+<h2>Multi-device selector in the widget header</h2>
+<p class="subtitle">When multiple devices are targeted, how should you switch between them?</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Pill tabs in header</h3>
+      <p>Clickable device name pills — active one highlighted. Same row as widget title. Scrolls horizontally if many devices. Familiar pattern (already used in telemetry/cmd/cfg).</p>
+      <div class="mockup" style="margin-top:10px">
+        <div class="mockup-header">Widget Header</div>
+        <div class="mockup-body" style="padding:8px 12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span style="font-weight:600;font-size:13px;flex:0 0 auto">Device Info</span>
+          <div style="display:flex;gap:5px;flex:1;overflow:hidden">
+            <span style="background:#6366f1;color:white;border-radius:9999px;padding:2px 10px;font-size:11px;cursor:pointer">power-01</span>
+            <span style="background:#e5e7eb;color:#374151;border-radius:9999px;padding:2px 10px;font-size:11px;cursor:pointer">weather-02</span>
+            <span style="background:#e5e7eb;color:#374151;border-radius:9999px;padding:2px 10px;font-size:11px;cursor:pointer">sensor-03</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Dropdown selector</h3>
+      <p>A compact dropdown showing the active device name. Click to open a list and pick another. Best when there are many devices and space is tight.</p>
+      <div class="mockup" style="margin-top:10px">
+        <div class="mockup-header">Widget Header</div>
+        <div class="mockup-body" style="padding:8px 12px;display:flex;align-items:center;gap:8px">
+          <span style="font-weight:600;font-size:13px;flex:1">Device Info</span>
+          <span style="background:#f9fafb;border:1px solid #d1d5db;border-radius:6px;padding:3px 10px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:4px">
+            power-01 <span style="color:#9ca3af">▾</span>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Tab row below header</h3>
+      <p>Full-width tab bar below the widget title — each tab is a device. More space, clearer active state. Takes slightly more vertical real estate.</p>
+      <div class="mockup" style="margin-top:10px">
+        <div class="mockup-header">Device Info</div>
+        <div class="mockup-body" style="padding:0">
+          <div style="display:flex;border-bottom:1px solid #e5e7eb;padding:0 12px;gap:0">
+            <span style="padding:7px 14px;font-size:12px;border-bottom:2px solid #6366f1;color:#6366f1;cursor:pointer;font-weight:500">power-01</span>
+            <span style="padding:7px 14px;font-size:12px;color:#6b7280;cursor:pointer">weather-02</span>
+            <span style="padding:7px 14px;font-size:12px;color:#6b7280;cursor:pointer">sensor-03</span>
+          </div>
+          <div style="padding:10px 12px;font-size:12px;color:#9ca3af">↑ device content below tabs</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
