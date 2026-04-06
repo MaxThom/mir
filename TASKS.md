@@ -19,9 +19,14 @@
   - [x] dashboard toolbar, horizontal scroll
   - [x] tlm, autorefresh and timerange
   - [x] tlm, utc switch
+  - [ ] tlm, last value widget chart
   - [x] store, validate CONTAINS with *
   - [ ] widget, dev list, grey if offline
-  - [ ] dev
+  - [ ] txt mardown widget
+  - [ ] welcome page which is a custome dashboard
+  - [ ] dev spec
+  - [ ] dev props
+  - [ ] dev online/offline
   - [x] cmd
   - [x] cfg
   - [ ] evt

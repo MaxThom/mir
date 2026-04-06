@@ -1,0 +1,79 @@
+<h2>Properties view layout — Desired vs Reported</h2>
+<p class="subtitle">Properties are key-value pairs. Desired = what you set. Reported = what the device says it is.</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Side-by-side columns</h3>
+      <p>Desired on the left, Reported on the right. Easy to spot drift between them at a glance.</p>
+      <div class="mockup" style="margin-top:10px">
+        <div class="mockup-header">Device Props · power-01</div>
+        <div class="mockup-body" style="padding:8px 12px;font-size:12px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px">
+            <div>
+              <div style="color:#9ca3af;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-bottom:4px">Desired</div>
+              <div style="display:grid;grid-template-columns:70px 1fr;gap:2px 6px;color:#374151">
+                <span style="color:#6b7280">interval</span><span>30</span>
+                <span style="color:#6b7280">enabled</span><span>true</span>
+                <span style="color:#6b7280">threshold</span><span>85</span>
+              </div>
+            </div>
+            <div style="border-left:1px solid #f3f4f6;padding-left:12px">
+              <div style="color:#9ca3af;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-bottom:4px">Reported</div>
+              <div style="display:grid;grid-template-columns:70px 1fr;gap:2px 6px;color:#374151">
+                <span style="color:#6b7280">interval</span><span style="color:#f59e0b">45</span>
+                <span style="color:#6b7280">enabled</span><span>true</span>
+                <span style="color:#6b7280">threshold</span><span style="color:#9ca3af">—</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Merged table with drift indicator</h3>
+      <p>One row per key. Columns: key | desired | reported. A ✓ or amber dot shows if they match. Compact and easy to scan for drift.</p>
+      <div class="mockup" style="margin-top:10px">
+        <div class="mockup-header">Device Props · power-01</div>
+        <div class="mockup-body" style="padding:8px 12px;font-size:12px">
+          <div style="display:grid;grid-template-columns:80px 1fr 1fr 20px;gap:3px 8px;color:#374151">
+            <span style="color:#9ca3af;font-size:10px;font-weight:700;text-transform:uppercase">Key</span>
+            <span style="color:#9ca3af;font-size:10px;font-weight:700;text-transform:uppercase">Desired</span>
+            <span style="color:#9ca3af;font-size:10px;font-weight:700;text-transform:uppercase">Reported</span>
+            <span></span>
+            <span style="color:#6b7280">interval</span><span>30</span><span style="color:#f59e0b">45</span><span title="drift">⚠</span>
+            <span style="color:#6b7280">enabled</span><span>true</span><span>true</span><span style="color:#22c55e">✓</span>
+            <span style="color:#6b7280">threshold</span><span>85</span><span style="color:#9ca3af">—</span><span style="color:#9ca3af">–</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Tabs — Desired | Reported</h3>
+      <p>Switch between the two with tabs. Simpler, more space for values, but you can't see both at once.</p>
+      <div class="mockup" style="margin-top:10px">
+        <div class="mockup-header">Device Props · power-01</div>
+        <div class="mockup-body" style="padding:0;font-size:12px">
+          <div style="display:flex;border-bottom:1px solid #e5e7eb;padding:0 12px">
+            <span style="padding:6px 12px;border-bottom:2px solid #6366f1;color:#6366f1;font-size:12px;font-weight:500">Desired</span>
+            <span style="padding:6px 12px;color:#6b7280;font-size:12px">Reported</span>
+          </div>
+          <div style="padding:10px 12px;display:grid;grid-template-columns:90px 1fr;gap:3px 8px;color:#374151">
+            <span style="color:#6b7280">interval</span><span>30</span>
+            <span style="color:#6b7280">enabled</span><span>true</span>
+            <span style="color:#6b7280">threshold</span><span>85</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

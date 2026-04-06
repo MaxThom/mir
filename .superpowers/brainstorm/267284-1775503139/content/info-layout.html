@@ -1,0 +1,88 @@
+<h2>Info view layout — Meta / Spec / Status sections</h2>
+<p class="subtitle">How should the three sections be arranged inside the widget?</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Collapsible sections (accordion)</h3>
+      <p>Each section has a header you can collapse. Saves space when you only care about one section.</p>
+      <div class="mockup" style="margin-top:10px">
+        <div class="mockup-header">Device Info · power-01</div>
+        <div class="mockup-body" style="padding:8px 12px;font-size:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #e5e7eb;font-weight:600;color:#374151">
+            <span>▾ Meta</span>
+          </div>
+          <div style="padding:6px 0 6px 8px;display:grid;grid-template-columns:90px 1fr;gap:3px 8px;color:#374151">
+            <span style="color:#6b7280">Name</span><span>power-01</span>
+            <span style="color:#6b7280">Namespace</span><span>default</span>
+            <span style="color:#6b7280">Labels</span><span style="background:#f3f4f6;border-radius:4px;padding:1px 6px;font-size:11px">env=prod</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #e5e7eb;font-weight:600;color:#374151">
+            <span>▸ Spec</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #e5e7eb;font-weight:600;color:#374151">
+            <span>▾ Status</span>
+          </div>
+          <div style="padding:6px 0 6px 8px;display:grid;grid-template-columns:90px 1fr;gap:3px 8px;color:#374151">
+            <span style="color:#6b7280">Online</span><span style="color:#22c55e">● Online</span>
+            <span style="color:#6b7280">Last seen</span><span>2 min ago</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Always-visible compact list</h3>
+      <p>All fields always shown, grouped by a small section label. Dense and scrollable — good for a small widget footprint.</p>
+      <div class="mockup" style="margin-top:10px">
+        <div class="mockup-header">Device Info · power-01</div>
+        <div class="mockup-body" style="padding:8px 12px;font-size:12px">
+          <div style="color:#9ca3af;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-bottom:3px">Meta</div>
+          <div style="display:grid;grid-template-columns:90px 1fr;gap:2px 8px;color:#374151;padding-bottom:8px;border-bottom:1px solid #f3f4f6">
+            <span style="color:#6b7280">Name</span><span>power-01</span>
+            <span style="color:#6b7280">Namespace</span><span>default</span>
+            <span style="color:#6b7280">Labels</span><span style="background:#f3f4f6;border-radius:4px;padding:1px 6px;font-size:11px">env=prod</span>
+          </div>
+          <div style="color:#9ca3af;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin:6px 0 3px">Spec</div>
+          <div style="display:grid;grid-template-columns:90px 1fr;gap:2px 8px;color:#374151;padding-bottom:8px;border-bottom:1px solid #f3f4f6">
+            <span style="color:#6b7280">Device ID</span><span style="font-family:monospace;font-size:11px">abc-123-def</span>
+            <span style="color:#6b7280">Disabled</span><span>No</span>
+          </div>
+          <div style="color:#9ca3af;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin:6px 0 3px">Status</div>
+          <div style="display:grid;grid-template-columns:90px 1fr;gap:2px 8px;color:#374151">
+            <span style="color:#6b7280">Online</span><span style="color:#22c55e">● Online</span>
+            <span style="color:#6b7280">Last seen</span><span>2 min ago</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Tabs — Meta | Spec | Status</h3>
+      <p>Each section is its own tab. Very clean if you rarely need all three at once. Hides context at a glance.</p>
+      <div class="mockup" style="margin-top:10px">
+        <div class="mockup-header">Device Info · power-01</div>
+        <div class="mockup-body" style="padding:0;font-size:12px">
+          <div style="display:flex;border-bottom:1px solid #e5e7eb;padding:0 12px">
+            <span style="padding:6px 12px;border-bottom:2px solid #6366f1;color:#6366f1;font-size:12px;font-weight:500">Meta</span>
+            <span style="padding:6px 12px;color:#6b7280;font-size:12px">Spec</span>
+            <span style="padding:6px 12px;color:#6b7280;font-size:12px">Status</span>
+          </div>
+          <div style="padding:10px 12px;display:grid;grid-template-columns:90px 1fr;gap:4px 8px;color:#374151">
+            <span style="color:#6b7280">Name</span><span>power-01</span>
+            <span style="color:#6b7280">Namespace</span><span>default</span>
+            <span style="color:#6b7280">Labels</span><span style="background:#f3f4f6;border-radius:4px;padding:1px 6px;font-size:11px">env=prod</span>
+            <span style="color:#6b7280">Annotations</span><span style="color:#9ca3af">none</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
