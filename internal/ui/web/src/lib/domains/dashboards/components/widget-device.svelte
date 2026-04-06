@@ -32,6 +32,19 @@
 	let loadError = $state<string | null>(null);
 	let isInRefresh = false;
 
+	let widgetEl: HTMLDivElement | undefined;
+	let widgetWidth = $state(9999);
+	const pillsCompact = $derived(widgetWidth < 280);
+
+	$effect(() => {
+		if (!widgetEl) return;
+		const ro = new ResizeObserver(([entry]) => {
+			widgetWidth = entry.contentRect.width;
+		});
+		ro.observe(widgetEl);
+		return () => ro.disconnect();
+	});
+
 	const selectedDevice = $derived(
 		devices.find((d) => d.spec?.deviceId === config.selectedDeviceId) ?? devices[0] ?? null
 	);
@@ -114,7 +127,7 @@
 	}
 </script>
 
-<div class="flex h-full flex-col overflow-hidden">
+<div class="flex h-full flex-col overflow-hidden" bind:this={widgetEl}>
 	{#if isLoading}
 		<div class="flex flex-1 items-center justify-center">
 			<span class="text-xs text-muted-foreground">Loading…</span>
@@ -124,97 +137,111 @@
 	{:else if devices.length === 0 && hasLoaded}
 		<p class="p-4 text-xs text-muted-foreground">No devices found for this target.</p>
 	{:else if selectedDevice}
-		<!-- Device pill tabs (only when multiple devices) -->
+		<!-- Device selector (pills or dropdown depending on widget width) -->
 		{#if devices.length > 1}
-			<div class="flex shrink-0 items-center gap-1.5 overflow-x-auto border-b px-3 py-1.5">
-				{#each deviceInfos as info (info.id)}
-					<button
-						onclick={() => selectDevice(info.id)}
-						class={cn(
-							'shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors',
-							info.id === (selectedDevice.spec?.deviceId ?? '')
-								? 'bg-primary text-primary-foreground'
-								: 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground'
-						)}
+			{#if pillsCompact}
+				<div class="shrink-0 border-b px-3 py-1.5">
+					<select
+						value={selectedDevice.spec?.deviceId ?? ''}
+						onchange={(e) => selectDevice(e.currentTarget.value)}
+						class="w-full rounded-md border border-input bg-background px-2 py-0.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
 					>
-						{info.name}
-					</button>
-				{/each}
-			</div>
+						{#each deviceInfos as info (info.id)}
+							<option value={info.id}>{info.name}</option>
+						{/each}
+					</select>
+				</div>
+			{:else}
+				<div class="flex shrink-0 items-center gap-1.5 overflow-x-auto border-b px-3 py-1.5">
+					{#each deviceInfos as info (info.id)}
+						<button
+							onclick={() => selectDevice(info.id)}
+							class={cn(
+								'shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors',
+								info.id === (selectedDevice.spec?.deviceId ?? '')
+									? 'bg-primary text-primary-foreground'
+									: 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground'
+							)}
+						>
+							{info.name}
+						</button>
+					{/each}
+				</div>
+			{/if}
 		{/if}
 
 		<div class="min-h-0 flex-1 overflow-y-auto px-4 py-3">
 			{#if config.view === 'info'}
 				<!-- ── Info view ────────────────────────────────────────────────── -->
-				<div class="space-y-2">
+				<div class="space-y-1">
 					<p class="text-xs font-medium tracking-wide text-muted-foreground uppercase">Meta</p>
 
-					<div class="flex items-center gap-4">
-						<span class="w-28 shrink-0 text-sm text-muted-foreground">Name</span>
-						<span class="flex-1 text-sm font-medium">{selectedDevice.meta?.name ?? '—'}</span>
+					<div class="flex items-center gap-2">
+						<span class="w-20 shrink-0 text-xs text-muted-foreground">Name</span>
+						<span class="flex-1 text-xs font-medium">{selectedDevice.meta?.name ?? '—'}</span>
 					</div>
 
-					<div class="flex items-center gap-4">
-						<span class="w-28 shrink-0 text-sm text-muted-foreground">Namespace</span>
-						<span class="flex-1 font-mono text-sm">{selectedDevice.meta?.namespace ?? '—'}</span>
+					<div class="flex items-center gap-2">
+						<span class="w-20 shrink-0 text-xs text-muted-foreground">Namespace</span>
+						<span class="flex-1 font-mono text-xs">{selectedDevice.meta?.namespace ?? '—'}</span>
 					</div>
 
-					<div class="flex items-start gap-4">
-						<span class="w-28 shrink-0 pt-0.5 text-sm text-muted-foreground">Labels</span>
+					<div class="flex items-start gap-2">
+						<span class="w-20 shrink-0 pt-0.5 text-xs text-muted-foreground">Labels</span>
 						<div class="flex flex-1 flex-wrap gap-1">
 							{#each Object.entries(selectedDevice.meta?.labels ?? {}) as [k, v] (k)}
 								<Badge variant="secondary" class="font-mono text-xs font-normal">{k}={v}</Badge>
 							{:else}
-								<span class="text-sm text-muted-foreground">—</span>
+								<span class="text-xs text-muted-foreground">—</span>
 							{/each}
 						</div>
 					</div>
 
-					<div class="flex items-start gap-4">
-						<span class="w-28 shrink-0 text-sm text-muted-foreground">Annotations</span>
+					<div class="flex items-start gap-2">
+						<span class="w-20 shrink-0 text-xs text-muted-foreground">Annotations</span>
 						<div class="flex flex-1 flex-wrap gap-1">
 							{#each Object.entries(selectedDevice.meta?.annotations ?? {}) as [k, v] (k)}
 								<span class="text-xs text-muted-foreground">{k}: {v}</span>
 							{:else}
-								<span class="text-sm text-muted-foreground">—</span>
+								<span class="text-xs text-muted-foreground">—</span>
 							{/each}
 						</div>
 					</div>
 				</div>
 
-				<Separator class="my-2" />
+				<Separator class="my-1.5" />
 
-				<div class="space-y-2">
+				<div class="space-y-1">
 					<p class="text-xs font-medium tracking-wide text-muted-foreground uppercase">Spec</p>
 
-					<div class="flex items-center gap-4">
-						<span class="w-28 shrink-0 text-sm text-muted-foreground">Device ID</span>
-						<span class="flex-1 font-mono text-xs text-muted-foreground">
+					<div class="flex items-center gap-2">
+						<span class="w-20 shrink-0 text-xs text-muted-foreground">Device ID</span>
+						<span class="flex-1 truncate font-mono text-xs text-muted-foreground">
 							{selectedDevice.spec?.deviceId ?? '—'}
 						</span>
 					</div>
 
-					<div class="flex items-center gap-4">
-						<span class="w-28 shrink-0 text-sm text-muted-foreground">Disabled</span>
+					<div class="flex items-center gap-2">
+						<span class="w-20 shrink-0 text-xs text-muted-foreground">Disabled</span>
 						{#if selectedDevice.spec?.disabled}
 							<Badge variant="destructive" class="text-xs">Yes</Badge>
 						{:else}
-							<span class="text-sm text-muted-foreground">No</span>
+							<span class="text-xs text-muted-foreground">No</span>
 						{/if}
 					</div>
 				</div>
 
-				<Separator class="my-2" />
+				<Separator class="my-1.5" />
 
-				<div class="space-y-2">
+				<div class="space-y-1">
 					<p class="text-xs font-medium tracking-wide text-muted-foreground uppercase">Status</p>
 
-					<div class="flex items-center gap-4">
-						<span class="w-28 shrink-0 text-sm text-muted-foreground">Connectivity</span>
-						<div class="flex items-center gap-2">
+					<div class="flex items-center gap-2">
+						<span class="w-20 shrink-0 text-xs text-muted-foreground">Connectivity</span>
+						<div class="flex items-center gap-1.5">
 							<span
 								class={cn(
-									'h-2 w-2 shrink-0 rounded-full',
+									'h-1.5 w-1.5 shrink-0 rounded-full',
 									selectedDevice.status?.online
 										? 'bg-emerald-500 shadow-[0_0_0_3px_--theme(--color-emerald-500/0.2)]'
 										: 'bg-muted-foreground/30'
@@ -222,7 +249,7 @@
 							></span>
 							<span
 								class={cn(
-									'text-sm font-medium',
+									'text-xs font-medium',
 									selectedDevice.status?.online
 										? 'text-emerald-600 dark:text-emerald-400'
 										: 'text-muted-foreground'
@@ -233,23 +260,23 @@
 						</div>
 					</div>
 
-					<div class="flex items-center gap-4">
-						<span class="w-28 shrink-0 text-sm text-muted-foreground">Last Heartbeat</span>
+					<div class="flex items-center gap-2">
+						<span class="w-20 shrink-0 text-xs text-muted-foreground">Last Heartbeat</span>
 						<div class="flex-1">
 							{#if selectedDevice.status?.lastHearthbeat}
 								<TimeTooltip
 									timestamp={selectedDevice.status.lastHearthbeat}
 									utc={editorPrefs.utc}
-									class="text-sm hover:text-foreground"
+									class="text-xs hover:text-foreground"
 								/>
 							{:else}
-								<span class="text-sm text-muted-foreground">—</span>
+								<span class="text-xs text-muted-foreground">—</span>
 							{/if}
 						</div>
 					</div>
 
-					<div class="flex items-start gap-4">
-						<span class="w-28 shrink-0 pt-0.5 text-sm text-muted-foreground">Schema</span>
+					<div class="flex items-start gap-2">
+						<span class="w-20 shrink-0 pt-0.5 text-xs text-muted-foreground">Schema</span>
 						<div class="flex-1">
 							{#if selectedDevice.status?.schema?.packageNames?.length}
 								<div class="flex flex-wrap gap-1">
@@ -266,7 +293,7 @@
 									/>
 								{/if}
 							{:else}
-								<span class="text-sm text-muted-foreground">Not loaded</span>
+								<span class="text-xs text-muted-foreground">Not loaded</span>
 							{/if}
 						</div>
 					</div>
