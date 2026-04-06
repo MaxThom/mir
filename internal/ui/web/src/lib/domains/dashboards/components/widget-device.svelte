@@ -33,10 +33,6 @@
 	let loadError = $state<string | null>(null);
 	let isInRefresh = false;
 
-	let widgetEl: HTMLDivElement | undefined;
-	let widgetWidth = $state(9999);
-	const pillsCompact = $derived(widgetWidth < 280);
-
 	let pillsEl = $state<HTMLDivElement | undefined>(undefined);
 	let pillsWrapEl = $state<HTMLDivElement | undefined>(undefined);
 	let hasOverflow = $state(false);
@@ -63,15 +59,6 @@
 		}
 		document.addEventListener('click', handleClick);
 		return () => document.removeEventListener('click', handleClick);
-	});
-
-	$effect(() => {
-		if (!widgetEl) return;
-		const ro = new ResizeObserver(([entry]) => {
-			widgetWidth = entry.contentRect.width;
-		});
-		ro.observe(widgetEl);
-		return () => ro.disconnect();
 	});
 
 	const selectedDevice = $derived(
@@ -163,7 +150,7 @@
 	}
 </script>
 
-<div class="flex h-full flex-col overflow-hidden" bind:this={widgetEl}>
+<div class="flex h-full flex-col overflow-hidden">
 	{#if isLoading}
 		<div class="flex flex-1 items-center justify-center">
 			<span class="text-xs text-muted-foreground">Loading…</span>
@@ -173,69 +160,55 @@
 	{:else if devices.length === 0 && hasLoaded}
 		<p class="p-4 text-xs text-muted-foreground">No devices found for this target.</p>
 	{:else if selectedDevice}
-		<!-- Device selector (pills or dropdown depending on widget width) -->
+		<!-- Device selector -->
 		{#if devices.length > 1}
-			{#if pillsCompact}
-				<div class="shrink-0 border-b px-3 py-1.5">
-					<select
-						value={selectedDevice.spec?.deviceId ?? ''}
-						onchange={(e) => selectDevice(e.currentTarget.value)}
-						class="w-full rounded-md border border-input bg-background px-2 py-0.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-					>
-						{#each deviceInfos as info (info.id)}
-							<option value={info.id}>{info.name}</option>
-						{/each}
-					</select>
+			<div class="relative shrink-0 border-b" bind:this={pillsWrapEl}>
+				<div bind:this={pillsEl} class="pills-scroll flex items-center gap-1.5 overflow-x-auto px-3 py-1.5" class:pr-8={hasOverflow}>
+					{#each pillsDeviceInfos() as info (info.id)}
+						<button
+							onclick={() => selectDevice(info.id)}
+							class={cn(
+								'shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors',
+								info.id === (selectedDevice.spec?.deviceId ?? '')
+									? 'bg-primary text-primary-foreground'
+									: 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground'
+							)}
+						>
+							{info.name}
+						</button>
+					{/each}
 				</div>
-			{:else}
-				<div class="relative shrink-0 border-b" bind:this={pillsWrapEl}>
-					<div bind:this={pillsEl} class="pills-scroll flex items-center gap-1.5 overflow-x-auto px-3 py-1.5" class:pr-8={hasOverflow}>
+				{#if hasOverflow}
+					<div class="absolute inset-y-0 right-0 flex items-center bg-gradient-to-l from-background via-background/80 to-transparent pl-6 pr-1">
+						<button
+							onclick={() => (dropdownOpen = !dropdownOpen)}
+							class={cn(
+								'flex size-5 items-center justify-center rounded transition-colors hover:bg-muted',
+								dropdownOpen ? 'text-foreground' : 'text-muted-foreground'
+							)}
+						>
+							<ChevronDownIcon class="size-3" />
+						</button>
+					</div>
+				{/if}
+				{#if dropdownOpen}
+					<div class="absolute left-0 right-0 top-full z-50 rounded-b-md border-x border-b bg-popover shadow-md">
 						{#each pillsDeviceInfos() as info (info.id)}
 							<button
-								onclick={() => selectDevice(info.id)}
+								onclick={() => { selectDevice(info.id); dropdownOpen = false; }}
 								class={cn(
-									'shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors',
+									'flex w-full items-center px-3 py-1.5 text-left text-xs transition-colors hover:bg-accent',
 									info.id === (selectedDevice.spec?.deviceId ?? '')
-										? 'bg-primary text-primary-foreground'
-										: 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground'
+										? 'font-medium text-foreground'
+										: 'text-muted-foreground'
 								)}
 							>
 								{info.name}
 							</button>
 						{/each}
 					</div>
-					{#if hasOverflow}
-						<div class="absolute inset-y-0 right-0 flex items-center bg-gradient-to-l from-background via-background/80 to-transparent pl-6 pr-1">
-							<button
-								onclick={() => (dropdownOpen = !dropdownOpen)}
-								class={cn(
-									'flex size-5 items-center justify-center rounded transition-colors hover:bg-muted',
-									dropdownOpen ? 'text-foreground' : 'text-muted-foreground'
-								)}
-							>
-								<ChevronDownIcon class="size-3" />
-							</button>
-						</div>
-					{/if}
-					{#if dropdownOpen}
-						<div class="absolute left-0 right-0 top-full z-50 rounded-b-md border-x border-b bg-popover shadow-md">
-							{#each pillsDeviceInfos() as info (info.id)}
-								<button
-									onclick={() => { selectDevice(info.id); dropdownOpen = false; }}
-									class={cn(
-										'flex w-full items-center px-3 py-1.5 text-left text-xs transition-colors hover:bg-accent',
-										info.id === (selectedDevice.spec?.deviceId ?? '')
-											? 'font-medium text-foreground'
-											: 'text-muted-foreground'
-									)}
-								>
-									{info.name}
-								</button>
-							{/each}
-						</div>
-					{/if}
-				</div>
-			{/if}
+				{/if}
+			</div>
 		{/if}
 
 		<div class="min-h-0 flex-1 overflow-y-auto px-4 py-3">
@@ -433,10 +406,10 @@
 								</div>
 							{/if}
 						</div>
-					</div>
+						</div>
+					{/if}
 				{/if}
-			{/if}
-		</div>
+			</div>
 	{/if}
 </div>
 
