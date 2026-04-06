@@ -30,6 +30,7 @@
 	let isLoading = $state(false);
 	let hasLoaded = $state(false);
 	let loadError = $state<string | null>(null);
+	let isInRefresh = false;
 
 	const selectedDevice = $derived(
 		devices.find((d) => d.spec?.deviceId === config.selectedDeviceId) ?? devices[0] ?? null
@@ -54,6 +55,10 @@
 
 	$effect(() => {
 		if (refreshTick > 0 && mirStore.mir && hasLoaded) {
+			if (!isInRefresh) {
+				isInRefresh = true;
+				dashboardStore.refreshStart();
+			}
 			untrack(loadDevices);
 		}
 	});
@@ -82,13 +87,18 @@
 				devices.length > 0 &&
 				!devices.some((d) => d.spec?.deviceId === config.selectedDeviceId)
 			) {
-				selectDevice(devices[0].spec?.deviceId ?? '');
+				const firstId = devices[0].spec?.deviceId;
+				if (firstId) selectDevice(firstId);
 			}
 			hasLoaded = true;
 		} catch (err) {
 			loadError = err instanceof Error ? err.message : 'Failed to load devices';
 		} finally {
 			isLoading = false;
+			if (isInRefresh) {
+				isInRefresh = false;
+				dashboardStore.refreshDone();
+			}
 		}
 	}
 
