@@ -20,9 +20,10 @@
   - [x] tlm, autorefresh and timerange
   - [x] tlm, utc switch
   - [x] store, validate CONTAINS with *
+  - [ ] widget, dev list, grey if offline
   - [ ] dev
   - [x] cmd
-  - [ ] cfg
+  - [x] cfg
   - [ ] evt
 
 ### Bug

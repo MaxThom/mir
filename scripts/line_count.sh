@@ -31,6 +31,21 @@ total=$((go_excl + svelte + ts + css + html))
 total_all=$((go_all + svelte + ts + css + html))
 
 echo ""
+echo "=== Scripts, Config & Documentation ==="
+
+bash=$(find . -name '*.sh' 2>/dev/null | grep -v node_modules | xargs -I {} cat {} 2>/dev/null | wc -l || echo 0)
+echo "Bash: $bash"
+
+yaml=$(find . \( -name '*.yaml' -o -name '*.yml' \) 2>/dev/null | grep -v node_modules | xargs -I {} cat {} 2>/dev/null | wc -l || echo 0)
+echo "YAML: $yaml"
+
+md=$(find . -name '*.md' 2>/dev/null | grep -v node_modules | xargs -I {} cat {} 2>/dev/null | wc -l || echo 0)
+echo "Markdown: $md"
+
+total=$((go_excl + svelte + ts + css + html + bash + yaml + md))
+total_all=$((go_all + svelte + ts + css + html + bash + yaml + md))
+
+echo ""
 echo "=== Total ==="
 echo "Sum of all lines (excl. generated): $total"
 echo "Sum of all lines: $total_all"
