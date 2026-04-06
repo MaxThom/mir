@@ -14,6 +14,9 @@
 	import { cn } from '$lib/utils';
 	import CircleCheckBigIcon from '@lucide/svelte/icons/circle-check-big';
 	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
+	import { PieChart } from 'layerchart';
+	import type { ChartConfig } from '$lib/shared/components/shadcn/chart';
+	import { ChartContainer } from '$lib/shared/components/shadcn/chart';
 
 	let {
 		config,
@@ -79,6 +82,19 @@
 		if (idx <= 0) return deviceInfos;
 		return [deviceInfos[idx], ...deviceInfos.slice(0, idx), ...deviceInfos.slice(idx + 1)];
 	});
+
+	const onlineCount  = $derived(devices.filter((d) =>  d.status?.online).length);
+	const offlineCount = $derived(devices.filter((d) => !d.status?.online).length);
+
+	const statusChartData = $derived([
+		{ key: 'online',  label: 'Online',  value: onlineCount  },
+		{ key: 'offline', label: 'Offline', value: offlineCount }
+	]);
+
+	const statusChartConfig: ChartConfig = {
+		online:  { label: 'Online',  color: 'hsl(142 71% 45%)' },
+		offline: { label: 'Offline', color: 'hsl(215 20% 65%)' }
+	};
 
 	$effect(() => {
 		if (mirStore.mir) {
@@ -160,8 +176,8 @@
 	{:else if devices.length === 0 && hasLoaded}
 		<p class="p-4 text-xs text-muted-foreground">No devices found for this target.</p>
 	{:else if selectedDevice}
-		<!-- Device selector -->
-		{#if devices.length > 1}
+		<!-- Device selector (hidden for status view — aggregate across all devices) -->
+		{#if config.view !== 'status' && devices.length > 1}
 			<div class="relative shrink-0 border-b" bind:this={pillsWrapEl}>
 				<div bind:this={pillsEl} class="pills-scroll flex items-center gap-1.5 overflow-x-auto px-3 py-1.5" class:pr-8={hasOverflow}>
 					{#each pillsDeviceInfos() as info (info.id)}
@@ -339,7 +355,7 @@
 						</div>
 					</div>
 				</div>
-			{:else}
+			{:else if config.view === 'properties'}
 				<!-- ── Properties view ──────────────────────────────────────────── -->
 				{@const desiredProps = Object.entries(selectedDevice.properties?.desired ?? {}).sort(([a], [b]) => a.localeCompare(b))}
 				{@const reportedProps = Object.entries(selectedDevice.properties?.reported ?? {}).sort(([a], [b]) => a.localeCompare(b))}
@@ -408,6 +424,38 @@
 						</div>
 						</div>
 					{/if}
+				{:else if config.view === 'status'}
+					<!-- ── Status view ──────────────────────────────────────────────── -->
+					<div class="relative mb-2">
+						<ChartContainer config={statusChartConfig} class="h-48 w-full">
+							<PieChart
+								data={statusChartData}
+								key="key"
+								label="label"
+								value="value"
+								innerRadius={0.6}
+								padAngle={2}
+								cornerRadius={4}
+							/>
+						</ChartContainer>
+						<div class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+							<span class="text-2xl font-bold">{onlineCount}</span>
+							<span class="text-xs text-muted-foreground">of {devices.length} online</span>
+						</div>
+					</div>
+					<div class="space-y-1">
+						{#each devices as device (device.spec?.deviceId)}
+							<div class="flex items-center gap-2">
+								<span class={cn(
+									'h-1.5 w-1.5 shrink-0 rounded-full',
+									device.status?.online ? 'bg-emerald-500' : 'bg-muted-foreground/40'
+								)}></span>
+								<span class="text-xs text-muted-foreground">
+									{device.meta?.name ?? device.spec?.deviceId ?? '—'}
+								</span>
+							</div>
+						{/each}
+					</div>
 				{/if}
 			</div>
 	{/if}
