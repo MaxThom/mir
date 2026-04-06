@@ -41,7 +41,7 @@ export interface EventsWidgetConfig {
 
 export interface DeviceWidgetConfig {
 	target: DeviceTargetConfig;
-	view: 'info' | 'properties';
+	view: 'info' | 'properties' | 'status';
 	selectedDeviceId?: string; // view state — active pill tab
 }
 
