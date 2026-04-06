@@ -9,8 +9,9 @@
 	import WidgetCommand from './widget-command.svelte';
 	import WidgetConfig from './widget-config.svelte';
 	import WidgetEvents from './widget-events.svelte';
+import WidgetDevice from './widget-device.svelte';
 	import WidgetDevicePills from './widget-device-pills.svelte';
-	import type { TelemetryWidgetConfig, CommandWidgetConfig, ConfigWidgetConfig, EventsWidgetConfig } from '../api/dashboard-api';
+	import type { TelemetryWidgetConfig, CommandWidgetConfig, ConfigWidgetConfig, EventsWidgetConfig, DeviceWidgetConfig } from '../api/dashboard-api';
 
 	let { widgets, refreshTick = 0, onEditWidget }: { widgets: Widget[]; refreshTick?: number; onEditWidget?: (w: Widget) => void } = $props();
 
@@ -120,6 +121,13 @@
 						/>
 					{:else if widget.type === 'events'}
 						<WidgetEvents config={widget.config as EventsWidgetConfig} {refreshTick} />
+					{:else if widget.type === 'device'}
+						<WidgetDevice
+							widgetId={widget.id}
+							config={widget.config as DeviceWidgetConfig}
+							{refreshTick}
+							onDevicesReady={(infos) => widgetDevices.set(widget.id, infos)}
+						/>
 					{/if}
 				</WidgetWrapper>
 			</div>
