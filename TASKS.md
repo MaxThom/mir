@@ -24,8 +24,8 @@
   - [ ] widget, dev list, grey if offline
   - [ ] txt mardown widget
   - [ ] welcome page which is a custome dashboard
-  - [ ] dev spec
-  - [ ] dev props
+  - [x] dev spec
+  - [x] dev props
   - [ ] dev online/offline
   - [x] cmd
   - [x] cfg
