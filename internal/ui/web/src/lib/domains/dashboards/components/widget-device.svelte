@@ -93,7 +93,7 @@
 
 	const statusChartConfig: ChartConfig = {
 		online:  { label: 'Online',  color: 'hsl(142 71% 45%)' },
-		offline: { label: 'Offline', color: 'hsl(215 20% 65%)' }
+		offline: { label: 'Offline', color: 'hsl(0 65% 55%)' }
 	};
 
 	$effect(() => {
