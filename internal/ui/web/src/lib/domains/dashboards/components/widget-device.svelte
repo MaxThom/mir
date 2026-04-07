@@ -450,6 +450,16 @@
 							<span class="text-xs text-muted-foreground">of {devices.length} online</span>
 						</div>
 					</div>
+					<div class="mt-3 flex items-center justify-center gap-4">
+						<div class="flex items-center gap-1.5">
+							<span class="h-2.5 w-2.5 rounded-sm" style="background: hsl(150 65% 40%)"></span>
+							<span class="text-xs text-muted-foreground">Online ({onlineCount})</span>
+						</div>
+						<div class="flex items-center gap-1.5">
+							<span class="h-2.5 w-2.5 rounded-sm" style="background: hsl(220 9% 72%)"></span>
+							<span class="text-xs text-muted-foreground">Offline ({offlineCount})</span>
+						</div>
+					</div>
 				{/if}
 			</div>
 	{/if}
