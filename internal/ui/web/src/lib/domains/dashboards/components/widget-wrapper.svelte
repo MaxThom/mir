@@ -24,7 +24,7 @@
 </script>
 
 <Card.Root class="flex h-full flex-col gap-0 py-4">
-	<Card.Header class="flex flex-row items-center gap-2 px-2 pb-2">
+	<Card.Header class="flex flex-row items-center gap-2 px-2 pb-2.5">
 		<span
 			class="grid-stack-item-content-drag-handle text-muted-foreground {editMode
 				? 'cursor-grab'
