@@ -434,7 +434,7 @@
 								label="label"
 								value="value"
 								innerRadius={0.55}
-								cRange={['hsl(142 71% 45%)', 'hsl(0 65% 55%)']}
+								cRange={['hsl(142 71% 45%)', 'hsl(220 9% 46%)']}
 							/>
 						</ChartContainer>
 						<div class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
