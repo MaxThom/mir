@@ -231,6 +231,41 @@
 			</div>
 		{/if}
 
+		{#if config.view === 'status'}
+			<div class="flex min-h-0 flex-1 flex-col overflow-hidden px-4 py-3">
+				<!-- ── Status view ──────────────────────────────────────────────── -->
+				<div class="relative min-h-0 flex-1">
+					<ChartContainer config={statusChartConfig} class="h-full w-full">
+						<PieChart
+							data={statusChartData}
+							key="key"
+							label="label"
+							value="value"
+							innerRadius={0.55}
+							cRange={['hsl(150 65% 40%)', 'hsl(220 9% 72%)']}
+						>
+							{#snippet tooltip()}
+								<WidgetDeviceStatusTooltip {onlineDevices} {offlineDevices} />
+							{/snippet}
+						</PieChart>
+					</ChartContainer>
+					<div class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+						<span class="text-2xl font-bold">{onlineCount}</span>
+						<span class="text-xs text-muted-foreground">of {devices.length} online</span>
+					</div>
+				</div>
+				<div class="mt-3 flex shrink-0 items-center justify-center gap-4">
+					<div class="flex items-center gap-1.5">
+						<span class="h-2.5 w-2.5 rounded-sm" style="background: hsl(150 65% 40%)"></span>
+						<span class="text-xs text-muted-foreground">Online ({onlineCount})</span>
+					</div>
+					<div class="flex items-center gap-1.5">
+						<span class="h-2.5 w-2.5 rounded-sm" style="background: hsl(220 9% 72%)"></span>
+						<span class="text-xs text-muted-foreground">Offline ({offlineCount})</span>
+					</div>
+				</div>
+			</div>
+		{:else}
 		<div class="min-h-0 flex-1 overflow-y-auto px-4 py-3">
 			{#if config.view === 'info'}
 				<!-- ── Info view ────────────────────────────────────────────────── -->
@@ -428,40 +463,9 @@
 						</div>
 						</div>
 					{/if}
-				{:else if config.view === 'status'}
-					<!-- ── Status view ──────────────────────────────────────────────── -->
-					<div class="relative">
-						<ChartContainer config={statusChartConfig} class="h-48 w-full">
-							<PieChart
-								data={statusChartData}
-								key="key"
-								label="label"
-								value="value"
-								innerRadius={0.55}
-								cRange={['hsl(150 65% 40%)', 'hsl(220 9% 72%)']}
-							>
-								{#snippet tooltip()}
-									<WidgetDeviceStatusTooltip {onlineDevices} {offlineDevices} />
-								{/snippet}
-							</PieChart>
-						</ChartContainer>
-						<div class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-							<span class="text-2xl font-bold">{onlineCount}</span>
-							<span class="text-xs text-muted-foreground">of {devices.length} online</span>
-						</div>
-					</div>
-					<div class="mt-3 flex items-center justify-center gap-4">
-						<div class="flex items-center gap-1.5">
-							<span class="h-2.5 w-2.5 rounded-sm" style="background: hsl(150 65% 40%)"></span>
-							<span class="text-xs text-muted-foreground">Online ({onlineCount})</span>
-						</div>
-						<div class="flex items-center gap-1.5">
-							<span class="h-2.5 w-2.5 rounded-sm" style="background: hsl(220 9% 72%)"></span>
-							<span class="text-xs text-muted-foreground">Offline ({offlineCount})</span>
-						</div>
-					</div>
 				{/if}
 			</div>
+		{/if}
 	{/if}
 </div>
 
