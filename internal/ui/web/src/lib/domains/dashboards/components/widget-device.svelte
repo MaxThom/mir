@@ -17,6 +17,7 @@
 	import { PieChart } from 'layerchart';
 	import type { ChartConfig } from '$lib/shared/components/shadcn/chart';
 	import { ChartContainer } from '$lib/shared/components/shadcn/chart';
+	import WidgetDeviceStatusTooltip from './widget-device-status-tooltip.svelte';
 
 	let {
 		config,
@@ -85,6 +86,9 @@
 
 	const onlineCount  = $derived(devices.filter((d) =>  d.status?.online).length);
 	const offlineCount = $derived(devices.filter((d) => !d.status?.online).length);
+
+	const onlineDevices  = $derived(devices.filter((d) =>  d.status?.online));
+	const offlineDevices = $derived(devices.filter((d) => !d.status?.online));
 
 	const statusChartData = $derived([
 		{ key: 'online',  label: 'Online',  value: onlineCount  },
@@ -426,7 +430,7 @@
 					{/if}
 				{:else if config.view === 'status'}
 					<!-- ── Status view ──────────────────────────────────────────────── -->
-					<div class="relative mb-2">
+					<div class="relative">
 						<ChartContainer config={statusChartConfig} class="h-48 w-full">
 							<PieChart
 								data={statusChartData}
@@ -435,25 +439,16 @@
 								value="value"
 								innerRadius={0.55}
 								cRange={['hsl(150 65% 40%)', 'hsl(220 9% 72%)']}
-							/>
+							>
+								{#snippet tooltip()}
+									<WidgetDeviceStatusTooltip {onlineDevices} {offlineDevices} />
+								{/snippet}
+							</PieChart>
 						</ChartContainer>
 						<div class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
 							<span class="text-2xl font-bold">{onlineCount}</span>
 							<span class="text-xs text-muted-foreground">of {devices.length} online</span>
 						</div>
-					</div>
-					<div class="space-y-1">
-						{#each devices as device (device.spec?.deviceId)}
-							<div class="flex items-center gap-2">
-								<span class={cn(
-									'h-1.5 w-1.5 shrink-0 rounded-full',
-									device.status?.online ? 'bg-emerald-500' : 'bg-muted-foreground/40'
-								)}></span>
-								<span class="text-xs text-muted-foreground">
-									{device.meta?.name ?? device.spec?.deviceId ?? '—'}
-								</span>
-							</div>
-						{/each}
 					</div>
 				{/if}
 			</div>
