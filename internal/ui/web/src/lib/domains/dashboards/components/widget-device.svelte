@@ -38,6 +38,10 @@
 	let isInRefresh = false;
 
 	let pillsEl = $state<HTMLDivElement | undefined>(undefined);
+	let statusChartHeight = $state(0);
+	let statusChartWidth = $state(0);
+	const statusCompact = $derived(statusChartHeight <= 160 || statusChartWidth <= 200);
+	const statusReallyCompact = $derived(statusChartHeight <= 100 || statusChartWidth <= 150);
 	let pillsWrapEl = $state<HTMLDivElement | undefined>(undefined);
 	let hasOverflow = $state(false);
 	let dropdownOpen = $state(false);
@@ -171,6 +175,7 @@
 </script>
 
 <div class="flex h-full flex-col overflow-hidden">
+	<div class="mt-2.5 border-b"></div>
 	{#if isLoading}
 		<div class="flex flex-1 items-center justify-center">
 			<span class="text-xs text-muted-foreground">Loading…</span>
@@ -232,7 +237,7 @@
 		{/if}
 
 		{#if config.view === 'status'}
-			<div class="flex min-h-0 flex-1 flex-col overflow-hidden px-4 py-3">
+			<div class="flex min-h-0 flex-1 flex-col overflow-hidden px-4 py-3" bind:clientHeight={statusChartHeight} bind:clientWidth={statusChartWidth}>
 				<!-- ── Status view ──────────────────────────────────────────────── -->
 				<div class="relative min-h-0 flex-1">
 					<ChartContainer config={statusChartConfig} class="h-full w-full">
@@ -244,29 +249,35 @@
 							innerRadius={0.55}
 							cRange={['hsl(150 65% 40%)', 'hsl(220 9% 72%)']}
 						>
-							{#snippet tooltip()}
+{#snippet tooltip()}
 								<WidgetDeviceStatusTooltip {onlineDevices} {offlineDevices} />
 							{/snippet}
 						</PieChart>
 					</ChartContainer>
 					<div class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-						<span class="text-2xl font-bold">{onlineCount}</span>
-						<span class="text-xs text-muted-foreground">of {devices.length} online</span>
+						{#if !statusCompact}
+							<span class="text-2xl font-bold">{onlineCount}</span>
+							<span class="text-xs text-muted-foreground">of {devices.length} online</span>
+						{:else}
+							<span class="text-base font-bold">{onlineCount}/{devices.length}</span>
+						{/if}
 					</div>
 				</div>
-				<div class="mt-3 flex shrink-0 items-center justify-center gap-4">
-					<div class="flex items-center gap-1.5">
-						<span class="h-2.5 w-2.5 rounded-sm" style="background: hsl(150 65% 40%)"></span>
-						<span class="text-xs text-muted-foreground">Online ({onlineCount})</span>
+				{#if !statusReallyCompact}
+					<div class="mt-3 flex shrink-0 items-center justify-center gap-4">
+						<div class="flex items-center gap-1.5">
+							<span class="h-2.5 w-2.5 rounded-sm" style="background: hsl(150 65% 40%)"></span>
+							<span class="text-xs text-muted-foreground">Online</span>
+						</div>
+						<div class="flex items-center gap-1.5">
+							<span class="h-2.5 w-2.5 rounded-sm" style="background: hsl(220 9% 72%)"></span>
+							<span class="text-xs text-muted-foreground">Offline</span>
+						</div>
 					</div>
-					<div class="flex items-center gap-1.5">
-						<span class="h-2.5 w-2.5 rounded-sm" style="background: hsl(220 9% 72%)"></span>
-						<span class="text-xs text-muted-foreground">Offline ({offlineCount})</span>
-					</div>
-				</div>
+				{/if}
 			</div>
 		{:else}
-		<div class="min-h-0 flex-1 overflow-y-auto px-4 py-3">
+		<div class="min-h-0 flex-1 overflow-y-auto px-4 pb-3 pt-1.5">
 			{#if config.view === 'info'}
 				<!-- ── Info view ────────────────────────────────────────────────── -->
 				<div class="space-y-1">

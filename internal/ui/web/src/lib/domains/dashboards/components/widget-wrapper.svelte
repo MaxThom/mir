@@ -24,7 +24,7 @@
 </script>
 
 <Card.Root class="flex h-full flex-col gap-0 py-4">
-	<Card.Header class="flex flex-row items-center gap-2 px-2 pb-2.5">
+	<Card.Header class="flex flex-row items-center gap-2 px-2 pb-0">
 		<span
 			class="grid-stack-item-content-drag-handle text-muted-foreground {editMode
 				? 'cursor-grab'
@@ -63,7 +63,6 @@
 			</Button>
 		{/if}
 	</Card.Header>
-	<div class="border-b"></div>
 	<Card.Content class="min-h-0 flex-1 overflow-visible p-0">
 		{@render children()}
 	</Card.Content>
