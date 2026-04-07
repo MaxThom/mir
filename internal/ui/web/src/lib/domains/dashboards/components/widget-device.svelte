@@ -92,7 +92,7 @@
 	]);
 
 	const statusChartConfig: ChartConfig = {
-		online:  { label: 'Online',  color: 'hsl(142 71% 45%)' },
+		online:  { label: 'Online',  color: 'hsl(162 63% 41%)' },
 		offline: { label: 'Offline', color: 'hsl(0 65% 55%)' }
 	};
 
@@ -434,7 +434,7 @@
 								label="label"
 								value="value"
 								innerRadius={0.55}
-								cRange={['hsl(142 71% 45%)', 'hsl(220 9% 72%)']}
+								cRange={['hsl(162 63% 41%)', 'hsl(220 9% 72%)']}
 							/>
 						</ChartContainer>
 						<div class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
