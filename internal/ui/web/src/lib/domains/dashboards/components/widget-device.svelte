@@ -433,8 +433,7 @@
 								key="key"
 								label="label"
 								value="value"
-								padAngle={2}
-								cornerRadius={4}
+								innerRadius={0.55}
 							/>
 						</ChartContainer>
 						<div class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
