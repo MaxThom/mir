@@ -433,7 +433,6 @@
 								key="key"
 								label="label"
 								value="value"
-								innerRadius={0.6}
 								padAngle={2}
 								cornerRadius={4}
 							/>
