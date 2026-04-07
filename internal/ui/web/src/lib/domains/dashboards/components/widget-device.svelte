@@ -178,7 +178,7 @@
 	{:else if selectedDevice}
 		<!-- Device selector (hidden for status view — aggregate across all devices) -->
 		{#if config.view !== 'status' && devices.length > 1}
-			<div class="relative shrink-0 border-b" bind:this={pillsWrapEl}>
+			<div class="relative shrink-0" bind:this={pillsWrapEl}>
 				<div bind:this={pillsEl} class="pills-scroll flex items-center gap-1.5 overflow-x-auto px-3 py-1.5" class:pr-8={hasOverflow}>
 					{#each pillsDeviceInfos() as info (info.id)}
 						<button
