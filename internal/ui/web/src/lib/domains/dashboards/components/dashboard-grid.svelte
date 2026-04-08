@@ -121,7 +121,11 @@
 							onDevicesReady={(infos) => widgetDevices.set(widget.id, infos)}
 						/>
 					{:else if widget.type === 'events'}
-						<WidgetEvents config={widget.config as EventsWidgetConfig} {refreshTick} />
+						<WidgetEvents
+							config={widget.config as EventsWidgetConfig}
+							{refreshTick}
+							onDevicesReady={(infos) => widgetDevices.set(widget.id, infos)}
+						/>
 					{:else if widget.type === 'device'}
 						<WidgetDevice
 							widgetId={widget.id}
