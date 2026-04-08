@@ -56,8 +56,6 @@
 			} else if (editWidget.type === 'config') {
 				const c = editWidget.config as ConfigWidgetConfig;
 				selectedConfigName = c.selectedConfig ?? '';
-			} else if (editWidget.type === 'events') {
-				eventLimit = (editWidget.config as EventsWidgetConfig).limit;
 			} else if (editWidget.type === 'device') {
 				const c = editWidget.config as DeviceWidgetConfig;
 				selectedDeviceView = c.view ?? 'info';
@@ -93,9 +91,6 @@
 	let configGroups = $state<ConfigGroup[]>([]);
 	let configsLoading = $state(false);
 	let selectedConfigName = $state('');
-
-	// Events config
-	let eventLimit = $state(50);
 
 	// Device config
 	let selectedDeviceView = $state<'info' | 'properties' | 'status'>('info');
@@ -238,7 +233,6 @@
 		configGroups = [];
 		configsLoading = false;
 		selectedConfigName = '';
-		eventLimit = 50;
 		selectedDeviceView = 'info';
 		textContent = '';
 		editWidget = null;
@@ -289,7 +283,7 @@
 			case 'config':
 				return { target, selectedConfig: selectedConfigName } satisfies ConfigWidgetConfig;
 			case 'events':
-				return { target, limit: eventLimit } satisfies EventsWidgetConfig;
+				return { target, limit: 100 } satisfies EventsWidgetConfig;
 			case 'device':
 				return { target, view: selectedDeviceView } satisfies DeviceWidgetConfig;
 			case 'text':
@@ -323,7 +317,7 @@
 			<Dialog.Title>{editWidget ? 'Edit Widget' : 'Add Widget'}</Dialog.Title>
 			<Dialog.Description>
 				{#if step === 'type'}Step 1 of {selectedType === 'text' ? '2' : '3'} — Choose widget type{/if}
-				{#if step === 'target'}{editWidget ? 'Step 1 of 2' : selectedType === 'text' ? 'Step 2 of 2' : 'Step 2 of 3'} — {selectedType === 'text' ? 'Name your widget' : 'Select devices'}{/if}
+				{#if step === 'target'}{editWidget ? 'Step 1 of 2' : (selectedType === 'text' || selectedType === 'events') ? 'Step 2 of 2' : 'Step 2 of 3'} — {selectedType === 'text' ? 'Name your widget' : 'Select devices'}{/if}
 				{#if step === 'config'}{editWidget ? 'Step 2 of 2' : 'Step 3 of 3'} — Configure widget{/if}
 			</Dialog.Description>
 		</Dialog.Header>
@@ -367,15 +361,14 @@
 
 				<div class="flex gap-2">
 					<Button variant="outline" onclick={() => editWidget ? (open = false, reset()) : (step = 'type')}>{editWidget ? 'Cancel' : 'Back'}</Button>
-					{#if selectedType === 'text'}
+					{#if selectedType === 'text' || selectedType === 'events'}
 						<Button onclick={saveWidget} disabled={dashboardStore.isSaving}>
 							{dashboardStore.isSaving ? (editWidget ? 'Saving…' : 'Adding…') : (editWidget ? 'Save' : 'Add Widget')}
 						</Button>
 					{:else}
 						<Button
 							onclick={goToConfig}
-							disabled={selectedType !== 'events' &&
-								!target.ids?.length &&
+							disabled={!target.ids?.length &&
 								!target.namespaces?.length &&
 								!Object.keys(target.labels ?? {}).length}
 						>
@@ -542,11 +535,6 @@
 									{/each}
 								</div>
 							{/if}
-						</div>
-					{:else if selectedType === 'events'}
-						<div class="space-y-1">
-							<label for="widget-maxevents" class="text-sm font-medium">Max events</label>
-							<Input id="widget-maxevents" type="number" bind:value={eventLimit} min={1} max={500} />
 						</div>
 					{:else if selectedType === 'device'}
 						<div class="space-y-1">

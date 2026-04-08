@@ -23,6 +23,7 @@
   - [x] store, validate CONTAINS with *
   - [ ] widget, dev list, grey if offline
   - [x] txt mardown widget
+  - [ ] txt, mardown from link
   - [ ] welcome page which is a custome dashboard
   - [x] dev spec
   - [x] dev props
