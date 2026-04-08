@@ -22,11 +22,11 @@
   - [ ] tlm, last value widget chart
   - [x] store, validate CONTAINS with *
   - [ ] widget, dev list, grey if offline
-  - [ ] txt mardown widget
+  - [x] txt mardown widget
   - [ ] welcome page which is a custome dashboard
   - [x] dev spec
   - [x] dev props
-  - [ ] dev online/offline
+  - [x] dev online/offline
   - [x] cmd
   - [x] cfg
   - [ ] evt

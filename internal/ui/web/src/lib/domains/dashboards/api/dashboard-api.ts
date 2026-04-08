@@ -1,4 +1,4 @@
-export type WidgetType = 'telemetry' | 'command' | 'config' | 'events' | 'device';
+export type WidgetType = 'telemetry' | 'command' | 'config' | 'events' | 'device' | 'text';
 
 export interface DeviceTargetConfig {
 	ids?: string[];
@@ -45,12 +45,17 @@ export interface DeviceWidgetConfig {
 	selectedDeviceId?: string; // view state — active pill tab
 }
 
+export interface TextWidgetConfig {
+	content: string;
+}
+
 export type WidgetConfig =
 	| TelemetryWidgetConfig
 	| CommandWidgetConfig
 	| ConfigWidgetConfig
 	| EventsWidgetConfig
-	| DeviceWidgetConfig;
+	| DeviceWidgetConfig
+	| TextWidgetConfig;
 
 export interface Widget {
 	id: string;

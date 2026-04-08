@@ -66,6 +66,7 @@
 		"@tanstack/table-core": "^8.21.3",
 		"codemirror": "^6.0.2",
 		"gridstack": "^12.4.2",
+		"marked": "^18.0.0",
 		"mode-watcher": "^1.1.0",
 		"shiki": "^3.22.0",
 		"yaml": "^2.8.2"

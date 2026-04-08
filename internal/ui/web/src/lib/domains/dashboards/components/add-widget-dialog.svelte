@@ -16,7 +16,8 @@
 		EventsWidgetConfig,
 		CommandWidgetConfig,
 		ConfigWidgetConfig,
-		DeviceWidgetConfig
+		DeviceWidgetConfig,
+		TextWidgetConfig
 	} from '../api/dashboard-api';
 	import type { TelemetryGroup, CommandGroup, ConfigGroup } from '@mir/sdk';
 	import { DeviceTarget } from '@mir/sdk';
@@ -27,6 +28,7 @@
 	import InfoIcon from '@lucide/svelte/icons/info';
 	import CpuIcon from '@lucide/svelte/icons/cpu';
 	import PieChartIcon from '@lucide/svelte/icons/pie-chart';
+	import FileTextIcon from '@lucide/svelte/icons/file-text';
 
 	let {
 		open = $bindable(false),
@@ -59,6 +61,8 @@
 			} else if (editWidget.type === 'device') {
 				const c = editWidget.config as DeviceWidgetConfig;
 				selectedDeviceView = c.view ?? 'info';
+			} else if (editWidget.type === 'text') {
+				textContent = (editWidget.config as TextWidgetConfig).content ?? '';
 			}
 		}
 	});
@@ -95,6 +99,9 @@
 
 	// Device config
 	let selectedDeviceView = $state<'info' | 'properties' | 'status'>('info');
+
+	// Text config
+	let textContent = $state('');
 
 	$effect(() => {
 		if (step === 'config' && selectedType === 'telemetry' && mirStore.mir) {
@@ -233,6 +240,7 @@
 		selectedConfigName = '';
 		eventLimit = 50;
 		selectedDeviceView = 'info';
+		textContent = '';
 		editWidget = null;
 	}
 
@@ -254,6 +262,8 @@
 				return 'Events';
 			case 'device':
 				return 'Device';
+			case 'text':
+				return 'Text';
 		}
 	}
 
@@ -261,7 +271,7 @@
 		step = 'config';
 	}
 
-	function buildConfig(): TelemetryWidgetConfig | CommandWidgetConfig | ConfigWidgetConfig | EventsWidgetConfig | DeviceWidgetConfig {
+	function buildConfig(): TelemetryWidgetConfig | CommandWidgetConfig | ConfigWidgetConfig | EventsWidgetConfig | DeviceWidgetConfig | TextWidgetConfig {
 		switch (selectedType!) {
 			case 'telemetry': {
 				const descriptor = measurementGroups
@@ -282,6 +292,8 @@
 				return { target, limit: eventLimit } satisfies EventsWidgetConfig;
 			case 'device':
 				return { target, view: selectedDeviceView } satisfies DeviceWidgetConfig;
+			case 'text':
+				return { content: textContent } satisfies TextWidgetConfig;
 		}
 	}
 
@@ -310,8 +322,8 @@
 		<Dialog.Header>
 			<Dialog.Title>{editWidget ? 'Edit Widget' : 'Add Widget'}</Dialog.Title>
 			<Dialog.Description>
-				{#if step === 'type'}Step 1 of 3 — Choose widget type{/if}
-				{#if step === 'target'}{editWidget ? 'Step 1 of 2' : 'Step 2 of 3'} — Select devices{/if}
+				{#if step === 'type'}Step 1 of {selectedType === 'text' ? '2' : '3'} — Choose widget type{/if}
+				{#if step === 'target'}{editWidget ? 'Step 1 of 2' : selectedType === 'text' ? 'Step 2 of 2' : 'Step 2 of 3'} — {selectedType === 'text' ? 'Name your widget' : 'Select devices'}{/if}
 				{#if step === 'config'}{editWidget ? 'Step 2 of 2' : 'Step 3 of 3'} — Configure widget{/if}
 			</Dialog.Description>
 		</Dialog.Header>
@@ -320,8 +332,8 @@
 			<!-- Step 1: Type -->
 			{#if step === 'type'}
 				<div class="flex flex-1 items-start justify-center">
-					<div class="grid w-full max-w-4xl grid-cols-5 gap-4">
-						{#each [{ type: 'telemetry' as WidgetType, icon: ActivityIcon, label: 'Telemetry', desc: 'Visualize time-series data from device sensors' }, { type: 'command' as WidgetType, icon: TerminalIcon, label: 'Command', desc: 'Send commands and view responses from devices' }, { type: 'config' as WidgetType, icon: SlidersHorizontalIcon, label: 'Configuration', desc: 'Manage and push configuration to devices' }, { type: 'events' as WidgetType, icon: CalendarClockIcon, label: 'Events', desc: 'Monitor events and audit logs from the fleet' }, { type: 'device' as WidgetType, icon: CpuIcon, label: 'Device', desc: 'View device meta, status and properties' }] as item (item.type)}
+					<div class="grid w-full max-w-2xl grid-cols-3 gap-4">
+						{#each [{ type: 'telemetry' as WidgetType, icon: ActivityIcon, label: 'Telemetry', desc: 'Visualize time-series data from device sensors' }, { type: 'command' as WidgetType, icon: TerminalIcon, label: 'Command', desc: 'Send commands and view responses from devices' }, { type: 'config' as WidgetType, icon: SlidersHorizontalIcon, label: 'Configuration', desc: 'Manage and push configuration to devices' }, { type: 'events' as WidgetType, icon: CalendarClockIcon, label: 'Events', desc: 'Monitor events and audit logs from the fleet' }, { type: 'device' as WidgetType, icon: CpuIcon, label: 'Device', desc: 'View device meta, status and properties' }, { type: 'text' as WidgetType, icon: FileTextIcon, label: 'Text', desc: 'Markdown content for notes and documentation' }] as item (item.type)}
 							<button
 								class="flex flex-col items-center gap-4 rounded-xl border border-border p-10 text-center transition-colors hover:border-primary hover:bg-accent"
 								onclick={() => selectType(item.type)}
@@ -344,24 +356,32 @@
 					<Input id="widget-title" bind:value={title} placeholder="Widget title" />
 				</div>
 
-				<DeviceTargetBuilder
-					devices={deviceStore.devices}
-					isLoading={deviceStore.isLoading}
-					bind:target
-					initialTarget={editWidget?.config?.target}
-				/>
+				{#if selectedType !== 'text'}
+					<DeviceTargetBuilder
+						devices={deviceStore.devices}
+						isLoading={deviceStore.isLoading}
+						bind:target
+						initialTarget={(editWidget?.config as any)?.target}
+					/>
+				{/if}
 
 				<div class="flex gap-2">
 					<Button variant="outline" onclick={() => editWidget ? (open = false, reset()) : (step = 'type')}>{editWidget ? 'Cancel' : 'Back'}</Button>
-					<Button
-						onclick={goToConfig}
-						disabled={selectedType !== 'events' &&
-							!target.ids?.length &&
-							!target.namespaces?.length &&
-							!Object.keys(target.labels ?? {}).length}
-					>
-						Next
-					</Button>
+					{#if selectedType === 'text'}
+						<Button onclick={saveWidget} disabled={dashboardStore.isSaving}>
+							{dashboardStore.isSaving ? (editWidget ? 'Saving…' : 'Adding…') : (editWidget ? 'Save' : 'Add Widget')}
+						</Button>
+					{:else}
+						<Button
+							onclick={goToConfig}
+							disabled={selectedType !== 'events' &&
+								!target.ids?.length &&
+								!target.namespaces?.length &&
+								!Object.keys(target.labels ?? {}).length}
+						>
+							Next
+						</Button>
+					{/if}
 				</div>
 			{/if}
 

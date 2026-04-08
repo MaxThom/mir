@@ -11,7 +11,8 @@
 	import WidgetEvents from './widget-events.svelte';
 	import WidgetDevice from './widget-device.svelte';
 	import WidgetDevicePills from './widget-device-pills.svelte';
-	import type { TelemetryWidgetConfig, CommandWidgetConfig, ConfigWidgetConfig, EventsWidgetConfig, DeviceWidgetConfig } from '../api/dashboard-api';
+	import WidgetText from './widget-text.svelte';
+	import type { TelemetryWidgetConfig, CommandWidgetConfig, ConfigWidgetConfig, EventsWidgetConfig, DeviceWidgetConfig, TextWidgetConfig } from '../api/dashboard-api';
 
 	let { widgets, refreshTick = 0, onEditWidget }: { widgets: Widget[]; refreshTick?: number; onEditWidget?: (w: Widget) => void } = $props();
 
@@ -87,7 +88,7 @@
 				{#snippet headerPills()}
 					<WidgetDevicePills
 						devices={widgetDevices.get(widget.id) ?? []}
-						target={widget.config.target}
+						target={(widget.config as any).target}
 					/>
 				{/snippet}
 				<WidgetWrapper
@@ -97,7 +98,7 @@
 					onRemove={() =>
 						dashboardStore.activeDashboard &&
 						dashboardStore.removeWidget(dashboardStore.activeDashboard, widget.id)}
-					headerExtra={headerPills}
+					headerExtra={widget.type !== 'text' ? headerPills : undefined}
 				>
 					{#if widget.type === 'telemetry'}
 						<WidgetTelemetry
@@ -128,6 +129,8 @@
 							{refreshTick}
 							onDevicesReady={(infos) => widgetDevices.set(widget.id, infos)}
 						/>
+					{:else if widget.type === 'text'}
+						<WidgetText widgetId={widget.id} config={widget.config as TextWidgetConfig} />
 					{/if}
 				</WidgetWrapper>
 			</div>
