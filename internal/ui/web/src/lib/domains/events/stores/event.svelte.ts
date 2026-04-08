@@ -54,7 +54,7 @@ class EventStore {
 		this.error = null;
 		try {
 			const target = new EventTarget({
-				names: [name],
+				names: [name + '-*'],
 				namespaces: [namespace],
 				limit,
 				dateFilter: new DateFilter({ from, to })
