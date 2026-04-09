@@ -49,6 +49,7 @@ export interface TextWidgetConfig {
 	content: string;
 	url?: string;      // remote URL to fetch markdown from
 	jsonKey?: string;  // dot-notation path into JSON response (e.g. "body" or "author.login")
+	fontSize?: 'sm' | 'base' | 'lg' | 'xl'; // markdown prose size (default: 'sm')
 }
 
 export type WidgetConfig =
