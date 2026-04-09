@@ -64,9 +64,10 @@
 				selectedDeviceView = c.view ?? 'info';
 			} else if (editWidget.type === 'text') {
 				const cfg = editWidget.config as TextWidgetConfig;
-				textContent = cfg.content ?? '';
-				textUrl     = cfg.url ?? '';
-				textJsonKey = cfg.jsonKey ?? '';
+				textContent  = cfg.content ?? '';
+				textFontSize = cfg.fontSize ?? 'sm';
+				textUrl      = cfg.url ?? '';
+				textJsonKey  = cfg.jsonKey ?? '';
 				if (cfg.url) fetchPreview(cfg.url, cfg.jsonKey ?? '');
 			}
 		}
@@ -104,6 +105,7 @@
 
 	// Text config
 	let textContent    = $state('');
+	let textFontSize   = $state<'sm' | 'base' | 'lg' | 'xl'>('sm');
 	let textUrl        = $state('');
 	let textJsonKey    = $state('');
 	let previewHtml            = $state('');
@@ -363,9 +365,10 @@
 		configsLoading = false;
 		selectedConfigName = '';
 		selectedDeviceView = 'info';
-		textContent = '';
-		textUrl = '';
-		textJsonKey = '';
+		textContent  = '';
+		textFontSize = 'sm';
+		textUrl      = '';
+		textJsonKey  = '';
 		previewHtml = '';
 		previewHighlightedHtml = '';
 		previewIsJson = false;
@@ -426,7 +429,8 @@
 				return {
 					content: textContent,
 					url: textUrl.trim() || undefined,
-					jsonKey: textJsonKey.trim() || undefined
+					jsonKey: textJsonKey.trim() || undefined,
+					fontSize: textFontSize
 				} satisfies TextWidgetConfig;
 		}
 	}
@@ -542,7 +546,7 @@
 										{/if}
 									</div>
 								{:else}
-									<div class="prose prose-sm dark:prose-invert max-w-none">
+									<div class="prose dark:prose-invert max-w-none" style="font-size: {textFontSize === 'base' ? '13px' : textFontSize === 'lg' ? '15px' : textFontSize === 'xl' ? '18px' : '11px'}">
 										{@html previewHtml}
 									</div>
 								{/if}
@@ -550,6 +554,23 @@
 								<p class="text-sm text-muted-foreground">Preview will appear here…</p>
 							{/if}
 						</div>
+					{/if}
+
+					{#if !previewIsJson}
+					<div class="space-y-2">
+						<p class="text-sm font-medium">Font size</p>
+						<div class="flex gap-1">
+							{#each [{ value: 'sm', label: 'sm' }, { value: 'base', label: 'md' }, { value: 'lg', label: 'lg' }, { value: 'xl', label: 'xl' }] as opt (opt.value)}
+								<button
+									type="button"
+									onclick={() => (textFontSize = opt.value as 'sm' | 'base' | 'lg' | 'xl')}
+									class="rounded-md border px-3 py-1 text-sm transition-colors {textFontSize === opt.value ? 'border-primary bg-primary text-primary-foreground' : 'border-border hover:bg-accent'}"
+								>
+									{opt.label}
+								</button>
+							{/each}
+						</div>
+					</div>
 					{/if}
 				{/if}
 

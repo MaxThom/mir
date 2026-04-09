@@ -125,6 +125,13 @@
 	});
 
 	const rendered = $derived(externalLinks(DOMPurify.sanitize(marked.parse(localContent || '') as string)));
+
+	const proseFontSize = $derived(
+		config.fontSize === 'base' ? '13px'
+		: config.fontSize === 'lg'  ? '15px'
+		: config.fontSize === 'xl'  ? '18px'
+		: '11px' // sm default
+	);
 </script>
 
 <div class="flex h-full flex-col">
@@ -148,7 +155,7 @@
 					{/if}
 				</div>
 			{:else}
-				<div class="prose prose-sm dark:prose-invert min-h-0 flex-1 max-w-none overflow-y-auto px-4 py-3 select-none opacity-60">
+				<div class="prose dark:prose-invert min-h-0 flex-1 max-w-none overflow-y-auto px-4 py-3 select-none opacity-60" style="font-size: {proseFontSize}">
 					{@html fetchedHtml}
 				</div>
 			{/if}
@@ -179,12 +186,12 @@
 					{/if}
 				</div>
 			{:else}
-				<div class="prose prose-sm dark:prose-invert min-h-0 flex-1 max-w-none overflow-y-auto px-4 py-3">
+				<div class="prose dark:prose-invert min-h-0 flex-1 max-w-none overflow-y-auto px-4 py-3" style="font-size: {proseFontSize}">
 					{@html fetchedHtml}
 				</div>
 			{/if}
 		{:else}
-			<div class="prose prose-sm dark:prose-invert min-h-0 flex-1 max-w-none overflow-y-auto px-4 py-3">
+			<div class="prose dark:prose-invert min-h-0 flex-1 max-w-none overflow-y-auto px-4 py-3" style="font-size: {proseFontSize}">
 				{@html rendered}
 			</div>
 		{/if}
