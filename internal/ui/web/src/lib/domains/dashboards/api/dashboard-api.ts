@@ -48,7 +48,7 @@ export interface DeviceWidgetConfig {
 export interface TextWidgetConfig {
 	content: string;
 	url?: string;      // remote URL to fetch markdown from
-	jsonKey?: string;  // if response is JSON, top-level key containing markdown
+	jsonKey?: string;  // dot-notation path into JSON response (e.g. "body" or "author.login")
 }
 
 export type WidgetConfig =

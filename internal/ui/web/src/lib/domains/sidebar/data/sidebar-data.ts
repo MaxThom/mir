@@ -12,7 +12,7 @@ export const sidebarData: SidebarData = {
 	contexts: [],
 	navMain: [
 		{
-			title: 'Dashboard',
+			title: 'Dashboards',
 			url: '/',
 			icon: SquareTerminalIcon,
 			isActive: true,
