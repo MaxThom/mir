@@ -24,10 +24,12 @@
   - [ ] widget, dev list, grey if offline
   - [x] txt mardown widget
   - [x] txt, mardown from link
-  - [ ] welcome page which is a custome dashboard
+  - [x] txt, fetch
+  - [ ] welcome page which is a custome dashboard (online, release, get started, event list, device list)
   - [x] dev spec
   - [x] dev props
   - [x] dev online/offline
+  - [ ] dev list widget
   - [x] cmd
   - [x] cfg
   - [x] evt
