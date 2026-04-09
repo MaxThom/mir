@@ -29,6 +29,8 @@
 	import CpuIcon from '@lucide/svelte/icons/cpu';
 	import PieChartIcon from '@lucide/svelte/icons/pie-chart';
 	import FileTextIcon from '@lucide/svelte/icons/file-text';
+	import { marked } from 'marked';
+	import { getHighlighter } from '$lib/shared/utils/highlighter';
 
 	let {
 		open = $bindable(false),
@@ -60,7 +62,11 @@
 				const c = editWidget.config as DeviceWidgetConfig;
 				selectedDeviceView = c.view ?? 'info';
 			} else if (editWidget.type === 'text') {
-				textContent = (editWidget.config as TextWidgetConfig).content ?? '';
+				const cfg = editWidget.config as TextWidgetConfig;
+				textContent = cfg.content ?? '';
+				textUrl     = cfg.url ?? '';
+				textJsonKey = cfg.jsonKey ?? '';
+				if (cfg.url) fetchPreview(cfg.url, cfg.jsonKey ?? '');
 			}
 		}
 	});
@@ -96,7 +102,119 @@
 	let selectedDeviceView = $state<'info' | 'properties' | 'status'>('info');
 
 	// Text config
-	let textContent = $state('');
+	let textContent    = $state('');
+	let textUrl        = $state('');
+	let textJsonKey    = $state('');
+	let previewHtml            = $state('');
+	let previewHighlightedHtml = $state('');
+	let previewIsJson          = $state(false);
+	let previewError           = $state('');
+	let previewLoading         = $state(false);
+	let previewTimer: ReturnType<typeof setTimeout> | null = null;
+	let cachedJson = $state<Record<string, unknown> | null>(null); // parsed JSON from last fetch
+
+	function processContent(text: string): { html: string; isJson: boolean; rawJson?: string } {
+		const trimmed = text.trim();
+		if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+			try {
+				const rawJson = JSON.stringify(JSON.parse(trimmed), null, 2);
+				const escaped = rawJson.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+				return { html: escaped, isJson: true, rawJson };
+			} catch { /* not valid JSON, fall through to markdown */ }
+		}
+		return { html: marked.parse(text) as string, isJson: false };
+	}
+
+	async function highlightJson(code: string) {
+		const hl = await getHighlighter();
+		previewHighlightedHtml = hl.codeToHtml(code, {
+			lang: 'json',
+			themes: { light: 'github-light', dark: 'github-dark' },
+			defaultColor: false
+		});
+	}
+
+	function getByPath(obj: Record<string, unknown>, path: string): { found: boolean; value: unknown } {
+		let current: unknown = obj;
+		for (const part of path.split('.')) {
+			if (current === null || typeof current !== 'object') return { found: false, value: undefined };
+			current = (current as Record<string, unknown>)[part];
+		}
+		return { found: current !== undefined, value: current };
+	}
+
+	function applyKey(key: string) {
+		if (!cachedJson) return;
+		previewError = '';
+		previewHtml = '';
+		previewHighlightedHtml = '';
+		const k = key.trim();
+		if (!k) {
+			const result = processContent(JSON.stringify(cachedJson));
+			previewHtml   = result.html;
+			previewIsJson = result.isJson;
+			if (result.isJson && result.rawJson) highlightJson(result.rawJson);
+			return;
+		}
+		const { found, value } = getByPath(cachedJson, k);
+		if (!found) {
+			previewError = `Key "${k}" not found in response`;
+			return;
+		}
+		const raw = typeof value === 'object' && value !== null
+			? JSON.stringify(value)
+			: String(value ?? '');
+		const result = processContent(raw);
+		previewHtml   = result.html;
+		previewIsJson = result.isJson;
+		if (result.isJson && result.rawJson) highlightJson(result.rawJson);
+	}
+
+	async function fetchPreview(url: string, key: string) {
+		previewLoading = true;
+		previewError = '';
+		previewHtml = '';
+		previewHighlightedHtml = '';
+		previewIsJson = false;
+		cachedJson = null;
+		try {
+			const res = await fetch(url);
+			if (!res.ok) throw new Error(`HTTP ${res.status}`);
+			const ct = res.headers.get('content-type') ?? '';
+			if (ct.includes('json')) {
+				cachedJson = await res.json();
+				applyKey(key);
+			} else {
+				const result = processContent(await res.text());
+				previewHtml   = result.html;
+				previewIsJson = result.isJson;
+				if (result.isJson && result.rawJson) highlightJson(result.rawJson);
+			}
+		} catch (e) {
+			previewError = (e as Error).message;
+		} finally {
+			previewLoading = false;
+		}
+	}
+
+	// Called when the URL changes — full reset and re-fetch
+	function onUrlChange() {
+		if (previewTimer) clearTimeout(previewTimer);
+		previewHtml = '';
+		previewHighlightedHtml = '';
+		previewIsJson = false;
+		previewError = '';
+		cachedJson = null;
+		if (!textUrl.trim()) return;
+		previewTimer = setTimeout(() => fetchPreview(textUrl, textJsonKey), 800);
+	}
+
+	// Called when the JSON key changes — re-extract from cached JSON, no network call
+	function onKeyChange() {
+		if (previewTimer) clearTimeout(previewTimer);
+		previewError = '';
+		previewTimer = setTimeout(() => applyKey(textJsonKey), 800);
+	}
 
 	$effect(() => {
 		if (step === 'config' && selectedType === 'telemetry' && mirStore.mir) {
@@ -235,6 +353,13 @@
 		selectedConfigName = '';
 		selectedDeviceView = 'info';
 		textContent = '';
+		textUrl = '';
+		textJsonKey = '';
+		previewHtml = '';
+		previewHighlightedHtml = '';
+		previewIsJson = false;
+		previewError = '';
+		cachedJson = null;
 		editWidget = null;
 	}
 
@@ -287,7 +412,11 @@
 			case 'device':
 				return { target, view: selectedDeviceView } satisfies DeviceWidgetConfig;
 			case 'text':
-				return { content: textContent } satisfies TextWidgetConfig;
+				return {
+					content: textContent,
+					url: textUrl.trim() || undefined,
+					jsonKey: textJsonKey.trim() || undefined
+				} satisfies TextWidgetConfig;
 		}
 	}
 
@@ -357,6 +486,60 @@
 						bind:target
 						initialTarget={(editWidget?.config as any)?.target}
 					/>
+				{/if}
+
+				{#if selectedType === 'text'}
+					<div class="space-y-2">
+						<label for="widget-url" class="text-sm font-medium">
+							URL <span class="text-muted-foreground font-normal">(leave empty for static content)</span>
+						</label>
+						<Input
+							id="widget-url"
+							bind:value={textUrl}
+							placeholder="https://example.com/README.md"
+							oninput={onUrlChange}
+						/>
+					</div>
+					{#if textUrl.trim()}
+						{#if cachedJson !== null}
+							<div class="space-y-2">
+								<label for="widget-json-key" class="text-sm font-medium">
+									JSON key <span class="text-muted-foreground font-normal">(optional)</span>
+								</label>
+								<Input
+									id="widget-json-key"
+									bind:value={textJsonKey}
+									placeholder="body or author.login"
+									oninput={onKeyChange}
+								/>
+							</div>
+						{/if}
+						<div class="rounded-md border border-border bg-muted/30 min-h-[80px] max-h-48 overflow-y-auto px-3 py-2">
+							{#if previewLoading}
+								<div class="flex items-center gap-2 text-sm text-muted-foreground">
+									<Spinner class="h-4 w-4" /> Fetching…
+								</div>
+							{:else if previewError}
+								<p class="text-sm text-destructive">{previewError}</p>
+							{:else if previewHtml}
+								{#if previewIsJson}
+									<div class="text-[11px] leading-relaxed [&_.shiki]:bg-transparent [&>pre]:px-2 [&>pre]:py-2 [&>pre]:break-all [&>pre]:whitespace-pre-wrap">
+										{#if previewHighlightedHtml}
+											{@html previewHighlightedHtml}
+										{:else}
+											<pre class="px-2 py-2 break-all whitespace-pre-wrap">{@html previewHtml}</pre>
+										{/if}
+									</div>
+								{:else}
+									<div class="prose prose-sm dark:prose-invert max-w-none">
+										{@html previewHtml}
+									</div>
+								{/if}
+							{:else}
+								<p class="text-sm text-muted-foreground">Preview will appear here…</p>
+							{/if}
+						</div>
+					{/if}
 				{/if}
 
 				<div class="flex gap-2">

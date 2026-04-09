@@ -125,6 +125,15 @@
 		}
 	}
 
+	function escapeHtml(s: string): string {
+		return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+	}
+
+	function payloadHtml(key: string, plain: string): string {
+		return highlightedPayloads[key]
+			?? `<pre class="px-4 py-3 break-all whitespace-pre-wrap">${escapeHtml(plain)}</pre>`;
+	}
+
 	async function highlightPayload(key: string, code: string) {
 		if (highlightedPayloads[key] !== undefined) return;
 		const hl = await getHighlighter();
@@ -219,11 +228,7 @@
 										<div
 											class="text-[11px] leading-relaxed [&_.shiki]:bg-transparent [&>pre]:px-4 [&>pre]:py-3 [&>pre]:break-all [&>pre]:whitespace-pre-wrap"
 										>
-											{#if highlightedPayloads[key]}
-												{@html highlightedPayloads[key]}
-											{:else}
-												<pre class="px-4 py-3 break-all whitespace-pre-wrap">{payload}</pre>
-											{/if}
+											{@html payloadHtml(key, payload)}
 										</div>
 									{:else}
 										<p class="px-4 py-3 text-xs text-muted-foreground">No payload.</p>
