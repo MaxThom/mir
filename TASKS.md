@@ -33,6 +33,10 @@
   - [x] cmd
   - [x] cfg
   - [x] evt
+  - [ ] tutorial panel
+  - [ ] book link
+  - [ ] mir book for Cockpit
+  - [ ] VIM at the top
 
 ### Bug
 

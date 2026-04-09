@@ -16,7 +16,7 @@ export type Breadcrumb = {
 export function generateBreadcrumbs(pathname: string): Breadcrumb[] {
 	// Handle root path
 	if (pathname === '/') {
-		return [{ label: 'Dashboard', href: '/', isCurrentPage: true }];
+		return [{ label: 'Dashboards', href: '/', isCurrentPage: true }];
 	}
 
 	// Split path and filter empty segments

@@ -30,6 +30,7 @@
 	import PieChartIcon from '@lucide/svelte/icons/pie-chart';
 	import FileTextIcon from '@lucide/svelte/icons/file-text';
 	import { marked } from 'marked';
+	import DOMPurify from 'dompurify';
 	import { getHighlighter } from '$lib/shared/utils/highlighter';
 
 	let {
@@ -111,7 +112,7 @@
 	let previewError           = $state('');
 	let previewLoading         = $state(false);
 	let previewTimer: ReturnType<typeof setTimeout> | null = null;
-	let cachedJson = $state<Record<string, unknown> | null>(null); // parsed JSON from last fetch
+	let cachedJson = $state<unknown>(null); // parsed JSON from last fetch
 
 	function processContent(text: string): { html: string; isJson: boolean; rawJson?: string } {
 		const trimmed = text.trim();
@@ -122,7 +123,7 @@
 				return { html: escaped, isJson: true, rawJson };
 			} catch { /* not valid JSON, fall through to markdown */ }
 		}
-		return { html: marked.parse(text) as string, isJson: false };
+		return { html: DOMPurify.sanitize(marked.parse(text) as string), isJson: false };
 	}
 
 	async function highlightJson(code: string) {
@@ -144,7 +145,7 @@
 	}
 
 	function applyKey(key: string) {
-		if (!cachedJson) return;
+		if (cachedJson === null || cachedJson === undefined) return;
 		previewError = '';
 		previewHtml = '';
 		previewHighlightedHtml = '';
@@ -156,7 +157,11 @@
 			if (result.isJson && result.rawJson) highlightJson(result.rawJson);
 			return;
 		}
-		const { found, value } = getByPath(cachedJson, k);
+		if (typeof cachedJson !== 'object' || Array.isArray(cachedJson)) {
+			previewError = 'Top-level JSON value is not an object — cannot use a key';
+			return;
+		}
+		const { found, value } = getByPath(cachedJson as Record<string, unknown>, k);
 		if (!found) {
 			previewError = `Key "${k}" not found in response`;
 			return;
@@ -180,12 +185,14 @@
 		try {
 			const res = await fetch(url);
 			if (!res.ok) throw new Error(`HTTP ${res.status}`);
-			const ct = res.headers.get('content-type') ?? '';
-			if (ct.includes('json')) {
-				cachedJson = await res.json();
+			const text = await res.text();
+			let parsed: unknown = null;
+			try { parsed = JSON.parse(text); } catch { /* not JSON */ }
+			if (parsed !== null) {
+				cachedJson = parsed;
 				applyKey(key);
 			} else {
-				const result = processContent(await res.text());
+				const result = processContent(text);
 				previewHtml   = result.html;
 				previewIsJson = result.isJson;
 				if (result.isJson && result.rawJson) highlightJson(result.rawJson);
@@ -215,6 +222,10 @@
 		previewError = '';
 		previewTimer = setTimeout(() => applyKey(textJsonKey), 800);
 	}
+
+	$effect(() => {
+		return () => { if (previewTimer) clearTimeout(previewTimer); };
+	});
 
 	$effect(() => {
 		if (step === 'config' && selectedType === 'telemetry' && mirStore.mir) {

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { marked } from 'marked';
+	import DOMPurify from 'dompurify';
 	import { dashboardStore } from '../stores/dashboard.svelte';
 	import { Spinner } from '$lib/shared/components/shadcn/spinner';
 	import { getHighlighter } from '$lib/shared/utils/highlighter';
@@ -54,7 +55,7 @@
 	let fetching               = $state(false);
 
 	function externalLinks(html: string): string {
-		return html.replace(/<a\s/g, '<a target="_blank" rel="noopener noreferrer" ');
+		return html.replace(/<a\s(?![^>]*\btarget=)/g, '<a target="_blank" rel="noopener noreferrer" ');
 	}
 
 	function processContent(text: string): { html: string; isJson: boolean; rawJson?: string } {
@@ -66,7 +67,7 @@
 				return { html: escaped, isJson: true, rawJson };
 			} catch { /* not valid JSON, fall through to markdown */ }
 		}
-		return { html: externalLinks(marked.parse(text) as string), isJson: false };
+		return { html: externalLinks(DOMPurify.sanitize(marked.parse(text) as string)), isJson: false };
 	}
 
 	async function highlightJson(code: string) {
@@ -86,17 +87,21 @@
 		try {
 			const res = await fetch(config.url);
 			if (!res.ok) throw new Error(`HTTP ${res.status}`);
-			const ct = res.headers.get('content-type') ?? '';
 			let raw: string;
-			if (config.jsonKey && ct.includes('json')) {
-				let current: unknown = await res.json();
-				for (const part of config.jsonKey.split('.')) {
-					if (current === null || typeof current !== 'object') { current = undefined; break; }
-					current = (current as Record<string, unknown>)[part];
+			if (config.jsonKey) {
+				const text = await res.text();
+				try {
+					let current: unknown = JSON.parse(text);
+					for (const part of config.jsonKey.split('.')) {
+						if (current === null || typeof current !== 'object') { current = undefined; break; }
+						current = (current as Record<string, unknown>)[part];
+					}
+					raw = typeof current === 'object' && current !== null
+						? JSON.stringify(current)
+						: String(current ?? '');
+				} catch {
+					raw = text;
 				}
-				raw = typeof current === 'object' && current !== null
-					? JSON.stringify(current)
-					: String(current ?? '');
 			} else {
 				raw = await res.text();
 			}
@@ -119,7 +124,7 @@
 		}
 	});
 
-	const rendered = $derived(externalLinks(marked.parse(localContent || '') as string));
+	const rendered = $derived(externalLinks(DOMPurify.sanitize(marked.parse(localContent || '') as string)));
 </script>
 
 <div class="flex h-full flex-col">
@@ -127,7 +132,14 @@
 
 	{#if editMode}
 		{#if urlMode}
-			{#if fetchedIsJson}
+			{#if fetching}
+				<div class="flex flex-1 items-center justify-center gap-2 text-sm text-muted-foreground select-none opacity-60">
+					<Spinner class="h-4 w-4" />
+					<span>Fetching…</span>
+				</div>
+			{:else if fetchError}
+				<div class="px-4 py-3 text-sm text-destructive select-none opacity-60">{fetchError}</div>
+			{:else if fetchedIsJson}
 				<div class="text-[11px] leading-relaxed [&_.shiki]:bg-transparent [&>pre]:px-4 [&>pre]:py-3 [&>pre]:break-all [&>pre]:whitespace-pre-wrap min-h-0 flex-1 overflow-y-auto select-none opacity-60">
 					{#if fetchedHighlightedHtml}
 						{@html fetchedHighlightedHtml}
