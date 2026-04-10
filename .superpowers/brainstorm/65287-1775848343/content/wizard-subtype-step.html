@@ -1,0 +1,60 @@
+<h2>Wizard — Subtype Selection Step</h2>
+<p class="subtitle">After clicking "Telemetry" in the widget type picker, a new step appears. The existing device widget already does this. Here's what that step looks like for telemetry.</p>
+
+<div class="mockup">
+  <div class="mockup-header">Add Widget — Step 2 of 5: Telemetry Type</div>
+  <div class="mockup-body" style="background:#0f1117;padding:24px;">
+
+    <div style="text-align:center;margin-bottom:20px;">
+      <div style="font-size:12px;color:#6b7280;margin-bottom:6px;">What kind of telemetry widget?</div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:420px;margin:0 auto;">
+
+      <!-- Line Chart option -->
+      <div style="background:#161b27;border:1px solid #2d3748;border-radius:8px;padding:16px;text-align:center;cursor:pointer;opacity:0.6;">
+        <div style="margin-bottom:10px;">
+          <!-- Mini line chart icon -->
+          <svg width="48" height="32" viewBox="0 0 48 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <polyline points="2,28 10,18 18,22 28,8 38,14 46,6" stroke="#3b82f6" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="2" y1="30" x2="46" y2="30" stroke="#374151" stroke-width="1"/>
+          </svg>
+        </div>
+        <div style="font-size:13px;font-weight:600;color:#d1d5db;">Line Chart</div>
+        <div style="font-size:11px;color:#6b7280;margin-top:4px;">Time-series chart<br>with field toggles</div>
+        <div style="margin-top:8px;font-size:10px;color:#374151;background:#0f1117;border-radius:4px;padding:2px 6px;display:inline-block;">existing</div>
+      </div>
+
+      <!-- Last Value option — highlighted as new -->
+      <div style="background:#161b27;border:2px solid #3b82f6;border-radius:8px;padding:16px;text-align:center;cursor:pointer;box-shadow:0 0 0 1px rgba(59,130,246,0.2);">
+        <div style="margin-bottom:10px;">
+          <!-- Mini grid/tiles icon -->
+          <svg width="48" height="32" viewBox="0 0 48 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="2" y="2" width="20" height="13" rx="2" fill="#1e3a5f" stroke="#3b82f6" stroke-width="1.5"/>
+            <rect x="26" y="2" width="20" height="13" rx="2" fill="#1e3a5f" stroke="#3b82f6" stroke-width="1.5"/>
+            <rect x="2" y="17" width="20" height="13" rx="2" fill="#1e3a5f" stroke="#3b82f6" stroke-width="1.5"/>
+            <rect x="26" y="17" width="20" height="13" rx="2" fill="#1e3a5f" stroke="#3b82f6" stroke-width="1.5"/>
+            <text x="12" y="12" text-anchor="middle" font-size="7" fill="#93c5fd" font-weight="bold">23.4</text>
+            <text x="36" y="12" text-anchor="middle" font-size="7" fill="#93c5fd" font-weight="bold">19.1</text>
+            <text x="12" y="27" text-anchor="middle" font-size="7" fill="#93c5fd" font-weight="bold">21.7</text>
+            <text x="36" y="27" text-anchor="middle" font-size="7" fill="#6b7280" font-weight="bold">—</text>
+          </svg>
+        </div>
+        <div style="font-size:13px;font-weight:600;color:#f9fafb;">Last Value</div>
+        <div style="font-size:11px;color:#6b7280;margin-top:4px;">Current reading per<br>device as tiles</div>
+        <div style="margin-top:8px;font-size:10px;color:#3b82f6;background:#1e3a5f;border-radius:4px;padding:2px 6px;display:inline-block;">new</div>
+      </div>
+
+    </div>
+
+    <div style="display:flex;justify-content:space-between;margin-top:24px;max-width:420px;margin-left:auto;margin-right:auto;">
+      <div style="font-size:11px;color:#374151;padding:6px 12px;border:1px solid #1f2937;border-radius:4px;">← Back</div>
+      <div style="font-size:11px;color:#fff;padding:6px 16px;background:#2563eb;border-radius:4px;">Next →</div>
+    </div>
+
+  </div>
+</div>
+
+<div class="section" style="margin-top:24px;">
+  <p class="subtitle" style="text-align:center;">Does this step feel right? Any changes to the options or labels?</p>
+</div>

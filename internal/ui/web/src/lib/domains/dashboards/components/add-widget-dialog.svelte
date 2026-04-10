@@ -57,7 +57,6 @@
 				const c = editWidget.config as TelemetryWidgetConfig;
 				selectedMeasurement = c.measurement;
 				selectedTlmSubtype = c.subtype ?? 'chart';
-				selectedLastValueField = c.selectedField ?? '';
 			} else if (editWidget.type === 'command') {
 				const c = editWidget.config as CommandWidgetConfig;
 				selectedCommandName = c.selectedCommand ?? '';
@@ -110,7 +109,6 @@
 
 	// Telemetry subtype config
 	let selectedTlmSubtype = $state<'chart' | 'last-value'>('chart');
-	let selectedLastValueField = $state('');
 
 	// Text config
 	let textContent    = $state('');
@@ -375,7 +373,6 @@
 		selectedConfigName = '';
 		selectedDeviceView = 'info';
 		selectedTlmSubtype = 'chart';
-		selectedLastValueField = '';
 		textContent  = '';
 		textFontSize = 'sm';
 		textUrl      = '';
@@ -428,8 +425,7 @@
 					measurement: selectedMeasurement,
 					fields: descriptor?.fields ?? (editWidget?.config as TelemetryWidgetConfig)?.fields ?? [],
 					timeMinutes: 60,
-					subtype: selectedTlmSubtype,
-					...(selectedTlmSubtype === 'last-value' ? { selectedField: selectedLastValueField } : {})
+					subtype: selectedTlmSubtype
 				} satisfies TelemetryWidgetConfig;
 			}
 			case 'command':
@@ -726,7 +722,7 @@
 											<div class="divide-y">
 												{#each group.measurements as m (m.name)}
 													<button
-														onclick={() => { selectedMeasurement = m.name; if (selectedTlmSubtype === 'last-value') selectedLastValueField = ''; }}
+														onclick={() => { selectedMeasurement = m.name; }}
 														class="flex w-full items-center gap-3 px-3 py-2 text-left text-sm transition-colors hover:bg-accent
 															{selectedMeasurement === m.name ? 'bg-muted' : ''}"
 													>
@@ -760,27 +756,6 @@
 									measurement will contribute data to this widget.</span
 								>
 							</div>
-						{/if}
-						{#if selectedTlmSubtype === 'last-value' && selectedMeasurement}
-							{@const measFields = measurementGroups.flatMap((g) => g.measurements).find((m) => m.name === selectedMeasurement)?.fields ?? []}
-							{#if measFields.length > 0}
-								<div class="space-y-1">
-									<p class="text-sm font-medium">Default field</p>
-									<div class="flex flex-wrap gap-2">
-										{#each measFields as field (field)}
-											<button
-												onclick={() => (selectedLastValueField = field)}
-												class="rounded-md border px-3 py-1.5 font-mono text-sm transition-colors
-													{selectedLastValueField === field
-													? 'border-primary bg-primary text-primary-foreground'
-													: 'border-border hover:bg-accent'}"
-											>
-												{field}
-											</button>
-										{/each}
-									</div>
-								</div>
-							{/if}
 						{/if}
 					{:else if selectedType === 'command'}
 						<div class="space-y-1">
@@ -889,7 +864,6 @@
 						onclick={saveWidget}
 						disabled={dashboardStore.isSaving ||
 							(selectedType === 'telemetry' && !selectedMeasurement) ||
-							(selectedType === 'telemetry' && selectedTlmSubtype === 'last-value' && !selectedLastValueField) ||
 							(selectedType === 'command' && !selectedCommandName) ||
 							(selectedType === 'config' && !selectedConfigName)}
 					>

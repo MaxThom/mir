@@ -1,0 +1,99 @@
+<h2>Field Selection — Last Value Widget</h2>
+<p class="subtitle">The measurement has multiple fields. How should the widget handle them?</p>
+
+<div class="cards">
+
+  <!-- Option A: Pick one field in wizard, locked -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0f1117;padding:14px;border-radius:6px;border:1px solid #1e2535;">
+
+      <div style="font-size:9px;color:#6b7280;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">Config step — wizard</div>
+      <div style="background:#161b27;border-radius:6px;padding:10px;margin-bottom:12px;">
+        <div style="font-size:10px;color:#9ca3af;margin-bottom:6px;">Field</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <div style="padding:4px 10px;background:#1e3a5f;border:1px solid #3b82f6;border-radius:4px;font-size:11px;color:#93c5fd;">temperature ✓</div>
+          <div style="padding:4px 10px;background:#161b27;border:1px solid #2d3748;border-radius:4px;font-size:11px;color:#6b7280;">humidity</div>
+          <div style="padding:4px 10px;background:#161b27;border:1px solid #2d3748;border-radius:4px;font-size:11px;color:#6b7280;">pressure</div>
+        </div>
+      </div>
+
+      <div style="font-size:9px;color:#6b7280;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em;">Widget on dashboard</div>
+      <div style="background:#161b27;border-radius:6px;padding:10px;">
+        <div style="font-size:9px;color:#6b7280;margin-bottom:6px;">temperature · /default</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;">
+          <div style="background:#0f1117;border-radius:4px;padding:6px;text-align:center;">
+            <div style="font-size:8px;color:#6b7280;">power</div>
+            <div style="font-size:16px;font-weight:700;color:#f9fafb;">23.4°</div>
+          </div>
+          <div style="background:#0f1117;border-radius:4px;padding:6px;text-align:center;">
+            <div style="font-size:8px;color:#6b7280;">weather</div>
+            <div style="font-size:16px;font-weight:700;color:#f9fafb;">19.1°</div>
+          </div>
+          <div style="background:#0f1117;border-radius:4px;padding:6px;text-align:center;">
+            <div style="font-size:8px;color:#6b7280;">sensor-3</div>
+            <div style="font-size:16px;font-weight:700;color:#f9fafb;">21.7°</div>
+          </div>
+          <div style="background:#0f1117;border-radius:4px;padding:6px;text-align:center;opacity:0.35;">
+            <div style="font-size:8px;color:#6b7280;">sensor-4</div>
+            <div style="font-size:14px;font-weight:700;color:#ef4444;">offline</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — One field, fixed</h3>
+      <p>Pick one field in the wizard. The widget always shows that field. Simple and focused.</p>
+    </div>
+  </div>
+
+  <!-- Option B: Field toggle pill on widget -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0f1117;padding:14px;border-radius:6px;border:1px solid #1e2535;">
+
+      <div style="font-size:9px;color:#6b7280;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">Config step — wizard (pick default field)</div>
+      <div style="background:#161b27;border-radius:6px;padding:10px;margin-bottom:12px;">
+        <div style="font-size:10px;color:#9ca3af;margin-bottom:6px;">Default field</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <div style="padding:4px 10px;background:#1e3a5f;border:1px solid #3b82f6;border-radius:4px;font-size:11px;color:#93c5fd;">temperature ✓</div>
+          <div style="padding:4px 10px;background:#161b27;border:1px solid #2d3748;border-radius:4px;font-size:11px;color:#6b7280;">humidity</div>
+          <div style="padding:4px 10px;background:#161b27;border:1px solid #2d3748;border-radius:4px;font-size:11px;color:#6b7280;">pressure</div>
+        </div>
+      </div>
+
+      <div style="font-size:9px;color:#6b7280;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em;">Widget on dashboard — field switcher at top</div>
+      <div style="background:#161b27;border-radius:6px;padding:10px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div style="font-size:9px;color:#6b7280;">/default</div>
+          <div style="display:flex;gap:4px;">
+            <div style="padding:2px 7px;background:#1e3a5f;border:1px solid #3b82f6;border-radius:3px;font-size:9px;color:#93c5fd;">temp</div>
+            <div style="padding:2px 7px;background:#0f1117;border:1px solid #2d3748;border-radius:3px;font-size:9px;color:#6b7280;">hum</div>
+            <div style="padding:2px 7px;background:#0f1117;border:1px solid #2d3748;border-radius:3px;font-size:9px;color:#6b7280;">pres</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;">
+          <div style="background:#0f1117;border-radius:4px;padding:6px;text-align:center;">
+            <div style="font-size:8px;color:#6b7280;">power</div>
+            <div style="font-size:16px;font-weight:700;color:#f9fafb;">23.4°</div>
+          </div>
+          <div style="background:#0f1117;border-radius:4px;padding:6px;text-align:center;">
+            <div style="font-size:8px;color:#6b7280;">weather</div>
+            <div style="font-size:16px;font-weight:700;color:#f9fafb;">19.1°</div>
+          </div>
+          <div style="background:#0f1117;border-radius:4px;padding:6px;text-align:center;">
+            <div style="font-size:8px;color:#6b7280;">sensor-3</div>
+            <div style="font-size:16px;font-weight:700;color:#f9fafb;">21.7°</div>
+          </div>
+          <div style="background:#0f1117;border-radius:4px;padding:6px;text-align:center;opacity:0.35;">
+            <div style="font-size:8px;color:#6b7280;">sensor-4</div>
+            <div style="font-size:14px;font-weight:700;color:#ef4444;">offline</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Field switcher on widget</h3>
+      <p>Pick a default field in the wizard. Widget has pill toggles to switch field live, like the line chart does with field selection. State is saved per widget.</p>
+    </div>
+  </div>
+
+</div>

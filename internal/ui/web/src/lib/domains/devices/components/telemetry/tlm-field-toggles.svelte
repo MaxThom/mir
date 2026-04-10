@@ -90,15 +90,23 @@
 		{/each}
 
 		{#if overflowFields.length > 0}
+			{@const overflowSelected = overflowFields.find((f) => selectedFields.includes(f))}
 			<Popover.Root bind:open={overflowOpen}>
 				<Popover.Trigger>
 					{#snippet child({ props })}
 						<button
 							{...props}
-							class="shrink-0 flex items-center rounded-sm border border-border/60 bg-muted/40 px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground transition-colors hover:bg-accent
+							class="flex min-w-0 max-w-[10rem] items-center gap-1 rounded-sm border px-1.5 py-0.5 font-mono text-[11px] transition-colors hover:bg-accent
+								{overflowSelected ? 'border-transparent text-white' : 'border-border/60 bg-muted/40 text-muted-foreground'}
 								{overflowOpen ? 'border-ring ring-1 ring-ring' : ''}"
+							style={overflowSelected
+								? `background: ${CHART_COLORS[fields.indexOf(overflowSelected) % CHART_COLORS.length]};`
+								: ''}
 						>
-							+{overflowFields.length}
+							<span class="shrink-0">+{overflowFields.length}</span>
+							{#if overflowSelected}
+								<span class="truncate">{overflowSelected}</span>
+							{/if}
 						</button>
 					{/snippet}
 				</Popover.Trigger>
