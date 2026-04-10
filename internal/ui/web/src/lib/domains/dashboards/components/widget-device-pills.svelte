@@ -17,6 +17,9 @@
 		| { kind: 'label'; key: string; value: string };
 
 	const allPills = $derived<Pill[]>([
+		...(!target.ids?.length && !(target.namespaces ?? []).length && !Object.keys(target.labels ?? {}).length
+			? [{ kind: 'ns' as const, value: 'all' }]
+			: []),
 		...(target.namespaces ?? []).map((v): Pill => ({ kind: 'ns', value: v })),
 		...Object.entries(target.labels ?? {}).map(([k, v]): Pill => ({ kind: 'label', key: k, value: v })),
 		...devices.map((d): Pill => ({ kind: 'device', id: d.id, name: d.name, color: d.color }))
