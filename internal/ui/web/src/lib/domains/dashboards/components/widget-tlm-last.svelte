@@ -191,6 +191,16 @@
 		return { label: 'stale', cls: 'text-destructive' };
 	}
 
+	// Sort: devices with a real timestamp first, stale (no timestamp) last.
+	const sortedDeviceInfos = $derived(
+		[...deviceInfos].sort((a, b) => {
+			const aStale = !lastRows.get(a.id)?.timestamp;
+			const bStale = !lastRows.get(b.id)?.timestamp;
+			if (aStale === bStale) return 0;
+			return aStale ? 1 : -1;
+		})
+	);
+
 	function formatValue(val: unknown): string {
 		if (val === null || val === undefined) return '—';
 		if (typeof val === 'number') return Number.isInteger(val) ? String(val) : val.toFixed(2);
@@ -218,18 +228,18 @@
 		<p class="px-4 py-2 text-xs text-muted-foreground">No devices found.</p>
 	{:else}
 		<!-- Device tile grid -->
-		<div class="flex-1 overflow-auto p-3">
+		<div class="min-h-0 flex-1 overflow-auto p-3">
 			<div
-				class="grid gap-2"
-				style="grid-template-columns: repeat({Math.min(deviceInfos.length, 2)}, 1fr)"
+				class="grid h-full gap-2"
+				style="grid-template-columns: repeat({Math.min(deviceInfos.length, 2)}, 1fr); grid-template-rows: repeat({Math.ceil(deviceInfos.length / 2)}, 1fr)"
 			>
-				{#each deviceInfos as dev (dev.id)}
+				{#each sortedDeviceInfos as dev (dev.id)}
 					{@const row = lastRows.get(dev.id)}
 					{@const val = row?.values[selectedField] ?? null}
 					{@const freshness = getFreshness(row?.timestamp ?? null)}
 					{@const noData = !row || row.timestamp === null}
 					<div
-						class="relative rounded-lg border border-border bg-card px-3 py-3 text-center transition-opacity
+						class="relative flex flex-col items-center justify-center rounded-lg border border-border bg-card px-3 py-3 text-center transition-opacity
 							{noData ? 'opacity-40' : ''}"
 					>
 						<!-- Freshness badge -->

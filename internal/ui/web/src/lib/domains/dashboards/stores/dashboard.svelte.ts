@@ -232,13 +232,15 @@ class DashboardStore {
 	}
 
 	addWidget(d: Dashboard, type: WidgetType, title: string, config: WidgetConfig) {
+		const existing = d.spec.widgets ?? [];
+		const bottomY = existing.reduce((max, w) => Math.max(max, w.y + w.h), 0);
 		const newWidget: Widget = {
 			id: crypto.randomUUID(),
 			type,
 			title,
 			config,
 			x: 0,
-			y: 0,
+			y: bottomY,
 			w: 4,
 			h: 4
 		};

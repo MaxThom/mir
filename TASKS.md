@@ -19,7 +19,7 @@
   - [x] dashboard toolbar, horizontal scroll
   - [x] tlm, autorefresh and timerange
   - [x] tlm, utc switch
-  - [ ] tlm, last value widget chart
+  - [x] tlm, last value widget chart
   - [x] store, validate CONTAINS with *
   - [x] widget, dev list, grey if offline
   - [x] txt mardown widget
