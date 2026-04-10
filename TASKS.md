@@ -21,7 +21,7 @@
   - [x] tlm, utc switch
   - [ ] tlm, last value widget chart
   - [x] store, validate CONTAINS with *
-  - [ ] widget, dev list, grey if offline
+  - [x] widget, dev list, grey if offline
   - [x] txt mardown widget
   - [x] txt, mardown from link
   - [x] txt, fetch
@@ -29,7 +29,7 @@
   - [x] dev spec
   - [x] dev props
   - [x] dev online/offline
-  - [ ] dev list widget
+  - [x] dev list widget
   - [x] cmd
   - [x] cfg
   - [x] evt

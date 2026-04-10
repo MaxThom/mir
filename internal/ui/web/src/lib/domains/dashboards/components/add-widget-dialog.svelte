@@ -75,7 +75,7 @@
 		}
 	});
 
-	type Step = 'type' | 'target' | 'config';
+	type Step = 'type' | 'device-sub' | 'target' | 'config';
 
 	type MeasurementGroup = {
 		devices: { id: string; name: string; namespace: string }[];
@@ -382,7 +382,7 @@
 	function selectType(t: WidgetType) {
 		selectedType = t;
 		title = typeLabel(t);
-		step = 'target';
+		step = t === 'device' ? 'device-sub' : 'target';
 	}
 
 	function typeLabel(t: WidgetType): string {
@@ -467,7 +467,8 @@
 			<Dialog.Title>{editWidget ? 'Edit Widget' : 'Add Widget'}</Dialog.Title>
 			<Dialog.Description>
 				{#if step === 'type'}Step 1 of {selectedType === 'text' ? '2' : '3'} — Choose widget type{/if}
-				{#if step === 'target'}{editWidget ? 'Step 1 of 2' : (selectedType === 'text' || selectedType === 'events' || selectedType === 'device-list') ? 'Step 2 of 2' : 'Step 2 of 3'} — {selectedType === 'text' ? 'Name your widget' : 'Select devices'}{/if}
+				{#if step === 'device-sub'}Step 2 of 3 — Configure widget{/if}
+				{#if step === 'target'}{editWidget ? 'Step 1 of 2' : (selectedType === 'text' || selectedType === 'events') ? 'Step 2 of 2' : 'Step 3 of 3'} — {selectedType === 'text' ? 'Name your widget' : 'Select devices'}{/if}
 				{#if step === 'config'}{editWidget ? 'Step 2 of 2' : 'Step 3 of 3'} — Configure widget{/if}
 			</Dialog.Description>
 		</Dialog.Header>
@@ -477,7 +478,7 @@
 			{#if step === 'type'}
 				<div class="flex flex-1 items-start justify-center">
 					<div class="grid w-full max-w-2xl grid-cols-3 gap-4">
-						{#each [{ type: 'telemetry' as WidgetType, icon: ActivityIcon, label: 'Telemetry', desc: 'Visualize time-series data from device sensors' }, { type: 'command' as WidgetType, icon: TerminalIcon, label: 'Command', desc: 'Send commands and view responses from devices' }, { type: 'config' as WidgetType, icon: SlidersHorizontalIcon, label: 'Configuration', desc: 'Manage and push configuration to devices' }, { type: 'device' as WidgetType, icon: CpuIcon, label: 'Device', desc: 'View device meta, status and properties' }, { type: 'device-list' as WidgetType, icon: LayoutListIcon, label: 'Device List', desc: 'Fleet overview with online/offline status' }, { type: 'events' as WidgetType, icon: CalendarClockIcon, label: 'Events', desc: 'Monitor events and audit logs from the fleet' }, { type: 'text' as WidgetType, icon: FileTextIcon, label: 'Text', desc: 'Markdown content for notes and documentation' }] as item (item.type)}
+						{#each [{ type: 'telemetry' as WidgetType, icon: ActivityIcon, label: 'Telemetry', desc: 'Visualize time-series data from device sensors' }, { type: 'command' as WidgetType, icon: TerminalIcon, label: 'Command', desc: 'Send commands and view responses from devices' }, { type: 'config' as WidgetType, icon: SlidersHorizontalIcon, label: 'Configuration', desc: 'Manage and push configuration to devices' }, { type: 'device' as WidgetType, icon: CpuIcon, label: 'Device', desc: 'View device meta, status and properties' }, { type: 'events' as WidgetType, icon: CalendarClockIcon, label: 'Events', desc: 'Monitor events and audit logs from the fleet' }, { type: 'text' as WidgetType, icon: FileTextIcon, label: 'Text', desc: 'Markdown content for notes and documentation' }] as item (item.type)}
 							<button
 								class="flex flex-col items-center gap-4 rounded-xl border border-border p-10 text-center transition-colors hover:border-primary hover:bg-accent"
 								onclick={() => selectType(item.type)}
@@ -493,7 +494,58 @@
 				</div>
 			{/if}
 
-			<!-- Step 2: Target devices -->
+			<!-- Step 2 (device only): Sub-type picker -->
+			{#if step === 'device-sub'}
+				<div class="flex flex-1 items-start justify-center">
+					<div class="grid w-full max-w-2xl grid-cols-2 gap-4">
+						<button
+							onclick={() => { selectedType = 'device'; selectedDeviceView = 'info'; title = 'Device'; step = 'target'; }}
+							class="flex flex-col items-center gap-4 rounded-xl border border-border p-10 text-center transition-colors hover:border-primary hover:bg-accent"
+						>
+							<InfoIcon class="h-12 w-12 text-muted-foreground" />
+							<div>
+								<p class="font-semibold">Info</p>
+								<p class="mt-1 text-xs text-muted-foreground">Meta, Spec &amp; Status</p>
+							</div>
+						</button>
+						<button
+							onclick={() => { selectedType = 'device'; selectedDeviceView = 'properties'; title = 'Device'; step = 'target'; }}
+							class="flex flex-col items-center gap-4 rounded-xl border border-border p-10 text-center transition-colors hover:border-primary hover:bg-accent"
+						>
+							<SlidersHorizontalIcon class="h-12 w-12 text-muted-foreground" />
+							<div>
+								<p class="font-semibold">Properties</p>
+								<p class="mt-1 text-xs text-muted-foreground">Desired &amp; Reported</p>
+							</div>
+						</button>
+						<button
+							onclick={() => { selectedType = 'device'; selectedDeviceView = 'status'; title = 'Device'; step = 'target'; }}
+							class="flex flex-col items-center gap-4 rounded-xl border border-border p-10 text-center transition-colors hover:border-primary hover:bg-accent"
+						>
+							<PieChartIcon class="h-12 w-12 text-muted-foreground" />
+							<div>
+								<p class="font-semibold">Status</p>
+								<p class="mt-1 text-xs text-muted-foreground">Online &amp; Offline</p>
+							</div>
+						</button>
+						<button
+							onclick={() => { selectedType = 'device-list'; title = 'Device List'; step = 'target'; }}
+							class="flex flex-col items-center gap-4 rounded-xl border border-border p-10 text-center transition-colors hover:border-primary hover:bg-accent"
+						>
+							<LayoutListIcon class="h-12 w-12 text-muted-foreground" />
+							<div>
+								<p class="font-semibold">Device List</p>
+								<p class="mt-1 text-xs text-muted-foreground">Fleet overview with online/offline status</p>
+							</div>
+						</button>
+					</div>
+				</div>
+				<div class="flex gap-2">
+					<Button variant="outline" onclick={() => (step = 'type')}>Back</Button>
+				</div>
+			{/if}
+
+			<!-- Step 3 (Step 2 for others): Target devices -->
 			{#if step === 'target'}
 				<div class="space-y-2">
 					<label for="widget-title" class="text-sm font-medium">Title</label>
@@ -581,17 +633,19 @@
 				{/if}
 
 				<div class="flex gap-2">
-					<Button variant="outline" onclick={() => editWidget ? (open = false, reset()) : (step = 'type')}>{editWidget ? 'Cancel' : 'Back'}</Button>
-					{#if selectedType === 'text' || selectedType === 'events' || selectedType === 'device-list'}
-						<Button onclick={saveWidget} disabled={dashboardStore.isSaving}>
+					<Button variant="outline" onclick={() => {
+						if (editWidget) { open = false; reset(); }
+						else if (selectedType === 'device' || selectedType === 'device-list') step = 'device-sub';
+						else step = 'type';
+					}}>{editWidget ? 'Cancel' : 'Back'}</Button>
+					{#if selectedType === 'text' || selectedType === 'events' || selectedType === 'device' || selectedType === 'device-list'}
+						<Button onclick={saveWidget} disabled={dashboardStore.isSaving || ('ids' in target && !target.ids?.length)}>
 							{dashboardStore.isSaving ? (editWidget ? 'Saving…' : 'Adding…') : (editWidget ? 'Save' : 'Add Widget')}
 						</Button>
 					{:else}
 						<Button
 							onclick={goToConfig}
-							disabled={!target.ids?.length &&
-								!target.namespaces?.length &&
-								!Object.keys(target.labels ?? {}).length}
+							disabled={'ids' in target && !target.ids?.length}
 						>
 							Next
 						</Button>
@@ -756,42 +810,6 @@
 									{/each}
 								</div>
 							{/if}
-						</div>
-					{:else if selectedType === 'device'}
-						<div class="space-y-1">
-							<p class="text-sm font-medium">View</p>
-							<div class="grid grid-cols-3 gap-3">
-								<button
-									onclick={() => (selectedDeviceView = 'info')}
-									class="flex flex-col items-center gap-2 rounded-xl border p-6 text-center transition-colors hover:border-primary hover:bg-accent {selectedDeviceView === 'info' ? 'border-primary bg-accent' : 'border-border'}"
-								>
-									<InfoIcon class="h-8 w-8 text-muted-foreground" />
-									<div>
-										<p class="font-semibold">Info</p>
-										<p class="mt-0.5 text-xs text-muted-foreground">Meta, Spec &amp; Status</p>
-									</div>
-								</button>
-								<button
-									onclick={() => (selectedDeviceView = 'properties')}
-									class="flex flex-col items-center gap-2 rounded-xl border p-6 text-center transition-colors hover:border-primary hover:bg-accent {selectedDeviceView === 'properties' ? 'border-primary bg-accent' : 'border-border'}"
-								>
-									<SlidersHorizontalIcon class="h-8 w-8 text-muted-foreground" />
-									<div>
-										<p class="font-semibold">Properties</p>
-										<p class="mt-0.5 text-xs text-muted-foreground">Desired &amp; Reported</p>
-									</div>
-								</button>
-								<button
-									onclick={() => (selectedDeviceView = 'status')}
-									class="flex flex-col items-center gap-2 rounded-xl border p-6 text-center transition-colors hover:border-primary hover:bg-accent {selectedDeviceView === 'status' ? 'border-primary bg-accent' : 'border-border'}"
-								>
-									<PieChartIcon class="h-8 w-8 text-muted-foreground" />
-									<div>
-										<p class="font-semibold">Status</p>
-										<p class="mt-0.5 text-xs text-muted-foreground">Online &amp; Offline</p>
-									</div>
-								</button>
-							</div>
 						</div>
 					{:else}
 						<p class="text-sm text-muted-foreground">
