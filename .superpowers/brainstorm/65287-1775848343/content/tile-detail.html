@@ -1,0 +1,110 @@
+<h2>Device Tile — Level of Detail</h2>
+<p class="subtitle">How much info should each device tile show?</p>
+
+<div class="cards">
+
+  <!-- Option A: Value only -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0f1117;padding:14px;border-radius:6px;border:1px solid #1e2535;display:flex;justify-content:center;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;width:200px;">
+        <div style="background:#161b27;border-radius:6px;padding:12px;text-align:center;">
+          <div style="font-size:10px;color:#9ca3af;margin-bottom:6px;">power</div>
+          <div style="font-size:22px;font-weight:700;color:#f9fafb;line-height:1;">23.4</div>
+          <div style="font-size:10px;color:#6b7280;margin-top:2px;">°C</div>
+        </div>
+        <div style="background:#161b27;border-radius:6px;padding:12px;text-align:center;">
+          <div style="font-size:10px;color:#9ca3af;margin-bottom:6px;">weather</div>
+          <div style="font-size:22px;font-weight:700;color:#f9fafb;line-height:1;">19.1</div>
+          <div style="font-size:10px;color:#6b7280;margin-top:2px;">°C</div>
+        </div>
+        <div style="background:#161b27;border-radius:6px;padding:12px;text-align:center;">
+          <div style="font-size:10px;color:#9ca3af;margin-bottom:6px;">sensor-3</div>
+          <div style="font-size:22px;font-weight:700;color:#f9fafb;line-height:1;">21.7</div>
+          <div style="font-size:10px;color:#6b7280;margin-top:2px;">°C</div>
+        </div>
+        <div style="background:#161b27;border-radius:6px;padding:12px;text-align:center;opacity:0.4;">
+          <div style="font-size:10px;color:#9ca3af;margin-bottom:6px;">sensor-4</div>
+          <div style="font-size:22px;font-weight:700;color:#6b7280;line-height:1;">—</div>
+          <div style="font-size:10px;color:#6b7280;margin-top:2px;">no data</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Value only</h3>
+      <p>Device name, value, unit. Clean and minimal. No data shows "—".</p>
+    </div>
+  </div>
+
+  <!-- Option B: Value + timestamp -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0f1117;padding:14px;border-radius:6px;border:1px solid #1e2535;display:flex;justify-content:center;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;width:220px;">
+        <div style="background:#161b27;border-radius:6px;padding:10px;text-align:center;">
+          <div style="font-size:10px;color:#9ca3af;margin-bottom:4px;">power</div>
+          <div style="font-size:20px;font-weight:700;color:#f9fafb;line-height:1;">23.4</div>
+          <div style="font-size:9px;color:#6b7280;margin-top:2px;">°C</div>
+          <div style="font-size:8px;color:#374151;margin-top:5px;border-top:1px solid #1f2937;padding-top:4px;">14:32:10</div>
+        </div>
+        <div style="background:#161b27;border-radius:6px;padding:10px;text-align:center;">
+          <div style="font-size:10px;color:#9ca3af;margin-bottom:4px;">weather</div>
+          <div style="font-size:20px;font-weight:700;color:#f9fafb;line-height:1;">19.1</div>
+          <div style="font-size:9px;color:#6b7280;margin-top:2px;">°C</div>
+          <div style="font-size:8px;color:#374151;margin-top:5px;border-top:1px solid #1f2937;padding-top:4px;">14:31:58</div>
+        </div>
+        <div style="background:#161b27;border-radius:6px;padding:10px;text-align:center;">
+          <div style="font-size:10px;color:#9ca3af;margin-bottom:4px;">sensor-3</div>
+          <div style="font-size:20px;font-weight:700;color:#f9fafb;line-height:1;">21.7</div>
+          <div style="font-size:9px;color:#6b7280;margin-top:2px;">°C</div>
+          <div style="font-size:8px;color:#374151;margin-top:5px;border-top:1px solid #1f2937;padding-top:4px;">14:32:05</div>
+        </div>
+        <div style="background:#161b27;border-radius:6px;padding:10px;text-align:center;opacity:0.4;">
+          <div style="font-size:10px;color:#9ca3af;margin-bottom:4px;">sensor-4</div>
+          <div style="font-size:20px;font-weight:700;color:#6b7280;line-height:1;">—</div>
+          <div style="font-size:9px;color:#6b7280;margin-top:2px;">°C</div>
+          <div style="font-size:8px;color:#374151;margin-top:5px;border-top:1px solid #1f2937;padding-top:4px;">no data</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Value + timestamp</h3>
+      <p>Shows when each value was last received. Helps spot stale or lagging devices.</p>
+    </div>
+  </div>
+
+  <!-- Option C: Value + relative age badge -->
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0f1117;padding:14px;border-radius:6px;border:1px solid #1e2535;display:flex;justify-content:center;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;width:220px;">
+        <div style="background:#161b27;border-radius:6px;padding:10px;text-align:center;position:relative;">
+          <div style="position:absolute;top:6px;right:6px;font-size:8px;color:#10b981;background:rgba(16,185,129,0.1);border-radius:3px;padding:1px 4px;">live</div>
+          <div style="font-size:10px;color:#9ca3af;margin-bottom:4px;">power</div>
+          <div style="font-size:20px;font-weight:700;color:#f9fafb;line-height:1;">23.4</div>
+          <div style="font-size:9px;color:#6b7280;margin-top:2px;">°C</div>
+        </div>
+        <div style="background:#161b27;border-radius:6px;padding:10px;text-align:center;position:relative;">
+          <div style="position:absolute;top:6px;right:6px;font-size:8px;color:#10b981;background:rgba(16,185,129,0.1);border-radius:3px;padding:1px 4px;">2s</div>
+          <div style="font-size:10px;color:#9ca3af;margin-bottom:4px;">weather</div>
+          <div style="font-size:20px;font-weight:700;color:#f9fafb;line-height:1;">19.1</div>
+          <div style="font-size:9px;color:#6b7280;margin-top:2px;">°C</div>
+        </div>
+        <div style="background:#161b27;border-radius:6px;padding:10px;text-align:center;position:relative;">
+          <div style="position:absolute;top:6px;right:6px;font-size:8px;color:#f59e0b;background:rgba(245,158,11,0.1);border-radius:3px;padding:1px 4px;">4m</div>
+          <div style="font-size:10px;color:#9ca3af;margin-bottom:4px;">sensor-3</div>
+          <div style="font-size:20px;font-weight:700;color:#f9fafb;line-height:1;">21.7</div>
+          <div style="font-size:9px;color:#6b7280;margin-top:2px;">°C</div>
+        </div>
+        <div style="background:#161b27;border-radius:6px;padding:10px;text-align:center;opacity:0.4;position:relative;">
+          <div style="position:absolute;top:6px;right:6px;font-size:8px;color:#ef4444;background:rgba(239,68,68,0.1);border-radius:3px;padding:1px 4px;">stale</div>
+          <div style="font-size:10px;color:#9ca3af;margin-bottom:4px;">sensor-4</div>
+          <div style="font-size:20px;font-weight:700;color:#6b7280;line-height:1;">—</div>
+          <div style="font-size:9px;color:#6b7280;margin-top:2px;">°C</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — Value + freshness badge</h3>
+      <p>Small colored badge shows relative age: green "live/2s", yellow "4m", red "stale". Immediate at-a-glance health signal.</p>
+    </div>
+  </div>
+
+</div>

@@ -6,6 +6,7 @@
 	import type { Widget } from '../api/dashboard-api';
 	import WidgetWrapper from './widget-wrapper.svelte';
 	import WidgetTelemetry from './widget-telemetry.svelte';
+	import WidgetTlmLast from './widget-tlm-last.svelte';
 	import WidgetCommand from './widget-command.svelte';
 	import WidgetConfig from './widget-config.svelte';
 	import WidgetEvents from './widget-events.svelte';
@@ -101,7 +102,14 @@
 						dashboardStore.removeWidget(dashboardStore.activeDashboard, widget.id)}
 					headerExtra={widget.type !== 'text' ? headerPills : undefined}
 				>
-					{#if widget.type === 'telemetry'}
+					{#if widget.type === 'telemetry' && (widget.config as TelemetryWidgetConfig).subtype === 'last-value'}
+						<WidgetTlmLast
+							widgetId={widget.id}
+							config={widget.config as TelemetryWidgetConfig}
+							{refreshTick}
+							onDevicesReady={(infos) => widgetDevices.set(widget.id, infos)}
+						/>
+					{:else if widget.type === 'telemetry'}
 						<WidgetTelemetry
 							widgetId={widget.id}
 							config={widget.config as TelemetryWidgetConfig}
