@@ -3,7 +3,9 @@
 	import { mirStore } from '$lib/domains/mir/stores/mir.svelte';
 	import { DeviceTarget } from '@mir/sdk';
 	import { dashboardStore } from '$lib/domains/dashboards/stores/dashboard.svelte';
-	import { CHART_COLORS } from '$lib/domains/devices/utils/tlm-time';
+	import { CHART_COLORS, getTimeRange } from '$lib/domains/devices/utils/tlm-time';
+	import { editorPrefs } from '$lib/shared/stores/editor-prefs.svelte';
+	import type { GlobalTimeFilter } from '$lib/shared/stores/editor-prefs.svelte';
 	import TlmFieldToggles from '$lib/domains/devices/components/telemetry/tlm-field-toggles.svelte';
 	import type { TelemetryWidgetConfig } from '../api/dashboard-api';
 
@@ -31,6 +33,18 @@
 	let loadError = $state<string | null>(null);
 	let isInRefresh = false;
 	let generation = 0;
+	let timeFilter = $state<GlobalTimeFilter>(editorPrefs.timeFilter);
+
+	// ─── Global time change ────────────────────────────────────────────────────
+
+	$effect(() => {
+		const globalFilter = editorPrefs.timeFilter;
+		if (untrack(() => !hasLoaded)) return;
+		untrack(() => {
+			timeFilter = globalFilter;
+			query();
+		});
+	});
 
 	// ─── Startup ─────────────────────────────────────────────────────────────
 
@@ -102,6 +116,10 @@
 		const mir = mirStore.mir;
 		if (!mir || !config.measurement) return;
 		loadError = null;
+		// Reset selectedField if it no longer exists in the (possibly updated) fields list
+		if (!config.fields.includes(selectedField)) {
+			selectedField = config.selectedField ?? config.fields[0] ?? '';
+		}
 		try {
 			const target = new DeviceTarget({
 				ids: config.target.ids,
@@ -129,8 +147,7 @@
 		if (!mir || !config.measurement || deviceInfos.length === 0) return;
 		const myGen = ++generation;
 
-		const end = new Date();
-		const start = new Date(end.getTime() - (config.timeMinutes ?? 60) * 60 * 1000);
+		const { start, end } = getTimeRange(timeFilter);
 
 		try {
 			const results = await Promise.all(
