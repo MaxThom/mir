@@ -18,6 +18,7 @@
 
 	let containerEl: HTMLDivElement | undefined;
 	let measureEl: HTMLDivElement | undefined;
+	let overflowBtnEl: HTMLButtonElement | undefined;
 	let visibleCount = $state(0);
 	let overflowOpen = $state(false);
 
@@ -34,7 +35,7 @@
 		if (pills.length === 0) return;
 
 		const gap = 4; // gap-1 = 4px
-		const overflowBtnWidth = 34; // approx +N button width
+		const overflowBtnWidth = overflowBtnEl?.offsetWidth ?? 34; // measured from off-screen element
 
 		let usedWidth = 0;
 		let count = 0;
@@ -148,4 +149,12 @@
 			{field}
 		</button>
 	{/each}
+	<!-- Overflow button measured in its expanded state (with field name) to get accurate width reservation -->
+	<button
+		bind:this={overflowBtnEl}
+		class="flex min-w-0 max-w-[10rem] items-center gap-1 rounded-sm border px-1.5 py-0.5 font-mono text-[11px]"
+	>
+		<span class="shrink-0">+1</span>
+		<span class="truncate">{fields.reduce((a, b) => (a.length >= b.length ? a : b), '')}</span>
+	</button>
 </div>
