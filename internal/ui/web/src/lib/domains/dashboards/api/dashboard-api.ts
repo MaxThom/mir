@@ -17,6 +17,8 @@ export interface TelemetryWidgetConfig {
 	splitCount?: 1 | 2 | 3 | 4;
 	syncFields?: boolean;
 	enabledDeviceIds?: string[];
+	subtype?: 'chart' | 'last-value';   // absent = 'chart' (backwards compatible)
+	selectedField?: string;              // active field for last-value display (view state)
 }
 
 export interface CommandWidgetConfig {
