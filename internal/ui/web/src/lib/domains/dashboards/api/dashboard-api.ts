@@ -1,4 +1,4 @@
-export type WidgetType = 'telemetry' | 'command' | 'config' | 'events' | 'device' | 'text';
+export type WidgetType = 'telemetry' | 'command' | 'config' | 'events' | 'device' | 'device-list' | 'text';
 
 export interface DeviceTargetConfig {
 	ids?: string[];
@@ -45,6 +45,10 @@ export interface DeviceWidgetConfig {
 	selectedDeviceId?: string; // view state — active pill tab
 }
 
+export interface DeviceListWidgetConfig {
+	target: DeviceTargetConfig;
+}
+
 export interface TextWidgetConfig {
 	content: string;
 	url?: string;      // remote URL to fetch markdown from
@@ -58,6 +62,7 @@ export type WidgetConfig =
 	| ConfigWidgetConfig
 	| EventsWidgetConfig
 	| DeviceWidgetConfig
+	| DeviceListWidgetConfig
 	| TextWidgetConfig;
 
 export interface Widget {

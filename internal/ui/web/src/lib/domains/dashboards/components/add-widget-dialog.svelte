@@ -17,6 +17,7 @@
 		CommandWidgetConfig,
 		ConfigWidgetConfig,
 		DeviceWidgetConfig,
+		DeviceListWidgetConfig,
 		TextWidgetConfig
 	} from '../api/dashboard-api';
 	import type { TelemetryGroup, CommandGroup, ConfigGroup } from '@mir/sdk';
@@ -29,6 +30,7 @@
 	import CpuIcon from '@lucide/svelte/icons/cpu';
 	import PieChartIcon from '@lucide/svelte/icons/pie-chart';
 	import FileTextIcon from '@lucide/svelte/icons/file-text';
+	import LayoutListIcon from '@lucide/svelte/icons/layout-list';
 	import { marked } from 'marked';
 	import DOMPurify from 'dompurify';
 	import { getHighlighter } from '$lib/shared/utils/highlighter';
@@ -395,6 +397,8 @@
 				return 'Events';
 			case 'device':
 				return 'Device';
+			case 'device-list':
+				return 'Device List';
 			case 'text':
 				return 'Text';
 		}
@@ -404,7 +408,7 @@
 		step = 'config';
 	}
 
-	function buildConfig(): TelemetryWidgetConfig | CommandWidgetConfig | ConfigWidgetConfig | EventsWidgetConfig | DeviceWidgetConfig | TextWidgetConfig {
+	function buildConfig(): TelemetryWidgetConfig | CommandWidgetConfig | ConfigWidgetConfig | EventsWidgetConfig | DeviceWidgetConfig | DeviceListWidgetConfig | TextWidgetConfig {
 		switch (selectedType!) {
 			case 'telemetry': {
 				const descriptor = measurementGroups
@@ -425,6 +429,8 @@
 				return { target, limit: 100 } satisfies EventsWidgetConfig;
 			case 'device':
 				return { target, view: selectedDeviceView } satisfies DeviceWidgetConfig;
+			case 'device-list':
+				return { target } satisfies DeviceListWidgetConfig;
 			case 'text':
 				return {
 					content: textContent,
@@ -461,7 +467,7 @@
 			<Dialog.Title>{editWidget ? 'Edit Widget' : 'Add Widget'}</Dialog.Title>
 			<Dialog.Description>
 				{#if step === 'type'}Step 1 of {selectedType === 'text' ? '2' : '3'} — Choose widget type{/if}
-				{#if step === 'target'}{editWidget ? 'Step 1 of 2' : (selectedType === 'text' || selectedType === 'events') ? 'Step 2 of 2' : 'Step 2 of 3'} — {selectedType === 'text' ? 'Name your widget' : 'Select devices'}{/if}
+				{#if step === 'target'}{editWidget ? 'Step 1 of 2' : (selectedType === 'text' || selectedType === 'events' || selectedType === 'device-list') ? 'Step 2 of 2' : 'Step 2 of 3'} — {selectedType === 'text' ? 'Name your widget' : 'Select devices'}{/if}
 				{#if step === 'config'}{editWidget ? 'Step 2 of 2' : 'Step 3 of 3'} — Configure widget{/if}
 			</Dialog.Description>
 		</Dialog.Header>
@@ -471,7 +477,7 @@
 			{#if step === 'type'}
 				<div class="flex flex-1 items-start justify-center">
 					<div class="grid w-full max-w-2xl grid-cols-3 gap-4">
-						{#each [{ type: 'telemetry' as WidgetType, icon: ActivityIcon, label: 'Telemetry', desc: 'Visualize time-series data from device sensors' }, { type: 'command' as WidgetType, icon: TerminalIcon, label: 'Command', desc: 'Send commands and view responses from devices' }, { type: 'config' as WidgetType, icon: SlidersHorizontalIcon, label: 'Configuration', desc: 'Manage and push configuration to devices' }, { type: 'device' as WidgetType, icon: CpuIcon, label: 'Device', desc: 'View device meta, status and properties' }, { type: 'events' as WidgetType, icon: CalendarClockIcon, label: 'Events', desc: 'Monitor events and audit logs from the fleet' }, { type: 'text' as WidgetType, icon: FileTextIcon, label: 'Text', desc: 'Markdown content for notes and documentation' }] as item (item.type)}
+						{#each [{ type: 'telemetry' as WidgetType, icon: ActivityIcon, label: 'Telemetry', desc: 'Visualize time-series data from device sensors' }, { type: 'command' as WidgetType, icon: TerminalIcon, label: 'Command', desc: 'Send commands and view responses from devices' }, { type: 'config' as WidgetType, icon: SlidersHorizontalIcon, label: 'Configuration', desc: 'Manage and push configuration to devices' }, { type: 'device' as WidgetType, icon: CpuIcon, label: 'Device', desc: 'View device meta, status and properties' }, { type: 'device-list' as WidgetType, icon: LayoutListIcon, label: 'Device List', desc: 'Fleet overview with online/offline status' }, { type: 'events' as WidgetType, icon: CalendarClockIcon, label: 'Events', desc: 'Monitor events and audit logs from the fleet' }, { type: 'text' as WidgetType, icon: FileTextIcon, label: 'Text', desc: 'Markdown content for notes and documentation' }] as item (item.type)}
 							<button
 								class="flex flex-col items-center gap-4 rounded-xl border border-border p-10 text-center transition-colors hover:border-primary hover:bg-accent"
 								onclick={() => selectType(item.type)}
@@ -576,7 +582,7 @@
 
 				<div class="flex gap-2">
 					<Button variant="outline" onclick={() => editWidget ? (open = false, reset()) : (step = 'type')}>{editWidget ? 'Cancel' : 'Back'}</Button>
-					{#if selectedType === 'text' || selectedType === 'events'}
+					{#if selectedType === 'text' || selectedType === 'events' || selectedType === 'device-list'}
 						<Button onclick={saveWidget} disabled={dashboardStore.isSaving}>
 							{dashboardStore.isSaving ? (editWidget ? 'Saving…' : 'Adding…') : (editWidget ? 'Save' : 'Add Widget')}
 						</Button>
