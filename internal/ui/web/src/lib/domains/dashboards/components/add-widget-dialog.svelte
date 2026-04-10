@@ -31,6 +31,7 @@
 	import PieChartIcon from '@lucide/svelte/icons/pie-chart';
 	import FileTextIcon from '@lucide/svelte/icons/file-text';
 	import LayoutListIcon from '@lucide/svelte/icons/layout-list';
+	import Grid2x2Icon from '@lucide/svelte/icons/grid-2x2';
 	import { marked } from 'marked';
 	import DOMPurify from 'dompurify';
 	import { getHighlighter } from '$lib/shared/utils/highlighter';
@@ -55,6 +56,8 @@
 			if (editWidget.type === 'telemetry') {
 				const c = editWidget.config as TelemetryWidgetConfig;
 				selectedMeasurement = c.measurement;
+				selectedTlmSubtype = c.subtype ?? 'chart';
+				selectedLastValueField = c.selectedField ?? '';
 			} else if (editWidget.type === 'command') {
 				const c = editWidget.config as CommandWidgetConfig;
 				selectedCommandName = c.selectedCommand ?? '';
@@ -75,7 +78,7 @@
 		}
 	});
 
-	type Step = 'type' | 'device-sub' | 'target' | 'config';
+	type Step = 'type' | 'tlm-sub' | 'device-sub' | 'target' | 'config';
 
 	type MeasurementGroup = {
 		devices: { id: string; name: string; namespace: string }[];
@@ -104,6 +107,10 @@
 
 	// Device config
 	let selectedDeviceView = $state<'info' | 'properties' | 'status'>('info');
+
+	// Telemetry subtype config
+	let selectedTlmSubtype = $state<'chart' | 'last-value'>('chart');
+	let selectedLastValueField = $state('');
 
 	// Text config
 	let textContent    = $state('');
@@ -367,6 +374,8 @@
 		configsLoading = false;
 		selectedConfigName = '';
 		selectedDeviceView = 'info';
+		selectedTlmSubtype = 'chart';
+		selectedLastValueField = '';
 		textContent  = '';
 		textFontSize = 'sm';
 		textUrl      = '';
@@ -382,7 +391,7 @@
 	function selectType(t: WidgetType) {
 		selectedType = t;
 		title = typeLabel(t);
-		step = t === 'device' ? 'device-sub' : 'target';
+		step = t === 'device' ? 'device-sub' : t === 'telemetry' ? 'tlm-sub' : 'target';
 	}
 
 	function typeLabel(t: WidgetType): string {
@@ -418,7 +427,9 @@
 					target,
 					measurement: selectedMeasurement,
 					fields: descriptor?.fields ?? (editWidget?.config as TelemetryWidgetConfig)?.fields ?? [],
-					timeMinutes: 60
+					timeMinutes: 60,
+					subtype: selectedTlmSubtype,
+					...(selectedTlmSubtype === 'last-value' ? { selectedField: selectedLastValueField } : {})
 				} satisfies TelemetryWidgetConfig;
 			}
 			case 'command':
