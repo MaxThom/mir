@@ -478,9 +478,10 @@
 			<Dialog.Title>{editWidget ? 'Edit Widget' : 'Add Widget'}</Dialog.Title>
 			<Dialog.Description>
 				{#if step === 'type'}Step 1 of {selectedType === 'text' ? '2' : '3'} — Choose widget type{/if}
+				{#if step === 'tlm-sub'}Step 2 of 4 — Choose display type{/if}
 				{#if step === 'device-sub'}Step 2 of 3 — Configure widget{/if}
-				{#if step === 'target'}{editWidget ? 'Step 1 of 2' : (selectedType === 'text' || selectedType === 'events') ? 'Step 2 of 2' : 'Step 3 of 3'} — {selectedType === 'text' ? 'Name your widget' : 'Select devices'}{/if}
-				{#if step === 'config'}{editWidget ? 'Step 2 of 2' : 'Step 3 of 3'} — Configure widget{/if}
+				{#if step === 'target'}{editWidget ? 'Step 1 of 2' : (selectedType === 'text' || selectedType === 'events') ? 'Step 2 of 2' : selectedType === 'telemetry' ? 'Step 3 of 4' : 'Step 3 of 3'} — {selectedType === 'text' ? 'Name your widget' : 'Select devices'}{/if}
+				{#if step === 'config'}{editWidget ? 'Step 2 of 2' : selectedType === 'telemetry' ? 'Step 4 of 4' : 'Step 3 of 3'} — Configure widget{/if}
 			</Dialog.Description>
 		</Dialog.Header>
 
@@ -547,6 +548,37 @@
 							<div>
 								<p class="font-semibold">Device List</p>
 								<p class="mt-1 text-xs text-muted-foreground">Fleet overview with online/offline status</p>
+							</div>
+						</button>
+					</div>
+				</div>
+				<div class="flex gap-2">
+					<Button variant="outline" onclick={() => (step = 'type')}>Back</Button>
+				</div>
+			{/if}
+
+			<!-- Step 2 (telemetry only): Subtype picker -->
+			{#if step === 'tlm-sub'}
+				<div class="flex flex-1 items-start justify-center">
+					<div class="grid w-full max-w-2xl grid-cols-2 gap-4">
+						<button
+							onclick={() => { selectedTlmSubtype = 'chart'; title = 'Telemetry'; step = 'target'; }}
+							class="flex flex-col items-center gap-4 rounded-xl border border-border p-10 text-center transition-colors hover:border-primary hover:bg-accent"
+						>
+							<ActivityIcon class="h-12 w-12 text-muted-foreground" />
+							<div>
+								<p class="font-semibold">Line Chart</p>
+								<p class="mt-1 text-xs text-muted-foreground">Time-series visualization with field toggles</p>
+							</div>
+						</button>
+						<button
+							onclick={() => { selectedTlmSubtype = 'last-value'; title = 'Last Value'; step = 'target'; }}
+							class="flex flex-col items-center gap-4 rounded-xl border border-border p-10 text-center transition-colors hover:border-primary hover:bg-accent"
+						>
+							<Grid2x2Icon class="h-12 w-12 text-muted-foreground" />
+							<div>
+								<p class="font-semibold">Last Value</p>
+								<p class="mt-1 text-xs text-muted-foreground">Current reading per device as tiles</p>
 							</div>
 						</button>
 					</div>
@@ -647,6 +679,7 @@
 					<Button variant="outline" onclick={() => {
 						if (editWidget) { open = false; reset(); }
 						else if (selectedType === 'device' || selectedType === 'device-list') step = 'device-sub';
+						else if (selectedType === 'telemetry') step = 'tlm-sub';
 						else step = 'type';
 					}}>{editWidget ? 'Cancel' : 'Back'}</Button>
 					{#if selectedType === 'text' || selectedType === 'events' || selectedType === 'device' || selectedType === 'device-list'}
@@ -693,7 +726,7 @@
 											<div class="divide-y">
 												{#each group.measurements as m (m.name)}
 													<button
-														onclick={() => (selectedMeasurement = m.name)}
+														onclick={() => { selectedMeasurement = m.name; if (selectedTlmSubtype === 'last-value') selectedLastValueField = ''; }}
 														class="flex w-full items-center gap-3 px-3 py-2 text-left text-sm transition-colors hover:bg-accent
 															{selectedMeasurement === m.name ? 'bg-muted' : ''}"
 													>
@@ -727,6 +760,27 @@
 									measurement will contribute data to this widget.</span
 								>
 							</div>
+						{/if}
+						{#if selectedTlmSubtype === 'last-value' && selectedMeasurement}
+							{@const measFields = measurementGroups.flatMap((g) => g.measurements).find((m) => m.name === selectedMeasurement)?.fields ?? []}
+							{#if measFields.length > 0}
+								<div class="space-y-1">
+									<p class="text-sm font-medium">Default field</p>
+									<div class="flex flex-wrap gap-2">
+										{#each measFields as field (field)}
+											<button
+												onclick={() => (selectedLastValueField = field)}
+												class="rounded-md border px-3 py-1.5 font-mono text-sm transition-colors
+													{selectedLastValueField === field
+													? 'border-primary bg-primary text-primary-foreground'
+													: 'border-border hover:bg-accent'}"
+											>
+												{field}
+											</button>
+										{/each}
+									</div>
+								</div>
+							{/if}
 						{/if}
 					{:else if selectedType === 'command'}
 						<div class="space-y-1">
@@ -835,6 +889,7 @@
 						onclick={saveWidget}
 						disabled={dashboardStore.isSaving ||
 							(selectedType === 'telemetry' && !selectedMeasurement) ||
+							(selectedType === 'telemetry' && selectedTlmSubtype === 'last-value' && !selectedLastValueField) ||
 							(selectedType === 'command' && !selectedCommandName) ||
 							(selectedType === 'config' && !selectedConfigName)}
 					>
