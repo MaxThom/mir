@@ -1,0 +1,79 @@
+{
+  "apiVersion": "mir/v1alpha",
+  "kind": "dashboard",
+  "meta": {
+    "name": "welcome",
+    "namespace": "system"
+  },
+  "spec": {
+    "description": "System welcome dashboard",
+    "widgets": [
+      {
+        "config": {
+          "target": {}
+        },
+        "h": 4,
+        "id": "welcome-device-list",
+        "title": "Devices",
+        "type": "device-list",
+        "w": 8,
+        "x": 0,
+        "y": 4
+      },
+      {
+        "config": {
+          "limit": 20.0,
+          "target": {}
+        },
+        "h": 4,
+        "id": "welcome-events",
+        "title": "Events",
+        "type": "events",
+        "w": 4,
+        "x": 8,
+        "y": 4
+      },
+      {
+        "config": {
+          "content": "## Welcome to **Mir IoT Hub**\n **1. Connect a device**\n  Integrate using the [Device SDK](/book) — register your device, define a telemetry schema, and start publishing data in minutes.\n\n  **2. Explore your data**\n  View live telemetry, send commands, and push configuration updates from the Devices section.\n\n  **3. Build dashboards**\n  Compose custom dashboards from widgets — charts, device lists, event feeds, and more.\n\n  **4. Read the docs**\n  The [Mir book](/book) covers the full architecture, SDK reference, and deployment guides."
+        },
+        "h": 4,
+        "id": "welcome-get-started",
+        "title": "Get Started",
+        "type": "text",
+        "w": 4,
+        "x": 4,
+        "y": 0
+      },
+      {
+        "config": {
+          "content": "# Release Notes\n\n## Latest\n\n- Dashboard widgets: telemetry, events, device list, text, command, config\n- Multi-device telemetry views\n- Cockpit web UI\n",
+          "fontSize": "sm",
+          "jsonKey": "body",
+          "url": "/api/v1/releases"
+        },
+        "h": 4,
+        "id": "welcome-release-notes",
+        "title": "Release Notes",
+        "type": "text",
+        "w": 4,
+        "x": 0,
+        "y": 0
+      },
+      {
+        "config": {
+          "selectedDeviceId": "gimli",
+          "target": {},
+          "view": "status"
+        },
+        "h": 4,
+        "id": "984d263c-bf98-42bd-83f6-b4ead6c51c1d",
+        "title": "Status",
+        "type": "device",
+        "w": 4,
+        "x": 8,
+        "y": 0
+      }
+    ]
+  }
+}

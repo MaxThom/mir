@@ -5,6 +5,7 @@ import DocDevices from '../components/doc-devices.svelte';
 
 export const docsContent: Record<RouteKey, Component> = {
 	dashboard: DocDevices,
+	dashboards: DocDevices,
 	devices: DocDevices,
 	'devices/create': DocDevices,
 	'devices/detail': DocDevices,

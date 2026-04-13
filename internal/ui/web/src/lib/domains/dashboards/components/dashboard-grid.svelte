@@ -16,7 +16,7 @@
 	import WidgetDeviceList from './widget-device-list.svelte';
 	import type { TelemetryWidgetConfig, CommandWidgetConfig, ConfigWidgetConfig, EventsWidgetConfig, DeviceWidgetConfig, DeviceListWidgetConfig, TextWidgetConfig } from '../api/dashboard-api';
 
-	let { widgets, refreshTick = 0, onEditWidget }: { widgets: Widget[]; refreshTick?: number; onEditWidget?: (w: Widget) => void } = $props();
+	let { widgets, refreshTick = 0, readonly = false, onEditWidget }: { widgets: Widget[]; refreshTick?: number; readonly?: boolean; onEditWidget?: (w: Widget) => void } = $props();
 
 	const widgetDevices = new SvelteMap<string, { id: string; name: string; color: string }[]>();
 
@@ -32,12 +32,14 @@
 				cellHeight: 80,
 				margin: 4,
 				handle: '.grid-stack-item-content-drag-handle',
-				float: false
+				float: false,
+				...(readonly ? { staticGrid: true } : {})
 			},
 			gridEl!
 		);
 
 		grid.on('change', () => {
+			if (readonly) return;
 			if (!dashboardStore.activeDashboard || !grid) return;
 			if (!dashboardStore.editMode && !dashboardStore.isCreatingNew) return;
 			const items = grid.save(false) as import('gridstack').GridStackWidget[];
@@ -57,6 +59,7 @@
 	});
 
 	$effect(() => {
+		if (readonly) return;
 		const editMode = dashboardStore.editMode || dashboardStore.isCreatingNew;
 		if (!grid) return;
 		tick().then(() => {
@@ -73,7 +76,7 @@
 				.querySelectorAll<HTMLElement>('.grid-stack-item')
 				.forEach((el) => {
 					if (!(el as HTMLElement & { gridstackNode?: unknown }).gridstackNode) {
-						grid!.makeWidget(el);
+						grid!.makeWidget(el, readonly ? { noMove: true, noResize: true } : undefined);
 					}
 				});
 		});
@@ -95,7 +98,7 @@
 				{/snippet}
 				<WidgetWrapper
 					title={widget.title}
-					editMode={dashboardStore.editMode || dashboardStore.isCreatingNew}
+					editMode={!readonly && (dashboardStore.editMode || dashboardStore.isCreatingNew)}
 					onEdit={() => onEditWidget?.(widget)}
 					onRemove={() =>
 						dashboardStore.activeDashboard &&

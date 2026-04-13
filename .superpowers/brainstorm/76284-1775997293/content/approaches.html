@@ -1,0 +1,79 @@
+<h2>Implementation Approaches</h2>
+<p class="subtitle">Three ways to build the welcome page — pick the one that fits</p>
+
+<div class="options">
+
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Minimal — Extend existing DashboardGrid with <code>readonly</code></h3>
+      <p>
+        Add a <code>readonly</code> prop to the existing <code>DashboardGrid</code> component that disables edit mode, drag handles, and the add-widget button.
+        The welcome <code>+page.svelte</code> fetches <code>system/welcome</code> from the API, passes it directly to <code>DashboardGrid readonly</code>.
+        No new toolbar — just a static title. The dashboard store is not involved at all (direct API call in the page).
+        Backend seeds <code>system/welcome</code> on startup if absent.
+      </p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul>
+          <li>Minimal new code — ~2 files touched</li>
+          <li>All widget types work automatically</li>
+          <li>Grid positions from DB respected</li>
+        </ul></div>
+        <div class="cons"><h4>Cons</h4><ul>
+          <li>DashboardGrid becomes dual-purpose</li>
+          <li>GridStack overhead for a static page</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B ⭐</div>
+    <div class="content">
+      <h3>Dedicated welcome store + simplified page (recommended)</h3>
+      <p>
+        A small <code>welcomeStore</code> fetches <code>system/welcome</code> from the API and holds the dashboard.
+        The <code>+page.svelte</code> (new route <code>/</code>) uses <code>DashboardGrid</code> with <code>readonly=true</code> and a minimal welcome toolbar (title + refresh button only — no tabs, no edit, no add widget).
+        Move existing dashboard to <code>/dashboards/+page.svelte</code>.
+        Clean separation: welcome store is read-only by contract, dashboard store is unchanged.
+        Backend seeds <code>system/welcome</code> on startup.
+      </p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul>
+          <li>Clean separation of concerns</li>
+          <li>Existing dashboard store untouched</li>
+          <li>Explicit read-only contract in the store</li>
+          <li>Easy to add welcome-specific logic later</li>
+        </ul></div>
+        <div class="cons"><h4>Cons</h4><ul>
+          <li>One new store file</li>
+          <li>DashboardGrid still needs <code>readonly</code> prop</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Custom CSS grid — no GridStack</h3>
+      <p>
+        A welcome-specific grid that renders widgets using plain CSS grid instead of GridStack.
+        Same widget components (<code>WidgetTelemetry</code>, <code>WidgetEvents</code>, etc.) but positioned via CSS grid areas defined in the DB config.
+        No drag/drop library loaded at all on the welcome page.
+      </p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul>
+          <li>No GridStack on a page that never needs drag/drop</li>
+          <li>Lighter page weight</li>
+        </ul></div>
+        <div class="cons"><h4>Cons</h4><ul>
+          <li>Must implement custom grid layout from widget x/y/w/h</li>
+          <li>CSS grid areas need translation from widget coords</li>
+          <li>More code, more maintenance</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+
+</div>
