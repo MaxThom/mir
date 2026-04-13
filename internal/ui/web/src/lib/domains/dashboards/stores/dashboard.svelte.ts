@@ -38,13 +38,13 @@ class DashboardStore {
 		localStorage.setItem('mir_pinned_dashboards', JSON.stringify(this.pinnedKeys));
 	}
 
-	get pinnedDashboards(): Dashboard[] {
-		return this.pinnedKeys
+	pinnedDashboards = $derived(
+		this.pinnedKeys
 			.map((k) => this.dashboards.find((d) => dashboardKey(d) === k))
-			.filter(Boolean) as Dashboard[];
-	}
+			.filter(Boolean) as Dashboard[]
+	);
 
-	get dashboardsByNamespace(): Map<string, Dashboard[]> {
+	dashboardsByNamespace = $derived.by(() => {
 		const map = new SvelteMap<string, Dashboard[]>();
 		const sorted = [...this.dashboards].sort(
 			(a, b) =>
@@ -56,7 +56,7 @@ class DashboardStore {
 			map.get(ns)!.push(d);
 		}
 		return map;
-	}
+	});
 
 	isPinned(d: Dashboard): boolean {
 		return this.pinnedKeys.includes(dashboardKey(d));
@@ -114,7 +114,7 @@ class DashboardStore {
 				editorPrefs.setRefreshInterval(this.activeDashboard.spec.refreshInterval ?? 10);
 				editorPrefs.setTimeMinutes(this.activeDashboard.spec.timeMinutes ?? 60);
 			}
-			if (this.pinnedKeys.length === 0 && this.activeDashboard) {
+			if (this.pinnedDashboards.length === 0 && this.activeDashboard) {
 				this.pinnedKeys = [dashboardKey(this.activeDashboard)];
 				this._savePinnedKeys();
 			}

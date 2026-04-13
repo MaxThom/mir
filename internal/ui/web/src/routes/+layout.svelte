@@ -33,10 +33,35 @@
 	import { docsStore } from '$lib/domains/docs/stores/docs.svelte';
 	import DocDrawer from '$lib/domains/docs/components/doc-drawer.svelte';
 	import { editorPrefs } from '$lib/shared/stores/editor-prefs.svelte';
+	import * as Dialog from '$lib/shared/components/shadcn/dialog/index.js';
 
 	// Generate breadcrumbs from current pathname
 	let breadcrumbs = $derived(generateBreadcrumbs(page.url.pathname));
 	let docsContent = $derived(docsStore.getContent(page.url.pathname));
+
+	// VIM gate
+	let vimGateOpen = $state(false);
+	let vimGateAnswer = $state('');
+	let vimGateWrong = $state(false);
+
+	function handleVimToggle() {
+		if (editorPrefs.vim) {
+			editorPrefs.setVim(false);
+		} else {
+			vimGateAnswer = '';
+			vimGateWrong = false;
+			vimGateOpen = true;
+		}
+	}
+
+	function submitVimGate() {
+		if (vimGateAnswer.trim() === ':q') {
+			editorPrefs.setVim(true);
+			vimGateOpen = false;
+		} else {
+			vimGateWrong = true;
+		}
+	}
 
 	onMount(async () => {
 		await contextStore.initialize();
@@ -89,6 +114,9 @@
 			</div>
 			<div class="flex items-center gap-2 px-4">
 				<Separator orientation="vertical" class="data-[orientation=vertical]:h-4" />
+				<Button onclick={handleVimToggle} variant="ghost" class="h-7 px-2 font-mono text-[10px] {editorPrefs.vim ? 'bg-secondary text-secondary-foreground' : ''}">
+					VIM
+				</Button>
 				<Button onclick={() => editorPrefs.setUtc(!editorPrefs.utc)} variant="ghost" class="h-7 w-12 px-2 font-mono text-[10px]">
 					{editorPrefs.utc ? 'UTC' : 'LOCAL'}
 				</Button>
@@ -165,3 +193,28 @@
 </Sidebar.Provider>
 <DocDrawer Content={docsContent} />
 <Toaster position="bottom-left" duration={8000} />
+
+<Dialog.Root bind:open={vimGateOpen}>
+	<Dialog.Content class="max-w-sm">
+		<Dialog.Header>
+			<Dialog.Title class="font-mono">VIM Proficiency Test</Dialog.Title>
+			<Dialog.Description>Answer correctly to unlock VIM mode.</Dialog.Description>
+		</Dialog.Header>
+		<div class="space-y-3 py-2">
+			<p class="text-sm font-medium">How do I quit VIM?</p>
+			<input
+				class="w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-sm focus:outline-none focus:ring-1 focus:ring-ring {vimGateWrong ? 'border-destructive focus:ring-destructive' : ''}"
+				placeholder="Type your answer..."
+				bind:value={vimGateAnswer}
+				onkeydown={(e) => e.key === 'Enter' && submitVimGate()}
+			/>
+			{#if vimGateWrong}
+				<p class="text-xs text-destructive">Wrong. You are trapped forever.</p>
+			{/if}
+		</div>
+		<Dialog.Footer>
+			<Button variant="ghost" size="sm" onclick={() => (vimGateOpen = false)}>Cancel</Button>
+			<Button size="sm" onclick={submitVimGate}>Confirm</Button>
+		</Dialog.Footer>
+	</Dialog.Content>
+</Dialog.Root>

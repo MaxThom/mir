@@ -43,7 +43,7 @@
 	let isJsonMode = $derived(editorPrefs.json);
 
 	let cmEditorEl = $state<HTMLElement | null>(null);
-	let cmView: EditorView | null = null;
+	let cmView: EditorView | null = $state(null);
 	const vimCompartment = new Compartment();
 	const langCompartment = new Compartment();
 	const themeCompartment = new Compartment();
@@ -51,10 +51,9 @@
 	// Internal content state — seeded from prop, updated on format toggle
 	let localContent = $state(untrack(() => content));
 
-	function toggleVim() {
-		editorPrefs.setVim(!isVimMode);
-		cmView?.dispatch({ effects: vimCompartment.reconfigure(!isVimMode ? vim() : []) });
-	}
+	$effect(() => {
+		cmView?.dispatch({ effects: vimCompartment.reconfigure(editorPrefs.vim ? vim() : []) });
+	});
 
 	function toggleFormat() {
 		if (!cmView) return;
@@ -127,14 +126,6 @@
 					: 'text-muted-foreground hover:text-foreground'}">JSON</button
 			>
 		</div>
-		<button
-			onclick={toggleVim}
-			class="rounded px-2 py-0.5 font-mono text-[10px] transition-colors {isVimMode
-				? 'bg-secondary text-secondary-foreground'
-				: 'text-muted-foreground hover:text-foreground'}"
-		>
-			VIM
-		</button>
 	</div>
 	<div class="flex items-center gap-1">
 		<Button
