@@ -70,7 +70,7 @@
 	let overflowOpen = $state(false);
 
 	let cmEl = $state<HTMLElement | null>(null);
-	let cmView: EditorView | null = null;
+	let cmView: EditorView | null = $state(null);
 	const themeCompartment = new Compartment();
 	const vimCompartment = new Compartment();
 
@@ -81,11 +81,9 @@
 		return cmView ? cmView.state.doc.toString() : displayValue;
 	}
 
-	function toggleVim() {
-		const newVim = !isVimMode;
-		editorPrefs.setVim(newVim);
-		cmView?.dispatch({ effects: vimCompartment.reconfigure(newVim ? vim() : []) });
-	}
+	$effect(() => {
+		cmView?.dispatch({ effects: vimCompartment.reconfigure(editorPrefs.vim ? vim() : []) });
+	});
 
 	async function handleCopy() {
 		const text = cmView ? cmView.state.doc.toString() : displayValue;
@@ -189,14 +187,6 @@
 					{viewMode === 'template' ? 'TEMPLATE' : 'VALUES'}
 				</button>
 				<button
-					onclick={toggleVim}
-					class="rounded px-2 py-0.5 font-mono text-[10px] transition-colors {isVimMode
-						? 'bg-secondary text-secondary-foreground'
-						: 'text-muted-foreground hover:text-foreground'}"
-				>
-					VIM
-				</button>
-				<button
 					onclick={handleCopy}
 					class="rounded p-1 text-muted-foreground transition-colors hover:text-foreground"
 					title="Copy"
@@ -234,12 +224,6 @@
 								class="flex items-center gap-1 rounded-md border border-border bg-background px-1.5 py-1 font-mono text-[10px] text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground {viewMode === 'template' ? 'border-ring text-foreground ring-1 ring-ring' : ''}"
 							>
 								{viewMode === 'template' ? 'TEMPLATE' : 'VALUES'}
-							</button>
-							<button
-								onclick={() => { toggleVim(); overflowOpen = false; }}
-								class="flex items-center gap-1 rounded-md border border-border bg-background px-1.5 py-1 font-mono text-[10px] text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground {isVimMode ? 'border-ring text-foreground ring-1 ring-ring' : ''}"
-							>
-								VIM
 							</button>
 							<button
 								onclick={() => { handleCopy(); overflowOpen = false; }}

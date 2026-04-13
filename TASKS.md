@@ -3,46 +3,17 @@
 ## Immediate
 
 - [x] Rust theme
-- [x] multi tlm
-  - [x] review
-  - [x] bug table/qry horizontal scroll
-- [x] config update, refresh device
 - [ ] perf check
-- [x] tutorial on each page
-- [ ] widgets
-  - [x] db, dashboard unit test
-  - [x] tlm, save settings of selection
-  - [x] tlm, make sure toolbar work
-  - [x] tlm, tiny
-  - [x] tlm, wizard and multischema and start size
-  - [x] tlm, header pills
-  - [x] dashboard toolbar, horizontal scroll
-  - [x] tlm, autorefresh and timerange
-  - [x] tlm, utc switch
-  - [x] tlm, last value widget chart
-  - [x] store, validate CONTAINS with *
-  - [x] widget, dev list, grey if offline
-  - [x] txt mardown widget
-  - [x] txt, mardown from link
-  - [x] txt, fetch
-  - [x] welcome page which is a custome dashboard (online, release, get started, event list, device list)
-  - [x] dev spec
-  - [x] dev props
-  - [x] dev online/offline
-  - [x] dev list widget
-  - [x] cmd
-  - [x] cfg
-  - [x] evt
-  - [x] release note combine
-  - [x] tutorial panel
-  - [x] book link
-  - [ ] mir book for Cockpit
-  - [ ] VIM at the top
   - [ ] tlm cache for widgets
+- [ ] mir book for Cockpit
+- [ ] deployment for Cockpit
+  - [ ] binary
+  - [ ] compose
+  - [ ] helm
+- [ ] security for Cockpit
   
 ### Bug
 
-- [ ] Add deviceid to badger
 - [ ] boolean false not get written in db, properties default not getting written
 - [ ] bytes in tlm
 
@@ -60,17 +31,8 @@
   - [ ] Event (error) msg to evt mod becomes event eg: disk full
   - [ ] Metrics gopsutil
 - [ ] Cockpit
-  - [x] New cmd for refresh schema with button next to Delete
-  - [x] cfg
-  - [x] tlm
-  - [x] tlm with charts
-    - [x] fe
-    - [x] be
-  - [x] create device
-  - [x] device list improvement
-    - [x] select multiple device
-  - [ ] dashboard creation
   - [ ] security
+  - [ ] deployment
 - [ ] Road to Production
   - [x] update all dependencies
   - [ ] alert & alarms
