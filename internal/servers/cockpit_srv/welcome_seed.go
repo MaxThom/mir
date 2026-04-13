@@ -40,20 +40,6 @@ func SeedWelcomeDashboard(log zerolog.Logger, store mng.DashboardStore) error {
 	d.Meta.Name = "welcome"
 	d.Meta.Namespace = "system"
 
-	if len(existing) > 0 {
-		_, err = store.UpdateDashboard(target, mir_v1.DashboardUpdate{
-			Spec: &mir_v1.DashboardUpdateSpec{
-				Description: &d.Spec.Description,
-				Widgets:     d.Spec.Widgets,
-			},
-		})
-		if err != nil {
-			return err
-		}
-		log.Info().Msg("welcome dashboard updated")
-		return nil
-	}
-
 	if _, err := store.CreateDashboard(d); err != nil {
 		return err
 	}

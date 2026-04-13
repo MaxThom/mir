@@ -51,14 +51,12 @@ func (s *CockpitServer) RegisterRoutes(mux *http.ServeMux) {
 
 	// Dashboard API routes (only if store is configured)
 	if s.store != nil {
+		if err := SeedWelcomeDashboard(s.log, s.store); err != nil {
+			s.log.Error().Err(err).Msg("failed to seed welcome dashboard")
+		}
+
 		s.registerDashboardRoute(mux, "/api/v1/dashboards", s.dashboardsHandler)
 		s.registerDashboardRoute(mux, "/api/v1/dashboards/", s.dashboardHandler)
-
-		go func() {
-			if err := SeedWelcomeDashboard(s.log, s.store); err != nil {
-				s.log.Warn().Err(err).Msg("failed to seed welcome dashboard")
-			}
-		}()
 	}
 
 	// Create SPA handler that serves static files and falls back to index.html
