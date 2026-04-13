@@ -1,0 +1,79 @@
+{
+  "apiVersion": "mir/v1alpha",
+  "kind": "dashboard",
+  "meta": {
+    "name": "welcome",
+    "namespace": "system"
+  },
+  "spec": {
+    "description": "System welcome dashboard",
+    "widgets": [
+      {
+        "config": {
+          "target": {}
+        },
+        "h": 4,
+        "id": "welcome-device-list",
+        "title": "Devices",
+        "type": "device-list",
+        "w": 8,
+        "x": 0,
+        "y": 4
+      },
+      {
+        "config": {
+          "limit": 20.0,
+          "target": {}
+        },
+        "h": 4,
+        "id": "welcome-events",
+        "title": "Events",
+        "type": "events",
+        "w": 4,
+        "x": 8,
+        "y": 4
+      },
+      {
+        "config": {
+          "content": "## Welcome to **Mir IoT Hub**\n\n- Add a device using the Device SDK\n- See telemetry, send commands and update configuration\n- Create your own dashboards\n- Follow device status and events\n- Browse the [documentation](/book)\n"
+        },
+        "h": 4,
+        "id": "welcome-get-started",
+        "title": "Get Started",
+        "type": "text",
+        "w": 4,
+        "x": 4,
+        "y": 0
+      },
+      {
+        "config": {
+          "content": "# Release Notes\n\n## Latest\n\n- Dashboard widgets: telemetry, events, device list, text, command, config\n- Multi-device telemetry views\n- Cockpit web UI\n",
+          "fontSize": "sm",
+          "jsonKey": "body",
+          "url": "https://api.github.com/repos/maxthom/mir/releases/latest"
+        },
+        "h": 4,
+        "id": "welcome-release-notes",
+        "title": "Release Notes",
+        "type": "text",
+        "w": 4,
+        "x": 0,
+        "y": 0
+      },
+      {
+        "config": {
+          "selectedDeviceId": "gimli",
+          "target": {},
+          "view": "status"
+        },
+        "h": 4,
+        "id": "984d263c-bf98-42bd-83f6-b4ead6c51c1d",
+        "title": "Status",
+        "type": "device",
+        "w": 4,
+        "x": 8,
+        "y": 0
+      }
+    ]
+  }
+}

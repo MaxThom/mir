@@ -169,6 +169,14 @@ seed:
 cleandb:
     ./scripts/clean_db.sh
 
+# Copy a Cockpit dashboard to a new namespace/name
+copy-dashboard src-ns src-name dst-ns dst-name:
+    ./scripts/copy_dashboard.sh {{ src-ns }} {{ src-name }} {{ dst-ns }} {{ dst-name }}
+
+# Snapshot a dashboard as the welcome page seed
+export-dashboard-seed ns name:
+    ./scripts/export_dashboard_seed.sh {{ ns }} {{ name }}
+
 # Install development tools
 tooling:
     ./scripts/tooling.sh

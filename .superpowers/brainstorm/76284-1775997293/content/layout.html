@@ -1,0 +1,144 @@
+<h2>Welcome Page — Layout Options</h2>
+<p class="subtitle">The welcome page is a read-only dashboard pulled from DB. Which layout feels right?</p>
+
+<div class="cards">
+
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:16px;background:#0f1117;border-radius:6px;">
+      <!-- Option A: Pure grid like existing dashboard -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;font-size:10px;color:#94a3b8;">
+        <div style="background:#1e2433;border:1px solid #2d3a52;border-radius:4px;padding:8px;grid-column:span 2;">
+          <div style="color:#64748b;font-size:9px;margin-bottom:4px;">DEVICE LIST</div>
+          <div style="display:flex;gap:4px;flex-wrap:wrap;">
+            <span style="background:#1a2d1a;color:#4ade80;border:1px solid #166534;border-radius:3px;padding:2px 5px;font-size:9px;">● sensor-01</span>
+            <span style="background:#1a2d1a;color:#4ade80;border:1px solid #166534;border-radius:3px;padding:2px 5px;font-size:9px;">● gateway-a</span>
+            <span style="background:#2d1a1a;color:#f87171;border:1px solid #991b1b;border-radius:3px;padding:2px 5px;font-size:9px;">● node-12</span>
+          </div>
+        </div>
+        <div style="background:#1e2433;border:1px solid #2d3a52;border-radius:4px;padding:8px;">
+          <div style="color:#64748b;font-size:9px;margin-bottom:4px;">EVENTS</div>
+          <div style="font-size:8px;color:#94a3b8;line-height:1.6;">
+            <div>↑ node-12 disconnect</div>
+            <div>↑ sensor-01 boot</div>
+            <div>↑ cfg applied</div>
+          </div>
+        </div>
+        <div style="background:#1e2433;border:1px solid #2d3a52;border-radius:4px;padding:8px;">
+          <div style="color:#64748b;font-size:9px;margin-bottom:4px;">GET STARTED</div>
+          <div style="font-size:8px;color:#94a3b8;line-height:1.6;">
+            <div>📖 Quick start guide</div>
+            <div>🔧 Add your device</div>
+          </div>
+        </div>
+        <div style="background:#1e2433;border:1px solid #2d3a52;border-radius:4px;padding:8px;">
+          <div style="color:#64748b;font-size:9px;margin-bottom:4px;">RELEASE</div>
+          <div style="font-size:8px;color:#94a3b8;">v0.4.2 — Apr 2026</div>
+        </div>
+        <div style="background:#1e2433;border:1px solid #2d3a52;border-radius:4px;padding:8px;">
+          <div style="color:#64748b;font-size:9px;margin-bottom:4px;">ONLINE</div>
+          <div style="font-size:14px;font-weight:bold;color:#4ade80;">2 / 3</div>
+          <div style="font-size:8px;color:#64748b;">devices online</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Pure Grid (like existing dashboard)</h3>
+      <p>Reuses the existing grid engine exactly as-is. All widgets are same-sized, drag-to-resize still possible in dev tooling. Simplest to implement — same DashboardGrid component, just read-only.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:16px;background:#0f1117;border-radius:6px;">
+      <!-- Option B: Hero banner top + grid below -->
+      <div style="font-size:10px;color:#94a3b8;">
+        <div style="background:linear-gradient(135deg,#1a1f35,#0f1117);border:1px solid #2d3a52;border-radius:4px;padding:10px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:13px;font-weight:bold;color:#e2e8f0;">Mir IoT Hub</div>
+            <div style="font-size:8px;color:#64748b;">v0.4.2 · 2 of 3 devices online</div>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <div style="text-align:center;">
+              <div style="font-size:16px;font-weight:bold;color:#4ade80;">2</div>
+              <div style="font-size:7px;color:#64748b;">online</div>
+            </div>
+            <div style="text-align:center;">
+              <div style="font-size:16px;font-weight:bold;color:#f87171;">1</div>
+              <div style="font-size:7px;color:#64748b;">offline</div>
+            </div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;">
+          <div style="background:#1e2433;border:1px solid #2d3a52;border-radius:4px;padding:7px;grid-column:span 2;">
+            <div style="color:#64748b;font-size:8px;margin-bottom:3px;">DEVICE LIST</div>
+            <div style="display:flex;gap:3px;">
+              <span style="background:#1a2d1a;color:#4ade80;border:1px solid #166534;border-radius:3px;padding:1px 4px;font-size:8px;">● sensor-01</span>
+              <span style="background:#1a2d1a;color:#4ade80;border:1px solid #166534;border-radius:3px;padding:1px 4px;font-size:8px;">● gateway-a</span>
+              <span style="background:#2d1a1a;color:#f87171;border:1px solid #991b1b;border-radius:3px;padding:1px 4px;font-size:8px;">● node-12</span>
+            </div>
+          </div>
+          <div style="background:#1e2433;border:1px solid #2d3a52;border-radius:4px;padding:7px;">
+            <div style="color:#64748b;font-size:8px;margin-bottom:3px;">EVENTS</div>
+            <div style="font-size:7px;color:#94a3b8;line-height:1.5;">
+              <div>↑ node-12 disconnect</div>
+              <div>↑ sensor-01 boot</div>
+            </div>
+          </div>
+          <div style="background:#1e2433;border:1px solid #2d3a52;border-radius:4px;padding:7px;grid-column:span 3;">
+            <div style="color:#64748b;font-size:8px;margin-bottom:3px;">GET STARTED</div>
+            <div style="font-size:7px;color:#94a3b8;">📖 Quick start &nbsp; 🔧 Add device &nbsp; 📡 Connect SDK &nbsp; 📊 View telemetry</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Hero Summary Banner + Grid Below</h3>
+      <p>A custom summary bar at the top (system status, version, online count) + standard widgets beneath. The banner is a bespoke component, not a widget. More visual impact as a landing page.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:16px;background:#0f1117;border-radius:6px;">
+      <!-- Option C: Standard grid, wider widgets, 2 columns -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:10px;color:#94a3b8;">
+        <div style="background:#1e2433;border:1px solid #2d3a52;border-radius:4px;padding:8px;">
+          <div style="color:#64748b;font-size:9px;margin-bottom:4px;">DEVICE LIST</div>
+          <div style="display:flex;flex-direction:column;gap:3px;">
+            <span style="background:#1a2d1a;color:#4ade80;border:1px solid #166534;border-radius:3px;padding:2px 5px;font-size:8px;">● sensor-01 &nbsp;<span style="color:#4ade80;opacity:0.6">online</span></span>
+            <span style="background:#1a2d1a;color:#4ade80;border:1px solid #166534;border-radius:3px;padding:2px 5px;font-size:8px;">● gateway-a &nbsp;<span style="color:#4ade80;opacity:0.6">online</span></span>
+            <span style="background:#2d1a1a;color:#f87171;border:1px solid #991b1b;border-radius:3px;padding:2px 5px;font-size:8px;">● node-12 &nbsp;<span style="color:#f87171;opacity:0.6">offline</span></span>
+          </div>
+        </div>
+        <div style="background:#1e2433;border:1px solid #2d3a52;border-radius:4px;padding:8px;">
+          <div style="color:#64748b;font-size:9px;margin-bottom:4px;">EVENTS</div>
+          <div style="font-size:8px;color:#94a3b8;line-height:1.6;">
+            <div>↑ node-12 disconnected</div>
+            <div>↑ sensor-01 booted</div>
+            <div>↑ cfg applied to gateway-a</div>
+            <div>↑ new schema registered</div>
+          </div>
+        </div>
+        <div style="background:#1e2433;border:1px solid #2d3a52;border-radius:4px;padding:8px;">
+          <div style="color:#64748b;font-size:9px;margin-bottom:4px;">GET STARTED</div>
+          <div style="font-size:8px;color:#94a3b8;line-height:1.7;">
+            <div>📖 Read the quick start guide</div>
+            <div>🔧 Connect your first device</div>
+            <div>📊 Set up telemetry</div>
+          </div>
+        </div>
+        <div style="background:#1e2433;border:1px solid #2d3a52;border-radius:4px;padding:8px;">
+          <div style="color:#64748b;font-size:9px;margin-bottom:4px;">RELEASE NOTES</div>
+          <div style="font-size:8px;color:#94a3b8;line-height:1.6;">
+            <div style="color:#e2e8f0;font-weight:bold;">v0.4.2 — Apr 2026</div>
+            <div>• New dashboard widget types</div>
+            <div>• Multi-device telemetry</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — 2-Column Grid (wider, fewer widgets)</h3>
+      <p>Same grid engine but configured with 2 columns instead of 3. Widgets feel bigger and more readable. Good middle ground: still a standard dashboard under the hood, just different default sizing.</p>
+    </div>
+  </div>
+
+</div>

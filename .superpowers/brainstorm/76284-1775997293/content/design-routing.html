@@ -1,0 +1,87 @@
+<h2>Design — Routing & Page Structure</h2>
+<p class="subtitle">How the pages are reorganized and what each contains</p>
+
+<div class="mockup">
+  <div class="mockup-header">SvelteKit Route Tree (after changes)</div>
+  <div class="mockup-body" style="font-family:monospace;font-size:13px;color:#94a3b8;line-height:2;">
+    <div style="color:#64748b;">src/routes/</div>
+    <div style="padding-left:20px;">
+      <span style="color:#4ade80;">+page.svelte</span>
+      <span style="color:#64748b;font-size:11px;margin-left:12px;">← NEW welcome page (was dashboard home)</span>
+    </div>
+    <div style="padding-left:20px;">
+      <span style="color:#94a3b8;">+layout.svelte</span>
+      <span style="color:#64748b;font-size:11px;margin-left:12px;">← update sidebar nav links</span>
+    </div>
+    <div style="padding-left:20px;color:#4ade80;">
+      dashboards/
+    </div>
+    <div style="padding-left:40px;">
+      <span style="color:#4ade80;">+page.svelte</span>
+      <span style="color:#64748b;font-size:11px;margin-left:12px;">← MOVED existing dashboard page</span>
+    </div>
+    <div style="padding-left:20px;color:#94a3b8;">devices/ ...</div>
+    <div style="padding-left:20px;color:#94a3b8;">events/ ...</div>
+  </div>
+</div>
+
+<div class="split" style="margin-top:20px;">
+
+  <div class="mockup">
+    <div class="mockup-header">/ — Welcome Page</div>
+    <div class="mockup-body" style="background:#0f1117;padding:12px;font-size:11px;color:#94a3b8;">
+      <!-- Minimal toolbar -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #1e2433;">
+        <span style="color:#e2e8f0;font-weight:600;font-size:13px;">Welcome</span>
+        <button style="background:#1e2433;border:1px solid #2d3a52;color:#94a3b8;border-radius:4px;padding:3px 10px;font-size:10px;">↺ Refresh</button>
+      </div>
+      <!-- Read-only grid widgets -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;">
+        <div style="background:#1e2433;border:1px solid #2d3a52;border-radius:4px;padding:8px;grid-column:span 2;">
+          <div style="color:#64748b;font-size:9px;margin-bottom:3px;">DEVICE LIST</div>
+          <div style="display:flex;gap:3px;flex-wrap:wrap;">
+            <span style="background:#1a2d1a;color:#4ade80;border:1px solid #166534;border-radius:3px;padding:1px 5px;font-size:9px;">● sensor-01</span>
+            <span style="background:#2d1a1a;color:#f87171;border:1px solid #991b1b;border-radius:3px;padding:1px 5px;font-size:9px;">● node-12</span>
+          </div>
+        </div>
+        <div style="background:#1e2433;border:1px solid #2d3a52;border-radius:4px;padding:8px;">
+          <div style="color:#64748b;font-size:9px;margin-bottom:3px;">EVENTS</div>
+          <div style="font-size:8px;line-height:1.5;">node-12 disconnected<br/>sensor-01 boot</div>
+        </div>
+        <div style="background:#1e2433;border:1px solid #2d3a52;border-radius:4px;padding:8px;">
+          <div style="color:#64748b;font-size:9px;margin-bottom:3px;">GET STARTED</div>
+          <div style="font-size:8px;line-height:1.5;">📖 Quick start<br/>🔧 Add device</div>
+        </div>
+        <div style="background:#1e2433;border:1px solid #2d3a52;border-radius:4px;padding:8px;grid-column:span 2;">
+          <div style="color:#64748b;font-size:9px;margin-bottom:3px;">RELEASE NOTES</div>
+          <div style="font-size:8px;">v0.4.2 — Apr 2026 · Dashboard widgets · Multi-device TLM</div>
+        </div>
+      </div>
+      <div style="margin-top:8px;font-size:9px;color:#374151;text-align:center;">no edit controls · no drag handles · no tabs</div>
+    </div>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-header">/dashboards — Existing Dashboard Page (unchanged)</div>
+    <div class="mockup-body" style="background:#0f1117;padding:12px;font-size:11px;color:#94a3b8;">
+      <!-- Full toolbar with tabs -->
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #1e2433;flex-wrap:wrap;">
+        <span style="background:#1e2433;border:1px solid #4ade80;color:#4ade80;border-radius:4px;padding:2px 8px;font-size:9px;">Fleet Overview</span>
+        <span style="background:#1e2433;border:1px solid #2d3a52;color:#64748b;border-radius:4px;padding:2px 8px;font-size:9px;">Sensors</span>
+        <span style="background:#1e2433;border:1px solid #2d3a52;color:#64748b;border-radius:4px;padding:2px 8px;font-size:9px;">+ New</span>
+        <div style="flex:1"></div>
+        <span style="background:#1e2433;border:1px solid #2d3a52;color:#64748b;border-radius:4px;padding:2px 8px;font-size:9px;">✏ Edit</span>
+      </div>
+      <!-- Editable grid -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;">
+        <div style="background:#1e2433;border:1px dashed #2d3a52;border-radius:4px;padding:8px;grid-column:span 3;text-align:center;color:#374151;font-size:9px;">user-configured widgets...</div>
+        <div style="background:#1e2433;border:1px solid #2d3a52;border-radius:4px;padding:8px;height:40px;"></div>
+        <div style="background:#1e2433;border:1px solid #2d3a52;border-radius:4px;padding:8px;height:40px;"></div>
+        <div style="background:#1e2433;border:1px solid #2d3a52;border-radius:4px;padding:8px;height:40px;"></div>
+      </div>
+      <div style="margin-top:8px;font-size:9px;color:#374151;text-align:center;">full edit mode · tabs · drag/drop · unchanged</div>
+    </div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:16px;">Does this routing split look right?</p>

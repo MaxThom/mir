@@ -1,5 +1,6 @@
 import BotIcon from '@lucide/svelte/icons/bot';
 import CalendarSearch from '@lucide/svelte/icons/calendar-search';
+import HomeIcon from '@lucide/svelte/icons/home';
 import SquareTerminalIcon from '@lucide/svelte/icons/square-terminal';
 import type { SidebarData } from '../types/types';
 
@@ -12,8 +13,15 @@ export const sidebarData: SidebarData = {
 	contexts: [],
 	navMain: [
 		{
-			title: 'Dashboards',
+			title: 'Home',
 			url: '/',
+			icon: HomeIcon,
+			isActive: true,
+			items: []
+		},
+		{
+			title: 'Dashboards',
+			url: '/dashboards',
 			icon: SquareTerminalIcon,
 			isActive: true,
 			items: []

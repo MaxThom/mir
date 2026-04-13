@@ -9,6 +9,9 @@ const (
 	WidgetTypeCommand   WidgetType = "command"
 	WidgetTypeConfig    WidgetType = "config"
 	WidgetTypeEvents    WidgetType = "events"
+	WidgetTypeDevice    WidgetType = "device"
+	WidgetTypeDeviceList WidgetType = "device-list"
+	WidgetTypeText      WidgetType = "text"
 )
 
 type Dashboard struct {
