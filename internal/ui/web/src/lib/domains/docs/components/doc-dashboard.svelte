@@ -8,11 +8,11 @@
 </script>
 
 <Sheet.Header class="px-4 pt-4 pb-0">
-	<Sheet.Title>Dashboard</Sheet.Title>
+	<Sheet.Title>Get Started</Sheet.Title>
 </Sheet.Header>
 <Separator class="mt-3" />
 <div class="bg-muted/50 px-4 py-3 text-sm leading-relaxed text-muted-foreground">
-	Get started with Mir — install the CLI, Go SDK, or TypeScript SDK.
+	Welcome to Mir IoT Hub — connect devices, explore data, and build dashboards.
 </div>
 <Separator />
 <Tabs.Root
@@ -36,10 +36,52 @@
 	</Tabs.List>
 	<div class="flex-1 overflow-y-auto px-4 py-4">
 		<Tabs.Content value="web">
-			<p class="text-sm leading-relaxed text-muted-foreground">
-				You're already here. Use the sidebar to navigate devices, telemetry, commands,
-				configurations, and events.
-			</p>
+			<div class="space-y-5">
+				<div>
+					<p class="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+						1. Register a device
+					</p>
+					<p class="text-sm text-muted-foreground">
+						Go to <span class="font-medium text-foreground">Devices</span> in the sidebar and click
+						<span class="font-medium text-foreground">Create Device</span>. Give it a name and
+						namespace — that's all you need to get started.
+					</p>
+				</div>
+				<div>
+					<p class="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+						2. Connect your device
+					</p>
+					<p class="text-sm text-muted-foreground">
+						Integrate using the CLI, Go SDK, or TypeScript SDK (see the other tabs). Publish
+						telemetry, report properties, and listen for commands from your code.
+					</p>
+				</div>
+				<div>
+					<p class="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+						3. Explore your data
+					</p>
+					<p class="text-sm text-muted-foreground">
+						Open any device from the Devices page to view live telemetry, send commands, push
+						configuration updates, and read its event history.
+					</p>
+				</div>
+				<div>
+					<p class="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+						4. Build a dashboard
+					</p>
+					<p class="text-sm text-muted-foreground">
+						Go to <span class="font-medium text-foreground">Dashboards</span> in the sidebar. Create
+						a dashboard, enter edit mode, and add widgets — charts, device lists, event feeds, text,
+						and more.
+					</p>
+				</div>
+				<div class="border-t pt-4">
+					<p class="text-sm text-muted-foreground">
+						Full architecture, SDK reference, and deployment guides are in the
+						<a href="/book" class="font-medium text-foreground underline underline-offset-2 hover:text-foreground/80">Mir book</a>.
+					</p>
+				</div>
+			</div>
 		</Tabs.Content>
 		<Tabs.Content value="cli">
 			<div class="space-y-4">
