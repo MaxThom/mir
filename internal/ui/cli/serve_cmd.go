@@ -63,6 +63,8 @@ type (
 
 	CockpitCfg struct {
 		AllowedOrigins []string `help:"CORS allowed origins" yaml:"allowedOrigins"`
+		GitHubOwner    string   `help:"GitHub owner for releases feed" default:"MaxThom" yaml:"githubOwner"`
+		GitHubRepo     string   `help:"GitHub repo for releases feed" default:"mir" yaml:"githubRepo"`
 	}
 
 	MirCfg struct {
@@ -301,6 +303,11 @@ func (d *ServeCmd) run(
 		AllowedOrigins: cfg.Module.Cockpit.AllowedOrigins,
 		WebFS:          webFS,
 		Config:         contexts,
+		Store:          mngStore,
+		GitHub: cockpit_srv.GitHubOptions{
+			Owner: cfg.Module.Cockpit.GitHubOwner,
+			Repo:  cfg.Module.Cockpit.GitHubRepo,
+		},
 	})
 	if err != nil {
 		return err
