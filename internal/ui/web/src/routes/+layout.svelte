@@ -86,7 +86,7 @@
 {/if}
 
 <Sidebar.Provider class="h-svh">
-	<AppSidebar user={sidebarData.user} navMain={sidebarData.navMain} />
+	<AppSidebar navMain={sidebarData.navMain} />
 	<Sidebar.Inset>
 		<header
 			class="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12"

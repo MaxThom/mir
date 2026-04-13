@@ -1,15 +1,10 @@
 import BotIcon from '@lucide/svelte/icons/bot';
 import CalendarSearch from '@lucide/svelte/icons/calendar-search';
 import HomeIcon from '@lucide/svelte/icons/home';
-import SquareTerminalIcon from '@lucide/svelte/icons/square-terminal';
+import LayoutDashboardIcon from '@lucide/svelte/icons/layout-dashboard';
 import type { SidebarData } from '../types/types';
 
 export const sidebarData: SidebarData = {
-	user: {
-		name: 'maxthom',
-		email: 'maxthomassin@hotmail.com',
-		avatar: ''
-	},
 	contexts: [],
 	navMain: [
 		{
@@ -22,7 +17,7 @@ export const sidebarData: SidebarData = {
 		{
 			title: 'Dashboards',
 			url: '/dashboards',
-			icon: SquareTerminalIcon,
+			icon: LayoutDashboardIcon,
 			isActive: true,
 			items: []
 		},
