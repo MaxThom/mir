@@ -37,6 +37,12 @@ type (
 		HttpServer     HttpServer
 		Contexts       ui.Config      `yaml:"contexts"`
 		DatabaseServer DatabaseServer `yaml:"databaseServer"`
+		GitHub         GitHubConfig   `yaml:"github"`
+	}
+
+	GitHubConfig struct {
+		Owner string
+		Repo  string
 	}
 
 	HttpServer struct {
@@ -56,6 +62,10 @@ type (
 var (
 	defaultCfg = CockpitConfig{
 		LogLevel: "info",
+		GitHub: GitHubConfig{
+			Owner: "MaxThom",
+			Repo:  "mir",
+		},
 		HttpServer: HttpServer{
 			Port: 3021,
 			AllowedOrigins: []string{
@@ -200,6 +210,10 @@ func run(
 		WebFS:          webFS,
 		Config:         cfg.Contexts,
 		Store:          mngStore,
+		GitHub: cockpit_srv.GitHubOptions{
+			Owner: cfg.GitHub.Owner,
+			Repo:  cfg.GitHub.Repo,
+		},
 	})
 	if err != nil {
 		return err

@@ -14,6 +14,7 @@ type CockpitServer struct {
 	log   zerolog.Logger
 	opts  Options
 	store mng.DashboardStore
+	cache *releasesCache
 }
 
 type Options struct {
@@ -21,6 +22,12 @@ type Options struct {
 	WebFS          fs.FS              // Embedded web files
 	Config         ui.Config          // Cockpit configuration
 	Store          mng.DashboardStore // Dashboard persistence (optional)
+	GitHub         GitHubOptions
+}
+
+type GitHubOptions struct {
+	Owner string
+	Repo  string
 }
 
 func NewCockpit(logger zerolog.Logger, opts *Options) (*CockpitServer, error) {
@@ -35,6 +42,7 @@ func NewCockpit(logger zerolog.Logger, opts *Options) (*CockpitServer, error) {
 		log:   logger.With().Str("srv", "cockpit_server").Logger(),
 		opts:  *opts,
 		store: opts.Store,
+		cache: &releasesCache{},
 	}, nil
 }
 
@@ -48,6 +56,11 @@ func (s *CockpitServer) RegisterRoutes(mux *http.ServeMux) {
 	apiHandler = securityHeadersMiddleware(apiHandler)
 	apiHandler = corsMiddleware(s.opts.AllowedOrigins)(apiHandler)
 	mux.Handle("/api/v1/contexts", apiHandler)
+
+	// GitHub releases endpoint (only if owner is configured)
+	if s.opts.GitHub.Owner != "" {
+		s.registerDashboardRoute(mux, "/api/v1/releases", s.releasesHandler)
+	}
 
 	// Dashboard API routes (only if store is configured)
 	if s.store != nil {

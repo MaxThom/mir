@@ -25,7 +25,7 @@
   - [x] txt mardown widget
   - [x] txt, mardown from link
   - [x] txt, fetch
-  - [ ] welcome page which is a custome dashboard (online, release, get started, event list, device list)
+  - [x] welcome page which is a custome dashboard (online, release, get started, event list, device list)
   - [x] dev spec
   - [x] dev props
   - [x] dev online/offline
@@ -33,8 +33,9 @@
   - [x] cmd
   - [x] cfg
   - [x] evt
-  - [ ] tutorial panel
-  - [ ] book link
+  - [x] release note combine
+  - [x] tutorial panel
+  - [x] book link
   - [ ] mir book for Cockpit
   - [ ] VIM at the top
   - [ ] tlm cache for widgets

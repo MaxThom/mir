@@ -155,7 +155,7 @@
 					{/if}
 				</div>
 			{:else}
-				<div class="prose dark:prose-invert min-h-0 flex-1 max-w-none overflow-y-auto px-4 py-3 select-none opacity-60" style="font-size: {proseFontSize}">
+				<div class="prose dark:prose-invert min-h-0 flex-1 max-w-none overflow-y-auto px-4 py-3 select-none opacity-60 [&_hr]:my-3" style="font-size: {proseFontSize}">
 					{@html fetchedHtml}
 				</div>
 			{/if}
@@ -186,12 +186,12 @@
 					{/if}
 				</div>
 			{:else}
-				<div class="prose dark:prose-invert min-h-0 flex-1 max-w-none overflow-y-auto px-4 py-3" style="font-size: {proseFontSize}">
+				<div class="prose dark:prose-invert min-h-0 flex-1 max-w-none overflow-y-auto px-4 py-3 [&_hr]:my-3" style="font-size: {proseFontSize}">
 					{@html fetchedHtml}
 				</div>
 			{/if}
 		{:else}
-			<div class="prose dark:prose-invert min-h-0 flex-1 max-w-none overflow-y-auto px-4 py-3" style="font-size: {proseFontSize}">
+			<div class="prose dark:prose-invert min-h-0 flex-1 max-w-none overflow-y-auto px-4 py-3 [&_hr]:my-3" style="font-size: {proseFontSize}">
 				{@html rendered}
 			</div>
 		{/if}

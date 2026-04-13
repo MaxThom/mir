@@ -35,7 +35,7 @@
       },
       {
         "config": {
-          "content": "## Welcome to **Mir IoT Hub**\n\n- Add a device using the Device SDK\n- See telemetry, send commands and update configuration\n- Create your own dashboards\n- Follow device status and events\n- Browse the [documentation](/book)\n"
+          "content": "## Welcome to **Mir IoT Hub**\n **1. Connect a device**\n  Integrate using the [Device SDK](/book) — register your device, define a telemetry schema, and start publishing data in minutes.\n\n  **2. Explore your data**\n  View live telemetry, send commands, and push configuration updates from the Devices section.\n\n  **3. Build dashboards**\n  Compose custom dashboards from widgets — charts, device lists, event feeds, and more.\n\n  **4. Read the docs**\n  The [Mir book](/book) covers the full architecture, SDK reference, and deployment guides."
         },
         "h": 4,
         "id": "welcome-get-started",
@@ -50,7 +50,7 @@
           "content": "# Release Notes\n\n## Latest\n\n- Dashboard widgets: telemetry, events, device list, text, command, config\n- Multi-device telemetry views\n- Cockpit web UI\n",
           "fontSize": "sm",
           "jsonKey": "body",
-          "url": "https://api.github.com/repos/maxthom/mir/releases/latest"
+          "url": "/api/v1/releases"
         },
         "h": 4,
         "id": "welcome-release-notes",
@@ -62,6 +62,7 @@
       },
       {
         "config": {
+          "selectedDeviceId": "gimli",
           "target": {},
           "view": "status"
         },
