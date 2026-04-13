@@ -1,4 +1,3 @@
-import type { User } from '../../user/types/user';
 import type { Context } from '../../contexts/types/types';
 
 export type NavSubItem = {
@@ -25,7 +24,6 @@ export type NavMainProps = {
 };
 
 export type SidebarData = {
-	user: User;
 	contexts: Context[];
 	navMain: NavItem[];
 };

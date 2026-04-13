@@ -1,20 +1,16 @@
 <script lang="ts">
 	import MirAlphaLogo from '$lib/assets/mir_alpha.png';
 	import NavSection from './nav-section.svelte';
-	import NavUser from './nav-user.svelte';
 	import ContextSwitcher from './context-switcher.svelte';
 	import * as Sidebar from '$lib/shared/components/shadcn/sidebar/index.js';
 	import type { ComponentProps } from 'svelte';
-	import type { User } from '../../user/types/user';
 	import type { NavItem } from '../types/types';
 
 	type SidebarProps = ComponentProps<typeof Sidebar.Root> & {
-		user: User;
 		navMain: NavItem[];
 	};
 
 	let {
-		user,
 		navMain,
 		ref = $bindable(null),
 		collapsible = 'icon',
@@ -40,7 +36,6 @@
 		<div class="hidden items-center justify-center group-data-[collapsible=icon]:flex">
 			<img src={MirAlphaLogo} alt="Mir Logo" class="w-8" />
 		</div>
-		<NavUser {user} />
 	</Sidebar.Footer>
 	<Sidebar.Rail />
 </Sidebar.Root>
