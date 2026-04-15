@@ -182,7 +182,7 @@ func sendTelemetry(d *mir.Mir) {
 
 	amp := rand.Float64() * 100
 	volt := rand.Float64() * 100
-	dataPwr := swarmv1.PowerConsuption{
+	dataPwr := swarmv1.PowerConsumption{
 		Ts:      time.Now().UTC().UnixNano(),
 		Amp:     amp,
 		Voltage: volt,

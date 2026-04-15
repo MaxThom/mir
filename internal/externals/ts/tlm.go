@@ -173,12 +173,25 @@ func (s *influxTelemetryStore) Query(ctx context.Context, ids []string, measurem
 		// We parse the headers and generate the conversion functions
 		// once then we use it for every row
 		if result.TableChanged() {
+			// Build a map for the unit so we only iterate throught the column once
+			unitMap := map[string]string{}
+			for _, col := range result.TableMetadata().Columns() {
+				if strings.HasPrefix(col.Name(), "__unit_") {
+					k, _ := strings.CutPrefix(col.Name(), "__unit_")
+					s, ok := result.Record().ValueByKey(col.Name()).(string)
+					if ok {
+						unitMap[k] = s
+					}
+				}
+			}
+
 			// Timestamp
 			dt, setFn, err := generateDataConvFn("time")
 			if err != nil {
 				return nil, fmt.Errorf("unsupported data type '%s' for column '%s'", "time", "_time")
 			}
 			values.Headers = append(values.Headers, "_time")
+			values.Units = append(values.Units, "RFC3339")
 			values.Datatypes = append(values.Datatypes, dt)
 			setFns = append(setFns, setFn)
 
@@ -188,6 +201,7 @@ func (s *influxTelemetryStore) Query(ctx context.Context, ids []string, measurem
 				return nil, fmt.Errorf("unsupported data type '%s' for column '%s'", "string", "__id")
 			}
 			values.Headers = append(values.Headers, "__id")
+			values.Units = append(values.Units, "")
 			values.Datatypes = append(values.Datatypes, dt)
 			setFns = append(setFns, setFn)
 
@@ -202,6 +216,7 @@ func (s *influxTelemetryStore) Query(ctx context.Context, ids []string, measurem
 					return nil, fmt.Errorf("unsupported data type '%s' for column '%s'", col.DataType(), col.Name())
 				}
 				values.Headers = append(values.Headers, col.Name())
+				values.Units = append(values.Units, unitMap[col.Name()])
 				values.Datatypes = append(values.Datatypes, dt)
 				setFns = append(setFns, setFn)
 			}

@@ -18,13 +18,13 @@ message EnvironmentTlm {
 	};
 
 	mir.device.v1.Timestamp ts = 1 [(mir.device.v1.timestamp) = TIMESTAMP_TYPE_FRACTION];
-	int32 temperature = 2;
-	int32 pressure = 3;
-	int32 humidity = 4;
-	int32 wind_speed = 5;
+	int32 temperature = 2 [(mir.device.v1.field_meta) = { unit: "C" }];
+	int32 pressure = 3 [(mir.device.v1.field_meta) = { unit: "kPA" }];
+	int32 humidity = 4 [(mir.device.v1.field_meta) = { unit: "%" }];
+	int32 wind_speed = 5 [(mir.device.v1.field_meta) = { unit: "km/h" }];
 }
 
-message PowerConsuption {
+message PowerConsumption {
 	option (mir.device.v1.message_type) = MESSAGE_TYPE_TELEMETRY;
 	option (mir.device.v1.meta) = {
 		tags: [{
@@ -37,9 +37,9 @@ message PowerConsuption {
 	};
 
 	int64 ts = 1 [(mir.device.v1.timestamp) = TIMESTAMP_TYPE_NANO];
-	double voltage = 2;
-	double amp = 3;
-	double power = 4;
+	double voltage = 2 [(mir.device.v1.field_meta) = { unit: "V" }];
+	double amp = 3 [(mir.device.v1.field_meta) = { unit: "A" }];
+	double power = 4 [(mir.device.v1.field_meta) = { unit: "W" }];
 }
 
 message ActivateHVAC {

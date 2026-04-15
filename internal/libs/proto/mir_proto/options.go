@@ -25,7 +25,7 @@ func retrieveTagsFromDescriptor(desc protoreflect.MessageDescriptor, nestedKey s
 		if meta != nil {
 			for k, v := range meta.Tags {
 				if v != "" {
-					tags[nestedKey+k] = v
+					tags["__tag_"+nestedKey+k] = v
 				}
 			}
 		}
@@ -40,8 +40,11 @@ func retrieveTagsFromDescriptor(desc protoreflect.MessageDescriptor, nestedKey s
 			if fieldMeta != nil {
 				for k, v := range fieldMeta.Tags {
 					if v != "" {
-						tags[nestedKey+string(fd.Name())+"."+k] = v
+						tags["__tag_"+nestedKey+string(fd.Name())+"."+k] = v
 					}
+				}
+				if fieldMeta.Unit != "" {
+					tags["__unit_"+nestedKey+string(fd.Name())] = fieldMeta.Unit
 				}
 			}
 		}
