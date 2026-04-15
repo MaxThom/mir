@@ -16,9 +16,9 @@ message Env {
 	option (mir.device.v1.message_type) = MESSAGE_TYPE_TELEMETRY;
 
 	int64 ts = 1 [(mir.device.v1.timestamp) = TIMESTAMP_TYPE_NANO];
-	int32 temperature = 2;
-	int32 pressure = 3;
-	int32 humidity = 4;
+	int32 temperature = 2 [(mir.device.v1.field_meta) = { unit: "C" }];
+	int32 pressure = 3 [(mir.device.v1.field_meta) = { unit: "kPA" }];
+	int32 humidity = 4 [(mir.device.v1.field_meta) = { unit: "%" }];
 }
 ```
 
@@ -26,6 +26,7 @@ Here we define a message `Env` that will be used. The options are used to annota
 
 - `mir.device.v1.message_type`: This tell the server that this message is of telemetry type.
 - `mir.device.v1.timestamp`: This tell the server that the field `ts` is the main timestamp and the precision is NANOSECONDS. Second, Microsecond and Millisecond are also available.
+- `mir.device.v1.field_meta`: This tell the server the unit of the field so it can be used for telemetry visualization.
 
 Lets regenerate the schema:
 

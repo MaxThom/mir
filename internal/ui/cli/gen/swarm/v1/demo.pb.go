@@ -98,7 +98,7 @@ func (x *EnvironmentTlm) GetWindSpeed() int32 {
 	return 0
 }
 
-type PowerConsuption struct {
+type PowerConsumption struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Ts            int64                  `protobuf:"varint,1,opt,name=ts,proto3" json:"ts,omitempty"`
 	Voltage       float64                `protobuf:"fixed64,2,opt,name=voltage,proto3" json:"voltage,omitempty"`
@@ -108,20 +108,20 @@ type PowerConsuption struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *PowerConsuption) Reset() {
-	*x = PowerConsuption{}
+func (x *PowerConsumption) Reset() {
+	*x = PowerConsumption{}
 	mi := &file_swarm_v1_demo_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *PowerConsuption) String() string {
+func (x *PowerConsumption) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*PowerConsuption) ProtoMessage() {}
+func (*PowerConsumption) ProtoMessage() {}
 
-func (x *PowerConsuption) ProtoReflect() protoreflect.Message {
+func (x *PowerConsumption) ProtoReflect() protoreflect.Message {
 	mi := &file_swarm_v1_demo_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -133,33 +133,33 @@ func (x *PowerConsuption) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use PowerConsuption.ProtoReflect.Descriptor instead.
-func (*PowerConsuption) Descriptor() ([]byte, []int) {
+// Deprecated: Use PowerConsumption.ProtoReflect.Descriptor instead.
+func (*PowerConsumption) Descriptor() ([]byte, []int) {
 	return file_swarm_v1_demo_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *PowerConsuption) GetTs() int64 {
+func (x *PowerConsumption) GetTs() int64 {
 	if x != nil {
 		return x.Ts
 	}
 	return 0
 }
 
-func (x *PowerConsuption) GetVoltage() float64 {
+func (x *PowerConsumption) GetVoltage() float64 {
 	if x != nil {
 		return x.Voltage
 	}
 	return 0
 }
 
-func (x *PowerConsuption) GetAmp() float64 {
+func (x *PowerConsumption) GetAmp() float64 {
 	if x != nil {
 		return x.Amp
 	}
 	return 0
 }
 
-func (x *PowerConsuption) GetPower() float64 {
+func (x *PowerConsumption) GetPower() float64 {
 	if x != nil {
 		return x.Power
 	}
@@ -390,24 +390,25 @@ var File_swarm_v1_demo_proto protoreflect.FileDescriptor
 
 const file_swarm_v1_demo_proto_rawDesc = "" +
 	"\n" +
-	"\x13swarm/v1/demo.proto\x12\bswarm.v1\x1a\x17mir/device/v1/mir.proto\"\xde\x01\n" +
+	"\x13swarm/v1/demo.proto\x12\bswarm.v1\x1a\x17mir/device/v1/mir.proto\"\x87\x02\n" +
 	"\x0eEnvironmentTlm\x12.\n" +
-	"\x02ts\x18\x01 \x01(\v2\x18.mir.device.v1.TimestampB\x04\xa8\xbb\x18\x05R\x02ts\x12 \n" +
-	"\vtemperature\x18\x02 \x01(\x05R\vtemperature\x12\x1a\n" +
-	"\bpressure\x18\x03 \x01(\x05R\bpressure\x12\x1a\n" +
-	"\bhumidity\x18\x04 \x01(\x05R\bhumidity\x12\x1d\n" +
+	"\x02ts\x18\x01 \x01(\v2\x18.mir.device.v1.TimestampB\x04\xa8\xbb\x18\x05R\x02ts\x12)\n" +
+	"\vtemperature\x18\x02 \x01(\x05B\a\xb2\xbb\x18\x03\x12\x01CR\vtemperature\x12%\n" +
+	"\bpressure\x18\x03 \x01(\x05B\t\xb2\xbb\x18\x05\x12\x03kPAR\bpressure\x12#\n" +
+	"\bhumidity\x18\x04 \x01(\x05B\a\xb2\xbb\x18\x03\x12\x01%R\bhumidity\x12)\n" +
 	"\n" +
-	"wind_speed\x18\x05 \x01(\x05R\twindSpeed:#\x88\xb5\x18\x01\x92\xb5\x18\x1b\n" +
+	"wind_speed\x18\x05 \x01(\x05B\n" +
+	"\xb2\xbb\x18\x06\x12\x04km/hR\twindSpeed:#\x88\xb5\x18\x01\x92\xb5\x18\x1b\n" +
 	"\r\n" +
 	"\bbuilding\x12\x01A\n" +
 	"\n" +
 	"\n" +
-	"\x05floor\x12\x011\"\x8e\x01\n" +
-	"\x0fPowerConsuption\x12\x14\n" +
-	"\x02ts\x18\x01 \x01(\x03B\x04\xa8\xbb\x18\x04R\x02ts\x12\x18\n" +
-	"\avoltage\x18\x02 \x01(\x01R\avoltage\x12\x10\n" +
-	"\x03amp\x18\x03 \x01(\x01R\x03amp\x12\x14\n" +
-	"\x05power\x18\x04 \x01(\x01R\x05power:#\x88\xb5\x18\x01\x92\xb5\x18\x1b\n" +
+	"\x05floor\x12\x011\"\xaa\x01\n" +
+	"\x10PowerConsumption\x12\x14\n" +
+	"\x02ts\x18\x01 \x01(\x03B\x04\xa8\xbb\x18\x04R\x02ts\x12!\n" +
+	"\avoltage\x18\x02 \x01(\x01B\a\xb2\xbb\x18\x03\x12\x01VR\avoltage\x12\x19\n" +
+	"\x03amp\x18\x03 \x01(\x01B\a\xb2\xbb\x18\x03\x12\x01AR\x03amp\x12\x1d\n" +
+	"\x05power\x18\x04 \x01(\x01B\a\xb2\xbb\x18\x03\x12\x01WR\x05power:#\x88\xb5\x18\x01\x92\xb5\x18\x1b\n" +
 	"\r\n" +
 	"\bbuilding\x12\x01A\n" +
 	"\n" +
@@ -441,7 +442,7 @@ func file_swarm_v1_demo_proto_rawDescGZIP() []byte {
 var file_swarm_v1_demo_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_swarm_v1_demo_proto_goTypes = []any{
 	(*EnvironmentTlm)(nil),       // 0: swarm.v1.EnvironmentTlm
-	(*PowerConsuption)(nil),      // 1: swarm.v1.PowerConsuption
+	(*PowerConsumption)(nil),     // 1: swarm.v1.PowerConsumption
 	(*ActivateHVAC)(nil),         // 2: swarm.v1.ActivateHVAC
 	(*ActivateHVACResponse)(nil), // 3: swarm.v1.ActivateHVACResponse
 	(*DataRateProp)(nil),         // 4: swarm.v1.DataRateProp

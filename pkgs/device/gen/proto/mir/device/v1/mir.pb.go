@@ -179,6 +179,7 @@ func (x *Meta) GetTags() map[string]string {
 type FieldMeta struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Tags          map[string]string      `protobuf:"bytes,1,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // tags are used to uniquely identify the device
+	Unit          string                 `protobuf:"bytes,2,opt,name=unit,proto3" json:"unit,omitempty"`                                                                           // special field to add a custom unit to the device
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -218,6 +219,13 @@ func (x *FieldMeta) GetTags() map[string]string {
 		return x.Tags
 	}
 	return nil
+}
+
+func (x *FieldMeta) GetUnit() string {
+	if x != nil {
+		return x.Unit
+	}
+	return ""
 }
 
 type Timestamp struct {
@@ -421,9 +429,10 @@ const file_mir_device_v1_mir_proto_rawDesc = "" +
 	"\x04tags\x18\x01 \x03(\v2\x1d.mir.device.v1.Meta.TagsEntryR\x04tags\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"|\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x90\x01\n" +
 	"\tFieldMeta\x126\n" +
-	"\x04tags\x18\x01 \x03(\v2\".mir.device.v1.FieldMeta.TagsEntryR\x04tags\x1a7\n" +
+	"\x04tags\x18\x01 \x03(\v2\".mir.device.v1.FieldMeta.TagsEntryR\x04tags\x12\x12\n" +
+	"\x04unit\x18\x02 \x01(\tR\x04unit\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\";\n" +

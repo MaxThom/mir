@@ -1,10 +1,10 @@
-
 syntax = "proto3";
 
 package mir.device.v1;
-option go_package = "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1";
 
 import "google/protobuf/descriptor.proto";
+
+option go_package = "github.com/maxthom/mir/pkgs/device/gen/proto/mir/device/v1";
 
 extend google.protobuf.MessageOptions {
   optional MessageType message_type = 50001;
@@ -19,7 +19,7 @@ enum MessageType {
 }
 
 message Meta {
-	map<string, string> tags = 1; // tags are used to uniquely identify the device
+  map<string, string> tags = 1; // tags are used to uniquely identify the device
 }
 
 extend google.protobuf.FieldOptions {
@@ -28,7 +28,8 @@ extend google.protobuf.FieldOptions {
 }
 
 message FieldMeta {
-	map<string, string> tags = 1; // tags are used to uniquely identify the device
+  map<string, string> tags = 1; // tags are used to uniquely identify the device
+  string unit = 2; // special field to add a custom unit to the device
 }
 
 enum TimestampType {
@@ -54,15 +55,13 @@ message Timestamp {
 }
 
 /*
-    A simple empty message to return as a response
+   A simple empty message to return as a response
 */
-message Void {
-
-}
+message Void {}
 
 /*
-    An error message to mimic http error messages
+   An error message to mimic http error messages
 */
 message Error {
-    string message = 1;  // Human-readable error message.
+  string message = 1; // Human-readable error message.
 }

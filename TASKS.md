@@ -9,8 +9,19 @@
 - [ ] deployment for Cockpit
   - [ ] binary
   - [ ] compose
+    - [ ] fix surreal v and var
   - [ ] helm
+    - [ ] fix surreal v and var
 - [ ] security for Cockpit
+- [ ] widget
+  - [ ] no device found is different for different widgets
+- [ ] unit
+  - [x] add new meta field tag
+  - [x] update tlm server
+  - [x] update query api
+  - [x] add unit test
+  - [x] update cli
+  - [ ] update Cockpit
   
 ### Bug
 
@@ -34,8 +45,10 @@
   - [ ] security
   - [ ] deployment
 - [ ] Road to Production
-  - [x] update all dependencies
   - [ ] alert & alarms
+  - [ ] tlm units
+    - [ ] store  unit in influx?
+    - [ ] or need to reverse the saved name in lp back to schema
   - [ ] autoreconnect
     - [ ] if modules are down
       - [ ] switch to jetstream for tlm, could be in memory TLM

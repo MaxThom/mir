@@ -264,7 +264,11 @@ func prettyStringQuery(query *mir_apiv1.QueryTelemetry, timezone string) {
 	}
 	headers := make([]any, len(query.Headers))
 	for i, h := range query.Headers {
-		headers[i] = h
+		if query.Units[i] != "" {
+			headers[i] = h + " (" + query.Units[i] + ")"
+		} else {
+			headers[i] = h
+		}
 	}
 	var sb strings.Builder
 	fmt.Fprintf(&sb, format, headers...)

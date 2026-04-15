@@ -37,8 +37,9 @@ message QueryTelemetryResponse {
 
 message QueryTelemetry {
   repeated string headers = 1; // List of telemetry headers
-  repeated DataType datatypes = 2; // List of telemetry data type
-  repeated Row rows = 3; // List of telemetry data, order is the same as headers
+  repeated string units = 2; // List of telemetry headers
+  repeated DataType datatypes = 3; // List of telemetry data type
+  repeated Row rows = 4; // List of telemetry data, order is the same as headers
 
   message Row {
     repeated DataPoint datapoints = 1; // List of telemetry data, order is the same as headers

@@ -432,8 +432,9 @@ func (*QueryTelemetryResponse_Error) isQueryTelemetryResponse_Response() {}
 type QueryTelemetry struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Headers       []string               `protobuf:"bytes,1,rep,name=headers,proto3" json:"headers,omitempty"`                                      // List of telemetry headers
-	Datatypes     []DataType             `protobuf:"varint,2,rep,packed,name=datatypes,proto3,enum=mir_api.v1.DataType" json:"datatypes,omitempty"` // List of telemetry data type
-	Rows          []*QueryTelemetry_Row  `protobuf:"bytes,3,rep,name=rows,proto3" json:"rows,omitempty"`                                            // List of telemetry data, order is the same as headers
+	Units         []string               `protobuf:"bytes,2,rep,name=units,proto3" json:"units,omitempty"`                                          // List of telemetry headers
+	Datatypes     []DataType             `protobuf:"varint,3,rep,packed,name=datatypes,proto3,enum=mir_api.v1.DataType" json:"datatypes,omitempty"` // List of telemetry data type
+	Rows          []*QueryTelemetry_Row  `protobuf:"bytes,4,rep,name=rows,proto3" json:"rows,omitempty"`                                            // List of telemetry data, order is the same as headers
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -471,6 +472,13 @@ func (*QueryTelemetry) Descriptor() ([]byte, []int) {
 func (x *QueryTelemetry) GetHeaders() []string {
 	if x != nil {
 		return x.Headers
+	}
+	return nil
+}
+
+func (x *QueryTelemetry) GetUnits() []string {
+	if x != nil {
+		return x.Units
 	}
 	return nil
 }
@@ -917,11 +925,12 @@ const file_mir_api_v1_tlm_proto_rawDesc = "" +
 	"\x02ok\x18\x01 \x01(\v2\x1a.mir_api.v1.QueryTelemetryH\x00R\x02ok\x12\x16\n" +
 	"\x05error\x18\x02 \x01(\tH\x00R\x05errorB\n" +
 	"\n" +
-	"\bresponse\"\xa2\t\n" +
+	"\bresponse\"\xb8\t\n" +
 	"\x0eQueryTelemetry\x12\x18\n" +
-	"\aheaders\x18\x01 \x03(\tR\aheaders\x122\n" +
-	"\tdatatypes\x18\x02 \x03(\x0e2\x14.mir_api.v1.DataTypeR\tdatatypes\x122\n" +
-	"\x04rows\x18\x03 \x03(\v2\x1e.mir_api.v1.QueryTelemetry.RowR\x04rows\x1a\x8d\b\n" +
+	"\aheaders\x18\x01 \x03(\tR\aheaders\x12\x14\n" +
+	"\x05units\x18\x02 \x03(\tR\x05units\x122\n" +
+	"\tdatatypes\x18\x03 \x03(\x0e2\x14.mir_api.v1.DataTypeR\tdatatypes\x122\n" +
+	"\x04rows\x18\x04 \x03(\v2\x1e.mir_api.v1.QueryTelemetry.RowR\x04rows\x1a\x8d\b\n" +
 	"\x03Row\x12H\n" +
 	"\n" +
 	"datapoints\x18\x01 \x03(\v2(.mir_api.v1.QueryTelemetry.Row.DataPointR\n" +
