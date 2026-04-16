@@ -143,7 +143,7 @@
 							</div>
 							{#if item.value !== undefined}
 								<span class="font-mono font-medium text-foreground tabular-nums">
-									{item.value.toLocaleString()}
+									{item.value.toLocaleString()}{itemConfig?.unit ? ' ' + itemConfig.unit : ''}
 								</span>
 							{/if}
 						</div>
