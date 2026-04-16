@@ -1,6 +1,6 @@
 services:
   surrealdb:
-    image: surrealdb/surrealdb:v3.0.1
+    image: surrealdb/surrealdb:v3.0.5
     ports:
       - "8000:8000"
     volumes:
@@ -17,10 +17,6 @@ services:
       - -A
       - --log
       - debug
-    environment:
-      # To remove when fix in future release
-      # https://github.com/surrealdb/surrealdb/issues/7038
-      - SURREAL_PLANNER_STRATEGY=compute-only
 
 volumes:
   surrealdb_data:
