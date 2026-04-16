@@ -331,10 +331,7 @@
 	// fieldUnits keyed by raw field name (for TlmFieldToggles pills)
 	const fieldUnits = $derived(
 		Object.fromEntries(
-			config.fields.map((f) => {
-				const entry = Object.entries(chartConfig).find(([k]) => k.endsWith('_' + f));
-				return [f, entry?.[1]?.unit ?? ''];
-			})
+			config.fields.map((f) => [f, chartConfig[`${deviceInfos[0]?.name ?? ''}_${f}`]?.unit ?? ''])
 		)
 	);
 

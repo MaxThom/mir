@@ -107,10 +107,10 @@
 
 	const fieldUnits = $derived(
 		Object.fromEntries(
-			(selection?.measurement.fields ?? []).map((f) => {
-				const entry = Object.entries(chartConfig).find(([k]) => k.endsWith('_' + f));
-				return [f, entry?.[1]?.unit ?? ''];
-			})
+			(selection?.measurement.fields ?? []).map((f) => [
+				f,
+				chartConfig[`${tlmGroups[selection?.groupIdx ?? 0]?.ids[0]?.name ?? ''}_${f}`]?.unit ?? ''
+			])
 		)
 	);
 
