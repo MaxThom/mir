@@ -7,6 +7,7 @@ export type ChartConfig = {
 	[k in string]: {
 		label?: string;
 		icon?: Component;
+		unit?: string;
 	} & (
 		| { color?: string; theme?: never }
 		| { color?: never; theme: Record<keyof typeof THEMES, string> }
