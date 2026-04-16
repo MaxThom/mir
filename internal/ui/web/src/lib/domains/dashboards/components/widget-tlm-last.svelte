@@ -30,6 +30,7 @@
 	);
 	let selectedField = $state(untrack(() => config.selectedField ?? config.fields[0] ?? ''));
 	let hasLoaded = $state(false);
+	let fieldUnits = $state<Record<string, string>>({});
 	let loadError = $state<string | null>(null);
 	let isInRefresh = false;
 	let generation = 0;
@@ -185,6 +186,8 @@
 				});
 			}
 			lastRows = newMap;
+			const unitSource = results.find((r) => Object.keys(r.data.fieldUnits).length > 0);
+			fieldUnits = unitSource?.data.fieldUnits ?? {};
 		} catch {
 			// silently ignore — stale data remains displayed
 		} finally {
@@ -236,6 +239,7 @@
 			fields={config.fields}
 			selectedFields={[selectedField]}
 			ontoggle={(field) => (selectedField = field)}
+			{fieldUnits}
 		/>
 	{/if}
 
@@ -273,6 +277,9 @@
 						<p class="text-2xl font-bold leading-none tracking-tight text-foreground">
 							{formatValue(val)}
 						</p>
+						{#if fieldUnits[selectedField]}
+							<p class="mt-0.5 font-mono text-xs text-muted-foreground">{fieldUnits[selectedField]}</p>
+						{/if}
 					</div>
 				{/each}
 			</div>

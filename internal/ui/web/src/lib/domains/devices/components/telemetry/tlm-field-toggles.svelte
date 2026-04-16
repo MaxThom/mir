@@ -8,11 +8,13 @@
 		fields,
 		selectedFields,
 		ontoggle,
+		fieldUnits = {},
 		class: wrapperClass = 'shrink-0 px-4 py-1.5'
 	}: {
 		fields: string[];
 		selectedFields: string[];
 		ontoggle: (field: string, shift: boolean) => void;
+		fieldUnits?: Record<string, string>;
 		class?: string;
 	} = $props();
 
@@ -24,6 +26,14 @@
 
 	const visibleFields = $derived(fields.slice(0, visibleCount));
 	const overflowFields = $derived(fields.slice(visibleCount));
+
+	const longestLabelField = $derived(
+		fields.reduce((a, b) => {
+			const aLabel = a + (fieldUnits[a] ? ' (' + fieldUnits[a] + ')' : '');
+			const bLabel = b + (fieldUnits[b] ? ' (' + fieldUnits[b] + ')' : '');
+			return aLabel.length >= bLabel.length ? a : b;
+		}, '')
+	);
 
 	async function measure() {
 		await tick();
@@ -59,8 +69,10 @@
 	}
 
 	$effect(() => {
-		// Re-measure when fields list changes
+		// Re-measure when fields list or units change
 		fields.length;
+		// eslint-disable-next-line @typescript-eslint/no-unused-expressions
+		fieldUnits;
 		measure();
 	});
 
@@ -86,7 +98,7 @@
 					? `background: ${CHART_COLORS[idx % CHART_COLORS.length]};`
 					: ''}
 			>
-				{field}
+				{field}{fieldUnits[field] ? ' (' + fieldUnits[field] + ')' : ''}
 			</button>
 		{/each}
 
@@ -106,7 +118,7 @@
 						>
 							<span class="shrink-0">+{overflowFields.length}</span>
 							{#if overflowSelected}
-								<span class="truncate">{overflowSelected}</span>
+								<span class="truncate">{overflowSelected}{fieldUnits[overflowSelected] ? ' (' + fieldUnits[overflowSelected] + ')' : ''}</span>
 							{/if}
 						</button>
 					{/snippet}
@@ -127,7 +139,7 @@
 									class="inline-block size-2 shrink-0 rounded-full"
 									style="background: {CHART_COLORS[idx % CHART_COLORS.length]}"
 								></span>
-								{field}
+								{field}{fieldUnits[field] ? ' (' + fieldUnits[field] + ')' : ''}
 							</button>
 						{/each}
 					</div>
@@ -146,7 +158,7 @@
 >
 	{#each fields as field (field)}
 		<button class="shrink-0 flex items-center gap-1 rounded-sm border px-1.5 py-0.5 font-mono text-[11px]">
-			{field}
+			{field}{fieldUnits[field] ? ' (' + fieldUnits[field] + ')' : ''}
 		</button>
 	{/each}
 	<!-- Overflow button measured in its expanded state (with field name) to get accurate width reservation -->
@@ -155,6 +167,6 @@
 		class="flex min-w-0 max-w-[10rem] items-center gap-1 rounded-sm border px-1.5 py-0.5 font-mono text-[11px]"
 	>
 		<span class="shrink-0">+1</span>
-		<span class="truncate">{fields.reduce((a, b) => (a.length >= b.length ? a : b), '')}</span>
+		<span class="truncate">{longestLabelField}{fieldUnits[longestLabelField] ? ' (' + fieldUnits[longestLabelField] + ')' : ''}</span>
 	</button>
 </div>

@@ -111,11 +111,20 @@
 
 	let chartConfig = $derived.by((): ChartConfig => {
 		const config: ChartConfig = {};
+		const units = telemetryStore.queryData?.fieldUnits ?? {};
 		(selectedMeasurement?.fields ?? []).forEach((field, i) => {
-			config[field] = { label: `${field} `, color: CHART_COLORS[i % CHART_COLORS.length] };
+			config[field] = {
+				label: `${field} `,
+				color: CHART_COLORS[i % CHART_COLORS.length],
+				unit: units[field] ?? ""
+			};
 		});
 		return config;
 	});
+
+	const fieldUnits = $derived(
+		Object.fromEntries((selectedMeasurement?.fields ?? []).map((f) => [f, chartConfig[f]?.unit ?? '']))
+	);
 
 	// ─── Context & lifecycle ──────────────────────────────────────────────────
 
@@ -259,6 +268,7 @@
 					fields={selectedMeasurement.fields}
 					{selectedFields}
 					ontoggle={toggleField}
+					{fieldUnits}
 				/>
 			{/if}
 

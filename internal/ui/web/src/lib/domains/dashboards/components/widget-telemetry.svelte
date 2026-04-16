@@ -261,16 +261,20 @@
 
 			const newMergedFields: string[] = [];
 			const newChartConfig: ChartConfig = {};
+			const newMergedFieldUnits: Record<string, string> = {};
 
 			config.fields.forEach((field, fieldIdx) => {
 				results.forEach(({ deviceName, data }) => {
 					if (!data.headers.includes(field)) return;
 					const key = `${deviceName}_${field}`;
 					newMergedFields.push(key);
+					const unit = data.fieldUnits[field] ?? '';
 					newChartConfig[key] = {
 						label: `${field} - ${deviceName}`,
-						color: CHART_COLORS[fieldIdx % CHART_COLORS.length]
+						color: CHART_COLORS[fieldIdx % CHART_COLORS.length],
+						unit
 					};
+					if (unit) newMergedFieldUnits[key] = unit;
 				});
 			});
 
@@ -297,7 +301,7 @@
 
 			if (myGen !== generation) return;
 
-			mergedData = { headers: ['_time', ...newMergedFields], fieldUnits: {}, rows: sortedRows };
+			mergedData = { headers: ['_time', ...newMergedFields], fieldUnits: newMergedFieldUnits, rows: sortedRows };
 			mergedFields = newMergedFields;
 			chartConfig = newChartConfig;
 		} catch (err) {
@@ -322,6 +326,16 @@
 					selectedFields.includes(key.slice(dev.name.length + 1))
 			);
 		})
+	);
+
+	// fieldUnits keyed by raw field name (for TlmFieldToggles pills)
+	const fieldUnits = $derived(
+		Object.fromEntries(
+			config.fields.map((f) => {
+				const entry = Object.entries(chartConfig).find(([k]) => k.endsWith('_' + f));
+				return [f, entry?.[1]?.unit ?? ''];
+			})
+		)
 	);
 
 	let singleViewChartConfig = $derived.by(() => {
@@ -490,12 +504,13 @@
 		<!-- Field toggles (move into toolbar dropdown when compact) -->
 		{#if config.fields.length > 0 && !compact}
 			{#if splitCount === 1}
-				<TlmFieldToggles fields={config.fields} {selectedFields} ontoggle={toggleField} />
+				<TlmFieldToggles fields={config.fields} {selectedFields} ontoggle={toggleField} {fieldUnits} />
 			{:else if syncFields}
 				<TlmFieldToggles
 					fields={config.fields}
 					selectedFields={syncSelectedFields}
 					ontoggle={toggleSyncField}
+					{fieldUnits}
 				/>
 			{/if}
 		{/if}
