@@ -117,6 +117,7 @@
 		const mir = mirStore.mir;
 		if (!mir || !config.measurement) return;
 		loadError = null;
+		fieldUnits = {};
 		// Reset selectedField if it no longer exists in the (possibly updated) fields list
 		if (!config.fields.includes(selectedField)) {
 			selectedField = config.selectedField ?? config.fields[0] ?? '';
