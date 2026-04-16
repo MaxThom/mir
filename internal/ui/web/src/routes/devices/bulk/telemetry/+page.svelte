@@ -273,7 +273,7 @@
 			if (myGen !== generation) return;
 
 			isQuerying = false;
-			mergedData = { headers: ['_time', ...newMergedFields], rows: sortedRows };
+			mergedData = { headers: ['_time', ...newMergedFields], fieldUnits: {}, rows: sortedRows };
 			mergedFields = newMergedFields;
 			chartConfig = newChartConfig;
 		} catch (err) {
