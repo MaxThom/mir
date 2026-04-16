@@ -105,6 +105,15 @@
 		selection ? `${selection.groupIdx}:${selection.measurement.name}` : null
 	);
 
+	const fieldUnits = $derived(
+		Object.fromEntries(
+			(selection?.measurement.fields ?? []).map((f) => {
+				const entry = Object.entries(chartConfig).find(([k]) => k.endsWith('_' + f));
+				return [f, entry?.[1]?.unit ?? ''];
+			})
+		)
+	);
+
 	let grafanaUrl = $derived.by(() => {
 		const host = contextStore.activeContext?.grafana;
 		const query = selection?.measurement.exploreQuery;
@@ -234,16 +243,20 @@
 
 			const newMergedFields: string[] = [];
 			const newChartConfig: ChartConfig = {};
+			const newMergedFieldUnits: Record<string, string> = {};
 
 			selectedMeasurement.fields.forEach((field, fieldIdx) => {
 				results.forEach(({ deviceName, data }) => {
 					if (!data.headers.includes(field)) return;
 					const key = `${deviceName}_${field}`;
 					newMergedFields.push(key);
+					const unit = data.fieldUnits[field] ?? '';
 					newChartConfig[key] = {
 						label: `${field} - ${deviceName} `,
-						color: CHART_COLORS[fieldIdx % CHART_COLORS.length]
+						color: CHART_COLORS[fieldIdx % CHART_COLORS.length],
+						unit
 					};
+					if (unit) newMergedFieldUnits[key] = unit;
 				});
 			});
 
@@ -273,7 +286,7 @@
 			if (myGen !== generation) return;
 
 			isQuerying = false;
-			mergedData = { headers: ['_time', ...newMergedFields], fieldUnits: {}, rows: sortedRows };
+			mergedData = { headers: ['_time', ...newMergedFields], fieldUnits: newMergedFieldUnits, rows: sortedRows };
 			mergedFields = newMergedFields;
 			chartConfig = newChartConfig;
 		} catch (err) {
@@ -471,7 +484,7 @@
 			</div>
 		{:else}
 			{#if splitCount === 1}
-			<TlmFieldToggles fields={selection.measurement.fields} {selectedFields} ontoggle={toggleField} />
+			<TlmFieldToggles fields={selection.measurement.fields} {selectedFields} ontoggle={toggleField} {fieldUnits} />
 
 			<!-- Device pills -->
 			<div class="flex shrink-0 flex-wrap items-center gap-2 border-b px-4 py-1.5">
@@ -492,6 +505,7 @@
 				fields={selection.measurement.fields}
 				selectedFields={syncSelectedFields}
 				ontoggle={toggleSyncField}
+				{fieldUnits}
 			/>
 		{/if}
 
