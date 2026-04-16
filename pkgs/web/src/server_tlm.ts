@@ -43,6 +43,7 @@ export type QueryRow = {
 
 export type QueryData = {
   headers: string[];
+  fieldUnits: Record<string, string>;
   rows: QueryRow[];
 };
 
@@ -143,6 +144,7 @@ export class QueryTelemetry {
       const qt = response.response.value;
       return {
         headers: qt.headers,
+        fieldUnits: Object.fromEntries(qt.headers.map((h, i) => [h, qt.units[i] ?? ''])),
         rows: qt.rows.map((row) => {
           const values: Record<string, number | boolean | string | Date | null> = {};
           qt.headers.forEach((h, i) => {
@@ -154,6 +156,6 @@ export class QueryTelemetry {
     } else if (response.response.case === "error") {
       throw new Error(response.response.value);
     }
-    return { headers: [], rows: [] };
+    return { headers: [], fieldUnits: {}, rows: [] };
   }
 }
