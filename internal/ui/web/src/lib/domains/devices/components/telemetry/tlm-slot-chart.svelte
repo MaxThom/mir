@@ -70,6 +70,15 @@
 		return result;
 	});
 
+	const fieldUnits = $derived(
+		Object.fromEntries(
+			measurementFields.map((f) => [
+				f,
+				chartConfig[`${devices[0]?.name ?? ''}_${f}`]?.unit ?? ''
+			])
+		)
+	);
+
 	function toggleDevice(deviceId: string, multi: boolean) {
 		if (onToggleDevice) {
 			onToggleDevice(deviceId, multi);
@@ -101,7 +110,7 @@
 
 <!-- Field selector (hidden when fields are synced externally) -->
 {#if !forcedFields}
-<TlmFieldToggles fields={measurementFields} {selectedFields} ontoggle={toggleField} class="mb-1" />
+<TlmFieldToggles fields={measurementFields} {selectedFields} ontoggle={toggleField} {fieldUnits} class="mb-1" />
 {/if}
 
 <!-- Chart -->
