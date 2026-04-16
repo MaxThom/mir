@@ -30,6 +30,10 @@
 
 	let selectedFields = $state<string[]>(untrack(() => initialFields ?? measurementFields.slice(0, MAX_AUTO_FIELDS)));
 
+	const fieldUnits = $derived(
+		Object.fromEntries(measurementFields.map((f) => [f, chartConfig[f]?.unit ?? '']))
+	);
+
 	function toggleField(field: string, multi: boolean) {
 		if (multi) {
 			if (selectedFields.includes(field)) {
@@ -47,6 +51,7 @@
 	fields={measurementFields}
 	{selectedFields}
 	ontoggle={toggleField}
+	{fieldUnits}
 	class="shrink-0 px-0 py-1.5"
 />
 
