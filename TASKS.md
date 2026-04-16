@@ -7,21 +7,21 @@
   - [ ] tlm cache for widgets
 - [ ] mir book for Cockpit
 - [ ] deployment for Cockpit
-  - [ ] binary
-  - [ ] compose
-    - [ ] fix surreal v and var
-  - [ ] helm
-    - [ ] fix surreal v and var
+  - [x] binary
+  - [x] compose
+  - [x] helm
 - [ ] security for Cockpit
 - [ ] widget
   - [ ] no device found is different for different widgets
-- [ ] unit
+  - [ ] refresh seem stuck
+  - [ ] device target with schema
+- [x] unit
   - [x] add new meta field tag
   - [x] update tlm server
   - [x] update query api
   - [x] add unit test
   - [x] update cli
-  - [ ] update Cockpit
+  - [x] update Cockpit
   
 ### Bug
 
