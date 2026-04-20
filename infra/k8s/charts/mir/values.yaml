@@ -168,7 +168,11 @@ surrealdb:
       #     - path: /*
       #       pathType: Prefix
     tls: []
-  podExtraEnv: []
+  podExtraEnv:
+    # To remove when fix in future release
+    # https://github.com/surrealdb/surrealdb/issues/7038
+    - name: SURREAL_PLANNER_STRATEGY
+      value: compute-only
   ## Use secret to pass any config as environment variables, mainly passwords and tokens.
   ## Refer to chart ./secret/surreal.secret.yaml
   ## eg:

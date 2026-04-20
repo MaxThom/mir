@@ -17,6 +17,10 @@ services:
       - -A
       - --log
       - debug
+    environment:
+      # To remove when fix in future release
+      # https://github.com/surrealdb/surrealdb/issues/7038
+      - SURREAL_PLANNER_STRATEGY=compute-only
 
 volumes:
   surrealdb_data:
