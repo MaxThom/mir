@@ -1238,3 +1238,87 @@ func TestPublishTelemetryQueryNullValues(t *testing.T) {
 	cancel()
 	wg.Wait()
 }
+
+func TestPublishTelemetryQueryWithUnits(t *testing.T) {
+	// Arrange
+	ctx, cancel := context.WithCancel(context.Background())
+	id := "device_query_tlm_units"
+	reqCreate := &mir_apiv1.NewDevice{
+		Meta: &mir_apiv1.Meta{
+			Name:      id,
+			Namespace: "testing_core",
+			Labels: map[string]string{
+				"testing": "tlm",
+			},
+		},
+		Spec: &mir_apiv1.DeviceSpec{
+			DeviceId: id,
+		},
+	}
+
+	dev, err := mirDevice.Builder().DeviceId(id).Store(mirDevice.StoreOptions{InMemory: true}).Target(busUrl).Schema(
+		prototlm_testv1.File_prototlm_test_v1_telemetry_proto,
+	).Build()
+	if err != nil {
+		t.Error(err)
+	}
+
+	_, err = core_client.PublishDeviceCreateRequest(mSdk.Bus, &mir_apiv1.CreateDeviceRequest{Device: reqCreate})
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(1 * time.Second)
+
+	wg, err := dev.Launch(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Act
+	startTime := time.Now().Add(-2 * time.Second)
+	for i := 1; i <= 5; i++ {
+		dev.SendTelemetry(&prototlm_testv1.UnitTlm{
+			Voltage: float64(i * 5),
+			Amp:     float64(i * 10),
+			Power:   float64(i * 15),
+		})
+		time.Sleep(100 * time.Millisecond)
+	}
+	time.Sleep(3 * time.Second) // Wait for InfluxDB batch to flush
+
+	resp, err := tlm_client.PublishTelemetryQueryRequest(mSdk.Bus, &mir_apiv1.QueryTelemetryRequest{
+		Targets: &mir_apiv1.DeviceTarget{
+			Ids: []string{id},
+		},
+		Measurement: "prototlm_test.v1.UnitTlm",
+		StartTime:   mir_v1.AsProtoTimestamp(startTime),
+	})
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Assert(t, resp.GetOk() != nil)
+	qt := resp.GetOk()
+	fmt.Println(qt.Units)
+	assert.Equal(t, 5, len(qt.Headers))
+	assert.Equal(t, "_time", qt.Headers[0])
+	assert.Equal(t, "__id", qt.Headers[1])
+	assert.Equal(t, "amp", qt.Headers[2])
+	assert.Equal(t, "power", qt.Headers[3])
+	assert.Equal(t, "voltage", qt.Headers[4])
+	assert.Equal(t, "RFC3339", qt.Units[0])
+	assert.Equal(t, "", qt.Units[1])
+	assert.Equal(t, "A", qt.Units[2])
+	assert.Equal(t, "W", qt.Units[3])
+	assert.Equal(t, "V", qt.Units[4])
+	assert.Equal(t, mir_apiv1.DataType_DATA_TYPE_TIMESTAMP, qt.Datatypes[0])
+	assert.Equal(t, mir_apiv1.DataType_DATA_TYPE_STRING, qt.Datatypes[1])
+	assert.Equal(t, mir_apiv1.DataType_DATA_TYPE_DOUBLE, qt.Datatypes[2])
+	assert.Equal(t, mir_apiv1.DataType_DATA_TYPE_DOUBLE, qt.Datatypes[3])
+	assert.Equal(t, mir_apiv1.DataType_DATA_TYPE_DOUBLE, qt.Datatypes[4])
+	assert.Equal(t, 5, len(qt.Rows))
+
+	cancel()
+	wg.Wait()
+}
