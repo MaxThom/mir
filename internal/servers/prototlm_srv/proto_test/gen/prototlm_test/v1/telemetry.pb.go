@@ -350,6 +350,66 @@ func (x *PowerTlm) GetPower() float64 {
 	return 0
 }
 
+type UnitTlm struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Voltage       float64                `protobuf:"fixed64,1,opt,name=voltage,proto3" json:"voltage,omitempty"`
+	Amp           float64                `protobuf:"fixed64,2,opt,name=amp,proto3" json:"amp,omitempty"`
+	Power         float64                `protobuf:"fixed64,3,opt,name=power,proto3" json:"power,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UnitTlm) Reset() {
+	*x = UnitTlm{}
+	mi := &file_prototlm_test_v1_telemetry_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UnitTlm) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UnitTlm) ProtoMessage() {}
+
+func (x *UnitTlm) ProtoReflect() protoreflect.Message {
+	mi := &file_prototlm_test_v1_telemetry_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UnitTlm.ProtoReflect.Descriptor instead.
+func (*UnitTlm) Descriptor() ([]byte, []int) {
+	return file_prototlm_test_v1_telemetry_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *UnitTlm) GetVoltage() float64 {
+	if x != nil {
+		return x.Voltage
+	}
+	return 0
+}
+
+func (x *UnitTlm) GetAmp() float64 {
+	if x != nil {
+		return x.Amp
+	}
+	return 0
+}
+
+func (x *UnitTlm) GetPower() float64 {
+	if x != nil {
+		return x.Power
+	}
+	return 0
+}
+
 var File_prototlm_test_v1_telemetry_proto protoreflect.FileDescriptor
 
 const file_prototlm_test_v1_telemetry_proto_rawDesc = "" +
@@ -399,7 +459,11 @@ const file_prototlm_test_v1_telemetry_proto_rawDesc = "" +
 	"\bbuilding\x12\x01A\n" +
 	"\n" +
 	"\n" +
-	"\x05floor\x12\x012B\xd9\x01\n" +
+	"\x05floor\x12\x012\"l\n" +
+	"\aUnitTlm\x12!\n" +
+	"\avoltage\x18\x01 \x01(\x01B\a\xb2\xbb\x18\x03\x12\x01VR\avoltage\x12\x19\n" +
+	"\x03amp\x18\x02 \x01(\x01B\a\xb2\xbb\x18\x03\x12\x01AR\x03amp\x12\x1d\n" +
+	"\x05power\x18\x03 \x01(\x01B\a\xb2\xbb\x18\x03\x12\x01WR\x05power:\x04\x88\xb5\x18\x01B\xd9\x01\n" +
 	"\x14com.prototlm_test.v1B\x0eTelemetryProtoP\x01ZTgithub.com/maxthom/mir/internal/servers/prototlm_srv/proto_test/gen/prototlm_test/v1\xa2\x02\x03PXX\xaa\x02\x0fPrototlmTest.V1\xca\x02\x0fPrototlmTest\\V1\xe2\x02\x1bPrototlmTest\\V1\\GPBMetadata\xea\x02\x10PrototlmTest::V1b\x06proto3"
 
 var (
@@ -414,12 +478,13 @@ func file_prototlm_test_v1_telemetry_proto_rawDescGZIP() []byte {
 	return file_prototlm_test_v1_telemetry_proto_rawDescData
 }
 
-var file_prototlm_test_v1_telemetry_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_prototlm_test_v1_telemetry_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_prototlm_test_v1_telemetry_proto_goTypes = []any{
 	(*EnvTlm)(nil),      // 0: prototlm_test.v1.EnvTlm
 	(*SparseTlm)(nil),   // 1: prototlm_test.v1.SparseTlm
 	(*AllTypesTlm)(nil), // 2: prototlm_test.v1.AllTypesTlm
 	(*PowerTlm)(nil),    // 3: prototlm_test.v1.PowerTlm
+	(*UnitTlm)(nil),     // 4: prototlm_test.v1.UnitTlm
 }
 var file_prototlm_test_v1_telemetry_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
@@ -441,7 +506,7 @@ func file_prototlm_test_v1_telemetry_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_prototlm_test_v1_telemetry_proto_rawDesc), len(file_prototlm_test_v1_telemetry_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   4,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
