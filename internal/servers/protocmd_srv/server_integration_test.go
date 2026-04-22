@@ -110,14 +110,15 @@ func TestPublishCmdListRequest(t *testing.T) {
 
 	// Assert
 	dev := respListCmd.GetOk().DevicesCommands[0]
+	fmt.Println(dev.CmdDescriptors[0].Labels)
 	assert.Equal(t, dev.Error, "")
 	assert.Equal(t, len(dev.CmdDescriptors), 4)
 	assert.Equal(t, dev.CmdDescriptors[0].Name, "protocmd_test.v1.Command")
-	assert.Equal(t, dev.CmdDescriptors[0].Labels["building"], "A")
-	assert.Equal(t, dev.CmdDescriptors[0].Labels["floor"], "1")
+	assert.Equal(t, dev.CmdDescriptors[0].Labels["__tag_building"], "A")
+	assert.Equal(t, dev.CmdDescriptors[0].Labels["__tag_floor"], "1")
 	assert.Equal(t, dev.CmdDescriptors[1].Name, "protocmd_test.v1.ChangePower")
-	assert.Equal(t, dev.CmdDescriptors[1].Labels["building"], "A")
-	assert.Equal(t, dev.CmdDescriptors[1].Labels["floor"], "2")
+	assert.Equal(t, dev.CmdDescriptors[1].Labels["__tag_building"], "A")
+	assert.Equal(t, dev.CmdDescriptors[1].Labels["__tag_floor"], "2")
 	assert.Equal(t, dev.CmdDescriptors[2].Name, "protocmd_test.v1.SetTargetVector")
 	assert.Equal(t, len(dev.CmdDescriptors[2].Labels), 0)
 	assert.Equal(t, dev.CmdDescriptors[3].Name, "protocmd_test.v1.SetDestination")
@@ -161,8 +162,8 @@ func TestPublishCmdListFiltersRequest(t *testing.T) {
 	respListCmd, err := cmd_client.PublishListCommandsRequest(mSdk.Bus, &mir_apiv1.SendListCommandsRequest{
 		Targets: mir_v1.MirDeviceTargetToProtoDeviceTarget(s.ToTarget()),
 		FilterLabels: map[string]string{
-			"building": "A",
-			"floor":    "2",
+			"__tag_building": "A",
+			"__tag_floor":    "2",
 		},
 		RefreshSchema: true,
 	})
@@ -177,8 +178,8 @@ func TestPublishCmdListFiltersRequest(t *testing.T) {
 	assert.Equal(t, dev.Error, "")
 	assert.Equal(t, len(dev.CmdDescriptors), 1)
 	assert.Equal(t, dev.CmdDescriptors[0].Name, "protocmd_test.v1.ChangePower")
-	assert.Equal(t, dev.CmdDescriptors[0].Labels["building"], "A")
-	assert.Equal(t, dev.CmdDescriptors[0].Labels["floor"], "2")
+	assert.Equal(t, dev.CmdDescriptors[0].Labels["__tag_building"], "A")
+	assert.Equal(t, dev.CmdDescriptors[0].Labels["__tag_floor"], "2")
 
 	cancel()
 	for _, wg := range wgs {
