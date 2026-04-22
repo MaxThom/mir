@@ -116,11 +116,11 @@ func TestPublishCfgListRequest(t *testing.T) {
 	assert.Equal(t, dev[0].Error, "")
 	assert.Equal(t, len(dev), 4)
 	assert.Equal(t, dev[0].Name, "protocfg_test.v1.Conduit")
-	assert.Equal(t, dev[0].Labels["building"], "A")
-	assert.Equal(t, dev[0].Labels["floor"], "1")
+	assert.Equal(t, dev[0].Labels["__tag_building"], "A")
+	assert.Equal(t, dev[0].Labels["__tag_floor"], "1")
 	assert.Equal(t, dev[1].Name, "protocfg_test.v1.PowerLevel")
-	assert.Equal(t, dev[1].Labels["building"], "A")
-	assert.Equal(t, dev[1].Labels["floor"], "2")
+	assert.Equal(t, dev[1].Labels["__tag_building"], "A")
+	assert.Equal(t, dev[1].Labels["__tag_floor"], "2")
 	assert.Equal(t, dev[2].Name, "protocfg_test.v1.Coordinate")
 	assert.Equal(t, len(dev[2].Labels), 0)
 	assert.Equal(t, dev[3].Name, "protocfg_test.v1.Destination")
@@ -202,11 +202,11 @@ func TestPublishCfgListRequestWithValues(t *testing.T) {
 	assert.Equal(t, cfgDesc[0].Error, "")
 	assert.Equal(t, len(cfgDesc), 4)
 	assert.Equal(t, cfgDesc[0].Name, "protocfg_test.v1.Conduit")
-	assert.Equal(t, cfgDesc[0].Labels["building"], "A")
-	assert.Equal(t, cfgDesc[0].Labels["floor"], "1")
+	assert.Equal(t, cfgDesc[0].Labels["__tag_building"], "A")
+	assert.Equal(t, cfgDesc[0].Labels["__tag_floor"], "1")
 	assert.Equal(t, cfgDesc[1].Name, "protocfg_test.v1.PowerLevel")
-	assert.Equal(t, cfgDesc[1].Labels["building"], "A")
-	assert.Equal(t, cfgDesc[1].Labels["floor"], "2")
+	assert.Equal(t, cfgDesc[1].Labels["__tag_building"], "A")
+	assert.Equal(t, cfgDesc[1].Labels["__tag_floor"], "2")
 	assert.Equal(t, cfgDesc[2].Name, "protocfg_test.v1.Coordinate")
 	assert.Equal(t, len(cfgDesc[2].Labels), 0)
 	assert.Equal(t, cfgDesc[3].Name, "protocfg_test.v1.Destination")
@@ -269,8 +269,8 @@ func TestPublishCfgListFiltersRequest(t *testing.T) {
 	respListCmd, err := cfg_client.PublishListConfigRequest(mSdk.Bus, &mir_apiv1.SendListConfigRequest{
 		Targets: mir_v1.MirDeviceTargetToProtoDeviceTarget(s.ToTarget()),
 		FilterLabels: map[string]string{
-			"building": "A",
-			"floor":    "2",
+			"__tag_building": "A",
+			"__tag_floor":    "2",
 		},
 		RefreshSchema: true,
 	})
@@ -286,8 +286,8 @@ func TestPublishCfgListFiltersRequest(t *testing.T) {
 	assert.Equal(t, dev.Error, "")
 	assert.Equal(t, len(dev.CfgDescriptors), 1)
 	assert.Equal(t, dev.CfgDescriptors[0].Name, "protocfg_test.v1.PowerLevel")
-	assert.Equal(t, dev.CfgDescriptors[0].Labels["building"], "A")
-	assert.Equal(t, dev.CfgDescriptors[0].Labels["floor"], "2")
+	assert.Equal(t, dev.CfgDescriptors[0].Labels["__tag_building"], "A")
+	assert.Equal(t, dev.CfgDescriptors[0].Labels["__tag_floor"], "2")
 
 	cancel()
 	for _, wg := range wgs {

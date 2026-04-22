@@ -8,9 +8,10 @@
 - [ ] mir book for Cockpit
 - [ ] deployment for Cockpit
   - [x] binary
-  - [x] compose
-  - [x] helm
+  - [ ] compose
+  - [ ] helm
 - [ ] security for Cockpit
+  - [ ] k8s websocket mTLS port to be configured
 - [ ] widget
   - [ ] no device found is different for different widgets
   - [ ] refresh seem stuck
