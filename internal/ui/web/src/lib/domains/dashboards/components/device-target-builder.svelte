@@ -27,7 +27,9 @@
 
 	let mode = $state<'dynamic' | 'specific'>(
 		untrack(() =>
-			initialTarget?.namespaces?.length || initialTarget?.labels ? 'dynamic' : 'specific'
+			initialTarget?.namespaces?.length || initialTarget?.labels || initialTarget?.schemas?.length
+				? 'dynamic'
+				: 'specific'
 		)
 	);
 
@@ -38,6 +40,7 @@
 			Object.entries(initialTarget?.labels ?? {}).map(([key, value]) => ({ key, value }))
 		)
 	);
+	let selectedSchemas = $state<string[]>(untrack(() => initialTarget?.schemas ?? []));
 
 	// Specific state
 	let selectedIds = $state<string[]>(untrack(() => initialTarget?.ids ?? []));
@@ -49,6 +52,15 @@
 	);
 	const allLabelKeys = $derived(
 		[...new Set(devices.flatMap((d) => Object.keys(d.meta?.labels ?? {})))].sort()
+	);
+	const allSchemas = $derived(
+		[
+			...new Set(
+				devices
+					.flatMap((d) => d.status?.schema?.packageNames ?? [])
+					.filter((p) => p !== 'mir.device.v1' && p !== 'google.protobuf')
+			)
+		].sort()
 	);
 
 	function valuesForKey(key: string): string[] {
@@ -69,7 +81,10 @@
 			const nsMatch = activeNs.length === 0 || activeNs.includes(d.meta?.namespace ?? 'default');
 			const valid = labelConditions.filter((c) => c.key && c.value);
 			const labelMatch = valid.every(({ key, value }) => d.meta?.labels?.[key] === value);
-			return nsMatch && labelMatch;
+			const pkgNames = d.status?.schema?.packageNames ?? [];
+			const activeSchemas = selectedSchemas.filter((s) => s);
+			const schemaMatch = activeSchemas.length === 0 || activeSchemas.every((s) => pkgNames.includes(s));
+			return nsMatch && labelMatch && schemaMatch;
 		})
 	);
 
@@ -81,9 +96,11 @@
 		if (mode === 'dynamic') {
 			const activeNs = selectedNamespaces.filter((ns) => ns);
 			const valid = labelConditions.filter((c) => c.key && c.value);
+			const activeSchemas = selectedSchemas.filter((s) => s);
 			target = {
 				...(activeNs.length ? { namespaces: activeNs } : {}),
-				...(valid.length ? { labels: Object.fromEntries(valid.map((c) => [c.key, c.value])) } : {})
+				...(valid.length ? { labels: Object.fromEntries(valid.map((c) => [c.key, c.value])) } : {}),
+				...(activeSchemas.length ? { schemas: activeSchemas } : {})
 			};
 		} else {
 			target = { ids: selectedIds };
@@ -112,6 +129,15 @@
 	}
 	function setValue(i: number, value: string) {
 		labelConditions = labelConditions.map((c, idx) => (idx === i ? { ...c, value } : c));
+	}
+
+	// ─── Schema helpers ───────────────────────────────────────────────────────
+
+	function addSchema() {
+		selectedSchemas = [...selectedSchemas, ''];
+	}
+	function removeSchema(i: number) {
+		selectedSchemas = selectedSchemas.filter((_, idx) => idx !== i);
 	}
 </script>
 
@@ -176,7 +202,7 @@
 		</div>
 
 		<!-- Labels -->
-		<div class="space-y-2 p-3">
+		<div class="space-y-2 border-b p-3">
 			<div class="flex items-center justify-between">
 				<span class="text-xs font-semibold tracking-wide text-muted-foreground uppercase"
 					>Labels</span
@@ -231,6 +257,50 @@
 			>
 				<PlusIcon class="size-3" />
 				Add label condition
+			</Button>
+		</div>
+
+		<!-- Schemas -->
+		<div class="space-y-2 p-3">
+			<div class="flex items-center justify-between">
+				<span class="text-xs font-semibold tracking-wide text-muted-foreground uppercase"
+					>Schemas</span
+				>
+				<span class="text-xs text-muted-foreground">match all (AND)</span>
+			</div>
+
+			{#if selectedSchemas.length > 0}
+				<div class="space-y-1.5">
+					{#each selectedSchemas, i (i)}
+						<div class="flex items-center gap-1.5">
+							<SuggestionInput
+								bind:value={selectedSchemas[i]}
+								suggestions={allSchemas}
+								placeholder="schema package"
+								class="h-7 flex-1 font-mono text-xs"
+							/>
+							<Button
+								variant="ghost"
+								size="icon-sm"
+								onclick={() => removeSchema(i)}
+								aria-label="Remove schema"
+								class="size-7 text-muted-foreground hover:text-destructive"
+							>
+								<XIcon class="size-3.5" />
+							</Button>
+						</div>
+					{/each}
+				</div>
+			{/if}
+
+			<Button
+				variant="ghost"
+				size="sm"
+				onclick={addSchema}
+				class="h-7 gap-1 px-2 text-xs text-muted-foreground"
+			>
+				<PlusIcon class="size-3" />
+				Add schema
 			</Button>
 		</div>
 	</div>

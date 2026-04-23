@@ -41,6 +41,7 @@ const (
 	tableColName      = 3
 	tableColNamespace = 4
 	tableColLabels    = 5
+	tableColSchema    = 6
 
 	refreshInterval = time.Second * 10
 )
@@ -84,7 +85,8 @@ func NewModel(ctx context.Context) *Model {
 		{Title: "id", Width: 20},
 		{Title: "name", Width: 25},
 		{Title: "namespace", Width: 25},
-		{Title: "labels", Width: 50},
+		{Title: "labels", Width: 30},
+		{Title: "schemas", Width: 50},
 	}
 
 	s := table.DefaultStyles()
@@ -398,11 +400,21 @@ func (m *Model) devicesToRows(devices []mir_v1.Device) ([]table.Row, []string) {
 			checked = "✔"
 		}
 
+		// Filter out mir.device.v1 and google.protobuf from package names
+		filteredPackageNames := []string{}
+		for _, pkg := range d.Status.Schema.PackageNames {
+			if pkg != "mir.device.v1" && pkg != "google.protobuf" {
+				filteredPackageNames = append(filteredPackageNames, pkg)
+			}
+		}
+		sort.Strings(filteredPackageNames)
+
 		rows = append(rows, table.Row{
-			status, checked, d.Spec.DeviceId, d.Meta.Name, d.Meta.Namespace, strings.Join(lbls, ","),
+			status, checked, d.Spec.DeviceId, d.Meta.Name, d.Meta.Namespace, strings.Join(lbls, ","), strings.Join(filteredPackageNames, ","),
 		})
 		suggestions = append(suggestions, d.Spec.DeviceId, d.Meta.Name, d.Meta.Namespace)
 		suggestions = append(suggestions, lbls...)
+		suggestions = append(suggestions, filteredPackageNames...)
 	}
 	// Sort the rows by namespace, then labels then name
 	// Empty value are at the bottom

@@ -54,6 +54,7 @@ func (d *SchemaUploadCmd) Validate() error {
 		len(d.Target.Names) == 0 &&
 		len(d.Target.Namespaces) == 0 &&
 		len(d.Target.Labels) == 0 &&
+		len(d.Target.Schemas) == 0 &&
 		d.NameNs == "" {
 		err.Details = append(err.Details, "Must specify targets")
 	}
@@ -93,6 +94,7 @@ func (d *SchemaUploadCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) err
 		Names:      d.Target.Names,
 		Namespaces: d.Target.Namespaces,
 		Labels:     d.Target.Labels,
+		Schemas:    d.Target.Schemas,
 	}, mir_v1.NewDevice().WithStatus(mir_v1.DeviceStatus{
 		Schema: mir_v1.Schema{
 			CompressedSchema: compSch,
@@ -124,6 +126,7 @@ func (d *SchemaExploreCmd) Validate() error {
 		len(d.Target.Names) == 0 &&
 		len(d.Target.Namespaces) == 0 &&
 		len(d.Target.Labels) == 0 &&
+		len(d.Target.Schemas) == 0 &&
 		d.NameNs == "" {
 		err.Details = append(err.Details, "Must specify targets")
 	}
@@ -149,6 +152,7 @@ func (d *SchemaExploreCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) er
 		Names:      d.Target.Names,
 		Namespaces: d.Target.Namespaces,
 		Labels:     d.Target.Labels,
+		Schemas:    d.Target.Schemas,
 	}, false)
 	if err != nil {
 		return fmt.Errorf("error publishing device list request: %w", err)
@@ -236,6 +240,7 @@ func (d *SchemaRefreshCmd) Validate() error {
 		len(d.Target.Names) == 0 &&
 		len(d.Target.Namespaces) == 0 &&
 		len(d.Target.Labels) == 0 &&
+		len(d.Target.Schemas) == 0 &&
 		d.NameNs == "" {
 		err.Details = append(err.Details, "Must specify targets")
 	}
@@ -264,6 +269,7 @@ func (d *SchemaRefreshCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) er
 		Names:      d.Target.Names,
 		Namespaces: d.Target.Namespaces,
 		Labels:     d.Target.Labels,
+		Schemas:    d.Target.Schemas,
 	})
 	if err != nil {
 		return fmt.Errorf("error publishing device refresh schema request: %w", err)

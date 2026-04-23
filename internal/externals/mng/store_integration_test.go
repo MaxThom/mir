@@ -762,6 +762,60 @@ func TestPublishStoreDeviceListByIdsWithWilcards(t *testing.T) {
 	assert.Equal(t, len(lResp3), 1)
 }
 
+func TestPublishStoreDeviceListBySchema(t *testing.T) {
+	// Arrange
+	ids := []string{"list_dev_0_sch", "list_dev_1_sch", "list_dev_2_sch"}
+	d0 := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
+		Namespace: "mirstore",
+		Labels:    map[string]string{"mirstore": "testing"},
+	}).WithSpec(mir_v1.DeviceSpec{DeviceId: ids[0]})
+	d1 := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
+		Namespace: "mirstore",
+		Labels:    map[string]string{"mirstore": "testing"},
+	}).WithSpec(mir_v1.DeviceSpec{DeviceId: ids[1]})
+	d2 := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
+		Namespace: "mirstore",
+		Labels:    map[string]string{"mirstore": "testing"},
+	}).WithSpec(mir_v1.DeviceSpec{DeviceId: ids[2]})
+	schemaStatus := mir_v1.NewDevice().WithStatus(mir_v1.DeviceStatus{
+		Schema: mir_v1.Schema{PackageNames: []string{"test.schema.v1"}},
+	})
+
+	// Act
+	_, err := mirStore.CreateDevice(d0)
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = mirStore.CreateDevice(d1)
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = mirStore.CreateDevice(d2)
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = mirStore.UpdateDevice(mir_v1.DeviceTarget{Ids: []string{ids[0]}}, schemaStatus)
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = mirStore.UpdateDevice(mir_v1.DeviceTarget{Ids: []string{ids[1]}}, schemaStatus)
+	if err != nil {
+		t.Error(err)
+	}
+	lResp, err := mirStore.ListDevice(mir_v1.DeviceTarget{Schemas: []string{"test.schema.v1"}}, false)
+	if err != nil {
+		t.Error(err)
+	}
+	lRespNone, err := mirStore.ListDevice(mir_v1.DeviceTarget{Schemas: []string{"unknown.schema.v99"}}, false)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	assert.Equal(t, 2, len(lResp))
+	assert.Equal(t, 0, len(lRespNone))
+}
+
 func TestPublishStoreDeviceDeleteByIds(t *testing.T) {
 	// Arrange
 	ids := []string{"del_dev_0", "del_dev_1"}

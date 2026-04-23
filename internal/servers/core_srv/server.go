@@ -598,7 +598,8 @@ func (s *CoreServer) schemaRefreshSub(msg *mir.Msg, clientId string, t mir_v1.De
 	if len(t.Ids) == 0 &&
 		len(t.Names) == 0 &&
 		len(t.Namespaces) == 0 &&
-		len(t.Labels) == 0 {
+		len(t.Labels) == 0 &&
+		len(t.Schemas) == 0 {
 		errs = append(errs, mir_v1.ErrorNoDeviceTargetProvided.Error())
 	}
 

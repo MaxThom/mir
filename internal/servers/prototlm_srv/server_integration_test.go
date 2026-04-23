@@ -1322,3 +1322,51 @@ func TestPublishTelemetryQueryWithUnits(t *testing.T) {
 	cancel()
 	wg.Wait()
 }
+
+func TestPublishTelemetryListBySchemaTarget(t *testing.T) {
+	// Arrange
+	ctx, cancel := context.WithCancel(context.Background())
+	id := "device_list_tlm_sch"
+	s := swarm.NewSwarm(mSdk.Bus)
+	if _, err := s.AddDevice(&mir_apiv1.NewDevice{
+		Meta: &mir_apiv1.Meta{
+			Name:      id,
+			Namespace: "testing_core",
+			Labels:    map[string]string{"testing": "tlm"},
+		},
+		Spec: &mir_apiv1.DeviceSpec{DeviceId: id},
+	}).WithSchema(prototlm_testv1.File_prototlm_test_v1_telemetry_proto).Incubate(); err != nil {
+		t.Error(err)
+	}
+
+	// Act
+	wgs, err := s.Deploy(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(2 * time.Second)
+
+	resp, err := tlm_client.PublishTelemetryListRequest(mSdk.Bus, &mir_apiv1.ListTelemetryRequest{
+		Targets:       &mir_apiv1.DeviceTarget{Schemas: []string{"prototlm_test.v1"}},
+		RefreshSchema: true,
+	})
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert: device must appear in schema-filtered results
+	found := false
+	for _, dt := range resp.GetOk().DevicesTelemetry {
+		if slices.ContainsFunc(dt.Ids, func(d *mir_apiv1.DeviceIdPair) bool {
+			return d.DeviceId == id
+		}) {
+			found = true
+		}
+	}
+	assert.Equal(t, true, found)
+
+	cancel()
+	for _, wg := range wgs {
+		wg.Wait()
+	}
+}

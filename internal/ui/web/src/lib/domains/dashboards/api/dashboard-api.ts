@@ -5,6 +5,7 @@ export interface DeviceTargetConfig {
 	names?: string[];
 	namespaces?: string[];
 	labels?: Record<string, string>;
+	schemas?: string[];
 }
 
 export interface TelemetryWidgetConfig {

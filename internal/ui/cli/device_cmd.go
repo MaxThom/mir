@@ -78,6 +78,7 @@ type Target struct {
 	Names      []string          `help:"List of device to fetch by names"`
 	Namespaces []string          `help:"List of device to fetch by namespaces"`
 	Labels     map[string]string `help:"Set of labels to filter devices"`
+	Schemas    []string          `help:"Schema package names to filter devices (AND logic)"`
 }
 
 func (d *DeviceCmd) Run(log zerolog.Logger, m *mir.Mir) error {
@@ -117,6 +118,7 @@ func (d *DeviceListCmd) Run(log zerolog.Logger, m *mir.Mir) error {
 			Names:      d.Names,
 			Namespaces: d.Namespaces,
 			Labels:     d.Labels,
+			Schemas:    d.Schemas,
 		}, !d.ExcludeEvents)
 	if err != nil {
 		return fmt.Errorf("error publishing list device request: %w", err)
@@ -250,6 +252,7 @@ func (d *DeviceUpdateCmd) Validate() error {
 		len(d.Target.Names) == 0 &&
 		len(d.Target.Namespaces) == 0 &&
 		len(d.Target.Labels) == 0 &&
+		len(d.Target.Schemas) == 0 &&
 		d.NameNs == "" {
 		err.Details = append(err.Details, "Must specify targets")
 	}
@@ -296,6 +299,7 @@ func (d *DeviceUpdateCmd) Run(log zerolog.Logger, m *mir.Mir) error {
 		Names:      d.Target.Names,
 		Namespaces: d.Target.Namespaces,
 		Labels:     d.Target.Labels,
+		Schemas:    d.Target.Schemas,
 	}
 	dev := mir_v1.NewDevice().WithMeta(mir_v1.Meta{
 		Labels:      d.Labels,
@@ -338,6 +342,7 @@ func (d *DeviceDeleteCmd) Validate() error {
 		len(d.Target.Names) == 0 &&
 		len(d.Target.Namespaces) == 0 &&
 		len(d.Target.Labels) == 0 &&
+		len(d.Target.Schemas) == 0 &&
 		d.NameNs == "" {
 		err.Details = append(err.Details, "Must specify targets")
 	}
@@ -362,6 +367,7 @@ func (d *DeviceDeleteCmd) Run(log zerolog.Logger, m *mir.Mir) error {
 		Names:      d.Target.Names,
 		Namespaces: d.Target.Namespaces,
 		Labels:     d.Target.Labels,
+		Schemas:    d.Target.Schemas,
 	})
 	if err != nil {
 		return fmt.Errorf("error publishing device delete request: %w", err)

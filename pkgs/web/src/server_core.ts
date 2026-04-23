@@ -144,6 +144,7 @@ export class UpdateDevice {
       names: [],
       namespaces: [],
       labels: {},
+      schemas: [],
     };
 
     const req = create(UpdateDeviceRequestSchema, {

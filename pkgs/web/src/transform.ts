@@ -114,6 +114,7 @@ export function deviceTargetFromProto(
     names: t?.names ?? [],
     namespaces: t?.namespaces ?? [],
     labels: t?.labels ?? {},
+    schemas: t?.schemas ?? [],
   });
 }
 
@@ -123,6 +124,7 @@ export function deviceTargetToProto(t: DeviceTarget): PDeviceTarget {
     names: t.names,
     namespaces: t.namespaces,
     labels: t.labels,
+    schemas: t.schemas,
   });
 }
 

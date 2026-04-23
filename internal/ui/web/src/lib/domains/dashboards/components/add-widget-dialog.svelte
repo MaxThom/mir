@@ -270,7 +270,10 @@
 						const labelMatch =
 							!target.labels ||
 							Object.entries(target.labels).every(([k, v]) => d.meta?.labels?.[k] === v);
-						return nsMatch && labelMatch;
+						const pkgNames = d.status?.schema?.packageNames ?? [];
+						const schemaMatch =
+							!target.schemas?.length || target.schemas.every((s) => pkgNames.includes(s));
+						return nsMatch && labelMatch && schemaMatch;
 					})
 					.map((d) => d.spec?.deviceId)
 					.filter((id): id is string => Boolean(id));
@@ -311,7 +314,10 @@
 						const labelMatch =
 							!target.labels ||
 							Object.entries(target.labels).every(([k, v]) => d.meta?.labels?.[k] === v);
-						return nsMatch && labelMatch;
+						const pkgNames = d.status?.schema?.packageNames ?? [];
+						const schemaMatch =
+							!target.schemas?.length || target.schemas.every((s) => pkgNames.includes(s));
+						return nsMatch && labelMatch && schemaMatch;
 					})
 					.map((d) => d.spec?.deviceId)
 					.filter((id): id is string => Boolean(id));
@@ -342,7 +348,10 @@
 						const labelMatch =
 							!target.labels ||
 							Object.entries(target.labels).every(([k, v]) => d.meta?.labels?.[k] === v);
-						return nsMatch && labelMatch;
+						const pkgNames = d.status?.schema?.packageNames ?? [];
+						const schemaMatch =
+							!target.schemas?.length || target.schemas.every((s) => pkgNames.includes(s));
+						return nsMatch && labelMatch && schemaMatch;
 					})
 					.map((d) => d.spec?.deviceId)
 					.filter((id): id is string => Boolean(id));
