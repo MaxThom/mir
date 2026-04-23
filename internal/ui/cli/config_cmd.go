@@ -63,6 +63,7 @@ func (d *ConfigListCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) error
 			Names:      d.Target.Names,
 			Namespaces: d.Target.Namespaces,
 			Labels:     d.Target.Labels,
+			Schemas:    d.Target.Schemas,
 		},
 		FilterLabels:  d.FilterLabels,
 		RefreshSchema: d.RefreshSchema,
@@ -163,6 +164,7 @@ func (d *ConfigSendCmd) Validate() error {
 		len(d.Target.Names) == 0 &&
 		len(d.Target.Namespaces) == 0 &&
 		len(d.Target.Labels) == 0 &&
+		len(d.Target.Schemas) == 0 &&
 		d.NameNs == "" {
 		err.Details = append(err.Details, "Must specify targets")
 	}
@@ -206,6 +208,7 @@ func (d *ConfigSendCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) error
 			Names:      d.Target.Names,
 			Namespaces: d.Target.Namespaces,
 			Labels:     d.Target.Labels,
+			Schemas:    d.Target.Schemas,
 		},
 		Name:            d.Config,
 		Payload:         []byte(d.Payload),

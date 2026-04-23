@@ -3048,3 +3048,52 @@ func TestDeviceDeleteEvent(t *testing.T) {
 func strRef(s string) *string {
 	return &s
 }
+
+func TestPublishDeviceListBySchemaTarget(t *testing.T) {
+	// Arrange
+	ctx, cancel := context.WithCancel(context.Background())
+	id := "device_list_schema"
+	s := swarm.NewSwarm(mSdk.Bus)
+	if _, err := s.AddDevice(&mir_apiv1.NewDevice{
+		Meta: &mir_apiv1.Meta{
+			Name:      id,
+			Namespace: "testing_core",
+			Labels:    map[string]string{"testing": "core"},
+		},
+		Spec: &mir_apiv1.DeviceSpec{DeviceId: id},
+	}).WithSchema(core_testv1.File_core_test_v1_core_proto).Incubate(); err != nil {
+		t.Error(err)
+	}
+
+	// Act
+	wgs, err := s.Deploy(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(2 * time.Second)
+
+	respBySchema, err := core_client.PublishDeviceListRequest(mSdk.Bus, &mir_apiv1.ListDeviceRequest{
+		Targets: &mir_apiv1.DeviceTarget{Schemas: []string{"core_test.v1"}},
+	})
+	if err != nil {
+		t.Error(err)
+	}
+	respByUnknown, err := core_client.PublishDeviceListRequest(mSdk.Bus, &mir_apiv1.ListDeviceRequest{
+		Targets: &mir_apiv1.DeviceTarget{Schemas: []string{"unknown.schema.v99"}},
+	})
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Assert
+	found := slices.ContainsFunc(respBySchema.GetOk().Devices, func(d *mir_apiv1.Device) bool {
+		return d.Spec.DeviceId == id
+	})
+	assert.Equal(t, true, found)
+	assert.Equal(t, 0, len(respByUnknown.GetOk().Devices))
+
+	cancel()
+	for _, wg := range wgs {
+		wg.Wait()
+	}
+}

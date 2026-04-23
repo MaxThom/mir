@@ -135,6 +135,7 @@ export class DeviceTarget {
   names: string[] = [];
   namespaces: string[] = [];
   labels: Record<string, string> = {};
+  schemas: string[] = [];
 
   constructor(data?: Partial<DeviceTarget>) {
     if (data) Object.assign(this, data);

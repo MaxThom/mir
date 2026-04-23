@@ -1440,6 +1440,56 @@ func TestPublishCmdJsonNameWithCurlyRequest(t *testing.T) {
 	wg.Wait()
 }
 
+func TestPublishCmdListBySchemaTarget(t *testing.T) {
+	// Arrange
+	ctx, cancel := context.WithCancel(context.Background())
+	id := "device_list_cmd_sch"
+	s := swarm.NewSwarm(mSdk.Bus)
+	if _, err := s.AddDevice(&mir_apiv1.NewDevice{
+		Meta: &mir_apiv1.Meta{
+			Name:      id,
+			Namespace: "testing_cmd",
+			Labels:    map[string]string{"testing": "cmd"},
+		},
+		Spec: &mir_apiv1.DeviceSpec{DeviceId: id},
+	}).WithSchema(protocmd_testv1.File_protocmd_test_v1_command_proto).Incubate(); err != nil {
+		t.Error(err)
+	}
+
+	// Act
+	wgs, err := s.Deploy(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(2 * time.Second)
+
+	resp, err := cmd_client.PublishListCommandsRequest(mSdk.Bus, &mir_apiv1.SendListCommandsRequest{
+		Targets:       &mir_apiv1.DeviceTarget{Schemas: []string{"protocmd_test.v1"}},
+		RefreshSchema: true,
+	})
+	if err != nil {
+		t.Error(err)
+	} else if resp.GetError() != "" {
+		t.Error(resp.GetError())
+	}
+
+	// Assert: device must appear in schema-filtered results
+	found := false
+	for _, dc := range resp.GetOk().DevicesCommands {
+		for _, devId := range dc.Ids {
+			if devId.DeviceId == id {
+				found = true
+			}
+		}
+	}
+	assert.Equal(t, true, found)
+
+	cancel()
+	for _, wg := range wgs {
+		wg.Wait()
+	}
+}
+
 func TestCommandEvent(t *testing.T) {
 	resp := mir_apiv1.SendCommandResponse_CommandResponse{
 		DeviceId: "0xTest",

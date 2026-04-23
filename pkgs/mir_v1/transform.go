@@ -504,6 +504,7 @@ func ProtoDeviceTargetToMirDeviceTarget(t *mir_apiv1.DeviceTarget) DeviceTarget 
 		Namespaces: t.Namespaces,
 		Labels:     t.Labels,
 		Ids:        t.Ids,
+		Schemas:    t.Schemas,
 	}
 }
 
@@ -513,6 +514,7 @@ func MirDeviceTargetToProtoDeviceTarget(t DeviceTarget) *mir_apiv1.DeviceTarget 
 		Namespaces: t.Namespaces,
 		Labels:     t.Labels,
 		Ids:        t.Ids,
+		Schemas:    t.Schemas,
 	}
 }
 

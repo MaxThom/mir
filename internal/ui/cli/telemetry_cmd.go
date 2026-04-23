@@ -56,6 +56,7 @@ func (d *TelemetryListCmd) Validate() error {
 		len(d.Target.Names) == 0 &&
 		len(d.Target.Namespaces) == 0 &&
 		len(d.Target.Labels) == 0 &&
+		len(d.Target.Schemas) == 0 &&
 		d.NameNs == "" {
 		err.Details = append(err.Details, "Must specify targets")
 	}
@@ -79,6 +80,7 @@ func (d *TelemetryListCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) er
 			Names:      d.Target.Names,
 			Namespaces: d.Target.Namespaces,
 			Labels:     d.Target.Labels,
+			Schemas:    d.Target.Schemas,
 		},
 		Measurements:  d.Measurements,
 		Filters:       d.Filters,
@@ -177,6 +179,7 @@ func (d *TelemetryQueryCmd) Validate() error {
 		len(d.Target.Names) == 0 &&
 		len(d.Target.Namespaces) == 0 &&
 		len(d.Target.Labels) == 0 &&
+		len(d.Target.Schemas) == 0 &&
 		d.NameNs == "" {
 		err.Details = append(err.Details, "Must specify targets")
 	}
@@ -225,6 +228,7 @@ func (d *TelemetryQueryCmd) Run(log zerolog.Logger, m *mir.Mir, cfg ui.Config) e
 			Names:      d.Target.Names,
 			Namespaces: d.Target.Namespaces,
 			Labels:     d.Target.Labels,
+			Schemas:    d.Target.Schemas,
 		},
 		Measurement: d.Measurement,
 		Fields:      d.Fields,

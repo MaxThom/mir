@@ -95,17 +95,19 @@ type DeviceTarget struct {
 	Names      []string
 	Namespaces []string
 	Labels     map[string]string
+	Schemas    []string
 }
 
 func (o DeviceTarget) HasNoTarget() bool {
 	return len(o.Names) == 0 &&
 		len(o.Namespaces) == 0 &&
 		len(o.Labels) == 0 &&
-		len(o.Ids) == 0
+		len(o.Ids) == 0 &&
+		len(o.Schemas) == 0
 }
 
 func (o DeviceTarget) HasOnlyIdsTarget() bool {
-	if len(o.Names) > 0 || len(o.Namespaces) > 0 || len(o.Labels) > 0 {
+	if len(o.Names) > 0 || len(o.Namespaces) > 0 || len(o.Labels) > 0 || len(o.Schemas) > 0 {
 		return false
 	}
 	if len(o.Ids) == 0 {

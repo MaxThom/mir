@@ -982,6 +982,7 @@ type DeviceTarget struct {
 	Namespaces    []string               `protobuf:"bytes,2,rep,name=namespaces,proto3" json:"namespaces,omitempty"`                                                                   // namespace of the object
 	Labels        map[string]string      `protobuf:"bytes,3,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // Labels are used to uniquely identify the object
 	Ids           []string               `protobuf:"bytes,4,rep,name=ids,proto3" json:"ids,omitempty"`                                                                                 // ids of the devices
+	Schemas       []string               `protobuf:"bytes,5,rep,name=schemas,proto3" json:"schemas,omitempty"`                                                                         // schema package names — device must have ALL (AND logic)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1040,6 +1041,13 @@ func (x *DeviceTarget) GetLabels() map[string]string {
 func (x *DeviceTarget) GetIds() []string {
 	if x != nil {
 		return x.Ids
+	}
+	return nil
+}
+
+func (x *DeviceTarget) GetSchemas() []string {
+	if x != nil {
+		return x.Schemas
 	}
 	return nil
 }
@@ -2185,14 +2193,15 @@ const file_mir_api_v1_core_proto_rawDesc = "" +
 	"\x02ok\x18\x01 \x01(\v2\x1f.mir_api.v1.DeviceListWithErrorH\x00R\x02ok\x12\x16\n" +
 	"\x05error\x18\x02 \x01(\tH\x00R\x05errorB\n" +
 	"\n" +
-	"\bresponse\"\xcf\x01\n" +
+	"\bresponse\"\xe9\x01\n" +
 	"\fDeviceTarget\x12\x14\n" +
 	"\x05names\x18\x01 \x03(\tR\x05names\x12\x1e\n" +
 	"\n" +
 	"namespaces\x18\x02 \x03(\tR\n" +
 	"namespaces\x12<\n" +
 	"\x06labels\x18\x03 \x03(\v2$.mir_api.v1.DeviceTarget.LabelsEntryR\x06labels\x12\x10\n" +
-	"\x03ids\x18\x04 \x03(\tR\x03ids\x1a9\n" +
+	"\x03ids\x18\x04 \x03(\tR\x03ids\x12\x18\n" +
+	"\aschemas\x18\x05 \x03(\tR\aschemas\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\":\n" +

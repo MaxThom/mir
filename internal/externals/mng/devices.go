@@ -701,6 +701,13 @@ func createDeviceWhereStatementWithTargets(t mir_v1.DeviceTarget) string {
 		}
 		cond = append(cond, "("+strings.Join(i, " AND ")+")")
 	}
+	if len(t.Schemas) > 0 {
+		var i []string
+		for _, s := range t.Schemas {
+			i = append(i, fmt.Sprintf("status.schema.packageNames CONTAINS \"%s\"", s))
+		}
+		cond = append(cond, "("+strings.Join(i, " AND ")+")")
+	}
 	q.WriteString(strings.Join(cond, " AND "))
 	ti := q.String()
 	return ti

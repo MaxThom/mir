@@ -14,14 +14,19 @@
 	type Pill =
 		| { kind: 'device'; id: string; name: string; color: string }
 		| { kind: 'ns'; value: string }
-		| { kind: 'label'; key: string; value: string };
+		| { kind: 'label'; key: string; value: string }
+		| { kind: 'schema'; value: string };
 
 	const allPills = $derived<Pill[]>([
-		...(!target.ids?.length && !(target.namespaces ?? []).length && !Object.keys(target.labels ?? {}).length
+		...(!target.ids?.length &&
+		!(target.namespaces ?? []).length &&
+		!Object.keys(target.labels ?? {}).length &&
+		!(target.schemas ?? []).length
 			? [{ kind: 'ns' as const, value: 'all' }]
 			: []),
 		...(target.namespaces ?? []).map((v): Pill => ({ kind: 'ns', value: v })),
 		...Object.entries(target.labels ?? {}).map(([k, v]): Pill => ({ kind: 'label', key: k, value: v })),
+		...(target.schemas ?? []).map((v): Pill => ({ kind: 'schema', value: v })),
 		...devices.map((d): Pill => ({ kind: 'device', id: d.id, name: d.name, color: d.color }))
 	]);
 
@@ -79,6 +84,7 @@
 	function pillLabel(pill: Pill): string {
 		if (pill.kind === 'device') return pill.name;
 		if (pill.kind === 'ns') return `ns:${pill.value}`;
+		if (pill.kind === 'schema') return `sch:${pill.value}`;
 		return `${pill.key}=${pill.value}`;
 	}
 </script>
