@@ -82,6 +82,7 @@
 
 	$effect(() => {
 		if (refreshTick > 0) {
+			if (!untrack(() => mirStore.mir)) return;
 			if (!isInRefresh) {
 				isInRefresh = true;
 				dashboardStore.refreshStart();
@@ -189,7 +190,10 @@
 
 	async function loadAndQuery() {
 		const mir = mirStore.mir;
-		if (!mir || !config.measurement) return;
+		if (!mir || !config.measurement) {
+			if (isInRefresh) { isInRefresh = false; dashboardStore.refreshDone(); }
+			return;
+		}
 
 		loadError = null;
 		try {
@@ -228,7 +232,10 @@
 
 	async function query() {
 		const mir = mirStore.mir;
-		if (!mir || !config.measurement || deviceInfos.length === 0) return;
+		if (!mir || !config.measurement || deviceInfos.length === 0) {
+			if (isInRefresh) { isInRefresh = false; dashboardStore.refreshDone(); }
+			return;
+		}
 
 		const myGen = ++generation;
 		queryError = null;

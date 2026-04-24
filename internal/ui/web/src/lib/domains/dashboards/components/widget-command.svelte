@@ -137,6 +137,7 @@
 			activeDescriptor = null;
 			activeDevices = [];
 			loadError = null;
+			isLoading = false;
 		}
 	});
 
