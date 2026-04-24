@@ -44,6 +44,7 @@
 	let isLoading = $state(false);
 	let loadError = $state<string | null>(null);
 	let hasLoaded = $state(false);
+	let emptyMessage = $state<string | null>(null);
 
 	let activeDescriptor = $state<ConfigDescriptor | null>(null);
 	let activeDevices = $state<{ id: string; name: string; namespace: string }[]>([]);
@@ -196,6 +197,7 @@
 
 		if (!hasLoaded) isLoading = true;
 		loadError = null;
+		emptyMessage = null;
 
 		try {
 			const target = new DeviceTarget({
@@ -204,6 +206,12 @@
 				labels: config.target.labels
 			});
 			const groups: ConfigGroup[] = await mir.client().listConfigs().request(target);
+
+			if (groups.length === 0) {
+				emptyMessage = 'No devices found for this target.';
+				hasLoaded = true;
+				return;
+			}
 
 			let found: { group: ConfigGroup; desc: ConfigDescriptor } | null = null;
 			for (const g of groups) {
@@ -215,7 +223,8 @@
 			}
 
 			if (!found) {
-				loadError = `Config "${config.selectedConfig}" not found on target devices`;
+				emptyMessage = 'Configuration not found for this target.';
+				hasLoaded = true;
 				return;
 			}
 
@@ -261,7 +270,13 @@
 
 			hasLoaded = true;
 		} catch (err) {
-			loadError = err instanceof Error ? err.message : 'Failed to load configs';
+			const msg = err instanceof Error ? err.message : 'Failed to load configs';
+			if (msg === 'no device found with current targets criteria') {
+				emptyMessage = 'No devices found for this target.';
+				hasLoaded = true;
+			} else {
+				loadError = msg;
+			}
 		} finally {
 			isLoading = false;
 		}
@@ -446,6 +461,7 @@
 		? 'fixed inset-0 z-50 bg-background'
 		: 'h-full'} flex flex-col overflow-hidden"
 >
+	<div class="mt-2.5 border-b"></div>
 	{#if isLoading}
 		<div class="flex flex-1 items-center justify-center">
 			<span class="text-xs text-muted-foreground">Loading…</span>
@@ -453,9 +469,9 @@
 	{:else if loadError}
 		<p class="px-4 py-2 text-xs text-destructive">{loadError}</p>
 	{:else if !config.selectedConfig}
-		<p class="p-4 text-xs text-muted-foreground"
-			>No configuration selected. Edit the widget to choose one.</p
-		>
+		<p class="p-4 text-xs text-muted-foreground">No configuration selected.</p>
+	{:else if emptyMessage}
+		<p class="p-4 text-xs text-muted-foreground">{emptyMessage}</p>
 	{:else if activeDescriptor}
 		<!-- Config editor -->
 		<div class="flex min-h-16 flex-1 overflow-hidden">

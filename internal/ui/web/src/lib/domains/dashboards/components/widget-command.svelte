@@ -42,6 +42,7 @@
 	let isLoading = $state(false);
 	let loadError = $state<string | null>(null);
 	let hasLoaded = $state(false);
+	let emptyMessage = $state<string | null>(null);
 
 	let activeDescriptor = $state<CommandDescriptor | null>(null);
 	let activeDevices = $state<{ id: string; name: string; namespace: string }[]>([]);
@@ -191,6 +192,7 @@
 
 		isLoading = true;
 		loadError = null;
+		emptyMessage = null;
 		responses = [];
 		hasResponses = false;
 
@@ -201,6 +203,12 @@
 				labels: config.target.labels
 			});
 			const groups: CommandGroup[] = await mir.client().listCommands().request(target);
+
+			if (groups.length === 0) {
+				emptyMessage = 'No devices found for this target.';
+				hasLoaded = true;
+				return;
+			}
 
 			// Find the group + descriptor for the configured command
 			let found: { group: CommandGroup; desc: CommandDescriptor } | null = null;
@@ -213,7 +221,8 @@
 			}
 
 			if (!found) {
-				loadError = `Command "${config.selectedCommand}" not found on target devices`;
+				emptyMessage = 'Command not found for this target.';
+				hasLoaded = true;
 				return;
 			}
 
@@ -249,7 +258,13 @@
 
 			hasLoaded = true;
 		} catch (err) {
-			loadError = err instanceof Error ? err.message : 'Failed to load commands';
+			const msg = err instanceof Error ? err.message : 'Failed to load commands';
+			if (msg === 'no device found with current targets criteria') {
+				emptyMessage = 'No devices found for this target.';
+				hasLoaded = true;
+			} else {
+				loadError = msg;
+			}
 		} finally {
 			isLoading = false;
 		}
@@ -396,6 +411,7 @@
 		? 'fixed inset-0 z-50 bg-background'
 		: 'h-full'} flex flex-col overflow-hidden"
 >
+	<div class="mt-2.5 border-b"></div>
 	{#if isLoading}
 		<div class="flex flex-1 items-center justify-center">
 			<span class="text-xs text-muted-foreground">Loading…</span>
@@ -403,7 +419,9 @@
 	{:else if loadError}
 		<p class="px-4 py-2 text-xs text-destructive">{loadError}</p>
 	{:else if !config.selectedCommand}
-		<p class="p-4 text-xs text-muted-foreground">No command selected. Edit the widget to choose one.</p>
+		<p class="p-4 text-xs text-muted-foreground">No command selected.</p>
+	{:else if emptyMessage}
+		<p class="p-4 text-xs text-muted-foreground">{emptyMessage}</p>
 	{:else if activeDescriptor}
 		<!-- JSON editor -->
 		<div class="flex min-h-16 flex-1 overflow-hidden">
