@@ -110,6 +110,7 @@
 		} else {
 			devices = [];
 			hasLoaded = false;
+			isLoading = false;
 		}
 	});
 

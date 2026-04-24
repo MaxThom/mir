@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { mirStore } from '$lib/domains/mir/stores/mir.svelte';
 	import { EventTarget, DateFilter, MirEvent } from '@mir/sdk';
 	import type { EventsWidgetConfig } from '../api/dashboard-api';
@@ -63,6 +64,7 @@
 
 	$effect(() => {
 		if (refreshTick > 0) {
+			if (!untrack(() => mirStore.mir)) return;
 			if (!isInRefresh) {
 				isInRefresh = true;
 				dashboardStore.refreshStart();
@@ -79,6 +81,7 @@
 		} else {
 			events = [];
 			hasLoaded = false;
+			isLoading = false;
 		}
 	});
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { mirStore } from '$lib/domains/mir/stores/mir.svelte';
 	import { DeviceTarget } from '@mir/sdk';
 	import type { Device } from '@mir/sdk';
@@ -72,6 +73,7 @@
 
 	$effect(() => {
 		if (refreshTick > 0) {
+			if (!untrack(() => mirStore.mir)) return;
 			if (!isInRefresh) {
 				isInRefresh = true;
 				dashboardStore.refreshStart();
@@ -88,6 +90,7 @@
 		} else {
 			devices = [];
 			hasLoaded = false;
+			isLoading = false;
 		}
 	});
 </script>
