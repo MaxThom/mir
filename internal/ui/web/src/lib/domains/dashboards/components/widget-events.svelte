@@ -158,9 +158,7 @@
 	{:else if error}
 		<div class="flex flex-1 items-center justify-center text-sm text-destructive">{error}</div>
 	{:else if sorted.length === 0}
-		<div class="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-			No events
-		</div>
+		<p class="p-4 text-xs text-muted-foreground">No events found for this target.</p>
 	{:else}
 		<div class="min-h-0 flex-1 overflow-y-auto">
 			<table class="w-full table-fixed text-xs">

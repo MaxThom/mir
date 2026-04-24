@@ -13,9 +13,9 @@
 - [ ] security for Cockpit
   - [ ] k8s websocket mTLS port to be configured
 - [ ] widget
-  - [ ] no device found is different for different widgets
+  - [x] no device found is different for different widgets
   - [ ] refresh seem stuck
-  - [ ] device target with schema
+  - [x] device target with schema
 - [x] unit
   - [x] add new meta field tag
   - [x] update tlm server

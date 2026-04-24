@@ -130,9 +130,9 @@
 			});
 			const groups = await mir.client().listTelemetry().request(target);
 			const group = groups.find((g) => g.descriptors.some((d) => d.name === config.measurement));
-			deviceInfos = group?.ids ?? (config.target.ids ?? []).map((id) => ({ id, name: id }));
+			deviceInfos = group?.ids ?? [];
 		} catch {
-			deviceInfos = (config.target.ids ?? []).map((id) => ({ id, name: id }));
+			deviceInfos = [];
 		}
 		onDevicesReady?.(
 			deviceInfos.map((dev, devIdx) => ({
@@ -247,7 +247,7 @@
 	{#if loadError}
 		<p class="px-4 py-2 text-xs text-destructive">{loadError}</p>
 	{:else if deviceInfos.length === 0 && hasLoaded}
-		<p class="px-4 py-2 text-xs text-muted-foreground">No devices found.</p>
+		<p class="p-4 text-xs text-muted-foreground">No devices found for this target.</p>
 	{:else}
 		<!-- Device tile grid -->
 		<div class="min-h-0 flex-1 overflow-auto p-3">
