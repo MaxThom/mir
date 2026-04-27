@@ -57,6 +57,13 @@ func (s *CockpitServer) RegisterRoutes(mux *http.ServeMux) {
 	apiHandler = corsMiddleware(s.opts.AllowedOrigins)(apiHandler)
 	mux.Handle("/api/v1/contexts", apiHandler)
 
+	// Credentials endpoint - POST with optional password, returns .creds file content
+	credsHandler := metricsMiddleware(http.HandlerFunc(s.credentialsHandler))
+	credsHandler = loggingMiddleware(s.log)(credsHandler)
+	credsHandler = securityHeadersMiddleware(credsHandler)
+	credsHandler = corsMiddleware(s.opts.AllowedOrigins)(credsHandler)
+	mux.Handle("/api/v1/credentials", credsHandler)
+
 	// GitHub releases endpoint (only if owner is configured)
 	if s.opts.GitHub.Owner != "" {
 		s.registerDashboardRoute(mux, "/api/v1/releases", s.releasesHandler)
