@@ -46,11 +46,13 @@ func NewDefaultConfig() Config {
 type Context struct {
 	Name        string `yaml:"name"`
 	Target      string `yaml:"target"`
+	WebTarget   string `yaml:"webTarget"`
 	Grafana     string `yaml:"grafana"`
 	Credentials string `yaml:"credentials"`
 	RootCA      string `yaml:"rootCA"`
 	TlsCert     string `yaml:"tlsCert"`
 	TlsKey      string `yaml:"tlsKey"`
+	Password    string `yaml:"password"`
 }
 
 func (c Config) GetCurrentContext() (Context, bool) {
