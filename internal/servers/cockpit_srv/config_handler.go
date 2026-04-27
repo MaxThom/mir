@@ -14,10 +14,11 @@ type ConfigResponse struct {
 // ContextResponse represents a sanitized context without sensitive fields
 // Excludes: Credentials, RootCA, TlsCert, TlsKey, Password
 type ContextResponse struct {
-	Name    string `json:"name"`
-	Target  string `json:"target"`
-	Grafana string `json:"grafana"`
-	Secured bool   `json:"secured"`
+	Name      string `json:"name"`
+	Target    string `json:"target"`
+	WebTarget string `json:"webTarget,omitempty"`
+	Grafana   string `json:"grafana"`
+	Secured   bool   `json:"secured"`
 }
 
 // configHandler handles GET /api/config requests
@@ -38,10 +39,11 @@ func (s *CockpitServer) configHandler(w http.ResponseWriter, r *http.Request) {
 	// Map contexts to response DTOs, filtering out sensitive fields
 	for i, ctx := range s.opts.Config.Contexts {
 		response.Contexts[i] = ContextResponse{
-			Name:    ctx.Name,
-			Target:  ctx.Target,
-			Grafana: ctx.Grafana,
-			Secured: ctx.Password != "",
+			Name:      ctx.Name,
+			Target:    ctx.Target,
+			WebTarget: ctx.WebTarget,
+			Grafana:   ctx.Grafana,
+			Secured:   ctx.Password != "",
 		}
 	}
 

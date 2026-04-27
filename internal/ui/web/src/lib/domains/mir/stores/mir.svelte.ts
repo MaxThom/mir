@@ -1,10 +1,16 @@
-import { Mir } from '@mir/sdk';
+import { Mir, credsAuthenticator } from '@mir/sdk';
 import type { Context } from '../../contexts/types/types';
+import { contextService } from '../../contexts/services/contexts';
 import { activityStore } from '$lib/domains/activity/stores/activity.svelte';
 
-// Converts "nats://host:port" → "ws://host:9222"
-function toWsUrl(natsTarget: string): string {
-	return natsTarget.replace(/^nats:\/\//, 'ws://').replace(/:\d+$/, ':9222');
+// Returns the WebSocket URL for a context.
+// Uses ctx.webTarget if set; otherwise derives ws[s]://host:9222 from ctx.target.
+// Uses wss:// when the page is served over HTTPS.
+function toWsUrl(ctx: Context): string {
+	if (ctx.webTarget) return ctx.webTarget;
+	const scheme =
+		typeof window !== 'undefined' && window.location.protocol === 'https:' ? 'wss' : 'ws';
+	return ctx.target.replace(/^nats:\/\//, `${scheme}://`).replace(/:\d+$/, ':9222');
 }
 
 class MirStore {
@@ -18,7 +24,7 @@ class MirStore {
 		return this.mir !== null;
 	}
 
-	async connect(ctx: Context) {
+	async connect(ctx: Context, password?: string | null) {
 		const id = ++this.connectionId;
 
 		if (this.mir) {
@@ -30,8 +36,18 @@ class MirStore {
 		this.error = null;
 
 		try {
-			const wsUrl = toWsUrl(ctx.target);
-			const mir = await Mir.connect('cockpit', wsUrl, { maxReconnectAttempts: 0 });
+			const wsUrl = toWsUrl(ctx);
+
+			const creds = await contextService.getCredentials(ctx.name, password ?? null);
+
+			const opts = creds
+				? {
+						maxReconnectAttempts: 0,
+						authenticator: credsAuthenticator(new TextEncoder().encode(creds))
+					}
+				: { maxReconnectAttempts: 0 };
+
+			const mir = await Mir.connect('cockpit', wsUrl, opts);
 
 			if (id !== this.connectionId) {
 				await mir.disconnect();

@@ -24,3 +24,7 @@ export type ContextsResponse = {
 	currentContext: string;
 	contexts: import('$lib/domains/contexts/types/types').Context[];
 };
+
+export type CredentialsResponse = {
+	creds: string;
+};

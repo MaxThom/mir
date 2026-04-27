@@ -15,5 +15,7 @@ export * from "./server_cfg";
 export * from "./server_tlm";
 export * from "./client";
 
+export { credsAuthenticator } from "@nats-io/nats-core";
+
 // Package version
 export const VERSION = "0.1.0";
