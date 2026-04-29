@@ -16,6 +16,7 @@
   - [ ] Setup local with creds to test
 - [ ] Cockpit
   - [ ] dashboard per context
+  - [ ] mir serve, how it load context list
   
 ### Bug
 

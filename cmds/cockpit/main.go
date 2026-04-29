@@ -48,6 +48,8 @@ type (
 	HttpServer struct {
 		Port           int
 		AllowedOrigins []string `yaml:"allowedOrigins"` // CORS allowed origins (empty = allow all)
+		TlsCert        string   `yaml:"tlsCert"`        // Path to TLS certificate file (enables HTTPS when set with TlsKey)
+		TlsKey         string   `yaml:"tlsKey"`         // Path to TLS private key file
 	}
 
 	DatabaseServer struct {
@@ -222,10 +224,17 @@ func run(
 	// Register cockpit routes on the mux
 	cockpitSrv.RegisterRoutes(mux)
 
-	// Create HTTP server with HTTP/2 support
+	// Create HTTP server — TLS enables HTTPS + native HTTP/2 (ALPN); plain uses h2c.
+	tlsEnabled := cfg.HttpServer.TlsCert != "" && cfg.HttpServer.TlsKey != ""
+	var handler http.Handler
+	if tlsEnabled {
+		handler = mux
+	} else {
+		handler = h2c.NewHandler(mux, &http2.Server{})
+	}
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.HttpServer.Port),
-		Handler: h2c.NewHandler(mux, &http2.Server{}),
+		Handler: handler,
 	}
 
 	// Start HTTP server in background
@@ -234,17 +243,27 @@ func run(
 	go func() {
 		defer wg.Done()
 		health.SetComponentReady(health.ComponentHttp)
-		log.Info().Int("port", cfg.HttpServer.Port).Msg("starting cockpit web server")
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Info().Int("port", cfg.HttpServer.Port).Bool("tls", tlsEnabled).Msg("starting cockpit web server")
+		var serveErr error
+		if tlsEnabled {
+			serveErr = server.ListenAndServeTLS(cfg.HttpServer.TlsCert, cfg.HttpServer.TlsKey)
+		} else {
+			serveErr = server.ListenAndServe()
+		}
+		if serveErr != nil && serveErr != http.ErrServerClosed {
 			health.SetComponentUnready(health.ComponentHttp)
-			log.Error().Err(err).Msg("http server error")
+			log.Error().Err(serveErr).Msg("http server error")
 			health.SetUnready()
 			mir_signals.Shutdown()
 		}
 		log.Debug().Msg("http server shutdown")
 	}()
 
-	log.Info().Msg(fmt.Sprintf("%s initialized - navigate to http://localhost:%d", AppName, cfg.HttpServer.Port))
+	scheme := "http"
+	if tlsEnabled {
+		scheme = "https"
+	}
+	log.Info().Msg(fmt.Sprintf("%s initialized - navigate to %s://localhost:%d", AppName, scheme, cfg.HttpServer.Port))
 	health.SetReady()
 
 	// Wait for shutdown signal

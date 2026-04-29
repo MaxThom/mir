@@ -75,6 +75,8 @@ type (
 		TLSKey      string `help:"Mir Private Key for TLS connection" default:"" yaml:"tlsKey"`
 		LogLevel    string `help:"Mir loglevel for each service" default:"info" yaml:"logLevel"`
 		HttpPort    int    `help:"Mir http port for api" default:"3015" yaml:"httpPort"`
+		HttpTlsCert string `help:"Path to TLS certificate for HTTP server (enables HTTPS)" default:"" yaml:"httpTlsCert"`
+		HttpTlsKey  string `help:"Path to TLS private key for HTTP server" default:"" yaml:"httpTlsKey"`
 	}
 
 	SurrealCfg struct {
@@ -316,26 +318,44 @@ func (d *ServeCmd) run(
 	// Register cockpit routes on the shared mux
 	cockpitSrv.RegisterRoutes(mux)
 
-	// WebServer
+	// WebServer — TLS enables HTTPS + native HTTP/2 (ALPN); plain uses h2c.
+	tlsEnabled := cfg.Mir.HttpTlsCert != "" && cfg.Mir.HttpTlsKey != ""
+	var handler http.Handler
+	if tlsEnabled {
+		handler = mux
+	} else {
+		handler = h2c.NewHandler(mux, &http2.Server{})
+	}
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.Mir.HttpPort),
-		Handler: h2c.NewHandler(mux, &http2.Server{}),
+		Handler: handler,
 	}
 
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
-	log.Info().Msgf("serve Cockpit on :%d", cfg.Mir.HttpPort)
+	scheme := "http"
+	if tlsEnabled {
+		scheme = "https"
+	}
+	log.Info().Int("port", cfg.Mir.HttpPort).Bool("tls", tlsEnabled).Msg("starting cockpit web server")
 	go func() {
+		defer wg.Done()
 		health.SetComponentReady(health.ComponentHttp)
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		var serveErr error
+		if tlsEnabled {
+			serveErr = server.ListenAndServeTLS(cfg.Mir.HttpTlsCert, cfg.Mir.HttpTlsKey)
+		} else {
+			serveErr = server.ListenAndServe()
+		}
+		if serveErr != nil && serveErr != http.ErrServerClosed {
 			health.SetComponentUnready(health.ComponentHttp)
-			log.Err(err).Msg("")
+			log.Err(serveErr).Msg("")
 			health.SetUnready()
 			mir_signals.Shutdown()
 		}
 		log.Debug().Msg("http server shutdown")
-		wg.Done()
 	}()
+	log.Info().Msgf("serve Cockpit on %s://localhost:%d", scheme, cfg.Mir.HttpPort)
 
 	if err := coreSrv.Serve(); err != nil {
 		return err
