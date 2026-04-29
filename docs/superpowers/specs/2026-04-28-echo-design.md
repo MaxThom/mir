@@ -223,8 +223,44 @@ type Options struct {
 
 Echo is disabled if `NatsConn` is nil (e.g., when running Cockpit standalone without NATS).
 
+## CLI subcommands
+
+Two subcommands added under `mir tools` — small, high-value, no new concepts.
+
+### `mir tools echo config`
+
+Prints the ready-to-paste MCP client config for the current context. Reads `ui.Config` to fill in the URL and auth header:
+
+```
+$ mir tools echo config
+{
+  "mcpServers": {
+    "mir": {
+      "url": "http://my-mir-server/mcp/sse",
+      "headers": { "Authorization": "Bearer <password>" }
+    }
+  }
+}
+```
+
+Omits `headers` block if no password is configured on the current context.
+
+### `mir tools echo status`
+
+Checks if the Echo MCP endpoint is reachable and reports auth configuration:
+
+```
+$ mir tools echo status
+Echo MCP endpoint : http://my-mir-server/mcp/sse
+Auth              : password configured
+Status            : reachable ✓
+```
+
+Both commands live in `internal/ui/cli/tools_cmd.go` alongside existing tools subcommands.
+
 ## Out of scope (v1)
 
 - Built-in chat UI (future: embedded in Cockpit)
+- stdio MCP adapter (not needed — all current AI clients support HTTP/SSE url config)
 - Streaming telemetry subscriptions (future: MCP resources/subscriptions)
 - Vector search over docs (future: replace keyword search with embeddings)
