@@ -1,0 +1,69 @@
+<h2>Echo — Design: MCP Transport</h2>
+<p class="subtitle">Section 2 of 4 — HTTP/SSE wire protocol & library</p>
+
+<div class="section">
+  <h3>MCP wire format (HTTP/SSE)</h3>
+  <div style="display:flex;gap:1rem;flex-wrap:wrap">
+    <div style="flex:1;min-width:280px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem">
+      <div class="label">1. AI client connects</div>
+      <div style="font-family:monospace;font-size:0.8rem;margin-top:0.5rem;line-height:1.8">
+        GET /mcp/sse<br>
+        <span style="color:#7ec8e3">← event: endpoint</span><br>
+        <span style="color:#7ec8e3">← data: /mcp/message?sid=abc</span>
+      </div>
+    </div>
+    <div style="flex:1;min-width:280px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem">
+      <div class="label">2. AI calls a tool</div>
+      <div style="font-family:monospace;font-size:0.8rem;margin-top:0.5rem;line-height:1.8">
+        POST /mcp/message?sid=abc<br>
+        {"method":"tools/call",<br>
+        &nbsp;"params":{"name":"list_devices"}}<br>
+        <span style="color:#7ec8e3">← event: message</span><br>
+        <span style="color:#7ec8e3">← data: {"result": [...]}</span>
+      </div>
+    </div>
+    <div style="flex:1;min-width:280px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem">
+      <div class="label">3. AI lists tools</div>
+      <div style="font-family:monospace;font-size:0.8rem;margin-top:0.5rem;line-height:1.8">
+        POST /mcp/message?sid=abc<br>
+        {"method":"tools/list"}<br>
+        <span style="color:#7ec8e3">← event: message</span><br>
+        <span style="color:#7ec8e3">← data: {"tools": [...]}</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Library recommendation: <code>mark3labs/mcp-go</code></h3>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem">
+    <p style="margin:0 0 0.5rem 0">Handles JSON-RPC 2.0, session management, SSE plumbing, and tool schema generation automatically. We just register tools and their handlers.</p>
+    <div style="font-family:monospace;font-size:0.83rem;line-height:1.7;margin-top:0.75rem">
+      s := server.NewMCPServer("Echo", "1.0.0")<br>
+      <br>
+      s.AddTool(mcp.NewTool("list_devices",<br>
+      &nbsp;&nbsp;mcp.WithDescription("List Mir devices"),<br>
+      &nbsp;&nbsp;mcp.WithString("namespace", mcp.Optional()),<br>
+      ), e.handleListDevices)<br>
+      <br>
+      <span style="color:var(--accent)">// Plug into our mux:</span><br>
+      sseServer := server.NewSSEServer(s)<br>
+      mux.Handle("/mcp/", sseServer)
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>What Claude Desktop / Cursor config looks like</h3>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem;font-family:monospace;font-size:0.83rem;line-height:1.7">
+    {<br>
+    &nbsp;&nbsp;"mcpServers": {<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;"mir": {<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"url": "http://your-mir-server:8080/mcp/sse"<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;}<br>
+    &nbsp;&nbsp;}<br>
+    }
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:1rem">Does this transport design look right?</p>

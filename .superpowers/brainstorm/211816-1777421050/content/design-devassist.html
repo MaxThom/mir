@@ -1,0 +1,62 @@
+<h2>Echo — Design: Developer Assistant Knowledge Base</h2>
+<p class="subtitle">Section 4 of 4 — Embedded docs + live CLI introspection</p>
+
+<div class="section">
+  <h3>Embedded docs (<code>docs_embed.go</code>)</h3>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem;font-size:0.85rem;line-height:1.7">
+    <p style="margin:0 0 0.75rem 0">All <code>book/src/**/*.md</code> files are compiled into the binary at build time — same pattern as the web UI embed.</p>
+    <div style="font-family:monospace;font-size:0.78rem;line-height:1.8">
+      <span style="color:#888">//go:embed book/src</span><br>
+      var bookFS embed.FS<br>
+      <br>
+      <span style="color:#888">// query_docs walks bookFS, scores each .md file</span><br>
+      <span style="color:#888">// by keyword overlap with the query, returns top-3 sections</span>
+    </div>
+    <p style="margin:0.75rem 0 0 0;font-size:0.82rem;color:var(--muted,#888)">No external service, no LLM call — pure string matching. Fast, zero latency, works offline.</p>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Live CLI introspection</h3>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem;font-size:0.85rem;line-height:1.7">
+    <p style="margin:0 0 0.75rem 0"><code>explain_cli_command</code> and <code>list_cli_commands</code> exec into the <code>mir</code> binary at runtime:</p>
+    <div style="font-family:monospace;font-size:0.78rem;line-height:1.8">
+      <span style="color:#888">// explain_cli_command("dev cfg send")</span><br>
+      exec.Command("mir", "dev", "cfg", "send", "--help")<br>
+      <span style="color:#888">// → returns live --help output, always current</span><br>
+      <br>
+      <span style="color:#888">// list_cli_commands()</span><br>
+      exec.Command("mir", "--help")<br>
+      <span style="color:#888">// → returns command tree</span>
+    </div>
+    <p style="margin:0.75rem 0 0 0;font-size:0.82rem;color:var(--muted,#888)">Always reflects the actual installed version — no stale docs problem.</p>
+  </div>
+</div>
+
+<div class="section">
+  <h3>How it comes together for the AI</h3>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;font-size:0.83rem">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0.9rem">
+      <div class="label">Developer question</div>
+      <p style="margin:0.5rem 0 0 0"><em>"How do I send a config update to a device?"</em></p>
+      <p style="margin:0.5rem 0 0 0;color:var(--muted,#888)">AI calls <code>query_docs("send config device")</code> → gets the relevant book section → synthesizes an answer with code examples.</p>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0.9rem">
+      <div class="label">CLI question</div>
+      <p style="margin:0.5rem 0 0 0"><em>"What flags does mir dev cfg send take?"</em></p>
+      <p style="margin:0.5rem 0 0 0;color:var(--muted,#888)">AI calls <code>explain_cli_command("dev cfg send")</code> → gets live --help output → returns it directly.</p>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0.9rem">
+      <div class="label">Scaffold request</div>
+      <p style="margin:0.5rem 0 0 0"><em>"Bootstrap a new sensor device project"</em></p>
+      <p style="margin:0.5rem 0 0 0;color:var(--muted,#888)">AI calls <code>scaffold_device_project("my-sensor")</code> → runs <code>mir tools generate device-template my-sensor</code> → returns generated files.</p>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0.9rem">
+      <div class="label">Fleet operation</div>
+      <p style="margin:0.5rem 0 0 0"><em>"Reboot all devices in prod that are offline"</em></p>
+      <p style="margin:0.5rem 0 0 0;color:var(--muted,#888)">AI calls <code>list_devices("prod")</code>, filters by status, loops <code>send_command(..., "reboot", "")</code> for each.</p>
+    </div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:1.5rem">Does Section 4 look right?</p>

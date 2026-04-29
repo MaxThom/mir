@@ -1,0 +1,56 @@
+<h2>Echo — Design: Tool Definitions</h2>
+<p class="subtitle">Section 3 of 4 — All tools with typed input structs</p>
+
+<div class="section">
+  <h3>Operational tools — talk to Mir via NATS</h3>
+  <div style="font-family:monospace;font-size:0.78rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem;line-height:2">
+
+    <span style="color:var(--accent)">list_devices</span>(namespace?, name?) <span style="color:#888">→ []Device</span><br>
+    <span style="color:var(--accent)">get_device</span>(name, namespace) <span style="color:#888">→ Device (full digital twin)</span><br>
+    <span style="color:var(--accent)">create_device</span>(name, namespace, schema?) <span style="color:#888">→ Device</span><br>
+    <span style="color:var(--accent)">delete_device</span>(name, namespace) <span style="color:#888">→ ok</span><br>
+    <span style="color:var(--accent)">send_command</span>(name, namespace, command, payload_json) <span style="color:#888">→ response</span><br>
+    <span style="color:var(--accent)">update_config</span>(name, namespace, config, payload_json) <span style="color:#888">→ ok</span><br>
+    <span style="color:var(--accent)">get_telemetry</span>(name, namespace, field?, limit?) <span style="color:#888">→ []TlmPoint</span><br>
+    <span style="color:var(--accent)">list_events</span>(namespace?, type?, limit?) <span style="color:#888">→ []Event</span><br>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Developer assistant tools — docs + CLI introspection</h3>
+  <div style="font-family:monospace;font-size:0.78rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem;line-height:2">
+    <span style="color:#f0a500">query_docs</span>(query) <span style="color:#888">→ relevant book/src sections as text</span><br>
+    <span style="color:#f0a500">explain_cli_command</span>(command) <span style="color:#888">→ runs `mir &lt;command&gt; --help`, returns output</span><br>
+    <span style="color:#f0a500">list_cli_commands</span>() <span style="color:#888">→ runs `mir --help`, returns command tree</span><br>
+    <span style="color:#f0a500">scaffold_device_project</span>(module_name) <span style="color:#888">→ runs `mir tools generate device-template`</span><br>
+    <span style="color:#f0a500">generate_schema</span>(device_name) <span style="color:#888">→ runs `mir tools generate mir-schema`</span><br>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Example: typed structs in Go</h3>
+  <div style="font-family:monospace;font-size:0.78rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem;line-height:1.8">
+    <span style="color:#888">// tools_operational.go</span><br>
+    type SendCommandInput struct {<br>
+    &nbsp;&nbsp;Name      string <span style="color:#f0a500">`json:"name"      jsonschema:"required,Device name"`</span><br>
+    &nbsp;&nbsp;Namespace string <span style="color:#f0a500">`json:"namespace"  jsonschema:"required,Namespace"`</span><br>
+    &nbsp;&nbsp;Command   string <span style="color:#f0a500">`json:"command"    jsonschema:"required,Command name"`</span><br>
+    &nbsp;&nbsp;Payload   string <span style="color:#f0a500">`json:"payload"    jsonschema:"JSON payload string"`</span><br>
+    }<br>
+    <br>
+    <span style="color:#888">// tools_devassist.go</span><br>
+    type QueryDocsInput struct {<br>
+    &nbsp;&nbsp;Query string <span style="color:#f0a500">`json:"query" jsonschema:"required,Natural language question about Mir"`</span><br>
+    }
+  </div>
+</div>
+
+<div class="section">
+  <h3>What the AI sees (tools/list)</h3>
+  <div style="font-size:0.83rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem">
+    When Claude connects to <code>/mcp/sse</code>, it gets 13 tools with full JSON schemas auto-generated from the structs above.
+    It can then call them autonomously — e.g. "list all devices in the production namespace, then send a reboot command to any that haven't reported telemetry in 10 minutes."
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:1rem">Does the tool set look right? Anything to add or remove?</p>

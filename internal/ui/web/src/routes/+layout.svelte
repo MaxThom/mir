@@ -34,10 +34,63 @@
 	import DocDrawer from '$lib/domains/docs/components/doc-drawer.svelte';
 	import { editorPrefs } from '$lib/shared/stores/editor-prefs.svelte';
 	import * as Dialog from '$lib/shared/components/shadcn/dialog/index.js';
+	import { contextService } from '$lib/domains/contexts/services/contexts';
+	import type { Context } from '$lib/domains/contexts/types/types';
+	import LockIcon from '@lucide/svelte/icons/lock';
+	import EyeIcon from '@lucide/svelte/icons/eye';
+	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
 
 	// Generate breadcrumbs from current pathname
 	let breadcrumbs = $derived(generateBreadcrumbs(page.url.pathname));
 	let docsContent = $derived(docsStore.getContent(page.url.pathname));
+
+	// Password gate
+	let passwordGateOpen = $state(false);
+	let passwordGateCtx = $state<Context | null>(null);
+	let passwordGateValue = $state('');
+	let passwordGateError = $state<string | null>(null);
+	let passwordGateSubmitting = $state(false);
+	let passwordGateVisible = $state(false);
+	let previousContextName = $state<string | null>(null);
+
+	async function submitPasswordGate() {
+		if (!passwordGateCtx) return;
+		passwordGateSubmitting = true;
+		passwordGateError = null;
+		try {
+			const creds = await contextService.getCredentials(passwordGateCtx.name, passwordGateValue);
+			const ctx = passwordGateCtx;
+			// Clear sentinel BEFORE closing so onOpenChange doesn't treat this as an external dismiss
+			passwordGateCtx = null;
+			passwordGateOpen = false;
+			passwordGateValue = '';
+			passwordGateVisible = false;
+			previousContextName = ctx.name;
+			mirStore.connect(ctx, null, creds);
+		} catch (e) {
+			const status = (e as Error & { status?: number }).status;
+			passwordGateError =
+				status === 401 ? 'Invalid password' :
+				status === 404 ? 'Context not found' :
+				status === 500 ? 'Server error — check the credentials file path' :
+				'Cannot reach server';
+		} finally {
+			passwordGateSubmitting = false;
+		}
+	}
+
+	function cancelPasswordGate() {
+		const prev = previousContextName;
+		// Clear sentinel BEFORE closing so onOpenChange doesn't recurse
+		passwordGateCtx = null;
+		passwordGateOpen = false;
+		passwordGateValue = '';
+		passwordGateError = null;
+		passwordGateVisible = false;
+		if (prev) {
+			contextStore.setActiveContext(prev);
+		}
+	}
 
 	// VIM gate
 	let vimGateOpen = $state(false);
@@ -70,8 +123,18 @@
 
 	$effect(() => {
 		const ctx = contextStore.activeContext;
-		if (ctx) {
-			untrack(() => mirStore.connect(ctx));
+		if (!ctx) return;
+
+		if (ctx.secured) {
+			untrack(() => {
+				passwordGateCtx = ctx;
+				passwordGateOpen = true;
+			});
+		} else {
+			untrack(() => {
+				previousContextName = ctx.name;
+				mirStore.connect(ctx);
+			});
 		}
 	});
 </script>
@@ -184,6 +247,25 @@
 						<Empty.Title>Failed to connect to Mir Context</Empty.Title>
 						<Empty.Description>{mirStore.error}</Empty.Description>
 					</Empty.Header>
+					<Empty.Content>
+						{#if contextStore.activeContext?.secured}
+							<Button
+								size="sm"
+								onclick={() => {
+									if (contextStore.activeContext) {
+										passwordGateCtx = contextStore.activeContext;
+										passwordGateOpen = true;
+									}
+								}}
+							>
+								Sign in again
+							</Button>
+						{:else if contextStore.activeContext}
+							<Button size="sm" onclick={() => mirStore.connect(contextStore.activeContext!)}>
+								Retry connection
+							</Button>
+						{/if}
+					</Empty.Content>
 				</Empty.Root>
 			{:else}
 				{@render children()}
@@ -193,6 +275,59 @@
 </Sidebar.Provider>
 <DocDrawer Content={docsContent} />
 <Toaster position="bottom-left" duration={8000} />
+
+<Dialog.Root
+	bind:open={passwordGateOpen}
+	onOpenChange={(open) => {
+		// passwordGateCtx is cleared before programmatic closes (success/cancel button).
+		// If it's still set when the dialog closes, the user dismissed it externally
+		// (outside click or Escape) — treat that the same as cancel.
+		if (!open && passwordGateCtx !== null) cancelPasswordGate();
+	}}
+>
+	<Dialog.Content class="max-w-sm">
+		<Dialog.Header>
+			<Dialog.Title class="flex items-center gap-2">
+				<LockIcon class="size-4" />
+				Sign in to {passwordGateCtx?.name}
+			</Dialog.Title>
+			<Dialog.Description>This context requires a password.</Dialog.Description>
+		</Dialog.Header>
+		<div class="space-y-3 py-2">
+			<div class="relative">
+				<input
+					type={passwordGateVisible ? 'text' : 'password'}
+					placeholder="Password"
+					class="w-full rounded-md border border-input bg-background px-3 py-2 pr-9 text-sm focus:outline-none focus:ring-1 focus:ring-ring {passwordGateError ? 'border-destructive focus:ring-destructive' : ''}"
+					bind:value={passwordGateValue}
+					disabled={passwordGateSubmitting}
+					onkeydown={(e) => e.key === 'Enter' && submitPasswordGate()}
+				/>
+				<button
+					type="button"
+					class="absolute inset-y-0 right-0 flex items-center px-2.5 text-muted-foreground hover:text-foreground"
+					onmousedown={(e) => { e.preventDefault(); passwordGateVisible = !passwordGateVisible; }}
+					tabindex="-1"
+				>
+					{#if passwordGateVisible}
+						<EyeOffIcon class="size-4" />
+					{:else}
+						<EyeIcon class="size-4" />
+					{/if}
+				</button>
+			</div>
+			{#if passwordGateError}
+				<p class="text-xs text-destructive">{passwordGateError}</p>
+			{/if}
+		</div>
+		<Dialog.Footer>
+			<Button variant="ghost" size="sm" onclick={cancelPasswordGate} disabled={passwordGateSubmitting}>Cancel</Button>
+			<Button size="sm" onclick={submitPasswordGate} disabled={passwordGateSubmitting}>
+				{passwordGateSubmitting ? 'Signing in…' : 'Sign in'}
+			</Button>
+		</Dialog.Footer>
+	</Dialog.Content>
+</Dialog.Root>
 
 <Dialog.Root bind:open={vimGateOpen}>
 	<Dialog.Content class="max-w-sm">

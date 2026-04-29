@@ -5,8 +5,8 @@
 	import ChevronsUpDownIcon from '@lucide/svelte/icons/chevrons-up-down';
 	import ServerIcon from '@lucide/svelte/icons/server';
 	import CheckIcon from '@lucide/svelte/icons/check';
+	import LockIcon from '@lucide/svelte/icons/lock';
 	import { contextStore } from '../../contexts/stores/contexts.svelte';
-	import { formatNatsUrl } from '../../../shared/utils/url-formatters';
 
 	const sidebar = useSidebar();
 </script>
@@ -57,7 +57,7 @@
 									{contextStore.activeContext?.name ?? ''}
 								</span>
 								<span class="truncate text-xs"
-									>{formatNatsUrl(contextStore.activeContext?.target ?? '')}</span
+									>{contextStore.activeContext?.target ?? ''}</span
 								>
 							</div>
 							<ChevronsUpDownIcon class="ms-auto" />
@@ -76,17 +76,19 @@
 							onSelect={() => contextStore.setActiveContext(context.name)}
 							class="gap-2 p-2"
 						>
-							<div class="flex size-6 items-center justify-center rounded-md border">
+							<div class="flex size-6 shrink-0 items-center justify-center rounded-md border">
 								<ServerIcon class="size-3.5 shrink-0" />
 							</div>
-							<div class="flex flex-1 flex-col gap-0">
-								<span class="text-sm font-medium">{context.name}</span>
-								<span class="text-xs text-muted-foreground">{formatNatsUrl(context.target)}</span>
+							<div class="flex min-w-0 flex-1 flex-col gap-0">
+								<span class="truncate text-sm font-medium">{context.name}</span>
+								<span class="truncate text-xs text-muted-foreground">{context.target}</span>
 							</div>
 							{#if contextStore.activeContext?.name === context.name}
-								<CheckIcon class="size-4 text-primary" />
+								<CheckIcon class="size-4 shrink-0 text-primary" />
 							{/if}
-							<DropdownMenu.Shortcut>⌘{index + 1}</DropdownMenu.Shortcut>
+							{#if context.secured}
+								<LockIcon class="size-4 shrink-0 text-muted-foreground" />
+							{/if}
 						</DropdownMenu.Item>
 					{/each}
 				</DropdownMenu.Content>

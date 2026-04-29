@@ -19,7 +19,9 @@ export const contextService = {
 
 		if (!response.ok) {
 			const text = await response.text();
-			throw new Error(`credentials request failed (${response.status}): ${text.trim()}`);
+			const err = new Error(text.trim() || response.statusText);
+			(err as Error & { status: number }).status = response.status;
+			throw err;
 		}
 
 		const data: CredentialsResponse = await response.json();

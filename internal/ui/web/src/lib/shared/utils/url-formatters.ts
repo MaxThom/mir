@@ -1,18 +1,15 @@
 /**
- * Format a NATS URL for display in the UI
- * Strips protocol and shortens localhost references
+ * Format a connection URL for display in the UI.
+ * Strips protocol (nats://, wss://, ws://) and shortens localhost to "local".
  *
- * @param url - The NATS URL to format (e.g., "nats://localhost:4222")
- * @returns Formatted URL string (e.g., "local:4222")
+ * @param url - The URL to format (e.g., "ws://localhost:9222")
+ * @returns Formatted URL string (e.g., "local:9222")
  */
 export function formatNatsUrl(url: string): string {
 	if (!url) return 'Unknown';
 
-	// Remove nats:// protocol
-	let formatted = url.replace(/^nats:\/\//, '');
-
-	// Shorten localhost to local
-	formatted = formatted.replace(/^localhost:/, 'local:');
+	let formatted = url.replace(/^(nats\+tls|nats|wss|ws):\/\//, '');
+	formatted = formatted.replace(/^localhost/, 'local');
 
 	return formatted;
 }

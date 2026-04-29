@@ -1,0 +1,75 @@
+<h2>Go MCP Server Libraries</h2>
+<p class="subtitle">Two real contenders — pick one. The third is out.</p>
+
+<div class="options">
+  <div class="option" data-choice="mark3labs" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>mark3labs/mcp-go &nbsp;<span style="font-size:0.75rem;font-weight:400;color:#f0a500">⭐ Ecosystem standard</span></h3>
+      <div style="display:flex;gap:1.5rem;font-size:0.8rem;margin:0.4rem 0 0.75rem 0;color:var(--muted,#888)">
+        <span>8,644 ★</span><span>v0.49.0</span><span>Last commit: 2026-04-21</span><span>OpenIssues: 34</span>
+      </div>
+      <p style="margin:0 0 0.75rem 0;font-size:0.88rem">De-facto standard in the MCP Go ecosystem. Builder-pattern API, weekly releases, OAuth already shipping.</p>
+      <div style="font-family:monospace;font-size:0.78rem;background:var(--surface-2,#1a1a2e);border-radius:6px;padding:0.75rem;line-height:1.7">
+        s := server.NewMCPServer("Echo", "1.0.0")<br>
+        s.AddTool(mcp.NewTool("list_devices",<br>
+        &nbsp;&nbsp;mcp.WithDescription("List Mir devices"),<br>
+        &nbsp;&nbsp;mcp.WithString("namespace", mcp.Optional()),<br>
+        ), handler)<br>
+        sseServer := server.NewSSEServer(s)<br>
+        mux.Handle("/mcp/", sseServer)
+      </div>
+      <div class="pros-cons" style="margin-top:0.75rem">
+        <div class="pros"><h4>Pros</h4><ul>
+          <li>Most community examples & docs</li>
+          <li>Battle-tested HTTP/SSE transport</li>
+          <li>Middleware, auth, test utilities</li>
+          <li>Integrates as http.Handler — fits our mux exactly</li>
+        </ul></div>
+        <div class="cons"><h4>Cons</h4><ul>
+          <li>Not the "official" SDK</li>
+          <li>v0.x — API can still change</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="official" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>modelcontextprotocol/go-sdk &nbsp;<span style="font-size:0.75rem;font-weight:400;color:#5b9bd5">🏢 Official SDK</span></h3>
+      <div style="display:flex;gap:1.5rem;font-size:0.8rem;margin:0.4rem 0 0.75rem 0;color:var(--muted,#888)">
+        <span>4,448 ★</span><span>v1.5.0</span><span>Last commit: 2026-04-28</span><span>OpenSSF ✓</span>
+      </div>
+      <p style="margin:0 0 0.75rem 0;font-size:0.88rem">Maintained by Anthropic + Google. Typed handler pattern, auto-schema from Go structs. v1 — stable API.</p>
+      <div style="font-family:monospace;font-size:0.78rem;background:var(--surface-2,#1a1a2e);border-radius:6px;padding:0.75rem;line-height:1.7">
+        s := mcp.NewServer("Echo", "1.0.0", nil)<br>
+        mcp.AddTool(s, &mcp.Tool{<br>
+        &nbsp;&nbsp;Name: "list_devices",<br>
+        }, typedHandler)<br>
+        h := server.NewSSEHandler(s)<br>
+        mux.Handle("/mcp/", h)
+      </div>
+      <div class="pros-cons" style="margin-top:0.75rem">
+        <div class="pros"><h4>Pros</h4><ul>
+          <li>Official — long-term winner</li>
+          <li>v1.x — stable, no breaking changes</li>
+          <li>OpenSSF security review</li>
+          <li>Auto-schema from Go structs</li>
+        </ul></div>
+        <div class="cons"><h4>Cons</h4><ul>
+          <li>Fewer community examples</li>
+          <li>Newer — less battle-tested at scale</li>
+          <li>Client OAuth still experimental</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem;margin-top:1.5rem;font-size:0.88rem">
+  <div class="label">Eliminated</div>
+  <p style="margin:0.25rem 0 0 0"><strong>metoro-io/mcp-golang</strong> — last commit Sep 2025, no streamable-HTTP, minimal community. Skip it.</p>
+</div>
+
+<p class="subtitle" style="margin-top:1.5rem">My recommendation: <strong>A (mark3labs)</strong> for v1 — more examples to reference, battle-tested SSE transport, integrates cleanly. Switch to official SDK once it matures.</p>

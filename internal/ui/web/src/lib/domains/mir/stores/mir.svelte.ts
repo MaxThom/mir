@@ -3,16 +3,6 @@ import type { Context } from '../../contexts/types/types';
 import { contextService } from '../../contexts/services/contexts';
 import { activityStore } from '$lib/domains/activity/stores/activity.svelte';
 
-// Returns the WebSocket URL for a context.
-// Uses ctx.webTarget if set; otherwise derives ws[s]://host:9222 from ctx.target.
-// Uses wss:// when the page is served over HTTPS.
-function toWsUrl(ctx: Context): string {
-	if (ctx.webTarget) return ctx.webTarget;
-	const scheme =
-		typeof window !== 'undefined' && window.location.protocol === 'https:' ? 'wss' : 'ws';
-	return ctx.target.replace(/^nats:\/\//, `${scheme}://`).replace(/:\d+$/, ':9222');
-}
-
 class MirStore {
 	mir = $state<Mir | null>(null);
 	isConnecting = $state(false);
@@ -24,7 +14,9 @@ class MirStore {
 		return this.mir !== null;
 	}
 
-	async connect(ctx: Context, password?: string | null) {
+	// preloadedCreds: pass already-fetched creds to avoid a second round-trip (e.g. from the password dialog).
+	// undefined = fetch now using password, null = no creds (already confirmed by caller), string = use directly.
+	async connect(ctx: Context, password?: string | null, preloadedCreds?: string | null) {
 		const id = ++this.connectionId;
 
 		if (this.mir) {
@@ -36,9 +28,11 @@ class MirStore {
 		this.error = null;
 
 		try {
-			const wsUrl = toWsUrl(ctx);
+			const wsUrl = ctx.target;
 
-			const creds = await contextService.getCredentials(ctx.name, password ?? null);
+			const creds = preloadedCreds !== undefined
+				? preloadedCreds
+				: await contextService.getCredentials(ctx.name, password ?? null);
 
 			const opts = creds
 				? {

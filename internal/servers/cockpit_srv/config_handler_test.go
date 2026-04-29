@@ -76,8 +76,8 @@ func TestConfigHandler_Success(t *testing.T) {
 	if response.Contexts[0].Name != "local" {
 		t.Errorf("expected first context name 'local', got '%s'", response.Contexts[0].Name)
 	}
-	if response.Contexts[0].Target != "nats://localhost:4222" {
-		t.Errorf("expected first context target 'nats://localhost:4222', got '%s'", response.Contexts[0].Target)
+	if response.Contexts[0].Target != "ws://localhost:9222" {
+		t.Errorf("expected first context target 'ws://localhost:9222', got '%s'", response.Contexts[0].Target)
 	}
 	if response.Contexts[0].Grafana != "localhost:3000" {
 		t.Errorf("expected first context grafana 'localhost:3000', got '%s'", response.Contexts[0].Grafana)
@@ -283,6 +283,34 @@ func TestConfigHandler_MultipleContexts(t *testing.T) {
 	for i, ctx := range response.Contexts {
 		if ctx.Name != expectedNames[i] {
 			t.Errorf("expected context[%d].name '%s', got '%s'", i, expectedNames[i], ctx.Name)
+		}
+	}
+}
+
+func TestToWebSocketTarget(t *testing.T) {
+	cases := []struct {
+		nats      string
+		webTarget string
+		want      string
+	}{
+		// Derived from natsTarget (no webTarget)
+		{"nats://localhost:4222", "", "ws://localhost:9222"},
+		{"nats://prod.example.com:4222", "", "ws://prod.example.com:9222"},
+		{"nats://host:1234", "", "ws://host:9222"},
+		{"tls://host:4222", "", "wss://host:9222"},
+		{"nats+tls://host:4222", "", "wss://host:9222"},
+		// webTarget already a WebSocket URL — used as-is
+		{"nats://host:4222", "wss://host:9222", "wss://host:9222"},
+		{"nats://host:4222", "ws://custom:8080", "ws://custom:8080"},
+		// webTarget uses a nats:// variant — converted
+		{"nats://host:4222", "nats://myhost:9222", "ws://myhost:9222"},
+		{"nats://host:4222", "tls://myhost:9222", "wss://myhost:9222"},
+		{"nats://host:4222", "nats+tls://myhost:9222", "wss://myhost:9222"},
+	}
+	for _, c := range cases {
+		got := toWebSocketTarget(c.nats, c.webTarget)
+		if got != c.want {
+			t.Errorf("toWebSocketTarget(%q, %q) = %q, want %q", c.nats, c.webTarget, got, c.want)
 		}
 	}
 }
