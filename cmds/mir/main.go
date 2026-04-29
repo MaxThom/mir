@@ -88,7 +88,10 @@ func main() {
 		kong.Bind(zerolog.Logger{}),
 		kong.Bind(ui.Context{}),
 	)
-	SetParams(kongCtx, c.Globals, logFile)
+	if err := SetParams(kongCtx, c.Globals, logFile); err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	err := kongCtx.Run()
 	if err != nil {
@@ -148,12 +151,14 @@ func SetParams(k *kong.Context, d Globals, logFile *os.File) error {
 	log.Info().Str("config", string(prettyCfg)).Msg("")
 	k.Bind(log)
 
+	setupMirConn(k, log, ctx)
+
 	return nil
 }
 
 // There is no hook for after subcommands are executed
 // Therefor each command must close Mir :(
-func (d *Client) BeforeApply(k *kong.Context, log zerolog.Logger, ctx ui.Context) error {
+func setupMirConn(k *kong.Context, log zerolog.Logger, ctx ui.Context) error {
 	// Normally, this hook should not be called if command not in Client struct
 	// Add command requiring Client in this list until fix
 	// https://github.com/alecthomas/kong/issues/549
