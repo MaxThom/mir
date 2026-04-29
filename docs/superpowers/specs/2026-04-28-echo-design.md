@@ -70,10 +70,14 @@ mux.Handle("/mcp/", handler)
 ```json
 {
   "mcpServers": {
-    "mir": { "url": "http://your-mir-server/mcp/sse" }
+    "mir": {
+      "url": "http://your-mir-server/mcp/sse",
+      "headers": { "Authorization": "Bearer <password>" }
+    }
   }
 }
 ```
+Omit `headers` when running locally with no password configured.
 
 ## Tools
 
@@ -158,12 +162,61 @@ echo_srv.Options{
 out, err := exec.CommandContext(ctx, "mir", append(strings.Fields(input.Command), "--help")...).Output()
 ```
 
+## Security
+
+Echo reuses the `Password` field already present on `ui.Config.Context` — no new config.
+
+### Auth middleware
+
+An `authMiddleware` wraps all `/mcp/` routes before the MCP handler:
+
+```go
+func authMiddleware(password string, next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        if password == "" {
+            // local mode — no password configured, pass through
+            next.ServeHTTP(w, r)
+            return
+        }
+        token := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
+        if token != password {
+            http.Error(w, "Unauthorized", http.StatusUnauthorized)
+            return
+        }
+        next.ServeHTTP(w, r)
+    })
+}
+```
+
+### Behaviour
+
+| Context password | Request has valid token | Result |
+|-----------------|------------------------|--------|
+| empty (local) | — | allowed (local dev, no auth needed) |
+| set | yes | allowed |
+| set | no / missing | 401 Unauthorized |
+
+### Client configuration
+
+Claude Desktop and Cursor support `headers` at the MCP server level — the token is sent automatically on both the SSE connection and every tool call:
+
+```json
+{
+  "mcpServers": {
+    "mir": {
+      "url": "http://your-mir-server/mcp/sse",
+      "headers": { "Authorization": "Bearer <your-password>" }
+    }
+  }
+}
+```
+
 ## Options struct
 
 ```go
 type Options struct {
     NatsConn *nats.Conn  // existing connection from mir serve
-    Config   ui.Config   // CLI config with contexts
+    Config   ui.Config   // CLI config with contexts (Password field used for auth)
     DocsFS   fs.FS       // embedded book/src FS, from book.DocsFS
 }
 ```
@@ -173,6 +226,5 @@ Echo is disabled if `NatsConn` is nil (e.g., when running Cockpit standalone wit
 ## Out of scope (v1)
 
 - Built-in chat UI (future: embedded in Cockpit)
-- Authentication on the MCP endpoint (future: reuse Cockpit credential system)
 - Streaming telemetry subscriptions (future: MCP resources/subscriptions)
 - Vector search over docs (future: replace keyword search with embeddings)
