@@ -2,6 +2,7 @@
 	import MirAlphaLogo from '$lib/assets/mir_alpha.png';
 	import NavSection from './nav-section.svelte';
 	import ContextSwitcher from './context-switcher.svelte';
+	import SecurityStatus from './security-status.svelte';
 	import * as Sidebar from '$lib/shared/components/shadcn/sidebar/index.js';
 	import type { ComponentProps } from 'svelte';
 	import type { NavItem } from '../types/types';
@@ -32,6 +33,7 @@
 		<div class="flex flex-col items-center justify-center group-data-[collapsible=icon]:hidden">
 			<img src={MirAlphaLogo} alt="Mir Logo" class="w-48" />
 			<span class="text-sm font-semibold tracking-widest text-sidebar-foreground/40 uppercase">Mir Cockpit</span>
+			<SecurityStatus />
 		</div>
 		<div class="hidden items-center justify-center group-data-[collapsible=icon]:flex">
 			<img src={MirAlphaLogo} alt="Mir Logo" class="w-8" />
