@@ -1,0 +1,102 @@
+<h2>MCP Library Code Comparison</h2>
+<p class="subtitle">Same tool — <code>list_devices(namespace string)</code> — implemented in both libraries</p>
+
+<div class="split" style="gap:1.5rem;align-items:start">
+
+  <div class="mockup" style="flex:1">
+    <div class="mockup-header">A — mark3labs/mcp-go</div>
+    <div class="mockup-body" style="padding:0">
+      <pre style="margin:0;padding:1rem;font-size:0.75rem;line-height:1.75;overflow-x:auto;background:transparent"><code><span style="color:#888">// Server setup</span>
+s := server.NewMCPServer("Echo", "1.0.0",
+    server.WithToolCapabilities(false),
+)
+
+<span style="color:#888">// Register tool — manual schema</span>
+tool := mcp.NewTool("list_devices",
+    mcp.WithDescription("List Mir devices"),
+    mcp.WithString("namespace",
+        mcp.Description("Filter by namespace"),
+    ),
+)
+s.AddTool(tool, e.handleListDevices)
+
+<span style="color:#888">// Mount on existing mux</span>
+sseServer := server.NewSSEServer(s,
+    server.WithStaticBasePath("/mcp"),
+    server.WithBaseURL("http://localhost:8080"),
+)
+mux.Handle("/mcp/", sseServer)
+
+<span style="color:#888">// Handler — manual param extraction</span>
+func (e *EchoServer) handleListDevices(
+    ctx context.Context,
+    req mcp.CallToolRequest,
+) (*mcp.CallToolResult, error) {
+    ns := req.GetString("namespace", "")
+
+    devices, err := e.listDevices(ctx, ns)
+    if err != nil {
+        return mcp.NewToolResultError(err.Error()), nil
+    }
+    out, _ := json.Marshal(devices)
+    return mcp.NewToolResultText(string(out)), nil
+}</code></pre>
+    </div>
+  </div>
+
+  <div class="mockup" style="flex:1;border-color:var(--accent)">
+    <div class="mockup-header" style="border-color:var(--accent)">B — modelcontextprotocol/go-sdk &nbsp;★ Official</div>
+    <div class="mockup-body" style="padding:0">
+      <pre style="margin:0;padding:1rem;font-size:0.75rem;line-height:1.75;overflow-x:auto;background:transparent"><code><span style="color:#888">// Server setup</span>
+s := mcp.NewServer(&mcp.Implementation{
+    Name: "Echo", Version: "1.0.0",
+}, nil)
+
+<span style="color:#888">// Register tool — schema from struct</span>
+type ListDevicesInput struct {
+    Namespace string <span style="color:#f0a500">`json:"namespace" jsonschema:"Filter by namespace"`</span>
+}
+mcp.AddTool(s,
+    &mcp.Tool{
+        Name:        "list_devices",
+        Description: "List Mir devices",
+    },
+    e.handleListDevices,
+)
+
+<span style="color:#888">// Mount on existing mux</span>
+handler := mcp.NewSSEHandler(
+    func(r *http.Request) *mcp.Server { return s },
+    nil,
+)
+mux.Handle("/mcp/", handler)
+
+<span style="color:#888">// Handler — typed input, no manual parsing</span>
+func (e *EchoServer) handleListDevices(
+    ctx context.Context,
+    req *mcp.CallToolRequest,
+    input ListDevicesInput,
+) (*mcp.CallToolResult, any, error) {
+    devices, err := e.listDevices(ctx, input.Namespace)
+    if err != nil {
+        return nil, nil, err
+    }
+    out, _ := json.Marshal(devices)
+    return &mcp.CallToolResult{
+        Content: []mcp.Content{
+            &mcp.TextContent{Text: string(out)},
+        },
+    }, nil, nil
+}</code></pre>
+    </div>
+  </div>
+
+</div>
+
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem;margin-top:1.5rem;font-size:0.87rem">
+  <div class="label" style="margin-bottom:0.5rem">Key difference</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+    <div><strong>mark3labs:</strong> you declare the schema manually with <code>mcp.WithString(...)</code>, then extract values manually with <code>req.GetString("key", "")</code>. More explicit, slightly more boilerplate per tool.</div>
+    <div><strong>official SDK:</strong> you define a typed Go struct — the library infers the JSON schema automatically. The handler receives a fully-typed, already-parsed input. Cleaner, less error-prone at scale.</div>
+  </div>
+</div>

@@ -1,0 +1,89 @@
+<h2>Echo — 3 Architecture Approaches</h2>
+<p class="subtitle">All use HTTP/SSE MCP transport embedded in <code>mir serve</code></p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Inline handler in Cockpit</h3>
+      <p>MCP endpoint registered directly in <code>cockpit_srv</code> alongside existing API routes. Echo shares the Cockpit HTTP server and its middleware stack.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul>
+          <li>Minimal new code</li>
+          <li>Reuses CORS, logging, metrics</li>
+          <li>Single port for UI + MCP</li>
+        </ul></div>
+        <div class="cons"><h4>Cons</h4><ul>
+          <li>Cockpit grows beyond its responsibility</li>
+          <li>Hard to disable Echo independently</li>
+          <li>Tangled concerns</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B ⭐ Recommended</div>
+    <div class="content">
+      <h3>Separate <code>echo_srv</code> package — same port</h3>
+      <p>New <code>internal/servers/echo_srv/</code> package, same pattern as <code>cockpit_srv</code>. Routes registered on the shared HTTP mux under <code>/mcp/...</code>. Own tool registry, doc embedder, NATS client.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul>
+          <li>Mirrors existing cockpit_srv pattern exactly</li>
+          <li>Clean boundaries, testable in isolation</li>
+          <li>Single port, separate concerns</li>
+          <li>Can be toggled via config</li>
+        </ul></div>
+        <div class="cons"><h4>Cons</h4><ul>
+          <li>Slightly more boilerplate than A</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Separate HTTP server — own port</h3>
+      <p>Echo runs on its own port (e.g. <code>:8484</code>), independent lifecycle from Cockpit. Separate goroutine, separate mux, separate config block.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul>
+          <li>True isolation</li>
+          <li>Independent enable/disable/TLS</li>
+        </ul></div>
+        <div class="cons"><h4>Cons</h4><ul>
+          <li>Extra port to configure &amp; expose</li>
+          <li>More infra complexity (k8s, firewall)</li>
+          <li>Overkill for v1</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:2rem">
+  <h3>Tool families (all approaches)</h3>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:0.5rem">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem">
+      <div class="label">Operational</div>
+      <ul style="margin:0.5rem 0 0 1rem;font-size:0.85rem">
+        <li><code>list_devices</code></li>
+        <li><code>get_device</code></li>
+        <li><code>send_command</code></li>
+        <li><code>get_telemetry</code></li>
+        <li><code>update_config</code></li>
+        <li><code>list_events</code></li>
+      </ul>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem">
+      <div class="label">Developer Assistant</div>
+      <ul style="margin:0.5rem 0 0 1rem;font-size:0.85rem">
+        <li><code>query_docs</code></li>
+        <li><code>explain_cli_command</code></li>
+        <li><code>scaffold_device_project</code></li>
+        <li><code>generate_schema</code></li>
+        <li><code>list_cli_commands</code></li>
+      </ul>
+    </div>
+  </div>
+</div>

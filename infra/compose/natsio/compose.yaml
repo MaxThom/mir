@@ -8,7 +8,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./config.conf:/etc/nats/config.conf:ro
-      - ./resolver.conf:/etc/nats/resolver.conf:ro
+      - ./local.resolver.conf:/etc/nats/resolver.conf:ro
       - ./certs:/etc/nats/certs
       - nats_data:/data
     ports:

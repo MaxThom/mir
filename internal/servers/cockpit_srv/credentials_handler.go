@@ -1,6 +1,7 @@
 package cockpit_srv
 
 import (
+	"crypto/subtle"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -51,7 +52,7 @@ func (s *CockpitServer) credentialsHandler(w http.ResponseWriter, r *http.Reques
 			http.Error(w, "Invalid request body", http.StatusBadRequest)
 			return
 		}
-		if req.Password != password {
+		if subtle.ConstantTimeCompare([]byte(req.Password), []byte(password)) != 1 {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}

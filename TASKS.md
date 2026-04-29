@@ -14,6 +14,8 @@
   - [ ] k8s websocket mTLS port to be configured
   - [ ] detect if local, if so no need of password
   - [ ] Setup local with creds to test
+- [ ] Cockpit
+  - [ ] dashboard per context
   
 ### Bug
 

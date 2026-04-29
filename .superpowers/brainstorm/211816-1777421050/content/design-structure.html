@@ -1,0 +1,67 @@
+<h2>Echo — Design: Package Structure & Data Flow</h2>
+<p class="subtitle">Section 1 of 4 — Architecture overview</p>
+
+<div class="section">
+  <h3>New files (mirrors cockpit_srv pattern)</h3>
+  <div style="font-family:monospace;font-size:0.85rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.2rem;line-height:2">
+    <span style="color:var(--accent)">internal/servers/echo_srv/</span><br>
+    &nbsp;&nbsp;├── server.go &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--muted,#888)">// EchoServer struct, RegisterRoutes, Options</span><br>
+    &nbsp;&nbsp;├── tools.go &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--muted,#888)">// tool registry, handler dispatch</span><br>
+    &nbsp;&nbsp;├── tools_operational.go <span style="color:var(--muted,#888)">// list_devices, send_command, get_telemetry…</span><br>
+    &nbsp;&nbsp;├── tools_devassist.go &nbsp;<span style="color:var(--muted,#888)">// query_docs, explain_cli, scaffold…</span><br>
+    &nbsp;&nbsp;├── docs_embed.go &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--muted,#888)">// embeds book/src/** at build time</span><br>
+    &nbsp;&nbsp;└── sse.go &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--muted,#888)">// HTTP/SSE MCP transport layer</span><br>
+    <br>
+    <span style="color:var(--accent)">cmds/cockpit/main.go</span> &nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--muted,#888)">// +echo_srv.NewEcho() + RegisterRoutes</span>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Request flow</h3>
+  <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;font-size:0.88rem;margin-top:0.5rem">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:0.6rem 1rem;text-align:center">
+      <div class="label">AI client</div>
+      <div>Claude / Cursor</div>
+    </div>
+    <div style="font-size:1.4rem;color:var(--accent)">→</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:0.6rem 1rem;text-align:center">
+      <div class="label">HTTP/SSE</div>
+      <div><code>GET /mcp/sse</code><br><code>POST /mcp/message</code></div>
+    </div>
+    <div style="font-size:1.4rem;color:var(--accent)">→</div>
+    <div style="background:var(--surface);border:2px solid var(--accent);border-radius:6px;padding:0.6rem 1rem;text-align:center">
+      <div class="label">echo_srv</div>
+      <div>Tool registry<br>dispatch</div>
+    </div>
+    <div style="font-size:1.4rem;color:var(--accent)">→</div>
+    <div style="display:flex;flex-direction:column;gap:0.5rem">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:0.4rem 0.8rem;font-size:0.8rem">
+        NATS (operational tools)
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:0.4rem 0.8rem;font-size:0.8rem">
+        Embedded docs (dev tools)
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:0.4rem 0.8rem;font-size:0.8rem">
+        CLI introspection (dev tools)
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Registration in <code>mir serve</code></h3>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem;font-family:monospace;font-size:0.83rem;line-height:1.7">
+    <span style="color:#7ec8e3">// existing</span><br>
+    cockpit := cockpit_srv.NewCockpit(logger, &amp;cockpitOpts)<br>
+    cockpit.RegisterRoutes(mux)<br>
+    <br>
+    <span style="color:var(--accent)">// new</span><br>
+    <span style="color:var(--accent)">echo := echo_srv.NewEcho(logger, &amp;echo_srv.Options{</span><br>
+    <span style="color:var(--accent)">&nbsp;&nbsp;&nbsp;&nbsp;NatsConn: natsConn,</span><br>
+    <span style="color:var(--accent)">&nbsp;&nbsp;&nbsp;&nbsp;Config:   uiConfig,</span><br>
+    <span style="color:var(--accent)">})</span><br>
+    <span style="color:var(--accent)">echo.RegisterRoutes(mux) &nbsp;// adds /mcp/sse + /mcp/message</span>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:1.5rem">Does this structure look right to you?</p>
