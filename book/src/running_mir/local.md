@@ -10,6 +10,7 @@ To run Mir locally, you need to have the following installed:
 - [Rust](https://www.rust-lang.org/tools/install)  (To run Mir Book)
 - [Just](https://github.com/casey/just) (Optional, for common tasks)
 - [Protoc](https://grpc.io/docs/protoc-installation/)
+- [Npm](https://docs.npmjs.com/cli/v11/configuring-npm/install)
 
 Once you have the above installed, you can run the following commands to complete installation:
 
@@ -70,6 +71,8 @@ Mir infra dev
 # URL: http://localhost:8222
 ```
 
+> **Note:** Cockpit (web UI) is served by `mir serve` on `http://localhost:3015`, not by the infra stack.
+
 To build Mir binary, run the following command:
 
 ```bash
@@ -90,13 +93,13 @@ mir
 # CLI
 mir -h
 # to interact with devices
-mir device
+mir device ls
 # to visualize the telemetry
-mir telemetry
+mir device telemetry
 # to send command to devices
-mir command
+mir device command
 # to explore and upload schemas
-mir schema
+mir device schema
 # to simulate a device connecting to the server
 mir swarm
 ```
@@ -121,3 +124,36 @@ Run the task `Mir local dev` to start developing. For Zed, each task must be sta
 A set of tmux layouts can be found in the [tmux](./tmux) directory to run the modules if using tmux and tmuxifier.
 
 Visit the `Justfile` to see the available commands and scripts to help develop locally.
+
+### Cockpit
+
+Cockpit is the Mir web interface, built with SvelteKit and located in `internal/ui/web/`. When developing the frontend, run the Vite dev server alongside `mir serve`:
+
+```bash
+# Terminal 1 — backend
+mir serve
+
+# Terminal 2 — frontend hot reload
+cd internal/ui/web
+npm install
+npm run dev   # serves on http://localhost:5173
+```
+
+The Vite dev server origin must be allowed by the Cockpit CORS config. In `~/.config/mir/mir.yaml`, set:
+
+```yaml
+mir:
+  cockpit:
+    enabled: true
+    allowedOrigins:
+      - "http://localhost:5173"
+```
+
+The Cockpit frontend connects to NATS via WebSocket using `webTarget` from your active context (`~/.config/mir/cli.yaml`). The default local context points to `ws://localhost:9222` — no change needed for local dev.
+
+Type-check the frontend with:
+
+```bash
+cd internal/ui/web
+npm run check
+```

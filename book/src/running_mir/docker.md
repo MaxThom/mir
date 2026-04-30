@@ -43,6 +43,7 @@ mir tools config edit
 # contexts:
 #  - name: local
 #    target: nats://localhost:4222
+#    webTarget: ws://localhost:9222
 #    grafana: localhost:3000
 mir ctx local
 
@@ -94,9 +95,36 @@ Modify `mir-compose/mir/local-config.yaml`
 
 ```yaml
 mir:
-  url: "nats://local_mir_support-nats-1:4222"
   logLevel: "info"
-  httpPort: 3015
+  http:
+    port: 3015
+    tlsCert: "/etc/mir/certs/tls.crt"
+    tlsKey: "/etc/mir/certs/tls.key"
+  core:
+    enabled: true
+    deviceOnlineFlush: 7s
+    deviceOfflineFlush: 12s
+    deviceOfflineAfter: 30s
+  prototlm:
+    enabled: true
+  protocmd:
+    enabled: true
+  protocfg:
+    enabled: true
+  event:
+    enabled: true
+    flushInterval: 5s
+  cockpit:
+    enabled: true
+    allowedOrigins: []
+    githubOwner: MaxThom
+    githubRepo: mir
+nats:
+  url: "nats://local_mir_support-nats-1:4222"
+  credentials: ""
+  rootCA: ""
+  tlsCert: ""
+  tlsKey: ""
 surreal:
   url: "ws://local_mir_support-surrealdb-1:8000/rpc"
   namespace: "global"
@@ -114,11 +142,31 @@ influx:
   gzip: false
 ```
 
+### Configure Cockpit Server List
+
+Cockpit reads available contexts from `./mir-compose/mir/local-contexts.yaml` (mounted into the container as `cli.yaml`) and exposes them to the browser via `GET /api/v1/contexts`. Each context entry defines a server the web UI can connect to.
+
+Edit `./mir-compose/mir/local-contexts.yaml` to list your servers:
+
+```yaml
+logLevel: info
+currentContext: local
+contexts:
+  - name: local
+    target: nats://localhost:4222
+    webTarget: ws://localhost:9222
+    grafana: localhost:3000
+```
+
+Restart to apply: `docker compose down && docker compose up`.
+
 ## Operating
 
 ### Port Exposures
 
 ```bash
+# Cockpit
+localhost:3015
 # Grafana       <user>///<password>
 localhost:3000 # admin///mir-operator
 # InfluxDB

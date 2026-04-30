@@ -48,6 +48,8 @@ All extra flags get passed to `docker compose`.
 The compose files are managed under env. var `$XDG_CACHE_HOME` defaulting to `$HOME/.cache/mir/infra`.
 
 ```bash
+# Cockpit
+localhost:3015
 # Grafana       <user>///<password>
 localhost:3000 # admin///mir-operator
 # InfluxDB
@@ -89,16 +91,36 @@ mir
 # CLI
 mir -h
 # to interact with devices
-mir device
+mir device ls
 # to visualize the telemetry
-mir telemetry
+mir device telemetry
 # to send command to devices
-mir command
+mir device command
 # to explore and upload schemas
-mir schema
+mir device schema
 # to simulate a device connecting to the server
 mir swarm
 ```
+
+### Mir Cockpit
+
+Cockpit is the Mir web interface, served by the Mir Server on port `3015`. Once `mir serve` is running, open your browser at:
+
+```
+http://localhost:3015
+```
+
+Cockpit connects to the NATS broker using the active context from your CLI config (`~/.config/mir/cli.yaml`). By default it uses the `webTarget` WebSocket URL configured in that context:
+
+```yaml
+contexts:
+  - name: local
+    target: nats://localhost:4222
+    webTarget: ws://localhost:9222
+    grafana: localhost:3000
+```
+
+To configure or switch contexts, run `mir tools config edit`.
 
 Visit [DeviceSDK](../integrating_mir/device/device_sdk.md) documentation to integrate device.
 

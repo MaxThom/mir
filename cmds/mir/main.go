@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"slices"
@@ -11,7 +10,6 @@ import (
 	"github.com/maxthom/mir/internal/libs/boiler/mir_config"
 	"github.com/maxthom/mir/internal/libs/boiler/mir_log"
 	"github.com/maxthom/mir/internal/libs/build_meta"
-	bus "github.com/maxthom/mir/internal/libs/external/natsio"
 	"github.com/maxthom/mir/internal/ui"
 	"github.com/maxthom/mir/internal/ui/cli"
 	"github.com/maxthom/mir/internal/ui/tui"
@@ -19,10 +17,6 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
-
-var l zerolog.Logger
-var msgBus *bus.BusConn
-var ctx context.Context
 
 type configFlag string
 

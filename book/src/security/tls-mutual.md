@@ -121,6 +121,19 @@ tls: {
 }
 ```
 
+```
+# WebSocket Configuration with TLS
+websocket: {
+  listen: 0.0.0.0:9222
+  tls: {
+    cert_file: "/etc/nats/certs/tls.crt"
+    key_file:  "/etc/nats/certs/tls.key"
+  }
+  no_tls: false
+  compress: true
+}
+```
+
 Update Compose to pass the certificates:
 
 ```yaml
@@ -172,20 +185,54 @@ nats:
     key: ca.crt
 ```
 
-### Step 3: Install Certificates on Module
+### Step 3: Configure Cockpit HTTPS (Optional)
 
-#### Docker
-
-Let's launch the server with the RootCA, Certificate and Private Key file. Edit `./mir-compose/mir/local-config.yaml`:
+By default Cockpit serves on plain HTTP. If you want the web UI over HTTPS (so the browser uses `wss://` for its NATS WebSocket connection), configure it in `./mir-compose/mir/local-config.yaml`:
 
 ```yaml
 mir:
-  rootCA: <path>/ca.crt
-  tlsKey: <path>/mir-module.key
-  tlsCert: <path>/mir-module.crt
+  http:
+    port: 3015
+    tlsCert: "/home/mir/certs/tls.crt"
+    tlsKey: "/home/mir/certs/tls.key"
 ```
 
-Edit `./mir-compose/mir/compose.yaml` to mount the file.
+Mount the certs into the Mir container in `./mir-compose/mir/compose.yaml`:
+
+```yaml
+services:
+  mir:
+    volumes:
+      - ./local-config.yaml:/home/mir/.config/mir/mir.yaml
+      - ./local-contexts.yaml:/home/mir/.config/mir/cli.yaml
+      - ./certs:/home/mir/certs
+```
+
+Update `./mir-compose/mir/local-contexts.yaml` so Cockpit connects over secure WebSocket:
+
+```yaml
+contexts:
+  - name: local
+    target: nats+tls://localhost:4222
+    webTarget: wss://localhost:9222 # Note 'wss' for secure connection
+    grafana: localhost:3000
+```
+
+Restart: `docker compose down && docker compose up`. Cockpit is now available at `https://localhost:3015`.
+
+### Step 4: Install Certificates on Module
+
+#### Docker
+
+Edit `./mir-compose/mir/local-config.yaml` with the RootCA, certificate and private key paths under `nats.*`. Mount the files in `./mir-compose/mir/compose.yaml`.
+
+```yaml
+nats:
+  url: "nats+tls://local_mir_support-nats-1:4222"
+  rootCA: "/home/mir/certs/ca.crt"
+  tlsCert: "/home/mir/certs/mir-module.crt"
+  tlsKey: "/home/mir/certs/mir-module.key"
+```
 
 ```bash
 # Restart server
@@ -214,7 +261,7 @@ caSecretRef: mir-ca-secret
 tlsSecretRef: mir-tls-secret
 ```
 
-### Step 4: Install the Certificates on the Clients
+### Step 5: Install the Certificates on the Clients
 
 #### CLI
 
@@ -222,11 +269,13 @@ Edit CLI configuration file to add the RootCA `mir tools config edit`:
 
 ```yaml
 - name: local
-  target: nats://localhost:4222
+  target: nats+tls://localhost:4222
+  webTarget: wss://localhost:9222
   grafana: localhost:3000
-  rootCA: <path>/ca.crt
-  tlsKey: <path>/mir-cli.key
-  tlsCert: <path>/mir-cli.crt
+  sec:
+    rootCA: <path>/ca.crt
+    tlsKey: <path>/mir-cli.key
+    tlsCert: <path>/mir-cli.crt
 ```
 
 Run `mir dev ls` to validate.
