@@ -155,9 +155,9 @@ func createSwarmForDeviceGroup(swarmCfg mir_v1.Swarm, bus *nats.Conn, mirCtx ui.
 		_, err := s.AddDevices(createReqs...).
 			WithLogLevel(mir.LogLevel(swarmCfg.Spec.LogLevel)).
 			WithPrettyLogger(true).
-			WithCredentials(mirCtx.Credentials).
-			WithCerticate(mirCtx.TlsCert, mirCtx.TlsKey).
-			WithCA(mirCtx.RootCA).
+			WithCredentials(mirCtx.Sec.Credentials).
+			WithCerticate(mirCtx.Sec.TlsCert, mirCtx.Sec.TlsKey).
+			WithCA(mirCtx.Sec.RootCA).
 			WithSchemaProto(protoFiles[devGroup.Meta.Name]...).
 			Incubate()
 		if err != nil {

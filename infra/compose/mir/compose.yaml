@@ -1,9 +1,10 @@
 services:
   mir:
-    image: ghcr.io/maxthom/mir:${MIR_VERSION:-latest}
+    image: ghcr.io/maxthom/mir:${MIR_VERSION:-main--7b90a67}
     ports:
       - "3015:3015"
     volumes:
       - ./local-config.yaml:/home/mir/.config/mir/mir.yaml
+      - ./local-contexts.yaml:/home/mir/.config/mir/cli.yaml
     command: serve
     restart: unless-stopped

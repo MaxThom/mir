@@ -173,9 +173,9 @@ func setupMirConn(k *kong.Context, log zerolog.Logger, ctx ui.Context) error {
 	}
 
 	opts := append(mir.WithDefaultReconnectOpts(), mir.WithDefaultConnectionHandlers(log)...)
-	opts = append(opts, mir.WithUserCredentials(ctx.Credentials))
-	opts = append(opts, mir.WithRootCA(ctx.RootCA))
-	opts = append(opts, mir.WithClientCertificate(ctx.TlsCert, ctx.TlsKey))
+	opts = append(opts, mir.WithUserCredentials(ctx.Sec.Credentials))
+	opts = append(opts, mir.WithRootCA(ctx.Sec.RootCA))
+	opts = append(opts, mir.WithClientCertificate(ctx.Sec.TlsCert, ctx.Sec.TlsKey))
 	m, err := mir.Connect(AppName, ctx.Target, opts...)
 	if err != nil {
 		log.Err(err).Msg("error connection to Mir server")

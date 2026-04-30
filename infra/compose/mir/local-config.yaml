@@ -1,9 +1,25 @@
 mir:
-  url: "nats://local_mir_support-nats-1:4222"
   logLevel: "info"
-  httpPort: 3015
+  http:
+    port: 3015
+    tlsCert: ""
+    tlsKey: ""
+  core:
+    deviceOnlineFlush: 7s
+    deviceOfflineFlush: 12s
+    deviceOfflineAfter: 30s
+  event:
+    flushInterval: 5s
+  cockpit:
+    allowedOrigins: []
+    githubOwner: MaxThom
+    githubRepo: mir
+nats:
+  url: "nats://local_mir_support-nats-1:4222"
   credentials: ""
   rootCA: ""
+  tlsCert: ""
+  tlsKey: ""
 surreal:
   url: "ws://local_mir_support-surrealdb-1:8000/rpc"
   namespace: "global"
@@ -15,3 +31,7 @@ influx:
   token: "mir-operator-token"
   org: "Mir"
   bucket: "mir"
+  batchSize: 1000
+  flushInterval: 1000
+  retryBufferLimit: 1073741824
+  gzip: false

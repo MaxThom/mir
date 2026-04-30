@@ -49,7 +49,7 @@ func TestCredentialsHandler_NoPassword_WithCreds(t *testing.T) {
 		opts: Options{
 			Config: ui.Config{
 				CurrentContext: "local",
-				Contexts:       []ui.Context{{Name: "local", Target: "nats://localhost:4222", Credentials: tmp.Name()}},
+				Contexts:       []ui.Context{{Name: "local", Target: "nats://localhost:4222", Sec: ui.ContextSecurity{Credentials: tmp.Name()}}},
 			},
 		},
 	}
@@ -88,7 +88,7 @@ func TestCredentialsHandler_WithPassword_Correct(t *testing.T) {
 		opts: Options{
 			Config: ui.Config{
 				CurrentContext: "prod",
-				Contexts:       []ui.Context{{Name: "prod", Target: "nats://prod:4222", Credentials: tmp.Name(), Password: "secret"}},
+				Contexts:       []ui.Context{{Name: "prod", Target: "nats://prod:4222", Sec: ui.ContextSecurity{Credentials: tmp.Name(), Password: "secret"}}},
 			},
 		},
 	}
@@ -110,7 +110,7 @@ func TestCredentialsHandler_WithPassword_Wrong(t *testing.T) {
 		opts: Options{
 			Config: ui.Config{
 				CurrentContext: "prod",
-				Contexts:       []ui.Context{{Name: "prod", Target: "nats://prod:4222", Password: "secret"}},
+				Contexts:       []ui.Context{{Name: "prod", Target: "nats://prod:4222", Sec: ui.ContextSecurity{Password: "secret"}}},
 			},
 		},
 	}
@@ -132,7 +132,7 @@ func TestCredentialsHandler_WithPassword_EmptyBody(t *testing.T) {
 		opts: Options{
 			Config: ui.Config{
 				CurrentContext: "prod",
-				Contexts:       []ui.Context{{Name: "prod", Target: "nats://prod:4222", Password: "secret"}},
+				Contexts:       []ui.Context{{Name: "prod", Target: "nats://prod:4222", Sec: ui.ContextSecurity{Password: "secret"}}},
 			},
 		},
 	}
@@ -153,7 +153,7 @@ func TestCredentialsHandler_WithPassword_MissingField(t *testing.T) {
 		opts: Options{
 			Config: ui.Config{
 				CurrentContext: "prod",
-				Contexts:       []ui.Context{{Name: "prod", Target: "nats://prod:4222", Password: "secret"}},
+				Contexts:       []ui.Context{{Name: "prod", Target: "nats://prod:4222", Sec: ui.ContextSecurity{Password: "secret"}}},
 			},
 		},
 	}
@@ -205,7 +205,7 @@ func TestCredentialsHandler_DefaultsToCurrentContext(t *testing.T) {
 		opts: Options{
 			Config: ui.Config{
 				CurrentContext: "local",
-				Contexts:       []ui.Context{{Name: "local", Target: "nats://localhost:4222", Credentials: tmp.Name()}},
+				Contexts:       []ui.Context{{Name: "local", Target: "nats://localhost:4222", Sec: ui.ContextSecurity{Credentials: tmp.Name()}}},
 			},
 		},
 	}
@@ -227,7 +227,7 @@ func TestCredentialsHandler_FileNotFound(t *testing.T) {
 		opts: Options{
 			Config: ui.Config{
 				CurrentContext: "local",
-				Contexts:       []ui.Context{{Name: "local", Target: "nats://localhost:4222", Credentials: "/nonexistent/path.creds"}},
+				Contexts:       []ui.Context{{Name: "local", Target: "nats://localhost:4222", Sec: ui.ContextSecurity{Credentials: "/nonexistent/path.creds"}}},
 			},
 		},
 	}

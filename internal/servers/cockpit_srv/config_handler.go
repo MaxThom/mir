@@ -74,7 +74,7 @@ func (s *CockpitServer) configHandler(w http.ResponseWriter, r *http.Request) {
 			Name:    ctx.Name,
 			Target:  toWebSocketTarget(ctx.Target, ctx.WebTarget),
 			Grafana: ctx.Grafana,
-			Secured: ctx.Password != "",
+			Secured: ctx.Sec.Password != "",
 		}
 	}
 
