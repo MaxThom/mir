@@ -7,13 +7,20 @@
   - [ ] tlm cache for widgets
 - [ ] mir book for Cockpit
 - [ ] deployment for Cockpit
-  - [x] binary
+  - [ ] binary
+    - [ ] test cockpit
+    - [ ] test tls, auth and wss
   - [ ] compose
+    - [x] update config
+    - [ ] test cockpit
+    - [ ] test tls, auth and wss
   - [ ] helm
-- [ ] security for Cockpit
-  - [ ] k8s websocket mTLS port to be configured
-  - [ ] detect if local, if so no need of password
-  - [ ] Setup local with creds to test
+    - [ ] update chart with http ingress
+    - [ ] test cockpit
+    - [ ] test tls, auth and wss
+- [x] security for Cockpit
+  - [x] detect if local, if so no need of password
+  - [x] Setup local with creds to test
 - [ ] Cockpit
   - [ ] dashboard per context
   - [ ] mir serve, how it load context list
