@@ -6,8 +6,8 @@
 - [ ] perf check
   - [ ] tlm cache for widgets
 - [ ] mir book for Cockpit
-  - [ ] operating
-    - [ ] webui
+  - [x] operating
+    - [x] webui
   - [ ] running
     - [x] binary
     - [x] docker
@@ -38,7 +38,7 @@
   - [x] detect if local, if so no need of password
   - [x] Setup local with creds to test
 - [ ] Cockpit
-  - [ ] redirect to https
+  - [x] redirect to https
   - [ ] dashboard per context
   - [x] mir serve, how it load context list
   

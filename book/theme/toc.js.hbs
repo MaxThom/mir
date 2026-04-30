@@ -10,7 +10,7 @@ class MDBookSidebarScrollbox extends HTMLElement {
   connectedCallback() {
     // Added Mir Logo
     this.innerHTML =
-      '<span class="logo"><img alt="{{ book_title }}" width=200px src="{{ path_to_root }}logos/mir_alpha.png"></span>{{#toc}}{{/toc}}';
+      '<span class="logo"><img alt="{{ book_title }}" width=200px src="/logos/mir_alpha.png"></span>{{#toc}}{{/toc}}';
 
     // Set the current, active page, and reveal it if it's hidden
     let current_page = document.location.href.toString();

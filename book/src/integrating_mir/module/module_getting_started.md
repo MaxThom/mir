@@ -107,6 +107,6 @@ Module started!
 
 Now that you have a basic module running, explore more advanced features:
 
-- [Event Subscriptions](./module_events.md) - Learn about all available events
-- [Examples](./module_examples.md) - See complete working examples
 - [Module SDK Overview](./module_sdk.md) - Complete API reference
+- [Routes](./module_routes.md) - Define custom NATS route handlers
+- [Routes Example](./module_routes_example.md) - Working examples

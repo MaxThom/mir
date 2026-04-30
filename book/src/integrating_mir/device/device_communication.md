@@ -1,6 +1,6 @@
 # Device Communication
 
-The SDK provices a set of function to interact with the Mir server. There are 3 types of communication:
+The SDK provides a set of functions to interact with the Mir server. There are 3 types of communication:
 
 1. **Telemetry**: data are sent from the device to the server as fire and forget.
 2. **Commands**: data are sent from the server to the device with a reply expected.

@@ -50,16 +50,16 @@ This launches the Mir server that manages all your devices.
 
 **Congratulations!** Your IoT platform is now running!
 
-### Access Your Dashboard
+### Access Your Interfaces
 
-Open your browser and navigate to:
+**Cockpit** — the Mir web interface for device management:
+- **URL**: http://localhost:3015
+
+**Grafana** — pre-configured dashboards for telemetry visualization:
 - **URL**: http://localhost:3000
-- **Username**: `admin`
-- **Password**: `mir-operator`
+- **Username**: `admin` / **Password**: `mir-operator`
 
-You now have access to pre-configured Grafana dashboards for monitoring your devices.
-
-Find list of running services [here](running_mir/binary.md).
+Find the full list of running services [here](running_mir/binary.md).
 
 ## 🤖 Create Your First Virtual Device
 
@@ -106,7 +106,7 @@ Device sending data to the server in a fire-and-forget manner.
 
 View incoming sensor data:
 ```bash
-mir tlm list power
+mir dev tlm list power
 ```
 
 **Output:**
@@ -124,17 +124,17 @@ Commands are sent from the server to the device as a request-reply.
 
 See available commands:
 ```bash
-mir cmd send power
+mir dev cmd send power
 ```
 
 Send a command to activate HVAC:
 ```bash
 # See command payload
-mir command send power/default -n swarm.v1.ActivateHVAC -j
+mir dev cmd send power/default -n swarm.v1.ActivateHVAC -j
 # Send command with modified payload
-mir command send power/default -n swarm.v1.ActivateHVAC -p '{"durationSec": 5}'
+mir dev cmd send power/default -n swarm.v1.ActivateHVAC -p '{"durationSec": 5}'
 # Quickly edit and send a command
-mir command send power/default -n swarm.v1.ActivateHVAC -e
+mir dev cmd send power/default -n swarm.v1.ActivateHVAC -e
 ```
 
 **Output:**
@@ -149,19 +149,19 @@ Configuration is divided into desired properties and reported properties. Contra
 
 View current configuration option:
 ```bash
-mir cfg send power/default
+mir dev cfg send power/default
 ```
 
 Update device configuration:
 ```bash
 # See current config
-mir config send power/default -n swarm.v1.DataRateProp -c
+mir dev cfg send power/default -n swarm.v1.DataRateProp -c
 # See config template payload
-mir config send power/default -n swarm.v1.DataRateProp -j
+mir dev cfg send power/default -n swarm.v1.DataRateProp -j
 # Send config with modified payload
-mir config send power/default -n swarm.v1.DataRateProp -p '{"sec": 5}'
+mir dev cfg send power/default -n swarm.v1.DataRateProp -p '{"sec": 5}'
 # Quickly edit and send a config
-mir config send power/default -n swarm.v1.DataRateProp -e
+mir dev cfg send power/default -n swarm.v1.DataRateProp -e
 ```
 
 The device will:
@@ -178,7 +178,8 @@ In just a few minutes, you've:
 - ✅ **Streamed** real-time telemetry data
 - ✅ **Sent** commands to control the device
 - ✅ **Updated** device configuration
-- ✅ **Visualized** data in Grafana dashboards
+- ✅ **Managed** your fleet via Cockpit at `localhost:3015`
+- ✅ **Visualized** data in Grafana dashboards at `localhost:3000`
 
 ## 🧹 Clean Up
 

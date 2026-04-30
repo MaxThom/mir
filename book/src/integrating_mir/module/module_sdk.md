@@ -62,5 +62,5 @@ Ready to build your first module? Continue to the [Getting Started](./module_get
 ## Next Steps
 
 - [Getting Started](./module_getting_started.md) - Create your first module
-- [Event Subscriptions](./module_events.md) - Learn about the event system
-- [Examples](./module_examples.md) - Explore practical examples
+- [Routes](./module_routes.md) - Define custom NATS route handlers
+- [Routes Example](./module_routes_example.md) - Explore practical examples
