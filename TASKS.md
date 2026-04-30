@@ -9,9 +9,12 @@
   - [ ] configure https
   - [ ] configure auths
 - [ ] deployment for Cockpit
+  - [x] rework config of Mir serve 
+    - [x] check srv
+    - [x] enabled/desable of each module
   - [ ] binary
-    - [ ] test cockpit
-    - [ ] test tls, auth and wss
+    - [x] test cockpit
+    - [x] test tls, auth and wss
   - [ ] compose
     - [x] update config
     - [ ] test cockpit
@@ -25,7 +28,7 @@
   - [x] Setup local with creds to test
 - [ ] Cockpit
   - [ ] dashboard per context
-  - [ ] mir serve, how it load context list
+  - [x] mir serve, how it load context list
   
 ### Bug
 

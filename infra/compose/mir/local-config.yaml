@@ -5,12 +5,21 @@ mir:
     tlsCert: ""
     tlsKey: ""
   core:
+    enabled: true
     deviceOnlineFlush: 7s
     deviceOfflineFlush: 12s
     deviceOfflineAfter: 30s
+  prototlm:
+    enabled: true
+  protocmd:
+    enabled: true
+  protocfg:
+    enabled: true
   event:
+    enabled: true
     flushInterval: 5s
   cockpit:
+    enabled: true
     allowedOrigins: []
     githubOwner: MaxThom
     githubRepo: mir
