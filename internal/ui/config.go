@@ -52,7 +52,7 @@ type Context struct {
 	RootCA      string `yaml:"rootCA"`
 	TlsCert     string `yaml:"tlsCert"`
 	TlsKey      string `yaml:"tlsKey"`
-	Password    string `yaml:"password"`
+	Password    string `yaml:"password" cfg:"secret"`
 }
 
 func (c Config) GetCurrentContext() (Context, bool) {

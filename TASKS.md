@@ -6,6 +6,8 @@
 - [ ] perf check
   - [ ] tlm cache for widgets
 - [ ] mir book for Cockpit
+  - [ ] configure https
+  - [ ] configure auths
 - [ ] deployment for Cockpit
   - [ ] binary
     - [ ] test cockpit

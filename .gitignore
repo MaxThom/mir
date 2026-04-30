@@ -13,3 +13,4 @@ history.txt
 .helm_ls_cache/
 local.resolver.conf
 infra/compose/natsio/certs/*
+infra/compose/natsio/resolver.conf
