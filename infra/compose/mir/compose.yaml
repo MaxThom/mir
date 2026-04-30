@@ -1,6 +1,6 @@
 services:
   mir:
-    image: ghcr.io/maxthom/mir:${MIR_VERSION:-main--7b90a67}
+    image: ghcr.io/maxthom/mir:${MIR_VERSION:-latest}
     ports:
       - "3015:3015"
     volumes:

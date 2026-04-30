@@ -22,6 +22,7 @@ import (
 	"github.com/maxthom/mir/internal/libs/build_meta"
 	"github.com/maxthom/mir/internal/libs/external/influx"
 	"github.com/maxthom/mir/internal/libs/external/surreal"
+	"github.com/maxthom/mir/internal/servers"
 	cockpit_srv "github.com/maxthom/mir/internal/servers/cockpit_srv"
 	"github.com/maxthom/mir/internal/servers/core_srv"
 	"github.com/maxthom/mir/internal/servers/eventstore_srv"
@@ -49,21 +50,39 @@ type (
 		LogLevel   string        `help:"Mir loglevel for each service" default:"info" yaml:"logLevel"`
 		Http       HttpCfg       `embed:"" prefix:"http." yaml:"http"`
 		Core       CoreCfg       `embed:"" prefix:"core." yaml:"core"`
+		ProtoTlm   ProtoTlmCfg   `embed:"" prefix:"prototlm." yaml:"prototlm"`
+		ProtoCmd   ProtoCmdCfg   `embed:"" prefix:"protocmd." yaml:"protocmd"`
+		ProtoCfg   ProtoCfgCfg   `embed:"" prefix:"protocfg." yaml:"protocfg"`
 		EventStore EventStoreCfg `embed:"" prefix:"event." yaml:"event"`
 		Cockpit    CockpitCfg    `embed:"" prefix:"cockpit." yaml:"cockpit"`
 	}
 
 	CoreCfg struct {
+		Enabled            bool          `help:"Enable core service" default:"true" yaml:"enabled"`
 		DeviceOnlineFlush  time.Duration `help:"Device online flush interval" default:"7s" yaml:"deviceOnlineFlush"`
 		DeviceOfflineFlush time.Duration `help:"Device offline flush interval" default:"12s" yaml:"deviceOfflineFlush"`
 		DeviceOfflineAfter time.Duration `help:"Device offline after" default:"30s" yaml:"deviceOfflineAfter"`
 	}
 
+	ProtoTlmCfg struct {
+		Enabled bool `help:"Enable prototlm service" default:"true" yaml:"enabled"`
+	}
+
+	ProtoCmdCfg struct {
+		Enabled bool `help:"Enable protocmd service" default:"true" yaml:"enabled"`
+	}
+
+	ProtoCfgCfg struct {
+		Enabled bool `help:"Enable protocfg service" default:"true" yaml:"enabled"`
+	}
+
 	EventStoreCfg struct {
+		Enabled       bool          `help:"Enable eventstore service" default:"true" yaml:"enabled"`
 		FlushInterval time.Duration `help:"Event store flush interval" default:"5s" yaml:"flushInterval"`
 	}
 
 	CockpitCfg struct {
+		Enabled        bool     `help:"Enable cockpit service" default:"true" yaml:"enabled"`
 		AllowedOrigins []string `help:"CORS allowed origins" yaml:"allowedOrigins"`
 		GitHubOwner    string   `help:"GitHub owner for releases feed" default:"MaxThom" yaml:"githubOwner"`
 		GitHubRepo     string   `help:"GitHub repo for releases feed" default:"mir" yaml:"githubRepo"`
@@ -109,11 +128,6 @@ const (
 )
 
 type ServeCmd struct {
-	Core              bool   `help:"Core module is for device mangement" default:"true"`
-	Configuration     bool   `help:"Configuration module is for device properties" default:"true"`
-	Telemetry         bool   `help:"Telemetry module is for data ingestion and visualization" default:"true"`
-	Command           bool   `help:"Command module if for command and control" default:"true"`
-	Cockpit           bool   `help:"Cockpit web UI for device management and monitoring" default:"false"`
 	DisplayDefaultCfg bool   `name:"display-default-cfg" help:"Display default configuration. Can be piped to config file '> ~/.config/mir/mir.yaml'" default:"false"`
 	DisplayLoadedCfg  bool   `name:"display-cfg" help:"Display loaded configuration. Usefull for debug scenario" default:"false"`
 	ConfigFile        string `name:"server-config" help:"Set path for config path." default:"~/.config/mir/mir.yaml"`
@@ -246,11 +260,11 @@ func (d *ServeCmd) run(
 	opts = append(opts, mir.WithClientCertificate(cfg.Nats.TLSCert, cfg.Nats.TLSKey))
 	m, err := mir.Connect(AppName, cfg.Nats.Url, opts...)
 	if err != nil {
-		log.Err(err).Msg("error connecting to Mir server")
-		fmt.Println("error connecting to Mir server")
+		log.Err(err).Msg("error connecting to msg bus")
+		fmt.Println("error connecting to msg bus")
 		os.Exit(1)
 	} else if !m.Bus.IsConnected() {
-		log.Error().Str("url", cfg.Nats.Url).Str("status", m.Bus.Status().String()).Err(m.Bus.LastError()).Msg("cannot connect to Mir msg bus")
+		log.Error().Str("url", cfg.Nats.Url).Str("status", m.Bus.Status().String()).Err(m.Bus.LastError()).Msg("cannot connect to msg bus")
 	}
 
 	// Services
@@ -263,34 +277,52 @@ func (d *ServeCmd) run(
 	if err != nil {
 		return err
 	}
-	coreSrv, err := core_srv.NewCore(log, m, mngStore, cc,
-		&core_srv.Options{
-			DeviceOnlineFlush:  cfg.Mir.Core.DeviceOnlineFlush,
-			DeviceOfflineFlush: cfg.Mir.Core.DeviceOfflineFlush,
-			DeviceOfflineAfter: cfg.Mir.Core.DeviceOfflineAfter,
-		})
-	if err != nil {
-		return err
+
+	// Servers
+	srvs := map[string]servers.Server{}
+	if cfg.Mir.Core.Enabled {
+		coreSrv, err := core_srv.NewCore(log, m, mngStore, cc,
+			&core_srv.Options{
+				DeviceOnlineFlush:  cfg.Mir.Core.DeviceOnlineFlush,
+				DeviceOfflineFlush: cfg.Mir.Core.DeviceOfflineFlush,
+				DeviceOfflineAfter: cfg.Mir.Core.DeviceOfflineAfter,
+			})
+		if err != nil {
+			return err
+		}
+		srvs["core"] = coreSrv
 	}
 
-	cfgSrv, err := protocfg_srv.NewProtoCfg(log, m, mngStore, cc)
-	if err != nil {
-		return err
+	if cfg.Mir.ProtoCfg.Enabled {
+		cfgSrv, err := protocfg_srv.NewProtoCfg(log, m, mngStore, cc)
+		if err != nil {
+			return err
+		}
+		srvs["protocfg"] = cfgSrv
 	}
 
-	cmdSrv, err := protocmd_srv.NewProtoCmd(log, m, mngStore, cc)
-	if err != nil {
-		return err
+	if cfg.Mir.ProtoCmd.Enabled {
+		cmdSrv, err := protocmd_srv.NewProtoCmd(log, m, mngStore, cc)
+		if err != nil {
+			return err
+		}
+		srvs["protocmd"] = cmdSrv
 	}
 
-	tlmSrv, err := prototlm_srv.NewProtoTlm(log, m, mngStore, ts.NewInfluxTelemetryStore(ctx, cfg.Influx.Org, cfg.Influx.Bucket, lpClient), cc)
-	if err != nil {
-		return err
+	if cfg.Mir.ProtoTlm.Enabled {
+		tlmSrv, err := prototlm_srv.NewProtoTlm(log, m, mngStore, ts.NewInfluxTelemetryStore(ctx, cfg.Influx.Org, cfg.Influx.Bucket, lpClient), cc)
+		if err != nil {
+			return err
+		}
+		srvs["prototlm"] = tlmSrv
 	}
 
-	eventSrv, err := eventstore_srv.NewEventStore(log, m, mngStore, &eventstore_srv.Options{FlushInterval: cfg.Mir.EventStore.FlushInterval})
-	if err != nil {
-		return err
+	if cfg.Mir.EventStore.Enabled {
+		eventSrv, err := eventstore_srv.NewEventStore(log, m, mngStore, &eventstore_srv.Options{FlushInterval: cfg.Mir.EventStore.FlushInterval})
+		if err != nil {
+			return err
+		}
+		srvs["eventstore"] = eventSrv
 	}
 
 	// Metrics & Health
@@ -300,27 +332,29 @@ func (d *ServeCmd) run(
 	pprof.RegisterRoutesIfEnvGoPprofSet(mux)
 
 	// Cockpit
-	webFS, err := fs.Sub(ui.CockpitBuildFS, "web/build")
-	if err != nil {
-		return fmt.Errorf("failed to get web filesystem: %w", err)
-	}
+	if cfg.Mir.Cockpit.Enabled {
+		webFS, err := fs.Sub(ui.CockpitBuildFS, "web/build")
+		if err != nil {
+			return fmt.Errorf("failed to get web filesystem: %w", err)
+		}
 
-	cockpitSrv, err := cockpit_srv.NewCockpit(log, &cockpit_srv.Options{
-		AllowedOrigins: cfg.Mir.Cockpit.AllowedOrigins,
-		WebFS:          webFS,
-		Config:         contexts,
-		Store:          mngStore,
-		GitHub: cockpit_srv.GitHubOptions{
-			Owner: cfg.Mir.Cockpit.GitHubOwner,
-			Repo:  cfg.Mir.Cockpit.GitHubRepo,
-		},
-	})
-	if err != nil {
-		return err
-	}
+		cockpitSrv, err := cockpit_srv.NewCockpit(log, &cockpit_srv.Options{
+			AllowedOrigins: cfg.Mir.Cockpit.AllowedOrigins,
+			WebFS:          webFS,
+			Config:         contexts,
+			Store:          mngStore,
+			GitHub: cockpit_srv.GitHubOptions{
+				Owner: cfg.Mir.Cockpit.GitHubOwner,
+				Repo:  cfg.Mir.Cockpit.GitHubRepo,
+			},
+		})
+		if err != nil {
+			return err
+		}
 
-	// Register cockpit routes on the shared mux
-	cockpitSrv.RegisterRoutes(mux)
+		// Register cockpit routes on the shared mux
+		cockpitSrv.RegisterRoutes(mux)
+	}
 
 	// WebServer — TLS enables HTTPS + native HTTP/2 (ALPN); plain uses h2c.
 	tlsEnabled := cfg.Mir.Http.TLSCert != "" && cfg.Mir.Http.TLSKey != ""
@@ -341,7 +375,6 @@ func (d *ServeCmd) run(
 	if tlsEnabled {
 		scheme = "https"
 	}
-	log.Info().Int("port", cfg.Mir.Http.Port).Bool("tls", tlsEnabled).Msg("starting cockpit web server")
 	go func() {
 		defer wg.Done()
 		health.SetComponentReady(health.ComponentHttp)
@@ -359,26 +392,17 @@ func (d *ServeCmd) run(
 		}
 		log.Debug().Msg("http server shutdown")
 	}()
-	log.Info().Msgf("serve Cockpit on %s://localhost:%d", scheme, cfg.Mir.Http.Port)
+	log.Info().Msgf("serving http on %s://localhost:%d", scheme, cfg.Mir.Http.Port)
 
-	if err := coreSrv.Serve(); err != nil {
-		return err
-	}
-	if err := cfgSrv.Serve(); err != nil {
-		return err
-	}
-	if err := cmdSrv.Serve(); err != nil {
-		return err
-	}
-	if err := tlmSrv.Serve(); err != nil {
-		return err
-	}
-	if err := eventSrv.Serve(); err != nil {
-		return err
+	for k, srv := range srvs {
+		if err := srv.Serve(); err != nil {
+			return err
+		}
+		log.Debug().Msgf("serving %s service", k)
 	}
 
 	// Handle shutdown
-	log.Info().Msg(fmt.Sprintf("%s initialized", strings.ToUpper(AppName[:1])+AppName[1:]))
+	log.Info().Msg(fmt.Sprintf("%s Initialized", strings.ToUpper(AppName[:1])+AppName[1:]))
 	health.SetReady()
 	mir_signals.WaitForOsSignals(func() {
 		cancel()
@@ -386,21 +410,15 @@ func (d *ServeCmd) run(
 		if err := server.Shutdown(shutdownCtx); err != nil {
 			log.Fatal().Err(err).Msg("failed to gracefully shutdown server")
 		}
-		if err := coreSrv.Shutdown(); err != nil {
-			log.Error().Err(err).Msg("failed to gracefully shutdown core server")
+
+		for k, srv := range srvs {
+			if err := srv.Shutdown(); err != nil {
+				log.Error().Err(err).Msgf("failed to gracefully shutdown %s service", k)
+			} else {
+				log.Debug().Msgf("shutdown %s service", k)
+			}
 		}
-		if err := cfgSrv.Shutdown(); err != nil {
-			log.Error().Err(err).Msg("failed to gracefully shutdown cfg server")
-		}
-		if err := cmdSrv.Shutdown(); err != nil {
-			log.Error().Err(err).Msg("failed to gracefully shutdown cmd server")
-		}
-		if err := tlmSrv.Shutdown(); err != nil {
-			log.Error().Err(err).Msg("failed to gracefully shutdown tlm server")
-		}
-		if err := eventSrv.Shutdown(); err != nil {
-			log.Error().Err(err).Msg("failed to gracefully shutdown event store server")
-		}
+
 		m.Disconnect()
 		db.Close()
 		lpClient.Close()

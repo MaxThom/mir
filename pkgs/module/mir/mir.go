@@ -158,11 +158,11 @@ func WithDefaultReconnectOpts() []nats.Option {
 func WithDefaultConnectionHandlers(l zerolog.Logger) []nats.Option {
 	return []nats.Option{
 		nats.ErrorHandler(func(c *nats.Conn, s *nats.Subscription, err error) {
-			l.Error().Str("url", c.ConnectedUrl()).Str("status", c.Status().String()).Err(err).Msg("connected to Mir Server ")
+			l.Error().Str("url", c.ConnectedUrl()).Str("status", c.Status().String()).Err(err).Msg("connected to msg bus")
 		}),
 		nats.ConnectHandler(func(c *nats.Conn) {
 			health.SetComponentReady(health.ComponentNats)
-			l.Info().Str("url", c.ConnectedUrl()).Str("status", c.Status().String()).Msg("connected to Mir Server ")
+			l.Info().Str("url", c.ConnectedUrl()).Str("status", c.Status().String()).Msg("connected to msg bus")
 		}),
 		nats.DisconnectErrHandler(func(c *nats.Conn, err error) {
 			health.SetComponentUnready(health.ComponentNats)
@@ -171,7 +171,7 @@ func WithDefaultConnectionHandlers(l zerolog.Logger) []nats.Option {
 		}),
 		nats.ReconnectHandler(func(c *nats.Conn) {
 			health.SetComponentReady(health.ComponentNats)
-			l.Info().Str("url", c.ConnectedUrl()).Str("status", c.Status().String()).Msg("reconnected to Mir Server ")
+			l.Info().Str("url", c.ConnectedUrl()).Str("status", c.Status().String()).Msg("reconnected to msg bus")
 		}),
 		nats.ClosedHandler(func(c *nats.Conn) {
 			health.SetComponentUnready(health.ComponentNats)
