@@ -107,13 +107,54 @@ nats:
         key: tls.key
 ```
 
-### Step 3: Install Root Certificate on Module
+### Step 3: Configure Cockpit HTTPS (Optional)
+
+By default Cockpit serves on plain HTTP. If you want the web UI over HTTPS (so the browser uses `wss://` for its NATS WebSocket connection), configure it in `./mir-compose/mir/local-config.yaml`:
+
+```yaml
+mir:
+  http:
+    port: 3015
+    tlsCert: "/home/mir/certs/tls.crt"
+    tlsKey: "/home/mir/certs/tls.key"
+```
+
+Mount the certs into the Mir container in `./mir-compose/mir/compose.yaml`:
+
+```yaml
+services:
+  mir:
+    volumes:
+      - ./local-config.yaml:/home/mir/.config/mir/mir.yaml
+      - ./local-contexts.yaml:/home/mir/.config/mir/cli.yaml
+      - ./certs:/home/mir/certs
+```
+
+Update `./mir-compose/mir/local-contexts.yaml` so Cockpit connects over secure WebSocket:
+
+```yaml
+contexts:
+  - name: local
+    target: nats+tls://localhost:4222
+    webTarget: wss://localhost:9222 # Note 'wss' to enable secured connection
+    grafana: localhost:3000
+```
+
+Restart: `docker compose down && docker compose up`. Cockpit is now available at `https://localhost:3015`.
+
+### Step 4: Install Root Certificate on Module
 
 If the CA Certificate is public and installed in the Trusted Store of your container, you can skip this step.
 
 #### Docker
 
-Let's launch the server with the RootCA file. Edit `./mir-compose/mir/local-config.yaml` and set the path of the credentials files under `mir.rootCA`. Edit `./mir-compose/mir/compose.yaml` to mount the file.
+Edit `./mir-compose/mir/local-config.yaml` and set the root CA path under `nats.rootCA`. Mount the file in `./mir-compose/mir/compose.yaml`.
+
+```yaml
+nats:
+  url: "nats+tls://local_mir_support-nats-1:4222"
+  rootCA: "/home/mir/certs/ca.crt"
+```
 
 ```bash
 # Restart server
@@ -139,7 +180,7 @@ Update values file:
 caSecretRef: mir-rootca-secret # Secret name
 ```
 
-### Step 4: Install the Root Certificate on the Clients
+### Step 5: Install the Root Certificate on the Clients
 
 If the CA Certificate is public and installed in the Trusted Store of your machine, you can skip this step.
 
@@ -173,8 +214,10 @@ Edit CLI configuration file to add the RootCA `mir tools config edit`:
 ```yaml
 - name: local
   target: nats://localhost:4222
+  webTarget: wss://localhost:9222
   grafana: localhost:3000
-  rootCA: <path>/ca.crt
+  sec:
+    rootCA: <path>/ca.crt
 ```
 
 #### Device

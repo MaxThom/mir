@@ -18,13 +18,17 @@ Mir Security CLI wraps NSC commands with a set of preset to make securing Mir ec
 - Clients (access CLI and other frontend)
 - Devices (connect devices)
 
-The CLI uses the current context to help manage which server to target. Use `mir config edit`to add a new context with server name and url:
+The CLI uses the current context to help manage which server to target. Use `mir tools config edit` to add a new context with server name and url:
 
 ```yaml
 # If using local setup
 - name: local
   target: nats://localhost:4222
+  webTarget: ws://localhost:9222
   grafana: localhost:3000
+  sec:
+    credentials: ""
+    password: ""
 ```
 
 You can overwrite the Operator, Account and URL arguments using flags. This requires more familiarity with the NSC tool. Moreover, you can use flag `--no-exec` on each command to see NSC commands.
@@ -75,7 +79,13 @@ mir tools security push
 mir tools security generate-creds mir_srv -p ./mir_srv.creds
 ```
 
-Now let's launch the server with the credentials file. Edit `./mir-compose/mir/local-config.yaml` and set the path of the credentials files under `mir.credentials`. Edit `./mir-compose/mir/compose.yaml` to mount the file.
+Now let's launch the server with the credentials file. Edit `./mir-compose/mir/local-config.yaml` and set the path under `nats.credentials`. Edit `./mir-compose/mir/compose.yaml` to mount the file.
+
+```yaml
+nats:
+  url: "nats://local_mir_support-nats-1:4222"
+  credentials: "/home/mir/creds/mir_srv.creds"
+```
 
 ```bash
 # Restart server
@@ -104,13 +114,49 @@ Edit CLI configuration file to add the credentials `mir tools config edit`:
 ```yaml
 - name: local
   target: nats://localhost:4222
+  webTarget: ws://localhost:9222
   grafana: localhost:3000
-  credentials: <path>/ops.creds
+  sec:
+    credentials: <path>/ops.creds
 ```
 
 If you run `mir dev ls`, you should now see the list of devices.
 
-### Step 5: Create Device Credentials
+### Step 5: Configure Cockpit Server List
+
+Cockpit reads available contexts from `./mir-compose/mir/local-contexts.yaml` (mounted into the container as `cli.yaml`) and exposes them to the browser via `GET /api/v1/contexts`. Each context entry defines a server the web UI can connect to.
+
+Edit `./mir-compose/mir/local-contexts.yaml` to list your servers:
+
+```yaml
+logLevel: info
+currentContext: local
+contexts:
+  - name: local
+    target: nats://localhost:4222
+    webTarget: ws://localhost:9222
+    grafana: localhost:3000
+    sec:
+      credentials: ""
+      password: ""
+```
+
+If you want to connect to a secure nats server. Mount the `.creds` file, set the path and a password.
+
+```yaml
+contexts:
+  - name: production
+    target: nats://prod.example.com:4222
+    webTarget: wss://prod.example.com:9222
+    grafana: prod.example.com:3000
+    sec:
+      credentials: "/home/mir/creds/ops.creds"
+      password: "your-secret-password"
+```
+
+Restart to apply: `docker compose down && docker compose up`.
+
+### Step 6: Create Device Credentials
 
 The last type of users is of Device type. Refer to [Integrating Mir](../integrating_mir/device/device_sdk.md) to create a device.
 

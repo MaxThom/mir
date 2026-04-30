@@ -35,9 +35,10 @@ func NewDefaultConfig() Config {
 		CurrentContext: "local",
 		Contexts: []Context{
 			{
-				Name:    "local",
-				Target:  "nats://localhost:4222",
-				Grafana: "localhost:3000",
+				Name:      "local",
+				Target:    "nats://localhost:4222",
+				WebTarget: "ws://localhost:9222",
+				Grafana:   "localhost:3000",
 			},
 		},
 	}

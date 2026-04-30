@@ -6,19 +6,30 @@
 - [ ] perf check
   - [ ] tlm cache for widgets
 - [ ] mir book for Cockpit
+  - [ ] operating
+    - [ ] webui
+  - [ ] running
+    - [x] binary
+    - [x] docker
+    - [ ] k8s
+    - [x] local
   - [ ] configure https
+    - [x] docker
+    - [ ] k8s
   - [ ] configure auths
+    - [x] docker
+    - [ ] k8s
 - [ ] deployment for Cockpit
   - [x] rework config of Mir serve 
     - [x] check srv
     - [x] enabled/desable of each module
-  - [ ] binary
+  - [x] binary
     - [x] test cockpit
     - [x] test tls, auth and wss
-  - [ ] compose
+  - [x] compose
     - [x] update config
-    - [ ] test cockpit
-    - [ ] test tls, auth and wss
+    - [x] test cockpit
+    - [x] test tls, auth and wss
   - [ ] helm
     - [ ] update chart with http ingress
     - [ ] test cockpit
@@ -27,6 +38,7 @@
   - [x] detect if local, if so no need of password
   - [x] Setup local with creds to test
 - [ ] Cockpit
+  - [ ] redirect to https
   - [ ] dashboard per context
   - [x] mir serve, how it load context list
   
