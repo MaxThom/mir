@@ -1,0 +1,14 @@
+# /home/maxthom/.config/mir/cli.yaml
+logLevel: info
+currentContext: local
+contexts:
+  - name: local
+    target: nats://localhost:4222
+    webTarget: ws://localhost:9222
+    grafana: localhost:3000
+    sec:
+      rootCA: ""
+      tlsCert: ""
+      tlsKey: ""
+      credentials: ""
+      password: ""

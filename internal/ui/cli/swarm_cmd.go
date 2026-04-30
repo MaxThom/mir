@@ -117,9 +117,9 @@ func launchSwarm(ctx context.Context, m *mSdk.Mir, logLvl mir.LogLevel, mirCtx u
 		WithSchema(swarmv1.File_swarm_v1_demo_proto).
 		WithLogLevel(logLvl).
 		WithPrettyLogger(true).
-		WithCredentials(mirCtx.Credentials).
-		WithCerticate(mirCtx.TlsCert, mirCtx.TlsKey).
-		WithCA(mirCtx.RootCA).
+		WithCredentials(mirCtx.Sec.Credentials).
+		WithCerticate(mirCtx.Sec.TlsCert, mirCtx.Sec.TlsKey).
+		WithCA(mirCtx.Sec.RootCA).
 		Incubate()
 	if err != nil {
 		return nil, fmt.Errorf("error incubating swarm: %w", err)

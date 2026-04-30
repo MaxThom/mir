@@ -34,8 +34,8 @@ func (s *CockpitServer) credentialsHandler(w http.ResponseWriter, r *http.Reques
 	found := false
 	for _, ctx := range s.opts.Config.Contexts {
 		if ctx.Name == contextName {
-			credPath = ctx.Credentials
-			password = ctx.Password
+			credPath = ctx.Sec.Credentials
+			password = ctx.Sec.Password
 			found = true
 			break
 		}

@@ -56,7 +56,7 @@ func (d *ContextCmd) Run(cfg ui.Config) error {
 			if c.Name == data.CurrentContext {
 				st = "*" + c.Name + ""
 			}
-			sb.WriteString(fmt.Sprintf(format, st, c.Target, c.Grafana, c.Credentials))
+			sb.WriteString(fmt.Sprintf(format, st, c.Target, c.Grafana, c.Sec.Credentials))
 		}
 		out = sb.String()
 	case "json":

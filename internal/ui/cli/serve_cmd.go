@@ -40,12 +40,14 @@ import (
 type (
 	ServeConfig struct {
 		Mir     MirCfg     `embed:"" prefix:"mir." yaml:"mir"`
+		Nats    NatsCfg    `embed:"" prefix:"nats." yaml:"nats"`
 		Surreal SurrealCfg `embed:"" prefix:"surreal." yaml:"surreal"`
 		Influx  InfluxCfg  `embed:"" prefix:"influx." yaml:"influx"`
-		Module  ModuleCfg  `embed:"" prefix:"" yaml:"module"`
 	}
 
-	ModuleCfg struct {
+	MirCfg struct {
+		LogLevel   string        `help:"Mir loglevel for each service" default:"info" yaml:"logLevel"`
+		Http       HttpCfg       `embed:"" prefix:"http." yaml:"http"`
 		Core       CoreCfg       `embed:"" prefix:"core." yaml:"core"`
 		EventStore EventStoreCfg `embed:"" prefix:"event." yaml:"event"`
 		Cockpit    CockpitCfg    `embed:"" prefix:"cockpit." yaml:"cockpit"`
@@ -67,16 +69,18 @@ type (
 		GitHubRepo     string   `help:"GitHub repo for releases feed" default:"mir" yaml:"githubRepo"`
 	}
 
-	MirCfg struct {
-		Url         string `help:"Mir server URL" default:"nats://127.0.0.1:4222" yaml:"url"`
-		Credentials string `help:"Mir JWT/NKEY credential file path" default:"" yaml:"credentials"`
-		RootCA      string `help:"Mir RootCA for TLS connection" default:"" yaml:"rootCA"`
-		TLSCert     string `help:"Mir Certificate for TLS connection" default:"" yaml:"tlsCert"`
-		TLSKey      string `help:"Mir Private Key for TLS connection" default:"" yaml:"tlsKey"`
-		LogLevel    string `help:"Mir loglevel for each service" default:"info" yaml:"logLevel"`
-		HttpPort    int    `help:"Mir http port for api" default:"3015" yaml:"httpPort"`
-		HttpTlsCert string `help:"Path to TLS certificate for HTTP server (enables HTTPS)" default:"" yaml:"httpTlsCert"`
-		HttpTlsKey  string `help:"Path to TLS private key for HTTP server" default:"" yaml:"httpTlsKey"`
+	HttpCfg struct {
+		Port    int    `help:"Mir http port for api" default:"3015" yaml:"port"`
+		TLSCert string `help:"Path to TLS certificate for HTTP server (enables HTTPS)" default:"" yaml:"tlsCert"`
+		TLSKey  string `help:"Path to TLS private key for HTTP server" default:"" yaml:"tlsKey"`
+	}
+
+	NatsCfg struct {
+		Url         string `help:"Nats server URL" default:"nats://127.0.0.1:4222" yaml:"url"`
+		Credentials string `help:"Nats JWT/NKEY credential file path" default:"" yaml:"credentials"`
+		RootCA      string `help:"Nats RootCA for TLS connection" default:"" yaml:"rootCA"`
+		TLSCert     string `help:"Nats Certificate for TLS connection" default:"" yaml:"tlsCert"`
+		TLSKey      string `help:"Nats Private Key for TLS connection" default:"" yaml:"tlsKey"`
 	}
 
 	SurrealCfg struct {
@@ -237,16 +241,16 @@ func (d *ServeCmd) run(
 		health.SetComponentReady(health.ComponentInflux)
 	}
 	opts := append(mir.WithDefaultReconnectOpts(), mir.WithDefaultConnectionHandlers(log)...)
-	opts = append(opts, mir.WithUserCredentials(cfg.Mir.Credentials))
-	opts = append(opts, mir.WithRootCA(cfg.Mir.RootCA))
-	opts = append(opts, mir.WithClientCertificate(cfg.Mir.TLSCert, cfg.Mir.TLSKey))
-	m, err := mir.Connect(AppName, cfg.Mir.Url, opts...)
+	opts = append(opts, mir.WithUserCredentials(cfg.Nats.Credentials))
+	opts = append(opts, mir.WithRootCA(cfg.Nats.RootCA))
+	opts = append(opts, mir.WithClientCertificate(cfg.Nats.TLSCert, cfg.Nats.TLSKey))
+	m, err := mir.Connect(AppName, cfg.Nats.Url, opts...)
 	if err != nil {
 		log.Err(err).Msg("error connecting to Mir server")
 		fmt.Println("error connecting to Mir server")
 		os.Exit(1)
 	} else if !m.Bus.IsConnected() {
-		log.Error().Str("url", cfg.Mir.Url).Str("status", m.Bus.Status().String()).Err(m.Bus.LastError()).Msg("cannot connect to Mir msg bus")
+		log.Error().Str("url", cfg.Nats.Url).Str("status", m.Bus.Status().String()).Err(m.Bus.LastError()).Msg("cannot connect to Mir msg bus")
 	}
 
 	// Services
@@ -261,9 +265,9 @@ func (d *ServeCmd) run(
 	}
 	coreSrv, err := core_srv.NewCore(log, m, mngStore, cc,
 		&core_srv.Options{
-			DeviceOnlineFlush:  cfg.Module.Core.DeviceOnlineFlush,
-			DeviceOfflineFlush: cfg.Module.Core.DeviceOfflineFlush,
-			DeviceOfflineAfter: cfg.Module.Core.DeviceOfflineAfter,
+			DeviceOnlineFlush:  cfg.Mir.Core.DeviceOnlineFlush,
+			DeviceOfflineFlush: cfg.Mir.Core.DeviceOfflineFlush,
+			DeviceOfflineAfter: cfg.Mir.Core.DeviceOfflineAfter,
 		})
 	if err != nil {
 		return err
@@ -284,7 +288,7 @@ func (d *ServeCmd) run(
 		return err
 	}
 
-	eventSrv, err := eventstore_srv.NewEventStore(log, m, mngStore, &eventstore_srv.Options{FlushInterval: cfg.Module.EventStore.FlushInterval})
+	eventSrv, err := eventstore_srv.NewEventStore(log, m, mngStore, &eventstore_srv.Options{FlushInterval: cfg.Mir.EventStore.FlushInterval})
 	if err != nil {
 		return err
 	}
@@ -302,13 +306,13 @@ func (d *ServeCmd) run(
 	}
 
 	cockpitSrv, err := cockpit_srv.NewCockpit(log, &cockpit_srv.Options{
-		AllowedOrigins: cfg.Module.Cockpit.AllowedOrigins,
+		AllowedOrigins: cfg.Mir.Cockpit.AllowedOrigins,
 		WebFS:          webFS,
 		Config:         contexts,
 		Store:          mngStore,
 		GitHub: cockpit_srv.GitHubOptions{
-			Owner: cfg.Module.Cockpit.GitHubOwner,
-			Repo:  cfg.Module.Cockpit.GitHubRepo,
+			Owner: cfg.Mir.Cockpit.GitHubOwner,
+			Repo:  cfg.Mir.Cockpit.GitHubRepo,
 		},
 	})
 	if err != nil {
@@ -319,7 +323,7 @@ func (d *ServeCmd) run(
 	cockpitSrv.RegisterRoutes(mux)
 
 	// WebServer — TLS enables HTTPS + native HTTP/2 (ALPN); plain uses h2c.
-	tlsEnabled := cfg.Mir.HttpTlsCert != "" && cfg.Mir.HttpTlsKey != ""
+	tlsEnabled := cfg.Mir.Http.TLSCert != "" && cfg.Mir.Http.TLSKey != ""
 	var handler http.Handler
 	if tlsEnabled {
 		handler = mux
@@ -327,7 +331,7 @@ func (d *ServeCmd) run(
 		handler = h2c.NewHandler(mux, &http2.Server{})
 	}
 	server := &http.Server{
-		Addr:    fmt.Sprintf(":%d", cfg.Mir.HttpPort),
+		Addr:    fmt.Sprintf(":%d", cfg.Mir.Http.Port),
 		Handler: handler,
 	}
 
@@ -337,13 +341,13 @@ func (d *ServeCmd) run(
 	if tlsEnabled {
 		scheme = "https"
 	}
-	log.Info().Int("port", cfg.Mir.HttpPort).Bool("tls", tlsEnabled).Msg("starting cockpit web server")
+	log.Info().Int("port", cfg.Mir.Http.Port).Bool("tls", tlsEnabled).Msg("starting cockpit web server")
 	go func() {
 		defer wg.Done()
 		health.SetComponentReady(health.ComponentHttp)
 		var serveErr error
 		if tlsEnabled {
-			serveErr = server.ListenAndServeTLS(cfg.Mir.HttpTlsCert, cfg.Mir.HttpTlsKey)
+			serveErr = server.ListenAndServeTLS(cfg.Mir.Http.TLSCert, cfg.Mir.Http.TLSKey)
 		} else {
 			serveErr = server.ListenAndServe()
 		}
@@ -355,7 +359,7 @@ func (d *ServeCmd) run(
 		}
 		log.Debug().Msg("http server shutdown")
 	}()
-	log.Info().Msgf("serve Cockpit on %s://localhost:%d", scheme, cfg.Mir.HttpPort)
+	log.Info().Msgf("serve Cockpit on %s://localhost:%d", scheme, cfg.Mir.Http.Port)
 
 	if err := coreSrv.Serve(); err != nil {
 		return err

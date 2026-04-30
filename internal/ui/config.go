@@ -44,10 +44,14 @@ func NewDefaultConfig() Config {
 }
 
 type Context struct {
-	Name        string `yaml:"name"`
-	Target      string `yaml:"target"`
-	WebTarget   string `yaml:"webTarget"`
-	Grafana     string `yaml:"grafana"`
+	Name      string          `yaml:"name"`
+	Target    string          `yaml:"target"`
+	WebTarget string          `yaml:"webTarget"`
+	Grafana   string          `yaml:"grafana"`
+	Sec       ContextSecurity `yaml:"sec"`
+}
+
+type ContextSecurity struct {
 	Credentials string `yaml:"credentials"`
 	RootCA      string `yaml:"rootCA"`
 	TlsCert     string `yaml:"tlsCert"`

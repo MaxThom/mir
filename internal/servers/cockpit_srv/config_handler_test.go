@@ -20,13 +20,15 @@ func TestConfigHandler_Success(t *testing.T) {
 				CurrentContext: "production",
 				Contexts: []ui.Context{
 					{
-						Name:        "local",
-						Target:      "nats://localhost:4222",
-						Grafana:     "localhost:3000",
-						Credentials: "/path/to/creds",
-						RootCA:      "/path/to/ca",
-						TlsCert:     "/path/to/cert",
-						TlsKey:      "/path/to/key",
+						Name:    "local",
+						Target:  "nats://localhost:4222",
+						Grafana: "localhost:3000",
+						Sec: ui.ContextSecurity{
+							Credentials: "/path/to/creds",
+							RootCA:      "/path/to/ca",
+							TlsCert:     "/path/to/cert",
+							TlsKey:      "/path/to/key",
+						},
 					},
 					{
 						Name:    "production",
@@ -94,13 +96,15 @@ func TestConfigHandler_SensitiveFieldsFiltered(t *testing.T) {
 				CurrentContext: "local",
 				Contexts: []ui.Context{
 					{
-						Name:        "local",
-						Target:      "nats://localhost:4222",
-						Grafana:     "localhost:3000",
-						Credentials: "/secret/credentials",
-						RootCA:      "/secret/ca.pem",
-						TlsCert:     "/secret/cert.pem",
-						TlsKey:      "/secret/key.pem",
+						Name:    "local",
+						Target:  "nats://localhost:4222",
+						Grafana: "localhost:3000",
+						Sec: ui.ContextSecurity{
+							Credentials: "/secret/credentials",
+							RootCA:      "/secret/ca.pem",
+							TlsCert:     "/secret/cert.pem",
+							TlsKey:      "/secret/key.pem",
+						},
 					},
 				},
 			},
