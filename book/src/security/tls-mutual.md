@@ -302,7 +302,7 @@ device := mir.Builder().
 device := mir.NewDevice().
     Target("nats://nats.example.com:4222").
     DefaultRootCAFile().
-    DefaultClientCertificateFile()
+    DefaultClientCertificateFile().
     Build()
 ```
 

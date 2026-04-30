@@ -125,7 +125,7 @@ The ModuleSDK empowers you to extend Mir's server-side capabilities, enabling po
 
 The true power of Mir emerges when you combine both SDKs:
 
-1. **DeviceSDK** collects and transmits data from your hardware or sofware
+1. **DeviceSDK** collects and transmits data from your hardware or software
 2. **ModuleSDK** processes data and configuration and implements business logic
 3. Together, they create complete end-to-end IoT solutions
 

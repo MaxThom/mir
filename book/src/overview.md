@@ -201,6 +201,15 @@ The ModuleSDK allows you to build custom server-side logic and integrations:
 
 Mir provides comprehensive monitoring capabilities out of the box:
 
+### Cockpit Web UI
+
+Cockpit is the Mir web interface, served directly by the Mir server. It provides a browser-based view of the platform without requiring any separate deployment:
+
+- **Device Fleet Overview**: Browse and inspect connected devices in real time
+- **Multi-Server Support**: Switch between Mir deployments via configurable contexts
+- **Secure Credential Delivery**: Fetch NATS credentials from the server with optional password protection
+- **Grafana Integration**: Launch scoped Grafana views directly from device pages
+
 ### Built-in Dashboards
 - **Grafana Integration**: Pre-configured dashboards for all telemetry data
 - **Auto-Generated Views**: Dashboards created automatically from device schemas
@@ -242,6 +251,9 @@ mir infra up
 
 # Start server
 mir serve
+
+# Cockpit web UI → http://localhost:3015
+# Grafana dashboards → http://localhost:3000
 ```
 
 ### Production Deployments

@@ -18,7 +18,7 @@ In the world of IoT, every project starts simple but quickly becomes complex:
 ### **1. All Batteries Included Platform**
 Mir includes everything you need to run a production IoT system out of the box:
 - **Storage**: Time-series database for telemetry, graph database for device metadata, and persistent key-value stores for local persistance on devices
-- **UI & Visualization**: Pre-built Grafana dashboards, powerful CLI with terminal UI, and real-time data streaming views
+- **UI & Visualization**: Cockpit web interface for device management and fleet monitoring, pre-built Grafana dashboards, powerful CLI with terminal UI, and real-time data streaming views
 - **Monitoring & Observability**: Built-in Prometheus metrics, health checks for all services, and comprehensive event logging
 - **Developer Tools**: Local development, DeviceSDK for device development, ModuleSDK to extend server side capabilities, and virtual device simulators
 - **Security**: TLS encryption and device authentication
@@ -40,6 +40,8 @@ mir infra up
 mir serve
 
 # Your IoT platform is ready! 🎉
+# Cockpit web UI → http://localhost:3015
+# Grafana dashboards → http://localhost:3000
 ```
 
 ### **3. Developer-First Experience**
@@ -49,7 +51,7 @@ mir serve
 
 No need to wire together multiple tools or build custom infrastructure – Mir provides a complete, integrated solution from day one.
 
-### **5. Built on Giants**
+### **4. Built on Giants**
 - **NATS**: Ultra-fast messaging backbone
 - **InfluxDB**: Purpose-built for time-series data
 - **SurrealDB**: Graph database for device relationships

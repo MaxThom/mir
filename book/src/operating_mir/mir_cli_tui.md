@@ -167,7 +167,7 @@ mir dev cmd send <name/namespace> -n <command_name> -j
 # Send a command. Single quotes help in writing json on terminal.
 mir dev cmd send <name/namespace> -n <command_name> -p '<json_payload>'
 # Send a command declaratively
-cat payload.json | mir cmd send <name/namespace> -n <command_name>
+cat payload.json | mir dev cmd send <name/namespace> -n <command_name>
 # Send a command interactively
 mir dev cmd send <name/namespace> -n <command_name> -e
 ```

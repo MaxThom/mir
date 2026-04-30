@@ -18,7 +18,7 @@ Mir Security CLI wraps NSC commands with a set of preset to make securing Mir ec
 - Clients (access CLI and other frontend)
 - Devices (connect devices)
 
-The CLI uses the current context to help manage which server to target. Use `mir config edit`to add a new context with server name and url:
+The CLI uses the current context to help manage which server to target. Use `mir tools config edit` to add a new context with server name and url:
 
 ```yaml
 # If using local k3d

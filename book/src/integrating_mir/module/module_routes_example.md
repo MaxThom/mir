@@ -31,7 +31,7 @@ func main() {
     defer m.Disconnect()
 
     // Subscribe to heartbeats from all devices
-    m.Device().Hearthbeat().Subscribe(
+    m.Device().Heartbeat().Subscribe(
         "*", // All devices
         func(msg *mir.Msg, deviceId string) {
         		...
@@ -40,7 +40,7 @@ func main() {
     )
 
     // Subscribe to heartbeats from a specific device
-    m.Device().Hearthbeat().Subscribe(
+    m.Device().Heartbeat().Subscribe(
         "critical-sensor-01",
         func(msg *mir.Msg, deviceId string) {
         		...

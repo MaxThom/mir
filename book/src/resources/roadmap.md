@@ -9,7 +9,7 @@ create the tools to help on this adventure
 - a proof of concept for the Protoproxy as their
 is much incertainties about the feasibility of that one
 - Core module to manage devices
-- CLI to easily interac with the system via vash and scripts
+- CLI to easily interact with the system via bash and scripts
 - TUI to easiliy interac with the system via a fun user experience
 - Go Device SDK to create basic devices
 
@@ -87,7 +87,7 @@ is much incertainties about the feasibility of that one
 ## v0.2.0 Telemetry module
 
 The main goals of this version is to create the Telemetry module
-as well as the visualiazing tools for the data
+as well as the visualizing tools for the data
 
 ### Features
 
@@ -203,7 +203,7 @@ Twin module to tackle the configuration mangement of devices. Flow of desired pr
 
 ### Improvements/Tech dett
 
-### Ergonmics
+### Ergonomics
 
 
 ## v0.5.0 DeviceSDK and ModuleSDK Improvements
@@ -227,7 +227,7 @@ The goal is too focus on SDK requirements or QOL that are not bound to a module
 
 ### Improvements/Tech dett
 
-### Ergonmics
+### Ergonomics
 
 
 ## v0.6.0

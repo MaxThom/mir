@@ -43,7 +43,7 @@ From the comprehensive CLI to automatic dashboard generation, Mir prioritizes ma
 
 ## Getting Started
 
-Ready to dive deeper? Start with [What is Mir IoT Hub](./what_is_mir.md) to understand the platform's vision and capabilities, then explore each concept to build your understanding.
+Ready to dive deeper? Start with the [Overview](../overview.md) to understand the platform's vision and capabilities, then explore each concept to build your understanding.
 
 Each section includes:
 - 📖 Conceptual explanations

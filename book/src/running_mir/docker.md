@@ -69,23 +69,30 @@ You can modify other settings in the individual compose files as needed.
 
 ### Environment Variables
 
-Configure Mir using environment variables with the `MIR__` prefix:
+Configure Mir using environment variables with the `MIR__` prefix. Nested config keys use `__` as separator (e.g. `mir.http.port` → `MIR__MIR__HTTP__PORT`):
 
 | Variable | Description | Default |
 |----------|-------------|---------|
+| `MIR__MIR__LOGLEVEL` | Logging level | `info` |
+| `MIR__MIR__HTTP__PORT` | Cockpit HTTP port | `3015` |
+| `MIR__MIR__HTTP__TLSCERT` | Path to Cockpit TLS certificate | `` |
+| `MIR__MIR__HTTP__TLSKEY` | Path to Cockpit TLS private key | `` |
+| `MIR__MIR__COCKPIT__ENABLED` | Enable Cockpit service | `true` |
+| `MIR__MIR__CORE__ENABLED` | Enable Core service | `true` |
 | `MIR__NATS__URL` | NATS server URL | `nats://localhost:4222` |
-| `MIR__NATS__TIMEOUT` | Connection timeout | `5s` |
+| `MIR__NATS__CREDENTIALS` | Path to NATS credentials file | `` |
+| `MIR__NATS__ROOTCA` | Path to NATS root CA certificate | `` |
+| `MIR__NATS__TLSCERT` | Path to NATS client certificate | `` |
+| `MIR__NATS__TLSKEY` | Path to NATS client private key | `` |
 | `MIR__SURREAL__URL` | SurrealDB WebSocket URL | `ws://localhost:8000` |
 | `MIR__SURREAL__USER` | SurrealDB username | `root` |
 | `MIR__SURREAL__PASSWORD` | SurrealDB password | `root` |
 | `MIR__SURREAL__NAMESPACE` | SurrealDB namespace | `global` |
 | `MIR__SURREAL__DATABASE` | SurrealDB database | `mir` |
 | `MIR__INFLUX__URL` | InfluxDB HTTP URL | `http://localhost:8086` |
-| `MIR__INFLUX__TOKEN` | InfluxDB auth token | - |
+| `MIR__INFLUX__TOKEN` | InfluxDB auth token | `` |
 | `MIR__INFLUX__ORG` | InfluxDB organization | `Mir` |
 | `MIR__INFLUX__BUCKET` | InfluxDB bucket | `mir` |
-| `MIR__LOG_LEVEL` | Logging level | `info` |
-| `MIR__PORT` | HTTP server port | `3015` |
 
 ### Configuration File
 
@@ -176,7 +183,8 @@ localhost:8000 # root///root
 # Prometheus
 localhost:9090
 # NatsIO
-localhost:8222
+localhost:4222 # TCP
+localhost:9222 # WebSocket
 ```
 
 ### View Logs
@@ -202,7 +210,7 @@ Docker automatically selects the appropriate architecture.
 
 ### Security
 
-Securing the environment is done via the NSC tool. Refer to [Security Tutorial](../security/auth-tutorial.md) for details.
+Securing the environment is done via the NSC tool. Refer to [Docker Authentication](../security/auth-docker.md) for details.
 
 ## Next Steps
 

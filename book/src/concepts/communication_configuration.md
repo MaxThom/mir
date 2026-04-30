@@ -76,7 +76,7 @@ message BatteryStatus {
 ```go
 // Handle a desired property and report
 m.HandleProperties(&schemav1.SampleRateConfig{}, func(msg proto.Message) {
-	cmd := msg.(*schemav1.SimpleRateConfig)
+	cmd := msg.(*schemav1.SampleRateConfig)
   if desired.IntervalSeconds < 10 {
     return fmt.Errorf("interval too short: %d", desired.IntervalSeconds)
   }

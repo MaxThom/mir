@@ -14,7 +14,7 @@ The provided Grafana is configured to work with Mir's Prometheus server, Surreal
 
 ## Display devices data
 
-As explained in the [CLI](./mir_cli_tui.md) documentation, you can use the `mir telemetry list` command to display devices data. The explore panel in Grafana is a great way to see telemetry as well as
+As explained in the [CLI](./mir_cli_tui.md) documentation, you can use the `mir dev tlm list` command to display devices data. The explore panel in Grafana is a great way to see telemetry as well as
 offering an example of the query to see that data. Use the query as a starting point
 to build powerful dashboards.
 
