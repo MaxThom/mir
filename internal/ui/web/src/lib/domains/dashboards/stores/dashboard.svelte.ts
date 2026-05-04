@@ -235,7 +235,7 @@ class DashboardStore {
 		const existing = d.spec.widgets ?? [];
 		const bottomY = existing.reduce((max, w) => Math.max(max, w.y + w.h), 0);
 		const newWidget: Widget = {
-			id: crypto.randomUUID(),
+			id: Math.random().toString(36).slice(2),
 			type,
 			title,
 			config,
