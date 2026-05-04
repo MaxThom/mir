@@ -16,6 +16,9 @@ ports:
   - port: 31422:31422
     nodeFilters:
       - loadbalancer
+  - port: 31922:31922
+    nodeFilters:
+      - loadbalancer
 registries:
   config: |
     configs:

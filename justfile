@@ -153,6 +153,11 @@ k3d-recreate: k3d-delete k3d-create
 k3d-mir instance="local":
     cd infra/k8s/charts/mir && helm install {{ instance }} . -f values-local-k3d.yaml
 
+# Cluster pre-requisites
+k3d-pre:
+    kubectl apply -f https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/main/example/prometheus-operator-crd/monitoring.coreos.com_servicemonitors.yaml
+    kubectl apply -f https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/main/example/prometheus-operator-crd/monitoring.coreos.com_podmonitors.yaml
+
 # Run Mir book for local documentation
 book:
     cd book && mdbook serve -p 5001

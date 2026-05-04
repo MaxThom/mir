@@ -6,15 +6,52 @@ metadata:
   labels:
     {{- include "mir.labels" . | nindent 4 }}
 data:
+  cli.yaml: |
+    contexts:
+      {{- range .Values.config.contexts }}
+      - name: {{ .name | quote }}
+        target: {{ .target | quote }}
+        webTarget: {{ .webTarget | quote }}
+        grafana: {{ .grafana | quote }}
+        sec:
+          credentials: {{ .sec.credentials | quote }}
+          rootCA: {{ .sec.rootCA | quote }}
+          tlsCert: {{ .sec.tlsCert | quote }}
+          tlsKey: {{ .sec.tlsKey | quote }}
+          password: {{ .sec.password | quote }}
+      {{- end }}
   mir.yaml: |
     mir:
+      logLevel: {{ .Values.config.mir.logLevel | quote }}
+      http:
+        port: {{ .Values.service.targetPort }}
+        tlsCert: ""
+        tlsKey: ""
+      core:
+        enabled: {{ .Values.config.mir.core.enabled }}
+        deviceOnlineFlush: {{ .Values.config.mir.core.deviceOnlineFlush | quote }}
+        deviceOfflineFlush: {{ .Values.config.mir.core.deviceOfflineFlush | quote }}
+        deviceOfflineAfter: {{ .Values.config.mir.core.deviceOfflineAfter | quote }}
+      prototlm:
+        enabled: {{ .Values.config.mir.prototlm.enabled }}
+      protocmd:
+        enabled: {{ .Values.config.mir.protocmd.enabled }}
+      protocfg:
+        enabled: {{ .Values.config.mir.protocfg.enabled }}
+      event:
+        enabled: {{ .Values.config.mir.event.enabled }}
+        flushInterval: {{ .Values.config.mir.event.flushInterval | quote }}
+      cockpit:
+        enabled: {{ .Values.config.mir.cockpit.enabled }}
+        allowedOrigins: {{ .Values.config.mir.cockpit.allowedOrigins }}
+        githubOwner: {{ .Values.config.mir.cockpit.githubOwner | quote }}
+        githubRepo: {{ .Values.config.mir.cockpit.githubRepo | quote }}
+    nats:
       {{- if .Values.config.mir.url }}
       url: {{ .Values.config.mir.url | quote }}
       {{- else }}
       url: "nats://{{ .Release.Name }}-nats:4222"
       {{- end }}
-      logLevel: {{ .Values.config.mir.logLevel | quote }}
-      httpPort: {{ .Values.service.targetPort }}
       {{- if .Values.authSecretRef }}
       credentials: "/etc/mir/mir.creds"
       {{- end }}
