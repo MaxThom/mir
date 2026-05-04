@@ -31,7 +31,12 @@
     - [x] test cockpit
     - [x] test tls, auth and wss
   - [ ] helm
-    - [ ] update chart with http ingress
+    - [x] nats websocket
+    - [ ] websocket ingress
+    - [x] configmap revamp
+    - [x] context list configmap
+    - [ ] tls load
+    - [ ] creds load for list
     - [ ] test cockpit
     - [ ] test tls, auth and wss
 - [x] security for Cockpit

@@ -1,7 +1,18 @@
 image:
-  tag: "feature__nkeys-infra--5cd7553"
+  tag: "cockpit__k8s--560d94e"
 
 config:
+  contexts:
+    - name: "local"
+      target: "nats://localhost:31422"
+      webTarget: "ws://localhost:31922"
+      grafana: "http://grafana-local:8081"
+      sec:
+        credentials: ""
+        rootCA: ""
+        tlsCert: ""
+        tlsKey: ""
+        password: ""
   mir:
     logLevel: "debug"
 
@@ -24,17 +35,20 @@ nats:
     host: nats-local
     path: /
     pathType: Prefix
-  service:
-    merge:
-      spec:
-        type: LoadBalancer
-        ports:
-          - appProtocol: tcp
-            name: nats
-            nodePort: 31422
-            port: 4222
-            protocol: TCP
-            targetPort: nats
+  # service:
+  #   merge:
+  #     spec:
+  #       type: LoadBalancer
+  #       ports:
+  #         - appProtocol: tcp
+  #           name: nats
+  #           nodePort: 31422
+  #           port: 4222
+  #           protocol: TCP
+  #           targetPort: nats
+  promExporter:
+    podMonitor:
+      enabled: false
 
 surrealdb:
   enabled: true
@@ -58,6 +72,13 @@ influxdb2:
     hostname: influx-local
     path: /
     tls: false
+
+# Disable monitoring CRDs (ServiceMonitor/PodMonitor) when prometheus stack is off
+mirServiceMonitors:
+  enabled: false
+
+mirPrometheusRules:
+  enabled: false
 
 # Enable Prometheus monitoring stack for k3d
 kube-prometheus-stack:

@@ -77,6 +77,10 @@ spec:
               mountPath: /etc/mir/mir.yaml
               subPath: mir.yaml
               readOnly: true
+            - name: contexts
+              mountPath: /etc/mir/cli.yaml
+              subPath: cli.yaml
+              readOnly: true
             {{- with .Values.authSecretRef }}
             - name: auth
               mountPath: /etc/mir/mir.creds
@@ -102,6 +106,9 @@ spec:
           {{- end }}
       volumes:
         - name: config
+          configMap:
+            name: {{ include "mir.fullname" . }}-config
+        - name: contexts
           configMap:
             name: {{ include "mir.fullname" . }}-config
         {{- with .Values.authSecretRef }}
