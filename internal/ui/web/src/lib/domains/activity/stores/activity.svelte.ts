@@ -4,7 +4,7 @@ export type ActivityKind = 'success' | 'error' | 'info';
 export type ActivityCategory = 'Device' | 'Command' | 'Config' | 'Connection' | 'Telemetry' | 'Dashboard';
 
 export type ActivityEntry = {
-	id: string;
+	id: number;
 	timestamp: Date;
 	kind: ActivityKind;
 	category: ActivityCategory;
@@ -14,11 +14,13 @@ export type ActivityEntry = {
 	error?: string;
 };
 
+let nextId = 0;
+
 class ActivityStore {
 	entries = $state<ActivityEntry[]>([]);
 
 	add(entry: Omit<ActivityEntry, 'id' | 'timestamp'>) {
-		this.entries.unshift({ id: crypto.randomUUID(), timestamp: new Date(), ...entry });
+		this.entries.unshift({ id: nextId++, timestamp: new Date(), ...entry });
 
 		const title = `${entry.category} · ${entry.title}`;
 		const opts = entry.error ? { description: entry.error } : undefined;
