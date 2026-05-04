@@ -13,6 +13,11 @@ config:
         tlsCert: ""
         tlsKey: ""
         password: ""
+    - name: "local-ingress"
+      target: "nats://localhost:31422"
+      webTarget: "ws://mir-local:8081/nats-ws"
+      grafana: "http://grafana-local:8081"
+      sec: {}
   mir:
     logLevel: "debug"
 
@@ -35,6 +40,8 @@ nats:
     host: nats-local
     path: /
     pathType: Prefix
+    wsHost: mir-local
+    wsPath: /nats-ws
   # service:
   #   merge:
   #     spec:

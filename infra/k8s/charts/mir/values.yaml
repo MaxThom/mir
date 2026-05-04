@@ -131,6 +131,8 @@ nats:
     #  - secretName: nats-tls
     #    hosts:
     #      - nats-local
+    wsHost: ""       # host to expose NATS WebSocket via ingress (empty = disabled)
+    wsPath: /nats-ws
   config:
     websocket:
       enabled: true

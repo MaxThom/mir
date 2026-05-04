@@ -28,6 +28,17 @@ image:
 ##     MIR__INFLUX__TOKEN: "mir-operator-token"
 #secretRef: mir-secret
 config:
+  contexts:
+    - name: "default"
+      target: ""          # Set to nats://<cluster-ip>:31422
+      webTarget: ""       # Set to ws://<host>/nats-ws or ws://<host>:31922
+      grafana: ""
+      sec:
+        credentials: ""
+        rootCA: ""
+        tlsCert: ""
+        tlsKey: ""
+        password: ""
   mir:
     # NATS URL - automatically set when nats.enabled=true
     url: ""
@@ -103,6 +114,8 @@ nats:
     path: /
     pathType: Prefix
     tls: []
+    wsHost: ""          # Set to expose NATS WebSocket via ingress (e.g. mir.example.com)
+    wsPath: /nats-ws
 
   # NATS cluster configuration
   config:

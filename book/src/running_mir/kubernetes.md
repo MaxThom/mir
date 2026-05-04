@@ -22,34 +22,42 @@ helm repo add mir https://charts.mirhub.io
 helm repo update
 ```
 
-### Create Image Pull Secret to access GitHub Container Registry
+### Create Image Pull Secret
 
 [Access to Mir GitHub Container Registry (ghcr.io)](../resources/access_mir_container_reg.md)
 
 ### Install Mir Chart
 
-Create a custom values file `custom.values.yaml` to pass secrets, update ingress hosts, persistences and resources:
+Create a `custom.values.yaml` with your environment-specific overrides:
 
 ```yaml
 imagePullSecrets:
   - name: ghcr-mir-secret
 
+# Configure contexts — tells the Cockpit UI how to reach NATS and Grafana
+# Need at one context for this Mir Server
+config:
+  contexts:
+    - name: "production"
+      target: "nats://<cluster-ip>:31422"      # NATS TCP for CLI/devices
+      webTarget: "ws://<nats-host>/nats-ws"    # NATS WebSocket for Cockpit
+      grafana: "http://<grafana-host>"
+      sec:
+        credentials: ""   # NATS creds file content (leave empty for open)
+        rootCA: ""
+        tlsCert: ""
+        tlsKey: ""
+        password: ""      # Cockpit UI password (leave empty to disable)
+
 ingress:
   enabled: true
-  className: ""
+  className: ""           # nginx, traefik, etc.
   annotations: {}
   hosts:
-    - host: mir.local
+    - host: mir.example.com
       paths:
         - path: /
           pathType: Prefix
-resources: {}
-  # limits:
-  #   cpu: 100m
-  #   memory: 128Mi
-  # requests:
-  #   cpu: 100m
-  #   memory: 128Mi
 
 nats:
   enabled: true
@@ -57,9 +65,11 @@ nats:
     enabled: true
     className: ""
     annotations: {}
-    host: nats-local
+    host: nats.example.com   # NATS monitor endpoint
     path: /
     pathType: Prefix
+    wsHost: mir.example.com  # Host for NATS WebSocket (can be same as Mir)
+    wsPath: /nats-ws         # Path for NATS WebSocket via ingress
   service:
     merge:
       spec:
@@ -71,6 +81,13 @@ nats:
             port: 4222
             protocol: TCP
             targetPort: nats
+          # NodePort for WebSocket, use this or ingress.wsHost/ingress.wsPath or both
+          - appProtocol: tcp
+            name: websocket
+            nodePort: 31922
+            port: 9222
+            protocol: TCP
+            targetPort: websocket
   config:
     jetstream:
       fileStore:
@@ -119,41 +136,28 @@ influxdb2:
 ### Install Chart
 
 ```bash
-# Install latest version
 helm install mir mir/mir \
   --namespace mir \
-  --create-namespace
+  --create-namespace \
   -f custom.values.yaml
 ```
-
-Default values, includes:
-
-- Load balancer on :31422
-- Mir services
-- NATS with JetStream
-- SurrealDB
-- InfluxDB
-- Service Monitors
-- Grafana Dashboards
 
 ### Access Mir
 
 ```bash
-# Access the server using the CLI on localhost
+# CLI access via NATS TCP
 mir tools config edit
-# contexts:
-#  - name: k8s
-#    target: nats://<cluster_ip>:31422
-#    grafana: <grafana_url>
-mir ctx k8s
-
-# Use
+# Set target: nats://<cluster-ip>:31422
+mir ctx production
 mir dev ls
+
+# Cockpit (web UI) — open in browser
+# http://mir.example.com
 ```
 
 ## Deployment Scenarios
 
-The chart includes several pre-configured values files for common deployment [scenarios](https://github.com/MaxThom/mir/tree/main/infra/k8s/charts/mir)
+The chart includes several pre-configured values files for common deployment [scenarios](https://github.com/MaxThom/mir/tree/main/infra/k8s/charts/mir).
 
 ### 1. Minimal Deployment (`values-minimal.yaml`)
 
@@ -166,22 +170,22 @@ helm install mir ./mir -f values-minimal.yaml
 ```
 
 **Configuration required**:
-- Update external service URLs in the config section
+- Update external service URLs in the `config` section
 - Configure authentication credentials
 - Adjust resource limits as needed
 
-### 2. Standard Deployment (`values-standard.yaml`) (Recommended and Default)
+### 2. Standard Deployment (`values-standard.yaml`) (Recommended)
 
-Deploy Mir with all infrastructure components but without monitoring.
+Deploy Mir with all infrastructure components but without a monitoring stack.
 
-**Use when**: You need a production-ready IoT platform and already have a prometheus monitoring stack or else.
+**Use when**: You need a production-ready IoT platform and manage observability separately.
 
 ```bash
 helm install mir ./mir -f values-standard.yaml
 ```
 
 **Includes**:
-- Mir services
+- Mir services + Cockpit UI
 - NATS with JetStream (3-node cluster)
 - SurrealDB with 20Gi storage
 - InfluxDB with 50Gi storage
@@ -190,7 +194,7 @@ helm install mir ./mir -f values-standard.yaml
 
 Complete deployment with all services and full observability stack.
 
-**Use when**: You need a production-ready platform with complete monitoring and logging.
+**Use when**: You need a self-contained platform with built-in monitoring and logging.
 
 ```bash
 helm install mir ./mir -f values-full.yaml
@@ -204,50 +208,84 @@ helm install mir ./mir -f values-full.yaml
 - Loki for log aggregation
 - Promtail for log collection
 
+> **Note**: When `kube-prometheus-stack` is disabled, you must also disable the monitoring CRD resources to avoid `ServiceMonitor`/`PodMonitor` errors:
+> ```yaml
+> mirServiceMonitors:
+>   enabled: false
+> mirPrometheusRules:
+>   enabled: false
+> nats:
+>   promExporter:
+>     podMonitor:
+>       enabled: false
+> ```
+
+## NATS WebSocket
+
+The Cockpit UI connects to NATS via WebSocket. Two exposure options are available:
+
+### Via NodePort (simpler)
+Directly accessible on port `31922`. Set `webTarget: "ws://localhost:31922"` in your context config.
+
+### Via Ingress (recommended for shared/production)
+Route WebSocket through the ingress controller on the same host as the Cockpit UI. Uses path `/nats-ws` to differentiate from the Mir HTTP API:
+
+```yaml
+nats:
+  ingress:
+    enabled: true
+    wsHost: mir.example.com  # Same host as Cockpit
+    wsPath: /nats-ws
+```
+
+Set `webTarget: "ws://mir.example.com/nats-ws"` in your context config.
+
+Traefik handles WebSocket upgrades natively — no additional annotations required.
+
 ## Security Considerations
 
 ### Using Secrets
 
 For production deployments, use Kubernetes secrets for sensitive data:
 
-1. Create secret files in `secret/` [directory](https://github.com/MaxThom/mir/tree/main/infra/k8s/charts/mir/secret):
-   - `mir.secret.yaml` - Mir service credentials
-   - `surreal.secret.yaml` - SurrealDB credentials
-   - `influx.secret.yaml` - InfluxDB credentials
+1. Create secret files from the templates in `secret/` [directory](https://github.com/MaxThom/mir/tree/main/infra/k8s/charts/mir/secret):
+   - `mir.secret.yaml` — Mir service credentials
+   - `surreal.secret.yaml` — SurrealDB credentials
+   - `influx.secret.yaml` — InfluxDB credentials
 
-2. Apply secrets before installing the chart:
+2. Apply secrets before installing:
 ```bash
 kubectl apply -f secret/
 ```
 
-3. Update your `custom.values.yaml`
+3. Reference secrets in your `custom.values.yaml`:
 ```yaml
 ## Mir
 secretRef: mir-secret
-## Surreal
+
+## SurrealDB
 surrealdb:
   podExtraEnv:
-  - name: SURREAL_USER
-    valueFrom:
-      secretKeyRef:
-        name: surreal-secret
-        key: SURREAL_USER
-  - name: SURREAL_PASS
-    valueFrom:
-      secretKeyRef:
-        name: surreal-secret
-        key: SURREAL_PASS
-## Influx
+    - name: SURREAL_USER
+      valueFrom:
+        secretKeyRef:
+          name: surreal-secret
+          key: SURREAL_USER
+    - name: SURREAL_PASS
+      valueFrom:
+        secretKeyRef:
+          name: surreal-secret
+          key: SURREAL_PASS
+
+## InfluxDB
 influxdb2:
   adminUser:
     existingSecret: influx-secret
 ```
 
-### Authentification and Authorization
+### Authentication and Authorization
 
-Securing the environment is done via the NSC tool. Refer to [Security Tutorial](../security/auth.md) for details on how to setup.
-
-To configure Kubernetes,
+Securing NATS with TLS and credentials is done via the NSC tool. Refer to [Security Tutorial](../security/auth.md) for setup details.
 
 ## Next Steps
 

@@ -26,6 +26,17 @@ image:
 ##     MIR__INFLUX__TOKEN: "mir-operator-token"
 #secretRef: mir-secret
 config:
+  contexts:
+    - name: "default"
+      target: "nats://your-nats-server:4222"       # NATS TCP for CLI/devices
+      webTarget: "ws://your-nats-server:9222"       # NATS WebSocket for Cockpit
+      grafana: ""
+      sec:
+        credentials: ""
+        rootCA: ""
+        tlsCert: ""
+        tlsKey: ""
+        password: ""
   mir:
     # External NATS URL - update to your NATS instance
     url: "nats://your-nats-server:4222/"
@@ -102,6 +113,16 @@ mirPromDashboards:
 ##
 nats:
   enabled: false
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    host: nats.example.com
+    path: /
+    pathType: Prefix
+    tls: []
+    wsHost: ""          # Set to expose NATS WebSocket via ingress (e.g. mir.example.com)
+    wsPath: /nats-ws
 
 surrealdb:
   enabled: false
