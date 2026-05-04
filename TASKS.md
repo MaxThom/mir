@@ -32,7 +32,7 @@
     - [x] test tls, auth and wss
   - [ ] helm
     - [x] nats websocket
-    - [ ] websocket ingress
+    - [x] websocket ingress
     - [x] configmap revamp
     - [x] context list configmap
     - [ ] tls load

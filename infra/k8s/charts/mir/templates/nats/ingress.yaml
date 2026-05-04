@@ -35,4 +35,16 @@ spec:
                 name: {{ include "mir.fullname" . }}-nats-monitor
                 port:
                   number: 8222
+    {{- if .Values.nats.ingress.wsHost }}
+    - host: {{ .Values.nats.ingress.wsHost | quote }}
+      http:
+        paths:
+          - path: {{ .Values.nats.ingress.wsPath | default "/nats-ws" }}
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ printf "%s-nats" .Release.Name }}
+                port:
+                  number: 9222
+    {{- end }}
 {{- end }}
