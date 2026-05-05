@@ -261,6 +261,102 @@ NAMESPACE/NAME                                DEVICE_ID        STATUS     LAST_H
 default/dev1                                  dev1             online     2025-09-18 16:16:27  2025-09-18 16:15:18
 ```
 
+### Step 6: Configure Cockpit Context Credentials
+
+The Cockpit web UI connects to NATS on behalf of the browser. When a context requires authentication, the Mir server serves the `.creds` file to the browser via `POST /api/v1/credentials?context=<name>`. You can optionally protect this endpoint with a password gate.
+
+#### Context credentials file
+
+**Option A - Reuse the Mir server credentials**
+
+If all contexts share the same access level as the Mir server itself, point the context at the file already mounted via `authSecretRef`:
+
+```yaml
+# values-auth.yaml
+config:
+  contexts:
+    - name: "production"
+      sec:
+        credentials: "/etc/mir/mir.creds"
+```
+
+**Option B - Dedicated Cockpit client credentials**
+
+Gives the Cockpit a separate NATS user with its own scope, independent from the server's module user.
+
+```bash
+# Create client users for each context
+mir tools security add client production_ui --swarm
+mir tools security add client staging_ui --swarm
+mir tools security push
+mir tools security generate-creds production_ui -p ./production.creds
+mir tools security generate-creds staging_ui -p ./staging.creds
+```
+
+All context credentials can share a single Kubernetes secret, use a separate key per context:
+
+```bash
+kubectl create secret generic mir-cockpit-creds \
+  --from-file=production.creds=./production.creds \
+  --from-file=staging.creds=./staging.creds
+```
+
+Reference the shared secret in values, pointing each context at its own key via `credsSecretKey`:
+
+```yaml
+# values-auth.yaml
+config:
+  contexts:
+    - name: "production"
+      sec:
+        credsSecretRef: "mir-cockpit-creds"
+        credsSecretKey: "production.creds"   # auto-mounts at /etc/mir/creds/production.creds
+    - name: "staging"
+      sec:
+        credsSecretRef: "mir-cockpit-creds"
+        credsSecretKey: "staging.creds"      # auto-mounts at /etc/mir/creds/staging.creds
+```
+
+If you only have one context, `credsSecretKey` defaults to `mir.creds`, so you can omit it:
+
+```bash
+kubectl create secret generic mir-cockpit-creds --from-file=mir.creds=./cockpit_ui.creds
+```
+
+Both options can be combined with a password gate (see below).
+
+#### Context password gate
+
+Add per-context passwords to the existing `mir-secret` (the secret referenced by `secretRef`) rather than putting them in plaintext values. The key pattern is `MIR__CTX__<UPPERCASE_NAME>__PASSWORD` - hyphens in context names become underscores.
+
+```yaml
+# mir.secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mir-secret
+type: Opaque
+stringData:
+  MIR__SURREAL__PASSWORD: "root"
+  MIR__INFLUX__TOKEN: "mir-operator-token"
+  # Cockpit context passwords
+  MIR__CTX__PRODUCTION__PASSWORD: "your-cockpit-password"
+  # For a context named "prod-eu": MIR__CTX__PROD_EU__PASSWORD: "..."
+```
+
+Apply and reference in values:
+
+```bash
+kubectl apply -f mir.secret.yaml
+```
+
+```yaml
+# values-auth.yaml
+secretRef: "mir-secret"
+```
+
+Restart the deployment to pick up the new secret keys. In the Cockpit, selecting a secured context will now prompt for the password before returning credentials to the browser.
+
 ### Other commands
 
 ```bash
