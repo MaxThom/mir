@@ -10,7 +10,7 @@ import (
 )
 
 // createSPAHandler creates a handler for serving a SPA
-// It serves static files if they exist, otherwise falls back to index.html
+// It serves static files if they exist, otherwise falls back to 200.html
 func createSPAHandler(webFS fs.FS, log zerolog.Logger) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Clean the path
@@ -38,16 +38,20 @@ func createSPAHandler(webFS fs.FS, log zerolog.Logger) http.Handler {
 			}
 		}
 
-		// File doesn't exist or is a directory, serve index.html for SPA routing
-		indexData, err := fs.ReadFile(webFS, "index.html")
+		// File doesn't exist or is a directory, serve 200.html for SPA routing.
+		// 200.html uses absolute asset paths and a fixed empty base, so it works
+		// correctly when served for any URL depth (e.g. /devices/gimli).
+		// index.html uses relative paths and a runtime-computed base that breaks
+		// for nested routes.
+		indexData, err := fs.ReadFile(webFS, "200.html")
 		if err != nil {
-			log.Error().Err(err).Msg("failed to read index.html")
+			log.Error().Err(err).Msg("failed to read 200.html")
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
 
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate") // Don't cache index.html
+		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate") // Don't cache 200.html
 		w.WriteHeader(http.StatusOK)
 		w.Write(indexData)
 	})

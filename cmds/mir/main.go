@@ -109,6 +109,18 @@ func SetParams(k *kong.Context, d Globals, logFile *os.File) error {
 	if len(foundFiles) > 0 {
 		ui.LoadedConfigPath = foundFiles[len(foundFiles)-1]
 	}
+
+	// Koanf cannot deep-merge env vars into slice elements, so per-context
+	// passwords must be patched manually after unmarshal.
+	// Env var pattern: MIR__CTX__<UPPERCASE_CONTEXT_NAME>__PASSWORD
+	// e.g. context "local" → MIR__CTX__LOCAL__PASSWORD
+	for i := range cfg.Contexts {
+		key := "MIR__CTX__" + strings.ToUpper(strings.ReplaceAll(cfg.Contexts[i].Name, "-", "_")) + "__PASSWORD"
+		if val := os.Getenv(key); val != "" {
+			cfg.Contexts[i].Sec.Password = val
+		}
+	}
+
 	k.Bind(cfg)
 
 	if d.LogLevel != "" {

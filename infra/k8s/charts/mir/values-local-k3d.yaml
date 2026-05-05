@@ -1,5 +1,5 @@
 image:
-  tag: "cockpit__k8s--560d94e"
+  tag: "cockpit__k8s--207af5b"
 
 config:
   contexts:
@@ -8,11 +8,22 @@ config:
       webTarget: "ws://localhost:31922"
       grafana: "http://grafana-local:8081"
       sec:
-        credentials: ""
+        credentials: "/etc/mir/mir.creds"
         rootCA: ""
         tlsCert: ""
         tlsKey: ""
-        password: ""
+        password: "mir-operator"
+    - name: "local-secret"
+      target: "nats://localhost:31422"
+      webTarget: "ws://localhost:31922"
+      grafana: "http://grafana-local:8081"
+      sec:
+        credsSecretRef: "mir-auth-secret-local-cockpit"           # K8s secret name containing the .creds file
+        credsSecretKey: "mir.creds"  # key inside the secret (default: mir.creds)
+        rootCA: ""
+        tlsCert: ""
+        tlsKey: ""
+        password: "mir-operator"
     - name: "local-ingress"
       target: "nats://localhost:31422"
       webTarget: "ws://mir-local:8081/nats-ws"
@@ -42,17 +53,6 @@ nats:
     pathType: Prefix
     wsHost: mir-local
     wsPath: /nats-ws
-  # service:
-  #   merge:
-  #     spec:
-  #       type: LoadBalancer
-  #       ports:
-  #         - appProtocol: tcp
-  #           name: nats
-  #           nodePort: 31422
-  #           port: 4222
-  #           protocol: TCP
-  #           targetPort: nats
   promExporter:
     podMonitor:
       enabled: false

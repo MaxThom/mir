@@ -36,6 +36,7 @@ config:
       webTarget: ""       # Set to ws://<host>/nats-ws or ws://<host>:31922
       grafana: ""         # Set to http://<grafana-host>
       sec:
+        credsSecretRef: ""
         credentials: ""
         rootCA: ""
         tlsCert: ""
