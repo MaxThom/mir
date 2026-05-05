@@ -14,7 +14,7 @@ data:
         webTarget: {{ .webTarget | quote }}
         grafana: {{ .grafana | quote }}
         sec:
-          credentials: {{ .sec.credentials | quote }}
+          credentials: {{ if .sec.credsSecretRef }}{{ printf "/etc/mir/creds/%s.creds" .name | quote }}{{ else }}{{ .sec.credentials | quote }}{{ end }}
           rootCA: {{ .sec.rootCA | quote }}
           tlsCert: {{ .sec.tlsCert | quote }}
           tlsKey: {{ .sec.tlsKey | quote }}

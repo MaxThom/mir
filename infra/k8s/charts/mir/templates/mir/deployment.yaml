@@ -101,6 +101,14 @@ spec:
               subPath: tls.key
               readOnly: true
             {{- end }}
+            {{- range .Values.config.contexts }}
+            {{- if .sec.credsSecretRef }}
+            - name: {{ printf "ctx-creds-%s" (.name | lower | replace "." "-" | replace "_" "-") }}
+              mountPath: {{ printf "/etc/mir/creds/%s.creds" .name }}
+              subPath: {{ default "mir.creds" .sec.credsSecretKey }}
+              readOnly: true
+            {{- end }}
+            {{- end }}
           {{- with .Values.volumeMounts }}
             {{- toYaml . | nindent 12 }}
           {{- end }}
@@ -136,6 +144,13 @@ spec:
                 - key: tls.key
                   path: tls.key
             {{- end }}
+        {{- end }}
+        {{- range .Values.config.contexts }}
+        {{- if .sec.credsSecretRef }}
+        - name: {{ printf "ctx-creds-%s" (.name | lower | replace "." "-" | replace "_" "-") }}
+          secret:
+            secretName: {{ .sec.credsSecretRef }}
+        {{- end }}
         {{- end }}
       {{- with .Values.volumes }}
         {{- toYaml . | nindent 8 }}

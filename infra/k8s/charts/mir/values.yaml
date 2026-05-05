@@ -19,6 +19,14 @@ config:
       webTarget: ""
       grafana: ""
       sec:
+        ## Option 1: reference a dedicated per-context secret (auto-mounts the file).
+        ## kubectl create secret generic mir-ctx-creds --from-file=mir.creds=./ctx.creds
+        credsSecretRef: ""           # K8s secret name containing the .creds file
+        credsSecretKey: "mir.creds"  # key inside the secret (default: mir.creds)
+        ## Option 2: point to an already-mounted path, e.g. the Mir server's own
+        ## NATS credentials file that is mounted via authSecretRef at /etc/mir/mir.creds.
+        ## authSecretRef: mir-auth-secret  (server-level, mounts /etc/mir/mir.creds)
+        ## credentials: "/etc/mir/mir.creds"
         credentials: ""
         rootCA: ""
         tlsCert: ""
