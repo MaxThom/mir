@@ -1,5 +1,5 @@
 image:
-  tag: "cockpit__k8s--207af5b"
+  tag: "cockpit__k8s--830f293"
 
 config:
   contexts:
@@ -23,7 +23,7 @@ config:
         rootCA: ""
         tlsCert: ""
         tlsKey: ""
-        password: "mir-operator"
+        password: ""
     - name: "local-ingress"
       target: "nats://localhost:31422"
       webTarget: "ws://mir-local:8081/nats-ws"
