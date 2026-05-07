@@ -228,14 +228,19 @@ The Cockpit UI connects to NATS via WebSocket. Two exposure options are availabl
 Directly accessible on port `31922`. Set `webTarget: "ws://localhost:31922"` in your context config.
 
 ### Via Ingress (recommended for shared/production)
-Route WebSocket through the ingress controller on the same host as the Cockpit UI. Uses path `/nats-ws` to differentiate from the Mir HTTP API:
+Route WebSocket through the ingress controller on the same host as the Cockpit UI using the NATS chart's native WebSocket ingress:
 
 ```yaml
 nats:
-  ingress:
-    enabled: true
-    wsHost: mir.example.com  # Same host as Cockpit
-    wsPath: /nats-ws
+  config:
+    websocket:
+      ingress:
+        enabled: true
+        hosts:
+          - mir.example.com   # same host as Cockpit
+        path: /nats-ws
+        pathType: Prefix
+        className: traefik    # or nginx, etc.
 ```
 
 Set `webTarget: "ws://mir.example.com/nats-ws"` in your context config.
