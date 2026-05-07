@@ -1,5 +1,5 @@
 ## TLS for Mir Kubernetes Deployment
-## See book/src/security/tls-kubernetes.md for the full guide.
+## See book/src/security/tls-serveronly.md or tls-mutual.md for the full guide.
 
 ## ─────────────────────────────────────────────────────────────
 ## MIR SERVER HTTPS
@@ -55,7 +55,7 @@
 #         cert: tls.crt
 #         key: tls.key
 #         merge:
-#           verify: true # true = Mutual TLS, false = Server-Only TLS
+#           verify: false # true = Mutual TLS, false = Server-Only TLS
 #           timeout: 2
 #   tlsCA:
 #     enabled: true
@@ -67,3 +67,41 @@
 # caSecretRef: <MIR_CA_SECRET>
 ## Mir server presents client cert (mTLS only):
 # tlsSecretRef: <MIR_TLS_SECRET>
+
+## ─────────────────────────────────────────────────────────────
+## NATS WEBSOCKET TLS
+## ─────────────────────────────────────────────────────────────
+## The browser requires wss:// when Cockpit is served over HTTPS.
+## Option A and B are MUTUALLY EXCLUSIVE — choose one.
+## Make sure to configure webTarget with wss: "wss://<MIR_HOST>/nats-ws"
+
+## Option A: Via Ingress (matches Mir Server HTTPS Option A)
+## TLS terminated at the ingress. NATS WebSocket runs plain WS internally.
+## Use the same TLS secret as the Mir ingress.
+## kubectl create secret tls <MIR_HTTP_TLS_SECRET> --cert=tls.crt --key=tls.key
+##
+# nats:
+#   config:
+#     websocket:
+#       ingress:
+#         enabled: true
+#         hosts:
+#           - <MIR_HOST>
+#         path: /nats-ws
+#         pathType: Prefix
+#         className: traefik        # or nginx, etc.
+#         tlsSecretName: <MIR_HTTP_TLS_SECRET>
+
+## Option B: Via NATS directly (matches Mir Server HTTPS Option B — no ingress)
+## NATS WebSocket serves WSS on NodePort 31922. Cannot combine with WebSocket ingress.
+## kubectl create secret tls <NATS_WS_TLS_SECRET> --cert=tls.crt --key=tls.key
+##
+# nats:
+#   config:
+#     websocket:
+#       tls:
+#         enabled: true
+#         secretName: <NATS_WS_TLS_SECRET>
+#         dir: /etc/nats-certs/websocket
+#         cert: tls.crt
+#         key: tls.key

@@ -134,6 +134,7 @@ nats:
             port: 9222
             protocol: TCP
             targetPort: websocket
+  # HTTP Ingress for Nats Monitoring
   ingress:
     enabled: false
     className: ""  # "[nginx|traefik]"
@@ -145,12 +146,19 @@ nats:
     #  - secretName: nats-tls
     #    hosts:
     #      - nats-local
-    wsHost: ""       # host to expose NATS WebSocket via ingress (empty = disabled)
-    wsPath: /nats-ws
   config:
     websocket:
       enabled: true
       port: 9222
+      ## Expose WebSocket via ingress.
+      # ingress:
+      #   enabled: true
+      #   hosts:
+      #     - mir.example.com       # same host as Mir ingress
+      #   path: /nats-ws
+      #   pathType: Prefix
+      #   className: traefik        # or nginx, etc.
+      #   tlsSecretName: ""
       tls:
         enabled: false
         # set secretName in order to mount an existing secret to dir

@@ -226,17 +226,15 @@ Restart: `docker compose down && docker compose up`. Cockpit is now available at
 
 #### Kubernetes
 
-Two options are available. TLS with Ingress or TLS with NodePort. If both are configured, you must configured your ingress to route HTTPS to the pod. It is recommended to use Ingress with a TLS secret only. Mutual TLS is not supported for Browser.
+**Option A and B are mutually exclusive.** With ingress TLS (Option A), NATS WebSocket TLS is terminated at the ingress. Without ingress (Option B), NATS WebSocket must serve TLS directly. Mutual TLS is not supported for browser clients.
 
-Create a TLS secret from your certificate files:
+**Option A - Via Ingress (recommended)**
+
+The ingress controller terminates TLS. Mir and NATS run plain HTTP/WS internally.
 
 ```bash
 kubectl create secret tls mir-http-tls-secret --cert=tls.crt --key=tls.key
 ```
-
-**Option A — Via Ingress (recommended)**
-
-The ingress controller terminates TLS. Mir runs on plain HTTP internally. Works with any ingress controller and cert-manager.
 
 ```yaml
 ingress:
@@ -251,14 +249,51 @@ ingress:
     - secretName: mir-http-tls-secret
       hosts:
         - mir.example.com
+
+nats:
+  config:
+    websocket:
+      ingress:
+        enabled: true
+        hosts:
+          - mir.example.com
+        path: /nats-ws
+        pathType: Prefix
+        className: "traefik"
+        tlsSecretName: mir-http-tls-secret
+
+config:
+  contexts:
+    - name: "production"
+      webTarget: "wss://mir.example.com/nats-ws"
 ```
 
-**Option B — Via App (no ingress)**
+**Option B - Via App (no ingress)**
 
-Mir reads the certificate directly and serves HTTPS itself. Use when there is no ingress controller.
+Mir and NATS serve TLS directly. Use when there is no ingress controller.
+
+```bash
+kubectl create secret tls mir-http-tls-secret --cert=tls.crt --key=tls.key
+kubectl create secret tls nats-ws-tls-secret --cert=tls.crt --key=tls.key
+```
 
 ```yaml
 mirHttpTlsSecretRef: mir-http-tls-secret
+
+nats:
+  config:
+    websocket:
+      tls:
+        enabled: true
+        secretName: nats-ws-tls-secret
+        dir: /etc/nats-certs/websocket
+        cert: tls.crt
+        key: tls.key
+
+config:
+  contexts:
+    - name: "production"
+      webTarget: "wss://<host>:31922"  # NATS WebSocket NodePort
 ```
 
 Apply with Helm:

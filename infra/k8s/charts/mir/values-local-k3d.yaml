@@ -1,5 +1,5 @@
 image:
-  tag: "cockpit__k8s--830f293"
+  tag: "cockpit__k8s--d3c88cb"
 
 config:
   contexts:
@@ -24,11 +24,31 @@ config:
         tlsCert: ""
         tlsKey: ""
         password: ""
+    - name: "local-secret-wss"
+      target: "nats://localhost:31422"
+      webTarget: "wss://localhost:31922"
+      grafana: "http://grafana-local:8081"
+      sec:
+        credsSecretRef: "mir-auth-secret-local-cockpit"           # K8s secret name containing the .creds file
+        credsSecretKey: "mir.creds"  # key inside the secret (default: mir.creds)
+        rootCA: ""
+        tlsCert: ""
+        tlsKey: ""
+        password: ""
     - name: "local-ingress"
       target: "nats://localhost:31422"
       webTarget: "ws://mir-local:8081/nats-ws"
       grafana: "http://grafana-local:8081"
-      sec: {}
+      sec:
+        credsSecretRef: "mir-auth-secret-local-cockpit"           # K8s secret name containing the .creds file
+        credsSecretKey: "mir.creds"  # key inside the secret (default: mir.creds)
+    - name: "local-ingress-wss"
+      target: "nats://localhost:31422"
+      webTarget: "wss://mir-local:8081/nats-ws"
+      grafana: "http://grafana-local:8081"
+      sec:
+        credsSecretRef: "mir-auth-secret-local-cockpit"           # K8s secret name containing the .creds file
+        credsSecretKey: "mir.creds"  # key inside the secret (default: mir.creds)
   mir:
     logLevel: "debug"
 
@@ -54,8 +74,15 @@ nats:
     host: nats-local
     path: /
     pathType: Prefix
-    wsHost: mir-local
-    wsPath: /nats-ws
+  config:
+    websocket:
+      ingress:
+        enabled: true
+        hosts:
+          - mir-local
+        path: /nats-ws
+        pathType: Prefix
+        className: traefik
   promExporter:
     podMonitor:
       enabled: false
