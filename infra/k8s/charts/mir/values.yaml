@@ -3,6 +3,11 @@ image:
   pullPolicy: IfNotPresent
   tag: ""
 
+## TLS secret for the Mir HTTP server (enables HTTPS on the Mir API/Cockpit endpoint).
+## kubectl create secret tls <name> --cert=tls.crt --key=tls.key
+## Refer to chart ./secret/mir-tls.secret.yaml
+#mirHttpTlsSecretRef: mir-http-tls-secret
+
 ## Use secret to pass any config as environment variables, mainly passwords and tokens.
 ## Refer to chart ./secret/mir.secret.yaml
 ## eg:
@@ -28,9 +33,6 @@ config:
         ## authSecretRef: mir-auth-secret  (server-level, mounts /etc/mir/mir.creds)
         ## credentials: "/etc/mir/mir.creds"
         credentials: ""
-        rootCA: ""
-        tlsCert: ""
-        tlsKey: ""
         ## Inject password via the existing secretRef secret to avoid plaintext in values.
         ## Add a key MIR__CTX__<UPPERCASE_NAME>__PASSWORD to the secret referenced by secretRef.
         ## e.g. for context "local":  MIR__CTX__LOCAL__PASSWORD: "mypassword"

@@ -36,9 +36,11 @@
     - [x] configmap revamp
     - [x] context list configmap
     - [ ] tls load
-    - [ ] creds load for list
+    - [x] creds load for list
     - [ ] test cockpit
     - [ ] test tls, auth and wss
+    - [ ] update gitops chart
+    - [ ] update my own do deployments
 - [x] security for Cockpit
   - [x] detect if local, if so no need of password
   - [x] Setup local with creds to test

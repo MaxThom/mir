@@ -25,8 +25,13 @@ data:
       logLevel: {{ .Values.config.mir.logLevel | quote }}
       http:
         port: {{ .Values.service.targetPort }}
+        {{- if .Values.mirHttpTlsSecretRef }}
+        tlsCert: "/etc/mir/http-tls/tls.crt"
+        tlsKey: "/etc/mir/http-tls/tls.key"
+        {{- else }}
         tlsCert: ""
         tlsKey: ""
+        {{- end }}
       core:
         enabled: {{ .Values.config.mir.core.enabled }}
         deviceOnlineFlush: {{ .Values.config.mir.core.deviceOnlineFlush | quote }}

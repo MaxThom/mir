@@ -19,14 +19,16 @@
 		<Tooltip.Trigger class="flex items-center gap-1 text-xs">
 			{#if isHttps}
 				<ShieldCheckIcon class="size-3.5 text-green-500" />
-				<span class="text-sidebar-foreground/70">HTTP</span>
+				<span class="text-sidebar-foreground/70">HTTPS</span>
 			{:else}
 				<ShieldAlertIcon class="size-3.5 text-yellow-500" />
-				<span class="text-sidebar-foreground/50">HTTP</span>
+				<span class="text-sidebar-foreground/50">HTTPS</span>
 			{/if}
 		</Tooltip.Trigger>
 		<Tooltip.Content side="top">
-			<span class="text-xs">{isHttps ? 'Cockpit served over HTTPS' : 'Cockpit served over HTTP'}</span>
+			<span class="text-xs"
+				>{isHttps ? 'Cockpit served over HTTPS' : 'Cockpit served over HTTP'}</span
+			>
 		</Tooltip.Content>
 	</Tooltip.Root>
 

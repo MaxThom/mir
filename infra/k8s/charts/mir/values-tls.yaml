@@ -1,37 +1,69 @@
-## Quick Setup
-# 1. NATS TLS Secret
-# kubectl create secret tls <NATS_TLS_SECRET> --cert=tls.crt --key=tls.key
-# 2. NATS CA Secret (Mutual TLS)
-# kubectl create secret generic <NATS_CA_SECRET> --from-file=ca.crt=ca.crt
-# 3. Mir CA Secret
-# kubectl create secret generic <MIR_CA_SECRET> --from-file=ca.crt=ca.crt
-# 4. Mir TLS Secret (Mutual TLS)
-# kubectl create secret tls <MIR_TLS_SECRET> --cert=tls.crt --key=tls.key
+## TLS for Mir Kubernetes Deployment
+## See book/src/security/tls-kubernetes.md for the full guide.
+
+## ─────────────────────────────────────────────────────────────
+## MIR SERVER HTTPS
+## ─────────────────────────────────────────────────────────────
+
+## Option A and B are MUTUALLY EXCLUSIVE.
+## Choose one based on your setup:
+##   Option A — you have an ingress controller (recommended for most deployments).
+##              Do NOT set mirHttpTlsSecretRef — ingress forwards plain HTTP to the pod.
+##   Option B — no ingress. The pod serves HTTPS directly.
+##              Setting ingress.enabled=true with mirHttpTlsSecretRef will break routing
+##              because the ingress always forwards plain HTTP to the backend.
+
+## Option A: Via Ingress (TLS terminated at ingress, Mir runs plain HTTP internally)
+## kubectl create secret tls <MIR_INGRESS_TLS_SECRET> --cert=tls.crt --key=tls.key
+## kubectl create secret tls <MIR_INGRESS_TLS_SECRET> --cert=tls.crt --key=tls.key --dry-run=client -o yaml > mir-tls.secret.yaml
 ##
+# ingress:
+#   enabled: true
+#   className: "traefik"  # or "nginx", etc.
+#   tls:
+#     - secretName: <MIR_INGRESS_TLS_SECRET>
+#       hosts:
+#         - <MIR_HOST>
 
-## NATS
-nats:
-  config:
-    nats:
-      tls:
-        enabled: true
-        secretName: <NATS_TLS_SECRET>
-        dir: /etc/nats-certs
-        cert: tls.crt
-        key: tls.key
-        merge:
-          verify: true # True for Mutual TLS, false for ServerOnly TLS
-          timeout: 2
-  # Reference CA for mTLS
-  tlsCA:
-    enabled: true
-    secretName: <NATS_CA_SECRET>
-    dir: /etc/nats-ca-certs
-    key: ca.crt
+## Option B: Via App (Mir pod runs HTTPS directly, see ./secret/mir-tls.secret.yaml)
+## kubectl create secret tls <MIR_HTTP_TLS_SECRET> --cert=tls.crt --key=tls.key
+## kubectl create secret tls <MIR_HTTP_TLS_SECRET> --cert=tls.crt --key=tls.key --dry-run=client -o yaml > mir-tls.secret.yaml
+##
+# mirHttpTlsSecretRef: <MIR_HTTP_TLS_SECRET>
 
-## MIR
-# Configure Mir Server Access, see
-# - ./secret/mir-ca.secret.yaml
-# - ./secret/mir-tls.secret.yaml
-caSecretRef: <MIR_CA_SECRET>
-tlsSecretRef: <MIR_TLS_SECRET>
+## ─────────────────────────────────────────────────────────────
+## NATS TLS (app-level — Mir connects to NATS over TLS)
+## ─────────────────────────────────────────────────────────────
+## See tls-serveronly.md / tls-mutual.md for NATS TLS configuration.
+##
+## 1. NATS TLS Secret
+## kubectl create secret tls <NATS_TLS_SECRET> --cert=tls.crt --key=tls.key
+## 2. NATS CA Secret (Mutual TLS)
+## kubectl create secret generic <NATS_CA_SECRET> --from-file=ca.crt=ca.crt
+## 3. Mir CA Secret (to verify NATS certificate)
+## kubectl create secret generic <MIR_CA_SECRET> --from-file=ca.crt=ca.crt
+## 4. Mir TLS Secret (Mutual TLS client cert for Mir → NATS)
+## kubectl create secret tls <MIR_TLS_SECRET> --cert=tls.crt --key=tls.key
+##
+# nats:
+#   config:
+#     nats:
+#       tls:
+#         enabled: true
+#         secretName: <NATS_TLS_SECRET>
+#         dir: /etc/nats-certs
+#         cert: tls.crt
+#         key: tls.key
+#         merge:
+#           verify: true # true = Mutual TLS, false = Server-Only TLS
+#           timeout: 2
+#   tlsCA:
+#     enabled: true
+#     secretName: <NATS_CA_SECRET>
+#     dir: /etc/nats-ca-certs
+#     key: ca.crt
+#
+## Mir server verifies NATS certificate (Server-Only and mTLS):
+# caSecretRef: <MIR_CA_SECRET>
+## Mir server presents client cert (mTLS only):
+# tlsSecretRef: <MIR_TLS_SECRET>

@@ -187,7 +187,11 @@ nats:
 
 ### Step 3: Configure Cockpit HTTPS (Optional)
 
-By default Cockpit serves on plain HTTP. If you want the web UI over HTTPS (so the browser uses `wss://` for its NATS WebSocket connection), configure it in `./mir-compose/mir/local-config.yaml`:
+By default Cockpit serves on plain HTTP. If you want the web UI over HTTPS (so the browser uses `wss://` for its NATS WebSocket connection), follow the steps for your deployment.
+
+#### Docker
+
+Configure in `./mir-compose/mir/local-config.yaml`:
 
 ```yaml
 mir:
@@ -219,6 +223,49 @@ contexts:
 ```
 
 Restart: `docker compose down && docker compose up`. Cockpit is now available at `https://localhost:3015`.
+
+#### Kubernetes
+
+Two options are available. TLS with Ingress or TLS with NodePort. If both are configured, you must configured your ingress to route HTTPS to the pod. It is recommended to use Ingress with a TLS secret only. Mutual TLS is not supported for Browser.
+
+Create a TLS secret from your certificate files:
+
+```bash
+kubectl create secret tls mir-http-tls-secret --cert=tls.crt --key=tls.key
+```
+
+**Option A — Via Ingress (recommended)**
+
+The ingress controller terminates TLS. Mir runs on plain HTTP internally. Works with any ingress controller and cert-manager.
+
+```yaml
+ingress:
+  enabled: true
+  className: "traefik"  # or "nginx", etc.
+  hosts:
+    - host: mir.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: mir-http-tls-secret
+      hosts:
+        - mir.example.com
+```
+
+**Option B — Via App (no ingress)**
+
+Mir reads the certificate directly and serves HTTPS itself. Use when there is no ingress controller.
+
+```yaml
+mirHttpTlsSecretRef: mir-http-tls-secret
+```
+
+Apply with Helm:
+
+```bash
+helm upgrade <release-name> <chart-path> -f values.yaml
+```
 
 ### Step 4: Install Certificates on Module
 
