@@ -32,6 +32,9 @@ config:
   mir:
     logLevel: "debug"
 
+service:
+  type: NodePort
+
 ingress:
   enabled: true
   className: "traefik"

@@ -60,13 +60,18 @@ spec:
             - name: http
               containerPort: {{ .Values.service.targetPort }}
               protocol: TCP
+          {{- $scheme := .Values.mirHttpTlsSecretRef | empty | ternary "HTTP" "HTTPS" }}
           {{- with .Values.livenessProbe }}
+          {{- $probe := deepCopy . }}
+          {{- $_ := set $probe.httpGet "scheme" $scheme }}
           livenessProbe:
-            {{- toYaml . | nindent 12 }}
+            {{- toYaml $probe | nindent 12 }}
           {{- end }}
           {{- with .Values.readinessProbe }}
+          {{- $probe := deepCopy . }}
+          {{- $_ := set $probe.httpGet "scheme" $scheme }}
           readinessProbe:
-            {{- toYaml . | nindent 12 }}
+            {{- toYaml $probe | nindent 12 }}
           {{- end }}
           {{- with .Values.resources }}
           resources:
@@ -85,6 +90,16 @@ spec:
             - name: auth
               mountPath: /etc/mir/mir.creds
               subPath: mir.creds
+              readOnly: true
+            {{- end }}
+            {{- with .Values.mirHttpTlsSecretRef }}
+            - name: mir-http-tls
+              mountPath: /etc/mir/http-tls/tls.crt
+              subPath: tls.crt
+              readOnly: true
+            - name: mir-http-tls
+              mountPath: /etc/mir/http-tls/tls.key
+              subPath: tls.key
               readOnly: true
             {{- end }}
             {{- if or .Values.caSecretRef .Values.tlsSecretRef }}
@@ -121,6 +136,11 @@ spec:
             name: {{ include "mir.fullname" . }}-config
         {{- with .Values.authSecretRef }}
         - name: auth
+          secret:
+            secretName: {{ . }}
+        {{- end }}
+        {{- with .Values.mirHttpTlsSecretRef }}
+        - name: mir-http-tls
           secret:
             secretName: {{ . }}
         {{- end }}
