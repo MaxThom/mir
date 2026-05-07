@@ -68,8 +68,15 @@ nats:
     host: nats.example.com   # NATS monitor endpoint
     path: /
     pathType: Prefix
-    wsHost: mir.example.com  # Host for NATS WebSocket (can be same as Mir)
-    wsPath: /nats-ws         # Path for NATS WebSocket via ingress
+  config:
+    websocket:
+      ingress:
+        enabled: true
+        hosts:
+          - mir.example.com   # same host as Cockpit
+        path: /nats-ws
+        pathType: Prefix
+        className: ""         # nginx, traefik, etc.
   service:
     merge:
       spec:
@@ -81,7 +88,7 @@ nats:
             port: 4222
             protocol: TCP
             targetPort: nats
-          # NodePort for WebSocket, use this or ingress.wsHost/ingress.wsPath or both
+          # NodePort for WebSocket, use this or nats.config.websocket.ingress or both
           - appProtocol: tcp
             name: websocket
             nodePort: 31922
@@ -246,6 +253,9 @@ nats:
 Set `webTarget: "ws://mir.example.com/nats-ws"` in your context config.
 
 Traefik handles WebSocket upgrades natively — no additional annotations required.
+
+> For HTTPS/WSS deployments, also set `tlsSecretName` in the `ingress` block.
+> See [TLS configuration](../security/tls-serveronly.md) for the full setup.
 
 ## Security Considerations
 
