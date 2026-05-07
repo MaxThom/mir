@@ -115,8 +115,15 @@ nats:
     path: /
     pathType: Prefix
     tls: []
-    wsHost: ""          # Set to expose NATS WebSocket via ingress (e.g. mir.example.com)
-    wsPath: /nats-ws
+  # config:
+  #   websocket:
+  #     ingress:
+  #       enabled: true
+  #       hosts:
+  #         - mir.example.com
+  #       path: /nats-ws
+  #       pathType: Prefix
+  #       className: ""   # nginx, traefik, etc.
 
   # NATS cluster configuration
   config:

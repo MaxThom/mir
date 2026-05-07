@@ -102,11 +102,13 @@ spec:
               subPath: tls.key
               readOnly: true
             {{- end }}
-            {{- if or .Values.caSecretRef .Values.tlsSecretRef }}
+            {{- if .Values.caSecretRef }}
             - name: mir-certs
               mountPath: /etc/mir/ca.crt
               subPath: ca.crt
               readOnly: true
+            {{- end }}
+            {{- if .Values.tlsSecretRef }}
             - name: mir-certs
               mountPath: /etc/mir/tls.crt
               subPath: tls.crt

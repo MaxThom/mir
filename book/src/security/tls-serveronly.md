@@ -105,6 +105,9 @@ nats:
         dir: /etc/nats-certs/nats
         cert: tls.crt
         key: tls.key
+        merge:
+          verify: false # false = Server-Only TLS (no client cert required)
+          timeout: 2
 ```
 
 ### Step 3: Configure Cockpit HTTPS (Optional)
