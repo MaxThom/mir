@@ -35,12 +35,15 @@
     - [x] websocket ingress
     - [x] configmap revamp
     - [x] context list configmap
-    - [ ] tls load
+    - [x] tls load
     - [x] creds load for list
     - [ ] test cockpit
     - [ ] test tls, auth and wss
     - [ ] update gitops chart
     - [ ] update my own do deployments
+    - [ ] the service merge destroy all the ports
+          maybe we need an extra service for loadbalancer 
+          of just 4222 and 9222
 - [x] security for Cockpit
   - [x] detect if local, if so no need of password
   - [x] Setup local with creds to test
@@ -48,6 +51,8 @@
   - [x] redirect to https
   - [ ] dashboard per context
   - [x] mir serve, how it load context list
+  - [ ] add tooltip on ctx dropdown for full server url
+  - [ ] missing a connected icon or something
   
 ### Bug
 

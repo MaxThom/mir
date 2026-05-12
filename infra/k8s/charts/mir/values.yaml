@@ -151,13 +151,13 @@ nats:
       enabled: true
       port: 9222
       ## Expose WebSocket via ingress.
-      # ingress:
-      #   enabled: true
-      #   hosts:
+      ingress:
+        enabled: false
+        hosts: []
       #     - mir.example.com       # same host as Mir ingress
-      #   path: /nats-ws
-      #   pathType: Prefix
-      #   className: traefik        # or nginx, etc.
+        path: /nats-ws
+        pathType: Prefix
+        className: ""        # [nginx|traefik]
       #   tlsSecretName: ""
       tls:
         enabled: false

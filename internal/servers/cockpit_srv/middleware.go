@@ -43,7 +43,7 @@ func securityHeadersMiddleware(next http.Handler) http.Handler {
 		// 'unsafe-inline' needed for Svelte's inline styles in development
 		csp := strings.Join([]string{
 			"default-src 'self'",
-			"script-src 'self' 'unsafe-inline'", // Svelte needs unsafe-inline for dev
+			"script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'", // Svelte needs unsafe-inline, NATS.ws needs wasm-unsafe-eval
 			"style-src 'self' 'unsafe-inline'",  // Svelte needs unsafe-inline
 			"img-src 'self' data: https:",
 			"font-src 'self' data:",
@@ -65,7 +65,7 @@ func securityHeadersMiddleware(next http.Handler) http.Handler {
 		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
 
 		// Permissions policy (formerly Feature-Policy)
-		w.Header().Set("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
+		w.Header().Set("Permissions-Policy", "geolocation=(), microphone=(), camera=(), browsing-topics=()")
 
 		next.ServeHTTP(w, r)
 	})

@@ -52,8 +52,8 @@ data:
         githubOwner: {{ .Values.config.mir.cockpit.githubOwner | quote }}
         githubRepo: {{ .Values.config.mir.cockpit.githubRepo | quote }}
     nats:
-      {{- if .Values.config.mir.url }}
-      url: {{ .Values.config.mir.url | quote }}
+      {{- if .Values.config.mir.nats.url }}
+      url: {{ .Values.config.mir.nats.url | quote }}
       {{- else }}
       url: "nats://{{ .Release.Name }}-nats:4222"
       {{- end }}
